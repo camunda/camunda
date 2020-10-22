@@ -19,7 +19,7 @@ public final class BooleanValue extends BaseValue {
   }
 
   public BooleanValue(final boolean initialValue) {
-    this.val = initialValue;
+    val = initialValue;
   }
 
   @Override
@@ -32,7 +32,7 @@ public final class BooleanValue extends BaseValue {
   }
 
   public void setValue(final boolean value) {
-    this.val = value;
+    val = value;
   }
 
   @Override

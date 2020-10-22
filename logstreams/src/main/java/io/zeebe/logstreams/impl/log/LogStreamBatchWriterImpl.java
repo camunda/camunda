@@ -61,15 +61,15 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   private BufferWriter valueWriter;
 
   LogStreamBatchWriterImpl(final int partitionId, final Dispatcher dispatcher) {
-    this.logWriteBuffer = dispatcher;
-    this.logId = partitionId;
+    logWriteBuffer = dispatcher;
+    logId = partitionId;
 
     reset();
   }
 
   @Override
   public LogStreamBatchWriter sourceRecordPosition(final long position) {
-    this.sourceEventPosition = position;
+    sourceEventPosition = position;
     return this;
   }
 
@@ -123,7 +123,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
 
   @Override
   public LogEntryBuilder metadataWriter(final BufferWriter writer) {
-    this.metadataWriter = writer;
+    metadataWriter = writer;
     return this;
   }
 
@@ -140,7 +140,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
 
   @Override
   public LogEntryBuilder valueWriter(final BufferWriter writer) {
-    this.valueWriter = writer;
+    valueWriter = writer;
     return this;
   }
 

@@ -18,6 +18,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/zeebe-io/zeebe/clients/go/internal/embedded"
 	"log"
 	"os"
 	"strconv"
@@ -39,6 +40,7 @@ const DefaultKeepAlive = 45 * time.Second
 const InsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
 const CaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
+const GatewayAddressEnvVar = "ZEEBE_ADDRESS"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
@@ -146,6 +148,8 @@ func NewClient(config *ClientConfig) (Client, error) {
 		return nil, err
 	}
 
+	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent("zeebe-client-go/"+getVersion()))
+
 	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
@@ -165,6 +169,10 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 
 	if caCertificatePath := env.get(CaCertificatePath); caCertificatePath != "" {
 		config.CaCertificatePath = caCertificatePath
+	}
+
+	if gatewayAddress := env.get(GatewayAddressEnvVar); gatewayAddress != "" {
+		config.GatewayAddress = gatewayAddress
 	}
 
 	if val := env.get(KeepAliveEnvVar); val != "" {
@@ -254,4 +262,13 @@ func configureKeepAlive(config *ClientConfig) error {
 	config.DialOpts = append(config.DialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive}))
 
 	return nil
+}
+
+func getVersion() string {
+	zbVersion := "development"
+	if readVersion, err := embedded.Asset("VERSION"); err == nil {
+		zbVersion = strings.TrimSpace(string(readVersion))
+	}
+
+	return zbVersion
 }

@@ -47,8 +47,8 @@ public class VectorTimestamp<T extends Identifier> extends LogicalTimestamp {
     final VectorTimestamp that = (VectorTimestamp) o;
 
     return ComparisonChain.start()
-        .compare(this.identifier.id(), that.identifier.id())
-        .compare(this.value(), that.value())
+        .compare(identifier.id(), that.identifier.id())
+        .compare(value(), that.value())
         .result();
   }
 
@@ -65,8 +65,7 @@ public class VectorTimestamp<T extends Identifier> extends LogicalTimestamp {
 
     if (obj instanceof VectorTimestamp) {
       final var that = (VectorTimestamp) obj;
-      return Objects.equals(this.identifier, that.identifier)
-          && Objects.equals(this.value(), that.value());
+      return Objects.equals(identifier, that.identifier) && Objects.equals(value(), that.value());
     }
 
     if (obj instanceof LogicalTimestamp) {

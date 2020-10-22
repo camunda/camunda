@@ -54,11 +54,11 @@ final class LeaderAppender extends AbstractAppender {
 
   LeaderAppender(final LeaderRole leader) {
     super(leader.raft);
-    this.leaderTime = System.currentTimeMillis();
-    this.leaderIndex = raft.getLogWriter().getNextIndex();
-    this.heartbeatTime = leaderTime;
-    this.electionTimeout = raft.getElectionTimeout().toMillis();
-    this.heartbeatInterval = raft.getHeartbeatInterval().toMillis();
+    leaderTime = System.currentTimeMillis();
+    leaderIndex = raft.getLogWriter().getNextIndex();
+    heartbeatTime = leaderTime;
+    electionTimeout = raft.getElectionTimeout().toMillis();
+    heartbeatInterval = raft.getHeartbeatInterval().toMillis();
   }
 
   /**
@@ -284,27 +284,6 @@ final class LeaderAppender extends AbstractAppender {
     }
   }
 
-  private void tryToReplicateSnapshot(final RaftMemberContext member) {
-    final var optSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
-
-    if (optSnapshot.isPresent()
-        && member.getSnapshotIndex() < optSnapshot.get().getIndex()
-        && optSnapshot.get().getIndex() >= member.getLogReader().getCurrentIndex()) {
-      if (!member.canInstall()) {
-        return;
-      }
-
-      final var persistedSnapshot = optSnapshot.get();
-      log.debug(
-          "Replicating snapshot {} to {}",
-          persistedSnapshot.getIndex(),
-          member.getMember().memberId());
-      sendInstallRequest(member, buildInstallRequest(member, persistedSnapshot));
-    } else if (member.canAppend()) {
-      sendAppendRequest(member, buildAppendRequest(member, -1));
-    }
-  }
-
   @Override
   protected boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
@@ -361,6 +340,28 @@ final class LeaderAppender extends AbstractAppender {
         future ->
             future.completeExceptionally(
                 new RaftException.ProtocolException("Failed to reach consensus")));
+  }
+
+  private void tryToReplicateSnapshot(final RaftMemberContext member) {
+    final var optSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+
+    if (optSnapshot.isPresent()
+        && member.getSnapshotIndex() < optSnapshot.get().getIndex()
+        && optSnapshot.get().getIndex() >= member.getLogReader().getCurrentIndex()) {
+      if (!member.canInstall()) {
+        return;
+      }
+
+      final var persistedSnapshot = optSnapshot.get();
+      log.debug(
+          "Replicating snapshot {} to {}",
+          persistedSnapshot.getIndex(),
+          member.getMember().memberId());
+      buildInstallRequest(member, persistedSnapshot)
+          .ifPresent(installRequest -> sendInstallRequest(member, installRequest));
+    } else if (member.canAppend()) {
+      sendAppendRequest(member, buildAppendRequest(member, -1));
+    }
   }
 
   /** Records a failed heartbeat. */

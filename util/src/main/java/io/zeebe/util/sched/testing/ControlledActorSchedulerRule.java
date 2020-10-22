@@ -19,16 +19,12 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadPoolExecutor;
-import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
 public final class ControlledActorSchedulerRule extends ExternalResource {
   private final ActorScheduler actorScheduler;
   private final ControlledActorThread controlledActorTaskRunner;
-  private final ThreadPoolExecutor blockingTasksRunner;
   private final ControlledActorClock clock = new ControlledActorClock();
 
   public ControlledActorSchedulerRule() {
@@ -40,12 +36,10 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(0)
             .setActorThreadFactory(actorTaskRunnerFactory)
-            .setBlockingTasksShutdownTime(Duration.ofSeconds(0))
             .setActorTimerQueue(timerQueue);
 
     actorScheduler = builder.build();
     controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
-    blockingTasksRunner = builder.getBlockingTasksRunner();
   }
 
   @Override
@@ -64,19 +58,6 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
 
   public ActorScheduler get() {
     return actorScheduler;
-  }
-
-  public void awaitBlockingTasksCompleted(final int i) {
-    final long currentTimeMillis = System.currentTimeMillis();
-
-    while (System.currentTimeMillis() - currentTimeMillis < 5000) {
-      final long completedTaskCount = blockingTasksRunner.getCompletedTaskCount();
-      if (completedTaskCount >= i) {
-        return;
-      }
-    }
-
-    Assert.fail("could not complete " + i + " blocking tasks within 5s");
   }
 
   public void workUntilDone() {

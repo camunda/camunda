@@ -20,7 +20,7 @@ public final class ExecuteCommandRequestBuilder {
 
   public ExecuteCommandRequestBuilder(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
-    this.request = new ExecuteCommandRequest(output, targetAddress, msgPackHelper);
+    request = new ExecuteCommandRequest(output, targetAddress, msgPackHelper);
   }
 
   public ExecuteCommandResponse sendAndAwait() {

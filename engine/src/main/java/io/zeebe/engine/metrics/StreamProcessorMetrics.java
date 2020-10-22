@@ -8,31 +8,49 @@
 package io.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.zeebe.protocol.record.RecordType;
 
 public final class StreamProcessorMetrics {
 
+  private static final String NAMESPACE = "zeebe";
   private static final Counter STREAM_PROCESSOR_EVENTS =
       Counter.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE)
           .name("stream_processor_events_total")
           .help("Number of events processed by stream processor")
           .labelNames("action", "partition")
           .register();
 
+  private static final Gauge LAST_PROCESSED_POSITION =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_last_processed_position")
+          .help("The last position the stream processor has processed.")
+          .labelNames("partition")
+          .register();
+
   private static final Histogram PROCESSING_LATENCY =
       Histogram.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE)
           .name("stream_processor_latency")
           .help("Latency of processing in seconds")
           .labelNames("recordType", "partition")
           .register();
 
+  private static final Gauge STARTUP_RECOVERY_TIME =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_startup_recovery_time")
+          .help("Time taken for startup and recovery of stream processor (in ms)")
+          .labelNames("partition")
+          .register();
+
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   private void event(final String action) {
@@ -56,5 +74,13 @@ public final class StreamProcessorMetrics {
 
   public void eventSkipped() {
     event("skipped");
+  }
+
+  public void recoveryTime(final long durationMillis) {
+    STARTUP_RECOVERY_TIME.labels(partitionIdLabel).set(durationMillis);
+  }
+
+  public void setLastProcessedPosition(final long position) {
+    LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
   }
 }

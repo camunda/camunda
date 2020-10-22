@@ -58,13 +58,12 @@ import org.junit.Test;
 
 /** Cluster event service test. */
 public class DefaultClusterEventServiceTest {
+
   private static final Serializer SERIALIZER = Serializer.using(Namespaces.BASIC);
 
   private final TestMessagingServiceFactory messagingServiceFactory =
       new TestMessagingServiceFactory();
   private final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-  private final TestBroadcastServiceFactory broadcastServiceFactory =
-      new TestBroadcastServiceFactory();
 
   private final Map<Integer, Managed> managedMemberShipServices = new HashMap<>();
   private final Map<Integer, Managed> managedEventService = new HashMap<>();
@@ -97,8 +96,7 @@ public class DefaultClusterEventServiceTest {
     final BootstrapService bootstrapService1 =
         new TestBootstrapService(
             messagingService,
-            unicastServiceFactory.newUnicastService(localMember.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(localMember.address()).start().join());
     final ManagedClusterMembershipService managedClusterMembershipService =
         new DefaultClusterMembershipService(
             localMember,
@@ -134,7 +132,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldBroadcast() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(6);
+    membersDiscovered = new CountDownLatch(6);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
@@ -198,7 +196,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldSubscribeMultipleTopics() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(4);
+    membersDiscovered = new CountDownLatch(4);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(2);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
@@ -248,7 +246,7 @@ public class DefaultClusterEventServiceTest {
   public void shouldBroadcastToMultipleLocalSubscriptionsForSameTopic()
       throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(0);
+    membersDiscovered = new CountDownLatch(0);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(1);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
 
@@ -293,7 +291,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldNotCloseOtherSubscriptions() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(0);
+    membersDiscovered = new CountDownLatch(0);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(1);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
 
@@ -332,7 +330,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldBroadcastAfterRestart() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(4);
+    membersDiscovered = new CountDownLatch(4);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(2);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);

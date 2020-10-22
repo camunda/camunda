@@ -51,14 +51,14 @@ public final class ZeebeClientTest extends ClientTest {
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 
       // then
-      assertThat(configuration.getBrokerContactPoint()).isEqualTo("0.0.0.0:26500");
+      assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
       assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
       assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
       assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
-      assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
+      assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
     }
   }
 
@@ -112,7 +112,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldCaCertificateWithEnvVar() {
     // given
-    final String certPath = this.getClass().getClassLoader().getResource("ca.cert.pem").getPath();
+    final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
     Environment.system().put(CA_CERTIFICATE_VAR, certPath);
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
@@ -171,5 +171,20 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(KEEP_ALIVE_VAR, "-2s");
     assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldBrokerContactPointReturnTheSameAsGatewayAddress() {
+    // given
+    final String gatewayAddress = "localhost:26500";
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().brokerContactPoint(gatewayAddress).build()) {
+      // when
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
+      // then
+      assertThat(configuration.getGatewayAddress())
+          .isEqualTo(configuration.getBrokerContactPoint())
+          .isEqualTo(gatewayAddress);
+    }
   }
 }

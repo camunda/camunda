@@ -32,7 +32,6 @@ import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 /** Candidate state. */
 public final class CandidateRole extends ActiveRole {
 
-  private final Random random = new Random();
   private Scheduled currentTimer;
 
   public CandidateRole(final RaftContext context) {
@@ -135,7 +133,9 @@ public final class CandidateRole extends ActiveRole {
 
     final Duration delay =
         raft.getElectionTimeout()
-            .plus(Duration.ofMillis(random.nextInt((int) raft.getElectionTimeout().toMillis())));
+            .plus(
+                Duration.ofMillis(
+                    raft.getRandom().nextInt((int) raft.getElectionTimeout().toMillis())));
     currentTimer =
         raft.getThreadContext()
             .schedule(

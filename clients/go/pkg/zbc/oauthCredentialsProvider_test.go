@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,43 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	s.NoError(err)
 
 	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, errorStatus.Code())
+	}
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
+}
+func (s *oauthCredsProviderTestSuite) TestNoConfigSecureClient() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	interceptor := newRecordingInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), &mutableToken{value: accessToken})
+	defer authzServer.Close()
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+
+	env.set(GatewayAddressEnvVar, fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]))
+	env.set(InsecureEnvVar, "true")
+	env.set(OAuthClientIdEnvVar, clientID)
+	env.set(OAuthClientSecretEnvVar, clientSecret)
+	env.set(OAuthTokenAudienceEnvVar, audience)
+	env.set(OAuthAuthorizationUrlEnvVar, authzServer.URL)
+
+	// when
+	client, err := NewClient(&ClientConfig{})
+	s.NoError(err)
+
 	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
@@ -560,6 +598,8 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 		require.Equal(t, audience, query.Get("audience"))
 		require.Equal(t, clientID, query.Get("client_id"))
 		require.Equal(t, clientSecret, query.Get("client_secret"))
+		require.Regexp(t, regexp.MustCompile(`zeebe-client-go/\d+\.\d+\.\d+.*`),
+			request.Header.Get("User-Agent"))
 
 		writer.Header().Set("Content-Type", "application/json")
 		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +

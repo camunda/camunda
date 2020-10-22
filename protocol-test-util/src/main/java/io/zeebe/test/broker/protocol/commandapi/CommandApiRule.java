@@ -46,7 +46,7 @@ public final class CommandApiRule extends ExternalResource {
   private ActorScheduler scheduler;
 
   public CommandApiRule(final Supplier<AtomixCluster> atomixSupplier) {
-    this.nodeId = 0;
+    nodeId = 0;
     this.atomixSupplier = atomixSupplier;
   }
 

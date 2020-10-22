@@ -28,11 +28,12 @@ import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.RaftStateMachine;
-import io.atomix.raft.RaftStateMachineFactory;
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
+import io.atomix.raft.impl.zeebe.LogCompactor;
+import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
@@ -45,24 +46,21 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.roles.PassiveRole;
 import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ComposableFuture;
-import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -93,16 +91,13 @@ public class RaftContext implements AutoCloseable {
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
   private final RaftLogWriter logWriter;
   private final RaftLogReader logReader;
-  private final PersistedSnapshotStore persistedSnapshotStore;
-  private final RaftStateMachine stateMachine;
-  private final ThreadContextFactory threadContextFactory;
-  private final ThreadContext loadContext;
-  private final ThreadContext stateContext;
-  private final boolean closeOnStop;
+  private final ReceivableSnapshotStore persistedSnapshotStore;
+  private final LogCompactor logCompactor;
   private volatile State state = State.ACTIVE;
   private RaftRole role = new InactiveRole(this);
   private Duration electionTimeout = Duration.ofMillis(500);
@@ -112,26 +107,29 @@ public class RaftContext implements AutoCloseable {
   private MemberId lastVotedFor;
   private long commitIndex;
   private volatile long firstCommitIndex;
-  private volatile long lastApplied;
-  private volatile long lastAppliedTerm;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private final int maxAppendBatchSize;
+  private final int maxAppendsPerFollower;
+  // Used for randomizing election timeout
+  private final Random random;
 
-  @SuppressWarnings("unchecked")
   public RaftContext(
       final String name,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
       final RaftStorage storage,
-      final ThreadContextFactory threadContextFactory,
-      final boolean closeOnStop,
-      final RaftStateMachineFactory stateMachineFactory) {
+      final RaftThreadContextFactory threadContextFactory,
+      final int maxAppendBatchSize,
+      final int maxAppendsPerFollower,
+      final Supplier<Random> randomFactory) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
-    this.log =
+    random = randomFactory.get();
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
 
@@ -142,40 +140,37 @@ public class RaftContext implements AutoCloseable {
     }
 
     final String baseThreadName = String.format("raft-server-%s-%s", localMemberId.id(), name);
-    this.threadContext =
-        new SingleThreadContext(namedThreads(baseThreadName, log), this::onUncaughtException);
-    this.loadContext = new SingleThreadContext(namedThreads(baseThreadName + "-load", log));
-    this.stateContext = new SingleThreadContext(namedThreads(baseThreadName + "-state", log));
-
-    this.threadContextFactory =
-        checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
-    this.closeOnStop = closeOnStop;
+    threadContext =
+        threadContextFactory.createContext(
+            namedThreads(baseThreadName, log), this::onUncaughtException);
 
     // Open the metadata store.
-    this.meta = storage.openMetaStore();
+    meta = storage.openMetaStore();
 
     // Load the current term and last vote from disk.
-    this.term = meta.loadTerm();
-    this.lastVotedFor = meta.loadVote();
+    term = meta.loadTerm();
+    lastVotedFor = meta.loadVote();
 
     // Construct the core log, reader, writer, and compactor.
-    this.raftLog = storage.openLog();
-    this.logWriter = raftLog.writer();
-    this.logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
+    raftLog = storage.openLog();
+    logWriter = raftLog.writer();
+    logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
 
     // Open the snapshot store.
-    this.persistedSnapshotStore = storage.getPersistedSnapshotStore();
+    persistedSnapshotStore = storage.getPersistedSnapshotStore();
 
-    // Create a new internal server state machine.
-    checkNotNull(stateMachineFactory, "stateMachineFactory must be not null");
-    this.stateMachine = stateMachineFactory.createStateMachine(this);
+    logCompactor = new LogCompactor(this);
 
-    this.cluster = new RaftClusterContext(localMemberId, this);
+    this.maxAppendBatchSize = maxAppendBatchSize;
+    this.maxAppendsPerFollower = maxAppendsPerFollower;
+    cluster = new RaftClusterContext(localMemberId, this);
 
     // Register protocol listeners.
     registerHandlers(protocol);
 
     raftRoleMetrics = new RaftRoleMetrics(name);
+    replicationMetrics = new RaftReplicationMetrics(name);
+    replicationMetrics.setAppendIndex(logWriter.getLastIndex());
     started = true;
   }
 
@@ -238,6 +233,14 @@ public class RaftContext implements AutoCloseable {
     return membershipService.getLocalMember().id();
   }
 
+  public int getMaxAppendBatchSize() {
+    return maxAppendBatchSize;
+  }
+
+  public int getMaxAppendsPerFollower() {
+    return maxAppendsPerFollower;
+  }
+
   /**
    * Adds a role change listener.
    *
@@ -256,20 +259,12 @@ public class RaftContext implements AutoCloseable {
     roleChangeListeners.remove(listener);
   }
 
-  /**
-   * Adds a failure listener which will be invoked when an uncaught exception occurs
-   *
-   * @param failureListener
-   */
+  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
   public void addFailureListener(final Runnable failureListener) {
     failureListeners.add(failureListener);
   }
 
-  /**
-   * Remove a failure listener
-   *
-   * @param failureListener
-   */
+  /** Remove a failure listener */
   public void removeFailureListener(final Runnable failureListener) {
     failureListeners.remove(failureListener);
   }
@@ -285,7 +280,7 @@ public class RaftContext implements AutoCloseable {
       listener.accept(this.state);
     } else {
       addStateChangeListener(
-          new Consumer<State>() {
+          new Consumer<>() {
             @Override
             public void accept(final State state) {
               listener.accept(state);
@@ -336,10 +331,10 @@ public class RaftContext implements AutoCloseable {
   /**
    * Notifies all listeners of the latest entry.
    *
-   * @param latestEntry latest committed entry
+   * @param lastCommitIndex index of the most recently committed entry
    */
-  public <T extends RaftLogEntry> void notifyCommitListeners(final Indexed<T> latestEntry) {
-    commitListeners.forEach(listener -> listener.onCommit(latestEntry));
+  public void notifyCommitListeners(final long lastCommitIndex) {
+    commitListeners.forEach(listener -> listener.onCommit(lastCommitIndex));
   }
 
   /**
@@ -354,32 +349,24 @@ public class RaftContext implements AutoCloseable {
     if (commitIndex > previousCommitIndex) {
       this.commitIndex = commitIndex;
       logWriter.commit(Math.min(commitIndex, logWriter.getLastIndex()));
+      if (raftLog.shouldFlushExplicitly() && isLeader()) {
+        // leader counts itself in quorum, so in order to commit the leader must persist
+        logWriter.flush();
+      }
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
         cluster.commit();
       }
       setFirstCommitIndex(commitIndex);
+      // On start up, set the state to READY after the follower has caught up with the leader
+      // https://github.com/zeebe-io/zeebe/issues/4877
+      if (state == State.ACTIVE && commitIndex >= firstCommitIndex) {
+        state = State.READY;
+        stateChangeListeners.forEach(l -> l.accept(state));
+      }
+      replicationMetrics.setCommitIndex(commitIndex);
     }
     return previousCommitIndex;
-  }
-
-  /**
-   * Sets the last applied index.
-   *
-   * @param lastApplied the last applied index and the last applied term
-   */
-  public void setLastApplied(final long lastApplied, final long lastAppliedTerm) {
-    this.lastApplied = Math.max(this.lastApplied, lastApplied);
-    this.lastAppliedTerm = Math.max(this.lastAppliedTerm, lastAppliedTerm);
-    if (state == State.ACTIVE) {
-      threadContext.execute(
-          () -> {
-            if (state == State.ACTIVE && this.lastApplied >= firstCommitIndex) {
-              state = State.READY;
-              stateChangeListeners.forEach(l -> l.accept(state));
-            }
-          });
-    }
   }
 
   /**
@@ -389,7 +376,7 @@ public class RaftContext implements AutoCloseable {
    */
   public CompletableFuture<Void> compact() {
     final ComposableFuture<Void> future = new ComposableFuture<>();
-    threadContext.execute(() -> stateMachine.compact().whenComplete(future));
+    threadContext.execute(() -> logCompactor.compact().whenComplete(future));
     return future;
   }
 
@@ -405,7 +392,7 @@ public class RaftContext implements AutoCloseable {
         () -> {
           // Register a leader election listener to wait for the election of this node.
           final Consumer<RaftMember> electionListener =
-              new Consumer<RaftMember>() {
+              new Consumer<>() {
                 @Override
                 public void accept(final RaftMember member) {
                   if (member.memberId().equals(cluster.getMember().memberId())) {
@@ -530,7 +517,7 @@ public class RaftContext implements AutoCloseable {
 
   private void notifyRoleChangeListeners() {
     try {
-      roleChangeListeners.forEach(l -> l.onNewRole(this.role.role(), getTerm()));
+      roleChangeListeners.forEach(l -> l.onNewRole(role.role(), getTerm()));
     } catch (final Exception exception) {
       log.error("Unexpected error on calling role change listeners.", exception);
     }
@@ -574,17 +561,17 @@ public class RaftContext implements AutoCloseable {
         }
         break;
       case PROMOTABLE:
-        if (this.role.role() != RaftServer.Role.PROMOTABLE) {
+        if (role.role() != RaftServer.Role.PROMOTABLE) {
           transition(RaftServer.Role.PROMOTABLE);
         }
         break;
       case PASSIVE:
-        if (this.role.role() != RaftServer.Role.PASSIVE) {
+        if (role.role() != RaftServer.Role.PASSIVE) {
           transition(RaftServer.Role.PASSIVE);
         }
         break;
       default:
-        if (this.role.role() != RaftServer.Role.INACTIVE) {
+        if (role.role() != RaftServer.Role.INACTIVE) {
           transition(RaftServer.Role.INACTIVE);
         }
         break;
@@ -597,9 +584,7 @@ public class RaftContext implements AutoCloseable {
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
 
-    // Close the state machine and thread context.
-    stateContext.close();
-    stateMachine.close();
+    logCompactor.close();
 
     // Close the log.
     try {
@@ -624,12 +609,6 @@ public class RaftContext implements AutoCloseable {
 
     // close thread contexts
     threadContext.close();
-    loadContext.close();
-
-    // Only close the thread context factory if indicated.
-    if (closeOnStop) {
-      threadContextFactory.close();
-    }
   }
 
   /** Unregisters server handlers on the configured protocol. */
@@ -709,6 +688,9 @@ public class RaftContext implements AutoCloseable {
   public void setFirstCommitIndex(final long firstCommitIndex) {
     if (this.firstCommitIndex == 0) {
       this.firstCommitIndex = firstCommitIndex;
+      log.info(
+          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",
+          firstCommitIndex);
     }
   }
 
@@ -745,25 +727,7 @@ public class RaftContext implements AutoCloseable {
    * @param validator The entry validator.
    */
   public void setEntryValidator(final EntryValidator validator) {
-    this.entryValidator = validator;
-  }
-
-  /**
-   * Returns the last applied index.
-   *
-   * @return the last applied index
-   */
-  public long getLastApplied() {
-    return lastApplied;
-  }
-
-  /**
-   * Returns the term of the last applied entry.
-   *
-   * @return the last applied index
-   */
-  public long getLastAppliedTerm() {
-    return lastAppliedTerm;
+    entryValidator = validator;
   }
 
   /**
@@ -786,8 +750,8 @@ public class RaftContext implements AutoCloseable {
     checkState(!(lastVotedFor != null && candidate != null), "Already voted for another candidate");
     final DefaultRaftMember member = cluster.getMember(candidate);
     checkState(member != null, "Unknown candidate: %d", candidate);
-    this.lastVotedFor = candidate;
-    meta.storeVote(this.lastVotedFor);
+    lastVotedFor = candidate;
+    meta.storeVote(lastVotedFor);
 
     if (candidate != null) {
       log.debug("Voted for {}", member.memberId());
@@ -884,10 +848,10 @@ public class RaftContext implements AutoCloseable {
   /**
    * Returns the server state machine.
    *
-   * @return The server state machine.
+   * @return The log compactor.
    */
-  public RaftStateMachine getServiceManager() {
-    return stateMachine;
+  public LogCompactor getLogCompactor() {
+    return logCompactor;
   }
 
   /**
@@ -895,7 +859,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The server snapshot store.
    */
-  public PersistedSnapshotStore getPersistedSnapshotStore() {
+  public ReceivableSnapshotStore getPersistedSnapshotStore() {
     return persistedSnapshotStore;
   }
 
@@ -934,10 +898,10 @@ public class RaftContext implements AutoCloseable {
   public void setTerm(final long term) {
     if (term > this.term) {
       this.term = term;
-      this.leader = null;
-      this.lastVotedFor = null;
+      leader = null;
+      lastVotedFor = null;
       meta.storeTerm(this.term);
-      meta.storeVote(this.lastVotedFor);
+      meta.storeVote(lastVotedFor);
       log.debug("Set term {}", term);
     }
   }
@@ -985,13 +949,20 @@ public class RaftContext implements AutoCloseable {
         }
       }
 
-      this.lastVotedFor = null;
-      meta.storeVote(null);
+      log.trace("Set leader {}", this.leader);
     }
   }
 
   public boolean isRunning() {
     return started;
+  }
+
+  public RaftReplicationMetrics getReplicationMetrics() {
+    return replicationMetrics;
+  }
+
+  public Random getRandom() {
+    return random;
   }
 
   /** Raft server state. */

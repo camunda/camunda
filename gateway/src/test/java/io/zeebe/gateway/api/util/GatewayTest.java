@@ -11,6 +11,7 @@ import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -41,5 +42,10 @@ public abstract class GatewayTest {
     gateway = gatewayRule.getGateway();
     client = gatewayRule.getClient();
     brokerClient = gatewayRule.getBrokerClient();
+  }
+
+  @After
+  public void tearDown() {
+    // nothing to do
   }
 }

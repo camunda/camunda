@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
  *
  * <p>See {@link WorkflowInstanceIntent} for intents.
  */
-public interface WorkflowInstanceRecordValue extends RecordValue {
+public interface WorkflowInstanceRecordValue extends RecordValue, WorkflowInstanceRelated {
   /** @return the BPMN process id this workflow instance belongs to. */
   String getBpmnProcessId();
 

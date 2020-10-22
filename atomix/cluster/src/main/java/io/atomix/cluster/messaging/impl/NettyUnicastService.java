@@ -25,7 +25,8 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.netty.bootstrap.Bootstrap;
@@ -56,23 +57,22 @@ public class NettyUnicastService implements ManagedUnicastService {
   private static final Logger LOGGER = LoggerFactory.getLogger(NettyUnicastService.class);
   private static final Serializer SERIALIZER =
       Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-              .register(Message.class)
-              .register(new AddressSerializer(), Address.class)
-              .build());
+          new FallbackNamespace(
+              new NamespaceImpl.Builder()
+                  .register(Namespaces.BASIC)
+                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+                  .register(Message.class)
+                  .register(new AddressSerializer(), Address.class)));
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   private final Address address;
   private final MessagingConfig config;
-  private EventLoopGroup group;
-  private DatagramChannel channel;
-
   private final Map<String, Map<BiConsumer<Address, byte[]>, Executor>> listeners =
       Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
+  private EventLoopGroup group;
+  private DatagramChannel channel;
 
   public NettyUnicastService(final Address address, final MessagingConfig config) {
     this.address = address;
@@ -81,6 +81,11 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public void unicast(final Address address, final String subject, final byte[] payload) {
+    if (!started.get()) {
+      LOGGER.debug("Failed sending unicast message, unicast service was not started.");
+      return;
+    }
+
     final InetAddress resolvedAddress = address.address();
     if (resolvedAddress == null) {
       LOGGER.debug(
@@ -214,31 +219,34 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public CompletableFuture<Void> stop() {
+    if (!started.compareAndSet(true, false)) {
+      return CompletableFuture.completedFuture(null);
+    }
+
     if (channel != null) {
       final CompletableFuture<Void> future = new CompletableFuture<>();
       channel
           .close()
           .addListener(
-              f -> {
-                started.set(false);
-                group.shutdownGracefully();
-                future.complete(null);
-              });
+              f ->
+                  group
+                      .shutdownGracefully()
+                      .addListener(
+                          f2 -> {
+                            future.complete(null);
+                          }));
+      channel = null;
       return future;
     }
-    started.set(false);
+
     return CompletableFuture.completedFuture(null);
   }
 
   /** Internal unicast service message. */
-  static class Message {
+  static final class Message {
     private final Address source;
     private final String subject;
     private final byte[] payload;
-
-    Message() {
-      this(null, null, null);
-    }
 
     Message(final Address source, final String subject, final byte[] payload) {
       this.source = source;

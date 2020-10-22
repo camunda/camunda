@@ -49,6 +49,11 @@ public abstract class TimestampedEntry extends RaftLogEntry {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(timestamp);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -58,10 +63,5 @@ public abstract class TimestampedEntry extends RaftLogEntry {
     }
     final TimestampedEntry that = (TimestampedEntry) o;
     return timestamp == that.timestamp;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(timestamp);
   }
 }

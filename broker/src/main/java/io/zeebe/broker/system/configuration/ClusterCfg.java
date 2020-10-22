@@ -12,9 +12,11 @@ import static io.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import java.util.Collections;
 import java.util.List;
-import org.agrona.collections.IntArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public final class ClusterCfg implements ConfigurationEntry {
+
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
   public static final int DEFAULT_NODE_ID = 0;
   public static final int DEFAULT_PARTITIONS_COUNT = 1;
@@ -38,13 +40,10 @@ public final class ClusterCfg implements ConfigurationEntry {
   }
 
   private void initPartitionIds() {
-    final IntArrayList list = new IntArrayList();
-    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + partitionsCount; i++) {
-      final int partitionId = i;
-      list.add(partitionId);
-    }
-
-    partitionIds = Collections.unmodifiableList(list);
+    partitionIds =
+        IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionsCount)
+            .boxed()
+            .collect(Collectors.toList());
   }
 
   public List<String> getInitialContactPoints() {
@@ -109,9 +108,12 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-
     return "ClusterCfg{"
-        + "nodeId="
+        + "initialContactPoints="
+        + initialContactPoints
+        + ", partitionIds="
+        + partitionIds
+        + ", nodeId="
         + nodeId
         + ", partitionsCount="
         + partitionsCount
@@ -119,8 +121,11 @@ public final class ClusterCfg implements ConfigurationEntry {
         + replicationFactor
         + ", clusterSize="
         + clusterSize
-        + ", initialContactPoints="
-        + initialContactPoints
+        + ", clusterName='"
+        + clusterName
+        + '\''
+        + ", membership="
+        + membership
         + '}';
   }
 }

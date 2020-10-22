@@ -26,7 +26,7 @@ public final class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwa
     pendingFutures -= 1;
 
     if (failure != null) {
-      this.occuredFailure = failure;
+      occuredFailure = failure;
     }
 
     if (pendingFutures == 0) {

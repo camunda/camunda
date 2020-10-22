@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.util;
 
-import io.zeebe.engine.processor.CopiedRecords;
+import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;

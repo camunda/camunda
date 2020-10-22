@@ -7,12 +7,11 @@
  */
 package io.zeebe.broker.system.partitions.impl;
 
-import io.atomix.raft.snapshot.TransientSnapshot;
 import io.zeebe.broker.system.partitions.StateController;
-import io.zeebe.engine.processor.RandomDuration;
-import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.SchedulingHints;
@@ -57,9 +56,9 @@ public final class AsyncSnapshotDirector extends Actor {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     this.logStream = logStream;
-    this.processorName = streamProcessor.getName();
+    processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
+    actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
   }
 
   @Override
@@ -102,6 +101,10 @@ public final class AsyncSnapshotDirector extends Actor {
     return getName() + "-wait-for-endPosition-committed";
   }
 
+  public void forceSnapshot() {
+    actor.call(this::prepareTakingSnapshot);
+  }
+
   private void prepareTakingSnapshot() {
     if (takingSnapshot) {
       return;
@@ -120,7 +123,7 @@ public final class AsyncSnapshotDirector extends Actor {
               return;
             }
 
-            this.lowerBoundSnapshotPosition = lastProcessedPosition;
+            lowerBoundSnapshotPosition = lastProcessedPosition;
             takeSnapshot();
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
@@ -140,9 +143,6 @@ public final class AsyncSnapshotDirector extends Actor {
                 final var optionalPendingSnapshot =
                     stateController.takeTransientSnapshot(tempSnapshotPosition);
                 if (optionalPendingSnapshot.isEmpty()) {
-                  LOG.warn(
-                      "Failed to obtain a pending snapshot directory for position {}",
-                      tempSnapshotPosition);
                   takingSnapshot = false;
                   return;
                 }
@@ -184,13 +184,14 @@ public final class AsyncSnapshotDirector extends Actor {
                   && lastWrittenEventPosition != null
                   && currentCommitPosition >= lastWrittenEventPosition) {
 
-                LOG.info(
-                    "Current commit position {} is greater then {}, snapshot is valid.",
-                    currentCommitPosition,
-                    lastWrittenEventPosition);
                 try {
-                  pendingSnapshot.persist();
+                  final var snapshot = pendingSnapshot.persist();
 
+                  LOG.info(
+                      "Current commit position {} is greater than {}, snapshot {} is valid and has been persisted.",
+                      currentCommitPosition,
+                      lastWrittenEventPosition,
+                      snapshot.getId());
                 } catch (final Exception ex) {
                   LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
                 } finally {

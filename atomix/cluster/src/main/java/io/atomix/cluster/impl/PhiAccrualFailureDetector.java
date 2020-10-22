@@ -62,7 +62,7 @@ public class PhiAccrualFailureDetector {
       final int minSamples, final double phiFactor, final int windowSize) {
     this.minSamples = minSamples;
     this.phiFactor = phiFactor;
-    this.history = new History(windowSize);
+    history = new History(windowSize);
   }
 
   /**
@@ -129,7 +129,7 @@ public class PhiAccrualFailureDetector {
     private final DescriptiveStatistics samples;
 
     private History(final int windowSize) {
-      this.samples = new DescriptiveStatistics(windowSize);
+      samples = new DescriptiveStatistics(windowSize);
     }
 
     DescriptiveStatistics samples() {

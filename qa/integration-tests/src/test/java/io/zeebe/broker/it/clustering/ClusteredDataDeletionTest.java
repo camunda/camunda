@@ -180,7 +180,7 @@ public final class ClusteredDataDeletionTest {
   }
 
   public static class TestExporter implements Exporter {
-    static final List<Record> RECORDS = new CopyOnWriteArrayList<>();
+    static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
     private Controller controller;
 
     @Override
@@ -189,7 +189,7 @@ public final class ClusteredDataDeletionTest {
     }
 
     @Override
-    public void export(final Record record) {
+    public void export(final Record<?> record) {
       RECORDS.add(record);
       controller.updateLastExportedRecordPosition(record.getPosition());
     }

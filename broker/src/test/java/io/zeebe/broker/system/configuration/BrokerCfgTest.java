@@ -26,8 +26,6 @@ import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.util.Environment;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -58,6 +56,12 @@ public final class BrokerCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
+  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER =
+      "zeebe.broker.experimental.maxAppendsPerFollower";
+  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE =
+      "zeebe.broker.experimental.maxAppendBatchSize";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
+      "zeebe.broker.experimental.disableExplicitRaftFlush";
 
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
@@ -369,7 +373,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldReadSpecificSystemClusterConfiguration() {
     // given
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // when - then
@@ -383,7 +387,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldCreatePartitionIds() {
     // given
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // when - then
@@ -399,7 +403,7 @@ public final class BrokerCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "2");
 
     // when
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // then
@@ -412,7 +416,7 @@ public final class BrokerCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
 
     // when
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // then
@@ -425,11 +429,50 @@ public final class BrokerCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "2");
 
     // when
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // then
     assertThat(cfgCluster.getClusterSize()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverrideMaxAppendsViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER, "8");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getMaxAppendsPerFollower()).isEqualTo(8);
+  }
+
+  @Test
+  public void shouldOverrideMaxAppendBatchSizeViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE, "256KB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getMaxAppendBatchSizeInBytes()).isEqualTo(256 * 1024);
+  }
+
+  @Test
+  public void shouldOverrideDisableExplicitRaftFlushViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDisableExplicitRaftFlush()).isTrue();
   }
 
   @Test
@@ -441,7 +484,7 @@ public final class BrokerCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "4");
 
     // when
-    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // then
@@ -472,7 +515,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldSetBackpressureConfig() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final BackpressureCfg backpressure = cfg.getBackpressure();
 
     // then
@@ -554,12 +597,13 @@ public final class BrokerCfgTest {
     final ExporterCfg expected = new ExporterCfg();
     expected.setClassName("io.zeebe.exporter.ElasticsearchExporter");
 
-    final BrokerCfg actual = readConfig("exporters");
+    final BrokerCfg actual = TestConfigReader.readConfig("exporters", environment);
 
     // then
-    assertThat(actual.getExporters()).hasSize(1);
-    assertThat(actual.getExporters()).containsKey("elasticsearch");
-    assertThat(actual.getExporters().get("elasticsearch")).isEqualTo(expected);
+    assertThat(actual.getExporters())
+        .hasSize(1)
+        .containsKey("elasticsearch")
+        .containsEntry("elasticsearch", expected);
   }
 
   @Test
@@ -574,7 +618,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldNotPrintConfidentialInformation() throws Exception {
     // given
-    final var brokerCfg = readConfig("elasticexporter");
+    final var brokerCfg = TestConfigReader.readConfig("elasticexporter", environment);
 
     // when
     final var json = brokerCfg.toJson();
@@ -593,7 +637,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldSetCustomMembershipConfig() {
     // when
-    final BrokerCfg brokerCfg = readConfig("membership-cfg");
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig("membership-cfg", environment);
 
     // then
     final var membershipCfg = brokerCfg.getCluster().getMembership();
@@ -610,26 +654,13 @@ public final class BrokerCfgTest {
     assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
   }
 
-  private BrokerCfg readConfig(final String name) {
-    final String configPath = "/system/" + name + ".yaml";
-
-    final Environment environmentVariables = new Environment(environment);
-
-    final BrokerCfg config =
-        new TestConfigurationFactory()
-            .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
-    config.init(BROKER_BASE, environmentVariables);
-
-    return config;
-  }
-
   private void assertDefaultNodeId(final int nodeId) {
     assertNodeId("default", nodeId);
     assertNodeId("empty", nodeId);
   }
 
   private void assertNodeId(final String configFileName, final int nodeId) {
-    final BrokerCfg cfg = readConfig(configFileName);
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
     assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
@@ -639,7 +670,7 @@ public final class BrokerCfgTest {
   }
 
   private void assertClusterName(final String configFileName, final String clusterName) {
-    final BrokerCfg cfg = readConfig(configFileName);
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
   }
 
@@ -649,7 +680,7 @@ public final class BrokerCfgTest {
   }
 
   private void assertStepTimeout(final String configFileName, final Duration stepTimeout) {
-    final BrokerCfg cfg = readConfig(configFileName);
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
     assertThat(cfg.getStepTimeout()).isEqualTo(stepTimeout);
   }
 
@@ -660,7 +691,7 @@ public final class BrokerCfgTest {
 
   private void assertPorts(
       final String configFileName, final int command, final int internal, final int monitoring) {
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg network = brokerCfg.getNetwork();
     assertThat(network.getCommandApi().getAddress().getPort()).isEqualTo(command);
     assertThat(network.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(command);
@@ -679,7 +710,7 @@ public final class BrokerCfgTest {
   }
 
   private void assertUseMmap(final String configFileName, final boolean useMmap) {
-    final var config = readConfig(configFileName);
+    final var config = TestConfigReader.readConfig(configFileName, environment);
     final var data = config.getData();
     assertThat(data.useMmap()).isEqualTo(useMmap);
   }
@@ -695,7 +726,7 @@ public final class BrokerCfgTest {
       final String command,
       final String internal,
       final String monitoring) {
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
@@ -705,14 +736,14 @@ public final class BrokerCfgTest {
   }
 
   private void assertAdvertisedHost(final String configFileName, final String host) {
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
   }
 
   private void assertAdvertisedAddress(
       final String configFileName, final String host, final int port) {
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(port);
@@ -732,7 +763,7 @@ public final class BrokerCfgTest {
   }
 
   private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
-    final ClusterCfg cfg = readConfig(configFileName).getCluster();
+    final ClusterCfg cfg = TestConfigReader.readConfig(configFileName, environment).getCluster();
     assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
   }
 
@@ -746,7 +777,7 @@ public final class BrokerCfgTest {
   }
 
   private void assertDirectories(final String configFileName, final List<String> directories) {
-    final DataCfg cfg = readConfig(configFileName).getData();
+    final DataCfg cfg = TestConfigReader.readConfig(configFileName, environment).getData();
     final List<String> expected =
         directories.stream()
             .map(d -> Paths.get(BROKER_BASE, d).toString())
@@ -760,7 +791,8 @@ public final class BrokerCfgTest {
   }
 
   private void assertEmbeddedGatewayEnabled(final String configFileName, final boolean enabled) {
-    final EmbeddedGatewayCfg gatewayCfg = readConfig(configFileName).getGateway();
+    final EmbeddedGatewayCfg gatewayCfg =
+        TestConfigReader.readConfig(configFileName, environment).getGateway();
     assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
   }
 
@@ -771,7 +803,7 @@ public final class BrokerCfgTest {
 
   private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
 
     assertThat(brokerCfg.getExporters().values())
         .usingRecursiveFieldByFieldElementComparator()
@@ -785,7 +817,7 @@ public final class BrokerCfgTest {
 
   private void assertMetricsExporter(final String configFileName) {
     final ExporterCfg exporterCfg = MetricsExporter.defaultConfig();
-    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
 
     assertThat(brokerCfg.getExporters().values())
         .usingRecursiveFieldByFieldElementComparator()
@@ -811,7 +843,7 @@ public final class BrokerCfgTest {
       final int replicationFactor,
       final int clusterSize,
       final List<String> initialContactPoints) {
-    final BrokerCfg cfg = readConfig(configFileName);
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     assertThat(cfgCluster.getNodeId()).isEqualTo(nodeId);

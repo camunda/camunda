@@ -18,7 +18,7 @@ public class Gradient2Cfg {
   private int longWindow = 600;
 
   public int getMinLimit() {
-    return this.minLimit;
+    return minLimit;
   }
 
   public void setMinLimit(final int minLimit) {
@@ -27,7 +27,7 @@ public class Gradient2Cfg {
   }
 
   public int getInitialLimit() {
-    return this.initialLimit;
+    return initialLimit;
   }
 
   public void setInitialLimit(final int initialLimit) {

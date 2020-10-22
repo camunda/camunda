@@ -29,7 +29,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobWorker;
-import io.zeebe.engine.processor.workflow.job.JobTimeoutTrigger;
+import io.zeebe.engine.processing.job.JobTimeoutTrigger;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;

@@ -20,15 +20,17 @@ import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
-import io.atomix.raft.impl.OperationResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ConfigureRequest;
+import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.LeaveRequest;
@@ -42,7 +44,6 @@ import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.snapshot.PersistedSnapshotListener;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -54,6 +55,7 @@ import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -73,7 +75,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   public LeaderRole(final RaftContext context) {
     super(context);
-    this.appender = new LeaderAppender(this);
+    appender = new LeaderAppender(this);
   }
 
   @Override
@@ -93,33 +95,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
   }
 
-  private ZeebeEntry findLastZeebeEntry() {
-    long index = raft.getLogWriter().getLastIndex();
-    while (index > 0) {
-      raft.getLogReader().reset(index);
-      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
-
-      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
-        return ((ZeebeEntry) lastEntry.entry());
-      }
-
-      --index;
-    }
-
-    return null;
-  }
-
-  @Override
-  protected PersistedSnapshotListener createSnapshotListener() {
-    return null;
-  }
-
   @Override
   public synchronized CompletableFuture<Void> stop() {
     return super.stop()
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
+  }
+
+  @Override
+  protected PersistedSnapshotListener createSnapshotListener() {
+    return null;
   }
 
   @Override
@@ -332,6 +318,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return future;
   }
 
+  private ZeebeEntry findLastZeebeEntry() {
+    long index = raft.getLogWriter().getLastIndex();
+    while (index > 0) {
+      raft.getLogReader().reset(index);
+      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
+
+      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+        return ((ZeebeEntry) lastEntry.entry());
+      }
+
+      --index;
+    }
+
+    return null;
+  }
+
   /** Cancels the timers. */
   private void cancelTimers() {
     if (appendTimer != null) {
@@ -375,7 +377,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               raft.checkThread();
               if (isRunning()) {
                 if (error == null) {
-                  raft.getServiceManager().apply(resultIndex);
                   future.complete(null);
                 } else {
                   log.info("Failed to commit the initial entry, stepping down");
@@ -458,12 +459,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .whenComplete(
                       (commitIndex, commitError) -> {
                         raft.checkThread();
-                        if (isRunning() && commitError == null) {
-                          raft.getServiceManager().<OperationResult>apply(entry.index());
-                        }
                         configuring = 0;
                       });
             });
+  }
+
+  @Override
+  public CompletableFuture<ConfigureResponse> onConfigure(final ConfigureRequest request) {
+    if (updateTermAndLeader(request.term(), request.leader())) {
+      raft.transition(Role.FOLLOWER);
+    }
+    return super.onConfigure(request);
   }
 
   @Override
@@ -634,6 +640,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     try {
       final Indexed<E> indexedEntry = raft.getLogWriter().append(entry);
+      raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
     } catch (final StorageException.TooLarge e) {
@@ -680,7 +687,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     if (!isRunning()) {
       appendListener.onWriteError(
-          new IllegalStateException("LeaderRole is closed and cannot be used as appender"));
+          new NoLeader("LeaderRole is closed and cannot be used as appender"));
       return;
     }
 
@@ -726,7 +733,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // entries properly on fail over
               if (commitError == null) {
                 appendListener.onCommit(indexed);
-                raft.getServiceManager().apply(indexed.index());
+                raft.notifyCommitListeners(indexed.index());
               } else {
                 appendListener.onCommitError(indexed, commitError);
                 // replicating the entry will be retried on the next append request

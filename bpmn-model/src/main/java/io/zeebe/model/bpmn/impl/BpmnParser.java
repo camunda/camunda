@@ -43,7 +43,7 @@ public class BpmnParser extends AbstractModelParser {
   private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
 
   public BpmnParser() {
-    this.schemaFactory = SchemaFactory.newInstance(W3C_XML_SCHEMA);
+    schemaFactory = SchemaFactory.newInstance(W3C_XML_SCHEMA);
     addSchema(BPMN20_NS, createSchema(BPMN_20_SCHEMA_LOCATION, BpmnParser.class.getClassLoader()));
   }
 

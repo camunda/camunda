@@ -11,25 +11,43 @@ import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
+import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.slf4j.Logger;
 
-public final class LeaderManagementRequestHandler extends Actor implements PartitionListener {
+public final class LeaderManagementRequestHandler extends Actor
+    implements PartitionListener, DiskSpaceUsageListener {
 
+  private static final String DEPLOYMENT_TOPIC = "deployment";
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
       new Int2ObjectHashMap<>();
   private final String actorName;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private final Atomix atomix;
+  private final ErrorResponse outOfDiskSpaceError;
 
   public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
-    this.actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
+    actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
+    outOfDiskSpaceError = new ErrorResponse();
+    outOfDiskSpaceError
+        .setErrorCode(ErrorCode.RESOURCE_EXHAUSTED)
+        .setErrorData(
+            BufferUtil.wrapString(
+                String.format(
+                    "Broker %d is out of disk space. Rejecting deployment request.",
+                    localBroker.getNodeId())));
   }
 
   @Override
@@ -55,7 +73,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
                         leaderForPartitions.put(partitionId, recordWriter);
                         future.complete(null);
                       } else {
-                        Loggers.CLUSTERING_LOGGER.error(
+                        LOG.error(
                             "Unexpected error on retrieving write buffer for partition {}",
                             partitionId,
                             error);
@@ -74,10 +92,40 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
   protected void onActorStarting() {
     pushDeploymentRequestHandler =
         new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
-    atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);
+    atomix.getCommunicationService().subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
   }
 
   public PushDeploymentRequestHandler getPushDeploymentRequestHandler() {
     return pushDeploymentRequestHandler;
+  }
+
+  @Override
+  public void onDiskSpaceNotAvailable() {
+    actor.call(
+        () -> {
+          LOG.debug(
+              "Broker is out of disk space. All requests with topic {} will be rejected.",
+              DEPLOYMENT_TOPIC);
+          atomix.getCommunicationService().unsubscribe(DEPLOYMENT_TOPIC);
+          atomix
+              .getCommunicationService()
+              .subscribe(
+                  DEPLOYMENT_TOPIC,
+                  b -> CompletableFuture.completedFuture(outOfDiskSpaceError.toBytes()));
+        });
+  }
+
+  @Override
+  public void onDiskSpaceAvailable() {
+    actor.call(
+        () -> {
+          LOG.debug(
+              "Broker has disk space available again. All requests with topic {} will be accepted.",
+              DEPLOYMENT_TOPIC);
+          atomix.getCommunicationService().unsubscribe(DEPLOYMENT_TOPIC);
+          atomix
+              .getCommunicationService()
+              .subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
+        });
   }
 }

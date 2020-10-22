@@ -25,7 +25,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
       new ArrayProperty<>("fetchVariables", new StringValue());
 
   public AwaitWorkflowInstanceResultMetadata() {
-    this.declareProperty(requestIdProperty)
+    declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty)
         .declareProperty(fetchVariablesProperty);
   }

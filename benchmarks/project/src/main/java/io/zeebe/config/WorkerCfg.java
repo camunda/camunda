@@ -27,6 +27,9 @@ public class WorkerCfg {
   private int capacity;
   private Duration pollingDelay;
   private Duration completionDelay;
+  private boolean completeJobsAsync;
+
+  private String payloadPath;
 
   public String getJobType() {
     return jobType;
@@ -74,5 +77,21 @@ public class WorkerCfg {
 
   public void setCompletionDelay(Duration completionDelay) {
     this.completionDelay = completionDelay;
+  }
+
+  public String getPayloadPath() {
+    return payloadPath;
+  }
+
+  public void setPayloadPath(String payloadPath) {
+    this.payloadPath = payloadPath;
+  }
+
+  public boolean isCompleteJobsAsync() {
+    return completeJobsAsync;
+  }
+
+  public void setCompleteJobsAsync(boolean completeJobsAsync) {
+    this.completeJobsAsync = completeJobsAsync;
   }
 }

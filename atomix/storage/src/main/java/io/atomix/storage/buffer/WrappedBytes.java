@@ -33,7 +33,7 @@ public class WrappedBytes extends AbstractBytes {
       throw new NullPointerException("bytes cannot be null");
     }
     this.bytes = bytes;
-    this.root = bytes instanceof WrappedBytes ? ((WrappedBytes) bytes).root : bytes;
+    root = bytes instanceof WrappedBytes ? ((WrappedBytes) bytes).root : bytes;
   }
 
   /** Returns the root bytes. */
@@ -57,8 +57,8 @@ public class WrappedBytes extends AbstractBytes {
   }
 
   @Override
-  public boolean readBoolean(final int offset) {
-    return bytes.readBoolean(offset);
+  public void close() {
+    bytes.close();
   }
 
   @Override
@@ -87,6 +87,11 @@ public class WrappedBytes extends AbstractBytes {
   }
 
   @Override
+  public boolean readBoolean(final int offset) {
+    return bytes.readBoolean(offset);
+  }
+
+  @Override
   public String readString(final int offset) {
     return bytes.readString(offset);
   }
@@ -94,12 +99,6 @@ public class WrappedBytes extends AbstractBytes {
   @Override
   public String readUTF8(final int offset) {
     return bytes.readUTF8(offset);
-  }
-
-  @Override
-  public Bytes writeBoolean(final int offset, final boolean b) {
-    bytes.writeBoolean(offset, b);
-    return this;
   }
 
   @Override
@@ -133,6 +132,12 @@ public class WrappedBytes extends AbstractBytes {
   }
 
   @Override
+  public Bytes writeBoolean(final int offset, final boolean b) {
+    bytes.writeBoolean(offset, b);
+    return this;
+  }
+
+  @Override
   public Bytes writeString(final int offset, final String s) {
     bytes.writeString(offset, s);
     return this;
@@ -148,11 +153,6 @@ public class WrappedBytes extends AbstractBytes {
   public Bytes flush() {
     bytes.flush();
     return this;
-  }
-
-  @Override
-  public void close() {
-    bytes.close();
   }
 
   @Override

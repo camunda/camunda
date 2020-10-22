@@ -48,7 +48,11 @@ public final class ZeebeAssertHelper {
   public static void assertJobCreated(
       final String jobType, final Consumer<JobRecordValue> consumer) {
     final JobRecordValue value =
-        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(jobType)
+            .findFirst()
+            .map(Record::getValue)
+            .orElse(null);
 
     assertThat(value).isNotNull();
 
@@ -64,7 +68,8 @@ public final class ZeebeAssertHelper {
     final Record<WorkflowInstanceRecordValue> record =
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
             .withRecordKey(workflowInstanceKey)
-            .getFirst();
+            .findFirst()
+            .orElse(null);
 
     assertThat(record).isNotNull();
 
@@ -123,7 +128,11 @@ public final class ZeebeAssertHelper {
   public static void assertJobCompleted(
       final String jobType, final Consumer<JobRecordValue> consumer) {
     final JobRecordValue job =
-        RecordingExporter.jobRecords(JobIntent.COMPLETED).withType(jobType).getFirst().getValue();
+        RecordingExporter.jobRecords(JobIntent.COMPLETED)
+            .withType(jobType)
+            .findFirst()
+            .map(Record::getValue)
+            .orElse(null);
 
     assertThat(job).isNotNull();
     consumer.accept(job);
@@ -141,7 +150,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
             .withBpmnProcessId(bpmnId)
             .withElementId(activity)
-            .getFirst();
+            .findFirst()
+            .orElse(null);
 
     assertThat(workflowInstanceRecordValueRecord).isNotNull();
 
@@ -156,7 +166,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
             .withElementId(activity)
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
+            .findFirst()
+            .orElse(null);
 
     assertThat(workflowInstanceRecordValueRecord).isNotNull();
 
@@ -194,7 +205,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.workflowInstanceRecords(intent)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId(elementId)
-            .getFirst();
+            .findFirst()
+            .orElse(null);
 
     assertThat(record).isNotNull();
   }
@@ -204,14 +216,13 @@ public final class ZeebeAssertHelper {
       final String elementId,
       final BpmnElementType elementType,
       final WorkflowInstanceIntent intent) {
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(intent)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementType(elementType)
-            .withElementId(elementId)
-            .getFirst();
-
-    assertThat(record).isNotNull();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(intent)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementType(elementType)
+                .withElementId(elementId)
+                .exists())
+        .isTrue();
   }
 
   public static void assertElementInState(
@@ -226,7 +237,7 @@ public final class ZeebeAssertHelper {
       final WorkflowInstanceRecordStream stream,
       final Consumer<WorkflowInstanceRecordValue> consumer) {
 
-    final WorkflowInstanceRecordValue value = stream.getFirst().getValue();
+    final WorkflowInstanceRecordValue value = stream.findFirst().map(Record::getValue).orElse(null);
 
     assertThat(value).isNotNull();
 
@@ -255,7 +266,9 @@ public final class ZeebeAssertHelper {
   public static void assertVariableDocumentUpdated(
       final Consumer<VariableDocumentRecordValue> eventConsumer) {
     final Record<VariableDocumentRecordValue> record =
-        RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED).getFirst();
+        RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+            .findFirst()
+            .orElse(null);
 
     assertThat(record).isNotNull();
     eventConsumer.accept(record.getValue());

@@ -41,7 +41,7 @@ public class VectorClock<T extends Identifier> implements Clock<VectorTimestamp<
 
   public VectorClock(
       final VectorTimestamp<T> localTimestamp, final Collection<VectorTimestamp<T>> vector) {
-    this.localIdentifier = localTimestamp.identifier();
+    localIdentifier = localTimestamp.identifier();
     this.vector.put(localTimestamp.identifier(), localTimestamp);
     for (final VectorTimestamp<T> timestamp : vector) {
       this.vector.put(timestamp.identifier(), timestamp);

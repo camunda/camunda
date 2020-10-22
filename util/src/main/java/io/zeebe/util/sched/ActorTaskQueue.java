@@ -41,7 +41,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    ActorTaskQueueNode node = this.tail;
+    ActorTaskQueueNode node = tail;
 
     while (node != null && node != empty) {
       final ActorTask task = node.task;

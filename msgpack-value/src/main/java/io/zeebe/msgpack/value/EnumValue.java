@@ -28,7 +28,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
       binaryEnumValues[i] = new StringValue(constant.toString());
     }
 
-    this.value = defaultValue;
+    value = defaultValue;
   }
 
   public EnumValue(final Class<E> e) {
@@ -40,7 +40,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   public void setValue(final E val) {
-    this.value = val;
+    value = val;
   }
 
   @Override

@@ -53,7 +53,7 @@ public final class SetVariablesCommandImpl
     this.objectMapper = objectMapper;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
-    this.builder = SetVariablesRequest.newBuilder();
+    builder = SetVariablesRequest.newBuilder();
     builder.setElementInstanceKey(elementInstanceKey);
   }
 

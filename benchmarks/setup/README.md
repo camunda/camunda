@@ -71,3 +71,25 @@ In order to do this easily, just run:
 ```
 
 This will switch to the default namespace, delete the given namespace and delete the corresponding folder.
+
+## How to run a Benchmark in Camunda Cloud
+
+_This targets only internal use cases and is not available for external parties._
+
+We currently waiting until https://github.com/camunda-cloud/enhancements/blob/master/CEP017-programmatic-access-to-console.md is implemented, until this is done we need to do some steps manually.
+
+### Setup Cloud Cluster
+
+ * Go to https://console.cloud.ultrawombat.com
+ * Login with your credentials, reach out to cloud team if you haven't one
+ * Create a new cluster, as region choose 'new chaos'. This means the cluster will be created in 'ultrachaos' gke cluster
+ * Create new client for the cluster
+ * copy the credentials
+
+### Setup Cloud Benchmark
+
+ * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
+ * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!**
+ * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter.
+ * To check the metrics for your benchmark, use https://grafana-ultrachaos.internal.ultrawombat.com/?orgId=1
+

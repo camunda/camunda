@@ -48,8 +48,8 @@ public final class StringValue extends BaseValue {
 
   public void wrap(final byte[] bytes) {
     this.bytes.wrap(bytes);
-    this.length = bytes.length;
-    this.hashCode = 0;
+    length = bytes.length;
+    hashCode = 0;
   }
 
   public void wrap(final DirectBuffer buff) {
@@ -58,16 +58,16 @@ public final class StringValue extends BaseValue {
 
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
     if (length == 0) {
-      this.bytes.wrap(0, 0);
+      bytes.wrap(0, 0);
     } else {
-      this.bytes.wrap(buff, offset, length);
+      bytes.wrap(buff, offset, length);
     }
     this.length = length;
-    this.hashCode = 0;
+    hashCode = 0;
   }
 
   public void wrap(final StringValue anotherString) {
-    this.wrap(anotherString.getValue());
+    wrap(anotherString.getValue());
   }
 
   public int getLength() {
@@ -98,7 +98,7 @@ public final class StringValue extends BaseValue {
 
     reader.skipBytes(stringLength);
 
-    this.wrap(buffer, offset, stringLength);
+    wrap(buffer, offset, stringLength);
   }
 
   @Override

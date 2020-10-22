@@ -31,6 +31,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.LongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -49,20 +50,25 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
+  private final AppenderMetrics appenderMetrics;
   private FailureListener failureListener;
   private final ActorFuture<Void> closeFuture;
+  private final LongConsumer commitPositionListener;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize) {
-    this.env = new Environment();
+      final int maxBlockSize,
+      final LongConsumer commitPositionListener) {
+    appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
+    this.commitPositionListener = commitPositionListener;
+    env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
-    this.maxAppendBlockSize = maxBlockSize;
+    maxAppendBlockSize = maxBlockSize;
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =
@@ -207,5 +213,20 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
 
   void releaseBackPressure(final long highestPosition) {
     actor.run(() -> appendEntryLimiter.onCommit(highestPosition));
+  }
+
+  void notifyWritePosition(final long highestPosition) {
+    actor.run(
+        () -> {
+          appenderMetrics.setLastAppendedPosition(highestPosition);
+        });
+  }
+
+  void notifyCommitPosition(final long highestPosition) {
+    actor.run(
+        () -> {
+          commitPositionListener.accept(highestPosition);
+          appenderMetrics.setLastCommittedPosition(highestPosition);
+        });
   }
 }

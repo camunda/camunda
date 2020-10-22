@@ -33,7 +33,7 @@ An expression is written in **FEEL** (Friendly Enough Expression Language). FEEL
 * Simple syntax designed for business professionals and developers
 * Three-valued logic (true, false, null)
 
-Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala/1.11/).
+Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine (version `1.12.x`) to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala/1.12/).
 
 ### Access Variables
 
@@ -123,14 +123,27 @@ orderCount >= 5 and orderCount < 15
 orderCount > 15 or totalPrice > 50
 ```
 
+### Null Checks
+
 If a variable or a nested property can be `null` then it can be compared to the `null` value. Comparing `null` to a value different from `null` results in `false`.
 
 ```feel
 order = null
-// true if order is null
+// true - if "order" is null or doesn't exist
 
-totalCount > 5
-// false is totalCount is null
+order.id = null
+// true - if "order" is null, "order" doesn't exist,
+//           "id" is null, or "order" has no property "id"
+```
+
+In addition to the comparison with `null`, the built-in function `is defined()` can be used to differentiate between a value that is `null` and a value that doesn’t exist.
+
+```feel
+is defined(order)
+// true - if "order" has any value or is null
+
+is defined(order.id)
+// false - if "order" doesn't exist or it has no property "id"
 ```
 
 ### String Expressions
@@ -149,7 +162,7 @@ Any value can be transformed into a string value using the `string()` function.
 // "order-123"
 ```
 
-More functions for string values are available as [built-in functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions#string-functions) (e.g. contains, matches, etc.).
+More functions for string values are available as [built-in functions](https://camunda.github.io/feel-scala/1.12/feel-built-in-functions#string-functions) (e.g. contains, matches, etc.).
 
 ### Temporal Expressions
 
@@ -238,6 +251,19 @@ cycle(duration("P7D"))
 // "R/P7D"
 ```
 
+The current date and date-time can be accessed using the built-in functions `today()` and `now()`. In order to store the current date or date-time in a variable, it must be converted to a string using the built-in function `string()`.
+
+```feel
+now()
+// date and time("2020-04-06T15:30:00@UTC")
+
+today()
+// date("2020-04-06")
+
+string(today())
+// "2020-04-06"
+```
+
 ### List Expressions
 
 An element of a list can be accessed by its index. The index starts at `1` with the first element (**not** at `0`). A negative index starts at the end by `-1`. If the index is out of the range of the list then `null` is returned instead.
@@ -272,7 +298,7 @@ some x in [1,2,3] satisfies x > 2
 
 ### Invoke Functions
 
-FEEL defines a set of [built-in functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions) to convert values and to apply different operations on specific value types in addition to the operators.
+FEEL defines a set of [built-in functions](https://camunda.github.io/feel-scala/1.12/feel-built-in-functions) to convert values and to apply different operations on specific value types in addition to the operators.
 
 A function can be invoked by its name followed by the arguments. The arguments can be assigned to the function parameters either by their position or by defining the parameter names.
 
@@ -293,8 +319,8 @@ contains(string: "foobar", match: "foo")
 ## Additional Resources
 
 References:
-* [FEEL-Scala - Documentation](https://camunda.github.io/feel-scala/1.11/)
-* [FEEL - Data Types](https://camunda.github.io/feel-scala/1.11/feel-data-types)
-* [FEEL - Expressions](https://camunda.github.io/feel-scala/1.11/feel-expression)
-* [FEEL - Built-in Functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions)
+* [FEEL-Scala - Documentation](https://camunda.github.io/feel-scala/1.12/)
+* [FEEL - Data Types](https://camunda.github.io/feel-scala/1.12/feel-data-types)
+* [FEEL - Expressions](https://camunda.github.io/feel-scala/1.12/feel-expression)
+* [FEEL - Built-in Functions](https://camunda.github.io/feel-scala/1.12/feel-built-in-functions)
 * [DMN Specification](https://www.omg.org/spec/DMN/About-DMN/)

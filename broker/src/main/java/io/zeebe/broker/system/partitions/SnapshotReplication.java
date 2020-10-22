@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.raft.snapshot.SnapshotChunk;
+import io.zeebe.snapshots.raft.SnapshotChunk;
 import java.util.function.Consumer;
 
 public interface SnapshotReplication extends AutoCloseable {

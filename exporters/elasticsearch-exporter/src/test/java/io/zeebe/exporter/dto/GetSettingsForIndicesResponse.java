@@ -19,7 +19,7 @@ public final class GetSettingsForIndicesResponse {
   @JsonUnwrapped private Map<String, IndexSettings> indices;
 
   public GetSettingsForIndicesResponse() {
-    this.indices = new HashMap<>();
+    indices = new HashMap<>();
   }
 
   @JsonAnySetter

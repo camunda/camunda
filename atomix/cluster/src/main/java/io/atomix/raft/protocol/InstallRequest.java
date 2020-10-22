@@ -181,6 +181,22 @@ public class InstallRequest extends AbstractRaftRequest {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        currentTerm,
+        leader,
+        index,
+        term,
+        timestamp,
+        version,
+        chunkId,
+        nextChunkId,
+        data,
+        initial,
+        complete);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -200,22 +216,6 @@ public class InstallRequest extends AbstractRaftRequest {
         && Objects.equals(chunkId, that.chunkId)
         && Objects.equals(nextChunkId, that.nextChunkId)
         && Objects.equals(data, that.data);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        currentTerm,
-        leader,
-        index,
-        term,
-        timestamp,
-        version,
-        chunkId,
-        nextChunkId,
-        data,
-        initial,
-        complete);
   }
 
   @Override

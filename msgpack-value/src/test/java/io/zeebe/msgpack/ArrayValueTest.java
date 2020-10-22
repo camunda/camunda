@@ -431,7 +431,7 @@ public final class ArrayValueTest {
     private final StringProperty barProp = new StringProperty("bar");
 
     Foo() {
-      this.declareProperty(fooProp).declareProperty(barProp);
+      declareProperty(fooProp).declareProperty(barProp);
     }
 
     public String getFoo() {
@@ -458,7 +458,7 @@ public final class ArrayValueTest {
     private final StringProperty barProp = new StringProperty("bar");
 
     Bar() {
-      this.declareProperty(barProp);
+      declareProperty(barProp);
     }
 
     public String getBar() {

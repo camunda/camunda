@@ -9,9 +9,9 @@ package io.zeebe.gateway.impl.broker;
 
 import io.zeebe.gateway.cmd.ClientException;
 
-class RequestRetriesExhaustedException extends ClientException {
+public final class RequestRetriesExhaustedException extends ClientException {
 
-  RequestRetriesExhaustedException() {
+  public RequestRetriesExhaustedException() {
     super(
         "Expected to execute the command on one of the partitions, but all failed; there are no more partitions available to retry. "
             + "Please try again. If the error persists contact your zeebe operator");

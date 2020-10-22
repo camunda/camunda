@@ -59,7 +59,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter sourceRecordPosition(final long position) {
-    this.sourceRecordPosition = position;
+    sourceRecordPosition = position;
     return this;
   }
 
@@ -77,7 +77,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter metadataWriter(final BufferWriter writer) {
-    this.metadataWriter = writer;
+    metadataWriter = writer;
     return this;
   }
 
@@ -94,7 +94,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter valueWriter(final BufferWriter writer) {
-    this.valueWriter = writer;
+    valueWriter = writer;
     return this;
   }
 

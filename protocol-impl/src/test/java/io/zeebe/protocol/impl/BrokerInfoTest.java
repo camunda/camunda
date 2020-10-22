@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.record.BrokerInfoEncoder;
+import io.zeebe.protocol.record.PartitionHealthStatus;
 import io.zeebe.protocol.record.PartitionRole;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,10 @@ public final class BrokerInfoTest {
     partitionRoles.put(1, PartitionRole.FOLLOWER);
     partitionRoles.put(2, PartitionRole.LEADER);
     partitionRoles.put(231, PartitionRole.FOLLOWER);
+    final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
+    partitionHealthStatuses.put(1, PartitionHealthStatus.HEALTHY);
+    partitionHealthStatuses.put(2, PartitionHealthStatus.UNHEALTHY);
+    partitionHealthStatuses.put(123, PartitionHealthStatus.HEALTHY);
 
     final BrokerInfo brokerInfo =
         new BrokerInfo()
@@ -45,6 +50,7 @@ public final class BrokerInfoTest {
 
     addresses.forEach(brokerInfo::addAddress);
     partitionRoles.forEach(brokerInfo::addPartitionRole);
+    partitionHealthStatuses.forEach(brokerInfo::addPartitionHealth);
 
     // when
     encodeDecode(brokerInfo);
@@ -55,6 +61,9 @@ public final class BrokerInfoTest {
     assertThat(brokerInfo.getClusterSize()).isEqualTo(clusterSize);
     assertThat(brokerInfo.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(brokerInfo.getAddresses()).containsAllEntriesOf(addresses);
+    assertThat(brokerInfo.getPartitionRoles()).containsAllEntriesOf(partitionRoles);
+    assertThat(brokerInfo.getPartitionHealthStatuses())
+        .containsAllEntriesOf(partitionHealthStatuses);
   }
 
   @Test
@@ -82,6 +91,7 @@ public final class BrokerInfoTest {
     assertThat(brokerInfo.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(brokerInfo.getAddresses()).isEmpty();
     assertThat(brokerInfo.getPartitionRoles()).isEmpty();
+    assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
   }
 
   @Test
@@ -101,6 +111,7 @@ public final class BrokerInfoTest {
         .isEqualTo(BrokerInfoEncoder.replicationFactorNullValue());
     assertThat(brokerInfo.getAddresses()).isEmpty();
     assertThat(brokerInfo.getPartitionRoles()).isEmpty();
+    assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
   }
 
   private void encodeDecode(final BrokerInfo brokerInfo) {

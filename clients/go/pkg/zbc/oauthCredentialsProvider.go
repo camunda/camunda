@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -156,6 +157,9 @@ func (p *OAuthCredentialsProvider) updateCredentials(ctx context.Context) (bool,
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
+	client := &http.Client{Transport: &userAgentRT{r: http.DefaultTransport}}
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
+
 	token, err := p.TokenConfig.Token(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to obtain access token: %w", err)
@@ -166,6 +170,15 @@ func (p *OAuthCredentialsProvider) updateCredentials(ctx context.Context) (bool,
 	}
 
 	return false, nil
+}
+
+type userAgentRT struct {
+	r http.RoundTripper
+}
+
+func (rt *userAgentRT) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("User-Agent", "zeebe-client-go/"+getVersion())
+	return rt.r.RoundTrip(req)
 }
 
 func (p *OAuthCredentialsProvider) updateCache(credentials *oauth2.Token) {

@@ -26,8 +26,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.utils.AtomixRuntimeException;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.netty.bootstrap.Bootstrap;
@@ -51,25 +49,16 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.ssl.ClientAuth;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.Future;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.net.InetAddress;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.MessageDigest;
-import java.security.cert.Certificate;
 import java.time.Duration;
-import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -80,17 +69,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.TrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Netty based MessagingService. */
 public class NettyMessagingService implements ManagedMessagingService {
-  protected boolean enableNettyTls;
-  protected TrustManagerFactory trustManager;
-  protected KeyManagerFactory keyManager;
+
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address returnAddress;
   private final int preamble;
@@ -108,6 +92,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   private Class<? extends Channel> clientChannelClass;
   private ScheduledExecutorService timeoutExecutor;
   private Channel serverChannel;
+  private final List<CompletableFuture> openFutures;
 
   public NettyMessagingService(
       final String cluster, final Address address, final MessagingConfig config) {
@@ -119,11 +104,12 @@ public class NettyMessagingService implements ManagedMessagingService {
       final Address address,
       final MessagingConfig config,
       final ProtocolVersion protocolVersion) {
-    this.preamble = cluster.hashCode();
-    this.returnAddress = address;
+    preamble = cluster.hashCode();
+    returnAddress = address;
     this.config = config;
     this.protocolVersion = protocolVersion;
-    this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    openFutures = new CopyOnWriteArrayList<>();
+    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
   }
 
   @Override
@@ -175,6 +161,11 @@ public class NettyMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout,
       final Executor executor) {
+    if (!started.get()) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("MessagingService is closed."));
+    }
+
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message = new ProtocolRequest(messageId, returnAddress, type, payload);
     if (keepAlive) {
@@ -251,7 +242,6 @@ public class NettyMessagingService implements ManagedMessagingService {
       return CompletableFuture.completedFuture(this);
     }
 
-    enableNettyTls = loadKeyStores();
     initEventLoopGroup();
     return bootstrapServer()
         .thenRun(
@@ -296,6 +286,19 @@ public class NettyMessagingService implements ManagedMessagingService {
                 interrupted = true;
               }
               timeoutExecutor.shutdown();
+
+              for (final var entry : connections.entrySet()) {
+                final var channel = entry.getKey();
+                channel.close();
+                final var connection = entry.getValue();
+                connection.close();
+              }
+
+              for (final CompletableFuture openFuture : openFutures) {
+                openFuture.completeExceptionally(
+                    new IllegalStateException("MessagingService has been closed."));
+              }
+              openFutures.clear();
             } finally {
               log.info("Stopped");
               if (interrupted) {
@@ -306,78 +309,6 @@ public class NettyMessagingService implements ManagedMessagingService {
           });
     }
     return CompletableFuture.completedFuture(null);
-  }
-
-  private boolean loadKeyStores() {
-    if (!config.getTlsConfig().isEnabled()) {
-      return false;
-    }
-
-    // Maintain a local copy of the trust and key managers in case anything goes wrong
-    final TrustManagerFactory tmf;
-    final KeyManagerFactory kmf;
-    try {
-      final String ksLocation = config.getTlsConfig().getKeyStore();
-      final String tsLocation = config.getTlsConfig().getTrustStore();
-      final char[] ksPwd = config.getTlsConfig().getKeyStorePassword().toCharArray();
-      final char[] tsPwd = config.getTlsConfig().getTrustStorePassword().toCharArray();
-
-      tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      final KeyStore ts = KeyStore.getInstance(KeyStore.getDefaultType());
-      try (final FileInputStream fileInputStream = new FileInputStream(tsLocation)) {
-        ts.load(fileInputStream, tsPwd);
-      }
-      tmf.init(ts);
-
-      kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      final KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-      try (final FileInputStream fileInputStream = new FileInputStream(ksLocation)) {
-        ks.load(fileInputStream, ksPwd);
-      }
-      kmf.init(ks, ksPwd);
-      if (log.isInfoEnabled()) {
-        logKeyStore(ks, ksLocation, ksPwd);
-      }
-    } catch (final FileNotFoundException e) {
-      throw new AtomixRuntimeException("Could not load cluster keystore: %s", e.getMessage());
-    } catch (final Exception e) {
-      throw new AtomixRuntimeException("Error loading cluster keystore", e);
-    }
-    this.trustManager = tmf;
-    this.keyManager = kmf;
-    return true;
-  }
-
-  private void logKeyStore(final KeyStore ks, final String ksLocation, final char[] ksPwd) {
-    if (log.isInfoEnabled()) {
-      log.info("Loaded cluster key store from: {}", ksLocation);
-      try {
-        for (final Enumeration<String> e = ks.aliases(); e.hasMoreElements(); ) {
-          final String alias = e.nextElement();
-          final Key key = ks.getKey(alias, ksPwd);
-          final Certificate[] certs = ks.getCertificateChain(alias);
-          log.debug("{} -> {}", alias, certs);
-          final byte[] encodedKey;
-          if (certs != null && certs.length > 0) {
-            encodedKey = certs[0].getEncoded();
-          } else {
-            log.info(
-                "Could not find cert chain for {}, using fingerprint of key instead...", alias);
-            encodedKey = key.getEncoded();
-          }
-          // Compute the certificate's fingerprint (use the key if certificate cannot be found)
-          final MessageDigest digest = MessageDigest.getInstance("SHA1");
-          digest.update(encodedKey);
-          final StringJoiner fingerprint = new StringJoiner(":");
-          for (final byte b : digest.digest()) {
-            fingerprint.add(String.format("%02X", b));
-          }
-          log.info("{} -> {}", alias, fingerprint);
-        }
-      } catch (final Exception e) {
-        log.warn("Unable to print contents of key store: {}", ksLocation, e);
-      }
-    }
   }
 
   private void initEventLoopGroup() {
@@ -393,7 +324,8 @@ public class NettyMessagingService implements ManagedMessagingService {
     } catch (final Throwable e) {
       log.debug(
           "Failed to initialize native (epoll) transport. " + "Reason: {}. Proceeding with nio.",
-          e.getMessage());
+          e.getMessage(),
+          e);
     }
     clientGroup =
         new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-client-%d", log));
@@ -453,12 +385,15 @@ public class NettyMessagingService implements ManagedMessagingService {
       return;
     }
 
+    // we need these to close them on stop
+    openFutures.add(future);
     channelPool
         .getChannel(address, type)
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
                 final ClientConnection connection = getOrCreateClientConnection(channel);
+                openFutures.remove(future);
                 callback
                     .apply(connection)
                     .whenComplete(
@@ -598,15 +533,7 @@ public class NettyMessagingService implements ManagedMessagingService {
     // http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html#37.0
     bootstrap.channel(clientChannelClass);
     bootstrap.remoteAddress(resolvedAddress, address.port());
-    if (enableNettyTls) {
-      try {
-        bootstrap.handler(new SslClientChannelInitializer(future, address));
-      } catch (final SSLException e) {
-        return Futures.exceptionalFuture(e);
-      }
-    } else {
-      bootstrap.handler(new BasicClientChannelInitializer(future));
-    }
+    bootstrap.handler(new BasicClientChannelInitializer(future));
     bootstrap
         .connect()
         .addListener(
@@ -636,15 +563,7 @@ public class NettyMessagingService implements ManagedMessagingService {
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
     b.group(serverGroup, clientGroup);
     b.channel(serverChannelClass);
-    if (enableNettyTls) {
-      try {
-        b.childHandler(new SslServerChannelInitializer());
-      } catch (final SSLException e) {
-        return Futures.exceptionalFuture(e);
-      }
-    } else {
-      b.childHandler(new BasicServerChannelInitializer());
-    }
+    b.childHandler(new BasicServerChannelInitializer());
     return bind(b);
   }
 
@@ -704,52 +623,9 @@ public class NettyMessagingService implements ManagedMessagingService {
     }
   }
 
-  /** Channel initializer for TLS clients. */
-  private class SslClientChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final CompletableFuture<Channel> future;
-    private final Address address;
-    private final SslContext sslContext;
-
-    SslClientChannelInitializer(final CompletableFuture<Channel> future, final Address address)
-        throws SSLException {
-      this.future = future;
-      this.address = address;
-      this.sslContext =
-          SslContextBuilder.forClient().keyManager(keyManager).trustManager(trustManager).build();
-    }
-
-    @Override
-    protected void initChannel(final SocketChannel channel) throws Exception {
-      channel
-          .pipeline()
-          .addLast("ssl", sslContext.newHandler(channel.alloc(), address.host(), address.port()))
-          .addLast("handshake", new ClientHandshakeHandlerAdapter(future));
-    }
-  }
-
-  /** Channel initializer for TLS servers. */
-  private final class SslServerChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final SslContext sslContext;
-
-    private SslServerChannelInitializer() throws SSLException {
-      this.sslContext =
-          SslContextBuilder.forServer(keyManager)
-              .clientAuth(ClientAuth.REQUIRE)
-              .trustManager(trustManager)
-              .build();
-    }
-
-    @Override
-    protected void initChannel(final SocketChannel channel) throws Exception {
-      channel
-          .pipeline()
-          .addLast("ssl", sslContext.newHandler(channel.alloc()))
-          .addLast("handshake", new ServerHandshakeHandlerAdapter());
-    }
-  }
-
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     private final CompletableFuture<Channel> future;
 
     BasicClientChannelInitializer(final CompletableFuture<Channel> future) {
@@ -764,6 +640,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Channel initializer for basic connections. */
   private class BasicServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     @Override
     protected void initChannel(final SocketChannel channel) throws Exception {
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
@@ -829,6 +706,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Client handshake handler. */
   private class ClientHandshakeHandlerAdapter extends HandshakeHandlerAdapter<ProtocolReply> {
+
     private final CompletableFuture<Channel> future;
 
     ClientHandshakeHandlerAdapter(final CompletableFuture<Channel> future) {
@@ -887,6 +765,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Server handshake handler. */
   private class ServerHandshakeHandlerAdapter extends HandshakeHandlerAdapter<ProtocolRequest> {
+
     @Override
     public void channelRead(final ChannelHandlerContext context, final Object message)
         throws Exception {
@@ -924,6 +803,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   /** Connection message dispatcher. */
   private class MessageDispatcher<M extends ProtocolMessage>
       extends SimpleChannelInboundHandler<Object> {
+
     private final Connection<M> connection;
 
     MessageDispatcher(final Connection<M> connection) {

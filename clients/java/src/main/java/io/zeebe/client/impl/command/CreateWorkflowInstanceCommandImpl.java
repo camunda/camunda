@@ -56,7 +56,7 @@ public final class CreateWorkflowInstanceCommandImpl
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
 
-    this.builder = CreateWorkflowInstanceRequest.newBuilder();
+    builder = CreateWorkflowInstanceRequest.newBuilder();
   }
 
   @Override

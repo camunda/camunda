@@ -31,25 +31,27 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.SnapshotChunk;
-import io.atomix.raft.snapshot.SnapshotChunkReader;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 /** Abstract appender. */
 abstract class AbstractAppender implements AutoCloseable {
 
-  private static final int MAX_BATCH_SIZE = 1024 * 32;
+  protected final int maxBatchSizePerAppend;
   protected final Logger log;
   protected final RaftContext raft;
   protected boolean open = true;
@@ -58,10 +60,11 @@ abstract class AbstractAppender implements AutoCloseable {
 
   AbstractAppender(final RaftContext raft) {
     this.raft = checkNotNull(raft, "context cannot be null");
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
-    this.metrics = new LeaderMetrics(raft.getName());
+    metrics = new LeaderMetrics(raft.getName());
+    maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
   }
 
   /**
@@ -158,7 +161,7 @@ abstract class AbstractAppender implements AutoCloseable {
       final Indexed<RaftLogEntry> entry = reader.next();
       entries.add(entry.entry());
       size += entry.size();
-      if (entry.index() == lastIndex || size >= MAX_BATCH_SIZE) {
+      if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
     }
@@ -451,24 +454,36 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   /** Builds an install request for the given member. */
-  protected InstallRequest buildInstallRequest(
+  protected Optional<InstallRequest> buildInstallRequest(
       final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
     if (member.getNextSnapshotIndex() != persistedSnapshot.getIndex()) {
+      try {
+        final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
+        member.setSnapshotChunkReader(snapshotChunkReader);
+      } catch (final UncheckedIOException e) {
+        log.warn(
+            "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
+            persistedSnapshot.getId(),
+            e);
+        return Optional.empty();
+      }
       member.setNextSnapshotIndex(persistedSnapshot.getIndex());
       member.setNextSnapshotChunk(null);
     }
 
-    final InstallRequest request;
-    // Open a new snapshot reader.
-    try (final SnapshotChunkReader reader = persistedSnapshot.newChunkReader()) {
-      reader.seek(member.getNextSnapshotChunk());
+    final SnapshotChunkReader reader = member.getSnapshotChunkReader();
+    if (!reader.hasNext()) {
+      return Optional.empty();
+    }
+
+    try {
       final SnapshotChunk chunk = reader.next();
 
       // Create the install request, indicating whether this is the last chunk of data based on
-      // the number
-      // of bytes remaining in the buffer.
+      // the number of bytes remaining in the buffer.
       final DefaultRaftMember leader = raft.getLeader();
-      request =
+
+      final InstallRequest request =
           InstallRequest.builder()
               .withCurrentTerm(raft.getTerm())
               .withLeader(leader.memberId())
@@ -482,11 +497,17 @@ abstract class AbstractAppender implements AutoCloseable {
               .withComplete(!reader.hasNext())
               .withNextChunkId(reader.nextId())
               .build();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+      return Optional.of(request);
+    } catch (final UncheckedIOException e) {
+      log.warn(
+          "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
+          persistedSnapshot.getId(),
+          member.getMember().memberId(),
+          e);
+      // If snapshot was deleted, a new reader should be created with the new snapshot
+      member.setNextSnapshotIndex(0);
+      return Optional.empty();
     }
-
-    return request;
   }
 
   /** Connects to the member and sends a snapshot request. */

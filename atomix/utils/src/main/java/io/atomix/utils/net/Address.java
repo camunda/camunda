@@ -18,6 +18,7 @@ package io.atomix.utils.net;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
@@ -27,7 +28,7 @@ public final class Address {
   private final String host;
   private final int port;
   private transient volatile Type type;
-  private transient volatile InetAddress address;
+  private volatile InetSocketAddress socketAddress;
 
   public Address(final String host, final int port) {
     this(host, port, null);
@@ -36,9 +37,11 @@ public final class Address {
   public Address(final String host, final int port, final InetAddress address) {
     this.host = host;
     this.port = port;
-    this.address = address;
     if (address != null) {
-      this.type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
+      type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
+      socketAddress = new InetSocketAddress(address, port);
+    } else {
+      socketAddress = new InetSocketAddress(host, port);
     }
   }
 
@@ -154,30 +157,39 @@ public final class Address {
    */
   public InetAddress address(final boolean resolve) {
     if (resolve) {
-      address = resolveAddress();
-      return address;
+      socketAddress = resolveAddress();
+      return socketAddress.getAddress();
     }
 
-    if (address == null) {
+    // Try to resolve address, if not successful return null
+    if (socketAddress.isUnresolved()) {
       synchronized (this) {
-        if (address == null) {
-          address = resolveAddress();
+        if (socketAddress.isUnresolved()) {
+          socketAddress = resolveAddress();
         }
       }
     }
-    return address;
+    return socketAddress.getAddress();
+  }
+
+  public InetSocketAddress socketAddress() {
+    return socketAddress;
   }
 
   /**
    * Resolves the IP address from the hostname.
    *
-   * @return the resolved IP address or {@code null} if the IP could not be resolved
+   * @return an InetSocketAddress with the resolved IP address and port or {@code null} if the IP
+   *     could not be resolved
    */
-  private InetAddress resolveAddress() {
+  private InetSocketAddress resolveAddress() {
     try {
-      return InetAddress.getByName(host);
+      return new InetSocketAddress(InetAddress.getByName(host), port);
     } catch (final UnknownHostException e) {
-      return null;
+      if (socketAddress.isUnresolved()) {
+        return socketAddress;
+      }
+      return new InetSocketAddress(host, port);
     }
   }
 
@@ -214,7 +226,7 @@ public final class Address {
       return false;
     }
     final Address that = (Address) obj;
-    return this.host.equals(that.host) && this.port == that.port;
+    return host.equals(that.host) && port == that.port;
   }
 
   @Override

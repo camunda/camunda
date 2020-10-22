@@ -17,9 +17,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
@@ -27,8 +24,11 @@ import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -63,23 +63,26 @@ public final class AsyncSnapshotingTest {
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private List<ActorCondition> conditionList;
-  private PersistedSnapshotStore persistedSnapshotStore;
+  private ConstructableSnapshotStore persistedSnapshotStore;
 
   @Before
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
-    persistedSnapshotStore =
-        new FileBasedSnapshotStoreFactory().createSnapshotStore(rootDirectory, "1");
+    final var factory = new FileBasedSnapshotStoreFactory();
+    final String partitionName = "1";
+    factory.createReceivableSnapshotStore(rootDirectory, partitionName);
+    persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionName);
 
     snapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
             persistedSnapshotStore,
+            factory.getReceivableSnapshotStore(partitionName),
             rootDirectory.resolve("runtime"),
             new NoneSnapshotReplication(),
             l ->
-                Optional.ofNullable(
+                Optional.of(
                     new Indexed(
                         l + 100, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
             db -> Long.MAX_VALUE);
@@ -128,7 +131,7 @@ public final class AsyncSnapshotingTest {
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             0, mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
-    actorScheduler.submitActor(this.asyncSnapshotDirector).join();
+    actorScheduler.submitActor(asyncSnapshotDirector).join();
   }
 
   @Test

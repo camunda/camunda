@@ -23,27 +23,53 @@ import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
+import io.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.zeebe.broker.system.management.BrokerAdminService;
+import io.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.zeebe.broker.system.partitions.PartitionContext;
+import io.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
+import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
+import io.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.RaftLogReaderPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
+import io.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.engine.processor.ProcessingContext;
-import io.zeebe.engine.processor.workflow.EngineProcessors;
-import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.EngineProcessors;
+import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
@@ -66,12 +92,30 @@ import org.slf4j.Logger;
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-
+  private static final List<PartitionStep> LEADER_STEPS =
+      List.of(
+          new LogStreamPartitionStep(),
+          new RaftLogReaderPartitionStep(),
+          new SnapshotReplicationPartitionStep(),
+          new StateControllerPartitionStep(),
+          new LogDeletionPartitionStep(),
+          new LeaderPostStoragePartitionStep(),
+          new ZeebeDbPartitionStep(),
+          new StreamProcessorPartitionStep(),
+          new SnapshotDirectorPartitionStep(),
+          new RocksDbMetricExporterPartitionStep(),
+          new ExporterDirectorPartitionStep());
+  private static final List<PartitionStep> FOLLOWER_STEPS =
+      List.of(
+          new RaftLogReaderPartitionStep(),
+          new SnapshotReplicationPartitionStep(),
+          new StateControllerPartitionStep(),
+          new LogDeletionPartitionStep(),
+          new FollowerPostStoragePartitionStep());
   private final SystemContext brokerContext;
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
   private Atomix atomix;
-
   private CompletableFuture<Broker> startFuture;
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
@@ -82,11 +126,16 @@ public final class Broker implements AutoCloseable {
   private ServerTransport serverTransport;
   private BrokerHealthCheckService healthCheckService;
   private Map<Integer, ZeebeIndexAdapter> partitionIndexes;
+  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
+  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private SnapshotStoreSupplier snapshotStoreSupplier;
+  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private BrokerAdminService brokerAdminService;
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
-    this.brokerContext = systemContext;
-    this.partitionListeners = new ArrayList<>();
+    brokerContext = systemContext;
+    partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
   }
 
@@ -171,14 +220,24 @@ public final class Broker implements AutoCloseable {
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
-    startContext.addStep(
-        "monitoring services", () -> monitoringServerStep(networkCfg, localBroker));
+    startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
+    startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
         "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
+    startContext.addStep("register diskspace usage listeners", () -> addDiskSpaceUsageListeners());
+    startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private AutoCloseable addBrokerAdminService() {
+    final var adminService = new BrokerAdminServiceImpl(partitions);
+    scheduleActor(adminService);
+    brokerAdminService = adminService;
+    springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
+    return adminService;
   }
 
   private AutoCloseable actorSchedulerStep() {
@@ -189,7 +248,9 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    atomix = AtomixFactory.fromConfiguration(brokerCfg);
+    final var snapshotStoreFactory = new FileBasedSnapshotStoreFactory();
+    snapshotStoreSupplier = snapshotStoreFactory;
+    atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
 
     final var partitionGroup =
         (RaftPartitionGroup)
@@ -244,7 +305,7 @@ public final class Broker implements AutoCloseable {
     commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
-
+    diskSpaceUsageListeners.add(commandHandler);
     return commandHandler;
   }
 
@@ -253,7 +314,12 @@ public final class Broker implements AutoCloseable {
         new SubscriptionApiCommandMessageHandlerService(localBroker, atomix);
     partitionListeners.add(messageHandlerService);
     scheduleActor(messageHandlerService);
+    diskSpaceUsageListeners.add(messageHandlerService);
     return messageHandlerService;
+  }
+
+  private void addDiskSpaceUsageListeners() {
+    diskSpaceUsageListeners.forEach(diskSpaceUsageMonitor::addDiskUsageListener);
   }
 
   private void scheduleActor(final Actor actor) {
@@ -271,20 +337,31 @@ public final class Broker implements AutoCloseable {
     return topologyManager;
   }
 
-  private AutoCloseable monitoringServerStep(
-      final NetworkCfg networkCfg, final BrokerInfo localBroker) {
+  private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
     healthCheckService = new BrokerHealthCheckService(localBroker, atomix);
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
-
     return () -> healthCheckService.close();
+  }
+
+  private AutoCloseable diskSpaceMonitorStep(final DataCfg data) {
+    diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
+    if (data.isDiskUsageMonitoringEnabled()) {
+      scheduleActor(diskSpaceUsageMonitor);
+      diskSpaceUsageListeners.forEach(l -> diskSpaceUsageMonitor.addDiskUsageListener(l));
+      return () -> diskSpaceUsageMonitor.close();
+    } else {
+      LOG.info("Skipping start of disk space usage monitor, as it is disabled by configuration");
+      return () -> {};
+    }
   }
 
   private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {
     managementRequestHandler = new LeaderManagementRequestHandler(localBroker, atomix);
     scheduleActor(managementRequestHandler);
     partitionListeners.add(managementRequestHandler);
+    diskSpaceUsageListeners.add(managementRequestHandler);
     return managementRequestHandler;
   }
 
@@ -314,9 +391,10 @@ public final class Broker implements AutoCloseable {
                     atomix.getCommunicationService(),
                     atomix.getMembershipService(),
                     owningPartition.members());
-            final ZeebePartition zeebePartition =
-                new ZeebePartition(
-                    localBroker,
+
+            final PartitionContext context =
+                new PartitionContext(
+                    localBroker.getNodeId(),
                     owningPartition,
                     partitionListeners,
                     messagingService,
@@ -324,14 +402,42 @@ public final class Broker implements AutoCloseable {
                     brokerCfg,
                     commandHandler,
                     partitionIndexes.get(partitionId),
-                    createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
+                    snapshotStoreSupplier,
+                    createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler),
+                    buildExporterRepository(brokerCfg));
+            final PartitionTransitionImpl transitionBehavior =
+                new PartitionTransitionImpl(context, LEADER_STEPS, FOLLOWER_STEPS);
+            final ZeebePartition zeebePartition = new ZeebePartition(context, transitionBehavior);
             scheduleActor(zeebePartition);
+            zeebePartition.addFailureListener(
+                new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
+            diskSpaceUsageListeners.add(zeebePartition);
+            partitions.add(zeebePartition);
             return zeebePartition;
           });
     }
     return partitionStartProcess.start();
+  }
+
+  private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
+    final ExporterRepository exporterRepository = new ExporterRepository();
+    final var exporterEntries = cfg.getExporters().entrySet();
+
+    // load and validate exporters
+    for (final var exporterEntry : exporterEntries) {
+      final var id = exporterEntry.getKey();
+      final var exporterCfg = exporterEntry.getValue();
+      try {
+        exporterRepository.load(id, exporterCfg);
+      } catch (final ExporterLoadException | ExporterJarLoadException e) {
+        throw new IllegalStateException(
+            "Failed to load exporter with configuration: " + exporterCfg, e);
+      }
+    }
+
+    return exporterRepository;
   }
 
   private TypedRecordProcessorsFactory createFactory(
@@ -399,6 +505,14 @@ public final class Broker implements AutoCloseable {
 
   public Atomix getAtomix() {
     return atomix;
+  }
+
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  public BrokerAdminService getBrokerAdminService() {
+    return brokerAdminService;
   }
 
   public SystemContext getBrokerContext() {

@@ -9,13 +9,12 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotMetadata;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32C;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,18 +37,11 @@ public final class SnapshotReplicationTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
-  private static final String WORKFLOW_RESOURCE_NAME = "workflow.bpmn";
 
   private final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureBroker);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
-  private ZeebeClient client;
-
-  @Before
-  public void init() {
-    client = clientRule.getClient();
-  }
 
   @Test
   public void shouldReplicateSnapshots() {
@@ -106,7 +97,7 @@ public final class SnapshotReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    client.newDeployCommand().addWorkflowModel(WORKFLOW, WORKFLOW_RESOURCE_NAME).send().join();
+    clientRule.deployWorkflow(WORKFLOW);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 

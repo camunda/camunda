@@ -9,15 +9,16 @@ package io.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.SnapshotChunk;
-import io.atomix.raft.snapshot.TransientSnapshot;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,39 +36,47 @@ public final class FailingSnapshotChunkReplicationTest {
 
   private StateControllerImpl replicatorSnapshotController;
   private StateControllerImpl receiverSnapshotController;
-  private PersistedSnapshotStore senderStore;
-  private PersistedSnapshotStore receiverStore;
+  private ConstructableSnapshotStore senderStore;
+  private ReceivableSnapshotStore receiverStore;
 
   public void setup(final SnapshotReplication replicator) throws IOException {
     final var senderRoot = tempFolderRule.newFolder("sender").toPath();
-    senderStore = new FileBasedSnapshotStoreFactory().createSnapshotStore(senderRoot, "1");
+
+    final var senderFactory = new FileBasedSnapshotStoreFactory();
+    senderFactory.createReceivableSnapshotStore(senderRoot, "1");
+    senderStore = senderFactory.getConstructableSnapshotStore("1");
 
     final var receiverRoot = tempFolderRule.newFolder("receiver").toPath();
-    receiverStore = new FileBasedSnapshotStoreFactory().createSnapshotStore(receiverRoot, "1");
+    final var receiverFactory = new FileBasedSnapshotStoreFactory();
+    receiverStore = receiverFactory.createReceivableSnapshotStore(receiverRoot, "1");
 
     replicatorSnapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
             senderStore,
+            senderFactory.getReceivableSnapshotStore("1"),
             senderRoot.resolve("runtime"),
             replicator,
             l ->
-                Optional.ofNullable(
+                Optional.of(
                     new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
             db -> Long.MAX_VALUE);
+    senderStore.addSnapshotListener(replicatorSnapshotController);
 
     receiverSnapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
-            receiverStore,
+            receiverFactory.getConstructableSnapshotStore("1"),
+            receiverFactory.getReceivableSnapshotStore("1"),
             receiverRoot.resolve("runtime"),
             replicator,
             l ->
                 Optional.ofNullable(
                     new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
             db -> Long.MAX_VALUE);
+    receiverStore.addSnapshotListener(receiverSnapshotController);
 
     autoCloseableRule.manage(replicatorSnapshotController);
     autoCloseableRule.manage(senderStore);

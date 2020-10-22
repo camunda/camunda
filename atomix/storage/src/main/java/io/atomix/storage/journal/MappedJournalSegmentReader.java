@@ -21,8 +21,11 @@ import io.atomix.storage.journal.index.Position;
 import io.atomix.utils.serializer.Namespace;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
+import org.agrona.IoUtil;
 
 /**
  * Log segment reader.
@@ -30,7 +33,7 @@ import java.util.zip.CRC32;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 class MappedJournalSegmentReader<E> implements JournalReader<E> {
-  private final ByteBuffer buffer;
+  private final MappedByteBuffer buffer;
   private final int maxEntrySize;
   private final JournalIndex index;
   private final Namespace namespace;
@@ -39,16 +42,18 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
   private Indexed<E> nextEntry;
 
   MappedJournalSegmentReader(
-      final ByteBuffer buffer,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.buffer = buffer.slice();
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
     this.segment = segment;
+    buffer =
+        IoUtil.mapExistingFile(
+            file.file(), MapMode.READ_ONLY, file.name(), 0, segment.descriptor().maxSegmentSize());
     reset();
   }
 
@@ -141,11 +146,11 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
 
   @Override
   public void close() {
-    // Do nothing. The writer is responsible for cleaning the mapped buffer.
+    IoUtil.unmap(buffer);
+    segment.onReaderClosed(this);
   }
 
   /** Reads the next entry in the segment. */
-  @SuppressWarnings("unchecked")
   private void readNext() {
     // Compute the index of the next entry in the segment.
     final long index = getNextIndex();

@@ -5,6 +5,7 @@
 package validation
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strconv"
@@ -26,6 +27,11 @@ type EachRule struct {
 
 // Validate loops through the given iterable and calls the Ozzo Validate() method for each value.
 func (r EachRule) Validate(value interface{}) error {
+	return r.ValidateWithContext(nil, value)
+}
+
+// ValidateWithContext loops through the given iterable and calls the Ozzo ValidateWithContext() method for each value.
+func (r EachRule) ValidateWithContext(ctx context.Context, value interface{}) error {
 	errs := Errors{}
 
 	v := reflect.ValueOf(value)
@@ -33,14 +39,26 @@ func (r EachRule) Validate(value interface{}) error {
 	case reflect.Map:
 		for _, k := range v.MapKeys() {
 			val := r.getInterface(v.MapIndex(k))
-			if err := Validate(val, r.rules...); err != nil {
+			var err error
+			if ctx == nil {
+				err = Validate(val, r.rules...)
+			} else {
+				err = ValidateWithContext(ctx, val, r.rules...)
+			}
+			if err != nil {
 				errs[r.getString(k)] = err
 			}
 		}
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < v.Len(); i++ {
 			val := r.getInterface(v.Index(i))
-			if err := Validate(val, r.rules...); err != nil {
+			var err error
+			if ctx == nil {
+				err = Validate(val, r.rules...)
+			} else {
+				err = ValidateWithContext(ctx, val, r.rules...)
+			}
+			if err != nil {
 				errs[strconv.Itoa(i)] = err
 			}
 		}

@@ -7,19 +7,19 @@
  */
 package io.zeebe.broker.system.partitions.impl;
 
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.PersistedSnapshotListener;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.ReceivedSnapshot;
-import io.atomix.raft.snapshot.SnapshotChunk;
-import io.atomix.raft.snapshot.TransientSnapshot;
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
 import io.zeebe.broker.system.partitions.StateController;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.snapshots.raft.ReceivedSnapshot;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,8 +40,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private final Map<String, ReplicationContext> receivedSnapshots =
       new Object2NullableObjectHashMap<>();
 
-  private final PersistedSnapshotStore store;
-
   private final Path runtimeDirectory;
   private final ZeebeDbFactory zeebeDbFactory;
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
@@ -50,51 +48,57 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private final SnapshotReplicationMetrics metrics;
 
   private ZeebeDb db;
+  private final ConstructableSnapshotStore constructableSnapshotStore;
+  private final ReceivableSnapshotStore receivableSnapshotStore;
 
   public StateControllerImpl(
       final int partitionId,
       final ZeebeDbFactory zeebeDbFactory,
-      final PersistedSnapshotStore store,
+      final ConstructableSnapshotStore constructableSnapshotStore,
+      final ReceivableSnapshotStore receivableSnapshotStore,
       final Path runtimeDirectory,
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
-    this.store = store;
+    this.constructableSnapshotStore = constructableSnapshotStore;
+    this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
     this.zeebeDbFactory = zeebeDbFactory;
     this.exporterPositionSupplier = exporterPositionSupplier;
     this.entrySupplier = entrySupplier;
     this.replication = replication;
-    this.metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
-    store.addSnapshotListener(this);
+    metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
   }
 
   @Override
   public Optional<TransientSnapshot> takeTransientSnapshot(final long lowerBoundSnapshotPosition) {
     if (!isDbOpened()) {
+      LOG.warn(
+          "Expected to take snapshot for last processed position {}, but database was closed.",
+          lowerBoundSnapshotPosition);
       return Optional.empty();
     }
 
     final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
-    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
-
+    final long snapshotPosition =
+        determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+    if (optionalIndexed.isEmpty()) {
+      LOG.warn(
+          "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {}, but found no matching indexed entry which contains this position.",
+          snapshotPosition);
+      return Optional.empty();
+    }
 
-    final Long previousSnapshotIndex =
-        store.getLatestSnapshot().map(PersistedSnapshot::getCompactionBound).orElse(-1L);
-
-    final var optTransientSnapshot =
-        optionalIndexed
-            .filter(indexed -> indexed.index() != previousSnapshotIndex)
-            .map(
-                indexed ->
-                    store.newTransientSnapshot(
-                        indexed.index(),
-                        indexed.entry().term(),
-                        WallClockTimestamp.from(System.currentTimeMillis())));
-
-    optTransientSnapshot.ifPresent(this::createSnapshot);
-    return optTransientSnapshot;
+    final var snapshotIndexedEntry = optionalIndexed.get();
+    final Optional<TransientSnapshot> transientSnapshot =
+        constructableSnapshotStore.newTransientSnapshot(
+            snapshotIndexedEntry.index(),
+            snapshotIndexedEntry.entry().term(),
+            lowerBoundSnapshotPosition,
+            exportedPosition);
+    transientSnapshot.ifPresent(this::takeSnapshot);
+    return transientSnapshot;
   }
 
   @Override
@@ -109,7 +113,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       FileUtil.deleteFolder(runtimeDirectory);
     }
 
-    final var optLatestSnapshot = store.getLatestSnapshot();
+    final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
     if (optLatestSnapshot.isPresent()) {
       final var snapshot = optLatestSnapshot.get();
       LOG.debug("Available snapshot: {}", snapshot);
@@ -144,7 +148,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public int getValidSnapshotsCount() {
-    return store.getLatestSnapshot().isPresent() ? 1 : 0;
+    return constructableSnapshotStore.getLatestSnapshot().isPresent() ? 1 : 0;
   }
 
   @Override
@@ -160,7 +164,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     return db != null;
   }
 
-  private void createSnapshot(final TransientSnapshot snapshot) {
+  private void takeSnapshot(final TransientSnapshot snapshot) {
     snapshot.take(
         snapshotDir -> {
           if (db == null) {
@@ -182,6 +186,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
+    LOG.debug("New snapshot {} was persisted. Start replicating.", newPersistedSnapshot.getId());
     // replicate snapshots when new snapshot was committed
     try (final var snapshotChunkReader = newPersistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
@@ -206,7 +211,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
             id -> {
               final var startTimestamp = System.currentTimeMillis();
               final ReceivedSnapshot transientSnapshot =
-                  store.newReceivedSnapshot(snapshotChunk.getSnapshotId());
+                  receivableSnapshotStore.newReceivedSnapshot(snapshotChunk.getSnapshotId());
               return newReplication(startTimestamp, transientSnapshot);
             });
     if (context == INVALID_SNAPSHOT) {
@@ -231,6 +236,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   private void markSnapshotAsInvalid(
       final ReplicationContext replicationContext, final SnapshotChunk chunk) {
+    LOG.debug("Abort snapshot {} and mark it as invalid.", chunk.getSnapshotId());
     replicationContext.abort();
     receivedSnapshots.put(chunk.getSnapshotId(), INVALID_SNAPSHOT);
   }
@@ -241,15 +247,17 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
     if (context.incrementCount() == totalChunkCount) {
       LOG.debug(
-          "Received all snapshot chunks ({}/{}), snapshot is valid",
+          "Received all snapshot chunks ({}/{}), snapshot {} is valid",
           context.getChunkCount(),
+          snapshotChunk.getSnapshotId(),
           totalChunkCount);
       if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
         LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
       }
     } else {
       LOG.debug(
-          "Waiting for more snapshot chunks, currently have {}/{}",
+          "Waiting for more snapshot chunks of snapshot {}, currently have {}/{}",
+          snapshotChunk.getSnapshotId(),
           context.getChunkCount(),
           totalChunkCount);
     }
@@ -271,16 +279,26 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   private ReplicationContext newReplication(
       final long startTimestamp, final ReceivedSnapshot transientSnapshot) {
-    final var context = new ReplicationContext(metrics, startTimestamp, transientSnapshot);
-    return context;
+    return new ReplicationContext(metrics, startTimestamp, transientSnapshot);
+  }
+
+  private long determineSnapshotPosition(
+      final long lowerBoundSnapshotPosition, final long exportedPosition) {
+    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
+    LOG.debug(
+        "Based on lowest exporter position '{}' and last processed position '{}', determined '{}' as snapshot position.",
+        exportedPosition,
+        lowerBoundSnapshotPosition,
+        snapshotPosition);
+    return snapshotPosition;
   }
 
   private static final class ReplicationContext {
 
     private final long startTimestamp;
     private final ReceivedSnapshot receivedSnapshot;
-    private long chunkCount;
     private final SnapshotReplicationMetrics metrics;
+    private long chunkCount;
 
     ReplicationContext(
         final SnapshotReplicationMetrics metrics,
@@ -291,7 +309,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         metrics.incrementCount();
       }
       this.startTimestamp = startTimestamp;
-      this.chunkCount = 0L;
+      chunkCount = 0L;
       this.receivedSnapshot = receivedSnapshot;
     }
 

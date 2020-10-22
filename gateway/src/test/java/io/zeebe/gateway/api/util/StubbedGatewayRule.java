@@ -25,8 +25,8 @@ public final class StubbedGatewayRule extends ExternalResource {
 
   public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule, final GatewayCfg config) {
     this.actorSchedulerRule = actorSchedulerRule;
-    this.brokerClient = new StubbedBrokerClient();
-    this.activateJobsHandler = getActivateJobsHandler(config, brokerClient);
+    brokerClient = new StubbedBrokerClient();
+    activateJobsHandler = getActivateJobsHandler(config, brokerClient);
   }
 
   private static ActivateJobsHandler getActivateJobsHandler(

@@ -31,7 +31,7 @@ public final class EndlessRetryStrategyTest {
   @Before
   public void setUp() {
     final ControllableActor actor = new ControllableActor();
-    this.actorControl = actor.getActor();
+    actorControl = actor.getActor();
     retryStrategy = new EndlessRetryStrategy(actorControl);
 
     schedulerRule.submitActor(actor);

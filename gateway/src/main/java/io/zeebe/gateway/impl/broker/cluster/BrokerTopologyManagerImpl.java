@@ -30,7 +30,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
-    this.topology = new AtomicReference<>(null);
+    topology = new AtomicReference<>(null);
   }
 
   /** @return the current known cluster state or null if the topology was not fetched yet */
@@ -91,10 +91,11 @@ public final class BrokerTopologyManagerImpl extends Actor
 
               case METADATA_CHANGED:
                 LOG.debug(
-                    "Received metadata change from Broker {}, partitions {} and terms {}.",
+                    "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
                     brokerInfo.getNodeId(),
                     brokerInfo.getPartitionRoles(),
-                    brokerInfo.getPartitionLeaderTerms());
+                    brokerInfo.getPartitionLeaderTerms(),
+                    brokerInfo.getPartitionHealthStatuses());
                 newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
                 break;

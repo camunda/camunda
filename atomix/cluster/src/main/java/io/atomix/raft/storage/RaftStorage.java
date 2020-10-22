@@ -20,8 +20,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
@@ -34,6 +32,8 @@ import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,13 +67,11 @@ public final class RaftStorage {
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final int maxEntriesPerSegment;
-  private final boolean dynamicCompaction;
-  private final double freeDiskBuffer;
-  private final double freeMemoryBuffer;
-  private final boolean flushOnCommit;
+  private final long freeDiskSpace;
+  private final boolean flushExplicitly;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
-  private final PersistedSnapshotStore persistedSnapshotStore;
+  private final ReceivableSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   private RaftStorage(
@@ -84,13 +82,11 @@ public final class RaftStorage {
       final int maxSegmentSize,
       final int maxEntrySize,
       final int maxEntriesPerSegment,
-      final boolean dynamicCompaction,
-      final double freeDiskBuffer,
-      final double freeMemoryBuffer,
-      final boolean flushOnCommit,
+      final long freeDiskSpace,
+      final boolean flushExplicitly,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
-      final PersistedSnapshotStore persistedSnapshotStore,
+      final ReceivableSnapshotStore persistedSnapshotStore,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.prefix = prefix;
     this.storageLevel = storageLevel;
@@ -99,12 +95,10 @@ public final class RaftStorage {
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.maxEntriesPerSegment = maxEntriesPerSegment;
-    this.dynamicCompaction = dynamicCompaction;
-    this.freeDiskBuffer = freeDiskBuffer;
-    this.freeMemoryBuffer = freeMemoryBuffer;
-    this.flushOnCommit = flushOnCommit;
+    this.freeDiskSpace = freeDiskSpace;
+    this.flushExplicitly = flushExplicitly;
     this.retainStaleSnapshots = retainStaleSnapshots;
-    this.statistics = storageStatistics;
+    statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexFactory = journalIndexFactory;
     directory.mkdirs();
@@ -176,30 +170,12 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns whether dynamic log compaction is enabled.
+   * Returns the amount of disk space that must be available before log compaction is forced.
    *
-   * @return whether dynamic log compaction is enabled
+   * @return the amount of disk space that must be available before log compaction is forced
    */
-  public boolean dynamicCompaction() {
-    return dynamicCompaction;
-  }
-
-  /**
-   * Returns the percentage of disk space that must be available before log compaction is forced.
-   *
-   * @return the percentage of disk space that must be available before log compaction is forced
-   */
-  public double freeDiskBuffer() {
-    return freeDiskBuffer;
-  }
-
-  /**
-   * Returns the percentage of memory space that must be available before log compaction is forced.
-   *
-   * @return the percentage of memory space that must be available before log compaction is forced
-   */
-  public double freeMemoryBuffer() {
-    return freeMemoryBuffer;
+  public long freeDiskSpace() {
+    return freeDiskSpace;
   }
 
   /**
@@ -287,7 +263,7 @@ public final class RaftStorage {
    *
    * @return The snapshot store.
    */
-  public PersistedSnapshotStore getPersistedSnapshotStore() {
+  public ReceivableSnapshotStore getPersistedSnapshotStore() {
     return persistedSnapshotStore;
   }
 
@@ -317,8 +293,9 @@ public final class RaftStorage {
         .withNamespace(namespace)
         .withMaxSegmentSize(maxSegmentSize)
         .withMaxEntrySize(maxEntrySize)
+        .withFreeDiskSpace(freeDiskSpace)
         .withMaxEntriesPerSegment(maxEntriesPerSegment)
-        .withFlushOnCommit(flushOnCommit)
+        .withFlushExplicitly(flushExplicitly)
         .withJournalIndexFactory(journalIndexFactory)
         .build();
   }
@@ -357,8 +334,8 @@ public final class RaftStorage {
    *
    * @return Whether to flush buffers to disk when entries are committed.
    */
-  public boolean isFlushOnCommit() {
-    return flushOnCommit;
+  public boolean isFlushExplicitly() {
+    return flushExplicitly;
   }
 
   /**
@@ -399,9 +376,9 @@ public final class RaftStorage {
     private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024; // 1MB
     private static final int DEFAULT_MAX_ENTRIES_PER_SEGMENT = 1024 * 1024;
     private static final boolean DEFAULT_DYNAMIC_COMPACTION = true;
-    private static final double DEFAULT_FREE_DISK_BUFFER = .2;
+    private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024; // 1GB
     private static final double DEFAULT_FREE_MEMORY_BUFFER = .2;
-    private static final boolean DEFAULT_FLUSH_ON_COMMIT = true;
+    private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
 
     private String prefix = DEFAULT_PREFIX;
@@ -411,13 +388,11 @@ public final class RaftStorage {
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
-    private boolean dynamicCompaction = DEFAULT_DYNAMIC_COMPACTION;
-    private double freeDiskBuffer = DEFAULT_FREE_DISK_BUFFER;
-    private double freeMemoryBuffer = DEFAULT_FREE_MEMORY_BUFFER;
-    private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
+    private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
+    private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
-    private PersistedSnapshotStore persistedSnapshotStore;
+    private ReceivableSnapshotStore persistedSnapshotStore;
     private Supplier<JournalIndex> journalIndexFactory;
 
     private Builder() {}
@@ -553,85 +528,27 @@ public final class RaftStorage {
     }
 
     /**
-     * Enables dynamic log compaction.
-     *
-     * <p>When dynamic compaction is enabled, logs will be compacted only during periods of low load
-     * on the cluster or when the cluster is running out of disk space.
-     *
-     * @return the Raft storage builder
-     */
-    public Builder withDynamicCompaction() {
-      return withDynamicCompaction(true);
-    }
-
-    /**
-     * Enables dynamic log compaction.
-     *
-     * <p>When dynamic compaction is enabled, logs will be compacted only during periods of low load
-     * on the cluster or when the cluster is running out of disk space.
-     *
-     * @param dynamicCompaction whether to enable dynamic compaction
-     * @return the Raft storage builder
-     */
-    public Builder withDynamicCompaction(final boolean dynamicCompaction) {
-      this.dynamicCompaction = dynamicCompaction;
-      return this;
-    }
-
-    /**
      * Sets the percentage of free disk space that must be preserved before log compaction is
      * forced.
      *
-     * @param freeDiskBuffer the free disk percentage
+     * @param freeDiskSpace the free disk percentage
      * @return the Raft log builder
      */
-    public Builder withFreeDiskBuffer(final double freeDiskBuffer) {
-      checkArgument(freeDiskBuffer > 0, "freeDiskBuffer must be positive");
-      checkArgument(freeDiskBuffer < 1, "freeDiskBuffer must be less than 1");
-      this.freeDiskBuffer = freeDiskBuffer;
+    public Builder withFreeDiskSpace(final long freeDiskSpace) {
+      checkArgument(freeDiskSpace >= 0, "freeDiskSpace must be positive");
+      this.freeDiskSpace = freeDiskSpace;
       return this;
     }
 
     /**
-     * Sets the percentage of free memory space that must be preserved before log compaction is
-     * forced.
+     * Sets whether to flush logs to disk to guarantee correctness. If true, followers will flush on
+     * every append, and the leader will flush on commit.
      *
-     * @param freeMemoryBuffer the free disk percentage
-     * @return the Raft log builder
+     * @param flushExplicitly whether to flush buffers to disk
+     * @return the storage builder.
      */
-    public Builder withFreeMemoryBuffer(final double freeMemoryBuffer) {
-      checkArgument(freeMemoryBuffer > 0, "freeMemoryBuffer must be positive");
-      checkArgument(freeMemoryBuffer < 1, "freeMemoryBuffer must be less than 1");
-      this.freeMemoryBuffer = freeMemoryBuffer;
-      return this;
-    }
-
-    /**
-     * Enables flushing buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @return The storage builder.
-     */
-    public Builder withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
-     * Sets whether to flush buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @param flushOnCommit Whether to flush buffers to disk when entries are committed to a
-     *     segment.
-     * @return The storage builder.
-     */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      this.flushOnCommit = flushOnCommit;
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      this.flushExplicitly = flushExplicitly;
       return this;
     }
 
@@ -685,7 +602,7 @@ public final class RaftStorage {
      * @param persistedSnapshotStore the snapshot store for this Raft
      * @return the storage builder
      */
-    public Builder withSnapshotStore(final PersistedSnapshotStore persistedSnapshotStore) {
+    public Builder withSnapshotStore(final ReceivableSnapshotStore persistedSnapshotStore) {
       this.persistedSnapshotStore = persistedSnapshotStore;
       return this;
     }
@@ -697,11 +614,6 @@ public final class RaftStorage {
      */
     @Override
     public RaftStorage build() {
-      if (persistedSnapshotStore == null) {
-        persistedSnapshotStore =
-            new FileBasedSnapshotStoreFactory().createSnapshotStore(directory.toPath(), prefix);
-      }
-
       return new RaftStorage(
           prefix,
           storageLevel,
@@ -710,10 +622,8 @@ public final class RaftStorage {
           maxSegmentSize,
           maxEntrySize,
           maxEntriesPerSegment,
-          dynamicCompaction,
-          freeDiskBuffer,
-          freeMemoryBuffer,
-          flushOnCommit,
+          freeDiskSpace,
+          flushExplicitly,
           retainStaleSnapshots,
           Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
           persistedSnapshotStore,

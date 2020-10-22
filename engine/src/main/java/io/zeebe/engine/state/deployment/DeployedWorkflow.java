@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state.deployment;
 
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import org.agrona.DirectBuffer;
 
 public final class DeployedWorkflow {

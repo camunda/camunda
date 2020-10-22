@@ -27,12 +27,12 @@ public final class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
 
   public BoundedArrayQueue(final int capacity) {
     this.capacity = findNextPositivePowerOfTwo(capacity);
-    this.mask = this.capacity - 1;
+    mask = this.capacity - 1;
 
     head = 0;
     tail = 0;
 
-    array = new Object[this.capacity];
+    array = new Object[capacity];
   }
 
   @Override

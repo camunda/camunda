@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.VariableIntent;
  *
  * <p>See {@link VariableIntent} for intents.
  */
-public interface VariableRecordValue extends RecordValue {
+public interface VariableRecordValue extends RecordValue, WorkflowInstanceRelated {
 
   /** @return the name of the variable. */
   String getName();

@@ -28,7 +28,6 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.util.Collection;
@@ -47,7 +46,6 @@ public class RaftPartition implements Partition {
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
-  private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
   private final Set<RaftFailureListener> raftFailureListeners = new CopyOnWriteArraySet<>();
@@ -58,12 +56,10 @@ public class RaftPartition implements Partition {
   public RaftPartition(
       final PartitionId partitionId,
       final RaftPartitionGroupConfig config,
-      final File dataDirectory,
-      final ThreadContextFactory threadContextFactory) {
+      final File dataDirectory) {
     this.partitionId = partitionId;
     this.config = config;
     this.dataDirectory = dataDirectory;
-    this.threadContextFactory = threadContextFactory;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -126,7 +122,7 @@ public class RaftPartition implements Partition {
   /** Opens the partition. */
   CompletableFuture<Partition> open(
       final PartitionMetadata metadata, final PartitionManagementService managementService) {
-    this.partitionMetadata = metadata;
+    partitionMetadata = metadata;
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
@@ -154,7 +150,6 @@ public class RaftPartition implements Partition {
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
         managementService.getMessagingService(),
-        threadContextFactory,
         journalIndexFactory);
   }
 

@@ -38,8 +38,7 @@ or `validation.ValidateStruct()` to validate the value.
 Run the following command to install the package:
 
 ```
-go get github.com/go-ozzo/ozzo-validation/v4
-go get github.com/go-ozzo/ozzo-validation/v4/is
+go get github.com/go-ozzo/ozzo-validation
 ```
 
 ### Validating a Simple Value
@@ -83,16 +82,6 @@ to achieve this purpose. A single struct can have rules for multiple fields, and
 rules. For example,
 
 ```go
-package main
-
-import (
-	"fmt"
-	"regexp"
-
-	"github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
-)
-
 type Address struct {
 	Street string
 	City   string
@@ -113,19 +102,17 @@ func (a Address) Validate() error {
 	)
 }
 
-func main() {
-	a := Address{
-		Street: "123",
-		City:   "Unknown",
-		State:  "Virginia",
-		Zip:    "12345",
-	}
-
-	err := a.Validate()
-	fmt.Println(err)
-	// Output:
-	// Street: the length must be between 5 and 50; State: must be in a valid format.
+a := Address{
+    Street: "123",
+    City:   "Unknown",
+    State:  "Virginia",
+    Zip:    "12345",
 }
+
+err := a.Validate()
+fmt.Println(err)
+// Output:
+// Street: the length must be between 5 and 50; State: must be in a valid format.
 ```
 
 Note that when calling `validation.ValidateStruct` to validate a struct, you should pass to the method a pointer 
@@ -135,6 +122,53 @@ for a struct field, you should use a pointer to the struct field.
 When the struct validation is performed, the fields are validated in the order they are specified in `ValidateStruct`. 
 And when each field is validated, its rules are also evaluated in the order they are associated with the field.
 If a rule fails, an error is recorded for that field, and the validation will continue with the next field.
+
+
+### Validating a Map
+
+Sometimes you might need to work with dynamic data stored in maps rather than a typed model. You can use `validation.Map()`
+in this situation. A single map can have rules for multiple keys, and a key can be associated with multiple 
+rules. For example,
+
+```go
+c := map[string]interface{}{
+	"Name":  "Qiang Xue",
+	"Email": "q",
+	"Address": map[string]interface{}{
+		"Street": "123",
+		"City":   "Unknown",
+		"State":  "Virginia",
+		"Zip":    "12345",
+	},
+}
+
+err := validation.Validate(c,
+	validation.Map(
+		// Name cannot be empty, and the length must be between 5 and 20.
+		validation.Key("Name", validation.Required, validation.Length(5, 20)),
+		// Email cannot be empty and should be in a valid email format.
+		validation.Key("Email", validation.Required, is.Email),
+		// Validate Address using its own validation rules
+		validation.Key("Address", validation.Map(
+			// Street cannot be empty, and the length must between 5 and 50
+			validation.Key("Street", validation.Required, validation.Length(5, 50)),
+			// City cannot be empty, and the length must between 5 and 50
+			validation.Key("City", validation.Required, validation.Length(5, 50)),
+			// State cannot be empty, and must be a string consisting of two letters in upper case
+			validation.Key("State", validation.Required, validation.Match(regexp.MustCompile("^[A-Z]{2}$"))),
+			// State cannot be empty, and must be a string consisting of five digits
+			validation.Key("Zip", validation.Required, validation.Match(regexp.MustCompile("^[0-9]{5}$"))),
+		)),
+	),
+)
+fmt.Println(err)
+// Output:
+// Address: (State: must be in a valid format; Street: the length must be between 5 and 50.); Email: must be a valid email address.
+```
+
+When the map validation is performed, the keys are validated in the order they are specified in `Map`. 
+And when each key is validated, its rules are also evaluated in the order they are associated with the key.
+If a rule fails, an error is recorded for that key, and the validation will continue with the next key.
 
 
 ### Validation Errors
@@ -458,8 +492,6 @@ You can also customize the pre-defined error(s) of a built-in rule such that the
 instance of the rule. For example, the `Required` rule uses the pre-defined error `ErrRequired`. You can customize it
 during the application initialization:
 ```go
-import "github.com/go-ozzo/ozzo-validation/v4"
-
 validation.ErrRequired = validation.ErrRequired.SetMessage("the value is required") 
 ```
 
@@ -583,6 +615,7 @@ When performing context-aware validation, if a rule does not implement `validati
 The following rules are provided in the `validation` package:
 
 * `In(...interface{})`: checks if a value can be found in the given list of values.
+* `NotIn(...interface{})`: checks if a value is NOT among the given list of values.
 * `Length(min, max int)`: checks if the length of a value is within the specified range.
   This rule should only be used for validating strings, slices, maps, and arrays.
 * `RuneLength(min, max int)`: checks if the length of a string is within the specified range.

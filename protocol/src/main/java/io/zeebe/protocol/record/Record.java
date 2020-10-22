@@ -71,6 +71,9 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
    */
   String getRejectionReason();
 
+  /** @return the version of the broker that wrote this record */
+  String getBrokerVersion();
+
   /** @return the type of the record (e.g. job, workflow, workflow instance, etc.) */
   ValueType getValueType();
 

@@ -18,7 +18,6 @@ import io.atomix.core.AtomixBuilder;
 import io.atomix.core.AtomixConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -27,6 +26,7 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.MembershipCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.logstreams.impl.log.ZeebeEntryValidator;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +34,15 @@ import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class AtomixFactory {
+
   public static final String GROUP_NAME = "raft-partition";
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private AtomixFactory() {}
 
-  public static Atomix fromConfiguration(final BrokerCfg configuration) {
+  public static Atomix fromConfiguration(
+      final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
     final var clusterCfg = configuration.getCluster();
     final var nodeId = clusterCfg.getNodeId();
     final var localMemberId = Integer.toString(nodeId);
@@ -80,18 +82,21 @@ public final class AtomixFactory {
     IoUtil.ensureDirectoryExists(new File(rootDirectory), "Zeebe data directory");
 
     final RaftPartitionGroup partitionGroup =
-        createRaftPartitionGroup(configuration, rootDirectory);
+        createRaftPartitionGroup(configuration, rootDirectory, snapshotStoreFactory);
 
     return atomixBuilder.withPartitionGroups(partitionGroup).build();
   }
 
   private static RaftPartitionGroup createRaftPartitionGroup(
-      final BrokerCfg configuration, final String rootDirectory) {
+      final BrokerCfg configuration,
+      final String rootDirectory,
+      final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final File raftDirectory = new File(rootDirectory, AtomixFactory.GROUP_NAME);
     IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
+    final var experimentalCfg = configuration.getExperimental();
     final DataCfg dataCfg = configuration.getData();
     final NetworkCfg networkCfg = configuration.getNetwork();
 
@@ -101,10 +106,13 @@ public final class AtomixFactory {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
-            .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
+            .withSnapshotStoreFactory(snapshotStoreFactory)
+            .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
+            .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
-            .withFlushOnCommit();
+            .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
+            .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark());
 
     // by default, the Atomix max entry size is 1 MB
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class ZeebeLogAppenderTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Stopwatch stopwatch = Stopwatch.createUnstarted();
   private final TestAppender appenderListener = new TestAppender();
 

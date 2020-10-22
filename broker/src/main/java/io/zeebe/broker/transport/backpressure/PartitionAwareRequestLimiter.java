@@ -19,7 +19,7 @@ import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.zeebe.broker.system.configuration.backpressure.AIMDCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.broker.system.configuration.backpressure.FixedLimitCfg;
+import io.zeebe.broker.system.configuration.backpressure.FixedCfg;
 import io.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.zeebe.broker.system.configuration.backpressure.GradientCfg;
 import io.zeebe.broker.system.configuration.backpressure.VegasCfg;
@@ -38,11 +38,11 @@ public final class PartitionAwareRequestLimiter {
   private final Function<Integer, RequestLimiter<Intent>> limiterSupplier;
 
   private PartitionAwareRequestLimiter() {
-    this.limiterSupplier = i -> new NoopRequestLimiter<>();
+    limiterSupplier = i -> new NoopRequestLimiter<>();
   }
 
   private PartitionAwareRequestLimiter(final Supplier<Limit> limitSupplier) {
-    this.limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
+    limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
   }
 
   public static PartitionAwareRequestLimiter newNoopLimiter() {
@@ -58,8 +58,8 @@ public final class PartitionAwareRequestLimiter {
         limit = () -> getAIMD(aimdCfg);
         break;
       case FIXED:
-        final FixedLimitCfg fixedLimitCfg = backpressureCfg.getFixedLimit();
-        limit = () -> FixedLimit.of(fixedLimitCfg.getLimit());
+        final FixedCfg fixedCfg = backpressureCfg.getFixed();
+        limit = () -> FixedLimit.of(fixedCfg.getLimit());
         break;
       case GRADIENT:
         final GradientCfg gradientCfg = backpressureCfg.getGradient();

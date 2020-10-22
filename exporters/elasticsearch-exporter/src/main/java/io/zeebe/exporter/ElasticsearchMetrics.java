@@ -7,6 +7,7 @@
  */
 package io.zeebe.exporter;
 
+import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
 public class ElasticsearchMetrics {
@@ -28,10 +29,18 @@ public class ElasticsearchMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge BULK_MEMORY_SIZE =
+      Gauge.build()
+          .namespace("zeebe_elasticsearch_exporter")
+          .name("bulk_memory_size")
+          .help("Exporter bulk memory size")
+          .labelNames("partition")
+          .register();
+
   private final String partitionIdLabel;
 
   public ElasticsearchMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   public Histogram.Timer measureFlushDuration() {
@@ -40,5 +49,9 @@ public class ElasticsearchMetrics {
 
   public void recordBulkSize(final int bulkSize) {
     BULK_SIZE.labels(partitionIdLabel).observe(bulkSize);
+  }
+
+  public void recordBulkMemorySize(final int bulkMemorySize) {
+    BULK_MEMORY_SIZE.labels(partitionIdLabel).set(bulkMemorySize);
   }
 }

@@ -27,7 +27,7 @@ final class LocalClientConnection extends AbstractClientConnection {
   LocalClientConnection(
       final ScheduledExecutorService executorService, final HandlerRegistry handlers) {
     super(executorService);
-    this.serverConnection = new LocalServerConnection(handlers, this);
+    serverConnection = new LocalServerConnection(handlers, this);
   }
 
   @Override

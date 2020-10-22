@@ -45,7 +45,7 @@ final class RequestContext {
     this.partitionId = partitionId;
     this.requestBytes = requestBytes;
     this.shouldRetry = shouldRetry;
-    this.startTime = ActorClock.currentTimeMillis();
+    startTime = ActorClock.currentTimeMillis();
     this.responseValidator = responseValidator;
     this.timeout = timeout;
   }

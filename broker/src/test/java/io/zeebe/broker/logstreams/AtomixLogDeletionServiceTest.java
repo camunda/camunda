@@ -10,15 +10,13 @@ package io.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStore;
-import io.atomix.raft.snapshot.impl.SnapshotMetrics;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
-import io.zeebe.util.FileUtil;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStore;
+import io.zeebe.snapshots.broker.impl.SnapshotMetrics;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -53,13 +51,13 @@ public final class AtomixLogDeletionServiceTest {
 
   private LogDeletionService deletionService;
   private Compactor compactor;
+  private NoopSnapshotStore persistedSnapshotStore;
 
   @Before
   public void setUp() {
     compactor = new Compactor();
-    deletionService =
-        new LogDeletionService(
-            0, PARTITION_ID, compactor, logStorageRule.getPersistedSnapshotStore());
+    persistedSnapshotStore = new NoopSnapshotStore();
+    deletionService = new LogDeletionService(0, PARTITION_ID, compactor, persistedSnapshotStore);
     actorScheduler.submitActor(deletionService).join();
   }
 
@@ -127,19 +125,7 @@ public final class AtomixLogDeletionServiceTest {
   }
 
   private void createSnapshot(final long index) {
-    final var store = logStorageRule.getPersistedSnapshotStore();
-    final var now = WallClockTimestamp.from(System.currentTimeMillis());
-    final var transientSnapshot = store.newTransientSnapshot(index, 0, now);
-    transientSnapshot.take(
-        p -> {
-          try {
-            FileUtil.ensureDirectoryExists(p);
-            return true;
-          } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-    transientSnapshot.persist();
+    persistedSnapshotStore.takeNewSnapshot(index);
   }
 
   private static RaftStorage.Builder builder(
@@ -147,7 +133,7 @@ public final class AtomixLogDeletionServiceTest {
     try {
       return builder
           // hardcode max segment size to allow a single entry only
-          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 8 * Integer.BYTES)
+          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 9 * Integer.BYTES)
           .withSnapshotStore(
               new FileBasedSnapshotStore(
                   new SnapshotMetrics("1"),

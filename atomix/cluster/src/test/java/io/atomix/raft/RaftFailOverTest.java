@@ -54,7 +54,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -79,7 +79,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -104,7 +104,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -132,8 +132,8 @@ public class RaftFailOverTest {
   @Test
   public void shouldCompactLogOnSnapshot() throws Exception {
     // given
-    raftRule.appendEntries(128);
-    raftRule.awaitSameLogSizeOnAllNodes();
+    final var lastIndex = raftRule.appendEntries(128);
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLogs = raftRule.getMemberLogs();
 
     // when
@@ -167,6 +167,26 @@ public class RaftFailOverTest {
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
     assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
+  }
+
+  @Test
+  public void shouldReplicateSnapshotWithManyFilesOnJoin() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+    raftRule.appendEntries(20);
+    final long snapshotIndex = 10L;
+    raftRule.doSnapshot(snapshotIndex, 10);
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+
+    // when
+    raftRule.joinCluster(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex)).isTrue();
+    final var snapshot = raftRule.getSnapshotOnNode(follower);
+
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(snapshotIndex);
     assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
   }
 
@@ -228,7 +248,35 @@ public class RaftFailOverTest {
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
     assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
-    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
+    assertThat(snapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
+    assertThat(snapshot.getId()).isEqualTo(leaderSnapshot.getId());
+  }
+
+  @Test
+  public void shouldReplicateSnapshotMultipleTimesAfterMultipleDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var follower = raftRule.shutdownFollower();
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    final var firstSnapshot = raftRule.getSnapshotOnNode(follower);
+
+    // when another data loss happens
+    raftRule.shutdownServer(follower);
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    // then snapshot is replicated again
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+    final var newSnapshot = raftRule.getSnapshotOnNode(follower);
+
+    assertThat(newSnapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
+    assertThat(newSnapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
+    assertThat(newSnapshot.getId()).isEqualTo(leaderSnapshot.getId());
+    assertThat(newSnapshot).isEqualTo(firstSnapshot);
   }
 
   @Test
@@ -312,11 +360,9 @@ public class RaftFailOverTest {
     raftRule.doSnapshot(65);
     // Leader and Follower A Log [65-100].
     // Follower B Log [0-50]
-    final var oldLeader = raftRule.shutdownLeader();
 
     // when
-    // Follower B comes back we should be able to form a healthy cluster again
-    // Follower A need to replicate snapshot to Follower B
+    // Follower B comes back and receives a snapshot from the leader
     raftRule.joinCluster(followerB);
     raftRule.appendEntries(entryCount);
 
@@ -327,13 +373,35 @@ public class RaftFailOverTest {
     // Follower B should have truncated his log to not have any gaps in his log
     // entries after snapshot should be replicated
     assertThat(entries.get(0).index()).isEqualTo(66);
+  }
 
-    for (final String member : memberLogs.keySet()) {
-      if (!oldLeader.equals(member)) {
-        final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
-      }
-    }
+  @Test
+  public void shouldTruncateLogOnNewerSnapshotEvenAfterRestart() throws Throwable {
+    // given
+    final var entryCount = 50;
+    raftRule.appendEntries(entryCount);
+    final var followerB = raftRule.shutdownFollower();
+    raftRule.appendEntries(entryCount);
+    raftRule.doSnapshot(65);
+    // Leader and Follower A Log [65-100].
+    // Follower B Log [0-50]
+
+    // Follower B has old log AND snapshot
+    final var nodes = raftRule.getNodes();
+    final var followerA = nodes.stream().findFirst().orElseThrow();
+    raftRule.copySnapshotOffline(followerA, followerB);
+
+    // when Follower B is started again it should truncate its log to join the cluster
+    raftRule.joinCluster(followerB);
+    raftRule.appendEntries(entryCount);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(65)).isTrue();
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(followerB);
+    // Follower B should have truncated his log to not have any gaps in his log
+    // entries after snapshot should be replicated
+    assertThat(entries.get(0).index()).isEqualTo(66);
   }
 
   private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {

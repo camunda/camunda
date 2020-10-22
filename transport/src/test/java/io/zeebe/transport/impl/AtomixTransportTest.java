@@ -55,8 +55,10 @@ public class AtomixTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
 
-  private static Supplier<String> nodeAddressSupplier;
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
+  private static final Duration REQUEST_TIMEOUT_NO_SUCCESS = Duration.ofMillis(200);
 
+  private static Supplier<String> nodeAddressSupplier;
   private static AtomixCluster cluster;
   private static String serverAddress;
   private static TransportFactory transportFactory;
@@ -152,6 +154,7 @@ public class AtomixTransportTest {
       nettyMessagingService = null;
     }
     cluster.stop().join();
+    cluster = null;
   }
 
   @Test
@@ -163,7 +166,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
     final var response = requestFuture.join();
@@ -179,10 +182,10 @@ public class AtomixTransportTest {
 
     // when
     clientTransport.sendRequestWithRetry(
-        nodeAddressSupplier, (response) -> false, new Request("messageABC"), Duration.ofSeconds(3));
+        nodeAddressSupplier, (response) -> false, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
-    final var success = retryLatch.await(1, TimeUnit.SECONDS);
+    final var success = retryLatch.await(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
     assertThat(success).isTrue();
     assertThat(retryLatch.getCount()).isEqualTo(0);
   }
@@ -202,7 +205,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -218,9 +221,10 @@ public class AtomixTransportTest {
 
     // when
     serverTransport.unsubscribe(0).join();
+
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), Duration.ofMillis(200));
+            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -234,7 +238,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -246,7 +250,7 @@ public class AtomixTransportTest {
 
     // when
     final var requestFuture =
-        clientTransport.sendRequest(() -> null, new Request("messageABC"), Duration.ofMillis(300));
+        clientTransport.sendRequest(() -> null, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -260,6 +264,7 @@ public class AtomixTransportTest {
     final var nodeAddressRef = new AtomicReference<String>();
     final var retryLatch = new CountDownLatch(3);
     serverTransport.subscribe(0, new DirectlyResponder()).join();
+
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
             () -> {
@@ -267,10 +272,10 @@ public class AtomixTransportTest {
               return nodeAddressRef.get();
             },
             new Request("messageABC"),
-            Duration.ofSeconds(5));
+            REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await();
+    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
     nodeAddressRef.set(serverAddress);
 
     // then
@@ -283,16 +288,17 @@ public class AtomixTransportTest {
     // given
     final var retryLatch = new CountDownLatch(2);
     serverTransport.subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown())).join();
+
     final var responseValidation = new AtomicBoolean(false);
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
             nodeAddressSupplier,
             (responseToValidate) -> responseValidation.get(),
             new Request("messageABC"),
-            Duration.ofSeconds(3));
+            REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await(1, TimeUnit.SECONDS);
+    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
     responseValidation.set(true);
 
     // then
@@ -307,7 +313,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -324,10 +330,10 @@ public class AtomixTransportTest {
               return serverAddress;
             },
             new Request("messageABC"),
-            Duration.ofSeconds(5));
+            REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await();
+    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
     serverTransport.subscribe(0, new DirectlyResponder());
 
     // then

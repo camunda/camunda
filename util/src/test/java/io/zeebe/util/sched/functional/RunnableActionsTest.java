@@ -38,7 +38,7 @@ public final class RunnableActionsTest {
         new Runner() {
           @Override
           protected void onActorStarted() {
-            this.doRun();
+            doRun();
           }
         };
 
@@ -200,7 +200,7 @@ public final class RunnableActionsTest {
 
   class Submitter extends Actor {
     public void submit(final Runnable r) {
-      this.actor.submit(r);
+      actor.submit(r);
     }
   }
 

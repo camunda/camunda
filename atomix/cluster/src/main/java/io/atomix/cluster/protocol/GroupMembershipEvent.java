@@ -49,7 +49,7 @@ public class GroupMembershipEvent extends AbstractEvent<GroupMembershipEvent.Typ
   public boolean equals(final Object object) {
     if (object instanceof GroupMembershipEvent) {
       final GroupMembershipEvent that = (GroupMembershipEvent) object;
-      return this.type() == that.type() && this.member().equals(that.member());
+      return type() == that.type() && member().equals(that.member());
     }
     return false;
   }

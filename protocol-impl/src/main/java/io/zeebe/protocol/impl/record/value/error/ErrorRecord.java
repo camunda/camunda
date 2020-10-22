@@ -29,7 +29,7 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
 
   public ErrorRecord() {
-    this.declareProperty(exceptionMessageProp)
+    declareProperty(exceptionMessageProp)
         .declareProperty(stacktraceProp)
         .declareProperty(errorEventPositionProp)
         .declareProperty(workflowInstanceKeyProp);
@@ -78,7 +78,7 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   }
 
   public ErrorRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 }

@@ -1,9 +1,18 @@
 # Contributing to Zeebe
 
-## Building Zeebe from source
+* [Build Zeebe from source](#build-zeebe-from-source)
+* [Report issues or contact developers](#report-issues-or-contact-developers)
+* [GitHub Issue Guidelines](#github-issue-guidelines)
+* [Create a Pull Request](#create-a-pull-request)
+* [Commit Message Guidelines](#commit-message-guidelines)
+* [Contributor License Agreement](#contributor-license-agreement)
+* [Licenses](#licenses)
+* [Code of Conduct](#code-of-conduct)
 
-Zeebe is developed as multi module maven project. To build all components
-run the command `mvn clean install -DskipTests` in the root folder.
+## Build Zeebe from source
+
+Zeebe is a multi-module maven project. To build all components,
+run the command: `mvn clean install -DskipTests` in the root folder.
 
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 ```
@@ -27,7 +36,7 @@ This is a small overview of the contents of the different modules:
 - `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 
-## Reporting issues or contact developers
+## Report issues or contact developers
 
 Zeebe uses GitHub issues to organize the development process. If you want to
 report a bug or request a new feature feel free to open a new issue on
@@ -39,18 +48,25 @@ providing as much information as possible. Ideally, that would include a small
 
 If you have a general usage question please ask on the [forum][] or [slack][] channel.
 
-## Work on an issue
+## GitHub Issue Guidelines
 
-The Zeebe follows a
+Every issue should have a meaningful name and a description which either
+describes:
+- a new feature with details about the use case the feature would solve or
+  improve
+- a problem, how we can reproduce it and what would be the expected behavior
+- a change and the intention how this would improve the system
+
+## Create a Pull Request
+
+Zeebe follows a
 [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
-The `develop` branch contains the current in development state of the project,
-where the `master` branch contains the latest stable release.
+The `develop` branch contains the current in-development state of the project. The `master` branch contains the latest stable release.
 
-If you want to work on an issue please follow the following steps:
+To work on an issue, follow the following steps:
 
-1. Check that a [GitHub issue][issues] exists for the task you want to work on,
-   if not please create one first and have a look at the [issue
-   guidelines](#github-issue-guidelines).
+1. Check that a [GitHub issue][issues] exists for the task you want to work on.
+   If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
 1. Checkout the `develop` branch and pull the latest changes.
    ```
    git checkout develop
@@ -63,7 +79,7 @@ If you want to work on an issue please follow the following steps:
 1. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 1. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run on it. Git commit will run a
+   changes to the origin so that the CI can run. Git commit will run a
    pre-commit hook which will check the formatting, style and license headers
    before committing. If these checks fail please fix the issues. Code format
    and license headers can be fixed automatically by running maven. Checkstyle
@@ -110,48 +126,17 @@ If you want to work on an issue please follow the following steps:
        they are caused by its changes and address them. If they are flaky tests
        a merge can be retried with a comment with the content `bors retry`.
 
-## GitHub Issue Guidelines
-
-Every issue should have a meaningful name and a description which either
-describes:
-- a new feature with details about the use case the feature would solve or
-  improve
-- a problem, how we can reproduce it and what would be the expected behavior
-- a change and the intention how this would improve the system
-
-### Labels
-
-Every issue will have up to three types of labels to indicate its status, type
-  and scope. The status label will be normally managed by https://waffle.io/zeebe-io/zeebe.
-
-- [[:mag:]][status] Status:
-  - No status label means it is not planned to work on the issue in the
-    near future
-  - [[:mag:]][planned] **Planned**: We plan to work on the issue in the current quarter
-  - [[:mag:]][ready] **Ready**: We plan to work on the issue in the next weeks
-  - [[:mag:]][in progress] **In Progress**: Someone is currently actively working on the issue
-  - [[:mag:]][needs review] **Needs Review**: The initial work on the issue is finished and it is now
-    subject to the review process
-- [[:mag:]][type] Type:
-  - [[:mag:]][enhancement] **Enhancement**: A user facing feature or improvement, decided if this
-  - [[:mag:]][bug] **Bug**: A user facing bug fix, which will be listed in the changelog
-    issue is something with should be listed in the changelog
-  - [[:mag:]][maintenance] **Maintenance**: A non-user facing code change
-  - [[:mag:]][docs] **Docs**: A addition or change to the docs
-  - [[:mag:]][question] **Question**: A general question which not yet is an actionable issue
-- [[:mag:]][scope] Scope:
-  - No scope label means it is not directly related to a code change in either
-    the broker or client
-  - [[:mag:]][broker] **broker**: Issues related to code changes which involve the server part
-    of the architecture, including gateway and exporters
-  - [[:mag:]][clients/java] **clients/java**: Issues related to code changes which involve the java
-    client
-  - [[:mag:]][clients/go] **clients/go**: Issues related to code changes which involve the go
-    client and zbctl
-
 ## Commit Message Guidelines
 
-The commit message should match the following pattern
+Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format with scope.
+
+Examples:
+
+* `docs(reference): add start event to bpmn symbol support matrix`
+* `fix(broker): reduce latency in backpressure`
+* `feat(clients/go): allow more than 9000 jobs in a single call`
+
+The commit message should match the following pattern:
 ```
 %{type}(%{scope}): %{description}
 ```
@@ -170,10 +155,19 @@ The commit message should match the following pattern
 - `description`: short description of the change to a max length of the whole
   subject line of 120 characters
 
+
 Zeebe uses a bot which will check your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
-## License
+## Contributor License Agreement
+
+You will be asked to sign our Contributor License Agreement when you open a Pull Request. We are not
+asking you to assign copyright to us, but to give us the right to distribute
+your code without restriction. We ask this of all contributors in order to
+assure our users of the origin and continuing existence of the code. You only
+need to sign the CLA once.
+
+## Licenses
 
 Zeebe source files are made available under the [Zeebe Community License
 Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
@@ -191,20 +185,11 @@ Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 If you would like to contribute something, or simply want to hack on the code
 this document should help you get started.
 
-### Sign the Contributor License Agreement
-
-Please make sure you have signed our Contributor License Agreement. We are not
-asking you to assign copyright to us, but to give us the right to distribute
-your code without restriction. We ask this of all contributors in order to
-assure our users of the origin and continuing existence of the code. You only
-need to sign the CLA once.
-
 ## Code of Conduct
 
-This project adheres to the Contributor Covenant [Code of
-Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
-this code. Please report unacceptable behavior to
-code-of-conduct@zeebe.io.
+This project adheres to the [Camunda Code of Conduct](https://camunda.com/events/code-conduct/).
+By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
+unacceptable behavior as soon as possible.
 
 [issues]: https://github.com/zeebe-io/zeebe/issues
 [forum]: https://forum.zeebe.io/

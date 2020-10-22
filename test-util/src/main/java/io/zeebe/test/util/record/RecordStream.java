@@ -81,4 +81,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new IncidentRecordStream(
         filter(r -> r.getValueType() == ValueType.INCIDENT).map(Record.class::cast));
   }
+
+  public MessageSubscriptionRecordStream messageSubscriptionRecords() {
+    return new MessageSubscriptionRecordStream(
+        filter(r -> r.getValueType() == ValueType.MESSAGE_SUBSCRIPTION).map(Record.class::cast));
+  }
 }

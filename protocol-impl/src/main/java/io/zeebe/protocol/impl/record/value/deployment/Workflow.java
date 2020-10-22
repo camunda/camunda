@@ -28,7 +28,7 @@ public final class Workflow extends UnpackedObject implements DeployedWorkflow {
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
 
   public Workflow() {
-    this.declareProperty(bpmnProcessIdProp)
+    declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp);
@@ -54,27 +54,27 @@ public final class Workflow extends UnpackedObject implements DeployedWorkflow {
   }
 
   public Workflow setResourceName(final String resourceName) {
-    this.resourceNameProp.setValue(resourceName);
+    resourceNameProp.setValue(resourceName);
     return this;
   }
 
   public Workflow setResourceName(final DirectBuffer resourceName) {
-    this.resourceNameProp.setValue(resourceName);
+    resourceNameProp.setValue(resourceName);
     return this;
   }
 
   public Workflow setVersion(final int version) {
-    this.versionProp.setValue(version);
+    versionProp.setValue(version);
     return this;
   }
 
   public Workflow setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
   public Workflow setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
@@ -84,7 +84,7 @@ public final class Workflow extends UnpackedObject implements DeployedWorkflow {
   }
 
   public Workflow setKey(final long key) {
-    this.keyProp.setValue(key);
+    keyProp.setValue(key);
     return this;
   }
 
@@ -112,7 +112,7 @@ public final class Workflow extends UnpackedObject implements DeployedWorkflow {
 
   public Workflow setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
+    bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;
   }
 }

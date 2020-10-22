@@ -53,7 +53,7 @@ public class WallClockTimestamp implements Timestamp {
     checkArgument(o instanceof WallClockTimestamp, "Must be WallClockTimestamp", o);
     final WallClockTimestamp that = (WallClockTimestamp) o;
 
-    return ComparisonChain.start().compare(this.unixTimestamp, that.unixTimestamp).result();
+    return ComparisonChain.start().compare(unixTimestamp, that.unixTimestamp).result();
   }
 
   @Override
@@ -70,7 +70,7 @@ public class WallClockTimestamp implements Timestamp {
       return false;
     }
     final WallClockTimestamp that = (WallClockTimestamp) obj;
-    return Objects.equals(this.unixTimestamp, that.unixTimestamp);
+    return Objects.equals(unixTimestamp, that.unixTimestamp);
   }
 
   @Override

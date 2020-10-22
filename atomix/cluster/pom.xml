@@ -35,6 +35,10 @@
       <groupId>io.zeebe</groupId>
     </dependency>
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-snapshots</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
@@ -44,10 +48,6 @@
     </dependency>
     <dependency>
       <artifactId>netty-codec</artifactId>
-      <groupId>io.netty</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>netty-handler</artifactId>
       <groupId>io.netty</groupId>
     </dependency>
     <dependency>
@@ -137,7 +137,7 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.25.0-SNAPSHOT</version>
+    <version>0.26.0-SNAPSHOT</version>
   </parent>
 
 

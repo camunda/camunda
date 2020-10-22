@@ -24,7 +24,7 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
       new ArrayProperty<>("interrupting", new StringValue());
 
   public EventScopeInstance() {
-    this.declareProperty(acceptingProp).declareProperty(interruptingProp);
+    declareProperty(acceptingProp).declareProperty(interruptingProp);
   }
 
   public EventScopeInstance(final EventScopeInstance other) {
@@ -33,7 +33,7 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
     final int length = other.getLength();
     final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[length]);
     other.write(buffer, 0);
-    this.wrap(buffer, 0, length);
+    wrap(buffer, 0, length);
   }
 
   public boolean isAccepting() {
@@ -41,12 +41,12 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
   }
 
   public EventScopeInstance setAccepting(final boolean accepting) {
-    this.acceptingProp.setValue(accepting);
+    acceptingProp.setValue(accepting);
     return this;
   }
 
   public EventScopeInstance addInterrupting(final DirectBuffer elementId) {
-    this.interruptingProp.add().wrap(elementId);
+    interruptingProp.add().wrap(elementId);
     return this;
   }
 

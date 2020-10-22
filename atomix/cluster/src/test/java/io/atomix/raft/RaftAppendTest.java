@@ -48,11 +48,11 @@ public class RaftAppendTest {
     // given
 
     // when
-    raftRule.appendEntry();
+    final long commitIndex = raftRule.appendEntry();
 
     // then
-    raftRule.awaitCommit(2);
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitCommit(commitIndex);
+    raftRule.awaitSameLogSizeOnAllNodes(commitIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var logLength = memberLog.values().stream().map(List::size).findFirst().orElseThrow();
@@ -70,7 +70,7 @@ public class RaftAppendTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =

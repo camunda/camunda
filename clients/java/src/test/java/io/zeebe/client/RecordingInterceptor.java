@@ -54,8 +54,8 @@ public final class RecordingInterceptor implements ServerInterceptor {
 
   /** Resets the captured headers and the action to be taken when a call is intercepted. */
   void reset() {
-    this.capturedHeaders = null;
-    this.interceptAction = null;
+    capturedHeaders = null;
+    interceptAction = null;
   }
 
   /**

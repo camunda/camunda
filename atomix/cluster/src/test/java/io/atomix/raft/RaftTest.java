@@ -40,7 +40,7 @@ import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
+import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
@@ -198,8 +198,7 @@ public class RaftTest extends ConcurrentTestCase {
             .withStorageLevel(StorageLevel.DISK)
             .withDirectory(directory)
             .withMaxEntriesPerSegment(10)
-            .withSnapshotStore(
-                new FileBasedSnapshotStoreFactory().createSnapshotStore(directory.toPath(), "1"))
+            .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();
@@ -623,8 +622,8 @@ public class RaftTest extends ConcurrentTestCase {
         .addCommitListener(
             new RaftCommitListener() {
               @Override
-              public <T extends RaftLogEntry> void onCommit(final Indexed<T> entry) {
-                commitIndex.set(entry.index());
+              public <T extends RaftLogEntry> void onCommit(final long index) {
+                commitIndex.set(index);
               }
             });
     appendEntry(leader);
@@ -771,13 +770,13 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+    public void onCommit(final Indexed<ZeebeEntry> indexed) {
+      commitFuture.complete(indexed.index());
     }
 
     @Override
-    public void onCommit(final Indexed<ZeebeEntry> indexed) {
-      commitFuture.complete(indexed.index());
+    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
+      fail("Unexpected write error: " + error.getMessage());
     }
 
     public long awaitCommit() throws Exception {

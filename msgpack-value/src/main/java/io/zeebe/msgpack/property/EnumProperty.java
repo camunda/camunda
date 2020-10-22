@@ -24,6 +24,6 @@ public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValu
 
   public void setValue(final E value) {
     this.value.setValue(value);
-    this.isSet = true;
+    isSet = true;
   }
 }

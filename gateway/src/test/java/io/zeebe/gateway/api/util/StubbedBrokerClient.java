@@ -18,6 +18,7 @@ import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,31 +55,13 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request) {
-    brokerRequests.add(request);
-    try {
-
-      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
-      final BrokerResponse<T> response = requestHandler.handle(request);
-
-      try {
-        if (response.isResponse()) {
-          return CompletableFuture.completedFuture(response);
-        } else if (response.isRejection()) {
-          return CompletableFuture.failedFuture(
-              new BrokerRejectionException(response.getRejection()));
-        } else if (response.isError()) {
-          return CompletableFuture.failedFuture(new BrokerErrorException(response.getError()));
-        } else {
-          return CompletableFuture.failedFuture(
-              new IllegalBrokerResponseException(
-                  "Expected broker response to be either response, rejection, or error, but is neither of them"));
-        }
-      } catch (final RuntimeException e) {
-        return CompletableFuture.failedFuture(new BrokerResponseException(e));
-      }
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
+    final CompletableFuture<BrokerResponse<T>> future = new CompletableFuture<>();
+    sendRequestWithRetry(
+        request,
+        (key, response) ->
+            future.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
+        future::completeExceptionally);
+    return future;
   }
 
   @Override
@@ -96,15 +79,20 @@ public final class StubbedBrokerClient implements BrokerClient {
     try {
       final RequestHandler requestHandler = requestHandlers.get(request.getClass());
       final BrokerResponse<T> response = requestHandler.handle(request);
-      if (response.isResponse()) {
-        responseConsumer.accept(response.getKey(), response.getResponse());
-      } else if (response.isRejection()) {
-        throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
-      } else if (response.isError()) {
-        throwableConsumer.accept(new BrokerErrorException(response.getError()));
-      } else {
-        throwableConsumer.accept(
-            new IllegalBrokerResponseException("Unknown response received: " + response));
+      try {
+        if (response.isResponse()) {
+          responseConsumer.accept(response.getKey(), response.getResponse());
+        } else if (response.isRejection()) {
+          throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
+        } else if (response.isError()) {
+          throwableConsumer.accept(new BrokerErrorException(response.getError()));
+        } else {
+          throwableConsumer.accept(
+              new IllegalBrokerResponseException(
+                  "Expected broker response to be either response, rejection, or error, but is neither of them []"));
+        }
+      } catch (final RuntimeException e) {
+        throwableConsumer.accept(new BrokerResponseException(e));
       }
     } catch (final Exception e) {
       throwableConsumer.accept(new BrokerResponseException(e));
@@ -119,7 +107,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    this.jobsAvailableHandler = handler;
+    jobsAvailableHandler = handler;
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>

@@ -139,7 +139,7 @@ public final class ActorLifecyclePhasesTest {
           public void onActorStarting() {
             super.onActorStarting();
 
-            this.actor.run(
+            actor.run(
                 () -> {
                   throw failure;
                 });
@@ -167,7 +167,7 @@ public final class ActorLifecyclePhasesTest {
           public void onActorClosing() {
             super.onActorClosing();
 
-            this.actor.run(
+            actor.run(
                 () -> {
                   throw failure;
                 });
@@ -199,7 +199,7 @@ public final class ActorLifecyclePhasesTest {
           public void onActorStarting() {
             super.onActorStarting();
 
-            this.actor.run(() -> isInvoked.set(true));
+            actor.run(() -> isInvoked.set(true));
 
             throw failure;
           }
@@ -225,7 +225,7 @@ public final class ActorLifecyclePhasesTest {
           public void onActorStarted() {
             super.onActorStarted();
 
-            this.actor.runUntilDone(
+            actor.runUntilDone(
                 () -> {
                   final int inv = invocations.getAndIncrement();
 
@@ -261,7 +261,7 @@ public final class ActorLifecyclePhasesTest {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            this.actor.run(
+            actor.run(
                 () -> {
                   throw new RuntimeException("foo");
                 });
@@ -292,12 +292,12 @@ public final class ActorLifecyclePhasesTest {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            this.actor.runOnCompletion(
+            actor.runOnCompletion(
                 future,
                 (v, t) -> {
                   throw new RuntimeException("foo");
                 });
-            this.actor.run(() -> future.complete(null));
+            actor.run(() -> future.complete(null));
           }
 
           @Override
@@ -324,8 +324,8 @@ public final class ActorLifecyclePhasesTest {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            this.actor.submit(actor::fail);
-            this.actor.submit(invocations::incrementAndGet);
+            actor.submit(actor::fail);
+            actor.submit(invocations::incrementAndGet);
           }
         };
 

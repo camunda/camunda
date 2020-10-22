@@ -56,16 +56,16 @@ public class ClusterMembershipEvent extends AbstractEvent<ClusterMembershipEvent
     }
     if (obj instanceof ClusterMembershipEvent) {
       final ClusterMembershipEvent other = (ClusterMembershipEvent) obj;
-      return Objects.equals(this.type(), other.type())
-          && Objects.equals(this.subject(), other.subject())
-          && Objects.equals(this.time(), other.time());
+      return Objects.equals(type(), other.type())
+          && Objects.equals(subject(), other.subject())
+          && Objects.equals(time(), other.time());
     }
     return false;
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this.getClass())
+    return MoreObjects.toStringHelper(getClass())
         .add("type", type())
         .add("subject", subject())
         .add("time", time())

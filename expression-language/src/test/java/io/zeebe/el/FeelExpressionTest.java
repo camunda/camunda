@@ -10,6 +10,11 @@ package io.zeebe.el;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.el.impl.FeelExpressionLanguage;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
@@ -17,8 +22,9 @@ public class FeelExpressionTest {
 
   private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
-  private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+  private final ControlledActorClock clock = new ControlledActorClock();
+
+  private final ExpressionLanguage expressionLanguage = new FeelExpressionLanguage(clock);
 
   @Test
   public void stringLiteral() {
@@ -127,6 +133,99 @@ public class FeelExpressionTest {
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");
+  }
+
+  @Test
+  public void accessListElement() {
+    final var context = Map.of("x", asMsgPack("[\"a\",\"b\"]"));
+    final var evaluationResult = evaluateExpression("x[1]", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
+    assertThat(evaluationResult.getString()).isEqualTo("a");
+  }
+
+  @Test
+  public void accessPropertyOfListElement() {
+    final var context = Map.of("x", asMsgPack("[{\"y\":\"a\"},{\"y\":\"b\"}]"));
+    final var evaluationResult = evaluateExpression("x[2].y", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
+    assertThat(evaluationResult.getString()).isEqualTo("b");
+  }
+
+  @Test
+  public void listProjection() {
+    final var context = Map.of("x", asMsgPack("[{\"y\":1},{\"y\":2}]"));
+    final var evaluationResult = evaluateExpression("x.y", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.ARRAY);
+    assertThat(evaluationResult.getList()).isEqualTo(List.of(asMsgPack("1"), asMsgPack("2")));
+  }
+
+  @Test
+  public void getCurrentTime() {
+    final var localDateTime = LocalDateTime.parse("2020-09-21T07:20:00");
+    final var now = localDateTime.atZone(ZoneId.systemDefault());
+    clock.setCurrentTime(now.toInstant());
+
+    final var evaluationResult = evaluateExpression("now()", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DATE_TIME);
+    assertThat(evaluationResult.getDateTime()).isEqualTo(now);
+  }
+
+  @Test
+  public void getCurrentDate() {
+    final var localDateTime = LocalDateTime.parse("2020-09-21T07:20:00");
+    final var now = localDateTime.atZone(ZoneId.systemDefault());
+    clock.setCurrentTime(now.toInstant());
+
+    final var evaluationResult = evaluateExpression("string(today())", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
+    assertThat(evaluationResult.getString()).isEqualTo(now.toLocalDate().toString());
+  }
+
+  @Test
+  public void nullCheckWithNonExistingVariable() {
+    final var evaluationResult = evaluateExpression("x = null", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
+    assertThat(evaluationResult.getBoolean()).isTrue();
+  }
+
+  @Test
+  public void nullCheckWithNestedNonExistingVariable() {
+    final var evaluationResult = evaluateExpression("x.y = null", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
+    assertThat(evaluationResult.getBoolean()).isTrue();
+  }
+
+  @Test
+  public void checkIfDefinedWithNonExistingVariable() {
+    final var evaluationResult = evaluateExpression("is defined(x)", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
+    assertThat(evaluationResult.getBoolean()).isFalse();
+  }
+
+  @Test
+  public void checkIfDefinedWithNestedNonExistingVariable() {
+    final var evaluationResult = evaluateExpression("is defined(x.y)", EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
+    assertThat(evaluationResult.getBoolean()).isFalse();
+  }
+
+  @Test
+  public void checkIfDefinedWithNullVariable() {
+    final var context = Map.of("x", asMsgPack("null"));
+
+    final var evaluationResult = evaluateExpression("is defined(x)", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
+    assertThat(evaluationResult.getBoolean()).isTrue();
   }
 
   private EvaluationResult evaluateExpression(

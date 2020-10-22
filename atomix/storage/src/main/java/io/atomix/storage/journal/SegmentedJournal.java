@@ -58,13 +58,13 @@ public class SegmentedJournal<E> implements Journal<E> {
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final int maxEntriesPerSegment;
-  private final boolean flushOnCommit;
   private final SegmentedJournalWriter<E> writer;
   private volatile long commitIndex;
   private final NavigableMap<Long, JournalSegment<E>> segments = new ConcurrentSkipListMap<>();
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile JournalSegment<E> currentSegment;
   private volatile boolean open = true;
+  private final long minFreeDiskSpace;
 
   public SegmentedJournal(
       final String name,
@@ -74,8 +74,8 @@ public class SegmentedJournal<E> implements Journal<E> {
       final int maxSegmentSize,
       final int maxEntrySize,
       final int maxEntriesPerSegment,
-      final boolean flushOnCommit,
-      final Supplier<JournalIndex> journalIndexFactory) {
+      final Supplier<JournalIndex> journalIndexFactory,
+      final long minFreeSpace) {
     this.name = checkNotNull(name, "name cannot be null");
     this.storageLevel = checkNotNull(storageLevel, "storageLevel cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
@@ -83,14 +83,14 @@ public class SegmentedJournal<E> implements Journal<E> {
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.maxEntriesPerSegment = maxEntriesPerSegment;
-    this.flushOnCommit = flushOnCommit;
     journalMetrics = new JournalMetrics(name);
     this.journalIndexFactory =
         journalIndexFactory == null
             ? () -> new SparseJournalIndex(DEFAULT_INDEX_DENSITY)
             : journalIndexFactory;
+    minFreeDiskSpace = minFreeSpace;
     open();
-    this.writer = openWriter();
+    writer = openWriter();
   }
 
   /**
@@ -196,15 +196,6 @@ public class SegmentedJournal<E> implements Journal<E> {
     return segments.tailMap(index).values();
   }
 
-  /**
-   * Returns the total size of the journal.
-   *
-   * @return the total size of the journal
-   */
-  public long size() {
-    return segments.values().stream().mapToLong(segment -> segment.size()).sum();
-  }
-
   @Override
   public SegmentedJournalWriter<E> writer() {
     return writer;
@@ -222,6 +213,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    * @param mode The mode in which to read entries.
    * @return The Raft log reader.
    */
+  @Override
   public SegmentedJournalReader<E> openReader(
       final long index, final SegmentedJournalReader.Mode mode) {
     final SegmentedJournalReader<E> reader = new SegmentedJournalReader<>(this, index, mode);
@@ -258,9 +250,11 @@ public class SegmentedJournal<E> implements Journal<E> {
 
   /** Opens the segments. */
   private synchronized void open() {
+    final long startTime = System.currentTimeMillis();
     // Load existing log segments from disk.
     for (final JournalSegment<E> segment : loadSegments()) {
       segments.put(segment.descriptor().index(), segment);
+      journalMetrics.incSegmentCount();
     }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
@@ -279,7 +273,9 @@ public class SegmentedJournal<E> implements Journal<E> {
       currentSegment.descriptor().update(System.currentTimeMillis());
 
       segments.put(1L, currentSegment);
+      journalMetrics.incSegmentCount();
     }
+    journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
   }
 
   /**
@@ -293,7 +289,8 @@ public class SegmentedJournal<E> implements Journal<E> {
 
   /** Asserts that enough disk space is available to allocate a new segment. */
   private void assertDiskSpace() {
-    if (directory().getUsableSpace() < maxSegmentSize() * SEGMENT_BUFFER_FACTOR) {
+    if (directory().getUsableSpace()
+        < Math.max((long) maxSegmentSize() * SEGMENT_BUFFER_FACTOR, minFreeDiskSpace)) {
       throw new StorageException.OutOfDiskSpace(
           "Not enough space to allocate a new journal segment");
     }
@@ -316,6 +313,7 @@ public class SegmentedJournal<E> implements Journal<E> {
       currentSegment = createSegment(descriptor);
 
       segments.put(1L, currentSegment);
+      journalMetrics.incSegmentCount();
     }
   }
 
@@ -337,6 +335,7 @@ public class SegmentedJournal<E> implements Journal<E> {
     for (final JournalSegment<E> segment : segments.values()) {
       segment.close();
       segment.delete();
+      journalMetrics.decSegmentCount();
     }
     segments.clear();
 
@@ -349,6 +348,7 @@ public class SegmentedJournal<E> implements Journal<E> {
             .build();
     currentSegment = createSegment(descriptor);
     segments.put(index, currentSegment);
+    journalMetrics.incSegmentCount();
     return currentSegment;
   }
 
@@ -396,6 +396,7 @@ public class SegmentedJournal<E> implements Journal<E> {
     currentSegment = createSegment(descriptor);
 
     segments.put(descriptor.index(), currentSegment);
+    journalMetrics.incSegmentCount();
     return currentSegment;
   }
 
@@ -439,6 +440,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    */
   synchronized void removeSegment(final JournalSegment segment) {
     segments.remove(segment.index());
+    journalMetrics.decSegmentCount();
     segment.close();
     segment.delete();
     resetCurrentSegment();
@@ -655,20 +657,12 @@ public class SegmentedJournal<E> implements Journal<E> {
           segment.compactIndex(index);
           segment.close();
           segment.delete();
+          journalMetrics.decSegmentCount();
         }
         compactSegments.clear();
         resetHead(segmentEntry.getValue().index());
       }
     }
-  }
-
-  /**
-   * Returns whether {@code flushOnCommit} is enabled for the log.
-   *
-   * @return Indicates whether {@code flushOnCommit} is enabled for the log.
-   */
-  boolean isFlushOnCommit() {
-    return flushOnCommit;
   }
 
   /**
@@ -686,7 +680,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    * @param index The index up to which to commit entries.
    */
   void setCommitIndex(final long index) {
-    this.commitIndex = index;
+    commitIndex = index;
   }
 
   /** Raft log builder. */
@@ -698,7 +692,7 @@ public class SegmentedJournal<E> implements Journal<E> {
     private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
     private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
     private static final int DEFAULT_MAX_ENTRIES_PER_SEGMENT = 1024 * 1024;
-
+    private static final long DEFAULT_MIN_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1;
     protected String name = DEFAULT_NAME;
     protected StorageLevel storageLevel = StorageLevel.DISK;
     protected File directory = new File(DEFAULT_DIRECTORY);
@@ -707,8 +701,8 @@ public class SegmentedJournal<E> implements Journal<E> {
     protected int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     protected int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
 
-    private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
     private Supplier<JournalIndex> journalIndexFactory;
+    private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
 
     protected Builder() {}
 
@@ -810,6 +804,19 @@ public class SegmentedJournal<E> implements Journal<E> {
     }
 
     /**
+     * Sets the minimum free disk space to leave when allocating a new segment
+     *
+     * @param freeDiskSpace free disk space in bytes
+     * @return the storage builder
+     * @throws IllegalArgumentException if the {@code freeDiskSpace} is not positive
+     */
+    public Builder<E> withFreeDiskSpace(final long freeDiskSpace) {
+      checkArgument(freeDiskSpace >= 0, "minFreeDiskSpace must be positive");
+      this.freeDiskSpace = freeDiskSpace;
+      return this;
+    }
+
+    /**
      * Sets the maximum number of allows entries per segment, returning the builder for method
      * chaining.
      *
@@ -836,35 +843,6 @@ public class SegmentedJournal<E> implements Journal<E> {
       return this;
     }
 
-    /**
-     * Enables flushing buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @return The storage builder.
-     */
-    public Builder<E> withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
-     * Sets whether to flush buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @param flushOnCommit Whether to flush buffers to disk when entries are committed to a
-     *     segment.
-     * @return The storage builder.
-     */
-    public Builder<E> withFlushOnCommit(final boolean flushOnCommit) {
-      this.flushOnCommit = flushOnCommit;
-      return this;
-    }
-
     public Builder<E> withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
       this.journalIndexFactory = journalIndexFactory;
       return this;
@@ -880,8 +858,8 @@ public class SegmentedJournal<E> implements Journal<E> {
           maxSegmentSize,
           maxEntrySize,
           maxEntriesPerSegment,
-          flushOnCommit,
-          journalIndexFactory);
+          journalIndexFactory,
+          freeDiskSpace);
     }
   }
 }

@@ -69,11 +69,11 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    this.actorName = buildActorName(nodeId, "LogStream-" + partitionId);
+    actorName = buildActorName(nodeId, "LogStream-" + partitionId);
 
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
-    this.closeFuture = new CompletableActorFuture<>();
+    closeFuture = new CompletableActorFuture<>();
 
     try {
       logStorage.open();
@@ -81,10 +81,10 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
       throw new UncheckedIOException(e);
     }
 
-    this.commitPosition = INVALID_ADDRESS;
-    this.readers = new ArrayList<>();
-    this.reader = new LogStreamReaderImpl(logStorage);
-    this.readers.add(reader);
+    commitPosition = INVALID_ADDRESS;
+    readers = new ArrayList<>();
+    reader = new LogStreamReaderImpl(logStorage);
+    readers.add(reader);
 
     internalSetCommitPosition(reader.seekToEnd());
   }
@@ -260,8 +260,12 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
     appenderFuture = appenderOpenFuture;
-    long initialPosition = getLastPosition() + 1;
-    if (initialPosition <= 0) {
+    final var lastPosition = getLastPosition();
+    final long initialPosition;
+    if (lastPosition > 0) {
+      internalSetCommitPosition(lastPosition);
+      initialPosition = lastPosition + 1;
+    } else {
       initialPosition = 1;
     }
 
@@ -284,7 +288,8 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         partitionId,
                         logStorage,
                         subscription,
-                        maxFrameLength);
+                        maxFrameLength,
+                        this::setCommitPosition);
 
                 actorScheduler
                     .submitActor(appender)

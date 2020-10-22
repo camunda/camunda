@@ -44,9 +44,8 @@ public class RaftStorageTest {
     assertEquals(new File(System.getProperty("user.dir")), storage.directory());
     assertEquals(1024 * 1024 * 32, storage.maxLogSegmentSize());
     assertEquals(1024 * 1024, storage.maxLogEntriesPerSegment());
-    assertTrue(storage.dynamicCompaction());
-    assertEquals(.2, storage.freeDiskBuffer(), .01);
-    assertTrue(storage.isFlushOnCommit());
+    assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
+    assertTrue(storage.isFlushExplicitly());
     assertFalse(storage.isRetainStaleSnapshots());
     assertTrue(storage.statistics().getFreeMemory() > 0);
   }
@@ -59,18 +58,16 @@ public class RaftStorageTest {
             .withDirectory(new File(PATH.toFile(), "foo"))
             .withMaxSegmentSize(1024 * 1024)
             .withMaxEntriesPerSegment(1024)
-            .withDynamicCompaction(false)
-            .withFreeDiskBuffer(.5)
-            .withFlushOnCommit(false)
+            .withFreeDiskSpace(100)
+            .withFlushExplicitly(false)
             .withRetainStaleSnapshots()
             .build();
     assertEquals("foo", storage.prefix());
     assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
     assertEquals(1024 * 1024, storage.maxLogSegmentSize());
     assertEquals(1024, storage.maxLogEntriesPerSegment());
-    assertFalse(storage.dynamicCompaction());
-    assertEquals(.5, storage.freeDiskBuffer(), .01);
-    assertFalse(storage.isFlushOnCommit());
+    assertEquals(100, storage.freeDiskSpace());
+    assertFalse(storage.isFlushExplicitly());
     assertTrue(storage.isRetainStaleSnapshots());
   }
 
@@ -79,12 +76,10 @@ public class RaftStorageTest {
     final RaftStorage storage =
         RaftStorage.builder()
             .withDirectory(PATH.toString() + "/baz")
-            .withDynamicCompaction()
-            .withFlushOnCommit()
+            .withFlushExplicitly(true)
             .build();
     assertEquals(new File(PATH.toFile(), "baz"), storage.directory());
-    assertTrue(storage.dynamicCompaction());
-    assertTrue(storage.isFlushOnCommit());
+    assertTrue(storage.isFlushExplicitly());
   }
 
   @Test

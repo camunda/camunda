@@ -34,23 +34,6 @@ public final class ExportersState {
     setPosition(position);
   }
 
-  public void setPositionIfGreater(final String exporterId, final long position) {
-    this.exporterId.wrapString(exporterId);
-
-    setPositionIfGreater(position);
-  }
-
-  private void setPositionIfGreater(final long position) {
-    // not that performant then rocksdb merge but
-    // was currently simpler and easier to implement
-    // if necessary change it again to merge
-
-    final long oldPosition = getPosition();
-    if (oldPosition < position) {
-      setPosition(position);
-    }
-  }
-
   public long getPosition(final String exporterId) {
     this.exporterId.wrapString(exporterId);
     return getPosition();
@@ -68,7 +51,7 @@ public final class ExportersState {
 
   private void setPosition(final long position) {
     this.position.set(position);
-    exporterPositionColumnFamily.put(this.exporterId, this.position);
+    exporterPositionColumnFamily.put(exporterId, this.position);
   }
 
   public void visitPositions(final BiConsumer<String, Long> consumer) {

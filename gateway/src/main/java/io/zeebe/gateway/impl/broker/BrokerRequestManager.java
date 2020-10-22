@@ -10,7 +10,6 @@ package io.zeebe.gateway.impl.broker;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.BrokerResponseException;
-import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.ClientResponseException;
 import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
 import io.zeebe.gateway.cmd.NoTopologyAvailableException;
@@ -21,6 +20,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.gateway.metrics.GatewayMetrics;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.ErrorCode;
@@ -31,6 +31,7 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.agrona.DirectBuffer;
@@ -78,11 +79,11 @@ final class BrokerRequestManager extends Actor {
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(final BrokerRequest<T> request) {
-    return sendRequestWithRetry(request, this.requestTimeout);
+    return sendRequestWithRetry(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
-    return sendRequest(request, this.requestTimeout);
+    return sendRequest(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(
@@ -116,41 +117,76 @@ final class BrokerRequestManager extends Actor {
       nodeIdProvider = determineBrokerNodeIdProvider(request);
     } catch (final PartitionNotFoundException e) {
       returnFuture.completeExceptionally(e);
+      GatewayMetrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), "PARTITION_NOT_FOUND");
       return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
         sender.send(clientTransport, nodeIdProvider, request, requestTimeout);
+    final long startTime = System.currentTimeMillis();
 
-    if (responseFuture != null) {
-      actor.runOnCompletion(
-          responseFuture,
-          (clientResponse, error) -> {
-            try {
-              if (error == null) {
-                final BrokerResponse<T> response = request.getResponse(clientResponse);
-                handleResponse(response, returnFuture);
-              } else {
-                returnFuture.completeExceptionally(error);
+    actor.runOnCompletion(
+        responseFuture,
+        (clientResponse, error) -> {
+          RequestResult result = null;
+          try {
+            if (error == null) {
+              final BrokerResponse<T> response = request.getResponse(clientResponse);
+
+              result = handleResponse(response, returnFuture);
+              if (result.wasProcessed()) {
+                final long elapsedTime = System.currentTimeMillis() - startTime;
+                GatewayMetrics.registerSuccessfulRequest(
+                    request.getPartitionId(), request.getType(), elapsedTime);
+                return;
               }
-            } catch (final RuntimeException e) {
-              returnFuture.completeExceptionally(new ClientResponseException(e));
+            } else {
+              returnFuture.completeExceptionally(error);
             }
-          });
-    } else {
-      returnFuture.completeExceptionally(new ClientOutOfMemoryException());
-    }
+          } catch (final RuntimeException e) {
+            returnFuture.completeExceptionally(new ClientResponseException(e));
+          }
+
+          registerFailure(request, result, error);
+        });
   }
 
-  private <T> void handleResponse(
+  private <T> void registerFailure(
+      final BrokerRequest<T> request, final RequestResult result, final Throwable error) {
+    if (result != null && result.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
+      return;
+    }
+    final String code;
+
+    if (result != null && result.getErrorCode() != ErrorCode.NULL_VAL) {
+      code = result.getErrorCode().toString();
+    } else if (error != null && error.getClass().equals(TimeoutException.class)) {
+      code = "TIMEOUT";
+    } else {
+      code = "UNKNOWN";
+    }
+
+    GatewayMetrics.registerFailedRequest(request.getPartitionId(), request.getType(), code);
+  }
+
+  /**
+   * Returns a successful RequestResult, if the request was successfully processed or rejected.
+   * Otherwise, it returns a RequestResult with the returned error code or with {@link
+   * ErrorCode#NULL_VAL} if something unexpected occurred.
+   */
+  private <T> RequestResult handleResponse(
       final BrokerResponse<T> response, final CompletableFuture<BrokerResponse<T>> responseFuture) {
     try {
       if (response.isResponse()) {
         responseFuture.complete(response);
+        return RequestResult.processed();
       } else if (response.isRejection()) {
         responseFuture.completeExceptionally(new BrokerRejectionException(response.getRejection()));
+        return RequestResult.processed();
       } else if (response.isError()) {
         responseFuture.completeExceptionally(new BrokerErrorException(response.getError()));
+        return RequestResult.failed(response.getError().getCode());
       } else {
         responseFuture.completeExceptionally(
             new IllegalBrokerResponseException(
@@ -159,6 +195,8 @@ final class BrokerRequestManager extends Actor {
     } catch (final RuntimeException e) {
       responseFuture.completeExceptionally(new BrokerResponseException(e));
     }
+
+    return RequestResult.failed(ErrorCode.NULL_VAL);
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
@@ -211,6 +249,7 @@ final class BrokerRequestManager extends Actor {
   }
 
   private interface TransportRequestSender {
+
     ActorFuture<DirectBuffer> send(
         ClientTransport transport,
         Supplier<String> nodeAddressSupplier,
@@ -219,6 +258,7 @@ final class BrokerRequestManager extends Actor {
   }
 
   private class BrokerAddressProvider implements Supplier<String> {
+
     private final ToIntFunction<BrokerClusterState> nodeIdSelector;
 
     BrokerAddressProvider() {
@@ -241,6 +281,32 @@ final class BrokerRequestManager extends Actor {
       } else {
         return null;
       }
+    }
+  }
+
+  private static class RequestResult {
+    private boolean processed;
+    private ErrorCode errorCode;
+
+    RequestResult(final boolean processed, final ErrorCode errorCode) {
+      this.processed = processed;
+      this.errorCode = errorCode;
+    }
+
+    boolean wasProcessed() {
+      return processed;
+    }
+
+    public ErrorCode getErrorCode() {
+      return errorCode;
+    }
+
+    static RequestResult processed() {
+      return new RequestResult(true, null);
+    }
+
+    static RequestResult failed(final ErrorCode code) {
+      return new RequestResult(false, code);
     }
   }
 }

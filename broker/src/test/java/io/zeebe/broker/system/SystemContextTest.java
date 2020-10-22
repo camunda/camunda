@@ -15,6 +15,8 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 public final class SystemContextTest {
 
@@ -118,6 +120,34 @@ public final class SystemContextTest {
   }
 
   @Test
+  public void shouldThrowExceptionIfBatchSizeIsNegative() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage(
+        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfBatchSizeIsTooLarge() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage(
+        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
   public void shouldNotThrowExceptionIfSnapshotPeriodIsEqualToOneMinute() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
@@ -129,20 +159,6 @@ public final class SystemContextTest {
     // then
     assertThat(systemContext.getBrokerConfiguration().getData().getSnapshotPeriod())
         .isEqualTo(Duration.ofMinutes(1));
-  }
-
-  @Test
-  public void shouldInvalidateConfigIfUseMmapTrueWithReplication() {
-    // given
-    final BrokerCfg brokerCfg = new BrokerCfg();
-    brokerCfg.getData().setUseMmap(true);
-    brokerCfg.getCluster().setClusterSize(2);
-    brokerCfg.getCluster().setReplicationFactor(2);
-
-    // then
-    expectedException.expect(IllegalStateException.class);
-    expectedException.expectMessage("memory mapped");
-    initSystemContext(brokerCfg);
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {

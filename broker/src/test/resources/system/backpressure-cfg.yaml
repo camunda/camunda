@@ -10,7 +10,7 @@ zeebe:
         minLimit: 5
         maxLimit: 150
         backoffRatio: 0.75
-      fixedLimit:
+      fixed:
         limit: 12
       vegas:
         alpha: 4

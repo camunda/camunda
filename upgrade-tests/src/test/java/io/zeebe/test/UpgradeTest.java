@@ -10,7 +10,6 @@ package io.zeebe.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.UpgradeTestCase.TestCaseBuilder;
@@ -26,7 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.agrona.IoUtil;
-import org.assertj.core.util.Files;
+import org.awaitility.Awaitility;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -44,6 +44,7 @@ public class UpgradeTest {
   public static final String CHILD_PROCESS_ID = "childProc";
   private static final String CURRENT_VERSION = "current-test";
   private static final String TASK = "task";
+  private static final String JOB = TASK;
   private static final String MESSAGE = "message";
   private static final File SHARED_DATA;
 
@@ -100,6 +101,42 @@ public class UpgradeTest {
                 .afterUpgrade(UpgradeTest::publishMessage)
                 .done()
           },
+          // TODO (saig0): enable the test case when upgrading from 0.25.0
+          // - an upgrade from 0.24.0 is not possible because a bug fix (#4959) causes an issue in
+          // the reprocessing (#5268)
+          //            {
+          //            "message event sub-process",
+          //            scenario()
+          //                .deployWorkflow(
+          //                    Bpmn.createExecutableProcess(PROCESS_ID)
+          //                        .eventSubProcess(
+          //                            "event-subprocess",
+          //                            eventSubProcess ->
+          //                                eventSubProcess
+          //                                    .startEvent()
+          //                                    .message(
+          //                                        m ->
+          // m.name(MESSAGE).zeebeCorrelationKeyExpression("key"))
+          //                                    .interrupting(false)
+          //                                    .endEvent())
+          //                        .startEvent()
+          //                        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
+          //                        .endEvent()
+          //                        .done())
+          //                .createInstance(Map.of("key", "123"))
+          //                .beforeUpgrade(
+          //                    state -> {
+          //                      publishMessage(state, -1L, -1L);
+          //
+          //                      TestUtil.waitUntil(
+          //                          () -> state.hasElementInState("event-subprocess",
+          // "ELEMENT_COMPLETED"));
+          //
+          //                      return activateJob(state);
+          //                    })
+          //                .afterUpgrade(UpgradeTest::completeJob)
+          //                .done()
+          //          },
           {
             "timer",
             scenario()
@@ -148,34 +185,82 @@ public class UpgradeTest {
                 .createInstance()
                 .afterUpgrade(
                     (state, wfKey, key) -> {
-                      final ActivatedJob job =
+                      TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+
+                      final var jobsResponse =
                           state
                               .client()
                               .newActivateJobsCommand()
                               .jobType(TASK)
                               .maxJobsToActivate(1)
                               .send()
-                              .join()
-                              .getJobs()
-                              .iterator()
-                              .next();
+                              .join();
+                      assertThat(jobsResponse.getJobs()).hasSize(1);
 
-                      state.client().newCompleteCommand(job.getKey()).send().join();
+                      TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
+
+                      state
+                          .client()
+                          .newCompleteCommand(jobsResponse.getJobs().get(0).getKey())
+                          .send()
+                          .join();
                       TestUtil.waitUntil(
                           () -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
                     })
+                .done()
+          },
+          {
+            "parallel gateway",
+            scenario()
+                .deployWorkflow(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .parallelGateway("fork")
+                        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
+                        .parallelGateway("join")
+                        .moveToNode("fork")
+                        .sequenceFlowId("to-join")
+                        .connectTo("join")
+                        .endEvent()
+                        .done())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::activateJob)
+                .afterUpgrade(UpgradeTest::completeJob)
+                .done()
+          },
+          {
+            "exclusive gateway",
+            scenario()
+                .deployWorkflow(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .exclusiveGateway()
+                        .sequenceFlowId("s1")
+                        .conditionExpression("x > 5")
+                        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
+                        .endEvent()
+                        .moveToLastExclusiveGateway()
+                        .sequenceFlowId("s2")
+                        .defaultFlow()
+                        .serviceTask("other-task", t -> t.zeebeJobType("other-task"))
+                        .endEvent()
+                        .done())
+                .createInstance(Map.of("x", 10))
+                .beforeUpgrade(UpgradeTest::activateJob)
+                .afterUpgrade(UpgradeTest::completeJob)
                 .done()
           }
         });
   }
 
+  @Ignore
   @Test
   public void oldGatewayWithNewBroker() {
     // given
     state
         .broker(CURRENT_VERSION, tmpFolder.getRoot().getPath())
         .withStandaloneGateway(LAST_VERSION)
-        .start();
+        .start(true);
     final long wfInstanceKey = testCase.setUp(state.client());
 
     // when
@@ -186,33 +271,56 @@ public class UpgradeTest {
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/5385")
   @Test
   public void upgradeWithSnapshot() {
-    upgradeZeebe(false);
+    upgradeZeebe(true);
   }
 
   @Test
   public void upgradeWithoutSnapshot() {
-    upgradeZeebe(true);
+    upgradeZeebe(false);
   }
 
-  private void upgradeZeebe(final boolean deleteSnapshot) {
+  private void upgradeZeebe(final boolean withSnapshot) {
     // given
-    state.broker(LAST_VERSION, tmpFolder.getRoot().getPath()).start();
+    state.broker(LAST_VERSION, tmpFolder.getRoot().getPath()).start(true);
     final long wfInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
 
     // when
-    state.close();
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
 
-    assertThat(snapshot).exists();
-    if (deleteSnapshot) {
-      Files.delete(snapshot);
+    if (withSnapshot) {
+
+      state.close();
+
+      state.broker(LAST_VERSION, tmpFolder.getRoot().getPath()).start(false);
+
+      // since 0.24, no snapshot is created when the broker is closed
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(2))
+          .untilAsserted(
+              () ->
+                  assertThat(snapshot)
+                      .describedAs("Expected that a snapshot is created")
+                      .exists()
+                      .isNotEmptyDirectory());
+
+      state.close();
+
+    } else {
+      // since 0.24, no snapshot is created when the broker is closed
+      state.close();
+
+      assertThat(snapshot)
+          .describedAs("Expected that no snapshot is created")
+          .exists()
+          .isEmptyDirectory();
     }
 
     // then
-    state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start();
+    state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start(true);
     testCase.runAfter(state, wfInstanceKey, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
@@ -227,10 +335,13 @@ public class UpgradeTest {
   }
 
   private static long activateJob(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+
     final ActivateJobsResponse jobsResponse =
         state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+    assertThat(jobsResponse.getJobs()).hasSize(1);
 
-    TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
+    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
     return jobsResponse.getJobs().get(0).getKey();
   }
 
@@ -261,6 +372,7 @@ public class UpgradeTest {
         .messageName(MESSAGE)
         .correlationKey("123")
         .timeToLive(Duration.ofMinutes(5))
+        .variables(Map.of("x", 1))
         .send()
         .join();
 

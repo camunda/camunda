@@ -30,8 +30,8 @@ public class Node implements Configured<NodeConfig> {
   private final Address address;
 
   public Node(final NodeConfig config) {
-    this.id = config.getId();
-    this.address = checkNotNull(config.getAddress(), "address cannot be null");
+    id = config.getId();
+    address = checkNotNull(config.getAddress(), "address cannot be null");
   }
 
   protected Node(final NodeId id, final Address address) {

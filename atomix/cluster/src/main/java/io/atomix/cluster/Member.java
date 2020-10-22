@@ -35,11 +35,11 @@ public class Member extends Node {
 
   public Member(final MemberConfig config) {
     super(config);
-    this.id = config.getId();
-    this.zone = config.getZoneId();
-    this.rack = config.getRackId();
-    this.host = config.getHostId();
-    this.properties = new Properties();
+    id = config.getId();
+    zone = config.getZoneId();
+    rack = config.getRackId();
+    host = config.getHostId();
+    properties = new Properties();
     properties.putAll(config.getProperties());
   }
 

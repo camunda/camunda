@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -81,7 +82,7 @@ public final class LogStorageAppenderTest {
 
     appender =
         new LogStorageAppender(
-            "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
+            "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE, l -> {});
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
     reader = new LogStreamReaderImpl(logStorage);
   }
@@ -155,29 +156,38 @@ public final class LogStorageAppenderTest {
     final AtomicReference<Throwable> err = new AtomicReference<>();
 
     logStorageRule.setPositionListener(i -> committed.countDown());
-    final long firstPosition = writer.valueWriter(value).tryWrite();
-    schedulerRule.submitActor(appender).join();
-
-    // when
     logStorageRule.setWriteErrorListener(
         throwable -> {
           err.set(throwable);
           failed.countDown();
         });
+
+    final AtomicLong expectedPos = new AtomicLong(INITIAL_POSITION);
     when(subscription.peekBlock(any(), anyInt(), anyBoolean()))
         .then(
             a -> {
-              // change the entry's position
               final Object result = a.callRealMethod();
               final BlockPeek block = a.getArgument(0);
               assertThat(LogEntryDescriptor.getPosition(block.getBuffer(), 0))
-                  .isEqualTo(INITIAL_POSITION + 1);
-              LogEntryDescriptor.setPosition(
-                  block.getBuffer(), DataFrameDescriptor.messageOffset(0), WRONG_POSITION);
+                  .isEqualTo(expectedPos.get());
+
+              // corrupt second entry
+              if (expectedPos.get() != INITIAL_POSITION) {
+                LogEntryDescriptor.setPosition(
+                    block.getBuffer(), DataFrameDescriptor.messageOffset(0), WRONG_POSITION);
+              } else {
+                expectedPos.incrementAndGet();
+              }
+
               return result;
             });
+
+    // when
+    final long firstPosition = writer.valueWriter(value).tryWrite();
+    schedulerRule.submitActor(appender).join();
     assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
-    final var position = writer.valueWriter(value).tryWrite();
+
+    final var secondPosition = writer.valueWriter(value).tryWrite();
 
     // then
     assertThat(failed.await(5, TimeUnit.SECONDS)).isTrue();
@@ -186,7 +196,7 @@ public final class LogStorageAppenderTest {
             String.format(
                 "Unexpected position %d was encountered after position %d when appending positions <%d, %d>.",
                 WRONG_POSITION, firstPosition, WRONG_POSITION, WRONG_POSITION));
-    assertThat(reader.seek(position)).isFalse();
+    assertThat(reader.seek(secondPosition)).isFalse();
     assertThat(reader.hasNext()).isFalse();
   }
 

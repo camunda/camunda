@@ -55,7 +55,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   public ElasticsearchContainer withUser(final String username, final String password) {
     this.username = username;
     this.password = password;
-    this.isAuthEnabled = true;
+    isAuthEnabled = true;
 
     return withXpack()
         .withEnv("xpack.security.enabled", "true")
@@ -71,7 +71,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
 
   @Override
   public ElasticsearchContainer withKeyStore(final String keyStore) {
-    this.isSslEnabled = true;
+    isSslEnabled = true;
 
     return withXpack()
         .withClasspathResourceMapping(

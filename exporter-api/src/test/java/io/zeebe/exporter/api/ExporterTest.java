@@ -37,7 +37,7 @@ public final class ExporterTest {
           }
 
           @Override
-          public void export(final Record record) {}
+          public void export(final Record<?> record) {}
         };
 
     // then

@@ -76,11 +76,11 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
   }
 
   static ZeebeClient createZeebeClient(final GatewayCfg gatewayCfg, final Duration defaultTimeout) {
-    final String brokerContactPoint = getContactPoint(gatewayCfg);
+    final String gatewayAddress = getContactPoint(gatewayCfg);
 
     ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder()
-            .brokerContactPoint(brokerContactPoint)
+            .gatewayAddress(gatewayAddress)
             .defaultRequestTimeout(defaultTimeout);
 
     if (gatewayCfg.getSecurity().isEnabled()) {

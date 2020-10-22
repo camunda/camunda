@@ -4,9 +4,17 @@
 
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
+def masterBranchName = 'master'
+def isMasterBranch = env.BRANCH_NAME == masterBranchName
+def developBranchName = 'develop'
+def isDevelopBranch = env.BRANCH_NAME == developBranchName
+
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
-def daysToKeep = (env.BRANCH_NAME=='develop') ? '7' : '-1'
-def numToKeep = (env.BRANCH_NAME=='develop') ? '-1' : '10'
+def daysToKeep = isDevelopBranch ? '7' : '-1'
+def numToKeep = isDevelopBranch ? '-1' : '10'
+
+//the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
+def cronTrigger = isDevelopBranch ? '@hourly' : ''
 
 pipeline {
     agent {
@@ -21,6 +29,10 @@ pipeline {
     environment {
       NEXUS = credentials("camunda-nexus")
       SONARCLOUD_TOKEN = credentials('zeebe-sonarcloud-token')
+    }
+
+    triggers {
+      cron(cronTrigger)
     }
 
     options {
@@ -118,7 +130,7 @@ pipeline {
 
                 stage('Unit (Java)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'java'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java-testrun'
                     }
 
                     steps {
@@ -131,13 +143,13 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
                 stage('Unit 8 (Java 8)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8-testrun'
                     }
 
                     steps {
@@ -150,14 +162,14 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
 
                 stage('IT (Java)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'it'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
                     }
 
                     steps {
@@ -170,7 +182,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
@@ -188,8 +200,22 @@ pipeline {
             }
 
             post {
+                always {
+                    jacoco(
+                          execPattern: '**/*.exec',
+                          classPattern: '**/target/classes',
+                          sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
+                          exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
+                                            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
+                                            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
+                          runAlways: true
+                    )
+                    zip zipFile: 'test-coverage-reports.zip', archive: true, glob: "**/target/site/jacoco/**"
+                }
                 failure {
-                    archive "**/*/surefire-reports/*-output.txt"
+                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                    archive "**/hs_err_*.log"
+
                     script {
                       if (fileExists('./target/FlakyTests.txt')) {
                           currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
@@ -200,7 +226,7 @@ pipeline {
         }
 
         stage('Upload') {
-            when { branch 'develop' }
+            when { allOf { branch developBranchName ; not {  triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
                     container('maven') {
@@ -213,9 +239,11 @@ pipeline {
         }
 
         stage('Post') {
+            when { not { triggeredBy 'TimerTrigger' } }
+
             parallel {
                 stage('Docker') {
-                    when { branch 'develop' }
+                    when { branch developBranchName }
 
                     environment {
                         VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -226,20 +254,20 @@ pipeline {
                             build job: 'zeebe-docker', parameters: [
                                 string(name: 'BRANCH', value: env.BRANCH_NAME),
                                 string(name: 'VERSION', value: env.VERSION),
-                                booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master'),
-                                booleanParam(name: 'PUSH', value: env.BRANCH_NAME == 'develop')
+                                booleanParam(name: 'IS_LATEST', value: isMasterBranch),
+                                booleanParam(name: 'PUSH', value: isDevelopBranch)
                             ]
                         }
                     }
                 }
 
                 stage('Docs') {
-                    when { anyOf { branch 'master'; branch 'develop' } }
+                    when { anyOf { branch masterBranchName; branch developBranchName } }
                     steps {
                         retry(3) {
                             build job: 'zeebe-docs', parameters: [
                                 string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
+                                booleanParam(name: 'LIVE', value: isMasterBranch)
                             ]
                         }
                     }
@@ -262,7 +290,12 @@ pipeline {
         }
         changed {
             script {
-                if (env.BRANCH_NAME == 'develop') {
+                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                    return
+                }
+
+                if (hasBuildResultChanged()) {
+                    echo "Send slack message"
                     slackSend(
                         channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
                         message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")

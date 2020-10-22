@@ -9,16 +9,16 @@ package io.zeebe.gateway.impl.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.grpc.stub.StreamObserver;
+import com.google.rpc.Code;
+import com.google.rpc.Status;
+import io.grpc.protobuf.StatusProto;
 import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.metrics.LongPollingMetrics;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -37,6 +37,8 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final String ERROR_MSG_ACTIVATED_EXHAUSTED =
+      "Expected to activate jobs of type '%s', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.";
 
   private final RoundRobinActivateJobsHandler activateJobsHandler;
   private final BrokerClient brokerClient;
@@ -56,7 +58,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
       final long probeTimeoutMillis,
       final int failedAttemptThreshold) {
     this.brokerClient = brokerClient;
-    this.activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
+    activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
@@ -77,7 +79,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   @Override
   public void activateJobs(
       final ActivateJobsRequest request,
-      final StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final LongPollingActivateJobsRequest longPollingRequest =
         new LongPollingActivateJobsRequest(request, responseObserver);
     activateJobs(longPollingRequest);
@@ -97,7 +99,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
         });
   }
 
-  private InFlightLongPollingActivateJobsRequestsState getJobTypeState(String jobType) {
+  private InFlightLongPollingActivateJobsRequestsState getJobTypeState(final String jobType) {
     return jobTypeState.computeIfAbsent(
         jobType, type -> new InFlightLongPollingActivateJobsRequestsState(type, metrics));
   }
@@ -131,21 +133,23 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private void onCompleted(
       final InFlightLongPollingActivateJobsRequestsState state,
       final LongPollingActivateJobsRequest request,
-      final Integer remainingAmount,
-      final Boolean containedResourceExhaustedResponse) {
+      final int remainingAmount,
+      final boolean containedResourceExhaustedResponse) {
 
     if (remainingAmount == request.getMaxJobsToActivate()) {
       if (containedResourceExhaustedResponse) {
         actor.submit(
             () -> {
               state.removeActiveRequest(request);
-              request
-                  .getResponseObserver()
-                  .onError(
-                      new BrokerErrorException(
-                          new BrokerError(
-                              ErrorCode.RESOURCE_EXHAUSTED,
-                              "Some brokers returned resource exhausted")));
+              final var type = request.getType();
+              final var errorMsg = String.format(ERROR_MSG_ACTIVATED_EXHAUSTED, type);
+              final var status =
+                  Status.newBuilder()
+                      .setCode(Code.RESOURCE_EXHAUSTED_VALUE)
+                      .setMessage(errorMsg)
+                      .build();
+
+              request.getResponseObserver().onError(StatusProto.toStatusException(status));
             });
       } else {
         actor.submit(

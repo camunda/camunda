@@ -31,7 +31,7 @@ In the default configuration, the liveness probe is comprised of the following h
 * Liveness Disk Space - checks that the free disk space is greater than 1 MB
 * Liveness Memory - checks that at least 1% of max memory (heap) are still available
 
-Note that health indicators with the *liveness* prefix are intended to be customized for the livness probe. This allows defining tighter thresholds (e.g. for free memory 1% for liveness vs. 10% for health), as well as adding tolerance for short downtimes (e.g. gateway has no awereness of other nodes in the cluster for more than 5 minutes).
+Note that health indicators with the *liveness* prefix are intended to be customized for the liveness probe. This allows defining tighter thresholds (e.g. for free memory 1% for liveness vs. 10% for health), as well as adding tolerance for short downtimes (e.g. gateway has no awareness of other nodes in the cluster for more than 5 minutes).
 
 ## Customizing Health Probes
 
@@ -57,7 +57,7 @@ Settings for gateway started health indicator:
 
 ### Gateway Responsive
 
-Settings for gateway repsonsiveness health indicator:
+Settings for gateway responsiveness health indicator:
 * `management.health.gateway-responsive.enabled=true` - enables (default) or disables this health indicator
 * `management.health.gateway-responsive.requestTimeout=500ms` - defines the timeout for the request; if the test completes before the timeout, the health status is _UP_, otherwise it is _DOWN_
 * `management.health.liveness.gateway-responsive.requestTimeout=5s` - defines the timeout for the request for liveness probe; if the request completes before the timeout, the health status is _UP_

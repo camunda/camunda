@@ -27,10 +27,10 @@ public class ResponseChecker extends Thread {
 
   private static final Logger LOG = LoggerFactory.getLogger(ResponseChecker.class);
 
-  private final BlockingQueue<Future> futures;
+  private final BlockingQueue<Future<?>> futures;
   private volatile boolean shuttingDown = false;
 
-  public ResponseChecker(BlockingQueue<Future> futures) {
+  public ResponseChecker(BlockingQueue<Future<?>> futures) {
     this.futures = futures;
   }
 

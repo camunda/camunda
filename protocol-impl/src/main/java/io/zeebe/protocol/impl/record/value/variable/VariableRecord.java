@@ -14,12 +14,10 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class VariableRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated, VariableRecordValue {
+public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final BinaryProperty valueProp = new BinaryProperty("value");
@@ -28,7 +26,7 @@ public final class VariableRecord extends UnifiedRecordValue
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
   public VariableRecord() {
-    this.declareProperty(nameProp)
+    declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
         .declareProperty(workflowInstanceKeyProp)
@@ -54,22 +52,22 @@ public final class VariableRecord extends UnifiedRecordValue
   }
 
   public VariableRecord setWorkflowKey(final long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
   public VariableRecord setScopeKey(final long scopeKey) {
-    this.scopeKeyProp.setValue(scopeKey);
+    scopeKeyProp.setValue(scopeKey);
     return this;
   }
 
   public VariableRecord setValue(final DirectBuffer value) {
-    this.valueProp.setValue(value);
+    valueProp.setValue(value);
     return this;
   }
 
   public VariableRecord setName(final DirectBuffer name) {
-    this.nameProp.setValue(name);
+    nameProp.setValue(name);
     return this;
   }
 
@@ -88,7 +86,7 @@ public final class VariableRecord extends UnifiedRecordValue
   }
 
   public VariableRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 }

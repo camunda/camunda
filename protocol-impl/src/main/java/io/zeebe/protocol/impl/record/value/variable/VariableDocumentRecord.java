@@ -30,13 +30,13 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public VariableDocumentRecord() {
-    this.declareProperty(scopeKeyProperty)
+    declareProperty(scopeKeyProperty)
         .declareProperty(updateSemanticsProperty)
         .declareProperty(variablesProperty);
   }
 
   public VariableDocumentRecord wrap(final VariableDocumentRecord other) {
-    this.setScopeKey(other.getScopeKey())
+    setScopeKey(other.getScopeKey())
         .setVariables(other.getVariablesBuffer())
         .setUpdateSemantics(other.getUpdateSemantics());
 

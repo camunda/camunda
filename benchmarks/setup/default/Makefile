@@ -7,6 +7,12 @@ zeebe:
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
+# Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
+# To apply the templates use k apply -f zeebe-cluster/templates/
+.PHONY: zeebe-template
+zeebe-template:
+	-helm template default zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds --output-dir .
+
 .PHONY: update
 update:
 	-helm upgrade default zeebe/zeebe-cluster -f zeebe-values.yaml
@@ -36,7 +42,7 @@ clean-zeebe:
 	-helm uninstall default
 	-kubectl delete -f curator-cronjob.yaml
 	-kubectl delete -f curator-configmap.yaml
-	-kubectl delete pvc -l app=default-zeebe
+	-kubectl delete pvc -l app.kubernetes.io/instance=default
 	-kubectl delete pvc -l app=elasticsearch-master
 
 .PHONY: clean-starter

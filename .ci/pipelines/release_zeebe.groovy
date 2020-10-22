@@ -88,7 +88,9 @@ spec:
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/compat-update.sh'
+                }
+                container('golang') {
+                    sh '.ci/scripts/release/prepare-go.sh'
                 }
             }
         }
@@ -118,11 +120,35 @@ spec:
             }
         }
 
+        stage('Update Compat Version') {
+            steps {
+                container('golang') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/compat-update-go.sh'
+                    }
+                }
+                container('maven') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/compat-update-java.sh'
+                        }
+                    }
+                }
+            }
+        }
+
+
         stage('GitHub Release') {
             when { expression { return params.PUSH_CHANGES } }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/release/github-release.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/github-release.sh'
+                    }
+                }
+
+                container('golang') {
+                    sh '.ci/scripts/release/post-github.sh'
                 }
             }
         }
@@ -153,8 +179,8 @@ spec:
     post {
         failure {
             slackSend(
-              channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-              message: "Release job build ${currentBuild.absoluteUrl} failed!")
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Release job build ${currentBuild.absoluteUrl} failed!")
         }
     }
 }

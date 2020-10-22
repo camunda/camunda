@@ -20,8 +20,6 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.MembershipCfg;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
@@ -116,11 +114,6 @@ public class StandaloneGateway {
                 LogManager.shutdown();
               }
             });
-
-    final LegacyConfigurationSupport legacyConfigurationSupport =
-        new LegacyConfigurationSupport(Scope.GATEWAY);
-    legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(
-        args, "gateway.yaml.template");
 
     SpringApplication.run(Launcher.class, args);
   }

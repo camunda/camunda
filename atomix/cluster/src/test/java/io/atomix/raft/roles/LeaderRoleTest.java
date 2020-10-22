@@ -26,9 +26,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
+import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -39,6 +40,7 @@ import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -65,6 +67,7 @@ public class LeaderRoleTest {
     when(context.getName()).thenReturn("leader");
     when(context.getElectionTimeout()).thenReturn(Duration.ofMillis(100));
     when(context.getHeartbeatInterval()).thenReturn(Duration.ofMillis(100));
+    when(context.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
 
     final SingleThreadContext threadContext = new SingleThreadContext("leader");
     when(context.getThreadContext()).thenReturn(threadContext);
@@ -79,7 +82,7 @@ public class LeaderRoleTest {
             });
     when(context.getLogWriter()).thenReturn(writer);
 
-    final PersistedSnapshotStore persistedSnapshotStore = mock(PersistedSnapshotStore.class);
+    final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
 
@@ -370,7 +373,7 @@ public class LeaderRoleTest {
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertTrue(catchedError.get() instanceof IllegalStateException);
+    assertTrue(catchedError.get() instanceof NoLeader);
     assertEquals(
         "LeaderRole is closed and cannot be used as appender", catchedError.get().getMessage());
   }

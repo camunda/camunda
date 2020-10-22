@@ -70,7 +70,7 @@ public abstract class AbstractBuffer implements Buffer {
     }
     this.bytes = bytes;
     this.offset = offset;
-    this.capacity = 0;
+    capacity = 0;
     this.initialCapacity = initialCapacity;
     this.maxCapacity = maxCapacity;
     capacity(initialCapacity);
@@ -82,7 +82,7 @@ public abstract class AbstractBuffer implements Buffer {
   protected AbstractBuffer reset(final int offset, final int capacity, final int maxCapacity) {
     this.offset = offset;
     this.capacity = 0;
-    this.initialCapacity = capacity;
+    initialCapacity = capacity;
     this.maxCapacity = maxCapacity;
     capacity(initialCapacity);
     references.set(0);
@@ -354,7 +354,7 @@ public abstract class AbstractBuffer implements Buffer {
 
   @Override
   public Buffer mark() {
-    this.mark = position;
+    mark = position;
     return this;
   }
 
@@ -506,7 +506,7 @@ public abstract class AbstractBuffer implements Buffer {
   @Override
   public Buffer write(final ByteBuffer src) {
     final int length = src.remaining();
-    this.bytes.write(checkWrite(length), src, src.position(), length);
+    bytes.write(checkWrite(length), src, src.position(), length);
     return this;
   }
 
@@ -616,7 +616,7 @@ public abstract class AbstractBuffer implements Buffer {
   @Override
   public Buffer write(
       final int offset, final ByteBuffer src, final int srcOffset, final int length) {
-    this.bytes.write(checkWrite(offset, length), src, srcOffset, length);
+    bytes.write(checkWrite(offset, length), src, srcOffset, length);
     return this;
   }
 
@@ -701,7 +701,7 @@ public abstract class AbstractBuffer implements Buffer {
 
   @Override
   public Buffer read(final ByteBuffer buffer) {
-    this.bytes.read(checkRead(buffer.remaining()), buffer, buffer.position(), buffer.remaining());
+    bytes.read(checkRead(buffer.remaining()), buffer, buffer.position(), buffer.remaining());
     return this;
   }
 
@@ -725,10 +725,10 @@ public abstract class AbstractBuffer implements Buffer {
     if (readBoolean(position)) {
       final byte[] bytes = new byte[readUnsignedShort(position + BOOLEAN)];
       read(position + BOOLEAN + SHORT, bytes, 0, bytes.length);
-      this.position += BOOLEAN + SHORT + bytes.length;
+      position += BOOLEAN + SHORT + bytes.length;
       return new String(bytes, charset);
     } else {
-      this.position += BOOLEAN;
+      position += BOOLEAN;
     }
     return null;
   }
@@ -775,8 +775,8 @@ public abstract class AbstractBuffer implements Buffer {
   /** Checks bounds for a read for the given length. */
   protected int checkRead(final int length) {
     checkRead(position, length);
-    final int previousPosition = this.position;
-    this.position = previousPosition + length;
+    final int previousPosition = position;
+    position = previousPosition + length;
     return offset(previousPosition);
   }
 
@@ -810,8 +810,8 @@ public abstract class AbstractBuffer implements Buffer {
   /** Checks bounds for a write of the given length. */
   protected int checkWrite(final int length) {
     checkWrite(position, length);
-    final int previousPosition = this.position;
-    this.position = previousPosition + length;
+    final int previousPosition = position;
+    position = previousPosition + length;
     return offset(previousPosition);
   }
 
@@ -903,7 +903,7 @@ public abstract class AbstractBuffer implements Buffer {
   @Override
   public Buffer read(
       final int offset, final ByteBuffer dst, final int dstOffset, final int length) {
-    this.bytes.read(checkRead(offset, length), dst, dstOffset, length);
+    bytes.read(checkRead(offset, length), dst, dstOffset, length);
     return this;
   }
 
