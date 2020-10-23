@@ -28,7 +28,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>0.25.0-rc1</version.zeebe>
+    <version.zeebe>0.25.0</version.zeebe>
     <version.log4j>2.13.3</version.log4j>
     <version.elasticsearch>6.8.12</version.elasticsearch>
     <version.spring.boot>2.3.4.RELEASE</version.spring.boot>
@@ -155,7 +155,7 @@
         <artifactId>micrometer-registry-prometheus</artifactId>
         <version>${version.micrometer}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>io.micrometer</groupId>
         <artifactId>micrometer-core</artifactId>
