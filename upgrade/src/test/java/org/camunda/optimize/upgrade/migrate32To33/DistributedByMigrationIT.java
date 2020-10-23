@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.upgrade.migrate32To33;
 
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
-import org.camunda.optimize.upgrade.migrate32To33.indices.SingleReportData32Dto;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportData32Dto.Fields.configuration);
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);
@@ -80,7 +80,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportData32Dto.Fields.configuration);
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);

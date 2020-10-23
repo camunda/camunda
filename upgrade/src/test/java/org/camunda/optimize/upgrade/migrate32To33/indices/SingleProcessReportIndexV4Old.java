@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.migrate32To33.indices;
 
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -34,16 +36,16 @@ public class SingleProcessReportIndexV4Old extends AbstractReportIndex {
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties")
-          .startObject(ProcessReportData32Dto.Fields.view)
+          .startObject(ProcessReportDataDto.Fields.view)
             .field("enabled", false)
           .endObject()
-          .startObject(ProcessReportData32Dto.Fields.groupBy)
+          .startObject(ProcessReportDataDto.Fields.groupBy)
             .field("enabled", false)
           .endObject()
-          .startObject(ProcessReportData32Dto.Fields.filter)
+          .startObject(ProcessReportDataDto.Fields.filter)
             .field("enabled", false)
           .endObject()
-          .startObject(SingleReportData32Dto.Fields.configuration)
+          .startObject(SingleReportDataDto.Fields.configuration.name())
             .field("type", "object")
             .field("dynamic", true)
             .startObject("properties")

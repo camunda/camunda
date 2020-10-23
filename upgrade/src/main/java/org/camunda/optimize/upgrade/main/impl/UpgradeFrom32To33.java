@@ -65,8 +65,7 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       new UpdateDataStep(EVENT_PROCESS_DEFINITION_INDEX_NAME, matchAllQuery(), script)
     );
   }
-
-
+  
   private UpgradeStep migrateDistributedByField(final String indexName) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()

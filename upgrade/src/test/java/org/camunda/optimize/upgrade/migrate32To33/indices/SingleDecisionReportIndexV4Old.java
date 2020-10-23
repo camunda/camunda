@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.migrate32To33.indices;
 
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -34,7 +35,7 @@ public class SingleDecisionReportIndexV4Old extends AbstractReportIndex {
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties")
-          .startObject(SingleReportData32Dto.Fields.configuration)
+          .startObject(SingleReportDataDto.Fields.configuration.name())
             .field("type", "object")
             .field("dynamic", true)
             .startObject("properties")
