@@ -1466,7 +1466,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
         );
       }
     } catch (IOException e) {
-      String message = "Could not delete process instance!";
+      String message = "Could not delete process definition!";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }

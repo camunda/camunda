@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -224,7 +225,7 @@ public class EngineContext {
           "remnants of historic process instances for that definition left! Response from the engine: \n%s",
         processDefinitionId, response.readEntity(String.class)
       );
-      throw new OptimizeProcessDefinitionFetchException(message);
+      throw new OptimizeProcessDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve process definition with id [%s] from the engine. Maybe the Optimize user utilized " +

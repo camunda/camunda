@@ -6,16 +6,21 @@
 package org.camunda.optimize.service.importing.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.importing.AbstractImportIT;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -208,6 +213,58 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         Tuple.tuple(applyCamundaTaskStartEventSuffix(USER_TASK_1), true)
       );
     assertOrderCounters(storedEvents);
+  }
+
+  @Test
+  public void noEventsAreCreatedOnImportOfProcessInstanceForDeletedDefinition() throws IOException {
+    // given
+    final String processKey = "eventsDef";
+    ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(processKey);
+    createCamundaActivityEventsIndexForKey(processKey);
+
+    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
+    engineIntegrationExtension.deleteProcessDefinition(processInstanceEngineDto.getDefinitionId());
+
+    // when
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
+
+    assertThat(storedEvents).isEmpty();
+  }
+
+  @Test
+  public void expectedEventsAreCreatedOnImportOfProcessInstanceForDeletedDefinitionAlreadyImported() throws
+                                                                                                     IOException {
+    // given
+    ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("eventsDef");
+    importAllEngineEntitiesFromScratch();
+
+    // then the original definition and events are stored
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).singleElement()
+      .satisfies(definition -> assertThat(definition.getKey()).isEqualTo(processInstanceEngineDto.getProcessDefinitionKey()));
+    final List<CamundaActivityEventDto> savedEvents = getSavedEventsForProcessDefinitionKey(
+      processInstanceEngineDto.getProcessDefinitionKey());
+    assertThat(savedEvents).hasSize(3)
+      .allSatisfy(activityEvent -> assertThat(activityEvent.getProcessDefinitionKey())
+        .isEqualTo(processInstanceEngineDto.getProcessDefinitionKey()));
+
+    // when the definition is deleted
+    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
+    engineIntegrationExtension.deleteProcessDefinition(processInstanceEngineDto.getDefinitionId());
+
+    // when
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the remaining events are still stored event though the definition has been deleted from the engine
+    assertThat(getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
+      .hasSize(7);
   }
 
   @Test
@@ -509,6 +566,20 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     assertThat(orderedEvents)
       .extracting(CamundaActivityEventDto::getOrderCounter)
       .doesNotContainNull();
+  }
+
+  @SneakyThrows
+  private void createCamundaActivityEventsIndexForKey(final String key) {
+    final OptimizeIndexNameService indexNameService =
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().getIndexNameService();
+    final CamundaActivityEventIndex newIndex = new CamundaActivityEventIndex(key);
+    CreateIndexRequest request = new CreateIndexRequest(
+      indexNameService.getOptimizeIndexNameWithVersion(newIndex)
+    ).alias(new Alias(indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName())));
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .getHighLevelClient()
+      .indices()
+      .create(request, RequestOptions.DEFAULT);
   }
 
 }
