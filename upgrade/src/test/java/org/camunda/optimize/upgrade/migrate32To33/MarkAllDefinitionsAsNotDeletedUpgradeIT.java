@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.version32;
+package org.camunda.optimize.upgrade.migrate32To33;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;

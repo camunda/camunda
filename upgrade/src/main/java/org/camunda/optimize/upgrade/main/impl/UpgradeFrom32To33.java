@@ -8,6 +8,9 @@ package org.camunda.optimize.upgrade.main.impl;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
@@ -49,6 +52,9 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new UpdateMappingIndexStep(new ProcessDefinitionIndex()))
+      .addUpgradeStep(new UpdateMappingIndexStep(new DecisionDefinitionIndex()))
+      .addUpgradeStep(new UpdateMappingIndexStep(new EventProcessDefinitionIndex()))
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleDecisionReportIndex()))
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
