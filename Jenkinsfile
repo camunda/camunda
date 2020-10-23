@@ -186,17 +186,6 @@ pipeline {
                         }
                     }
                 }
-
-                stage('Build Docs') {
-                    steps {
-                      retry(3) {
-                        container('maven') {
-                            sh '.ci/scripts/docs/prepare.sh'
-                            sh '.ci/scripts/docs/build.sh'
-                        }
-                      }
-                    }
-                }
             }
 
             post {
@@ -260,18 +249,6 @@ pipeline {
                         }
                     }
                 }
-
-                stage('Docs') {
-                    when { anyOf { branch masterBranchName; branch developBranchName } }
-                    steps {
-                        retry(3) {
-                            build job: 'zeebe-docs', parameters: [
-                                string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                booleanParam(name: 'LIVE', value: isMasterBranch)
-                            ]
-                        }
-                    }
-                }
             }
         }
     }
@@ -294,10 +271,25 @@ pipeline {
                 org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
+        failure {
+            script {
+                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                    return
+                }
+
+                echo "Send slack message"
+                slackSend(
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+            }
+        }
         changed {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
                     return
+                }
+                if (currentBuild.currentResult == 'FAILURE') {
+                    return // already handled above
                 }
 
                 if (hasBuildResultChanged()) {
