@@ -19,10 +19,10 @@ package io.atomix.utils.concurrent;
 import java.util.concurrent.Future;
 
 /** Simple wrapper class that delegates to a non-interruptible future */
-final class ScheduledFutureImpl<T> implements Scheduled {
+public final class ScheduledFutureImpl<T> implements Scheduled {
   private final Future<T> future;
 
-  ScheduledFutureImpl(final Future<T> future) {
+  public ScheduledFutureImpl(final Future<T> future) {
     this.future = future;
   }
 
