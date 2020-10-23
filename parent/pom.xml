@@ -90,7 +90,7 @@
     <version.spring-boot>2.3.4.RELEASE</version.spring-boot>
     <version.tomcat>9.0.39</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
-    <version.config>1.4.0</version.config>
+    <version.config>1.4.1</version.config>
     <version.kryo>4.0.2</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
