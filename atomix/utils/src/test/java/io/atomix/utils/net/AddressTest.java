@@ -17,6 +17,7 @@
 package io.atomix.utils.net;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,7 +29,7 @@ public class AddressTest {
     final Address address = Address.from("127.0.0.1:5000");
     assertEquals("127.0.0.1", address.host());
     assertEquals(5000, address.port());
-    assertEquals("localhost", address.address().getHostName());
+    assertTrue("127.0.0.1".equals(address.address().getHostName()) || "localhost".equals(address.address().getHostName()));
     assertEquals("127.0.0.1:5000", address.toString());
   }
 
