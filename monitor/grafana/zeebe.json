@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1603456725508,
+  "iteration": 1603718010459,
   "links": [],
   "panels": [
     {
@@ -3387,6 +3387,7 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Memory limits and requests are get from the k8 pod metrics.",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3418,7 +3419,22 @@
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
-          "seriesOverrides": [],
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:235",
+              "alias": "limit",
+              "color": "#E02F44",
+              "fill": 0,
+              "linewidth": 2
+            },
+            {
+              "$$hashKey": "object:1073",
+              "alias": "request",
+              "color": "#56A64B",
+              "fill": 0,
+              "fillGradient": 0
+            }
+          ],
           "spaceLength": 10,
           "stack": false,
           "steppedLine": false,
@@ -3426,25 +3442,27 @@
             {
               "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"}",
               "format": "time_series",
+              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} RSS",
               "refId": "A"
-            }
-          ],
-          "thresholds": [
+            },
             {
-              "$$hashKey": "object:351",
-              "colorMode": "critical",
-              "fill": true,
-              "fillColor": "rgba(50, 116, 217, 0.2)",
-              "line": true,
-              "lineColor": "rgba(31, 96, 196, 0.6)",
-              "op": "gt",
-              "value": 16000000000,
-              "yaxis": "left"
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "limit",
+              "refId": "B"
+            },
+            {
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "interval": "",
+              "legendFormat": "request",
+              "refId": "C"
             }
           ],
+          "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
@@ -3468,8 +3486,8 @@
               "format": "decbytes",
               "label": null,
               "logBase": 1,
-              "max": "16000000000",
-              "min": "1000000000",
+              "max": null,
+              "min": null,
               "show": true
             },
             {
@@ -9135,7 +9153,7 @@
       "type": "row"
     }
   ],
-  "refresh": "10s",
+  "refresh": "",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
