@@ -92,6 +92,7 @@ pipeline {
 
                 container('docker') {
                     sh '.ci/scripts/docker/build.sh'
+                    sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                 }
             }
         }
@@ -183,6 +184,20 @@ pipeline {
                     post {
                         always {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                        }
+                    }
+                }
+
+                stage('BPMN TCK') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/distribution/test-tck.sh'
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true
                         }
                     }
                 }
