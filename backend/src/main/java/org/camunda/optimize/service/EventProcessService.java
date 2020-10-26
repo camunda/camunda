@@ -118,14 +118,8 @@ public class EventProcessService {
     if (createRequestDto.isAutogenerate()) {
       return autogenerateEventProcessMapping(userId, createRequestDto);
     }
-    final EventProcessMappingDto eventProcessMappingDto = EventProcessMappingDto.builder()
-      .name(Optional.ofNullable(createRequestDto.getName()).orElse(DEFAULT_PROCESS_NAME))
-      .xml(createRequestDto.getXml())
-      .mappings(createRequestDto.getMappings())
-      .lastModifier(userId)
-      .eventSources(createRequestDto.getEventSources())
-      .roles(Collections.singletonList(new EventProcessRoleRequestDto(new IdentityDto(userId, IdentityType.USER))))
-      .build();
+    final EventProcessMappingDto eventProcessMappingDto =
+      EventProcessMappingCreateRequestDto.createServiceDTO(userId, createRequestDto);
     validateMappingsAndXmlCompatibility(eventProcessMappingDto);
     validateEventSources(userId, eventProcessMappingDto);
     return eventProcessMappingWriter.createEventProcessMapping(eventProcessMappingDto);
