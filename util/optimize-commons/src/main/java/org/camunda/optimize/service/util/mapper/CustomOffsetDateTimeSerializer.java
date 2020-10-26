@@ -39,7 +39,7 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
         timeZoneAdjustedDateTime = zonedDateTime.toOffsetDateTime();
       } else {
         log.warn(
-          "The provided timezone [{}] is not being recognized. Falling back to server timezone instead.",
+          "The provided timezone [{}] not recognized. Falling back to server timezone instead.",
           timezone
         );
       }

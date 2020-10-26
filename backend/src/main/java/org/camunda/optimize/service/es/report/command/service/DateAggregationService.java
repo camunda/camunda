@@ -61,7 +61,6 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 public class DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
-  public static final String AUTOMATIC_DATE_REVERSE_AGGREGATION = "reverseAggForAutomatic";
 
   private final DateTimeFormatter dateTimeFormatter;
   private final ConfigurationService configurationService;
