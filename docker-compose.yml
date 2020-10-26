@@ -59,16 +59,14 @@ services:
     image: camunda/zeebe-tasklist:latest
     ports:
       - 8080:8080
-      - 5005:5005
     environment:
-      - zeebe.tasklist.elasticsearch.host=elasticsearch
-      - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
+      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
       - zeebe.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
-      - JAVA_TOOL_OPTIONS='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
     volumes:
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
@@ -119,9 +117,9 @@ services:
     ports:
       - 8081:8080
     environment:
-      - zeebe.tasklist.elasticsearch.host=elasticsearch
+      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.elasticsearch.indexPrefix=e2etasklist
-      - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
+      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebeElasticsearch.prefix=e2e
       - zeebe.tasklist.zeebe.brokerContactPoint=zeebe-e2e:26503
       - zeebe.tasklist.importer.readerBackoff=0
