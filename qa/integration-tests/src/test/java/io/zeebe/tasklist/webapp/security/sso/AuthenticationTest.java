@@ -28,7 +28,7 @@ import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
-import io.zeebe.tasklist.util.TasklistIntegrationTest;
+import io.zeebe.tasklist.util.apps.sso.AuthSSOApplication;
 import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import java.util.Arrays;
 import java.util.Base64;
@@ -62,6 +62,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
 @RunWith(Parameterized.class)
 @SpringBootTest(
+    classes = {AuthSSOApplication.class},
     properties = {
       "zeebe.tasklist.auth0.clientId=1",
       "zeebe.tasklist.auth0.clientSecret=2",
@@ -72,7 +73,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
-public class AuthenticationTest extends TasklistIntegrationTest {
+public class AuthenticationTest {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
   private static final String CURRENT_USER_QUERY =
