@@ -8,7 +8,7 @@ package io.zeebe.tasklist.util.apps.retry_after_failure;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.ImportBatch;
-import io.zeebe.tasklist.zeebeimport.v24.processors.ElasticsearchBulkProcessor;
+import io.zeebe.tasklist.zeebeimport.v25.processors.ElasticsearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class RetryAfterFailureTestConfig {
 
-  @Bean("io.zeebe.tasklist.zeebeimport.v24.processors.ElasticsearchBulkProcessor")
+  @Bean("io.zeebe.tasklist.zeebeimport.v25.processors.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();
