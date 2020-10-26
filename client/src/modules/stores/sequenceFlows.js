@@ -6,7 +6,7 @@
 
 import {observable, decorate, action, when, autorun} from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/instances';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
@@ -21,14 +21,14 @@ class SequenceFlows {
 
   init() {
     when(
-      () => currentInstance.state.instance?.id !== undefined,
+      () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
-        this.fetchWorkflowSequenceFlows(currentInstance.state.instance.id);
+        this.fetchWorkflowSequenceFlows(currentInstanceStore.state.instance.id);
       }
     );
 
     this.disposer = autorun(() => {
-      const {instance} = currentInstance.state;
+      const {instance} = currentInstanceStore.state;
 
       if (isInstanceRunning(instance)) {
         if (this.intervalId === null) {
@@ -48,7 +48,6 @@ class SequenceFlows {
 
   handlePolling = async (instanceId) => {
     const response = await fetchSequenceFlows(instanceId);
-
     if (this.intervalId !== null) {
       const processedSequenceFlows = getProcessedSequenceFlows(response);
       this.setItems(processedSequenceFlows);
@@ -84,4 +83,4 @@ decorate(SequenceFlows, {
   reset: action,
 });
 
-export const sequenceFlows = new SequenceFlows();
+export const sequenceFlowsStore = new SequenceFlows();

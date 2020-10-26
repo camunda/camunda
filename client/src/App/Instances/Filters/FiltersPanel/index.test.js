@@ -8,7 +8,7 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FiltersPanel} from '.';
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 
 const props = {
   isFiltersCollapsed: false,
@@ -19,7 +19,7 @@ const props = {
 
 describe('<FiltersPanel />', () => {
   it('should show filteredInstancesCount', async () => {
-    instances.setInstances({
+    instancesStore.setInstances({
       filteredInstancesCount: 909,
       workflowInstances: [],
     });

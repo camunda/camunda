@@ -40,8 +40,8 @@ import {
 } from './service';
 import {parseQueryString} from 'modules/utils/filter';
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
-import {filters} from 'modules/stores/filters';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const Filters = observer(
@@ -139,8 +139,8 @@ const Filters = observer(
 
     propagateFilter = () => {
       const sanitizedFilter = sanitizeFilter(this.state.filter);
-      if (!isEqual(filters.state.filter, sanitizedFilter)) {
-        filters.setFilter(sanitizedFilter);
+      if (!isEqual(filtersStore.state.filter, sanitizedFilter)) {
+        filtersStore.setFilter(sanitizedFilter);
       }
     };
 
@@ -171,7 +171,7 @@ const Filters = observer(
 
     handleWorkflowNameChange = (event) => {
       const {value} = event.target;
-      const {groupedWorkflows} = filters.state;
+      const {groupedWorkflows} = filtersStore.state;
       const currentWorkflow = groupedWorkflows[value];
       const version = getLastVersionOfWorkflow(currentWorkflow);
       this.setFilterState(
@@ -217,15 +217,15 @@ const Filters = observer(
       this.setFilterState(
         {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
         () => {
-          if (!isEqual(DEFAULT_FILTER, filters.state.filter)) {
-            filters.setFilter(DEFAULT_FILTER);
+          if (!isEqual(DEFAULT_FILTER, filtersStore.state.filter)) {
+            filtersStore.setFilter(DEFAULT_FILTER);
           }
         }
       );
     };
 
     getPlaceHolder(regular, preview) {
-      const {groupedWorkflows} = filters.state;
+      const {groupedWorkflows} = filtersStore.state;
       const isWorkflowDataLoaded = !isEmpty(groupedWorkflows);
       if (preview && !isWorkflowDataLoaded) {
         return preview;
@@ -252,7 +252,7 @@ const Filters = observer(
       } = this.state.filter;
 
       const {previewVersion, previewName} = this.state;
-      const {groupedWorkflows} = filters.state;
+      const {groupedWorkflows} = filtersStore.state;
 
       const isWorkflowsDataLoaded = !isEmpty(groupedWorkflows);
       const versionPlaceholder =
@@ -263,7 +263,7 @@ const Filters = observer(
               getOptionsForWorkflowVersion(groupedWorkflows[workflow].workflows)
             )
           : [];
-      const {selectableFlowNodes} = instancesDiagram;
+      const {selectableFlowNodes} = instancesDiagramStore;
 
       return (
         <FiltersPanel>

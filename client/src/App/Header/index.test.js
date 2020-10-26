@@ -7,14 +7,14 @@
 import React from 'react';
 import {Router} from 'react-router-dom';
 
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Header from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createMemoryHistory} from 'history';
 import PropTypes from 'prop-types';
 import {render, within, fireEvent, screen} from '@testing-library/react';
 import {location, mockCollapsablePanelProps} from './index.setup';
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -69,7 +69,7 @@ describe('Header', () => {
         )
       )
     );
-    currentInstance.reset();
+    currentInstanceStore.reset();
   });
 
   it('should render all header links', async () => {
@@ -94,7 +94,7 @@ describe('Header', () => {
       location: location.dashboard,
       ...mockCollapsablePanelProps,
     };
-    instances.setInstances({filteredInstancesCount: 200});
+    instancesStore.setInstances({filteredInstancesCount: 200});
 
     render(<MockApp {...mockProps} />);
 
@@ -189,7 +189,7 @@ describe('Header', () => {
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    currentInstance.init(MOCK_INSTANCE_ID);
+    currentInstanceStore.init(MOCK_INSTANCE_ID);
 
     expect(
       await screen.findByText(`Instance ${MOCK_INSTANCE_ID}`)
@@ -215,7 +215,7 @@ describe('Header', () => {
     await waitForComponentToLoad();
 
     jest.useFakeTimers();
-    currentInstance.init(MOCK_FIRST_INSTANCE_ID);
+    currentInstanceStore.init(MOCK_FIRST_INSTANCE_ID);
     expect(
       await screen.findByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
     ).toBeInTheDocument();

@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {instances} from './instances';
+import {instancesStore} from './instances';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-import {filters} from './filters';
+import {filtersStore} from './filters';
 import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 import {createMemoryHistory} from 'history';
 import {groupedWorkflowsMock} from 'modules/testUtils';
@@ -29,7 +29,7 @@ const mockWorkflowInstances = {
 };
 
 describe('stores/instances', () => {
-  const fetchInstancesSpy = jest.spyOn(instances, 'fetchInstances');
+  const fetchInstancesSpy = jest.spyOn(instancesStore, 'fetchInstances');
   const historyMock = createMemoryHistory();
   const locationMock = {pathname: '/instances'};
 
@@ -49,103 +49,103 @@ describe('stores/instances', () => {
         res.once(ctx.json({}))
       )
     );
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
   });
   afterEach(() => {
     clearStateLocally();
-    instances.reset();
-    filters.reset();
+    instancesStore.reset();
+    filtersStore.reset();
   });
 
   it('should return null by default', () => {
-    expect(instances.state.filteredInstancesCount).toBe(null);
+    expect(instancesStore.state.filteredInstancesCount).toBe(null);
   });
 
   // This test is skipped, because setting the local storage inside
   // the test has no effect. See https://jira.camunda.com/browse/OPE-1004
   it.skip('should return state from local storage', () => {
-    instances.reset();
+    instancesStore.reset();
     storeStateLocally({filteredInstancesCount: 312});
 
-    expect(instances.state.filteredInstancesCount).toBe(312);
+    expect(instancesStore.state.filteredInstancesCount).toBe(312);
   });
 
   it('should return store state', () => {
-    instances.setInstances({filteredInstancesCount: 654});
+    instancesStore.setInstances({filteredInstancesCount: 654});
 
-    expect(instances.state.filteredInstancesCount).toBe(654);
+    expect(instancesStore.state.filteredInstancesCount).toBe(654);
   });
 
   it('should return store state when both is set', () => {
     storeStateLocally({filteredInstancesCount: 101});
-    instances.setInstances({filteredInstancesCount: 202});
+    instancesStore.setInstances({filteredInstancesCount: 202});
 
-    expect(instances.state.filteredInstancesCount).toBe(202);
+    expect(instancesStore.state.filteredInstancesCount).toBe(202);
   });
 
   it('should start and stop loading', () => {
-    expect(instances.state.isLoading).toBe(false);
-    instances.startLoading();
-    expect(instances.state.isLoading).toBe(true);
-    instances.stopLoading();
-    expect(instances.state.isLoading).toBe(false);
+    expect(instancesStore.state.isLoading).toBe(false);
+    instancesStore.startLoading();
+    expect(instancesStore.state.isLoading).toBe(true);
+    instancesStore.stopLoading();
+    expect(instancesStore.state.isLoading).toBe(false);
   });
 
   it('should complete initial load', () => {
-    expect(instances.state.isInitialLoadComplete).toBe(false);
-    instances.completeInitialLoad();
-    expect(instances.state.isInitialLoadComplete).toBe(true);
+    expect(instancesStore.state.isInitialLoadComplete).toBe(false);
+    instancesStore.completeInitialLoad();
+    expect(instancesStore.state.isInitialLoadComplete).toBe(true);
   });
 
   it('should fetch instances', async () => {
-    expect(instances.state.isLoading).toEqual(false);
-    expect(instances.state.isInitialLoadComplete).toEqual(false);
+    expect(instancesStore.state.isLoading).toEqual(false);
+    expect(instancesStore.state.isInitialLoadComplete).toEqual(false);
 
-    const instancesRequest = instances.fetchInstances({});
+    const instancesRequest = instancesStore.fetchInstances({});
 
-    expect(instances.state.isLoading).toEqual(true);
-    expect(instances.state.isInitialLoadComplete).toEqual(false);
+    expect(instancesStore.state.isLoading).toEqual(true);
+    expect(instancesStore.state.isInitialLoadComplete).toEqual(false);
 
     await instancesRequest;
 
-    expect(instances.state.isLoading).toEqual(false);
-    expect(instances.state.isInitialLoadComplete).toEqual(true);
+    expect(instancesStore.state.isLoading).toEqual(false);
+    expect(instancesStore.state.isInitialLoadComplete).toEqual(true);
 
-    expect(instances.state.filteredInstancesCount).toBe(100);
-    expect(instances.state.workflowInstances).toEqual(
+    expect(instancesStore.state.filteredInstancesCount).toBe(100);
+    expect(instancesStore.state.workflowInstances).toEqual(
       mockWorkflowInstances.workflowInstances
     );
   });
 
   it('should refresh instances', async () => {
-    expect(instances.state.isLoading).toEqual(false);
+    expect(instancesStore.state.isLoading).toEqual(false);
 
-    const instancesRequest = instances.refreshInstances({});
+    const instancesRequest = instancesStore.refreshInstances({});
 
-    expect(instances.state.isLoading).toEqual(false);
+    expect(instancesStore.state.isLoading).toEqual(false);
 
     await instancesRequest;
 
-    expect(instances.state.isLoading).toEqual(false);
+    expect(instancesStore.state.isLoading).toEqual(false);
 
-    expect(instances.state.filteredInstancesCount).toBe(
+    expect(instancesStore.state.filteredInstancesCount).toBe(
       mockWorkflowInstances.totalCount
     );
-    expect(instances.state.workflowInstances).toEqual(
+    expect(instancesStore.state.workflowInstances).toEqual(
       mockWorkflowInstances.workflowInstances
     );
   });
 
   it('should reset store (keep the filteredInstancesCount value)', async () => {
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
-    expect(instances.state.workflowInstances).toEqual(
+    expect(instancesStore.state.workflowInstances).toEqual(
       mockWorkflowInstances.workflowInstances
     );
-    const filteredInstancesCount = instances.state.filteredInstancesCount;
-    instances.reset();
-    expect(instances.state).toEqual({
+    const filteredInstancesCount = instancesStore.state.filteredInstancesCount;
+    instancesStore.reset();
+    expect(instancesStore.state).toEqual({
       filteredInstancesCount: filteredInstancesCount,
       workflowInstances: [],
       isLoading: false,
@@ -156,17 +156,17 @@ describe('stores/instances', () => {
   });
 
   it('should get visible ids in list panel', async () => {
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
-    expect(instances.visibleIdsInListPanel).toEqual([
+    expect(instancesStore.visibleIdsInListPanel).toEqual([
       'instance_id_1',
       'instance_id_2',
     ]);
   });
 
   it('should get areWorkflowInstancesEmpty', async () => {
-    await instances.fetchInstances({});
-    expect(instances.areWorkflowInstancesEmpty).toBe(false);
+    await instancesStore.fetchInstances({});
+    expect(instancesStore.areWorkflowInstancesEmpty).toBe(false);
 
     mockServer.use(
       rest.post(
@@ -176,79 +176,81 @@ describe('stores/instances', () => {
       )
     );
 
-    await instances.fetchInstances({});
-    expect(instances.areWorkflowInstancesEmpty).toBe(true);
+    await instancesStore.fetchInstances({});
+    expect(instancesStore.areWorkflowInstancesEmpty).toBe(true);
   });
 
   it('should add instances with active operations', async () => {
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
-    instances.addInstancesWithActiveOperations({ids: ['instance_id_1']});
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    instancesStore.addInstancesWithActiveOperations({ids: ['instance_id_1']});
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       'instance_id_1',
     ]);
 
-    instances.addInstancesWithActiveOperations({
+    instancesStore.addInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
     });
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       'instance_id_1',
     ]);
 
-    instances.addInstancesWithActiveOperations({
+    instancesStore.addInstancesWithActiveOperations({
       ids: [],
       shouldPollAllVisibleIds: true,
     });
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       'instance_id_1',
       'instance_id_2',
     ]);
 
-    instances.addInstancesWithActiveOperations({
+    instancesStore.addInstancesWithActiveOperations({
       ids: ['instance_id_1'],
       shouldPollAllVisibleIds: true,
     });
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       'instance_id_2',
     ]);
 
-    instances.addInstancesWithActiveOperations({
+    instancesStore.addInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
       shouldPollAllVisibleIds: true,
     });
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       'instance_id_1',
       'instance_id_2',
     ]);
   });
 
   it('should set instances with active operations', () => {
-    expect(instances.state.instancesWithActiveOperations).toEqual([]);
-    instances.setInstancesWithActiveOperations([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+    instancesStore.setInstancesWithActiveOperations([
       {id: '1', hasActiveOperation: true},
       {id: '2', hasActiveOperation: false},
     ]);
-    expect(instances.state.instancesWithActiveOperations).toEqual(['1']);
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual(['1']);
   });
 
   it('should set/reset instances with completed operations', () => {
-    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
-    instances.setInstancesWithCompletedOperations([
+    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
+    instancesStore.setInstancesWithCompletedOperations([
       {id: '1', hasActiveOperation: true},
       {id: '2', hasActiveOperation: false},
     ]);
-    expect(instances.state.instancesWithCompletedOperations).toEqual(['2']);
-    instances.resetInstancesWithCompletedOperations();
-    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([
+      '2',
+    ]);
+    instancesStore.resetInstancesWithCompletedOperations();
+    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
   });
 
   it('should refresh instances and reset instances with completed operations every time there is an instance with completed operation', async () => {
-    instances.init();
+    instancesStore.init();
 
     await waitFor(() =>
-      expect(instances.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
-    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
     mockServer.use(
       rest.post(
         '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
@@ -274,24 +276,24 @@ describe('stores/instances', () => {
           )
       )
     );
-    instances.setInstancesWithCompletedOperations([
+    instancesStore.setInstancesWithCompletedOperations([
       {id: 'instance_id_1', hasActiveOperation: true},
       {id: 'instance_id_2', hasActiveOperation: false},
     ]);
     await waitFor(() =>
-      expect(instances.state.workflowInstances.length).toBe(3)
+      expect(instancesStore.state.workflowInstances.length).toBe(3)
     );
 
-    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
   });
 
   it('should poll instances by id when there are instances with active operations', async () => {
-    instances.init();
+    instancesStore.init();
 
     await waitFor(() =>
-      expect(instances.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
-    expect(instances.state.instancesWithActiveOperations).toEqual([]);
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
     jest.useFakeTimers();
     mockServer.use(
       // mock for fetching instances when there is an active operation
@@ -341,20 +343,20 @@ describe('stores/instances', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    instances.setInstancesWithActiveOperations([
+    instancesStore.setInstancesWithActiveOperations([
       {id: 'instance_id_1', hasActiveOperation: true},
       {id: 'instance_id_2', hasActiveOperation: true},
     ]);
     jest.runOnlyPendingTimers();
     await waitFor(() => {
-      expect(instances.state.instancesWithActiveOperations).toEqual([
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
         'instance_id_1',
       ]);
     });
     jest.runOnlyPendingTimers();
     await waitFor(() => {
-      expect(instances.state.instancesWithActiveOperations).toEqual([]);
-      expect(instances.state.workflowInstances).toEqual(
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.state.workflowInstances).toEqual(
         mockWorkflowInstances.workflowInstances
       );
     });
@@ -363,14 +365,14 @@ describe('stores/instances', () => {
   });
 
   it('should set instances with active operations every time instances are fetched', async () => {
-    instances.init();
+    instancesStore.init();
 
     await waitFor(() =>
-      expect(instances.state.workflowInstances).toEqual(
+      expect(instancesStore.state.workflowInstances).toEqual(
         mockWorkflowInstances.workflowInstances
       )
     );
-    expect(instances.state.instancesWithActiveOperations).toEqual([]);
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
 
     mockServer.use(
       rest.post(
@@ -415,86 +417,92 @@ describe('stores/instances', () => {
       )
     );
 
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
     await waitFor(() => {
-      expect(instances.state.instancesWithActiveOperations).toEqual([
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
         'instance_id_1',
       ]);
     });
 
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
     await waitFor(() => {
-      expect(instances.state.instancesWithActiveOperations).toEqual([
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
         'instance_id_2',
       ]);
     });
 
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
 
     await waitFor(() => {
-      expect(instances.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
     });
   });
 
   describe('fetch instances autorun', () => {
     beforeEach(() => {
-      instances.init();
+      instancesStore.init();
       fetchInstancesSpy.mockReset();
     });
     it('should fetch instances every time sorting changes', () => {
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
-      expect(filters.state.sorting).toEqual(DEFAULT_SORTING);
-      filters.setSorting({...DEFAULT_SORTING, sortBy: 'instanceId'});
-      expect(filters.state.sorting).toEqual({
+      expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
+      filtersStore.setSorting({...DEFAULT_SORTING, sortBy: 'instanceId'});
+      expect(filtersStore.state.sorting).toEqual({
         ...DEFAULT_SORTING,
         sortBy: 'instanceId',
       });
 
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
 
-      filters.setSorting(DEFAULT_SORTING);
-      expect(filters.state.sorting).toEqual(DEFAULT_SORTING);
+      filtersStore.setSorting(DEFAULT_SORTING);
+      expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
 
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should fetch instances every time page or entries per page changes', () => {
-      filters.setEntriesPerPage(10);
+      filtersStore.setEntriesPerPage(10);
 
-      expect(filters.state.page).toEqual(1);
-      expect(filters.state.prevEntriesPerPage).toEqual(0);
-      expect(filters.state.entriesPerPage).toEqual(10);
+      expect(filtersStore.state.page).toEqual(1);
+      expect(filtersStore.state.prevEntriesPerPage).toEqual(0);
+      expect(filtersStore.state.entriesPerPage).toEqual(10);
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
 
-      filters.setPage(2);
+      filtersStore.setPage(2);
 
-      expect(filters.state.page).toEqual(2);
+      expect(filtersStore.state.page).toEqual(2);
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
 
-      filters.setEntriesPerPage(5);
+      filtersStore.setEntriesPerPage(5);
 
-      expect(filters.state.page).toEqual(2);
-      expect(filters.state.prevEntriesPerPage).toEqual(10);
-      expect(filters.state.entriesPerPage).toEqual(5);
+      expect(filtersStore.state.page).toEqual(2);
+      expect(filtersStore.state.prevEntriesPerPage).toEqual(10);
+      expect(filtersStore.state.entriesPerPage).toEqual(5);
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
 
-      filters.setEntriesPerPage(10);
+      filtersStore.setEntriesPerPage(10);
 
-      expect(filters.state.page).toEqual(2);
-      expect(filters.state.prevEntriesPerPage).toEqual(5);
-      expect(filters.state.entriesPerPage).toEqual(10);
+      expect(filtersStore.state.page).toEqual(2);
+      expect(filtersStore.state.prevEntriesPerPage).toEqual(5);
+      expect(filtersStore.state.entriesPerPage).toEqual(10);
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(3);
     });
 
     it('should fetch instances every time filter changes', () => {
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
 
-      filters.setFilter({...DEFAULT_FILTER, startDate: '2020-01-01 12:30:00'});
+      filtersStore.setFilter({
+        ...DEFAULT_FILTER,
+        startDate: '2020-01-01 12:30:00',
+      });
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
 
-      filters.setFilter({...DEFAULT_FILTER, startDate: '2022-01-01 12:30:00'});
+      filtersStore.setFilter({
+        ...DEFAULT_FILTER,
+        startDate: '2022-01-01 12:30:00',
+      });
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
     });
   });

@@ -56,4 +56,4 @@ decorate(IncidentsByError, {
   isDataAvailable: computed,
 });
 
-export const incidentsByError = new IncidentsByError();
+export const incidentsByErrorStore = new IncidentsByError();

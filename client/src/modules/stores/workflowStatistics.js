@@ -6,9 +6,9 @@
 
 import {observable, decorate, action, reaction, observe, autorun} from 'mobx';
 import {fetchWorkflowInstancesStatistics} from 'modules/api/instances';
-import {filters} from 'modules/stores/filters';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
-import {instances} from 'modules/stores/instances';
+import {filtersStore} from 'modules/stores/filters';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {instancesStore} from 'modules/stores/instances';
 import {isEmpty, isEqual} from 'lodash';
 
 const DEFAULT_STATE = {
@@ -26,33 +26,37 @@ class WorkflowStatistics {
 
   init = () => {
     this.diagramReactionDisposer = reaction(
-      () => instancesDiagram.state.diagramModel,
+      () => instancesDiagramStore.state.diagramModel,
       () => {
-        if (instancesDiagram.state.diagramModel !== null) {
-          this.fetchWorkflowStatistics(filters.getFiltersPayload());
+        if (instancesDiagramStore.state.diagramModel !== null) {
+          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
         }
       }
     );
 
-    this.filterObserveDisposer = observe(filters.state, 'filter', (change) => {
-      if (isEqual(filters.state.filter, change.oldValue)) {
-        return;
-      }
+    this.filterObserveDisposer = observe(
+      filtersStore.state,
+      'filter',
+      (change) => {
+        if (isEqual(filtersStore.state.filter, change.oldValue)) {
+          return;
+        }
 
-      if (isEmpty(filters.workflow)) {
-        this.resetState();
-      } else if (
-        filters.state.filter.workflow === change.oldValue.workflow &&
-        filters.state.filter.version === change.oldValue.version
-      ) {
-        this.fetchWorkflowStatistics(filters.getFiltersPayload());
+        if (isEmpty(filtersStore.workflow)) {
+          this.resetState();
+        } else if (
+          filtersStore.state.filter.workflow === change.oldValue.workflow &&
+          filtersStore.state.filter.version === change.oldValue.version
+        ) {
+          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+        }
       }
-    });
+    );
 
     this.completedOperationsDisposer = autorun(() => {
-      if (instances.state.instancesWithCompletedOperations.length > 0) {
-        if (filters.isSingleWorkflowSelected) {
-          this.fetchWorkflowStatistics(filters.getFiltersPayload());
+      if (instancesStore.state.instancesWithCompletedOperations.length > 0) {
+        if (filtersStore.isSingleWorkflowSelected) {
+          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
         }
       }
     });
@@ -99,4 +103,4 @@ decorate(WorkflowStatistics, {
   resetState: action,
 });
 
-export const workflowStatistics = new WorkflowStatistics();
+export const workflowStatisticsStore = new WorkflowStatistics();

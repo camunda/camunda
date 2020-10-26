@@ -6,14 +6,13 @@
 
 import {observable, decorate, action, autorun, computed} from 'mobx';
 import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {addFlowNodeName, mapify} from './mappers';
 
 const DEFAULT_STATE = {
   response: null,
   isLoaded: false,
-  isFailed: false,
 };
 
 class Incidents {
@@ -23,10 +22,10 @@ class Incidents {
 
   init() {
     this.disposer = autorun(() => {
-      if (currentInstance.state.instance?.state === 'INCIDENT') {
+      if (currentInstanceStore.state.instance?.state === 'INCIDENT') {
         if (this.intervalId === null) {
-          this.fetchIncidents(currentInstance.state.instance.id);
-          this.startPolling(currentInstance.state.instance.id);
+          this.fetchIncidents(currentInstanceStore.state.instance.id);
+          this.startPolling(currentInstanceStore.state.instance.id);
         }
       } else {
         this.stopPolling();
@@ -52,21 +51,14 @@ class Incidents {
 
   handlePolling = async (id) => {
     const response = await fetchWorkflowInstanceIncidents(id);
-
     if (this.intervalId !== null) {
       this.setIncidents(response);
     }
   };
 
-  setError() {
-    this.state.isLoaded = true;
-    this.state.isFailed = true;
-  }
-
   setIncidents = (response) => {
     this.state.response = response;
     this.state.isLoaded = true;
-    this.state.isFailed = false;
   };
 
   reset = () => {
@@ -78,7 +70,9 @@ class Incidents {
   get incidents() {
     if (this.state.response === null) return [];
     return this.state.response.incidents.map((incident) => {
-      const metaData = singleInstanceDiagram.getMetaData(incident.flowNodeId);
+      const metaData = singleInstanceDiagramStore.getMetaData(
+        incident.flowNodeId
+      );
       return addFlowNodeName(incident, metaData);
     });
   }
@@ -87,7 +81,7 @@ class Incidents {
     return this.state.response !== null
       ? mapify(
           this.state.response.flowNodes.map((flowNode) => {
-            const metaData = singleInstanceDiagram.getMetaData(
+            const metaData = singleInstanceDiagramStore.getMetaData(
               flowNode.flowNodeId
             );
             return addFlowNodeName(flowNode, metaData);
@@ -110,7 +104,6 @@ class Incidents {
 
 decorate(Incidents, {
   state: observable,
-  setError: action,
   setIncidents: action,
   reset: action,
   incidents: computed,
@@ -119,4 +112,4 @@ decorate(Incidents, {
   incidentsCount: computed,
 });
 
-export const incidents = new Incidents();
+export const incidentsStore = new Incidents();

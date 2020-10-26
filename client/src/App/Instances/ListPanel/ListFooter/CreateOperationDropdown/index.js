@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
-import {instanceSelection} from 'modules/stores/instanceSelection';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import * as Styled from './styled';
@@ -42,7 +42,7 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
 
   const handleCancelClick = () => {
     closeModal();
-    instanceSelection.reset();
+    instanceSelectionStore.reset();
   };
 
   const getBodyText = () =>

@@ -14,8 +14,8 @@ import {
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import {InstanceHeader} from './index';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {variables} from 'modules/stores/variables';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {variablesStore} from 'modules/stores/variables';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {operationsStore} from 'modules/stores/operations';
@@ -29,8 +29,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 describe('InstanceHeader', () => {
   afterEach(() => {
     operationsStore.reset();
-    variables.reset();
-    currentInstance.reset();
+    variablesStore.reset();
+    currentInstanceStore.reset();
   });
 
   it('should show skeleton before instance data is available', async () => {
@@ -44,7 +44,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    currentInstance.init(mockInstanceWithActiveOperation.id);
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -59,11 +59,11 @@ describe('InstanceHeader', () => {
     );
     render(<InstanceHeader />, {wrapper: ThemeProvider});
 
-    currentInstance.init(mockInstanceWithActiveOperation.id);
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
-    const {instance} = currentInstance.state;
+    const {instance} = currentInstanceStore.state;
     const workflowName = getWorkflowName(instance);
     const instanceState = instance.state;
     const formattedStartDate = formatDate(instance.startDate);
@@ -92,7 +92,7 @@ describe('InstanceHeader', () => {
     );
 
     jest.useFakeTimers();
-    currentInstance.init(mockInstanceWithoutOperations.id);
+    currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
@@ -118,7 +118,7 @@ describe('InstanceHeader', () => {
 
     render(<InstanceHeader />, {wrapper: ThemeProvider});
 
-    currentInstance.init(mockInstanceWithoutOperations.id);
+    currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
@@ -154,14 +154,14 @@ describe('InstanceHeader', () => {
     );
 
     render(<InstanceHeader />, {wrapper: ThemeProvider});
-    currentInstance.init(mockInstanceWithActiveOperation.id);
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    variables.addVariable(
+    variablesStore.addVariable(
       mockInstanceWithoutOperations.id,
       mockVariable.name,
       mockVariable.value
@@ -169,7 +169,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
-    variables.fetchVariables(mockInstanceWithActiveOperation.id);
+    variablesStore.fetchVariables(mockInstanceWithActiveOperation.id);
 
     await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
   });

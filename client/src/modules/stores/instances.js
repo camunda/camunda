@@ -10,7 +10,7 @@ import {
   fetchWorkflowInstances,
   fetchWorkflowInstancesByIds,
 } from 'modules/api/instances';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 import {DEFAULT_MAX_RESULTS} from 'modules/constants';
 
 const DEFAULT_STATE = {
@@ -38,11 +38,11 @@ class Instances {
   init() {
     this.fetchInstancesDisposer = autorun(() => {
       // we should wait for initial load to complete so we are sure both groupedWorkflows and filters are initially loaded and this fetch won't run a couple of times on first page landing
-      if (filters.state.isInitialLoadComplete) {
+      if (filtersStore.state.isInitialLoadComplete) {
         this.fetchInstances({
-          ...filters.getFiltersPayload(),
-          sorting: filters.state.sorting,
-          firstResult: filters.firstElement,
+          ...filtersStore.getFiltersPayload(),
+          sorting: filtersStore.state.sorting,
+          firstResult: filtersStore.firstElement,
           maxResults: DEFAULT_MAX_RESULTS,
         });
       }
@@ -51,9 +51,9 @@ class Instances {
     this.completedOperationActionsDisposer = autorun(() => {
       if (this.state.instancesWithCompletedOperations.length > 0) {
         this.refreshInstances({
-          ...filters.getFiltersPayload(),
-          sorting: filters.state.sorting,
-          firstResult: filters.firstElement,
+          ...filtersStore.getFiltersPayload(),
+          sorting: filtersStore.state.sorting,
+          firstResult: filtersStore.firstElement,
           maxResults: DEFAULT_MAX_RESULTS,
         });
 
@@ -208,4 +208,4 @@ decorate(Instances, {
   areWorkflowInstancesEmpty: computed,
 });
 
-export const instances = new Instances();
+export const instancesStore = new Instances();

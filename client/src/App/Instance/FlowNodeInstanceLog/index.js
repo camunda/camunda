@@ -9,9 +9,9 @@ import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as Styled from './styled';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
 const FlowNodeInstanceLog = observer(
   class FlowNodeInstanceLog extends React.Component {
@@ -21,11 +21,11 @@ const FlowNodeInstanceLog = observer(
       const {
         isFailed: isStateInstanceTreeFailed,
         isInitialLoadComplete: isStateInstanceTreeLoaded,
-      } = flowNodeInstance.state;
+      } = flowNodeInstanceStore.state;
       const {
         isFailed: areStateDefinitionsFailed,
         isInitialLoadComplete: areStateDefinitionsLoaded,
-      } = singleInstanceDiagram.state;
+      } = singleInstanceDiagramStore.state;
 
       if (isStateInstanceTreeFailed || areStateDefinitionsFailed) {
         type = 'warning';
@@ -41,9 +41,9 @@ const FlowNodeInstanceLog = observer(
       const {
         instanceExecutionHistory,
         isInstanceExecutionHistoryAvailable,
-      } = flowNodeInstance;
+      } = flowNodeInstanceStore;
 
-      const {areDiagramDefinitionsAvailable} = singleInstanceDiagram;
+      const {areDiagramDefinitionsAvailable} = singleInstanceDiagramStore;
       return (
         <Styled.Panel>
           {areDiagramDefinitionsAvailable &&

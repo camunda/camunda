@@ -8,7 +8,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled.js';
-import {statistics} from 'modules/stores/statistics';
+import {statisticsStore} from 'modules/stores/statistics';
 
 function getUrl({filter, hasFinishedInstances}) {
   if (hasFinishedInstances) {
@@ -22,7 +22,7 @@ function getUrl({filter, hasFinishedInstances}) {
 }
 
 const MetricPanel = observer(() => {
-  const {running, active, withIncidents, isLoaded} = statistics.state;
+  const {running, active, withIncidents, isLoaded} = statisticsStore.state;
   return (
     <Styled.Panel data-testid="metric-panel">
       <Styled.Title

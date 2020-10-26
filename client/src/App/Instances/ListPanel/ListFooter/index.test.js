@@ -7,11 +7,12 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 
-import {instances} from 'modules/stores/instances';
-import {filters} from 'modules/stores/filters';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {instancesStore} from 'modules/stores/instances';
+import {filtersStore} from 'modules/stores/filters';
+
 import ListFooter from './index';
-import {instanceSelection} from 'modules/stores/instanceSelection';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 
 const DROPDOWN_REGEX = /^Apply Operation on \d+ Instance[s]?...$/;
 const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
@@ -27,16 +28,16 @@ const defaultProps = {
 
 describe('ListFooter', () => {
   beforeAll(() => {
-    filters.setEntriesPerPage(10);
+    filtersStore.setEntriesPerPage(10);
   });
   afterAll(() => {
-    filters.reset();
+    filtersStore.reset();
   });
   afterEach(() => {
-    instanceSelection.reset();
+    instanceSelectionStore.reset();
   });
   it('should show pagination, copyright, no dropdown', () => {
-    instances.setInstances({filteredInstancesCount: 11});
+    instancesStore.setInstances({filteredInstancesCount: 11});
 
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
@@ -53,7 +54,7 @@ describe('ListFooter', () => {
   });
 
   it('should show copyright, no dropdown, no pagination', () => {
-    instances.setInstances({filteredInstancesCount: 9});
+    instancesStore.setInstances({filteredInstancesCount: 9});
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
     expect(screen.queryByText(/^1$/i)).toBeNull();
@@ -67,10 +68,10 @@ describe('ListFooter', () => {
   });
 
   it('should show Dropdown when there is selection', () => {
-    instances.setInstances({filteredInstancesCount: 9});
+    instancesStore.setInstances({filteredInstancesCount: 9});
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
-    instanceSelection.selectInstance('1');
-    instanceSelection.selectInstance('2');
+    instanceSelectionStore.selectInstance('1');
+    instanceSelectionStore.selectInstance('2');
     const dropdownButton = screen.getByText(
       'Apply Operation on 2 Instances...'
     );
@@ -81,7 +82,7 @@ describe('ListFooter', () => {
   });
 
   it('should not show the pagination buttons when there is no content', () => {
-    instances.setInstances({filteredInstancesCount: 11});
+    instancesStore.setInstances({filteredInstancesCount: 11});
     render(<ListFooter {...defaultProps} hasContent={false} />, {
       wrapper: ThemeProvider,
     });

@@ -28,4 +28,4 @@ decorate(FlowNodeTimeStamp, {
   toggleTimeStampVisibility: action,
 });
 
-export const flowNodeTimeStamp = new FlowNodeTimeStamp();
+export const flowNodeTimeStampStore = new FlowNodeTimeStamp();

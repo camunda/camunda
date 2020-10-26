@@ -11,9 +11,9 @@ import SplitPane from 'modules/components/SplitPane';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled.js';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
-import {workflowStatistics} from 'modules/stores/workflowStatistics';
-import {filters} from 'modules/stores/filters';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const DiagramPanel = observer(
@@ -25,7 +25,7 @@ const DiagramPanel = observer(
     renderMessage = (type) => {
       const message = {
         NoWorkflow: `There is no Workflow selected.\n To see a diagram, select a Workflow in the Filters panel.`,
-        NoVersion: `There is more than one version selected for Workflow "${filters.workflowName}".\n To see a diagram, select a single version.`,
+        NoVersion: `There is more than one version selected for Workflow "${filtersStore.workflowName}".\n To see a diagram, select a single version.`,
       };
       return (
         <Styled.EmptyMessageWrapper>
@@ -38,32 +38,34 @@ const DiagramPanel = observer(
       const {
         isLoading: areStateDefinitionsLoading,
         diagramModel,
-      } = instancesDiagram.state;
+      } = instancesDiagramStore.state;
 
-      const {selectableIds} = instancesDiagram;
-      const {filter} = filters.state;
+      const {selectableIds} = instancesDiagramStore;
+      const {filter} = filtersStore.state;
       const selectedFlowNodeId = selectableIds.includes(filter.activityId)
         ? filter.activityId
         : undefined;
-      const {statistics} = workflowStatistics.state;
+      const {statistics} = workflowStatisticsStore.state;
       return (
         <SplitPane.Pane {...this.props}>
           <Styled.PaneHeader>
-            <span>{filters.workflowName}</span>
+            <span>{filtersStore.workflowName}</span>
           </Styled.PaneHeader>
           <SplitPane.Pane.Body style={{position: 'relative'}}>
-            {(workflowStatistics.isLoading || areStateDefinitionsLoading) && (
+            {(workflowStatisticsStore.isLoading ||
+              areStateDefinitionsLoading) && (
               <SpinnerSkeleton data-testid="spinner" />
             )}
-            {filters.isNoWorkflowSelected && this.renderMessage('NoWorkflow')}
-            {filters.isNoVersionSelected
+            {filtersStore.isNoWorkflowSelected &&
+              this.renderMessage('NoWorkflow')}
+            {filtersStore.isNoVersionSelected
               ? this.renderMessage('NoVersion')
               : diagramModel?.definitions && (
                   <Diagram
                     definitions={diagramModel.definitions}
                     onFlowNodeSelection={(activityId) => {
-                      filters.setFilter({
-                        ...filters.state.filter,
+                      filtersStore.setFilter({
+                        ...filtersStore.state.filter,
                         activityId: activityId ? activityId : '',
                       });
                     }}

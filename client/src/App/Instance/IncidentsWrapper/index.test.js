@@ -13,7 +13,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData, mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {incidents} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -70,7 +70,7 @@ describe('IncidentsWrapper', () => {
       )
     );
 
-    await incidents.fetchIncidents(1);
+    await incidentsStore.fetchIncidents(1);
   });
 
   it('should render the IncidentsBanner', () => {
@@ -253,7 +253,7 @@ describe('IncidentsWrapper', () => {
         )
       );
 
-      await incidents.fetchIncidents(1);
+      await incidentsStore.fetchIncidents(1);
 
       rerender(<IncidentsWrapper {...testData.props.default} />);
 

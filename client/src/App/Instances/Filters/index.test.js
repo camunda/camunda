@@ -35,8 +35,8 @@ import {
 } from './index.setup';
 
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
-import {filters} from 'modules/stores/filters';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {filtersStore} from 'modules/stores/filters';
 import {getFlowNodeOptions} from './service';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
@@ -64,21 +64,21 @@ describe('Filters', () => {
       )
     );
 
-    await instancesDiagram.fetchWorkflowXml(1);
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
+    await instancesDiagramStore.fetchWorkflowXml(1);
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
     jest.clearAllMocks();
     jest.clearAllTimers();
   });
 
   afterEach(() => {
-    filters.reset();
+    filtersStore.reset();
   });
 
   it('should render filters panel if no filter is applied in querystring', () => {
     // given
 
-    filters.setFilter(DEFAULT_FILTER_CONTROLLED_VALUES);
+    filtersStore.setFilter(DEFAULT_FILTER_CONTROLLED_VALUES);
     const node = shallow(
       <Filters.WrappedComponent
         {...mockPropsWithEmptyLocationSearch}
@@ -190,7 +190,7 @@ describe('Filters', () => {
         expect(field.length).toEqual(1);
         expect(field.prop('placeholder')).toEqual('Error Message');
         expect(field.prop('value')).toEqual('');
-        expect(filters.state.filter.errorMessage).toBe('asd');
+        expect(filtersStore.state.filter.errorMessage).toBe('asd');
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -215,7 +215,7 @@ describe('Filters', () => {
 
       setTimeout(() => {
         // then
-        expect(filters.state.filter.errorMessage).not.toBe('test');
+        expect(filtersStore.state.filter.errorMessage).not.toBe('test');
 
         done();
       }, DEBOUNCE_DELAY / 2);
@@ -287,7 +287,7 @@ describe('Filters', () => {
 
       setTimeout(() => {
         // then
-        expect(filters.state.filter.errorMessage).toBe(errorMessage);
+        expect(filtersStore.state.filter.errorMessage).toBe(errorMessage);
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -309,7 +309,7 @@ describe('Filters', () => {
       instance.waitForTimer(instance.propagateFilter);
 
       setTimeout(() => {
-        expect(filters.state.filter.errorMessage).toBe(undefined);
+        expect(filtersStore.state.filter.errorMessage).toBe(undefined);
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -349,7 +349,7 @@ describe('Filters', () => {
         'Instance Id(s) separated by space or comma'
       );
 
-      expect(filters.state.filter[target.name]).toBe(target.value);
+      expect(filtersStore.state.filter[target.name]).toBe(target.value);
       jest.useRealTimers();
     });
 
@@ -420,7 +420,7 @@ describe('Filters', () => {
       instance.propagateFilter();
 
       // then
-      expect(filters.state.filter.ids).toBe(instanceIds);
+      expect(filtersStore.state.filter.ids).toBe(instanceIds);
     });
 
     it('should set filter state with empty object', () => {
@@ -442,7 +442,7 @@ describe('Filters', () => {
       instance.propagateFilter();
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
   });
 
@@ -471,7 +471,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
 
     it('should render the value from this.props.filter.workflow', () => {
@@ -561,7 +561,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
-      expect(filters.state.filter.version).toBe('1');
+      expect(filtersStore.state.filter.version).toBe('1');
     });
 
     it('should render the value from this.props.filter.version', () => {
@@ -611,7 +611,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
-      expect(filters.state.filter.version).toEqual(
+      expect(filtersStore.state.filter.version).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
     });
@@ -687,7 +687,7 @@ describe('Filters', () => {
           .props().value
       ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
-      expect(filters.state.filter.version).toBe('3');
+      expect(filtersStore.state.filter.version).toBe('3');
     });
 
     it('should reset after a the workflowName field is also reseted ', async () => {
@@ -746,8 +746,8 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(filters.state.filter.workflow).toBe('demoProcess');
-      expect(filters.state.filter.version).toBe('3');
+      expect(filtersStore.state.filter.workflow).toBe('demoProcess');
+      expect(filtersStore.state.filter.version).toBe('3');
     });
 
     it('should set filter state when all workflow versions are selected', async () => {
@@ -768,8 +768,8 @@ describe('Filters', () => {
         .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
 
       // then
-      expect(filters.state.filter.workflow).toBe(workflowName);
-      expect(filters.state.filter.version).toBe(ALL_VERSIONS_OPTION);
+      expect(filtersStore.state.filter.workflow).toBe(workflowName);
+      expect(filtersStore.state.filter.version).toBe(ALL_VERSIONS_OPTION);
     });
   });
 
@@ -798,7 +798,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
 
     it('should render the value from this.props.filter.activityId', () => {
@@ -896,7 +896,7 @@ describe('Filters', () => {
 
     it('should render selectable flow nodes', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
         version: '2',
@@ -933,7 +933,7 @@ describe('Filters', () => {
         .filterWhere((n) => n.props().name === 'activityId');
 
       const selectableFlowNodes = getFlowNodeOptions(
-        instancesDiagram.selectableFlowNodes
+        instancesDiagramStore.selectableFlowNodes
       );
 
       expect(field.props().options[0].value).toEqual(
@@ -945,7 +945,7 @@ describe('Filters', () => {
     });
 
     it('should render the selectable flow nodes on the correct order', async () => {
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
         version: '2',
@@ -1015,7 +1015,7 @@ describe('Filters', () => {
     it('should display a list of activity ids', async () => {
       // given
 
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
         version: '2',
@@ -1050,7 +1050,7 @@ describe('Filters', () => {
     it('should set the state on activityId selection', async () => {
       // given
 
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
         version: '2',
@@ -1071,7 +1071,7 @@ describe('Filters', () => {
       node.update();
 
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const selectableFlowNodes = instancesDiagram.selectableFlowNodes;
+      const selectableFlowNodes = instancesDiagramStore.selectableFlowNodes;
       const activityId = selectableFlowNodes[0].id;
       //when
       // select workflowName, the version is set to the latest
@@ -1126,7 +1126,7 @@ describe('Filters', () => {
         'Start Date yyyy-mm-dd hh:mm:ss'
       );
       expect(field.props().value).toEqual('');
-      expect(filters.state.filter.startDate).toBe('1084-10-08');
+      expect(filtersStore.state.filter.startDate).toBe('1084-10-08');
       jest.useRealTimers();
     });
 
@@ -1184,7 +1184,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(filters.state.filter.startDate).toBe('2009-01-25');
+      expect(filtersStore.state.filter.startDate).toBe('2009-01-25');
     });
 
     it('should send null values for empty start dates', async () => {
@@ -1204,7 +1204,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
   });
 
@@ -1239,7 +1239,7 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date yyyy-mm-dd hh:mm:ss');
       expect(field.props().value).toEqual('');
-      expect(filters.state.filter.endDate).toBe('1984-10-08');
+      expect(filtersStore.state.filter.endDate).toBe('1984-10-08');
       jest.useRealTimers();
     });
 
@@ -1352,7 +1352,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(filters.state.filter.variable).toEqual(variable);
+      expect(filtersStore.state.filter.variable).toEqual(variable);
     });
 
     it('should set filter state with empty object (on invalid JSON value)', async () => {
@@ -1368,7 +1368,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
 
     it('should set filter state with empty object (on empty name)', async () => {
@@ -1384,7 +1384,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
 
     it('should set filter state with empty object (on empty value)', async () => {
@@ -1400,7 +1400,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
 
     it('should set filter state with empty object (on empty name and value)', async () => {
@@ -1414,7 +1414,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
   });
 
@@ -1480,12 +1480,12 @@ describe('Filters', () => {
       jest.advanceTimersByTime(DEBOUNCE_DELAY);
       await flushPromises();
 
-      expect(filters.state.filter.errorMessage).toBe('abc');
+      expect(filtersStore.state.filter.errorMessage).toBe('abc');
       const ResetButtonNode = node.find(Button);
       ResetButtonNode.simulate('click');
 
       // then
-      expect(filters.state.filter.errorMessage).toBe(undefined);
+      expect(filtersStore.state.filter.errorMessage).toBe(undefined);
 
       jest.useRealTimers();
     });
@@ -1560,7 +1560,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.prop('placeholder')).toEqual('Operation Id');
       expect(field.prop('value')).toEqual('');
-      expect(filters.state.filter.batchOperationId).toBe(
+      expect(filtersStore.state.filter.batchOperationId).toBe(
         '8d5aeb73-193b-4bec-a237-8ff71ac1d713'
       );
     });
@@ -1588,7 +1588,7 @@ describe('Filters', () => {
 
       await flushPromises();
 
-      expect(filters.state.filter.batchOperationId).not.toBe('asd');
+      expect(filtersStore.state.filter.batchOperationId).not.toBe('asd');
     });
 
     // test behaviour here
@@ -1664,7 +1664,7 @@ describe('Filters', () => {
       await flushPromises();
 
       // then
-      expect(filters.state.filter.batchOperationId).toBe(batchOperationId);
+      expect(filtersStore.state.filter.batchOperationId).toBe(batchOperationId);
     });
 
     it('should set filter state with empty object', async () => {
@@ -1688,7 +1688,7 @@ describe('Filters', () => {
       await flushPromises();
 
       // then
-      expect(filters.state.filter).toEqual({});
+      expect(filtersStore.state.filter).toEqual({});
     });
   });
 });

@@ -16,7 +16,7 @@ import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 
 const {
   UPDATE_VARIABLE,
@@ -41,7 +41,7 @@ const OperationsEntry = ({operation}) => {
   } = operation;
 
   const handleInstancesClick = (batchOperationId) => {
-    filters.setFilter({
+    filtersStore.setFilter({
       ...DEFAULT_FILTER_CONTROLLED_VALUES,
       active: true,
       incidents: true,

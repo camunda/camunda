@@ -22,19 +22,19 @@ import {EXPAND_STATE} from 'modules/constants';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-import {sequenceFlows} from 'modules/stores/sequenceFlows';
-import {events} from 'modules/stores/events';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {eventsStore} from 'modules/stores/events';
 const TopPanel = observer((props) => {
   useEffect(() => {
-    events.init();
-    sequenceFlows.init();
+    eventsStore.init();
+    sequenceFlowsStore.init();
 
     return () => {
-      events.reset();
-      sequenceFlows.reset();
+      eventsStore.reset();
+      sequenceFlowsStore.reset();
     };
   }, []);
 
@@ -49,8 +49,8 @@ const TopPanel = observer((props) => {
       selectMultiInstanceChildrenOnly: false,
     }
   ) => {
-    const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
-    const {instance} = currentInstance.state;
+    const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstanceStore;
+    const {instance} = currentInstanceStore.state;
     let treeRowIds = [instance.id];
     if (flowNodeId) {
       const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
@@ -62,7 +62,7 @@ const TopPanel = observer((props) => {
         : getMultiInstanceBodies(flowNodeInstancesMap);
     }
 
-    flowNodeInstance.setCurrentSelection({flowNodeId, treeRowIds});
+    flowNodeInstanceStore.setCurrentSelection({flowNodeId, treeRowIds});
   };
 
   const {expandState} = props;
@@ -71,20 +71,20 @@ const TopPanel = observer((props) => {
     state: {selection},
     flowNodeIdToFlowNodeInstanceMap,
     areMultipleNodesSelected,
-  } = flowNodeInstance;
+  } = flowNodeInstanceStore;
 
-  const {items: processedSequenceFlows} = sequenceFlows.state;
-  const {instance} = currentInstance.state;
+  const {items: processedSequenceFlows} = sequenceFlowsStore.state;
+  const {instance} = currentInstanceStore.state;
 
   const {
     nodeMetaDataMap,
     state: {isLoading, isInitialLoadComplete, diagramModel},
-  } = singleInstanceDiagram;
+  } = singleInstanceDiagramStore;
 
   const selectedFlowNodeId = selection?.flowNodeId;
-  const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
+  const metaData = singleInstanceDiagramStore.getMetaData(selectedFlowNodeId);
 
-  const {items: eventList} = events.state;
+  const {items: eventList} = eventsStore.state;
   return (
     <Styled.Pane expandState={expandState}>
       <InstanceHeader />

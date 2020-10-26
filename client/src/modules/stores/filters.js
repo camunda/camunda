@@ -214,4 +214,4 @@ decorate(Filters, {
   isSingleWorkflowSelected: computed,
 });
 
-export const filters = new Filters();
+export const filtersStore = new Filters();

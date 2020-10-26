@@ -16,7 +16,7 @@ import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import PropTypes from 'prop-types';
-import {statistics} from 'modules/stores/statistics';
+import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -34,7 +34,7 @@ describe('<MetricPanel />', () => {
       )
     );
 
-    statistics.reset();
+    statisticsStore.reset();
   });
 
   const MockApp = ({history = createMemoryHistory()}) => (
@@ -57,7 +57,7 @@ describe('<MetricPanel />', () => {
       'Running Instances in total'
     );
 
-    statistics.fetchStatistics();
+    statisticsStore.fetchStatistics();
 
     await waitForElementToBeRemoved(() => [
       screen.getByTestId('instances-bar-skeleton'),
@@ -70,7 +70,7 @@ describe('<MetricPanel />', () => {
   it('should show active instances and instances with incidents', async () => {
     render(<MockApp />);
 
-    statistics.fetchStatistics();
+    statisticsStore.fetchStatistics();
     expect(screen.getByText('Instances with Incident')).toBeInTheDocument();
     expect(screen.getByText('Active Instances')).toBeInTheDocument();
     expect(
@@ -109,7 +109,7 @@ describe('<MetricPanel />', () => {
     const MOCK_HISTORY = createMemoryHistory();
     render(<MockApp history={MOCK_HISTORY} />);
 
-    statistics.fetchStatistics();
+    statisticsStore.fetchStatistics();
     fireEvent.click(await screen.findByText('821 Running Instances in total'));
 
     const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);

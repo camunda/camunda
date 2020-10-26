@@ -10,7 +10,7 @@ import Pill from 'modules/components/Pill';
 
 import Dropdown from 'modules/components/Dropdown';
 import * as Styled from './styled';
-import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 
 const splitArray = (arr, size = 5) => {

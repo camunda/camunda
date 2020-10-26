@@ -14,7 +14,7 @@ import {
   mockIncidents,
   mockIncidentsWithManyErrors,
 } from './index.setup';
-import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';

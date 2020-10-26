@@ -16,8 +16,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockSequenceFlows, mockEvents, mockIncidents} from './index.setup';
 import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -88,15 +88,15 @@ describe('TopPanel', () => {
   });
 
   afterEach(() => {
-    singleInstanceDiagram.reset();
-    currentInstance.reset();
+    singleInstanceDiagramStore.reset();
+    currentInstanceStore.reset();
   });
 
   it('should render spinner while loading', async () => {
     render(<TopPanel />, {wrapper: Wrapper});
 
-    currentInstance.init('active_instance');
-    singleInstanceDiagram.fetchWorkflowXml(1);
+    currentInstanceStore.init('active_instance');
+    singleInstanceDiagramStore.fetchWorkflowXml(1);
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
   });
@@ -104,8 +104,8 @@ describe('TopPanel', () => {
   it('should render incident bar', async () => {
     render(<TopPanel />, {wrapper: Wrapper});
 
-    currentInstance.init('instance_with_incident');
-    await singleInstanceDiagram.fetchWorkflowXml(1);
+    currentInstanceStore.init('instance_with_incident');
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
     expect(
       await screen.findByText('There is 1 Incident in Instance 1.')
     ).toBeInTheDocument();

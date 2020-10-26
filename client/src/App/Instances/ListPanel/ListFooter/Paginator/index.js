@@ -12,7 +12,7 @@ import {ReactComponent as Left} from 'modules/components/Icon/left.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {ReactComponent as RightBar} from 'modules/components/Icon/right-bar.svg';
 import {getRange, getCurrentPage} from './service';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -27,8 +27,8 @@ const Paginator = observer(
       const {maxPage} = this.props;
 
       const currentPage = getCurrentPage(
-        filters.firstElement,
-        filters.state.entriesPerPage
+        filtersStore.firstElement,
+        filtersStore.state.entriesPerPage
       );
       const pageRange = getRange(currentPage, maxPage);
 
@@ -39,7 +39,7 @@ const Paginator = observer(
             aria-label="First page"
             disabled={currentPage === 1}
             withIcon
-            onClick={() => filters.setPage(1)}
+            onClick={() => filtersStore.setPage(1)}
           >
             <LeftBar />
           </Styled.Page>
@@ -48,7 +48,7 @@ const Paginator = observer(
             aria-label="Previous page"
             disabled={currentPage === 1}
             withIcon
-            onClick={() => filters.setPage(currentPage - 1)}
+            onClick={() => filtersStore.setPage(currentPage - 1)}
           >
             <Left />
           </Styled.Page>
@@ -57,7 +57,7 @@ const Paginator = observer(
               <Styled.Page
                 title="Page 1"
                 aria-label="Page 1"
-                onClick={() => filters.setPage(1)}
+                onClick={() => filtersStore.setPage(1)}
               >
                 1
               </Styled.Page>
@@ -72,7 +72,7 @@ const Paginator = observer(
               aria-label={`Page ${page}`}
               key={page}
               active={page === currentPage}
-              onClick={() => filters.setPage(page)}
+              onClick={() => filtersStore.setPage(page)}
             >
               {page}
             </Styled.Page>
@@ -85,7 +85,7 @@ const Paginator = observer(
               <Styled.Page
                 title={`Page ${maxPage}`}
                 aria-label={`Page ${maxPage}`}
-                onClick={() => filters.setPage(maxPage)}
+                onClick={() => filtersStore.setPage(maxPage)}
               >
                 {maxPage}
               </Styled.Page>
@@ -97,7 +97,7 @@ const Paginator = observer(
             aria-label="Next page"
             disabled={currentPage === maxPage}
             withIcon
-            onClick={() => filters.setPage(currentPage + 1)}
+            onClick={() => filtersStore.setPage(currentPage + 1)}
           >
             <Right />
           </Styled.Page>
@@ -106,7 +106,7 @@ const Paginator = observer(
             aria-label="Last page"
             disabled={currentPage === maxPage}
             withIcon
-            onClick={() => filters.setPage(maxPage)}
+            onClick={() => filtersStore.setPage(maxPage)}
           >
             <RightBar />
           </Styled.Page>

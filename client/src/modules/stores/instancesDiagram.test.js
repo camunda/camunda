@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {filters} from './filters';
+import {filtersStore} from './filters';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {createMemoryHistory} from 'history';
-import {instancesDiagram} from './instancesDiagram';
+import {instancesDiagramStore} from './instancesDiagram';
 import {DEFAULT_FILTER} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
@@ -15,9 +15,12 @@ import {mockServer} from 'modules/mockServer';
 jest.mock('modules/utils/bpmn');
 
 describe('stores/instancesDiagram', () => {
-  const fetchWorkflowXmlSpy = jest.spyOn(instancesDiagram, 'fetchWorkflowXml');
+  const fetchWorkflowXmlSpy = jest.spyOn(
+    instancesDiagramStore,
+    'fetchWorkflowXml'
+  );
   const resetDiagramModelSpy = jest.spyOn(
-    instancesDiagram,
+    instancesDiagramStore,
     'resetDiagramModel'
   );
 
@@ -34,16 +37,16 @@ describe('stores/instancesDiagram', () => {
       )
     );
 
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
-    filters.setFilter(DEFAULT_FILTER);
-    instancesDiagram.init();
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
+    filtersStore.setFilter(DEFAULT_FILTER);
+    instancesDiagramStore.init();
     fetchWorkflowXmlSpy.mockClear();
     resetDiagramModelSpy.mockClear();
   });
   afterEach(() => {
-    filters.reset();
-    instancesDiagram.reset();
+    filtersStore.reset();
+    instancesDiagramStore.reset();
     fetchWorkflowXmlSpy.mockClear();
     resetDiagramModelSpy.mockClear();
   });
@@ -53,7 +56,7 @@ describe('stores/instancesDiagram', () => {
       expect(fetchWorkflowXmlSpy).toHaveBeenCalledTimes(0);
       expect(resetDiagramModelSpy).toHaveBeenCalledTimes(0);
 
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'bigVarProcess',
         version: '1',
@@ -62,7 +65,7 @@ describe('stores/instancesDiagram', () => {
       expect(fetchWorkflowXmlSpy).toHaveBeenCalledTimes(1);
       expect(resetDiagramModelSpy).toHaveBeenCalledTimes(0);
 
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
       });
 

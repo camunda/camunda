@@ -5,8 +5,8 @@
  */
 
 import {observable, decorate, action, computed, autorun, observe} from 'mobx';
-import {instances} from 'modules/stores/instances';
-import {filters} from 'modules/stores/filters';
+import {instancesStore} from 'modules/stores/instances';
+import {filtersStore} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {isEqual} from 'lodash';
 
@@ -23,7 +23,7 @@ class InstanceSelection {
 
   init() {
     const {selectionMode, selectedInstanceIds} = this.state;
-    const {filteredInstancesCount} = instances.state;
+    const {filteredInstancesCount} = instancesStore.state;
 
     this.autorunDisposer = autorun(() => {
       if (
@@ -39,8 +39,8 @@ class InstanceSelection {
       }
     });
 
-    this.observeDisposer = observe(filters.state, 'filter', (change) => {
-      if (isEqual(filters.state.filter, change.oldValue)) {
+    this.observeDisposer = observe(filtersStore.state, 'filter', (change) => {
+      if (isEqual(filtersStore.state.filter, change.oldValue)) {
         return;
       }
 
@@ -110,7 +110,7 @@ class InstanceSelection {
 
   getSelectedInstanceCount = () => {
     const {selectionMode, selectedInstanceIds} = this.state;
-    const {filteredInstancesCount} = instances.state;
+    const {filteredInstancesCount} = instancesStore.state;
 
     switch (selectionMode) {
       case INSTANCE_SELECTION_MODE.INCLUDE:
@@ -162,4 +162,4 @@ decorate(InstanceSelection, {
   excludedInstanceIds: computed,
 });
 
-export const instanceSelection = new InstanceSelection();
+export const instanceSelectionStore = new InstanceSelection();

@@ -83,4 +83,4 @@ decorate(CurrentInstance, {
   workflowTitle: computed,
 });
 
-export const currentInstance = new CurrentInstance();
+export const currentInstanceStore = new CurrentInstance();

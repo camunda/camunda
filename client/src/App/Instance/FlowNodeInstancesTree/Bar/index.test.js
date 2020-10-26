@@ -9,11 +9,11 @@ import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Bar} from './index';
 import {mockStartNode, mockMultiInstanceBody} from './index.setup';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 
 describe('<Bar />', () => {
   afterEach(() => {
-    flowNodeTimeStamp.reset();
+    flowNodeTimeStampStore.reset();
   });
 
   it('should show an icon based on node type and the node name', () => {
@@ -44,7 +44,7 @@ describe('<Bar />', () => {
 
     expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
 
-    flowNodeTimeStamp.toggleTimeStampVisibility();
+    flowNodeTimeStampStore.toggleTimeStampVisibility();
 
     expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
   });

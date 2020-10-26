@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {filters} from './filters';
+import {filtersStore} from './filters';
 import {
   groupedWorkflowsMock,
   mockWorkflowStatistics,
@@ -12,16 +12,16 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {createMemoryHistory} from 'history';
-import {instancesDiagram} from './instancesDiagram';
-import {instances} from './instances';
-import {workflowStatistics} from './workflowStatistics';
-import {instanceSelection} from './instanceSelection';
+import {instancesDiagramStore} from './instancesDiagram';
+import {instancesStore} from './instances';
+import {workflowStatisticsStore} from './workflowStatistics';
+import {instanceSelectionStore} from './instanceSelection';
 import {DEFAULT_FILTER, DEFAULT_SORTING, SORT_ORDER} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
 describe('stores/filters', () => {
-  const fetchInstancesSpy = jest.spyOn(instances, 'fetchInstances');
+  const fetchInstancesSpy = jest.spyOn(instancesStore, 'fetchInstances');
   beforeEach(async () => {
     const historyMock = createMemoryHistory();
     const locationMock = {pathname: '/instances'};
@@ -42,50 +42,58 @@ describe('stores/filters', () => {
       )
     );
 
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
-    filters.setFilter(DEFAULT_FILTER);
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
+    filtersStore.setFilter(DEFAULT_FILTER);
     fetchInstancesSpy.mockClear();
   });
   afterEach(() => {
-    filters.reset();
-    instancesDiagram.reset();
-    instances.reset();
-    workflowStatistics.reset();
-    instanceSelection.reset();
+    filtersStore.reset();
+    instancesDiagramStore.reset();
+    instancesStore.reset();
+    workflowStatisticsStore.reset();
+    instanceSelectionStore.reset();
     jest.clearAllMocks();
   });
 
   describe('filter observer', () => {
     it('should go to first page every time filter changes', () => {
-      filters.setPage(3);
-      expect(filters.state.page).toBe(3);
-      filters.setFilter({
-        ...filters.state.filter,
+      filtersStore.setPage(3);
+      expect(filtersStore.state.page).toBe(3);
+      filtersStore.setFilter({
+        ...filtersStore.state.filter,
         errorMessage: 'test',
       });
-      expect(filters.state.page).toBe(1);
+      expect(filtersStore.state.page).toBe(1);
     });
   });
 
   it('should reset sorting if endDate filter was active and finished instances filter is not set anymore', () => {
     const sortByEndDate = {sortBy: 'endDate', sortOrder: SORT_ORDER.ASC};
-    filters.setSorting(sortByEndDate);
-    filters.setFilter({...DEFAULT_FILTER, canceled: true, completed: true});
-    expect(filters.state.sorting).toEqual(sortByEndDate);
-    filters.setFilter({...DEFAULT_FILTER});
-    expect(filters.state.sorting).toEqual(DEFAULT_SORTING);
+    filtersStore.setSorting(sortByEndDate);
+    filtersStore.setFilter({
+      ...DEFAULT_FILTER,
+      canceled: true,
+      completed: true,
+    });
+    expect(filtersStore.state.sorting).toEqual(sortByEndDate);
+    filtersStore.setFilter({...DEFAULT_FILTER});
+    expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
   });
 
   it('should get filters payload', () => {
-    expect(filters.getFiltersPayload()).toEqual({
+    expect(filtersStore.getFiltersPayload()).toEqual({
       active: true,
       incidents: true,
       running: true,
     });
 
-    filters.setFilter({completed: true, canceled: true, errorMessage: 'test'});
-    expect(filters.getFiltersPayload()).toEqual({
+    filtersStore.setFilter({
+      completed: true,
+      canceled: true,
+      errorMessage: 'test',
+    });
+    expect(filtersStore.getFiltersPayload()).toEqual({
       completed: true,
       canceled: true,
       finished: true,
@@ -94,12 +102,15 @@ describe('stores/filters', () => {
   });
 
   it('should get decodedFilters', () => {
-    expect(filters.decodedFilters).toEqual({active: true, incidents: true});
-    filters.setFilter({
-      ...filters.state.filter,
+    expect(filtersStore.decodedFilters).toEqual({
+      active: true,
+      incidents: true,
+    });
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       errorMessage: 'some%20error%20message',
     });
-    expect(filters.decodedFilters).toEqual({
+    expect(filtersStore.decodedFilters).toEqual({
       active: true,
       incidents: true,
       errorMessage: 'some error message',
@@ -108,76 +119,76 @@ describe('stores/filters', () => {
 
   describe('computed values', () => {
     it('should get firstElement', () => {
-      expect(filters.firstElement).toBe(0);
-      filters.setEntriesPerPage(10);
-      expect(filters.firstElement).toBe(0);
-      filters.setPage(2);
-      expect(filters.firstElement).toBe(10);
+      expect(filtersStore.firstElement).toBe(0);
+      filtersStore.setEntriesPerPage(10);
+      expect(filtersStore.firstElement).toBe(0);
+      filtersStore.setPage(2);
+      expect(filtersStore.firstElement).toBe(10);
     });
 
     it('should get isNoVersionSelected', () => {
-      expect(filters.isNoVersionSelected).toBe(false);
-      filters.setFilter({
+      expect(filtersStore.isNoVersionSelected).toBe(false);
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
         version: 'all',
       });
-      expect(filters.isNoVersionSelected).toBe(true);
-      filters.setFilter({
+      expect(filtersStore.isNoVersionSelected).toBe(true);
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
         version: 1,
       });
-      expect(filters.isNoVersionSelected).toBe(false);
+      expect(filtersStore.isNoVersionSelected).toBe(false);
     });
 
     it('should get isNoWorkflowSelected', () => {
-      expect(filters.isNoWorkflowSelected).toBe(true);
-      filters.setFilter({...DEFAULT_FILTER, workflow: 'bigVarProcess'});
-      expect(filters.isNoWorkflowSelected).toBe(false);
+      expect(filtersStore.isNoWorkflowSelected).toBe(true);
+      filtersStore.setFilter({...DEFAULT_FILTER, workflow: 'bigVarProcess'});
+      expect(filtersStore.isNoWorkflowSelected).toBe(false);
     });
 
     it('should get workflow', () => {
-      expect(filters.workflow).toEqual({});
-      filters.setFilter({
+      expect(filtersStore.workflow).toEqual({});
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
       });
-      expect(filters.workflow).toEqual({});
-      filters.setFilter({
+      expect(filtersStore.workflow).toEqual({});
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
         version: 1,
       });
-      expect(filters.workflow).toEqual({
+      expect(filtersStore.workflow).toEqual({
         bpmnProcessId: 'eventBasedGatewayProcess',
         id: '2251799813685911',
         name: 'Event based gateway with message start',
         version: 1,
       });
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
         version: 'all',
       });
-      expect(filters.workflow).toEqual({});
+      expect(filtersStore.workflow).toEqual({});
     });
 
     it('should get workflowName', () => {
-      expect(filters.workflowName).toBe('Workflow');
-      filters.setFilter({...DEFAULT_FILTER, workflow: 'bigVarProcess'});
-      expect(filters.workflowName).toBe('Big variable process');
-      filters.setFilter({
+      expect(filtersStore.workflowName).toBe('Workflow');
+      filtersStore.setFilter({...DEFAULT_FILTER, workflow: 'bigVarProcess'});
+      expect(filtersStore.workflowName).toBe('Big variable process');
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
       });
-      expect(filters.workflowName).toBe('eventBasedGatewayProcess');
-      filters.setFilter({
+      expect(filtersStore.workflowName).toBe('eventBasedGatewayProcess');
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'eventBasedGatewayProcess',
         version: 1,
       });
-      expect(filters.workflowName).toBe(
+      expect(filtersStore.workflowName).toBe(
         'Event based gateway with message start'
       );
     });
@@ -185,20 +196,24 @@ describe('stores/filters', () => {
 
   it('should reset store', () => {
     const sortByEndDate = {sortBy: 'endDate', sortOrder: SORT_ORDER.ASC};
-    filters.setFilter({...DEFAULT_FILTER, canceled: true, completed: true});
-    filters.setEntriesPerPage(10);
-    filters.setPage(3);
-    filters.setSorting(sortByEndDate);
-    expect(filters.state.page).toBe(3);
-    expect(filters.state.entriesPerPage).toBe(10);
-    expect(filters.state.prevEntriesPerPage).toBe(0);
-    expect(filters.state.sorting).toEqual(sortByEndDate);
-    expect(filters.state.groupedWorkflows).not.toEqual({});
-    filters.reset();
-    expect(filters.state.page).toBe(1);
-    expect(filters.state.entriesPerPage).toBe(0);
-    expect(filters.state.prevEntriesPerPage).toBe(0);
-    expect(filters.state.sorting).toEqual(DEFAULT_SORTING);
-    expect(filters.state.groupedWorkflows).toEqual({});
+    filtersStore.setFilter({
+      ...DEFAULT_FILTER,
+      canceled: true,
+      completed: true,
+    });
+    filtersStore.setEntriesPerPage(10);
+    filtersStore.setPage(3);
+    filtersStore.setSorting(sortByEndDate);
+    expect(filtersStore.state.page).toBe(3);
+    expect(filtersStore.state.entriesPerPage).toBe(10);
+    expect(filtersStore.state.prevEntriesPerPage).toBe(0);
+    expect(filtersStore.state.sorting).toEqual(sortByEndDate);
+    expect(filtersStore.state.groupedWorkflows).not.toEqual({});
+    filtersStore.reset();
+    expect(filtersStore.state.page).toBe(1);
+    expect(filtersStore.state.entriesPerPage).toBe(0);
+    expect(filtersStore.state.prevEntriesPerPage).toBe(0);
+    expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
+    expect(filtersStore.state.groupedWorkflows).toEqual({});
   });
 });

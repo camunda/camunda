@@ -4,19 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {filters} from './filters';
+import {filtersStore} from './filters';
 import {createMemoryHistory} from 'history';
-import {instancesDiagram} from './instancesDiagram';
-import {instances} from './instances';
-import {workflowStatistics} from './workflowStatistics';
-import {instanceSelection} from './instanceSelection';
+import {instancesDiagramStore} from './instancesDiagram';
+import {instancesStore} from './instances';
+import {workflowStatisticsStore} from './workflowStatistics';
+import {instanceSelectionStore} from './instanceSelection';
 import {DEFAULT_FILTER} from 'modules/constants';
 import {groupedWorkflowsMock, mockWorkflowStatistics} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
 describe('stores/instanceSelection', () => {
-  const fetchInstancesSpy = jest.spyOn(instances, 'fetchInstances');
+  const fetchInstancesSpy = jest.spyOn(instancesStore, 'fetchInstances');
   beforeEach(async () => {
     const historyMock = createMemoryHistory();
     const locationMock = {pathname: '/instances'};
@@ -30,34 +30,37 @@ describe('stores/instanceSelection', () => {
       )
     );
 
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
-    filters.setFilter(DEFAULT_FILTER);
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
+    filtersStore.setFilter(DEFAULT_FILTER);
     fetchInstancesSpy.mockClear();
-    instanceSelection.init();
+    instanceSelectionStore.init();
   });
   afterEach(() => {
-    filters.reset();
-    instancesDiagram.reset();
-    instances.reset();
-    workflowStatistics.reset();
-    instanceSelection.reset();
+    filtersStore.reset();
+    instancesDiagramStore.reset();
+    instancesStore.reset();
+    workflowStatisticsStore.reset();
+    instanceSelectionStore.reset();
     jest.clearAllMocks();
   });
 
   describe('filter observer', () => {
     it('should reset instance selection every time filter changes', () => {
-      const instanceSelectionSpy = jest.spyOn(instanceSelection, 'resetState');
+      const instanceSelectionSpy = jest.spyOn(
+        instanceSelectionStore,
+        'resetState'
+      );
       expect(instanceSelectionSpy).toHaveBeenCalledTimes(0);
 
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
         workflow: 'bigVarProcess',
         version: '1',
       });
 
       expect(instanceSelectionSpy).toHaveBeenCalledTimes(1);
-      filters.setFilter({
+      filtersStore.setFilter({
         ...DEFAULT_FILTER,
       });
       expect(instanceSelectionSpy).toHaveBeenCalledTimes(2);

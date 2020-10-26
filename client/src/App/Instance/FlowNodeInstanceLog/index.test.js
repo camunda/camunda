@@ -18,12 +18,12 @@ import {
   mockSuccessResponseForDiagram,
   mockFailedResponseForDiagram,
 } from './index.setup';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/diagram', () => ({
@@ -41,16 +41,16 @@ jest.mock('modules/api/instances', () => ({
 
 describe('FlowNodeInstanceLog', () => {
   beforeAll(() => {
-    currentInstance.init(1);
+    currentInstanceStore.init(1);
   });
   afterAll(() => {
-    currentInstance.reset();
+    currentInstanceStore.reset();
   });
   afterEach(() => {
     fetchActivityInstancesTree.mockReset();
     fetchWorkflowXML.mockReset();
-    flowNodeInstance.reset();
-    singleInstanceDiagram.reset();
+    flowNodeInstanceStore.reset();
+    singleInstanceDiagramStore.reset();
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
@@ -61,8 +61,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagram.fetchWorkflowXml(1);
-    flowNodeInstance.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
@@ -79,8 +79,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await flowNodeInstance.fetchInstanceExecutionHistory(1);
-    singleInstanceDiagram.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
+    singleInstanceDiagramStore.fetchWorkflowXml(1);
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
@@ -97,8 +97,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagram.fetchWorkflowXml(1);
-    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
     expect(
       screen.getByText('Activity Instances could not be fetched')
     ).toBeInTheDocument();
@@ -112,8 +112,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagram.fetchWorkflowXml(1);
-    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
     expect(
       screen.getByText('Activity Instances could not be fetched')
     ).toBeInTheDocument();
@@ -127,8 +127,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagram.fetchWorkflowXml(1);
-    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
     expect(screen.getAllByText('workflowName').length).toBeGreaterThan(0);
   });
 });

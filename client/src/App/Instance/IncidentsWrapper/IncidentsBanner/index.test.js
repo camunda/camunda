@@ -11,7 +11,7 @@ import {EXPAND_STATE} from 'modules/constants';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import PropTypes from 'prop-types';
-import {incidents} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -49,7 +49,7 @@ describe('IncidentsBanner', () => {
       )
     );
 
-    await incidents.fetchIncidents(1);
+    await incidentsStore.fetchIncidents(1);
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
@@ -69,7 +69,7 @@ describe('IncidentsBanner', () => {
       )
     );
 
-    await incidents.fetchIncidents(1);
+    await incidentsStore.fetchIncidents(1);
 
     render(
       <IncidentsBanner {...mockProps} expandState={EXPAND_STATE.COLLAPSED} />,
@@ -92,7 +92,7 @@ describe('IncidentsBanner', () => {
       )
     );
 
-    await incidents.fetchIncidents(1);
+    await incidentsStore.fetchIncidents(1);
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 

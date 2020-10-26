@@ -13,9 +13,9 @@ import {Bar} from './Bar';
 import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 import {observer} from 'mobx-react';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {getNodeWithMetaData} from './service';
 import {TYPE} from 'modules/constants';
 
@@ -45,7 +45,7 @@ function Node({isSelected, node, treeDepth}) {
       >
         <Foldable.Summary
           data-testid={node.id}
-          onSelection={() => flowNodeInstance.changeCurrentSelection(node)}
+          onSelection={() => flowNodeInstanceStore.changeCurrentSelection(node)}
           isSelected={isSelected}
           isLastChild={node.isLastChild}
           nodeName={`${node.name}${
@@ -90,9 +90,9 @@ Node.propTypes = {
 const FlowNodeInstancesTree = observer(({treeDepth, node}) => {
   const {
     selection: {treeRowIds},
-  } = flowNodeInstance.state;
+  } = flowNodeInstanceStore.state;
   const isSelected = treeRowIds.includes(node.id);
-  const metaData = singleInstanceDiagram.getMetaData(node.activityId);
+  const metaData = singleInstanceDiagramStore.getMetaData(node.activityId);
 
   return treeDepth === 1 ? (
     <ul>
@@ -101,7 +101,7 @@ const FlowNodeInstancesTree = observer(({treeDepth, node}) => {
         node={getNodeWithMetaData(
           node,
           metaData,
-          currentInstance.state.instance
+          currentInstanceStore.state.instance
         )}
         treeDepth={treeDepth}
       />
@@ -109,7 +109,11 @@ const FlowNodeInstancesTree = observer(({treeDepth, node}) => {
   ) : (
     <Node
       isSelected={isSelected}
-      node={getNodeWithMetaData(node, metaData, currentInstance.state.instance)}
+      node={getNodeWithMetaData(
+        node,
+        metaData,
+        currentInstanceStore.state.instance
+      )}
       treeDepth={treeDepth}
     />
   );

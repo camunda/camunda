@@ -9,8 +9,8 @@ import {useParams} from 'react-router-dom';
 import Variables from '../Variables';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
-import {variables} from 'modules/stores/variables';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {variablesStore} from 'modules/stores/variables';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -19,20 +19,20 @@ const VariablePanel = observer(function VariablePanel() {
   const {id: workflowInstanceId} = useParams();
 
   useEffect(() => {
-    variables.init(workflowInstanceId);
+    variablesStore.init(workflowInstanceId);
 
     return () => {
-      variables.reset();
+      variablesStore.reset();
     };
   }, [workflowInstanceId]);
 
   const {
     scopeId,
     state: {isFailed},
-  } = variables;
+  } = variablesStore;
   return (
     <Styled.VariablesPanel>
-      {isFailed || flowNodeInstance.areMultipleNodesSelected ? (
+      {isFailed || flowNodeInstanceStore.areMultipleNodesSelected ? (
         <EmptyPanel
           type={isFailed ? 'warning' : 'info'}
           label={isFailed ? FAILED_PLACEHOLDER : MULTI_SCOPE_PLACEHOLDER}

@@ -16,7 +16,7 @@ import {
 } from './service';
 
 import * as Styled from './styled';
-import {incidentsByError} from 'modules/stores/incidentsByError';
+import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 
 import {INCIDENTS_BY_ERROR} from '../constants';
 import {Skeleton} from '../Skeleton';
@@ -25,11 +25,11 @@ import {observer} from 'mobx-react';
 const IncidentsByError = observer(
   class IncidentsByError extends React.Component {
     componentDidMount = () => {
-      incidentsByError.getIncidentsByError();
+      incidentsByErrorStore.getIncidentsByError();
     };
 
     componentWillUnmount = () => {
-      incidentsByError.reset();
+      incidentsByErrorStore.reset();
     };
 
     renderIncidentsPerWorkflow = (errorMessage, items) => {
@@ -95,7 +95,7 @@ const IncidentsByError = observer(
       const {
         state: {incidents, isFailed, isLoaded},
         isDataAvailable,
-      } = incidentsByError;
+      } = incidentsByErrorStore;
 
       if (!isDataAvailable) {
         return (

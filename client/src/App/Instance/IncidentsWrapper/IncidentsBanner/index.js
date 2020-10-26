@@ -10,7 +10,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
 import {useParams} from 'react-router-dom';
-import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 
 const IncidentsBanner = observer(({onClick, isOpen, expandState}) => {

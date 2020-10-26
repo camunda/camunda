@@ -21,8 +21,9 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
-import {filters} from 'modules/stores/filters';
+
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {filtersStore} from 'modules/stores/filters';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -64,8 +65,8 @@ describe('DiagramPanel', () => {
   });
 
   afterEach(() => {
-    instancesDiagram.reset();
-    filters.reset();
+    instancesDiagramStore.reset();
+    filtersStore.reset();
   });
 
   it('should render header', async () => {
@@ -74,8 +75,8 @@ describe('DiagramPanel', () => {
       search:
         '?filter={%22active%22:true,%22incidents%22:true,%22version%22:%221%22,%22workflow%22:%22bigVarProcess%22}&name=%22Big%20variable%20process%22',
     };
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
 
     render(<DiagramPanel {...mockProps} />, {
       wrapper: Wrapper,
@@ -88,11 +89,11 @@ describe('DiagramPanel', () => {
     const locationMock = {
       pathname: '/instances',
     };
-    filters.setUrlParameters(historyMock, locationMock);
+    filtersStore.setUrlParameters(historyMock, locationMock);
     render(<DiagramPanel {...mockProps} />, {
       wrapper: Wrapper,
     });
-    instancesDiagram.fetchWorkflowXml(1);
+    instancesDiagramStore.fetchWorkflowXml(1);
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
@@ -107,13 +108,13 @@ describe('DiagramPanel', () => {
       pathname: '/instances',
       search: '?filter={%22active%22:true,%22incidents%22:true}',
     };
-    filters.setUrlParameters(historyMock, locationMock);
+    filtersStore.setUrlParameters(historyMock, locationMock);
 
     render(<DiagramPanel {...mockProps} />, {
       wrapper: Wrapper,
     });
 
-    await filters.init();
+    await filtersStore.init();
 
     expect(
       screen.getByText('There is no Workflow selected.')
@@ -132,12 +133,12 @@ describe('DiagramPanel', () => {
       search:
         '?filter={%22active%22:true,%22incidents%22:true,%22version%22:%22all%22,%22workflow%22:%22bigVarProcess%22}&name=%22Big%20variable%20process%22',
     };
-    filters.setUrlParameters(historyMock, locationMock);
+    filtersStore.setUrlParameters(historyMock, locationMock);
 
     render(<DiagramPanel {...mockProps} />, {
       wrapper: Wrapper,
     });
-    await filters.init();
+    await filtersStore.init();
 
     expect(
       screen.getByText(

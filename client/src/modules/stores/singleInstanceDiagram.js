@@ -8,7 +8,7 @@ import {observable, decorate, action, computed, when} from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 
 const DEFAULT_STATE = {
   diagramModel: null,
@@ -22,9 +22,9 @@ class SingleInstanceDiagram {
 
   init() {
     when(
-      () => currentInstance.state.instance !== null,
+      () => currentInstanceStore.state.instance !== null,
       () => {
-        this.fetchWorkflowXml(currentInstance.state.instance.workflowId);
+        this.fetchWorkflowXml(currentInstanceStore.state.instance.workflowId);
       }
     );
   }
@@ -71,7 +71,11 @@ class SingleInstanceDiagram {
 
   get areDiagramDefinitionsAvailable() {
     const {isInitialLoadComplete, isFailed, diagramModel} = this.state;
-    return isInitialLoadComplete && !isFailed && diagramModel?.definitions;
+    return (
+      isInitialLoadComplete &&
+      !isFailed &&
+      diagramModel?.definitions !== undefined
+    );
   }
 
   handleFailure = () => {
@@ -95,4 +99,4 @@ decorate(SingleInstanceDiagram, {
   areDiagramDefinitionsAvailable: computed,
 });
 
-export const singleInstanceDiagram = new SingleInstanceDiagram();
+export const singleInstanceDiagramStore = new SingleInstanceDiagram();

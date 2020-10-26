@@ -16,7 +16,7 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
 import {sortData} from './service';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {observer} from 'mobx-react';
 import {useParams} from 'react-router-dom';
 import {ErrorMessageModal} from './ErrorMessageModal';
@@ -35,7 +35,7 @@ const IncidentsTable = observer(function IncidentsTable({incidents}) {
   const {id: instanceId} = useParams();
   const {
     state: {selection},
-  } = flowNodeInstance;
+  } = flowNodeInstanceStore;
 
   const toggleModal = ({content, title}) => {
     setIsModalVisibile(!isModalVisibile);
@@ -64,7 +64,7 @@ const IncidentsTable = observer(function IncidentsTable({incidents}) {
       newSelection = {id: flowNodeInstanceId, activityId: flowNodeId};
     }
 
-    flowNodeInstance.changeCurrentSelection(newSelection);
+    flowNodeInstanceStore.changeCurrentSelection(newSelection);
   };
 
   const handleSort = (key) => {

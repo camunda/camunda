@@ -11,13 +11,13 @@ import {getWorkflowName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
 import Skeleton from './Skeleton';
 import {observer} from 'mobx-react';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 
 import * as Styled from './styled';
-import {variables} from 'modules/stores/variables';
+import {variablesStore} from 'modules/stores/variables';
 
 const InstanceHeader = observer(() => {
-  const {instance} = currentInstance.state;
+  const {instance} = currentInstanceStore.state;
 
   return (
     <Styled.SplitPaneHeader>
@@ -44,7 +44,7 @@ const InstanceHeader = observer(() => {
                   <Operations
                     instance={instance}
                     forceSpinner={
-                      variables.hasActiveOperation ||
+                      variablesStore.hasActiveOperation ||
                       instance?.hasActiveOperation
                     }
                   />

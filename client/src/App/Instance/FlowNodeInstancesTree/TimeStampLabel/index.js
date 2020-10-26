@@ -10,11 +10,11 @@ import PropTypes from 'prop-types';
 import {formatDate} from 'modules/utils/date';
 
 import {TimeStamp} from './styled';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 
 const TimeStampLabel = observer(({timeStamp, isSelected}) => {
-  const {isTimeStampVisible} = flowNodeTimeStamp.state;
+  const {isTimeStampVisible} = flowNodeTimeStampStore.state;
 
   return isTimeStampVisible && timeStamp ? (
     <TimeStamp isSelected={isSelected}>{formatDate(timeStamp)}</TimeStamp>

@@ -6,21 +6,21 @@
 
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {filters} from 'modules/stores/filters';
-import {instances} from 'modules/stores/instances';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {filtersStore} from 'modules/stores/filters';
+import {instancesStore} from 'modules/stores/instances';
 import {Paginator} from './index';
 
 describe('Paginator', () => {
   afterEach(() => {
-    filters.reset();
-    instances.reset();
+    filtersStore.reset();
+    instancesStore.reset();
   });
 
   it('should show the first five pages when on first page', () => {
-    filters.setEntriesPerPage(10);
-    filters.setPage(1);
-    instances.setInstances({filteredInstancesCount: 150});
+    filtersStore.setEntriesPerPage(10);
+    filtersStore.setPage(1);
+    instancesStore.setInstances({filteredInstancesCount: 150});
 
     render(<Paginator maxPage={15} />, {wrapper: ThemeProvider});
 
@@ -37,9 +37,9 @@ describe('Paginator', () => {
   });
 
   it('should show the last five pages when on last page', () => {
-    filters.setEntriesPerPage(10);
-    filters.setPage(15);
-    instances.setInstances({filteredInstancesCount: 150});
+    filtersStore.setEntriesPerPage(10);
+    filtersStore.setPage(15);
+    instancesStore.setInstances({filteredInstancesCount: 150});
 
     render(<Paginator maxPage={15} />, {wrapper: ThemeProvider});
     [15, 14, 13, 12, 11, 1].forEach((pageNumber) => {
@@ -54,65 +54,65 @@ describe('Paginator', () => {
   });
 
   it('should show ellipsis on both sides in the middle', () => {
-    filters.setEntriesPerPage(5);
-    filters.setPage(10);
-    instances.setInstances({filteredInstancesCount: 150});
+    filtersStore.setEntriesPerPage(5);
+    filtersStore.setPage(10);
+    instancesStore.setInstances({filteredInstancesCount: 150});
 
     render(<Paginator maxPage={20} />, {wrapper: ThemeProvider});
     expect(screen.getAllByText('…').length).toBe(2);
   });
 
   it('should not show ellipsis when first page is just barely out of range', () => {
-    filters.setEntriesPerPage(10);
-    filters.setPage(1);
-    instances.setInstances({filteredInstancesCount: 20});
+    filtersStore.setEntriesPerPage(10);
+    filtersStore.setPage(1);
+    instancesStore.setInstances({filteredInstancesCount: 20});
     render(<Paginator maxPage={2} />, {wrapper: ThemeProvider});
     expect(screen.queryByText('…')).not.toBeInTheDocument();
   });
 
   it('should navigate between pages', () => {
-    filters.setEntriesPerPage(10);
-    filters.setPage(1);
-    instances.setInstances({filteredInstancesCount: 30});
+    filtersStore.setEntriesPerPage(10);
+    filtersStore.setPage(1);
+    instancesStore.setInstances({filteredInstancesCount: 30});
     render(<Paginator maxPage={3} />, {wrapper: ThemeProvider});
 
     expect(screen.getByRole('button', {name: 'First page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Last page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Next page'})).toBeEnabled();
-    expect(filters.state.page).toBe(1);
+    expect(filtersStore.state.page).toBe(1);
 
     fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
     ['First page', 'Previous page', 'Last page', 'Next page'].forEach((name) =>
       expect(screen.getByRole('button', {name})).toBeEnabled()
     );
-    expect(filters.state.page).toBe(2);
+    expect(filtersStore.state.page).toBe(2);
 
     fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
     expect(screen.getByRole('button', {name: 'First page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Previous page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Last page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Next page'})).toBeDisabled();
-    expect(filters.state.page).toBe(3);
+    expect(filtersStore.state.page).toBe(3);
 
     fireEvent.click(screen.getByRole('button', {name: 'First page'}));
     expect(screen.getByRole('button', {name: 'First page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Last page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Next page'})).toBeEnabled();
-    expect(filters.state.page).toBe(1);
+    expect(filtersStore.state.page).toBe(1);
 
     fireEvent.click(screen.getByRole('button', {name: 'Last page'}));
     expect(screen.getByRole('button', {name: 'First page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Previous page'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Last page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Next page'})).toBeDisabled();
-    expect(filters.state.page).toBe(3);
+    expect(filtersStore.state.page).toBe(3);
 
     fireEvent.click(screen.getByRole('button', {name: 'Previous page'}));
     ['First page', 'Previous page', 'Last page', 'Next page'].forEach((name) =>
       expect(screen.getByRole('button', {name})).toBeEnabled()
     );
-    expect(filters.state.page).toBe(2);
+    expect(filtersStore.state.page).toBe(2);
   });
 });

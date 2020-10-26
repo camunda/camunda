@@ -8,7 +8,7 @@ import React from 'react';
 import {Collapse} from '../Collapse';
 import InstancesBar from 'modules/components/InstancesBar';
 import PanelListItem from '../PanelListItem';
-import {instancesByWorkflow} from 'modules/stores/instancesByWorkflow';
+import {instancesByWorkflowStore} from 'modules/stores/instancesByWorkflow';
 
 import * as Styled from './styled';
 import {
@@ -26,11 +26,11 @@ import {observer} from 'mobx-react';
 const InstancesByWorkflow = observer(
   class InstancesByWorkflow extends React.Component {
     componentDidMount = async () => {
-      instancesByWorkflow.getInstancesByWorkflow();
+      instancesByWorkflowStore.getInstancesByWorkflow();
     };
 
     componentWillUnmount = async () => {
-      instancesByWorkflow.reset();
+      instancesByWorkflowStore.reset();
     };
 
     renderIncidentsPerVersion = (workflowName, items) => {
@@ -114,7 +114,7 @@ const InstancesByWorkflow = observer(
       const {
         state: {instances, isFailed, isLoaded},
         isDataAvailable,
-      } = instancesByWorkflow;
+      } = instancesByWorkflowStore;
 
       if (!isDataAvailable) {
         return (

@@ -11,7 +11,7 @@ import {Observer} from 'mobx-react';
 import {PANEL_POSITION, BADGE_TYPE} from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Badge from 'modules/components/Badge';
@@ -22,7 +22,7 @@ function Header() {
   return (
     <Styled.FiltersHeader>
       <Badge type={BADGE_TYPE.FILTERS} data-testid="filter-panel-header-badge">
-        <Observer>{() => instances.state.filteredInstancesCount}</Observer>
+        <Observer>{() => instancesStore.state.filteredInstancesCount}</Observer>
       </Badge>
     </Styled.FiltersHeader>
   );

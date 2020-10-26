@@ -7,20 +7,20 @@
 import React from 'react';
 import {PILL_TYPE} from 'modules/constants';
 import * as Styled from './styled';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
 const TimeStampPill = observer(function TimeStampPill() {
-  const {isInitialLoadComplete: isTreeLoaded} = flowNodeInstance.state;
+  const {isInitialLoadComplete: isTreeLoaded} = flowNodeInstanceStore.state;
   const {
     isInitialLoadComplete: areDefinitionsLoaded,
-  } = singleInstanceDiagram.state;
+  } = singleInstanceDiagramStore.state;
   const {
     state: {isTimeStampVisible},
     toggleTimeStampVisibility,
-  } = flowNodeTimeStamp;
+  } = flowNodeTimeStampStore;
 
   const isDisabled = !isTreeLoaded && !areDefinitionsLoaded;
   return (

@@ -6,8 +6,8 @@
 
 import {observable, decorate, action, autorun} from 'mobx';
 import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {instances} from 'modules/stores/instances';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {instancesStore} from 'modules/stores/instances';
 
 const DEFAULT_STATE = {
   running: 0,
@@ -25,7 +25,7 @@ class Statistics {
     this.fetchStatistics();
 
     this.pollingDisposer = autorun(() => {
-      if (currentInstance.state.instance != null) {
+      if (currentInstanceStore.state.instance != null) {
         if (this.intervalId === null) {
           this.startPolling();
         }
@@ -35,7 +35,7 @@ class Statistics {
     });
 
     this.fetchStatisticsDisposer = autorun(() => {
-      if (instances.state.instancesWithCompletedOperations.length > 0) {
+      if (instancesStore.state.instancesWithCompletedOperations.length > 0) {
         this.fetchStatistics();
       }
     });
@@ -105,4 +105,4 @@ decorate(Statistics, {
   reset: action,
 });
 
-export const statistics = new Statistics();
+export const statisticsStore = new Statistics();

@@ -14,10 +14,10 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {variables} from 'modules/stores/variables';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {variablesStore} from 'modules/stores/variables';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Variables from './index';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockVariables} from './index.setup';
 import PropTypes from 'prop-types';
 import {rest} from 'msw';
@@ -62,12 +62,12 @@ describe('Variables', () => {
       )
     );
 
-    await currentInstance.init(1);
+    await currentInstanceStore.init(1);
   });
 
   afterEach(() => {
-    currentInstance.reset();
-    variables.reset();
+    currentInstanceStore.reset();
+    variablesStore.reset();
   });
 
   describe('Skeleton', () => {
@@ -102,7 +102,7 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      const variableList = variables.fetchVariables(1);
+      const variableList = variablesStore.fetchVariables(1);
 
       expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
       await variableList;
@@ -118,7 +118,7 @@ describe('Variables', () => {
       expect(screen.getByText('Variable')).toBeInTheDocument();
       expect(screen.getByText('Value')).toBeInTheDocument();
 
-      const {items} = variables.state;
+      const {items} = variablesStore.state;
 
       items.forEach((item) => {
         const withinVariableRow = within(screen.getByTestId(item.name));
@@ -131,7 +131,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const {items} = variables.state;
+      const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
         ({hasActiveOperation}) => hasActiveOperation
       );
@@ -224,11 +224,11 @@ describe('Variables', () => {
 
       // already existing variable
       fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
-        target: {value: variables.state.items[0].name},
+        target: {value: variablesStore.state.items[0].name},
       });
 
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: variables.state.items[0].value},
+        target: {value: variablesStore.state.items[0].value},
       });
 
       expect(
@@ -280,7 +280,7 @@ describe('Variables', () => {
         )
       );
 
-      await variables.fetchVariables('with-newly-added-variable');
+      await variablesStore.fetchVariables('with-newly-added-variable');
       expect(
         within(screen.queryByTestId(newVariableName)).queryByTestId(
           'edit-variable-spinner'
@@ -294,7 +294,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const [activeOperationVariable] = variables.state.items.filter(
+      const [activeOperationVariable] = variablesStore.state.items.filter(
         ({hasActiveOperation}) => hasActiveOperation
       );
 
@@ -304,7 +304,7 @@ describe('Variables', () => {
         ).queryByTestId('edit-variable-button')
       ).not.toBeInTheDocument();
 
-      const [inactiveOperationVariable] = variables.state.items.filter(
+      const [inactiveOperationVariable] = variablesStore.state.items.filter(
         ({hasActiveOperation}) => !hasActiveOperation
       );
 
@@ -321,7 +321,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const [inactiveOperationVariable] = variables.state.items.filter(
+      const [inactiveOperationVariable] = variablesStore.state.items.filter(
         ({hasActiveOperation}) => !hasActiveOperation
       );
 
@@ -359,7 +359,7 @@ describe('Variables', () => {
       expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
-        screen.getByTestId(variables.state.items[0].name)
+        screen.getByTestId(variablesStore.state.items[0].name)
       );
       expect(
         withinFirstVariable.queryByTestId('edit-value')
@@ -389,7 +389,7 @@ describe('Variables', () => {
       expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
-        screen.getByTestId(variables.state.items[0].name)
+        screen.getByTestId(variablesStore.state.items[0].name)
       );
 
       fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
@@ -406,7 +406,7 @@ describe('Variables', () => {
       expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
-        screen.getByTestId(variables.state.items[0].name)
+        screen.getByTestId(variablesStore.state.items[0].name)
       );
 
       fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
@@ -435,7 +435,10 @@ describe('Variables', () => {
 
   describe('Footer', () => {
     beforeAll(async () => {
-      flowNodeInstance.setCurrentSelection({flowNodeId: null, treeRowIds: []});
+      flowNodeInstanceStore.setCurrentSelection({
+        flowNodeId: null,
+        treeRowIds: [],
+      });
     });
     it('should disable add variable button when loading', async () => {
       render(<Variables />, {wrapper: Wrapper});
@@ -446,7 +449,7 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button if instance state is cancelled', async () => {
-      currentInstance.setCurrentInstance({id: 1, state: 'CANCELED'});
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'CANCELED'});
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));

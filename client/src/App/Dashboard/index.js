@@ -11,7 +11,7 @@ import {InstancesByWorkflow} from './InstancesByWorkflow';
 import {IncidentsByError} from './IncidentsByError';
 import {PAGE_TITLE} from 'modules/constants';
 import Copyright from 'modules/components/Copyright';
-import {statistics} from 'modules/stores/statistics';
+import {statisticsStore} from 'modules/stores/statistics';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled.js';
@@ -23,7 +23,7 @@ const Dashboard = observer(
     };
 
     render() {
-      const {isFailed} = statistics.state;
+      const {isFailed} = statisticsStore.state;
 
       return (
         <Styled.Dashboard>

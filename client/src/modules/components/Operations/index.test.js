@@ -9,8 +9,8 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {createMemoryHistory} from 'history';
 import {STATE, OPERATION_STATE} from 'modules/constants';
-import {filters} from 'modules/stores/filters';
-import {instances} from 'modules/stores/instances';
+import {filtersStore} from 'modules/stores/filters';
+import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
 import {mockServer} from 'modules/mockServer';
 import {INSTANCE, ACTIVE_INSTANCE, mockOperationCreated} from './index.setup';
@@ -196,8 +196,10 @@ describe('Operations', () => {
         )
       );
 
-      filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
-      await filters.init();
+      filtersStore.setUrlParameters(createMemoryHistory(), {
+        pathname: '/instances',
+      });
+      await filtersStore.init();
 
       render(
         <Operations
@@ -213,7 +215,7 @@ describe('Operations', () => {
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
       jest.useFakeTimers();
-      instances.init();
+      instancesStore.init();
 
       await waitFor(() =>
         expect(screen.getByTestId('operation-spinner')).toBeInTheDocument()
@@ -235,8 +237,8 @@ describe('Operations', () => {
         ).not.toBeInTheDocument()
       );
 
-      instances.reset();
-      filters.reset();
+      instancesStore.reset();
+      filtersStore.reset();
 
       jest.useRealTimers();
     });

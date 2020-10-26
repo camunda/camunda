@@ -7,7 +7,7 @@
 import {observable, decorate, action, computed, when, autorun} from 'mobx';
 import {constructFlowNodeIdToFlowNodeInstanceMap} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 const DEFAULT_STATE = {
@@ -28,19 +28,21 @@ class FlowNodeInstance {
 
   init() {
     when(
-      () => currentInstance.state.instance?.id !== undefined,
+      () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
         this.setCurrentSelection({
           flowNodeId: null,
-          treeRowIds: [currentInstance.state.instance.id],
+          treeRowIds: [currentInstanceStore.state.instance.id],
         });
 
-        this.fetchInstanceExecutionHistory(currentInstance.state.instance.id);
+        this.fetchInstanceExecutionHistory(
+          currentInstanceStore.state.instance.id
+        );
       }
     );
 
     this.disposer = autorun(() => {
-      const {instance} = currentInstance.state;
+      const {instance} = currentInstanceStore.state;
 
       if (isInstanceRunning(instance)) {
         if (this.intervalId === null) {
@@ -57,7 +59,7 @@ class FlowNodeInstance {
   };
 
   changeCurrentSelection = (node) => {
-    const {instance} = currentInstance.state;
+    const {instance} = currentInstanceStore.state;
 
     const isRootNode = node.id === instance.id;
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
@@ -100,7 +102,7 @@ class FlowNodeInstance {
     );
   }
   get instanceExecutionHistory() {
-    const {instance} = currentInstance.state;
+    const {instance} = currentInstanceStore.state;
     const {response, isInitialLoadComplete} = this.state;
 
     if (instance === null || !isInitialLoadComplete) {
@@ -178,4 +180,4 @@ decorate(FlowNodeInstance, {
   isInstanceExecutionHistoryAvailable: computed,
 });
 
-export const flowNodeInstance = new FlowNodeInstance();
+export const flowNodeInstanceStore = new FlowNodeInstance();

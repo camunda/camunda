@@ -13,7 +13,7 @@ import IncidentsOverlay from './IncidentsOverlay';
 import {IncidentsTable} from './IncidentsTable';
 import {IncidentsFilter} from './IncidentsFilter';
 import usePrevious from 'modules/hooks/usePrevious';
-import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';

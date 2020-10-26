@@ -13,10 +13,10 @@ import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {observer} from 'mobx-react';
 import {autorun} from 'mobx';
 import {useParams} from 'react-router-dom';
@@ -25,21 +25,21 @@ import * as Styled from './styled';
 const Instance = observer(() => {
   const {id} = useParams();
   useEffect(() => {
-    currentInstance.init(id);
-    flowNodeInstance.init();
+    currentInstanceStore.init(id);
+    flowNodeInstanceStore.init();
 
     let disposer = autorun(() => {
-      if (currentInstance.workflowTitle !== null)
-        document.title = currentInstance.workflowTitle;
+      if (currentInstanceStore.workflowTitle !== null)
+        document.title = currentInstanceStore.workflowTitle;
     });
 
-    singleInstanceDiagram.init();
+    singleInstanceDiagramStore.init();
 
     return () => {
-      currentInstance.reset();
-      flowNodeInstance.reset();
-      singleInstanceDiagram.reset();
-      flowNodeTimeStamp.reset();
+      currentInstanceStore.reset();
+      flowNodeInstanceStore.reset();
+      singleInstanceDiagramStore.reset();
+      flowNodeTimeStampStore.reset();
 
       if (disposer !== undefined) {
         disposer();
@@ -47,7 +47,7 @@ const Instance = observer(() => {
     };
   }, [id]);
 
-  const {instance} = currentInstance.state;
+  const {instance} = currentInstanceStore.state;
   return (
     <Styled.Instance>
       <VisuallyHiddenH1>

@@ -9,7 +9,7 @@ import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {isEmpty} from 'lodash';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 
 const DEFAULT_STATE = {
   diagramModel: null,
@@ -24,8 +24,8 @@ class InstancesDiagram {
 
   init = () => {
     this.disposer = autorun(() => {
-      if (!isEmpty(filters.workflow)) {
-        this.fetchWorkflowXml(filters.workflow.id);
+      if (!isEmpty(filtersStore.workflow)) {
+        this.fetchWorkflowXml(filtersStore.workflow.id);
       } else {
         this.resetDiagramModel();
       }
@@ -96,4 +96,4 @@ decorate(InstancesDiagram, {
   selectableIds: computed,
 });
 
-export const instancesDiagram = new InstancesDiagram();
+export const instancesDiagramStore = new InstancesDiagram();

@@ -8,7 +8,7 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
-import {statistics} from 'modules/stores/statistics';
+import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
 import PropTypes from 'prop-types';
 import {rest} from 'msw';
@@ -30,7 +30,7 @@ Wrapper.propTypes = {
 };
 describe('Dashboard', () => {
   beforeEach(() => {
-    statistics.reset();
+    statisticsStore.reset();
   });
 
   it('should render', async () => {
@@ -48,7 +48,7 @@ describe('Dashboard', () => {
 
     render(<Dashboard />, {wrapper: Wrapper});
 
-    await statistics.fetchStatistics();
+    await statisticsStore.fetchStatistics();
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
     expect(screen.getByText('Camunda Operate Dashboard')).toBeInTheDocument();
     expect(
@@ -71,7 +71,7 @@ describe('Dashboard', () => {
 
     render(<Dashboard />, {wrapper: Wrapper});
 
-    await statistics.fetchStatistics();
+    await statisticsStore.fetchStatistics();
     expect(screen.queryByText('Metric Panel')).not.toBeInTheDocument();
     expect(
       screen.getByText('Workflow statistics could not be fetched.')

@@ -7,9 +7,9 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {TimeStampPill} from './index';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -29,16 +29,16 @@ describe('TimeStampPill', () => {
   });
 
   afterEach(() => {
-    flowNodeTimeStamp.reset();
-    singleInstanceDiagram.reset();
-    flowNodeInstance.reset();
+    flowNodeTimeStampStore.reset();
+    singleInstanceDiagramStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should render "Show" / "Hide" label', () => {
     render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByText('Show End Time')).toBeInTheDocument();
-    flowNodeTimeStamp.toggleTimeStampVisibility();
+    flowNodeTimeStampStore.toggleTimeStampVisibility();
     expect(screen.getByText('Hide End Time')).toBeInTheDocument();
   });
 
@@ -46,8 +46,8 @@ describe('TimeStampPill', () => {
     render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByRole('button')).toBeDisabled();
-    await flowNodeInstance.fetchInstanceExecutionHistory(1);
-    await singleInstanceDiagram.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml(1);
     expect(screen.getByRole('button')).toBeEnabled();
   });
 });

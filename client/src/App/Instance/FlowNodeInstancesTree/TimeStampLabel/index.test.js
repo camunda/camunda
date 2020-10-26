@@ -7,7 +7,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {TimeStampLabel} from './index';
 
 describe('TimeStampLabel', () => {
@@ -20,9 +20,9 @@ describe('TimeStampLabel', () => {
       {wrapper: ThemeProvider}
     );
     expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
-    flowNodeTimeStamp.toggleTimeStampVisibility();
+    flowNodeTimeStampStore.toggleTimeStampVisibility();
     expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
-    flowNodeTimeStamp.toggleTimeStampVisibility();
+    flowNodeTimeStampStore.toggleTimeStampVisibility();
     expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
   });
 });

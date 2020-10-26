@@ -9,9 +9,9 @@ import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
 import {isRunning} from 'modules/utils/instance';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {variables} from 'modules/stores/variables';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {variablesStore} from 'modules/stores/variables';
 
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
@@ -26,12 +26,12 @@ const Variables = observer(function Variables() {
   const {
     state: {items, isLoading, isInitialLoadComplete},
     hasNoVariables,
-  } = variables;
+  } = variablesStore;
   const {id: workflowInstanceId} = useParams();
 
   useEffect(() => {
-    variables.fetchVariables(workflowInstanceId);
-    return () => variables.clearItems();
+    variablesStore.fetchVariables(workflowInstanceId);
+    return () => variablesStore.clearItems();
   }, [workflowInstanceId]);
 
   const [editMode, setEditMode] = useState('');
@@ -80,9 +80,9 @@ const Variables = observer(function Variables() {
 
   function saveVariable() {
     if (editMode === VARIABLE_MODE.ADD) {
-      variables.addVariable(workflowInstanceId, key, value);
+      variablesStore.addVariable(workflowInstanceId, key, value);
     } else if (editMode === VARIABLE_MODE.EDIT) {
-      variables.updateVariable(workflowInstanceId, key, value);
+      variablesStore.updateVariable(workflowInstanceId, key, value);
     }
 
     closeEdit();
@@ -191,7 +191,7 @@ const Variables = observer(function Variables() {
   }
 
   function renderContent() {
-    const {instance} = currentInstance.state;
+    const {instance} = currentInstanceStore.state;
     const isCurrentInstanceRunning =
       instance && isRunning({state: instance.state});
     return (
@@ -260,9 +260,9 @@ const Variables = observer(function Variables() {
         selection: {flowNodeId, treeRowIds},
       },
       flowNodeIdToFlowNodeInstanceMap,
-    } = flowNodeInstance;
+    } = flowNodeInstanceStore;
 
-    const {instance} = currentInstance.state;
+    const {instance} = currentInstanceStore.state;
 
     if (instance === null && flowNodeId === null) {
       return false;

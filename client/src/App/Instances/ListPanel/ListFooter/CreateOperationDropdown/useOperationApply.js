@@ -4,21 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {instanceSelection} from 'modules/stores/instanceSelection';
-import {filters} from 'modules/stores/filters';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
+import {filtersStore} from 'modules/stores/filters';
 import {operationsStore} from 'modules/stores/operations';
 import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
 } from 'modules/utils/filter';
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 
 export default function useOperationApply() {
-  const {selectedInstanceIds, excludedInstanceIds, reset} = instanceSelection;
+  const {
+    selectedInstanceIds,
+    excludedInstanceIds,
+    reset,
+  } = instanceSelectionStore;
 
   return {
     applyBatchOperation: (operationType) => {
-      const {filter, groupedWorkflows} = filters.state;
+      const {filter, groupedWorkflows} = filtersStore.state;
 
       const query = parseFilterForRequest(
         getFilterWithWorkflowIds(filter, groupedWorkflows)
@@ -31,9 +35,11 @@ export default function useOperationApply() {
         selectedInstanceIds.length > 0 ? selectedInstanceIds : filterIds;
 
       if (selectedInstanceIds.length > 0) {
-        instances.addInstancesWithActiveOperations({ids: selectedInstanceIds});
+        instancesStore.addInstancesWithActiveOperations({
+          ids: selectedInstanceIds,
+        });
       } else {
-        instances.addInstancesWithActiveOperations({
+        instancesStore.addInstancesWithActiveOperations({
           ids: excludedInstanceIds,
           shouldPollAllVisibleIds: true,
         });

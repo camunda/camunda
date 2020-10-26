@@ -56,4 +56,4 @@ decorate(InstancesByWorkflow, {
   isDataAvailable: computed,
 });
 
-export const instancesByWorkflow = new InstancesByWorkflow();
+export const instancesByWorkflowStore = new InstancesByWorkflow();

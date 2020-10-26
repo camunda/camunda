@@ -10,10 +10,10 @@ import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
 import {waitFor} from '@testing-library/react';
 import {createMemoryHistory} from 'history';
-import {instanceSelection} from 'modules/stores/instanceSelection';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {operationsStore} from 'modules/stores/operations';
-import {filters} from 'modules/stores/filters';
-import {instances} from 'modules/stores/instances';
+import {filtersStore} from 'modules/stores/filters';
+import {instancesStore} from 'modules/stores/instances';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {mockData} from './useOperationApply.setup';
 import {
@@ -57,15 +57,15 @@ describe('useOperationApply', () => {
       )
     );
 
-    filters.setUrlParameters(historyMock, locationMock);
-    await filters.init();
-    instances.init();
+    filtersStore.setUrlParameters(historyMock, locationMock);
+    await filtersStore.init();
+    instancesStore.init();
   });
 
   afterEach(() => {
-    instanceSelection.reset();
-    filters.reset();
-    instances.reset();
+    instanceSelectionStore.reset();
+    filtersStore.reset();
+    instancesStore.reset();
     operationsStore.reset();
   });
 
@@ -99,8 +99,8 @@ describe('useOperationApply', () => {
       })
     );
 
-    filters.setFilter({
-      ...filters.state.filter,
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       ids: '1',
     });
 
@@ -111,7 +111,7 @@ describe('useOperationApply', () => {
       )
     );
 
-    instanceSelection.setAllChecked();
+    instanceSelectionStore.setAllChecked();
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
@@ -132,11 +132,11 @@ describe('useOperationApply', () => {
       })
     );
 
-    filters.setFilter({
-      ...filters.state.filter,
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       ids: '1, 2',
     });
-    instanceSelection.selectInstance('1');
+    instanceSelectionStore.selectInstance('1');
 
     mockServer.use(
       rest.post(
@@ -167,12 +167,12 @@ describe('useOperationApply', () => {
       })
     );
 
-    filters.setFilter({
-      ...filters.state.filter,
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       ids: '1, 2',
     });
-    instanceSelection.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
-    instanceSelection.selectInstance('1');
+    instanceSelectionStore.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
+    instanceSelectionStore.selectInstance('1');
 
     mockServer.use(
       rest.post(
@@ -204,8 +204,8 @@ describe('useOperationApply', () => {
       })
     );
 
-    filters.setFilter({
-      ...filters.state.filter,
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       workflow: 'demoProcess',
       version: '1',
     });
@@ -217,7 +217,7 @@ describe('useOperationApply', () => {
       )
     );
 
-    instanceSelection.selectInstance('1');
+    instanceSelectionStore.selectInstance('1');
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply(context);
@@ -229,10 +229,10 @@ describe('useOperationApply', () => {
 
   it('should poll all visible instances', async () => {
     const {expectedQuery, ...context} = mockData.setFilterSelectAll;
-    instanceSelection.setMode(INSTANCE_SELECTION_MODE.ALL);
+    instanceSelectionStore.setMode(INSTANCE_SELECTION_MODE.ALL);
 
     await waitFor(() =>
-      expect(instances.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
 
     jest.useFakeTimers();
@@ -248,7 +248,7 @@ describe('useOperationApply', () => {
     );
     renderUseOperationApply(context);
 
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       '2251799813685594',
       '2251799813685596',
     ]);
@@ -256,23 +256,23 @@ describe('useOperationApply', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(instances.state.instancesWithActiveOperations).toEqual([])
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([])
     );
     jest.useRealTimers();
   });
 
   it('should poll the selected instances', async () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
-    instanceSelection.selectInstance('2251799813685594');
+    instanceSelectionStore.selectInstance('2251799813685594');
 
     await waitFor(() =>
-      expect(instances.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
 
     jest.useFakeTimers();
     renderUseOperationApply(context);
 
-    expect(instances.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       '2251799813685594',
     ]);
     mockServer.use(
@@ -288,7 +288,7 @@ describe('useOperationApply', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(instances.state.instancesWithActiveOperations).toEqual([])
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([])
     );
     jest.useRealTimers();
   });

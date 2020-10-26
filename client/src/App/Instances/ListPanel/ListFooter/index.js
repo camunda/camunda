@@ -9,20 +9,22 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {instances} from 'modules/stores/instances';
-import {instanceSelection} from 'modules/stores/instanceSelection';
+import {instancesStore} from 'modules/stores/instances';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 
 import {Paginator} from './Paginator';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 
 const ListFooter = observer(({hasContent}) => {
-  const {filteredInstancesCount} = instances.state;
-  const selectedCount = instanceSelection.getSelectedInstanceCount();
+  const {filteredInstancesCount} = instancesStore.state;
+  const selectedCount = instanceSelectionStore.getSelectedInstanceCount();
 
   const getMaxPage = () => {
-    return Math.ceil(filteredInstancesCount / filters.state.entriesPerPage);
+    return Math.ceil(
+      filteredInstancesCount / filtersStore.state.entriesPerPage
+    );
   };
 
   const isPaginationRequired = () => {

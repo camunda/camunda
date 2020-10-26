@@ -9,12 +9,12 @@ import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import {statistics} from 'modules/stores/statistics';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {statisticsStore} from 'modules/stores/statistics';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 
 import {observer} from 'mobx-react';
 
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
 import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
 import {FILTER_SELECTION, BADGE_TYPE, DEFAULT_FILTER} from 'modules/constants';
@@ -46,7 +46,7 @@ const Header = observer(
     }
 
     componentDidMount = () => {
-      statistics.init();
+      statisticsStore.init();
     };
 
     componentDidUpdate = (prevProps) => {
@@ -65,7 +65,7 @@ const Header = observer(
     };
 
     componentWillUnmount() {
-      statistics.reset();
+      statisticsStore.reset();
     }
 
     currentView() {
@@ -148,8 +148,8 @@ const Header = observer(
     }
 
     selectCount(type) {
-      const {running, withIncidents, isLoaded} = statistics.state;
-      const {filteredInstancesCount} = instances.state;
+      const {running, withIncidents, isLoaded} = statisticsStore.state;
+      const {filteredInstancesCount} = instancesStore.state;
 
       if (!isLoaded) {
         return '';
@@ -178,7 +178,7 @@ const Header = observer(
     }
 
     renderInstanceDetails() {
-      const {instance} = currentInstance.state;
+      const {instance} = currentInstanceStore.state;
       if (instance) {
         return (
           <>

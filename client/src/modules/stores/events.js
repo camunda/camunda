@@ -6,7 +6,7 @@
 
 import {observable, decorate, action, when, autorun} from 'mobx';
 import {fetchEvents} from 'modules/api/events';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
 const DEFAULT_STATE = {
@@ -20,16 +20,16 @@ class Events {
 
   init() {
     when(
-      () => currentInstance.state.instance?.id !== undefined,
+      () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
-        this.fetchWorkflowEvents(currentInstance.state.instance.id);
+        this.fetchWorkflowEvents(currentInstanceStore.state.instance.id);
       }
     );
 
     this.disposer = autorun(() => {
-      if (isInstanceRunning(currentInstance.state.instance)) {
+      if (isInstanceRunning(currentInstanceStore.state.instance)) {
         if (this.intervalId === null) {
-          this.startPolling(currentInstance.state.instance.id);
+          this.startPolling(currentInstanceStore.state.instance.id);
         }
       } else {
         this.stopPolling();
@@ -77,4 +77,4 @@ decorate(Events, {
   reset: action,
 });
 
-export const events = new Events();
+export const eventsStore = new Events();

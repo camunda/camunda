@@ -15,7 +15,8 @@ import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {groupedWorkflowsMock, mockWorkflowStatistics} from 'modules/testUtils';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
+
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
@@ -23,7 +24,7 @@ import PropTypes from 'prop-types';
 import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 
 describe('ListPanel', () => {
   const locationMock = {pathname: '/instances'};
@@ -58,17 +59,17 @@ describe('ListPanel', () => {
       )
     );
 
-    filters.setUrlParameters(historyMock, locationMock);
+    filtersStore.setUrlParameters(historyMock, locationMock);
 
-    await filters.init();
-    filters.setFilter(DEFAULT_FILTER);
-    filters.setSorting(DEFAULT_SORTING);
-    filters.setEntriesPerPage(10);
+    await filtersStore.init();
+    filtersStore.setFilter(DEFAULT_FILTER);
+    filtersStore.setSorting(DEFAULT_SORTING);
+    filtersStore.setEntriesPerPage(10);
   });
 
   afterEach(() => {
-    filters.reset();
-    instances.reset();
+    filtersStore.reset();
+    instancesStore.reset();
   });
 
   describe('messages', () => {
@@ -80,8 +81,8 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instances.fetchInstances({});
-      filters.setFilter({});
+      await instancesStore.fetchInstances({});
+      filtersStore.setFilter({});
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
@@ -103,9 +104,9 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instances.fetchInstances({});
+      await instancesStore.fetchInstances({});
 
-      filters.setFilter(DEFAULT_FILTER);
+      filtersStore.setFilter(DEFAULT_FILTER);
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
@@ -129,7 +130,7 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      instances.fetchInstances({});
+      instancesStore.fetchInstances({});
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -153,7 +154,7 @@ describe('ListPanel', () => {
         )
       );
 
-      await instances.fetchInstances({});
+      await instancesStore.fetchInstances({});
 
       render(<ListPanel />, {wrapper: Wrapper});
       expect(screen.getByTestId('instances-list')).toBeInTheDocument();
@@ -171,7 +172,7 @@ describe('ListPanel', () => {
         )
       );
 
-      await instances.fetchInstances({});
+      await instancesStore.fetchInstances({});
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
@@ -191,7 +192,7 @@ describe('ListPanel', () => {
       )
     );
 
-    await instances.fetchInstances({});
+    await instancesStore.fetchInstances({});
     render(<ListPanel />, {
       wrapper: Wrapper,
     });

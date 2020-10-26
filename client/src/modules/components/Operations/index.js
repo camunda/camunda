@@ -10,7 +10,7 @@ import {isEqual} from 'lodash';
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
-import {instances as instancesStore} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
 
 import {

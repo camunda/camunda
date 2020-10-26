@@ -9,8 +9,8 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
-import {filters} from 'modules/stores/filters';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {filtersStore} from 'modules/stores/filters';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -111,11 +111,11 @@ describe('OperationsEntry', () => {
       {wrapper: ThemeProvider}
     );
 
-    expect(filters.state.filter).toEqual({});
+    expect(filtersStore.state.filter).toEqual({});
 
     fireEvent.click(screen.getByText('3 Instances'));
 
-    expect(filters.state.filter).toEqual({
+    expect(filtersStore.state.filter).toEqual({
       ...DEFAULT_FILTER_CONTROLLED_VALUES,
       active: true,
       incidents: true,

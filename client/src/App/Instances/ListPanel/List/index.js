@@ -22,8 +22,8 @@ import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
-import {instanceSelection} from 'modules/stores/instanceSelection';
-import {filters} from 'modules/stores/filters';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
+import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const {THead, TBody, TH, TR, TD} = Table;
@@ -67,7 +67,7 @@ const List = observer(
     recalculateHeight() {
       if (this.containerRef.current?.clientHeight > 0) {
         const rows = ~~(this.containerRef.current.clientHeight / 38) - 1;
-        filters.setEntriesPerPage(rows);
+        filtersStore.setEntriesPerPage(rows);
       }
     }
 
@@ -76,8 +76,8 @@ const List = observer(
     };
 
     shouldResetSorting = ({
-      filter = filters.state.filter,
-      sorting = filters.state.sorting,
+      filter = filtersStore.state.filter,
+      sorting = filtersStore.state.sorting,
     }) => {
       const isFinishedInFilter = filter.canceled || filter.completed;
 
@@ -86,7 +86,7 @@ const List = observer(
     };
 
     handleSortingChange = (key) => {
-      const prevSorting = filters.state.sorting;
+      const prevSorting = filtersStore.state.sorting;
 
       const sorting = {
         sortBy: key,
@@ -99,10 +99,10 @@ const List = observer(
 
       // check if sorting needs to be reset
       if (this.shouldResetSorting({sorting: sorting})) {
-        return filters.setSorting(DEFAULT_SORTING);
+        return filtersStore.setSorting(DEFAULT_SORTING);
       }
 
-      return filters.setSorting(sorting);
+      return filtersStore.setSorting(sorting);
     };
 
     render() {
@@ -115,7 +115,7 @@ const List = observer(
               value={{
                 data: this.props.data,
                 onSort: this.handleSortingChange,
-                rowsToDisplay: filters.state.entriesPerPage,
+                rowsToDisplay: filtersStore.state.entriesPerPage,
                 isDataLoaded: this.props.isDataLoaded,
                 handleOperationButtonClick: this.handleOperationButtonClick,
               }}
@@ -161,7 +161,9 @@ const Body = observer(function (props) {
   return (
     <TBody {...props} data-testid="instances-list">
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
-        const isSelected = instanceSelection.isInstanceChecked(instance.id);
+        const isSelected = instanceSelectionStore.isInstanceChecked(
+          instance.id
+        );
         return (
           <TR key={idx} selected={isSelected}>
             <TD>
@@ -171,7 +173,9 @@ const Body = observer(function (props) {
                   data-testid="instance-checkbox"
                   type="selection"
                   isChecked={isSelected}
-                  onChange={() => instanceSelection.selectInstance(instance.id)}
+                  onChange={() =>
+                    instanceSelectionStore.selectInstance(instance.id)
+                  }
                   title={`Select instance ${instance.id}`}
                 />
 
@@ -211,8 +215,8 @@ const Body = observer(function (props) {
 
 const Header = observer(function (props) {
   const {data, onSort, isDataLoaded} = useListContext();
-  const {isAllChecked} = instanceSelection.state;
-  const {filter, sorting} = filters.state;
+  const {isAllChecked} = instanceSelectionStore.state;
+  const {filter, sorting} = filtersStore.state;
 
   const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;
@@ -225,7 +229,7 @@ const Header = observer(function (props) {
               <Checkbox
                 disabled={isListEmpty}
                 isChecked={isAllChecked}
-                onChange={instanceSelection.selectAllInstances}
+                onChange={instanceSelectionStore.selectAllInstances}
                 title="Select all instances"
               />
             ) : (

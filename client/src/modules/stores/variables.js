@@ -7,8 +7,8 @@
 import {observable, decorate, action, computed, when, autorun} from 'mobx';
 import {fetchVariables, applyOperation} from 'modules/api/instances';
 import {differenceWith, differenceBy} from 'lodash';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {STATE} from 'modules/constants';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
@@ -26,12 +26,12 @@ class Variables {
 
   init = async (workflowInstanceId) => {
     when(
-      () => currentInstance.state.instance?.state === STATE.CANCELED,
+      () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
     );
 
     this.disposer = autorun(() => {
-      if (isInstanceRunning(currentInstance.state.instance)) {
+      if (isInstanceRunning(currentInstanceStore.state.instance)) {
         if (this.intervalId === null) {
           this.startPolling(workflowInstanceId);
         }
@@ -80,7 +80,7 @@ class Variables {
   get scopeId() {
     const {
       state: {selection},
-    } = flowNodeInstance;
+    } = flowNodeInstanceStore;
     if (selection.treeRowIds.length > 0) {
       return selection.treeRowIds[0];
     }
@@ -215,4 +215,4 @@ decorate(Variables, {
   scopeId: computed,
 });
 
-export const variables = new Variables();
+export const variablesStore = new Variables();

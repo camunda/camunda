@@ -10,9 +10,10 @@ import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from './index';
 import {mockServer} from 'modules/mockServer';
-import {currentInstance} from 'modules/stores/currentInstance';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+
 import {DIAGRAM, CURRENT_INSTANCE, mockNode} from './index.setup';
 
 const instanceId = 1;
@@ -30,15 +31,15 @@ describe('<FlowNodeInstancesTree />', () => {
     );
 
     await Promise.all([
-      currentInstance.init(instanceId),
-      singleInstanceDiagram.fetchWorkflowXml(workflowId),
+      currentInstanceStore.init(instanceId),
+      singleInstanceDiagramStore.fetchWorkflowXml(workflowId),
     ]);
   });
 
   afterEach(() => {
-    currentInstance.reset();
-    singleInstanceDiagram.reset();
-    flowNodeInstance.reset();
+    currentInstanceStore.reset();
+    singleInstanceDiagramStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
@@ -109,12 +110,12 @@ describe('<FlowNodeInstancesTree />', () => {
     render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />, {
       wrapper: ThemeProvider,
     });
-    expect(flowNodeInstance.state.selection).toEqual({
+    expect(flowNodeInstanceStore.state.selection).toEqual({
       flowNodeId: null,
       treeRowIds: [],
     });
     fireEvent.click(screen.getByText('Peter Fork'));
-    expect(flowNodeInstance.state.selection).toEqual({
+    expect(flowNodeInstanceStore.state.selection).toEqual({
       flowNodeId: 'peterFork',
       treeRowIds: ['2251799813686130'],
     });

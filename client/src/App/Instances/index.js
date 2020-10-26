@@ -14,35 +14,35 @@ import {DiagramPanel} from './DiagramPanel';
 import {ListPanel} from './ListPanel';
 import Filters from './Filters';
 import OperationsPanel from './OperationsPanel';
-import {filters} from 'modules/stores/filters';
-import {instances} from 'modules/stores/instances';
-import {workflowStatistics} from 'modules/stores/workflowStatistics';
-import {instanceSelection} from 'modules/stores/instanceSelection';
-import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {filtersStore} from 'modules/stores/filters';
+import {instancesStore} from 'modules/stores/instances';
+import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 
 import {observer} from 'mobx-react';
 import * as Styled from './styled.js';
 
 const Instances = observer((props) => {
   useEffect(() => {
-    filters.init();
-    instanceSelection.init();
-    instancesDiagram.init();
-    workflowStatistics.init();
-    instances.init();
+    filtersStore.init();
+    instanceSelectionStore.init();
+    instancesDiagramStore.init();
+    workflowStatisticsStore.init();
+    instancesStore.init();
     document.title = PAGE_TITLE.INSTANCES;
     return () => {
-      filters.reset();
-      instanceSelection.reset();
-      instancesDiagram.reset();
-      workflowStatistics.reset();
-      instances.reset();
+      filtersStore.reset();
+      instanceSelectionStore.reset();
+      instancesDiagramStore.reset();
+      workflowStatisticsStore.reset();
+      instancesStore.reset();
     };
   }, []);
 
   useEffect(() => {
     const {history, location} = props;
-    filters.setUrlParameters(history, location);
+    filtersStore.setUrlParameters(history, location);
   }, [props]);
 
   return (
@@ -53,7 +53,7 @@ const Instances = observer((props) => {
           <Filters
             filter={{
               ...DEFAULT_FILTER_CONTROLLED_VALUES,
-              ...filters.decodedFilters,
+              ...filtersStore.decodedFilters,
             }}
           />
         </Styled.FilterSection>

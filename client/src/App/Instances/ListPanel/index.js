@@ -7,9 +7,9 @@
 import React from 'react';
 import {EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
-import {instances} from 'modules/stores/instances';
+import {instancesStore} from 'modules/stores/instances';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -23,16 +23,16 @@ const ListPanel = observer((props) => {
       isLoading: areInstancesLoading,
       isInitialLoadComplete: areInstancesInitiallyLoaded,
     },
-  } = instances;
+  } = instancesStore;
 
   const handleOperationButtonClick = (instance) => {
-    instances.addInstancesWithActiveOperations({ids: [instance.id]});
+    instancesStore.addInstancesWithActiveOperations({ids: [instance.id]});
   };
 
   const getEmptyListMessage = () => {
     const {
       filter: {active, incidents, completed, canceled},
-    } = filters.state;
+    } = filtersStore.state;
 
     let msg = 'There are no instances matching this filter set.';
 

@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {workflowStatistics} from './workflowStatistics';
-import {instancesDiagram} from './instancesDiagram';
+import {workflowStatisticsStore} from './workflowStatistics';
+import {instancesDiagramStore} from './instancesDiagram';
 import {createMemoryHistory} from 'history';
-import {filters} from 'modules/stores/filters';
+import {filtersStore} from './filters';
 import {
   groupedWorkflowsMock,
   mockWorkflowXML,
@@ -16,12 +16,12 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
-import {instances} from './instances';
+import {instancesStore} from './instances';
 
 describe('stores/workflowStatistics', () => {
   afterEach(() => {
-    workflowStatistics.reset();
-    filters.reset();
+    workflowStatisticsStore.reset();
+    filtersStore.reset();
   });
 
   beforeEach(() => {
@@ -36,11 +36,11 @@ describe('stores/workflowStatistics', () => {
   });
 
   it('should start and stop loading', () => {
-    expect(workflowStatistics.state.isLoading).toBe(false);
-    workflowStatistics.startLoading();
-    expect(workflowStatistics.state.isLoading).toBe(true);
-    workflowStatistics.stopLoading();
-    expect(workflowStatistics.state.isLoading).toBe(false);
+    expect(workflowStatisticsStore.state.isLoading).toBe(false);
+    workflowStatisticsStore.startLoading();
+    expect(workflowStatisticsStore.state.isLoading).toBe(true);
+    workflowStatisticsStore.stopLoading();
+    expect(workflowStatisticsStore.state.isLoading).toBe(false);
   });
 
   it('should reset state', async () => {
@@ -50,8 +50,8 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    await workflowStatistics.fetchWorkflowStatistics();
-    expect(workflowStatistics.state.statistics).toEqual([
+    await workflowStatisticsStore.fetchWorkflowStatistics();
+    expect(workflowStatisticsStore.state.statistics).toEqual([
       {
         activityId: 'ServiceTask_0kt6c5i',
         active: 1,
@@ -61,8 +61,8 @@ describe('stores/workflowStatistics', () => {
       },
     ]);
 
-    workflowStatistics.reset();
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    workflowStatisticsStore.reset();
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
   });
 
   it('should fetch workflow statistics', async () => {
@@ -72,14 +72,16 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    expect(workflowStatistics.state.isLoading).toBe(false);
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    expect(workflowStatisticsStore.state.isLoading).toBe(false);
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
-    workflowStatistics.fetchWorkflowStatistics();
-    expect(workflowStatistics.state.isLoading).toBe(true);
-    await waitFor(() => expect(workflowStatistics.state.isLoading).toBe(false));
+    workflowStatisticsStore.fetchWorkflowStatistics();
+    expect(workflowStatisticsStore.state.isLoading).toBe(true);
+    await waitFor(() =>
+      expect(workflowStatisticsStore.state.isLoading).toBe(false)
+    );
 
-    expect(workflowStatistics.state.statistics).toEqual([
+    expect(workflowStatisticsStore.state.statistics).toEqual([
       {
         activityId: 'ServiceTask_0kt6c5i',
         active: 1,
@@ -91,11 +93,13 @@ describe('stores/workflowStatistics', () => {
   });
 
   it('should fetch and update workflow statistics every time diagram changes', async () => {
-    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
-    await filters.init();
-    workflowStatistics.init();
+    filtersStore.setUrlParameters(createMemoryHistory(), {
+      pathname: '/instances',
+    });
+    await filtersStore.init();
+    workflowStatisticsStore.init();
 
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
@@ -106,9 +110,9 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    await instancesDiagram.fetchWorkflowXml(1);
+    await instancesDiagramStore.fetchWorkflowXml(1);
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual(
+      expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
       )
     );
@@ -132,9 +136,9 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    await instancesDiagram.fetchWorkflowXml(1);
+    await instancesDiagramStore.fetchWorkflowXml(1);
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual([
+      expect(workflowStatisticsStore.state.statistics).toEqual([
         {
           activityId: 'ServiceTask_0kt6c5i',
           active: 2,
@@ -147,13 +151,15 @@ describe('stores/workflowStatistics', () => {
   });
 
   it('should fetch/reset workflow statistics depending on filters', async () => {
-    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
-    await filters.init();
-    workflowStatistics.init();
+    filtersStore.setUrlParameters(createMemoryHistory(), {
+      pathname: '/instances',
+    });
+    await filtersStore.init();
+    workflowStatisticsStore.init();
 
     // should not fetch statistics on workflow or version change (handled by diagram reaction)
-    filters.setFilter({workflow: 'bigVarProcess', version: '1'});
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    filtersStore.setFilter({workflow: 'bigVarProcess', version: '1'});
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
     // should fetch when any other filter changes
     mockServer.use(
@@ -161,76 +167,80 @@ describe('stores/workflowStatistics', () => {
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
-    filters.setFilter({
-      ...filters.state.filter,
+    filtersStore.setFilter({
+      ...filtersStore.state.filter,
       errorMessage: 'bigVarProcess',
     });
 
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual(
+      expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
       )
     );
 
     // should reset statistics when workflow and version filters no longer exists
-    filters.setFilter({
+    filtersStore.setFilter({
       errorMessage: 'bigVarProcess',
     });
 
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual([])
+      expect(workflowStatisticsStore.state.statistics).toEqual([])
     );
 
     // should not react if filter is the same as previous
-    filters.setFilter({
+    filtersStore.setFilter({
       errorMessage: 'bigVarProcess',
     });
 
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual([])
+      expect(workflowStatisticsStore.state.statistics).toEqual([])
     );
   });
 
   it('should fetch workflow statistics depending on completed operations', async () => {
-    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
-    await filters.init();
-    workflowStatistics.init();
+    filtersStore.setUrlParameters(createMemoryHistory(), {
+      pathname: '/instances',
+    });
+    await filtersStore.init();
+    workflowStatisticsStore.init();
 
-    filters.setFilter({workflow: 'bigVarProcess', version: '1'});
+    filtersStore.setFilter({workflow: 'bigVarProcess', version: '1'});
 
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
     mockServer.use(
       rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
-    instances.setInstancesWithCompletedOperations([
+    instancesStore.setInstancesWithCompletedOperations([
       {id: '1', hasActiveOperations: false},
       {id: '2', hasActiveOperations: false},
     ]);
 
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual(
+      expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
       )
     );
   });
 
   it('should not fetch workflow statistics depending on completed operations if workflow and version filter does not exist', async () => {
-    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
-    await filters.init();
-    workflowStatistics.init();
+    filtersStore.setUrlParameters(createMemoryHistory(), {
+      pathname: '/instances',
+    });
+    await filtersStore.init();
+    workflowStatisticsStore.init();
 
-    expect(workflowStatistics.state.statistics).toEqual([]);
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
-    instances.setInstancesWithCompletedOperations([
+    instancesStore.setInstancesWithCompletedOperations([
       {id: '1', hasActiveOperations: false},
       {id: '2', hasActiveOperations: false},
     ]);
 
     await waitFor(() =>
-      expect(workflowStatistics.state.statistics).toEqual([])
+      expect(workflowStatisticsStore.state.statistics).toEqual([])
     );
   });
 });
