@@ -39,8 +39,7 @@ public class XMLUtil {
           "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
       return saxParserFactory;
     } catch (ParserConfigurationException | SAXException e) {
-      LOGGER.error("Error creating SAXParser", e);
-      throw new RuntimeException(e);
+      throw new RuntimeException("Error creating SAXParser: " + e.getMessage(), e);
     }
   }
 

@@ -141,14 +141,12 @@ public class RecordsReader {
             String.format(
                 "Exception occurred, while obtaining next Zeebe records batch: %s",
                 ex.getMessage());
-        LOGGER.error(message, ex);
         throw new TasklistRuntimeException(message, ex);
       }
     } catch (Exception e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }

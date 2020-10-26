@@ -55,7 +55,6 @@ public class WorkflowReader {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }

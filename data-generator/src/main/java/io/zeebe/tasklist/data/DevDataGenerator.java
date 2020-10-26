@@ -104,7 +104,7 @@ public class DevDataGenerator implements DataGenerator {
           new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
               .source(userEntityToJSONString(user), XContentType.JSON);
       esClient.index(request, RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOGGER.error("Could not create demo user with username {}", user.getUsername(), t);
     }
     LOGGER.info("Created demo user {} with password {}", username, password);

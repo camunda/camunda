@@ -135,7 +135,6 @@ public class TaskReaderWriter {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }

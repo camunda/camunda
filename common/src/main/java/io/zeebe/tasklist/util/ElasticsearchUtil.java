@@ -209,7 +209,6 @@ public abstract class ElasticsearchUtil {
           String.format(
               "Update request failed for type [%s] and id [%s] with the message [%s].",
               updateRequest.type(), updateRequest.id(), e.getMessage());
-      LOGGER.error(errorMessage, e);
       throw new PersistenceException(errorMessage, e);
     }
   }
@@ -240,10 +239,6 @@ public abstract class ElasticsearchUtil {
     try {
       entity = objectMapper.readValue(searchHitString, clazz);
     } catch (IOException e) {
-      LOGGER.error(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
-          e);
       throw new TasklistRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
@@ -265,10 +260,6 @@ public abstract class ElasticsearchUtil {
     try {
       entity = objectMapper.readValue(searchHitString, valueType);
     } catch (IOException e) {
-      LOGGER.error(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
-          e);
       throw new TasklistRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),

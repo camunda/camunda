@@ -114,7 +114,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
@@ -124,7 +124,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
   }
@@ -216,7 +216,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       checks++;
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
-      } catch (Throwable t) {
+      } catch (Exception t) {
         LOGGER.error(
             "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
@@ -264,7 +264,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       final Response response =
           esClient.getLowLevelClient().performRequest(new Request("GET", path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }

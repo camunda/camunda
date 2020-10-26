@@ -93,7 +93,7 @@ public class PartitionHolder {
       if (partitionCount > 0) {
         return Optional.of(CollectionUtil.fromTo(1, partitionCount));
       }
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOGGER.warn(
           "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
     }

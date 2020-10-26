@@ -68,7 +68,7 @@ public class Probes {
       allIndexNames.addAll(map(indexDescriptors, i -> i.getIndexName()));
       allIndexNames.addAll(map(templateDescriptors, t -> t.getMainIndexName()));
       return indicesStatus.keySet().containsAll(allIndexNames);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOGGER.error("ClusterHealth request failed", e);
       return false;
     }

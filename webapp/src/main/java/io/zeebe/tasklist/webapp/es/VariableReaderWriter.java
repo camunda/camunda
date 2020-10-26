@@ -113,11 +113,6 @@ public class VariableReaderWriter {
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      LOGGER.error(
-          String.format(
-              "Error preparing the query to upsert task variable instance [%s]",
-              variableEntity.getId()),
-          e);
       throw new TasklistRuntimeException(
           String.format(
               "Error preparing the query to upsert task variable instance [%s]",
@@ -231,7 +226,6 @@ public class VariableReaderWriter {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }
@@ -251,7 +245,6 @@ public class VariableReaderWriter {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }
@@ -362,7 +355,6 @@ public class VariableReaderWriter {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }

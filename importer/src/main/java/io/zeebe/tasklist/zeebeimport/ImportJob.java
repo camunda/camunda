@@ -120,7 +120,7 @@ public class ImportJob implements Callable<Boolean> {
           importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
       return true;
-    } catch (Throwable ex) {
+    } catch (Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
       return false;
     }

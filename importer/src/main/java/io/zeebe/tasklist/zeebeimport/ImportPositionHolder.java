@@ -111,12 +111,11 @@ public class ImportPositionHolder {
               .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       ElasticsearchUtil.executeUpdate(esClient, request);
     } catch (Exception e) {
-      LOGGER.error(
+      final String message =
           String.format(
               "Error occurred while persisting latest loaded position for %s",
-              lastProcessedPosition.getAliasName()),
-          e);
-      throw new TasklistRuntimeException(e);
+              lastProcessedPosition.getAliasName());
+      throw new TasklistRuntimeException(message, e);
     }
   }
 
