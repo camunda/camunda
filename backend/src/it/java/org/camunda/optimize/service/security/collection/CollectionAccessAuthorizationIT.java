@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 import org.junit.jupiter.api.Test;
@@ -89,7 +89,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       KERMIT_USER
     );
 
-    final List<EntityDto> entities = collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> entities = collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
     assertThat(collection.getCurrentUserRole(), is(accessIdentityRolePairs.roleType));
@@ -138,13 +138,13 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private void createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
     reportClient.createCombinedReport(collectionId, new ArrayList<>());
   }
 
   private void createDashboardInCollectionAsDefaultUser(final String collectionId) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
     dashboardClient.createDashboard(collectionId, new ArrayList<>());
   }

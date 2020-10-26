@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
@@ -95,7 +95,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   protected abstract String getModelElementIdPath();
 
-  protected abstract Map<String, String> extractModelElementNames(DefinitionOptimizeDto def);
+  protected abstract Map<String, String> extractModelElementNames(DefinitionOptimizeResponseDto def);
 
   protected abstract ProcessDistributedByDto getDistributedBy();
 

@@ -11,11 +11,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -24,7 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.custo
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -110,8 +110,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists()).isTrue();
-    CombinedReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
-      .readValue(getResponse.getSourceAsString(), CombinedReportDefinitionDto.class);
+    CombinedReportDefinitionRequestDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
+      .readValue(getResponse.getSourceAsString(), CombinedReportDefinitionRequestDto.class);
     assertThat(definitionDto.getData()).isNotNull();
     CombinedReportDataDto data = definitionDto.getData();
 
@@ -122,7 +122,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("getUncombinableSingleReports")
-  public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
+  public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionRequestDto> singleReports) {
     // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -131,7 +131,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .collect(Collectors.toList());
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
@@ -144,9 +144,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> getUncombinableSingleReports() {
     // uncombinable visualization
-    SingleProcessReportDefinitionDto pICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto pICount_startDateYear_bar = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto pICount_startDateYear_barData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -158,7 +158,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     pICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
     pICount_startDateYear_bar.setData(pICount_startDateYear_barData);
 
-    SingleProcessReportDefinitionDto pICount_startDateYear_line = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto pICount_startDateYear_line = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto PICount_startDateYear_lineData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -180,11 +180,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setVariableType(VariableType.BOOLEAN)
       .build();
     pICount_byVariable_barData.setVisualization(ProcessVisualization.BAR);
-    SingleProcessReportDefinitionDto pICount_byVariable_bar = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto pICount_byVariable_bar = new SingleProcessReportDefinitionRequestDto();
     pICount_byVariable_bar.setData(pICount_byVariable_barData);
 
     // uncombinable view
-    SingleProcessReportDefinitionDto pIDuration_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto pIDuration_startDateYear_bar = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto PIDuration_startDateYear_barData = new ProcessReportDataBuilderHelper()
       .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
       .viewProperty(ProcessViewProperty.DURATION)
@@ -198,7 +198,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     pIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
     // groupBy number variable reports with different bucket size
-    SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto groupByNumberVar1 = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
@@ -214,7 +214,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
-    SingleProcessReportDefinitionDto groupByNumberVar2 = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto groupByNumberVar2 = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
@@ -231,7 +231,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     groupByNumberVar2.setData(groupByNumberVar2Data);
 
     // groupByDuration with different bucket size
-    final SingleProcessReportDefinitionDto groupByDuration = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDuration = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -250,7 +250,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     );
     groupByDuration.setData(groupByDurationData);
 
-    final SingleProcessReportDefinitionDto groupByDurationDifferentBucketSize = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDurationDifferentBucketSize = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationDataDifferentBucketSize = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -271,8 +271,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // groupByFlowNodeDuration distributed by flowNode
     // as this report type is not supported at all a single report will just get combined with itself to verify that
-    final SingleProcessReportDefinitionDto groupByFlowNodeDurationDistributeByFlowNode =
-      new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByFlowNodeDurationDistributeByFlowNode =
+      new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByFlowNodeDurationDistributeByFlowNodeData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
@@ -295,7 +295,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @Test
   public void getSingleAndCombinedReport() {
     // given
-    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionDto());
+    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionRequestDto());
     String combinedReportId = createNewCombinedReport();
 
     // when
@@ -319,7 +319,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
     String id = createNewCombinedReport();
     String singleReportId = createNewSingleNumberReport(engineDto);
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto report = new CombinedReportDefinitionRequestDto();
     report.setData(createCombinedReportData(singleReportId));
     report.getData().getConfiguration().setXLabel("FooXLabel");
     report.setId(shouldNotBeUpdatedString);
@@ -336,8 +336,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(reports).hasSize(2);
-    CombinedReportDefinitionDto newReport = (CombinedReportDefinitionDto) reports.stream()
-      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto).findFirst().get();
+    CombinedReportDefinitionRequestDto newReport = (CombinedReportDefinitionRequestDto) reports.stream()
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionRequestDto).findFirst().get();
     assertThat(newReport.getData().getReportIds()).isNotEmpty();
     assertThat(newReport.getData().getReportIds().get(0)).isEqualTo(singleReportId);
     assertThat(newReport.getData().getConfiguration().getXLabel()).isEqualTo("FooXLabel");
@@ -358,7 +358,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       data -> {
         CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
         combinedReportData.setReports(Collections.singletonList(new CombinedReportItemDto(data.getSingleReportId())));
-        CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+        CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
         combinedReport.setData(combinedReportData);
         combinedReport.setCollectionId(data.getCollectionId());
         return embeddedOptimizeExtension
@@ -439,7 +439,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     // when
@@ -460,7 +460,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String combinedReportId = createNewCombinedReport();
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(createCombinedReportData(numberReportId, rawReportId));
     ErrorResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -477,7 +477,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleMapReport(engineDto);
     String reportId = createNewCombinedReport();
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto report = new CombinedReportDefinitionRequestDto();
     report.setData(createCombinedReportData(singleReportId));
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
@@ -962,7 +962,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   public void reportsThatCantBeEvaluatedAreIgnored() {
     // given
     deploySimpleServiceTaskProcessDefinition();
-    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionDto());
+    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionRequestDto());
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -997,9 +997,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultSet).hasSize(2);
     assertThat(resultSet.contains(remainingSingleReportId)).isTrue();
     assertThat(resultSet.contains(combinedReportId)).isTrue();
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(report -> report instanceof CombinedReportDefinitionDto)
-      .map(report -> (CombinedReportDefinitionDto) report)
+    Optional<CombinedReportDefinitionRequestDto> combinedReport = reports.stream()
+      .filter(report -> report instanceof CombinedReportDefinitionRequestDto)
+      .map(report -> (CombinedReportDefinitionRequestDto) report)
       .findFirst();
     assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -1023,7 +1023,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     countFlowNodeFrequencyGroupByFlowNode.setVisualization(ProcessVisualization.TABLE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -1036,9 +1036,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultSet)
       .hasSize(3)
       .contains(combinedReportId);
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
-      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
+    Optional<CombinedReportDefinitionRequestDto> combinedReport = reports.stream()
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionRequestDto)
+      .map(reportDto -> (CombinedReportDefinitionRequestDto) reportDto)
       .findFirst();
     assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -1062,7 +1062,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     countFlowNodeFrequencyGroupByFlowNode.getGroupBy().setType(ProcessGroupByType.START_DATE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -1075,9 +1075,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultSet)
       .hasSize(3)
       .contains(combinedReportId);
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
-      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
+    Optional<CombinedReportDefinitionRequestDto> combinedReport = reports.stream()
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionRequestDto)
+      .map(reportDto -> (CombinedReportDefinitionRequestDto) reportDto)
       .findFirst();
     assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -1101,7 +1101,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -1114,9 +1114,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultSet)
       .hasSize(3)
       .contains(combinedReportId);
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
-      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
+    Optional<CombinedReportDefinitionRequestDto> combinedReport = reports.stream()
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionRequestDto)
+      .map(reportDto -> (CombinedReportDefinitionRequestDto) reportDto)
       .findFirst();
     assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -1162,7 +1162,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
     assertThat(resultMap).hasSize(1);
-    AuthorizedEvaluationResultDto<ReportMapResultDto, SingleProcessReportDefinitionDto> mapResult =
+    AuthorizedEvaluationResultDto<ReportMapResultDto, SingleProcessReportDefinitionRequestDto> mapResult =
       resultMap.get(singleReportId);
     assertThat(mapResult.getReportDefinition().getName()).isEqualTo(TEST_REPORT_NAME);
   }
@@ -1599,7 +1599,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleMapReport(ProcessReportDataDto data) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(TEST_REPORT_NAME);
     singleProcessReportDefinitionDto.setData(data);
     return createNewSingleReport(singleProcessReportDefinitionDto);
@@ -1616,7 +1616,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleNumberReport(ProcessReportDataDto data) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(data);
     return createNewSingleReport(singleProcessReportDefinitionDto);
   }
@@ -1653,30 +1653,30 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewCombinedReport(String... singleReportIds) {
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto report = new CombinedReportDefinitionRequestDto();
     report.setData(createCombinedReportData(singleReportIds));
     return createNewCombinedReport(report);
   }
 
-  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
+  private String createNewCombinedReport(CombinedReportDefinitionRequestDto report) {
     String reportId = createNewCombinedReportInCollection(null);
     updateReport(reportId, report);
     return reportId;
   }
 
   private String createNewCombinedReportInCollection(String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -1709,29 +1709,29 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+  private String createNewSingleReport(SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport, Boolean force) {
+  private void updateReport(String id, SingleProcessReportDefinitionRequestDto updatedReport, Boolean force) {
     Response response = getUpdateSingleProcessReportResponse(id, updatedReport, force);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private void updateReport(String id, CombinedReportDefinitionDto updatedReport) {
+  private void updateReport(String id, CombinedReportDefinitionRequestDto updatedReport) {
     updateReport(id, updatedReport, null);
   }
 
-  private void updateReport(String id, CombinedReportDefinitionDto updatedReport, Boolean force) {
+  private void updateReport(String id, CombinedReportDefinitionRequestDto updatedReport, Boolean force) {
     Response response = getUpdateCombinedProcessReportResponse(id, updatedReport, force);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport,
+  private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionRequestDto updatedReport,
                                                         Boolean force) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -1739,7 +1739,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
   }
 
-  private Response getUpdateCombinedProcessReportResponse(String id, CombinedReportDefinitionDto updatedReport,
+  private Response getUpdateCombinedProcessReportResponse(String id, CombinedReportDefinitionRequestDto updatedReport,
                                                           Boolean force) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -1762,7 +1762,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private Response addSingleReportToCombinedReport(final String combinedReportId, final String reportId) {
-    final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto combinedReportData = new CombinedReportDefinitionRequestDto();
     combinedReportData.getData().getReports().add(new CombinedReportItemDto(reportId, "red"));
     return embeddedOptimizeExtension
       .getRequestExecutor()

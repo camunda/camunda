@@ -8,13 +8,13 @@ package org.camunda.optimize.test.query.performance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -90,7 +90,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       // we only evaluate reports that are valid and can be saved
       if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
         // when
-        final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
+        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
 
         log.info("Evaluating report {}", getPrintableReportDetails(report));
         executeRequestAndAssertBelowMaxQueryTime(
@@ -109,7 +109,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       // we only export reports that are valid and can be saved
       if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
         // when
-        final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
+        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
         log.info("CSV export request for report {}", getPrintableReportDetails(report));
         executeRequestAndAssertBelowMaxQueryTime(
           embeddedOptimizeExtension.getRequestExecutor()
@@ -187,12 +187,12 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public void testQueryPerformance_getInputVariableValuesForDecisionReportVariables() {
     // given
     final DecisionVariableNameRequestDto varNameRequest = buildDecisionVariableNameRequest();
-    List<DecisionVariableNameDto> varNamesResponse = embeddedOptimizeExtension
+    List<DecisionVariableNameResponseDto> varNamesResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionInputVariableNamesRequest(varNameRequest)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    for (DecisionVariableNameDto varName : varNamesResponse) {
+    for (DecisionVariableNameResponseDto varName : varNamesResponse) {
       DecisionVariableValueRequestDto varValueRequest = new DecisionVariableValueRequestDto();
       varValueRequest.setDecisionDefinitionKey(varNameRequest.getDecisionDefinitionKey());
       varValueRequest.setVariableId(varName.getId());
@@ -212,12 +212,12 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public void testQueryPerformance_getOutputVariableValuesForDecisionReportVariables() {
     // given
     final DecisionVariableNameRequestDto varNameRequest = buildDecisionVariableNameRequest();
-    List<DecisionVariableNameDto> varNamesResponse = embeddedOptimizeExtension
+    List<DecisionVariableNameResponseDto> varNamesResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionOutputVariableNamesRequest(varNameRequest)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    for (DecisionVariableNameDto varName : varNamesResponse) {
+    for (DecisionVariableNameResponseDto varName : varNamesResponse) {
       DecisionVariableValueRequestDto varValueRequest = new DecisionVariableValueRequestDto();
       varValueRequest.setDecisionDefinitionKey(varNameRequest.getDecisionDefinitionKey());
       varValueRequest.setVariableId(varName.getId());
@@ -299,11 +299,11 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   private Response saveReportToOptimize(final SingleReportDataDto report) {
     if (report instanceof ProcessReportDataDto) {
       return embeddedOptimizeExtension.getRequestExecutor()
-        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto((ProcessReportDataDto) report))
+        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) report))
         .execute();
     } else {
       return embeddedOptimizeExtension.getRequestExecutor()
-        .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionDto((DecisionReportDataDto) report))
+        .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) report))
         .execute();
     }
   }

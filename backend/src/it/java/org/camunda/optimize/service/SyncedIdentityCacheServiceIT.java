@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
@@ -309,19 +309,19 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       final String collectionId1 = collectionClient.createNewCollection();
       final String collectionId2 = collectionClient.createNewCollection();
 
-      CollectionRoleDto testGroupRole = new CollectionRoleDto(
+      CollectionRoleRequestDto testGroupRole = new CollectionRoleRequestDto(
         new IdentityDto(TEST_GROUP, IdentityType.GROUP),
         RoleType.EDITOR
       );
-      CollectionRoleDto testGroupBRole = new CollectionRoleDto(
+      CollectionRoleRequestDto testGroupBRole = new CollectionRoleRequestDto(
         new IdentityDto(TEST_GROUP_B, IdentityType.GROUP),
         RoleType.EDITOR
       );
-      CollectionRoleDto userKermitRole = new CollectionRoleDto(
+      CollectionRoleRequestDto userKermitRole = new CollectionRoleRequestDto(
         new IdentityDto(USER_KERMIT, IdentityType.USER),
         RoleType.EDITOR
       );
-      CollectionRoleDto userDemoRole = new CollectionRoleDto(
+      CollectionRoleRequestDto userDemoRole = new CollectionRoleRequestDto(
         new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
         RoleType.MANAGER
       );
@@ -349,12 +349,12 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
-      List<IdDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
-      List<IdDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
+      List<IdResponseDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
+      List<IdResponseDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
       assertThat(roleIds1).containsExactlyInAnyOrderElementsOf(roleIds2);
       assertThat(roleIds1).containsExactlyInAnyOrder(
-        new IdDto(testGroupBRole.getId()),
-        new IdDto(userDemoRole.getId())
+        new IdResponseDto(testGroupBRole.getId()),
+        new IdResponseDto(userDemoRole.getId())
       );
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
@@ -386,7 +386,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then
-      List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+      List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
       assertThat(roles).isEmpty();
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.frequency.groupby.variable.date;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -26,8 +26,8 @@ public class CountProcessInstanceFrequencyGroupByVariableByEndDateCmd extends Pr
   }
 
   @Override
-  public ReportEvaluationResult<?, SingleProcessReportDefinitionDto> evaluate(
-    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult<?, SingleProcessReportDefinitionRequestDto> evaluate(
+    final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
   }

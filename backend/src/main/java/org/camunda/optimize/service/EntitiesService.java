@@ -6,8 +6,8 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
@@ -32,7 +32,7 @@ public class EntitiesService {
   private AuthorizedEntitiesService authorizedEntitiesService;
   private EntitiesReader entitiesReader;
 
-  public List<EntityDto> getAllEntities(final String userId) {
+  public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
       collectionService.getAllCollectionDefinitions(userId);
     final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
@@ -40,7 +40,7 @@ public class EntitiesService {
         .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
         .collect(Collectors.toList())
     );
-    final List<EntityDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
+    final List<EntityResponseDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
 
     return Stream.concat(
       collectionDefinitions.stream()
@@ -48,13 +48,13 @@ public class EntitiesService {
         .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
       privateEntities.stream())
       .sorted(
-        Comparator.comparing(EntityDto::getEntityType)
-          .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
+        Comparator.comparing(EntityResponseDto::getEntityType)
+          .thenComparing(EntityResponseDto::getLastModified, Comparator.reverseOrder())
       ).collect(Collectors.toList());
   }
 
-  public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
-    Optional<EntityNameDto> entityNames = entitiesReader.getEntityNames(requestDto);
+  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto) {
+    Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto);
 
     if (!entityNames.isPresent()) {
       String reason = String.format("Could not get entity names search request %s", requestDto.toString());

@@ -9,11 +9,11 @@ import com.icegreen.greenmail.util.GreenMail;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -65,7 +65,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
     String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
@@ -107,7 +107,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String alertId = alertClient.createAlert(simpleAlert);
@@ -133,7 +133,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String alertId = alertClient.createAlert(simpleAlert);
@@ -154,7 +154,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_INVALID_PORT_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String alertId = alertClient.createAlert(simpleAlert);
@@ -177,7 +177,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // when
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String id = alertClient.createAlert(simpleAlert);
@@ -213,7 +213,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     simpleAlert.setFixNotification(true);
     addReminderToAlert(simpleAlert);
@@ -258,7 +258,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String alertId = alertClient.createAlert(simpleAlert);
@@ -284,7 +284,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
     String alertId = alertClient.createAlert(simpleAlert);
@@ -307,7 +307,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
     simpleAlert.setThreshold(258165800.0); // = 2d 23h 42min 45s 800ms
 
@@ -337,7 +337,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
     processInstance.setProcessDefinitionKey("definitionKeyThatDoesNotExistAndWillLeadToNoResults");
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
     String id = alertClient.createAlert(simpleAlert);
 
     // when
@@ -361,7 +361,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     importAllEngineEntitiesFromScratch();
 
     String reportId = createAndStoreVariableAggregationReport(definition, "var", VariableType.DOUBLE);
-    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setThreshold(10.0);
     simpleAlert.setThresholdOperator(AlertThresholdOperator.LESS);
     String id = alertClient.createAlert(simpleAlert);
@@ -393,7 +393,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
       .setVariableType(variableType)
       .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportDataDto);
     report.setName("something");
     report.setCollectionId(collectionId);
@@ -413,12 +413,12 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     client.clear(request().withPath(TEST_WEBHOOK_URL_PATH));
   }
 
-  private AlertCreationDto createAlertWithReminder(String reportId) {
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+  private AlertCreationRequestDto createAlertWithReminder(String reportId) {
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     return addReminderToAlert(simpleAlert);
   }
 
-  private AlertCreationDto addReminderToAlert(AlertCreationDto alert) {
+  private AlertCreationRequestDto addReminderToAlert(AlertCreationRequestDto alert) {
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(3);
     reminderInterval.setUnit("Seconds");

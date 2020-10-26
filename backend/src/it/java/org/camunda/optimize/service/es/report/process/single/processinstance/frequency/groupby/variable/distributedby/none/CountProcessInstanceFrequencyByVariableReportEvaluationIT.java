@@ -8,13 +8,13 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
@@ -399,22 +399,22 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData1))
       ));
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData2))
       ));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     //when
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
@@ -464,22 +464,22 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData1))
       ));
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData2))
       ));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     //when
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
@@ -529,22 +529,22 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData1))
       ));
     reportIds.add(
       new CombinedReportItemDto(
-        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData2))
       ));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     //when
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())

@@ -6,17 +6,17 @@
 package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
@@ -55,7 +55,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("getCombinableSingleReports")
-  public void combineCombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
+  public void combineCombinableSingleReports(List<SingleProcessReportDefinitionRequestDto> singleReports) {
     // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -64,14 +64,14 @@ public class CombinedReportCombinationsIT extends AbstractIT {
       .collect(Collectors.toList());
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
-    IdDto response = embeddedOptimizeExtension
+    IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
@@ -80,7 +80,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     assertThat(result.getReportDefinition().getData().getReports()).containsExactlyInAnyOrderElementsOf(reportIds);
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> getCombinableSingleReports() {
     return Stream.of(
       createDifferentProcessDefinitionReports(),
       createByStartEndDateReports(),
@@ -92,9 +92,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     ).flatMap(Function.identity());
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createDifferentProcessDefinitionReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createDifferentProcessDefinitionReports() {
     // different procDefs
-    final SingleProcessReportDefinitionDto procDefKeyReport = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto procDefKeyReport = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto procDefKeyReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -106,7 +106,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
     procDefKeyReport.setData(procDefKeyReportData);
 
-    final SingleProcessReportDefinitionDto procDefAnotherKeyReport = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto procDefAnotherKeyReport = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto procDefAnotherKeyReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -120,9 +120,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(procDefKeyReport, procDefAnotherKeyReport));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createByStartEndDateReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createByStartEndDateReports() {
     // byStartDate/byEndDate
-    final SingleProcessReportDefinitionDto byStartDate = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto byStartDate = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto procDefKeyReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -134,7 +134,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
     byStartDate.setData(procDefKeyReportData);
 
-    final SingleProcessReportDefinitionDto byEndDate = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto byEndDate = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
@@ -149,9 +149,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(byStartDate, byStartDate));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createByUserTaskFlowNodeDurationReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createByUserTaskFlowNodeDurationReports() {
     // userTaskDuration/flowNodeDuration
-    final SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto userTaskDuration = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto userTaskDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
@@ -162,7 +162,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     userTaskDurationData.setVisualization(ProcessVisualization.BAR);
     userTaskDuration.setData(userTaskDurationData);
 
-    final SingleProcessReportDefinitionDto flowNodeDuration = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto flowNodeDuration = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto flowNodeDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
@@ -177,9 +177,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(userTaskDuration, flowNodeDuration));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createByNumberVariableWithSameBucketSizeReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createByNumberVariableWithSameBucketSizeReports() {
     // groupBy number variable reports with same bucket size
-    final SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByNumberVar1 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
@@ -195,7 +195,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
-    final SingleProcessReportDefinitionDto groupByNumberVar2 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByNumberVar2 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
@@ -214,9 +214,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(groupByNumberVar1, groupByNumberVar2));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createByInstanceDurationReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createByInstanceDurationReports() {
     // groupByDuration
-    final SingleProcessReportDefinitionDto groupByDuration = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDuration = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -226,7 +226,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
       .build();
     groupByDuration.setData(groupByDurationData);
 
-    final SingleProcessReportDefinitionDto groupByDurationAnotherKey = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDurationAnotherKey = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationDataAnotherKey = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -239,9 +239,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(groupByDuration, groupByDurationAnotherKey));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createByInstanceDurationWithSameBucketSizeReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createByInstanceDurationWithSameBucketSizeReports() {
     // groupByDuration with same bucketSize
-    final SingleProcessReportDefinitionDto groupByDurationBucketSize = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDurationBucketSize = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationDataBucketSize = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -260,7 +260,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     );
     groupByDurationBucketSize.setData(groupByDurationDataBucketSize);
 
-    final SingleProcessReportDefinitionDto groupByDurationBucketSizeAnotherKey = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto groupByDurationBucketSizeAnotherKey = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationDataBucketSizeAnotherKey = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
@@ -282,9 +282,9 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     return Stream.of(Arrays.asList(groupByDurationBucketSize, groupByDurationBucketSizeAnotherKey));
   }
 
-  private static Stream<List<SingleProcessReportDefinitionDto>> createCombinableIncidentReports() {
+  private static Stream<List<SingleProcessReportDefinitionRequestDto>> createCombinableIncidentReports() {
     // incident frequency count grouped by none
-    final SingleProcessReportDefinitionDto incidentFrequency1 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentFrequency1 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentFrequencyData1 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_NONE)
@@ -295,7 +295,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentFrequencyData1.setVisualization(ProcessVisualization.NUMBER);
     incidentFrequency1.setData(incidentFrequencyData1);
 
-    final SingleProcessReportDefinitionDto incidentFrequency2 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentFrequency2 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentFrequencyData2 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_NONE)
@@ -307,7 +307,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentFrequency2.setData(incidentFrequencyData2);
 
     // incident duration grouped by none
-    final SingleProcessReportDefinitionDto incidentDuration1 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentDuration1 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentDurationData1 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_NONE)
@@ -318,7 +318,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentDurationData1.setVisualization(ProcessVisualization.NUMBER);
     incidentDuration1.setData(incidentDurationData1);
 
-    final SingleProcessReportDefinitionDto incidentDuration2 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentDuration2 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentDurationData2 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_NONE)
@@ -330,7 +330,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentDuration2.setData(incidentDurationData2);
 
     // incident frequency count grouped by flow node
-    final SingleProcessReportDefinitionDto incidentFrequencyGroupedByFlowNode1 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentFrequencyGroupedByFlowNode1 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentFrequencyGroupedByFlowNodeData1 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE)
@@ -341,7 +341,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentFrequencyGroupedByFlowNodeData1.setVisualization(ProcessVisualization.TABLE);
     incidentFrequencyGroupedByFlowNode1.setData(incidentFrequencyGroupedByFlowNodeData1);
 
-    final SingleProcessReportDefinitionDto incidentFrequencyGroupedByFlowNode2 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentFrequencyGroupedByFlowNode2 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentFrequencyGroupedByFlowNodeData2 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE)
@@ -353,7 +353,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentFrequencyGroupedByFlowNode2.setData(incidentFrequencyGroupedByFlowNodeData2);
 
     // incident duration grouped by flow node
-    final SingleProcessReportDefinitionDto incidentDurationGroupedByFlowNode1 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentDurationGroupedByFlowNode1 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentDurationGroupedByFlowNodeData1 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_DURATION_GROUP_BY_FLOW_NODE)
@@ -364,7 +364,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
     incidentDurationGroupedByFlowNodeData1.setVisualization(ProcessVisualization.TABLE);
     incidentDurationGroupedByFlowNode1.setData(incidentDurationGroupedByFlowNodeData1);
 
-    final SingleProcessReportDefinitionDto incidentDurationGroupedByFlowNode2 = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto incidentDurationGroupedByFlowNode2 = new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto incidentDurationGroupedByFlowNodeData2 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(INCIDENT_DURATION_GROUP_BY_FLOW_NODE)

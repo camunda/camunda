@@ -10,7 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -76,7 +76,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisQueryDto analysisDto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto analysisDto = analysisClient.createAnalysisDto(
       "",
       Lists.newArrayList(""),
       Collections.emptyList(),

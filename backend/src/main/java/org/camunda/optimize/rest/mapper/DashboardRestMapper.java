@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.service.IdentityService;
 import org.springframework.stereotype.Component;
 
@@ -18,15 +18,15 @@ import java.util.Optional;
 public class DashboardRestMapper {
   private final IdentityService identityService;
 
-  public void prepareRestResponse(final AuthorizedDashboardDefinitionDto dashboardDefinitionDto) {
+  public void prepareRestResponse(final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto) {
     resolveOwnerAndModifierNames(dashboardDefinitionDto.getDefinitionDto());
   }
 
-  public void prepareRestResponse(final DashboardDefinitionDto dashboardDefinitionDto) {
+  public void prepareRestResponse(final DashboardDefinitionRestDto dashboardDefinitionDto) {
     resolveOwnerAndModifierNames(dashboardDefinitionDto);
   }
 
-  private void resolveOwnerAndModifierNames(DashboardDefinitionDto dashboardDefinitionDto) {
+  private void resolveOwnerAndModifierNames(DashboardDefinitionRestDto dashboardDefinitionDto) {
     Optional.ofNullable(dashboardDefinitionDto.getOwner())
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(dashboardDefinitionDto::setOwner);

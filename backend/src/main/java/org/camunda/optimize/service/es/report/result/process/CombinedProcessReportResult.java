@@ -11,8 +11,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class CombinedProcessReportResult
-  extends ReportEvaluationResult<CombinedProcessReportResultDto<?>, CombinedReportDefinitionDto> {
+  extends ReportEvaluationResult<CombinedProcessReportResultDto<?>, CombinedReportDefinitionRequestDto> {
 
   public CombinedProcessReportResult(@NotNull final CombinedProcessReportResultDto reportResult,
-                                     @NotNull final CombinedReportDefinitionDto reportDefinition) {
+                                     @NotNull final CombinedReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 
@@ -137,7 +137,7 @@ public class CombinedProcessReportResult
   }
 
   interface ReportResultHeaderMapper<T extends SingleReportResultDto>
-    extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, String[]> {
+    extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionRequestDto>, String[]> {
   }
 
   private List<String[]> mapCombinedNumberReportResultsToCsvList(

@@ -504,11 +504,11 @@ public class ConfigurationService {
     return engineImportProcessDefinitionMaxPageSize;
   }
 
-  public Boolean getSharingEnabled() {
+  public boolean getSharingEnabled() {
     if (sharingEnabled == null) {
       sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED, Boolean.class);
     }
-    return sharingEnabled;
+    return Optional.ofNullable(sharingEnabled).orElse(false);
   }
 
   public int getEngineImportDecisionDefinitionXmlMaxPageSize() {

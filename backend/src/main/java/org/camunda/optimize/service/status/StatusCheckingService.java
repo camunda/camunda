@@ -7,7 +7,7 @@ package org.camunda.optimize.service.status;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -34,8 +34,8 @@ public class StatusCheckingService {
   private final EngineContextFactory engineContextFactory;
   private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
 
-  public StatusWithProgressDto getConnectionStatusWithProgress() {
-    final StatusWithProgressDto result = new StatusWithProgressDto();
+  public StatusWithProgressResponseDto getConnectionStatusWithProgress() {
+    final StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
     result.setConnectionStatus(getConnectionStatus());
     result.setIsImporting(engineImportSchedulerManagerService.getImportStatusMap());
     return result;

@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -308,12 +308,12 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       engineDto.getKey(),
       engineDto.getVersionAsString()
     );
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportDataDto);
     return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
-  private String createNewSingleReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+  private String createNewSingleReport(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 

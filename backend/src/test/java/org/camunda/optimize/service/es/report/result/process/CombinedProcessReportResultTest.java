@@ -9,10 +9,10 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -257,8 +257,8 @@ public class CombinedProcessReportResultTest {
     // given
     CombinedProcessReportResult underTest = new CombinedProcessReportResult(
       new CombinedProcessReportResultDto(new HashMap<String, ReportEvaluationResult<SingleReportResultDto,
-        SingleProcessReportDefinitionDto>>(), 0L),
-      new CombinedReportDefinitionDto()
+        SingleProcessReportDefinitionRequestDto>>(), 0L),
+      new CombinedReportDefinitionRequestDto()
     );
 
     // when
@@ -283,7 +283,7 @@ public class CombinedProcessReportResultTest {
     List<ReportEvaluationResult> reportEvaluationResults = new ArrayList<>();
 
     for (int i = 0; i < reportResultDtos.size(); i++) {
-      final SingleProcessReportDefinitionDto singleDefDto = new SingleProcessReportDefinitionDto();
+      final SingleProcessReportDefinitionRequestDto singleDefDto = new SingleProcessReportDefinitionRequestDto();
       singleDefDto.setName("SingleTestReport" + i);
       singleDefDto.setData(processReportDataDto);
 
@@ -294,7 +294,7 @@ public class CombinedProcessReportResultTest {
   }
 
   private ReportEvaluationResult createReportEvaluationResult(final SingleReportResultDto reportResultDto,
-                                                              final SingleProcessReportDefinitionDto singleDefDto) {
+                                                              final SingleProcessReportDefinitionRequestDto singleDefDto) {
     ReportEvaluationResult reportResult = null;
 
     final boolean isFrequencyReport = singleDefDto.getData().isFrequencyReport();
@@ -327,7 +327,7 @@ public class CombinedProcessReportResultTest {
 
     return new CombinedProcessReportResult(
       new CombinedProcessReportResultDto(mapIMap, 0L),
-      new CombinedReportDefinitionDto()
+      new CombinedReportDefinitionRequestDto()
     );
   }
 

@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 import javax.ws.rs.BadRequestException;
@@ -15,33 +15,33 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Comparator.nullsFirst;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.entityType;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModified;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModifier;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 
 @NoArgsConstructor
-public class EntitySorter extends Sorter<EntityDto> {
+public class EntitySorter extends Sorter<EntityResponseDto> {
 
-  private static final Comparator<EntityDto> DEFAULT_ENTITY_COMPARATOR =
-    Comparator.comparing(EntityDto::getEntityType)
-      .thenComparing(Comparator.comparing(EntityDto::getLastModified).reversed());
+  private static final Comparator<EntityResponseDto> DEFAULT_ENTITY_COMPARATOR =
+    Comparator.comparing(EntityResponseDto::getEntityType)
+      .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
-  private static final ImmutableMap<String, Comparator<EntityDto>> sortComparators = ImmutableMap.of(
-    name.toLowerCase(), Comparator.comparing(EntityDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
-    entityType.toLowerCase(), Comparator.comparing(EntityDto::getEntityType),
-    lastModified.toLowerCase(), Comparator.comparing(EntityDto::getLastModified),
-    lastModifier.toLowerCase(), Comparator.comparing(EntityDto::getLastModifier)
+  private static final ImmutableMap<String, Comparator<EntityResponseDto>> sortComparators = ImmutableMap.of(
+    name.toLowerCase(), Comparator.comparing(EntityResponseDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
+    entityType.toLowerCase(), Comparator.comparing(EntityResponseDto::getEntityType),
+    lastModified.toLowerCase(), Comparator.comparing(EntityResponseDto::getLastModified),
+    lastModifier.toLowerCase(), Comparator.comparing(EntityResponseDto::getLastModifier)
   );
 
   @Override
-  public List<EntityDto> applySort(List<EntityDto> entities) {
-    Comparator<EntityDto> entitySorter;
+  public List<EntityResponseDto> applySort(List<EntityResponseDto> entities) {
+    Comparator<EntityResponseDto> entitySorter;
     if (getSortBy().isPresent()) {
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
-      Comparator<EntityDto> entityDtoComparator = sortComparators.get(sortBy.toLowerCase());
+      Comparator<EntityResponseDto> entityDtoComparator = sortComparators.get(sortBy.toLowerCase());
       if (SortOrder.DESC.equals(sortOrder)) {
         entityDtoComparator = entityDtoComparator.reversed();
       }

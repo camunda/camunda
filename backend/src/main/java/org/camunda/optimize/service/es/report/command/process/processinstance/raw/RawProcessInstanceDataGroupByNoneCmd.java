@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.raw;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -45,13 +45,13 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<RawDataProc
 
   @Override
   public SingleProcessRawDataReportResult evaluate(
-    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final RawDataProcessReportResultDto evaluate = executionPlan.evaluate(commandContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(commandContext, evaluate);
     return new SingleProcessRawDataReportResult(evaluate, commandContext.getReportDefinition());
   }
 
-  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext,
                                                               final RawDataProcessReportResultDto result) {
     final List<String> variableNames = result.getData()
       .stream()

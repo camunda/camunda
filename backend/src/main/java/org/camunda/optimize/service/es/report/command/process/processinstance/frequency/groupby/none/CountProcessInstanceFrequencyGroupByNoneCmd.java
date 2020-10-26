@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.frequency.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -38,7 +38,7 @@ public class CountProcessInstanceFrequencyGroupByNoneCmd extends ProcessCmd<Numb
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final NumberResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
   }

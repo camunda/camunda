@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -112,10 +112,10 @@ public class CollectionIndex extends DefaultIndexMappingCreator {
       startObject(CollectionDataDto.Fields.roles.name())
         .field("type", "nested")
         .startObject("properties")
-          .startObject(CollectionRoleDto.Fields.id.name())
+          .startObject(CollectionRoleRequestDto.Fields.id.name())
               .field("type", "keyword")
           .endObject()
-          .startObject(CollectionRoleDto.Fields.identity.name())
+          .startObject(CollectionRoleRequestDto.Fields.identity.name())
             .field("type", "object")
             .startObject("properties")
               .startObject(IdentityDto.Fields.id)
@@ -126,7 +126,7 @@ public class CollectionIndex extends DefaultIndexMappingCreator {
               .endObject()
             .endObject()
           .endObject()
-          .startObject(CollectionRoleDto.Fields.role.name())
+          .startObject(CollectionRoleRequestDto.Fields.role.name())
             .field("type", "keyword")
           .endObject()
         .endObject()

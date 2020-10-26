@@ -19,7 +19,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
-public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
+public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
   private String bpmn20Xml;
   private Map<String, String> flowNodeNames = new HashMap<>();
   private Map<String, String> userTaskNames = new HashMap<>();

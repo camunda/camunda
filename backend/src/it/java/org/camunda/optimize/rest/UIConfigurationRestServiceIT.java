@@ -9,7 +9,7 @@ import com.google.common.collect.Sets;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
@@ -30,7 +30,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getHeaderCustomization() {
     // when
-    final UIConfigurationDto actualConfiguration = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto actualConfiguration = uiConfigurationClient.getUIConfiguration();
 
     // then
     HeaderCustomizationDto configurationHeader = actualConfiguration.getHeader();
@@ -46,7 +46,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(true);
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isLogoutHidden()).isTrue();
@@ -58,7 +58,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(false);
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isLogoutHidden()).isFalse();
@@ -70,7 +70,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(true);
 
     // when
-    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isSharingEnabled()).isTrue();
@@ -82,7 +82,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
 
     // when
-    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isSharingEnabled()).isFalse();
@@ -91,7 +91,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getDefaultCamundaWebappsEndpoint() {
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
@@ -108,7 +108,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     setWebappsEndpoint("foo");
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
 
     // then
@@ -126,7 +126,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     setWebappsEnabled(false);
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
 
     // then
@@ -144,7 +144,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled()).isTrue();
@@ -156,7 +156,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(false);
 
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled()).isFalse();
@@ -165,7 +165,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getOptimizeVersion() {
     // when
-    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.getOptimizeVersion()).isEqualTo(Version.RAW_VERSION);
@@ -194,7 +194,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     createTenant("tenant1");
 
     // when
-    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isTenantsAvailable()).isTrue();
@@ -205,7 +205,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     // given
 
     // when
-    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isTenantsAvailable()).isFalse();
@@ -214,7 +214,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getTelemetryFlags() {
     // when
-    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isMetadataTelemetryEnabled())

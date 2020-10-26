@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -18,9 +18,9 @@ public class SettingsIndex extends DefaultIndexMappingCreator {
   public static final int VERSION = 1;
   public static final String ID = "1";
 
-  public static final String METADATA_TELEMETRY_ENABLED = SettingsDto.Fields.metadataTelemetryEnabled.name();
-  public static final String LAST_MODIFIED = SettingsDto.Fields.lastModified.name();
-  public static final String LAST_MODIFIER = SettingsDto.Fields.lastModifier.name();
+  public static final String METADATA_TELEMETRY_ENABLED = SettingsResponseDto.Fields.metadataTelemetryEnabled.name();
+  public static final String LAST_MODIFIED = SettingsResponseDto.Fields.lastModified.name();
+  public static final String LAST_MODIFIER = SettingsResponseDto.Fields.lastModifier.name();
 
   @Override
   public String getIndexName() {

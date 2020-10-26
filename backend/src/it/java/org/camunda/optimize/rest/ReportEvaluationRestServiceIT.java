@@ -19,10 +19,10 @@ import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -503,11 +503,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     final AuthorizedEvaluationResultDto<?, ?> result;
     switch (reportType) {
       case PROCESS:
-        reportDefinitionDto = new SingleProcessReportDefinitionDto((ProcessReportDataDto) reportDataDto);
+        reportDefinitionDto = new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) reportDataDto);
         break;
       case DECISION:
         reportDefinitionDto =
-          new SingleDecisionReportDefinitionDto((DecisionReportDataDto) reportDataDto);
+          new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) reportDataDto);
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);

@@ -9,14 +9,14 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
@@ -45,10 +45,10 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void partialCollectionUpdateDoesNotAffectRoles() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
@@ -56,7 +56,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    final List<CollectionRoleRestDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
     assertThat(actualRoles).isEqualTo(expectedRoles);
   }
 
@@ -64,10 +64,10 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void getRoles() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles)
@@ -90,7 +90,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     UserDto missPiggyUserDto = new UserDto(USER_MISS_PIGGY, USER_MISS_PIGGY);
     UserDto demoUserDto = new UserDto(DEFAULT_USERNAME, DEFAULT_USERNAME);
 
-    List<IdentityWithMetadataDto> identities = new ArrayList<>();
+    List<IdentityWithMetadataResponseDto> identities = new ArrayList<>();
     identities.add(testGroupDto);
     identities.add(anotherTestGroupDto);
     identities.add(kermitUserDto);
@@ -100,23 +100,23 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(TEST_GROUP, IdentityType.GROUP), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(TEST_GROUP, IdentityType.GROUP), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(TEST_GROUP_B, IdentityType.GROUP), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(TEST_GROUP_B, IdentityType.GROUP), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(USER_KERMIT, IdentityType.USER), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(USER_KERMIT, IdentityType.USER), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(USER_MISS_PIGGY, IdentityType.USER), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(USER_MISS_PIGGY, IdentityType.USER), RoleType.EDITOR)
     );
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     // expected order(groups first, user second, then by name ascending):
@@ -144,7 +144,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     UserDto missPiggyUserDto = new UserDto(USER_MISS_PIGGY, USER_MISS_PIGGY);
     UserDto demoUserDto = new UserDto(DEFAULT_USERNAME, DEFAULT_USERNAME);
 
-    List<IdentityWithMetadataDto> identities = new ArrayList<>();
+    List<IdentityWithMetadataResponseDto> identities = new ArrayList<>();
     identities.add(testGroupDto);
     identities.add(anotherTestGroupDto);
     identities.add(kermitUserDto);
@@ -154,26 +154,26 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(TEST_GROUP, IdentityType.GROUP), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(TEST_GROUP, IdentityType.GROUP), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(TEST_GROUP_B, IdentityType.GROUP), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(TEST_GROUP_B, IdentityType.GROUP), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(USER_KERMIT, IdentityType.USER), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(USER_KERMIT, IdentityType.USER), RoleType.EDITOR)
     );
     collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(USER_MISS_PIGGY, IdentityType.USER), RoleType.EDITOR)
+      new CollectionRoleRequestDto(new IdentityDto(USER_MISS_PIGGY, IdentityType.USER), RoleType.EDITOR)
     );
 
     authorizationClient.grantSingleResourceAuthorizationForKermit(anotherTestGroupDto.getId(), RESOURCE_TYPE_GROUP);
     authorizationClient.grantSingleResourceAuthorizationForKermit(demoUserDto.getId(), RESOURCE_TYPE_USER);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRolesAsUser(
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRolesAsUser(
       collectionId,
       USER_KERMIT,
       USER_KERMIT
@@ -200,11 +200,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedUserDtoWithData);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles.size()).isEqualTo(1);
-    final IdentityWithMetadataDto identityRestDto = roles.get(0).getIdentity();
+    final IdentityWithMetadataResponseDto identityRestDto = roles.get(0).getIdentity();
     assertThat(identityRestDto).isInstanceOf(UserDto.class);
     final UserDto userDto = (UserDto) identityRestDto;
     assertThat(userDto.getFirstName()).isEqualTo(expectedUserDtoWithData.getFirstName());
@@ -220,11 +220,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles.size()).isEqualTo(1);
-    final IdentityWithMetadataDto identityRestDto = roles.get(0).getIdentity();
+    final IdentityWithMetadataResponseDto identityRestDto = roles.get(0).getIdentity();
     assertThat(identityRestDto).isInstanceOf(UserDto.class);
     final UserDto userDto = (UserDto) identityRestDto;
     assertThat(userDto.getId()).isEqualTo(DEFAULT_USERNAME);
@@ -246,18 +246,18 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     GroupDto testGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP);
     embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
-    final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
-      .map(CollectionRoleRestDto::getIdentity)
+    final List<IdentityWithMetadataResponseDto> groupIdentities = roles.stream()
+      .map(CollectionRoleResponseDto::getIdentity)
       .filter(identityDto -> identityDto instanceof GroupDto)
       .collect(Collectors.toList());
     assertThat(groupIdentities.size()).isEqualTo(1);
@@ -275,18 +275,18 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     GroupDto testGroupDto = new GroupDto(TEST_GROUP, null);
     embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
-    final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
-      .map(CollectionRoleRestDto::getIdentity)
+    final List<IdentityWithMetadataResponseDto> groupIdentities = roles.stream()
+      .map(CollectionRoleResponseDto::getIdentity)
       .filter(identityDto -> identityDto instanceof GroupDto)
       .collect(Collectors.toList());
     assertThat(groupIdentities.size()).isEqualTo(1);
@@ -302,7 +302,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
@@ -311,7 +311,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(roleDto.getId());
   }
@@ -323,12 +323,12 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, null),
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, roleDto);
-    final CollectionRoleDto expectedRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto expectedRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
@@ -336,7 +336,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(expectedRoleDto.getId());
   }
@@ -350,12 +350,12 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, null),
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, roleDto);
-    final CollectionRoleDto expectedRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto expectedRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
@@ -363,7 +363,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(expectedRoleDto.getId());
   }
@@ -374,7 +374,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, null),
       RoleType.EDITOR
     );
@@ -395,11 +395,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY);
 
     // when
-    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
-    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto missPiggyRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
       RoleType.VIEWER
     );
@@ -408,7 +408,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(kermitRoleDto.getId(), missPiggyRoleDto.getId());
   }
@@ -421,13 +421,13 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY);
 
     // when
-    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, kermitRoleDto);
 
-    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto missPiggyRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
       RoleType.VIEWER
     );
@@ -436,7 +436,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(kermitRoleDto.getId(), missPiggyRoleDto.getId());
   }
@@ -447,7 +447,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
@@ -466,7 +466,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
@@ -486,11 +486,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
-    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto missPiggyRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
       RoleType.VIEWER
     );
@@ -502,7 +502,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     assertThat(addRoleResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(collectionClient.getCollectionRoleIdDtos(collectionId))
-      .extracting(IdDto::getId)
+      .extracting(IdResponseDto::getId)
       .doesNotContain(kermitRoleDto.getId(), missPiggyRoleDto.getId());
   }
 
@@ -514,14 +514,14 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(testUser);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.MANAGER
     );
     collectionClient.addRolesToCollection(collectionId, kermitRoleDto);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       testUser,
       RoleType.EDITOR
     );
@@ -544,7 +544,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
@@ -553,7 +553,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).contains(roleDto.getId());
   }
@@ -564,7 +564,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
@@ -581,10 +581,10 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void duplicateIdentityRoleIsRejected_singleDuplicate() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       // there is already an entry for the default user who created the collection
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
       RoleType.EDITOR
@@ -605,15 +605,15 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void duplicateIdentityRoleIsRejected_firstRoleIsNewAndSecondIsDuplicate() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final CollectionRoleDto kermit = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermit = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
-    final CollectionRoleDto demo = new CollectionRoleDto(
+    final CollectionRoleRequestDto demo = new CollectionRoleRequestDto(
       // there is already an entry for the default user who created the collection
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
       RoleType.EDITOR
@@ -638,16 +638,16 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // when
     final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
-    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(identityDto, RoleType.EDITOR);
     collectionClient.addRolesToCollection(collectionId, roleDto);
 
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.VIEWER);
+    final CollectionRoleUpdateRequestDto updatedRoleDto = new CollectionRoleUpdateRequestDto(RoleType.VIEWER);
     updateRoleOnCollection(collectionId, roleDto.getId(), updatedRoleDto);
 
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds).hasSize(2)
       .contains(roleDto.getId());
@@ -662,10 +662,10 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // when
     final IdentityDto identityDto = new IdentityDto(USER_MISS_PIGGY, IdentityType.USER);
-    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(identityDto, RoleType.EDITOR);
     collectionClient.addRolesToCollection(collectionId, roleDto);
 
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.VIEWER);
+    final CollectionRoleUpdateRequestDto updatedRoleDto = new CollectionRoleUpdateRequestDto(RoleType.VIEWER);
     final Response updateRoleResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(USER_KERMIT, USER_KERMIT)
@@ -680,11 +680,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void updatingLastManagerFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
-    final CollectionRoleRestDto roleEntryDto = expectedRoles.get(0);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final CollectionRoleResponseDto roleEntryDto = expectedRoles.get(0);
 
     // when
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
+    final CollectionRoleUpdateRequestDto updatedRoleDto = new CollectionRoleUpdateRequestDto(RoleType.EDITOR);
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryDto.getId(), updatedRoleDto)
@@ -701,11 +701,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void updatingNonPresentRoleFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
     final String notExistingRoleEntryId = "USER:abc";
 
     // when
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
+    final CollectionRoleUpdateRequestDto updatedRoleDto = new CollectionRoleUpdateRequestDto(RoleType.EDITOR);
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, notExistingRoleEntryId, updatedRoleDto)
@@ -725,14 +725,14 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // when
     final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
-    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(identityDto, RoleType.EDITOR);
     collectionClient.addRolesToCollection(collectionId, roleDto);
     deleteRoleFromCollection(collectionId, roleDto.getId());
 
     // then
     final List<String> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId)
       .stream()
-      .map(IdDto::getId)
+      .map(IdResponseDto::getId)
       .collect(Collectors.toList());
     assertThat(roleIds.size()).isEqualTo(1);
     assertThat(roleIds).doesNotContain(roleDto.getId());
@@ -742,8 +742,8 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void deletingLastManagerFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
-    final CollectionRoleRestDto roleEntryDto = expectedRoles.get(0);
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final CollectionRoleResponseDto roleEntryDto = expectedRoles.get(0);
 
     // when
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension
@@ -754,13 +754,13 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
 
-    final List<CollectionRoleRestDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
+    final List<CollectionRoleResponseDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
     assertThat(actualRoles).isEqualTo(expectedRoles);
   }
 
   private void updateRoleOnCollection(final String collectionId,
                                       final String roleEntryId,
-                                      final CollectionRoleUpdateDto updateDto) {
+                                      final CollectionRoleUpdateRequestDto updateDto) {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryId, updateDto)

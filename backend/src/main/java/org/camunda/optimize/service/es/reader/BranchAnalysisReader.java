@@ -16,9 +16,9 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -59,14 +59,14 @@ public class BranchAnalysisReader {
   private final ProcessQueryFilterEnhancer queryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
-  public BranchAnalysisDto branchAnalysis(final BranchAnalysisQueryDto request, final ZoneId timezone) {
+  public BranchAnalysisResponseDto branchAnalysis(final BranchAnalysisRequestDto request, final ZoneId timezone) {
     log.debug(
       "Performing branch analysis on process definition with key [{}] and versions [{}]",
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions()
     );
 
-    final BranchAnalysisDto result = new BranchAnalysisDto();
+    final BranchAnalysisResponseDto result = new BranchAnalysisResponseDto();
     getBpmnModelInstance(
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
@@ -142,7 +142,7 @@ public class BranchAnalysisReader {
   }
 
   private BranchAnalysisOutcomeDto branchAnalysis(final FlowNode flowNode,
-                                                  final BranchAnalysisQueryDto request,
+                                                  final BranchAnalysisRequestDto request,
                                                   final Set<String> activitiesToExclude,
                                                   final ZoneId timezone) {
 
@@ -160,7 +160,7 @@ public class BranchAnalysisReader {
   }
 
   private long calculateReachedEndEventActivityCount(final String activityId,
-                                                     final BranchAnalysisQueryDto request,
+                                                     final BranchAnalysisRequestDto request,
                                                      final Set<String> activitiesToExclude,
                                                      final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
@@ -171,7 +171,7 @@ public class BranchAnalysisReader {
   }
 
   private long calculateActivityCount(final String activityId,
-                                      final BranchAnalysisQueryDto request,
+                                      final BranchAnalysisRequestDto request,
                                       final Set<String> activitiesToExclude,
                                       final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
@@ -180,7 +180,7 @@ public class BranchAnalysisReader {
     return executeQuery(request, query, timezone);
   }
 
-  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisQueryDto request, final Set<String> activitiesToExclude) {
+  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisRequestDto request, final Set<String> activitiesToExclude) {
     final BoolQueryBuilder query = createDefinitionQuery(
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
@@ -207,7 +207,7 @@ public class BranchAnalysisReader {
     );
   }
 
-  private long executeQuery(final BranchAnalysisQueryDto request,
+  private long executeQuery(final BranchAnalysisRequestDto request,
                             final BoolQueryBuilder query,
                             final ZoneId timezone) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter(), timezone);

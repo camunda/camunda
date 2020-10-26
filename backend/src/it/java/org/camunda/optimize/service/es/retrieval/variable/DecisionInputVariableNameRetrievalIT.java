@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.retrieval.variable;
 
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
@@ -32,15 +32,15 @@ public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRe
     return engineIntegrationExtension.deployDecisionDefinition(decisionGenerator.buildDecision().build());
   }
 
-  protected List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+  protected List<DecisionVariableNameResponseDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     return variablesClient.getDecisionInputVariableNames(variableRequestDto);
   }
 
-  protected List<DecisionVariableNameDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
+  protected List<DecisionVariableNameResponseDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
     return variablesClient.getDecisionInputVariableNames(decisionDefinition);
   }
 
-  protected List<DecisionVariableNameDto> getVariableNames(String key, List<String> versions) {
+  protected List<DecisionVariableNameResponseDto> getVariableNames(String key, List<String> versions) {
     return variablesClient.getDecisionInputVariableNames(key, versions);
   }
 

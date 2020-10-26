@@ -7,15 +7,15 @@ package org.camunda.optimize.service.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
@@ -54,13 +54,13 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   private final DashboardService dashboardService;
   private final ReportService reportService;
 
-  public IdDto createNewReportShareIfAbsent(ReportShareDto createSharingDto, String userId) {
+  public IdResponseDto createNewReportShareIfAbsent(ReportShareRestDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto, userId);
-    Optional<ReportShareDto> existing =
+    Optional<ReportShareRestDto> existing =
       sharingReader.findShareForReport(createSharingDto.getReportId());
 
     return existing
-      .map(share -> new IdDto(share.getId()))
+      .map(share -> new IdResponseDto(share.getId()))
       .orElseGet(() -> createNewReportShare(createSharingDto));
   }
 
@@ -88,13 +88,13 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   }
 
   @Override
-  public void handleDashboardDeleted(final DashboardDefinitionDto definition) {
+  public void handleDashboardDeleted(final DashboardDefinitionRestDto definition) {
     deleteShareForDashboard(definition.getId());
   }
 
   @Override
-  public void handleDashboardUpdated(final DashboardDefinitionDto updatedDashboard) {
-    Optional<DashboardShareDto> dashboardShare = findShareForDashboard(updatedDashboard.getId());
+  public void handleDashboardUpdated(final DashboardDefinitionRestDto updatedDashboard) {
+    Optional<DashboardShareRestDto> dashboardShare = findShareForDashboard(updatedDashboard.getId());
 
     dashboardShare.ifPresent(share -> {
       share.setReportShares(updatedDashboard.getReports());
@@ -102,30 +102,30 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     });
   }
 
-  private IdDto createNewReportShare(ReportShareDto createSharingDto) {
+  private IdResponseDto createNewReportShare(ReportShareRestDto createSharingDto) {
     String result = sharingWriter.saveReportShare(createSharingDto).getId();
-    return new IdDto(result);
+    return new IdResponseDto(result);
   }
 
-  public IdDto crateNewDashboardShare(DashboardShareDto createSharingDto, String userId) {
+  public IdResponseDto crateNewDashboardShare(DashboardShareRestDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto.getDashboardId(), userId);
 
     String result;
-    Optional<DashboardShareDto> existing =
+    Optional<DashboardShareRestDto> existing =
       sharingReader.findShareForDashboard(createSharingDto.getDashboardId());
 
     result = existing
-      .map(DashboardShareDto::getId)
+      .map(DashboardShareRestDto::getId)
       .orElseGet(() -> {
         this.addReportInformation(createSharingDto, userId);
         return sharingWriter.saveDashboardShare(createSharingDto).getId();
       });
 
-    return new IdDto(result);
+    return new IdResponseDto(result);
   }
 
-  private void addReportInformation(DashboardShareDto createSharingDto, String userId) {
-    DashboardDefinitionDto dashboardDefinition =
+  private void addReportInformation(DashboardShareRestDto createSharingDto, String userId) {
+    DashboardDefinitionRestDto dashboardDefinition =
       dashboardService.getDashboardDefinition(createSharingDto.getDashboardId(), userId).getDefinitionDto();
     createSharingDto.setReportShares(dashboardDefinition.getReports());
   }
@@ -133,7 +133,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   public void validateAndCheckAuthorization(String dashboardId, String userId) {
     ValidationHelper.ensureNotEmpty("dashboardId", dashboardId);
     try {
-      DashboardDefinitionDto dashboardDefinition =
+      DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
 
       List<String> authorizedReportIds = reportService
@@ -162,7 +162,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     return reportLocationDto.getId().isEmpty();
   }
 
-  private void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {
+  private void validateAndCheckAuthorization(ReportShareRestDto reportShare, String userId) {
     ValidationHelper.ensureNotEmpty("reportId", reportShare.getReportId());
     try {
       reportService.getReportDefinition(reportShare.getReportId(), userId);
@@ -183,7 +183,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
   public AuthorizedReportEvaluationResult evaluateReportShare(final String shareId, final ZoneId timezone,
                                                               final PaginationDto paginationDto) {
-    Optional<ReportShareDto> optionalReportShare = sharingReader.getReportShare(shareId);
+    Optional<ReportShareRestDto> optionalReportShare = sharingReader.getReportShare(shareId);
     return optionalReportShare
       .map(share -> evaluateReport(ReportEvaluationInfo.builder(share.getReportId())
                                      .timezone(timezone)
@@ -199,7 +199,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
                                                                            final ZoneId timezone,
                                                                            final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
                                                                            final PaginationDto paginationDto) {
-    final DashboardDefinitionDto dashboard = sharingReader.findDashboardShare(dashboardShareId)
+    final DashboardDefinitionRestDto dashboard = sharingReader.findDashboardShare(dashboardShareId)
       .map(share -> dashboardService.getDashboardDefinitionAsService(share.getDashboardId()))
       .orElseThrow(() -> new OptimizeRuntimeException(String.format(
         "Could not find dashboard share for id [%s]",
@@ -234,8 +234,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     }
   }
 
-  public Optional<DashboardDefinitionDto> evaluateDashboard(String shareId) {
-    Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(shareId);
+  public Optional<DashboardDefinitionRestDto> evaluateDashboard(String shareId) {
+    Optional<DashboardShareRestDto> sharedDashboard = sharingReader.findDashboardShare(shareId);
 
     return sharedDashboard
       .map(this::constructDashboard)
@@ -243,8 +243,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
                                                         "unsupported type"));
   }
 
-  private Optional<DashboardDefinitionDto> constructDashboard(DashboardShareDto share) {
-    DashboardDefinitionDto result = dashboardService.getDashboardDefinitionAsService(share.getDashboardId());
+  private Optional<DashboardDefinitionRestDto> constructDashboard(DashboardShareRestDto share) {
+    DashboardDefinitionRestDto result = dashboardService.getDashboardDefinitionAsService(share.getDashboardId());
     return Optional.of(result);
   }
 
@@ -258,25 +258,25 @@ public class SharingService implements ReportReferencingService, DashboardRefere
       .ifPresent(dto -> this.deleteDashboardShare(dto.getId()));
   }
 
-  public Optional<ReportShareDto> findShareForReport(String resourceId) {
+  public Optional<ReportShareRestDto> findShareForReport(String resourceId) {
     return sharingReader.findShareForReport(resourceId);
   }
 
-  public Optional<DashboardShareDto> findShareForDashboard(String resourceId) {
+  public Optional<DashboardShareRestDto> findShareForDashboard(String resourceId) {
     return sharingReader.findShareForDashboard(resourceId);
   }
 
-  public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {
-    ShareSearchResultDto result = new ShareSearchResultDto();
+  public ShareSearchResultResponseDto checkShareStatus(ShareSearchRequestDto searchRequest) {
+    ShareSearchResultResponseDto result = new ShareSearchResultResponseDto();
     if (searchRequest != null && searchRequest.getReports() != null && !searchRequest.getReports().isEmpty()) {
-      Map<String, ReportShareDto> shareForReports = sharingReader.findShareForReports(searchRequest.getReports());
+      Map<String, ReportShareRestDto> shareForReports = sharingReader.findShareForReports(searchRequest.getReports());
       for (String reportId : searchRequest.getReports()) {
         result.getReports().put(reportId, shareForReports.containsKey(reportId));
       }
     }
 
     if (searchRequest != null && searchRequest.getDashboards() != null && !searchRequest.getDashboards().isEmpty()) {
-      Map<String, DashboardShareDto> shareForReports =
+      Map<String, DashboardShareRestDto> shareForReports =
         sharingReader.findShareForDashboards(searchRequest.getDashboards());
       for (String dashboardId : searchRequest.getDashboards()) {
         result.getDashboards().put(dashboardId, shareForReports.containsKey(dashboardId));

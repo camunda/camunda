@@ -10,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -38,18 +38,18 @@ public class CollectionEntityService {
   private final ReportService reportService;
   private final DashboardService dashboardService;
 
-  public List<EntityDto> getAuthorizedCollectionEntities(final String userId, final String collectionId) {
+  public List<EntityResponseDto> getAuthorizedCollectionEntities(final String userId, final String collectionId) {
     AuthorizedCollectionDefinitionDto authCollectionDto =
       authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
-    List<EntityDto> entities = authorizedEntitiesService.getAuthorizedCollectionEntities(userId, collectionId);
+    List<EntityResponseDto> entities = authorizedEntitiesService.getAuthorizedCollectionEntities(userId, collectionId);
 
     final RoleType currentUserResourceRole = authCollectionDto.getCollectionResourceRole();
     entities = entities.stream()
       .filter(Objects::nonNull)
       .peek(entityDto -> entityDto.setCurrentUserRole(currentUserResourceRole))
       .sorted(
-        Comparator.comparing(EntityDto::getEntityType)
-          .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
+        Comparator.comparing(EntityResponseDto::getEntityType)
+          .thenComparing(EntityResponseDto::getLastModified, Comparator.reverseOrder())
       )
       .collect(Collectors.toList());
     return entities;
@@ -59,14 +59,14 @@ public class CollectionEntityService {
     return alertService.getStoredAlertsForCollection(userId, collectionId);
   }
 
-  public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {
+  public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(String userId, String collectionId) {
     return reportService.findAndFilterReports(userId, collectionId);
   }
 
   public void copyCollectionEntities(String userId, CollectionDefinitionRestDto collectionDefinitionDto,
                                      String newCollectionId) {
     final Map<String, String> uniqueReportCopies = new HashMap<>();
-    List<EntityDto> oldCollectionEntities = getAuthorizedCollectionEntities(userId, collectionDefinitionDto.getId());
+    List<EntityResponseDto> oldCollectionEntities = getAuthorizedCollectionEntities(userId, collectionDefinitionDto.getId());
 
     oldCollectionEntities.forEach(e -> {
       final String originalEntityId = e.getId();

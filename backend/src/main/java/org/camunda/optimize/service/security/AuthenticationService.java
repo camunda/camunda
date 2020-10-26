@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ public class AuthenticationService {
    * @throws ForbiddenException     if no engine that authenticates the user also authorizes the user
    * @throws NotAuthorizedException if no engine authenticates the user
    */
-  public String authenticateUser(final CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
+  public String authenticateUser(final CredentialsRequestDto credentials) throws ForbiddenException, NotAuthorizedException {
     final List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     final Optional<String> authenticatedUserId = engineContextFactory.getConfiguredEngines().stream()
       .map(engineContext -> engineAuthenticationProvider.performAuthenticationCheck(credentials, engineContext))

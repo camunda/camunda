@@ -34,7 +34,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
   private String lastModifier;
   private List<IndexableEventMappingDto> mappings;
   private List<EventSourceEntryDto> eventSources;
-  private List<EventProcessRoleDto<IdentityDto>> roles;
+  private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
   public static IndexableEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
     return IndexableEventProcessMappingDto.builder()

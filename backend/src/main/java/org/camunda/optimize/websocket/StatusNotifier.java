@@ -6,7 +6,7 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class StatusNotifier implements ImportObserver {
   }
 
   private void sendStatus() {
-    StatusWithProgressDto result = new StatusWithProgressDto();
+    StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
     result.setConnectionStatus(statusCheckingService.getConnectionStatus());
     result.setIsImporting(importStatusMap);
 

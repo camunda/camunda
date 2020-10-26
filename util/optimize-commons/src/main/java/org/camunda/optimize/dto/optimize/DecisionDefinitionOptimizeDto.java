@@ -10,7 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +19,10 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants(asEnum = true)
-public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeDto {
+public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
   private String dmn10Xml;
-  private List<DecisionVariableNameDto> inputVariableNames = new ArrayList<>();
-  private List<DecisionVariableNameDto> outputVariableNames = new ArrayList<>();
+  private List<DecisionVariableNameResponseDto> inputVariableNames = new ArrayList<>();
+  private List<DecisionVariableNameResponseDto> outputVariableNames = new ArrayList<>();
 
   public DecisionDefinitionOptimizeDto() {
     setType(DefinitionType.DECISION);
@@ -41,8 +41,8 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeDto {
   public DecisionDefinitionOptimizeDto(final String id,
                                        final String engine,
                                        final String dmn10Xml,
-                                       final List<DecisionVariableNameDto> inputVariableNames,
-                                       final List<DecisionVariableNameDto> outputVariableNames) {
+                                       final List<DecisionVariableNameResponseDto> inputVariableNames,
+                                       final List<DecisionVariableNameResponseDto> outputVariableNames) {
     super(id, engine);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
@@ -58,8 +58,8 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                        final String engine,
                                        final String tenantId,
                                        final String dmn10Xml,
-                                       final List<DecisionVariableNameDto> inputVariableNames,
-                                       final List<DecisionVariableNameDto> outputVariableNames) {
+                                       final List<DecisionVariableNameResponseDto> inputVariableNames,
+                                       final List<DecisionVariableNameResponseDto> outputVariableNames) {
     super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.DECISION);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;

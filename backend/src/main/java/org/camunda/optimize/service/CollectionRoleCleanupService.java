@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -36,7 +36,7 @@ public class CollectionRoleCleanupService implements SyncedIdentityCacheListener
     for (CollectionDefinitionDto collection : allCollections) {
       rolesToRemove.put(collection.getId(), new HashSet<>());
       final CollectionDataDto collectionData = collection.getData();
-      for (CollectionRoleDto role : collectionData.getRoles()) {
+      for (CollectionRoleRequestDto role : collectionData.getRoles()) {
         final IdentityDto roleIdentity = role.getIdentity();
         switch (roleIdentity.getType()) {
           case GROUP:

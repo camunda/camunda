@@ -6,8 +6,7 @@
 package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -19,11 +18,11 @@ import java.util.List;
 import static org.camunda.optimize.service.security.util.LocalDateUtil.atSameTimezoneOffsetDateTime;
 
 public class SingleDecisionRawDataReportResult
-  extends ReportEvaluationResult<RawDataDecisionReportResultDto, SingleDecisionReportDefinitionDto> {
+  extends ReportEvaluationResult<RawDataDecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> {
 
 
   public SingleDecisionRawDataReportResult(@NotNull final RawDataDecisionReportResultDto reportResult,
-                                           @NotNull final SingleDecisionReportDefinitionDto reportDefinition) {
+                                           @NotNull final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

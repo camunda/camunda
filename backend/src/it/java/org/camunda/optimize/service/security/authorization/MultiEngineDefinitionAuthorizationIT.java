@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -41,7 +41,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(2);
@@ -59,7 +59,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(1);
@@ -85,7 +85,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(1);
@@ -109,7 +109,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(1);
@@ -138,7 +138,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -164,7 +164,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -189,7 +189,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -211,7 +211,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -237,7 +237,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -266,7 +266,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     //when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions).hasSize(1);
@@ -292,7 +292,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
     // when
-    final List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    final List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(2);
@@ -315,7 +315,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions).hasSize(1);
@@ -330,13 +330,13 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY_2 : DECISION_KEY_2;
   }
 
-  private <T extends DefinitionOptimizeDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {
+  private <T extends DefinitionOptimizeResponseDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {
     return retrieveDefinitionsAsUser(resourceType, KERMIT_USER, KERMIT_USER);
   }
 
-  private <T extends DefinitionOptimizeDto> List<T> retrieveDefinitionsAsUser(final int resourceType,
-                                                                              final String userName,
-                                                                              final String password) {
+  private <T extends DefinitionOptimizeResponseDto> List<T> retrieveDefinitionsAsUser(final int resourceType,
+                                                                                      final String userName,
+                                                                                      final String password) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         return (List<T>) retrieveProcessDefinitionsAsUser(userName, password);

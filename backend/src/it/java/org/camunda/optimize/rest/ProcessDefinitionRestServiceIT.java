@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -78,7 +78,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
     // then we only get 3 definitions, the one kermit is authorized to see and all event based definitions
     assertThat(definitions)
-      .extracting(DefinitionOptimizeDto::getId)
+      .extracting(DefinitionOptimizeResponseDto::getId)
       .containsExactlyInAnyOrder(authorizedProcessId, authorizedEventProcessId1, authorizedEventProcessId2);
   }
 

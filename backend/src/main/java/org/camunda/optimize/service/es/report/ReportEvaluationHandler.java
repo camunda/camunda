@@ -12,14 +12,14 @@ import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEva
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -76,8 +76,8 @@ public abstract class ReportEvaluationHandler {
 
   private CombinedProcessReportResult evaluateCombinedReport(final ReportEvaluationInfo evaluationInfo,
                                                              final RoleType currentUserRole) {
-    final CombinedReportDefinitionDto combinedReportDefinitionDto =
-      (CombinedReportDefinitionDto) evaluationInfo.getReport();
+    final CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
+      (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinitionDto, currentUserRole);
     Optional.ofNullable(evaluationInfo.getPagination())
       .ifPresent(pagination -> {
@@ -85,7 +85,7 @@ public abstract class ReportEvaluationHandler {
           throw new OptimizeValidationException("Pagination cannot be applied to combined reports");
         }
       });
-    final List<SingleProcessReportDefinitionDto> singleReportDefinitions =
+    final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions =
       getAuthorizedSingleReportDefinitions(evaluationInfo);
     final List<ReportEvaluationResult> resultList =
       combinedReportEvaluator.evaluate(singleReportDefinitions, evaluationInfo.getTimezone());
@@ -94,7 +94,7 @@ public abstract class ReportEvaluationHandler {
   }
 
   private CombinedProcessReportResult transformToCombinedReportResult(
-    final CombinedReportDefinitionDto combinedReportDefinition,
+    final CombinedReportDefinitionRequestDto combinedReportDefinition,
     final List<ReportEvaluationResult> singleReportResultList,
     final long instanceCount) {
 
@@ -123,12 +123,12 @@ public abstract class ReportEvaluationHandler {
       ResultType.NUMBER.equals(resultType);
   }
 
-  private List<SingleProcessReportDefinitionDto> getAuthorizedSingleReportDefinitions(final ReportEvaluationInfo evaluationInfo) {
-    final CombinedReportDefinitionDto combinedReportDefinitionDto =
-      (CombinedReportDefinitionDto) evaluationInfo.getReport();
+  private List<SingleProcessReportDefinitionRequestDto> getAuthorizedSingleReportDefinitions(final ReportEvaluationInfo evaluationInfo) {
+    final CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
+      (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     final String userId = evaluationInfo.getUserId();
     List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
-    List<SingleProcessReportDefinitionDto> foundSingleReports = reportReader.getAllSingleProcessReportsForIdsOmitXml(
+    List<SingleProcessReportDefinitionRequestDto> foundSingleReports = reportReader.getAllSingleProcessReportsForIdsOmitXml(
       singleReportIds)
       .stream()
       .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
@@ -167,8 +167,8 @@ public abstract class ReportEvaluationHandler {
       CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
     } catch (OptimizeException | OptimizeValidationException e) {
-      AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
-        new AuthorizedReportDefinitionDto(evaluationInfo.getReport(), currentUserRole);
+      AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+        new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
     }
   }
@@ -199,8 +199,8 @@ public abstract class ReportEvaluationHandler {
                                              final AdditionalProcessReportEvaluationFilterDto additionalFilters,
                                              Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
     if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
-      if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
-        SingleProcessReportDefinitionDto definitionDto = (SingleProcessReportDefinitionDto) reportDefinitionDto;
+      if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto) {
+        SingleProcessReportDefinitionRequestDto definitionDto = (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
         Map<VariableType, Set<String>> variableFiltersByTypeForReport =
           varNameSupplier.get()
             .stream()

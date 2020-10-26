@@ -7,8 +7,8 @@ package org.camunda.optimize.service.report;
 
 import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.ReportReader;
@@ -65,7 +65,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleProcessReport() {
     // given
-    SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto updateDto = new SingleProcessReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
@@ -84,7 +84,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleProcessReportWithConflicts() {
     // given
-    SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto updateDto = new SingleProcessReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
@@ -107,7 +107,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleDecisionReport() throws OptimizeConflictException {
     // given
-    SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
+    SingleDecisionReportDefinitionRequestDto updateDto = new SingleDecisionReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
@@ -124,7 +124,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleDecisionReportWithConflicts() {
     // given
-    SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
+    SingleDecisionReportDefinitionRequestDto updateDto = new SingleDecisionReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
@@ -147,7 +147,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testDeleteReport() {
     // given
-    final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto testDefinition = new SingleProcessReportDefinitionRequestDto();
     when(reportReader.getReport("test1")).thenReturn(Optional.of(testDefinition));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
@@ -163,7 +163,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testDeleteReportWithConflicts() {
     // given
-    when(reportReader.getReport("test1")).thenReturn(Optional.of(new SingleProcessReportDefinitionDto()));
+    when(reportReader.getReport("test1")).thenReturn(Optional.of(new SingleProcessReportDefinitionRequestDto()));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(

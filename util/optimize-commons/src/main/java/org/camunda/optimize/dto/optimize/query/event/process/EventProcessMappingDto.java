@@ -45,7 +45,7 @@ public class EventProcessMappingDto implements OptimizeDto {
   @Valid
   private Map<String, EventMappingDto> mappings;
 
-  private List<EventProcessRoleDto<IdentityDto>> roles;
+  private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
   private EventProcessState state;
 

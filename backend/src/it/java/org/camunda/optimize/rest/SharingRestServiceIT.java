@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +62,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShare() {
     //given
     String reportId = createReportWithInstance();
-    ReportShareDto share = createReportShare(reportId);
+    ReportShareRestDto share = createReportShare(reportId);
 
     // when
     Response response = sharingClient.createReportShareResponse(share);
@@ -78,7 +78,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     //given
     String reportId = createReportWithInstance();
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
-    ReportShareDto share = createReportShare(reportId);
+    ReportShareRestDto share = createReportShare(reportId);
 
     // when
     Response response = sharingClient.createReportShareResponse(share);
@@ -92,7 +92,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     //given
     String dashboard = addEmptyDashboardToOptimize();
 
-    DashboardShareDto sharingDto = new DashboardShareDto();
+    DashboardShareRestDto sharingDto = new DashboardShareRestDto();
     sharingDto.setDashboardId(dashboard);
 
     // when
@@ -199,7 +199,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String id = addShareForReport(reportId);
 
     //when
-    ReportShareDto share = getShareForReport(reportId);
+    ReportShareRestDto share = getShareForReport(reportId);
 
     //then
     assertThat(share).isNotNull();
@@ -230,7 +230,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String id = addShareForDashboard(dashboardWithReport);
 
     //when
-    DashboardShareDto share = findShareForDashboard(dashboardWithReport).readEntity(DashboardShareDto.class);
+    DashboardShareRestDto share = findShareForDashboard(dashboardWithReport).readEntity(DashboardShareRestDto.class);
 
     //then
     assertThat(share).isNotNull();
@@ -245,7 +245,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     //when
-    DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
+    DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     //then
     assertThat(dashboardShareDto).isNotNull();

@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,9 +32,9 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameDto> responseList = getExecutor(inputOutput, request)
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
       .withoutAuthentication()
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList).isNotEmpty();
@@ -48,8 +48,8 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameDto> responseList = getExecutor(inputOutput, request)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList).isNotEmpty();

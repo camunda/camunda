@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -25,10 +25,10 @@ import java.util.stream.IntStream;
 
 @Slf4j
 public class SingleProcessHyperMapReportResult
-  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionRequestDto> {
 
   public SingleProcessHyperMapReportResult(@NonNull final ReportHyperMapResultDto reportResult,
-                                           @NonNull final SingleProcessReportDefinitionDto reportDefinition) {
+                                           @NonNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -41,13 +41,13 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(userIdentity1.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
 
     // then only return identities the current user has access to are returned
     // the total count however still reflects all users
     assertThat(searchResult)
       .isEqualTo(
-        new IdentitySearchResultDto(
+        new IdentitySearchResultResponseDto(
           4L, Lists.newArrayList(userIdentity1, groupIdentity1)
         ));
   }
@@ -106,7 +106,7 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity(
       "testUser",
       1,
       KERMIT_USER,
@@ -117,7 +117,7 @@ public class IdentityAuthorizationIT extends AbstractIT {
     assertThat(searchResult)
       // user2 is still returned although being not the first internal search result based on sorting
       // and total count however still reflects all users
-      .isEqualTo(new IdentitySearchResultDto(
+      .isEqualTo(new IdentitySearchResultResponseDto(
         3L, Lists.newArrayList(user2)
       ));
   }
@@ -140,7 +140,7 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(user4.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity(
       "testUser",
       2,
       KERMIT_USER,
@@ -152,7 +152,7 @@ public class IdentityAuthorizationIT extends AbstractIT {
       // user2 and user4 are still returned even though they are not in the first internal search result based on
       // sorting
       // and total count however still reflects all users
-      .isEqualTo(new IdentitySearchResultDto(
+      .isEqualTo(new IdentitySearchResultResponseDto(
         4L, Lists.newArrayList(user2, user4)
       ));
   }

@@ -12,9 +12,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -69,7 +69,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result =
+    BranchAnalysisResponseDto result =
       performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     //then
@@ -97,7 +97,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisResponseDto result = performBranchAnalysis(
       processDefinition.getKey(),
       processDefinition.getVersionAsString()
     );
@@ -127,7 +127,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
+    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition.getKey(),
       Lists.newArrayList(processDefinition.getVersionAsString()),
       Collections.singletonList(null),
@@ -162,7 +162,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
 
     //then
     assertThat(result).isNotNull();
@@ -199,7 +199,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       processDefinition1.getVersionAsString(),
       processDefinition3.getVersionAsString()
     );
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisResponseDto result = performBranchAnalysis(
       processDefinition1.getKey(),
       versions
     );
@@ -233,7 +233,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
     //then
     assertThat(result).isNotNull();
@@ -276,7 +276,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisResponseDto result = performBranchAnalysis(
       processDefinition.getKey(),
       processDefinition.getVersionAsString()
     );
@@ -313,7 +313,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
+    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
       Lists.newArrayList(tenantId2, tenantId1),
@@ -353,7 +353,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
+    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
       Lists.newArrayList(tenantId2),
@@ -388,7 +388,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
     assertThat(result).isNotNull();
@@ -416,7 +416,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
     assertThat(result).isNotNull();
@@ -446,7 +446,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
     assertThat(result).isNotNull();
@@ -475,7 +475,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
       Collections.singletonList(null),
@@ -492,7 +492,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       now
     );
 
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
     //then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
@@ -519,7 +519,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
       Collections.singletonList(null),
@@ -529,7 +529,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     addStartDateFilter(now.plusSeconds(1L), null, dto);
 
     //when
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result).isNotNull();
@@ -555,7 +555,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
       Collections.singletonList(null),
@@ -565,7 +565,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
     //when
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result).isNotNull();
@@ -614,7 +614,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startBypassProcessAndTakeLongWayWithTask(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
       Collections.singletonList(null),
@@ -623,7 +623,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //when
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result).isNotNull();
@@ -649,7 +649,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(processDefinition.getVersionAsString()),
       Collections.singletonList(null),
@@ -665,7 +665,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
                     .buildList());
 
     //when
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result).isNotNull();
@@ -691,7 +691,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(processDefinition.getVersionAsString()),
       Collections.singletonList(null),
@@ -708,7 +708,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     dto.getFilter().addAll(flowNodeFilter);
 
     //when
-    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
+    BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result).isNotNull();
@@ -755,7 +755,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
+    BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result).isNotNull();
@@ -804,7 +804,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
+    BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result).isNotNull();
@@ -823,8 +823,8 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
-  private BranchAnalysisDto getBasicBranchAnalysisDto(ProcessInstanceEngineDto instanceEngineDto) {
-    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+  private BranchAnalysisResponseDto getBasicBranchAnalysisDto(ProcessInstanceEngineDto instanceEngineDto) {
+    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       instanceEngineDto.getProcessDefinitionKey(),
       Lists.newArrayList(String.valueOf(instanceEngineDto.getProcessDefinitionVersion())),
       Collections.singletonList(null),
@@ -866,7 +866,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     //when
-    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
+    BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result).isNotNull();
@@ -895,14 +895,14 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
     //when
-    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisQueryDto());
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisRequestDto());
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinitionVersion() {
     //given
-    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
       PROCESS_DEFINITION_KEY,
       null,
       null,
@@ -918,7 +918,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   @Test
   public void testValidationExceptionOnNullGateway() {
     //given
-    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
       PROCESS_DEFINITION_KEY,
       Lists.newArrayList(PROCESS_DEFINITION_VERSION),
       null,
@@ -934,7 +934,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void testValidationExceptionOnNullEndActivity() {
-    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
       PROCESS_DEFINITION_KEY,
       Lists.newArrayList(PROCESS_DEFINITION_VERSION),
       Collections.singletonList(null),
@@ -968,8 +968,8 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final Integer processDefinitionVersion) {
+  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
+                                                          final Integer processDefinitionVersion) {
     return analysisClient.performBranchAnalysis(
       processDefinitionKey,
       ImmutableList.of(processDefinitionVersion.toString()),
@@ -979,8 +979,8 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
   }
 
-  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final String processDefinitionVersion) {
+  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
+                                                          final String processDefinitionVersion) {
     return analysisClient.performBranchAnalysis(
       processDefinitionKey,
       ImmutableList.of(processDefinitionVersion),
@@ -990,8 +990,8 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
   }
 
-  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final List<String> processDefinitionVersions) {
+  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
+                                                          final List<String> processDefinitionVersions) {
     return analysisClient.performBranchAnalysis(
       processDefinitionKey,
       processDefinitionVersions,
@@ -1111,7 +1111,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisQueryDto dto) {
+  private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisRequestDto dto) {
     List<ProcessFilterDto<?>> dateFilter = ProcessFilterBuilder
       .filter()
       .fixedStartDate()

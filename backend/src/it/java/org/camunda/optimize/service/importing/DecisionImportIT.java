@@ -9,7 +9,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
@@ -270,7 +270,7 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(tenantId);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(newDefinition.getId(), false)
@@ -316,7 +316,7 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), false)
@@ -342,7 +342,7 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), true),

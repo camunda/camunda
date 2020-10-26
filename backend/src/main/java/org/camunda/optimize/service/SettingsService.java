@@ -7,7 +7,7 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.es.reader.SettingsReader;
 import org.camunda.optimize.service.es.writer.SettingsWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -25,16 +25,16 @@ public class SettingsService {
   private final IdentityService identityService;
   private final ConfigurationService configurationService;
 
-  public SettingsDto getSettings() {
+  public SettingsResponseDto getSettings() {
     return settingsReader.getSettings()
       .orElse(
-        SettingsDto.builder()
+        SettingsResponseDto.builder()
           .metadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry())
           .build()
       );
   }
 
-  public void setSettings(final String userId, final SettingsDto settingsDto) {
+  public void setSettings(final String userId, final SettingsResponseDto settingsDto) {
     validateUserAuthorizedToConfigureSettingsOrFail(userId);
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     settingsDto.setLastModifier(userId);

@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @ToString(callSuper = true)
-public class CancelableEventDto extends EventDto {
+public class CancelableEventDto extends EventResponseDto {
 
   @ToString.Include
   private boolean canceled;

@@ -6,13 +6,13 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
@@ -58,8 +58,8 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/report")
-  public IdDto createNewReportShare(@Context ContainerRequestContext requestContext,
-                                    ReportShareDto createSharingDto) throws SharingNotAllowedException {
+  public IdResponseDto createNewReportShare(@Context ContainerRequestContext requestContext,
+                                            ReportShareRestDto createSharingDto) {
     if (configurationService.getSharingEnabled()) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
       return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
@@ -73,8 +73,8 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/dashboard")
-  public IdDto createNewDashboardShare(@Context ContainerRequestContext requestContext,
-                                       DashboardShareDto createSharingDto) throws SharingNotAllowedException {
+  public IdResponseDto createNewDashboardShare(@Context ContainerRequestContext requestContext,
+                                               DashboardShareRestDto createSharingDto) {
     if (configurationService.getSharingEnabled()) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
       return sharingService.crateNewDashboardShare(createSharingDto, userId);
@@ -103,7 +103,7 @@ public class SharingRestService {
   @Secured
   @Path("/report/{reportId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportShareDto findShareForReport(@PathParam("reportId") String reportId) {
+  public ReportShareRestDto findShareForReport(@PathParam("reportId") String reportId) {
     return sharingService.findShareForReport(reportId).orElse(null);
   }
 
@@ -111,7 +111,7 @@ public class SharingRestService {
   @Secured
   @Path("/dashboard/{dashboardId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardShareDto findShareForDashboard(@PathParam("dashboardId") String dashboardId) {
+  public DashboardShareRestDto findShareForDashboard(@PathParam("dashboardId") String dashboardId) {
     return sharingService.findShareForDashboard(dashboardId).orElse(null);
   }
 
@@ -155,8 +155,8 @@ public class SharingRestService {
   @GET
   @Path("/dashboard/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
-    DashboardDefinitionDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
+  public DashboardDefinitionRestDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
+    DashboardDefinitionRestDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
     dashboardRestMapper.prepareRestResponse(dashboardDefinitionDto);
     return dashboardDefinitionDto;
   }
@@ -184,7 +184,7 @@ public class SharingRestService {
   @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {
+  public ShareSearchResultResponseDto checkShareStatus(ShareSearchRequestDto searchRequest) {
     return sharingService.checkShareStatus(searchRequest);
   }
 

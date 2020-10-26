@@ -9,11 +9,11 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,7 +46,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
     //then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
@@ -64,7 +64,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -82,7 +82,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
     //then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
@@ -96,7 +96,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -117,7 +117,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
-    final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
+    final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
@@ -135,7 +135,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
-    final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
+    final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
@@ -157,7 +157,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
+    final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
@@ -182,7 +182,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     collectionClient.updateCollectionRoleAsUser(
       collectionId,
       getJohnRoleId(),
-      new CollectionRoleUpdateDto(RoleType.MANAGER),
+      new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
       KERMIT_USER,
       KERMIT_USER
     );
@@ -194,7 +194,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     //given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-    final CollectionRoleDto johnEditorRoleDto = createJohnEditorRoleDto();
+    final CollectionRoleRequestDto johnEditorRoleDto = createJohnEditorRoleDto();
     collectionClient.addRolesToCollection(collectionId, johnEditorRoleDto);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -205,7 +205,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateRoleToCollectionRequest(collectionId, getJohnRoleId(), new CollectionRoleUpdateDto(RoleType.MANAGER))
+      .buildUpdateRoleToCollectionRequest(collectionId, getJohnRoleId(), new CollectionRoleUpdateRequestDto(RoleType.MANAGER))
       .execute();
 
     // then
@@ -228,7 +228,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     collectionClient.updateCollectionRoleAsUser(
       collectionId,
       getJohnRoleId(),
-      new CollectionRoleUpdateDto(RoleType.MANAGER),
+      new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
       KERMIT_USER,
       KERMIT_USER
     );
@@ -461,13 +461,13 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void onlyManagerCanCopyACollection() {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
         new IdentityDto("kermit", IdentityType.USER),
         RoleType.VIEWER
       ));
 
     authorizationClient.addUserAndGrantOptimizeAccess("gonzo");
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
         new IdentityDto("gonzo", IdentityType.USER),
         RoleType.MANAGER
       ));
@@ -493,8 +493,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     return new CollectionScopeEntryDto(DefinitionType.PROCESS, "KEY");
   }
 
-  private CollectionRoleDto createJohnEditorRoleDto() {
-    return new CollectionRoleDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
+  private CollectionRoleRequestDto createJohnEditorRoleDto() {
+    return new CollectionRoleRequestDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
   }
 
   private String getJohnRoleId() {

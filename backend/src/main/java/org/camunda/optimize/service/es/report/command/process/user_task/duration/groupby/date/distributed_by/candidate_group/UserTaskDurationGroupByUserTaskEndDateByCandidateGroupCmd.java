@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.date.distributed_by.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -37,7 +37,7 @@ public class UserTaskDurationGroupByUserTaskEndDateByCandidateGroupCmd extends P
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
   }

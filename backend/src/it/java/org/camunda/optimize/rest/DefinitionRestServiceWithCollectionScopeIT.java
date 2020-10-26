@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
@@ -77,11 +77,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
     assertThat(definitionKeys)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactlyInAnyOrder(definitionKey1, definitionKey2);
   }
 
@@ -105,11 +105,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when we get definition keys for the scope of the collection
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then the definition key is still returned although the definition only exists for the not defined tenant
     assertThat(definitionKeys)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactlyInAnyOrder(definitionKey);
   }
 
@@ -138,7 +138,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
     assertThat(definitionKeys).isEmpty();
@@ -165,7 +165,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when definition keys of the other type are requested
-    final List<DefinitionKeyDto> definitionKeys = definitionClient
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient
       .getDefinitionKeysByType(otherDefinitionType, collectionId);
 
     // then none are returned
@@ -216,11 +216,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("2", "1");
   }
 
   @ParameterizedTest
@@ -243,11 +243,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("2", "1");
   }
 
   @ParameterizedTest
@@ -270,11 +270,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("4", "3", "2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("4", "3", "2", "1");
   }
 
   @ParameterizedTest
@@ -301,11 +301,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("3", "2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("3", "2", "1");
   }
 
   @ParameterizedTest

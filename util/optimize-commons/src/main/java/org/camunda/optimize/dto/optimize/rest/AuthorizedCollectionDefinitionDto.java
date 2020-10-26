@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -30,7 +30,7 @@ public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
     this.definitionDto = definitionDto;
   }
 
-  public EntityDto toEntityDto() {
+  public EntityResponseDto toEntityDto() {
     return definitionDto.toEntityDto(getCurrentUserRole());
   }
 

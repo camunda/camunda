@@ -8,7 +8,7 @@ import lombok.SneakyThrows
 import org.camunda.optimize.OptimizeRequestExecutor
 import org.camunda.optimize.dto.optimize.ReportConstants
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityType
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
@@ -63,7 +63,7 @@ class PostMigrationTest {
 
   @Test
   void retrieveAllEntities() {
-    final List<EntityDto> entities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
     assertThat(entities).isNotEmpty();
   }
 
@@ -71,7 +71,7 @@ class PostMigrationTest {
   void retrieveAlerts() {
     List<AlertDefinitionDto> allAlerts = new ArrayList<>();
 
-    List<EntityDto> collections = getCollections();
+    List<EntityResponseDto> collections = getCollections();
     collections.forEach(collection -> {
       allAlerts.addAll(alertClient.getAlertsForCollectionAsDefaultUser(collection.getId()));
     });
@@ -83,20 +83,20 @@ class PostMigrationTest {
 
   @Test
   void retrieveAllCollections() {
-    final List<EntityDto> collections = getCollections();
+    final List<EntityResponseDto> collections = getCollections();
 
     assertThat(collections).isNotEmpty();
-    for (EntityDto collection : collections) {
+    for (EntityResponseDto collection : collections) {
       assertThat(collectionClient.getCollectionById(collection.getId())).isNotNull();
     }
   }
 
   @Test
   void evaluateAllCollectionReports() {
-    final List<EntityDto> collections = getCollections();
-    for (EntityDto collection : collections) {
-      final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
-      for (EntityDto entity : collectionEntities.stream()
+    final List<EntityResponseDto> collections = getCollections();
+    for (EntityResponseDto collection : collections) {
+      final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
+      for (EntityResponseDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
         .collect(Collectors.toList())) {
         final Response response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId())
@@ -189,8 +189,8 @@ class PostMigrationTest {
     return reportClient.evaluateRawReport(reportData);
   }
 
-  private static List<EntityDto> getCollections() {
-    final List<EntityDto> entities = entitiesClient.getAllEntities();
+  private static List<EntityResponseDto> getCollections() {
+    final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
 
     return entities.stream()
       .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))

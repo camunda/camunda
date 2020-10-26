@@ -6,19 +6,19 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.mapper.AlertRestMapper;
 import org.camunda.optimize.rest.mapper.CollectionRestMapper;
@@ -29,7 +29,6 @@ import org.camunda.optimize.service.collection.CollectionEntityService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,6 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -74,13 +72,13 @@ public class CollectionRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewCollection(@Context ContainerRequestContext requestContext,
-                                   PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public IdResponseDto createNewCollection(@Context ContainerRequestContext requestContext,
+                                           PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.createNewCollectionAndReturnId(
       userId,
       Optional.ofNullable(partialCollectionDefinitionDto)
-        .orElse(new PartialCollectionDefinitionDto())
+        .orElse(new PartialCollectionDefinitionRequestDto())
     );
   }
 
@@ -112,7 +110,7 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
                                       @PathParam("id") String collectionId,
-                                      @NotNull PartialCollectionDefinitionDto updatedCollection) {
+                                      @NotNull PartialCollectionDefinitionRequestDto updatedCollection) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(userId, collectionId, updatedCollection);
   }
@@ -125,7 +123,7 @@ public class CollectionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteCollection(@Context ContainerRequestContext requestContext,
                                @PathParam("id") String collectionId,
-                               @QueryParam("force") boolean force) throws OptimizeConflictException {
+                               @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.deleteCollection(userId, collectionId, force);
   }
@@ -158,7 +156,7 @@ public class CollectionRestService {
   public void deleteScopeEntry(@Context ContainerRequestContext requestContext,
                                @PathParam("id") String collectionId,
                                @PathParam("scopeEntryId") String scopeEntryId,
-                               @QueryParam("force") boolean force) throws NotFoundException {
+                               @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionScopeService.deleteScopeEntry(userId, collectionId, scopeEntryId, force);
   }
@@ -191,8 +189,8 @@ public class CollectionRestService {
   @Path("/{id}/scope")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionScopeEntryRestDto> getScopes(@Context ContainerRequestContext requestContext,
-                                                     @PathParam("id") String collectionId) {
+  public List<CollectionScopeEntryResponseDto> getScopes(@Context ContainerRequestContext requestContext,
+                                                         @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionScopeService.getCollectionScope(userId, collectionId);
   }
@@ -201,8 +199,8 @@ public class CollectionRestService {
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionRoleRestDto> getRoles(@Context ContainerRequestContext requestContext,
-                                              @PathParam("id") String collectionId) {
+  public List<CollectionRoleResponseDto> getRoles(@Context ContainerRequestContext requestContext,
+                                                  @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionRoleService.getAllRolesOfCollectionSorted(userId, collectionId);
   }
@@ -212,7 +210,7 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void addRoles(@Context ContainerRequestContext requestContext,
                        @PathParam("id") String collectionId,
-                       @NotNull List<CollectionRoleDto> rolesToAdd) {
+                       @NotNull List<CollectionRoleRequestDto> rolesToAdd) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionRoleService.addRolesToCollection(userId, collectionId, rolesToAdd);
   }
@@ -224,7 +222,7 @@ public class CollectionRestService {
   public void updateRole(@Context ContainerRequestContext requestContext,
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId,
-                         @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
+                         @NotNull CollectionRoleUpdateRequestDto roleUpdateDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
     collectionRoleService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
@@ -233,9 +231,9 @@ public class CollectionRestService {
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdDto copyCollection(@Context ContainerRequestContext requestContext,
-                              @PathParam("id") String collectionId,
-                              @QueryParam("name") String newCollectionName) {
+  public IdResponseDto copyCollection(@Context ContainerRequestContext requestContext,
+                                      @PathParam("id") String collectionId,
+                                      @QueryParam("name") String newCollectionName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.copyCollection(userId, collectionId, newCollectionName);
   }
@@ -245,7 +243,7 @@ public class CollectionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void removeRole(@Context ContainerRequestContext requestContext,
                          @PathParam("id") String collectionId,
-                         @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
+                         @PathParam("roleEntryId") String roleEntryId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
     collectionRoleService.removeRoleFromCollectionUnlessIsLastManager(userId, collectionId, roleEntryId);
@@ -265,10 +263,10 @@ public class CollectionRestService {
   @GET
   @Path("/{id}/reports/")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedReportDefinitionDto> getReports(@Context ContainerRequestContext requestContext,
-                                                        @PathParam("id") String collectionId) {
+  public List<AuthorizedReportDefinitionResponseDto> getReports(@Context ContainerRequestContext requestContext,
+                                                                @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<AuthorizedReportDefinitionDto> reports = collectionEntityService.findAndFilterReports(userId, collectionId);
+    List<AuthorizedReportDefinitionResponseDto> reports = collectionEntityService.findAndFilterReports(userId, collectionId);
     reports.forEach(reportRestMapper::prepareRestResponse);
     return reports;
   }
@@ -276,11 +274,11 @@ public class CollectionRestService {
   @GET
   @Path("/{id}/entities")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext,
-                                     @PathParam("id") String collectionId,
-                                     @BeanParam final EntitySorter entitySorter) {
+  public List<EntityResponseDto> getEntities(@Context ContainerRequestContext requestContext,
+                                             @PathParam("id") String collectionId,
+                                             @BeanParam final EntitySorter entitySorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<EntityDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
+    List<EntityResponseDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
   }

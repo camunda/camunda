@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -74,7 +74,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
@@ -107,7 +107,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(typePair.get(0)));
-    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
         new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER));
 
     // when
@@ -150,18 +150,18 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId = createNumberReportForCollection(collectionId, definitionType);
     final String alertId = alertClient.createAlertForReport(reportId);
-    final AlertCreationDto alertCreationDto = alertClient.createSimpleAlert(reportId);
+    final AlertCreationRequestDto alertCreationRequestDto = alertClient.createSimpleAlert(reportId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
 
     // when
-    Response createResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
-    Response editResponse = alertClient.editAlertAsUser(alertId, alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response createResponse = alertClient.createAlertAsUser(alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
+    Response editResponse = alertClient.editAlertAsUser(alertId, alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
     Response deleteResponse = alertClient.deleteAlertAsUser(alertId, KERMIT_USER, KERMIT_USER);
 
     // then
@@ -180,29 +180,30 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     final String reportId = createNumberReportForCollection(collectionId, definitionType);
     final String alertId1 = alertClient.createAlertForReport(reportId);
     final String alertId2 = alertClient.createAlertForReport(reportId);
-    final AlertCreationDto alertCreationDto = alertClient.createSimpleAlert(reportId);
+    final AlertCreationRequestDto alertCreationRequestDto = alertClient.createSimpleAlert(reportId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ));
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
         new IdentityDto(MISS_PIGGY_USER, IdentityType.USER),
         RoleType.EDITOR
       ));
 
     // when
-    Response managerCreateResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
-    Response managerEditResponse = alertClient.editAlertAsUser(alertId1, alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response managerCreateResponse = alertClient.createAlertAsUser(alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
+    Response managerEditResponse = alertClient.editAlertAsUser(alertId1,
+                                                               alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
     Response managerDeleteResponse = alertClient.deleteAlertAsUser(alertId1, KERMIT_USER, KERMIT_USER);
 
-    Response editorCreateResponse = alertClient.createAlertAsUser(alertCreationDto, MISS_PIGGY_USER, MISS_PIGGY_USER);
+    Response editorCreateResponse = alertClient.createAlertAsUser(alertCreationRequestDto, MISS_PIGGY_USER, MISS_PIGGY_USER);
     Response editorEditResponse = alertClient.editAlertAsUser(
       alertId2,
-      alertCreationDto,
+      alertCreationRequestDto,
       MISS_PIGGY_USER,
       MISS_PIGGY_USER
     );

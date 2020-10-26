@@ -17,7 +17,7 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class GroupDto extends IdentityWithMetadataDto {
+public class GroupDto extends IdentityWithMetadataResponseDto {
   private Long memberCount;
 
   public GroupDto(final String id) {

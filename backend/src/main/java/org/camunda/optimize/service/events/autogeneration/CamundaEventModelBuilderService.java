@@ -14,7 +14,7 @@ import org.camunda.bpm.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
@@ -146,7 +146,7 @@ public class CamundaEventModelBuilderService {
                                                                    final Map<String, EventMappingDto> mappings,
                                                                    final EventSourceEntryDto sourceEntryDto,
                                                                    final boolean isFinalSourceInSeries) {
-    final String definitionName = getDefinition(sourceEntryDto).map(DefinitionOptimizeDto::getName)
+    final String definitionName = getDefinition(sourceEntryDto).map(DefinitionOptimizeResponseDto::getName)
       .orElse(sourceEntryDto.getProcessDefinitionKey());
     final EventTypeDto processInstanceStartProcessEvent =
       createCamundaProcessStartEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
@@ -213,7 +213,7 @@ public class CamundaEventModelBuilderService {
     return BpmnModelUtil.parseBpmnModel(definitionXml);
   }
 
-  private Optional<DefinitionOptimizeDto> getDefinition(final EventSourceEntryDto sourceEntryDto) {
+  private Optional<DefinitionOptimizeResponseDto> getDefinition(final EventSourceEntryDto sourceEntryDto) {
     return definitionService.getDefinitionWithXmlAsService(
       DefinitionType.PROCESS,
       sourceEntryDto.getProcessDefinitionKey(),

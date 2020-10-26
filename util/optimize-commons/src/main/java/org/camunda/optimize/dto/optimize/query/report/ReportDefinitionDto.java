@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import java.time.OffsetDateTime;
@@ -44,8 +44,8 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
   }
 
   @Override
-  public EntityDto toEntityDto() {
-    return new EntityDto(
+  public EntityResponseDto toEntityDto() {
+    return new EntityResponseDto(
       getId(),
       getName(),
       getLastModified(),

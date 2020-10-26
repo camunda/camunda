@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.eventName;
-import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.group;
-import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.eventName;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.group;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.source;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
@@ -67,7 +67,7 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
       numberOfDifferentEvents,
       () -> embeddedOptimizeExtension.getRequestExecutor()
         .buildPostEventCountRequest(eventCountSorter, searchTerm, countRequest)
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 

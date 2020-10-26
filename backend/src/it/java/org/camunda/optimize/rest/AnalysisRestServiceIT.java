@@ -8,8 +8,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
+      .buildProcessDefinitionCorrelation(new BranchAnalysisRequestDto())
       .withoutAuthentication()
       .execute();
 
@@ -61,18 +61,18 @@ public class AnalysisRestServiceIT extends AbstractIT {
     setupFullInstanceFlow();
 
     // when
-    BranchAnalysisQueryDto branchAnalysisQueryDto = new BranchAnalysisQueryDto();
-    branchAnalysisQueryDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    branchAnalysisQueryDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
-    branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
-    branchAnalysisQueryDto.setEnd(END_ACTIVITY);
+    BranchAnalysisRequestDto branchAnalysisRequestDto = new BranchAnalysisRequestDto();
+    branchAnalysisRequestDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    branchAnalysisRequestDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
+    branchAnalysisRequestDto.setGateway(GATEWAY_ACTIVITY);
+    branchAnalysisRequestDto.setEnd(END_ACTIVITY);
 
-    BranchAnalysisDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisQueryDto);
+    BranchAnalysisResponseDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
 
     // then
     assertThat(response)
       .isNotNull()
-      .extracting(BranchAnalysisDto::getTotal)
+      .extracting(BranchAnalysisResponseDto::getTotal)
       .isEqualTo(2L);
   }
 

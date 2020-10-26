@@ -19,19 +19,19 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -56,10 +56,10 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.entityType;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModified;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModifier;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -153,9 +153,9 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addCollectionsToOptimize(numOfEachEntityToAdd);
 
     // when & then
-    final Supplier<List<EntityDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
+    final Supplier<List<EntityResponseDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllEntitiesRequest(entitySorter)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityResponseDto.class, Response.Status.OK.getStatusCode());
     assertThatListEndpointMaxAllowedQueryTimeIsMet(totalNumberOfEntities, reportSupplier);
 
     // when caches are warm due to previous call, then
@@ -182,9 +182,9 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addDashboardsToOptimize(numOfEachEntityToAdd + extraDashboardsToAdd, collectionId);
 
     // when & then
-    final Supplier<List<EntityDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
+    final Supplier<List<EntityResponseDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId, entitySorter)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityResponseDto.class, Response.Status.OK.getStatusCode());
     assertThatListEndpointMaxAllowedQueryTimeIsMet(totalNumberOfEntities, reportSupplier);
 
     // when caches are warm due to previous call, then
@@ -224,7 +224,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
           .build();
 
-        final SingleProcessReportDefinitionDto definition = new SingleProcessReportDefinitionDto(processReportData);
+        final SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto(processReportData);
         definition.setCollectionId(collectionId);
         definition.setName(IdGenerator.getNextId());
         definition.setOwner(DEFAULT_USER);
@@ -251,7 +251,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           .setDecisionDefinitionKey(DECISION_DEFINITION_KEY + "_" + index)
           .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
           .build();
-        final SingleDecisionReportDefinitionDto definition = new SingleDecisionReportDefinitionDto(decisionReportData);
+        final SingleDecisionReportDefinitionRequestDto definition = new SingleDecisionReportDefinitionRequestDto(decisionReportData);
         definition.setCollectionId(collectionId);
         definition.setName(IdGenerator.getNextId());
         definition.setOwner(DEFAULT_USER);
@@ -274,7 +274,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       new CombinedReportItemDto("firstReportId", "red"),
       new CombinedReportItemDto("secondReportId", "blue")
     ));
-    final CombinedReportDefinitionDto definition = new CombinedReportDefinitionDto(new CombinedReportDataDto());
+    final CombinedReportDefinitionRequestDto definition = new CombinedReportDefinitionRequestDto(new CombinedReportDataDto());
     definition.setCollectionId(collectionId);
     definition.setName(IdGenerator.getNextId());
     definition.setOwner(DEFAULT_USER);
@@ -293,7 +293,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   }
 
   private void addDashboardsToOptimize(final int numOfDashboards, final String collectionId) {
-    DashboardDefinitionDto definition = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto definition = new DashboardDefinitionRestDto();
     definition.setReports(Arrays.asList(
       ReportLocationDto.builder().id("firstReportId").build(),
       ReportLocationDto.builder().id("secondReportId").build()
@@ -400,7 +400,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       new CollectionScopeEntryDto(DefinitionType.PROCESS, PROCESS_DEFINITION_KEY),
       new CollectionScopeEntryDto(DefinitionType.DECISION, DECISION_DEFINITION_KEY)
     ));
-    final CollectionRoleDto collectionRoleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto collectionRoleDto = new CollectionRoleRequestDto(
       new IdentityDto(DEFAULT_USER, IdentityType.USER),
       RoleType.MANAGER
     );

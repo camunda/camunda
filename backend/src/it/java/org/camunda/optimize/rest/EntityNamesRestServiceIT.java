@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
@@ -31,7 +31,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
 
     // then
     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
@@ -49,7 +49,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
+    EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
 
     // then
     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
@@ -67,7 +67,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();
@@ -83,7 +83,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();
@@ -99,7 +99,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();

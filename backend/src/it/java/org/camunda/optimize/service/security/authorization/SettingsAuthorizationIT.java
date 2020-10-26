@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -19,7 +19,7 @@ public class SettingsAuthorizationIT extends AbstractIT {
   @Test
   public void testSetSettings_asSuperUser() {
     // given
-    final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
 
     // when
@@ -36,7 +36,7 @@ public class SettingsAuthorizationIT extends AbstractIT {
   @Test
   public void testSetSettings_asNonSuperUser_Forbidden() {
     // given
-    final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
     final Response response = embeddedOptimizeExtension
@@ -52,7 +52,7 @@ public class SettingsAuthorizationIT extends AbstractIT {
   @Test
   public void testSetSettings_withoutAuthentication_Unauthorized() {
     // given
-    final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
     final Response response = embeddedOptimizeExtension

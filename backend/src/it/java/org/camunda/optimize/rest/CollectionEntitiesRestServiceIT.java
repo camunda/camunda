@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.api.Test;
@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
-  public static final Comparator<EntityDto> DEFAULT_ENTITIES_COMPARATOR = Comparator.comparing(EntityDto::getName)
-    .thenComparing(Comparator.comparing(EntityDto::getLastModified).reversed());
+  public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR = Comparator.comparing(EntityResponseDto::getName)
+    .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
   @Test
   public void getCollectionEntitiesWithoutAuthentication() {
@@ -41,7 +41,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     final String collectionId = createCollectionWithMixedEntities();
 
     // when
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
 
     // then
     assertThat(collectionEntities)
@@ -52,13 +52,13 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
   @ParameterizedTest(name = "sortBy={0}, sortOrder={1}")
   @MethodSource("sortParamsAndExpectedComparator")
   public void getCollectionEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
-                                                                                  Comparator<EntityDto> expectedComparator) {
+                                                                                  Comparator<EntityResponseDto> expectedComparator) {
     // given
     final String collectionId = createCollectionWithMixedEntities();
     EntitySorter sorter = entitySorter(sortBy, sortOrder);
 
     // when
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
 
     // then
     assertThat(collectionEntities)
@@ -73,19 +73,19 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     EntitySorter sorter = entitySorter("name", null);
 
     // when
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
 
     // then
     assertThat(collectionEntities)
       .hasSize(4)
-      .isSortedAccordingTo(Comparator.comparing(EntityDto::getName));
+      .isSortedAccordingTo(Comparator.comparing(EntityResponseDto::getName));
   }
 
   @Test
   public void getCollectionEntities_invalidSortByParameterPassed() {
     // given a sortBy field which is not supported
     final String collectionId = createCollectionWithMixedEntities();
-    EntitySorter sorter = entitySorter(EntityDto.Fields.currentUserRole, SortOrder.ASC);
+    EntitySorter sorter = entitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()

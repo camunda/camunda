@@ -7,8 +7,8 @@ package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.util.BpmnModels;
 import org.hamcrest.MatcherAssert;
@@ -44,12 +44,12 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
     );
 
     // when
-    List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
+    List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
       DefinitionType.PROCESS, collectionId, KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitionKeys).extracting(DefinitionKeyDto::getKey).containsExactly(DEFAULT_DEFINITION_KEY);
+    assertThat(definitionKeys).extracting(DefinitionKeyResponseDto::getKey).containsExactly(DEFAULT_DEFINITION_KEY);
   }
 
   @Test
@@ -88,12 +88,12 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
     );
 
     // when
-    List<DefinitionVersionDto> definitionVersions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+    List<DefinitionVersionResponseDto> definitionVersions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
       DefinitionType.PROCESS, DEFAULT_DEFINITION_KEY, collectionId, KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitionVersions).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+    assertThat(definitionVersions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("1");
   }
 
   @Test

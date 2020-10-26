@@ -13,15 +13,15 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -71,8 +71,8 @@ public class CollectionWriter {
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
 
-  public IdDto createNewCollectionAndReturnId(@NonNull String userId,
-                                              @NonNull PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
+                                                      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     log.debug("Writing new collection to Elasticsearch");
 
     String id = IdGenerator.getNextId();
@@ -87,14 +87,14 @@ public class CollectionWriter {
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
     newCollectionDataDto.getRoles()
-      .add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
+      .add(new CollectionRoleRequestDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
     if (partialCollectionDefinitionDto.getData() != null) {
       newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
     }
     collectionDefinitionDto.setData(newCollectionDataDto);
 
     persistCollection(id, collectionDefinitionDto);
-    return new IdDto(id);
+    return new IdResponseDto(id);
   }
 
   private void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
@@ -371,7 +371,7 @@ public class CollectionWriter {
     return updateResponse;
   }
 
-  public void addRoleToCollection(String collectionId, List<CollectionRoleDto> rolesToAdd, String userId) {
+  public void addRoleToCollection(String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId) {
     log.debug("Adding roles {} to collection with id [{}] in Elasticsearch.", rolesToAdd, collectionId);
 
     try {
@@ -434,7 +434,7 @@ public class CollectionWriter {
 
   public void updateRoleInCollection(final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateDto roleUpdateDto,
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto,
                                      final String userId) throws OptimizeConflictException {
     log.debug("Updating the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
 

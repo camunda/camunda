@@ -7,12 +7,12 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import javax.ws.rs.core.Response;
@@ -34,14 +34,14 @@ public class AlertClient {
     return createAlert(createSimpleAlert(reportId));
   }
 
-  public String createAlert(final AlertCreationDto creationDto) {
+  public String createAlert(final AlertCreationRequestDto creationDto) {
     return getRequestExecutor()
       .buildCreateAlertRequest(creationDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
-  public Response editAlertAsUser(final String alertId, final AlertCreationDto updatedAlertDto,
+  public Response editAlertAsUser(final String alertId, final AlertCreationRequestDto updatedAlertDto,
                                   final String username, final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)
@@ -49,11 +49,11 @@ public class AlertClient {
       .execute();
   }
 
-  public Response createAlertAsUser(final AlertCreationDto alertCreationDto,
+  public Response createAlertAsUser(final AlertCreationRequestDto alertCreationRequestDto,
                                     final String username, final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)
-      .buildCreateAlertRequest(alertCreationDto)
+      .buildCreateAlertRequest(alertCreationRequestDto)
       .execute();
   }
 
@@ -68,10 +68,10 @@ public class AlertClient {
 
   public List<AlertDefinitionDto> getAllAlerts(String username, String password) {
     List<AlertDefinitionDto> result = new ArrayList<>();
-    List<EntityDto> entities = getRequestExecutor()
+    List<EntityResponseDto> entities = getRequestExecutor()
       .buildGetAllEntitiesRequest()
       .withUserAuthentication(username, password)
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityResponseDto.class, 200);
 
     entities.stream()
       .filter(e -> e.getEntityType().equals(EntityType.COLLECTION))
@@ -86,7 +86,7 @@ public class AlertClient {
     return result;
   }
 
-  public void updateAlert(String id, AlertCreationDto simpleAlert) {
+  public void updateAlert(String id, AlertCreationRequestDto simpleAlert) {
     getRequestExecutor()
       .buildUpdateAlertRequest(id, simpleAlert)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
@@ -106,24 +106,24 @@ public class AlertClient {
       .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public AlertCreationDto createSimpleAlert(String reportId) {
+  public AlertCreationRequestDto createSimpleAlert(String reportId) {
     return createSimpleAlert(reportId, 1, "Seconds");
   }
 
-  public AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
-    AlertCreationDto alertCreationDto = new AlertCreationDto();
+  public AlertCreationRequestDto createSimpleAlert(String reportId, int intervalValue, String unit) {
+    AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
 
     AlertInterval interval = new AlertInterval();
     interval.setUnit(unit);
     interval.setValue(intervalValue);
-    alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0.0);
-    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
-    alertCreationDto.setEmails(Collections.singletonList("test@camunda.com"));
-    alertCreationDto.setName("test alert");
-    alertCreationDto.setReportId(reportId);
+    alertCreationRequestDto.setCheckInterval(interval);
+    alertCreationRequestDto.setThreshold(0.0);
+    alertCreationRequestDto.setThresholdOperator(AlertThresholdOperator.GREATER);
+    alertCreationRequestDto.setEmails(Collections.singletonList("test@camunda.com"));
+    alertCreationRequestDto.setName("test alert");
+    alertCreationRequestDto.setReportId(reportId);
 
-    return alertCreationDto;
+    return alertCreationRequestDto;
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

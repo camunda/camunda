@@ -6,9 +6,9 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.dashboard.DashboardService;
@@ -50,24 +50,24 @@ public class DashboardRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewDashboard(@Context final ContainerRequestContext requestContext,
-                                  DashboardDefinitionDto dashboardDefinitionDto) {
+  public IdResponseDto createNewDashboard(@Context final ContainerRequestContext requestContext,
+                                          DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return dashboardService.createNewDashboardAndReturnId(
       userId,
       Optional.ofNullable(dashboardDefinitionDto)
-        .orElseGet(DashboardDefinitionDto::new)
+        .orElseGet(DashboardDefinitionRestDto::new)
     );
   }
 
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdDto copyDashboard(@Context UriInfo uriInfo,
-                             @Context ContainerRequestContext requestContext,
-                             @PathParam("id") String dashboardId,
-                             @QueryParam("collectionId") String collectionId,
-                             @QueryParam("name") String newDashboardName) {
+  public IdResponseDto copyDashboard(@Context UriInfo uriInfo,
+                                     @Context ContainerRequestContext requestContext,
+                                     @PathParam("id") String dashboardId,
+                                     @QueryParam("collectionId") String collectionId,
+                                     @QueryParam("name") String newDashboardName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     if (collectionId == null) {
@@ -85,10 +85,11 @@ public class DashboardRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedDashboardDefinitionDto getDashboard(@Context ContainerRequestContext requestContext,
-                                                       @PathParam("id") String dashboardId) {
+  public AuthorizedDashboardDefinitionResponseDto getDashboard(@Context ContainerRequestContext requestContext,
+                                                               @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionDto dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+      dashboardService.getDashboardDefinition(dashboardId, userId);
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
     return dashboardDefinition;
   }
@@ -106,7 +107,7 @@ public class DashboardRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateDashboard(@Context ContainerRequestContext requestContext,
                               @PathParam("id") String dashboardId,
-                              DashboardDefinitionDto updatedDashboard) {
+                              DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);

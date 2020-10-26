@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -65,9 +65,9 @@ public class EventCountService {
     );
   }
 
-  public List<EventCountDto> getEventCounts(final String userId,
-                                            final String searchTerm,
-                                            final EventCountRequestDto eventCountRequestDto) {
+  public List<EventCountResponseDto> getEventCounts(final String userId,
+                                                    final String searchTerm,
+                                                    final EventCountRequestDto eventCountRequestDto) {
     if (eventCountRequestDto == null || eventCountRequestDto.getEventSources().isEmpty()) {
       return Collections.emptyList();
     }
@@ -77,7 +77,7 @@ public class EventCountService {
     final Map<EventSourceType, List<EventSourceEntryDto>> sourcesByType = eventCountRequestDto.getEventSources()
       .stream()
       .collect(Collectors.groupingBy(EventSourceEntryDto::getType));
-    final List<EventCountDto> matchingEventCounts = new ArrayList<>();
+    final List<EventCountResponseDto> matchingEventCounts = new ArrayList<>();
     if (sourcesByType.containsKey(EventSourceType.EXTERNAL)) {
       if (sequenceCountIndexSuffixes.contains(EXTERNAL_EVENTS_INDEX_SUFFIX)) {
         matchingEventCounts.addAll(eventSequenceCountReader.getEventCountsWithSearchTerm(searchTerm));
@@ -105,8 +105,8 @@ public class EventCountService {
       final Map<EventTypeDto, Long> allCamundaSourcesEventCounts =
         eventSequenceCountReader.getEventCountsForCamundaSources(sourcesWithSequenceIndex)
           .stream()
-          .collect(Collectors.toMap(EventDtoBuilderUtil::fromEventCountDto, EventCountDto::getCount));
-      final List<EventCountDto> countedCamundaEvents = camundaSources.stream()
+          .collect(Collectors.toMap(EventDtoBuilderUtil::fromEventCountDto, EventCountResponseDto::getCount));
+      final List<EventCountResponseDto> countedCamundaEvents = camundaSources.stream()
         .map(source -> getEventsForCamundaProcess(userId, searchTerm, source, allCamundaSourcesEventCounts))
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
@@ -120,10 +120,10 @@ public class EventCountService {
       && sourcesByType.get(EventSourceType.EXTERNAL).size() == 1;
   }
 
-  private List<EventCountDto> getEventsForCamundaProcess(final String userId,
-                                                         final String searchTerm,
-                                                         final EventSourceEntryDto eventSourceEntryDto,
-                                                         final Map<EventTypeDto, Long> typeAndCount) {
+  private List<EventCountResponseDto> getEventsForCamundaProcess(final String userId,
+                                                                 final String searchTerm,
+                                                                 final EventSourceEntryDto eventSourceEntryDto,
+                                                                 final Map<EventTypeDto, Long> typeAndCount) {
     return camundaEventService
       .getLabeledCamundaEventTypesForProcess(userId, eventSourceEntryDto)
       .stream()
@@ -133,7 +133,7 @@ public class EventCountService {
         || StringUtils.containsIgnoreCase(eventDto.getGroup(), searchTerm)
         || StringUtils.containsIgnoreCase(eventDto.getSource(), searchTerm))
       .map(labeledEventTypeDto ->
-             EventCountDto.builder()
+             EventCountResponseDto.builder()
                .source(labeledEventTypeDto.getSource())
                .group(labeledEventTypeDto.getGroup())
                .eventName(labeledEventTypeDto.getEventName())
@@ -160,7 +160,7 @@ public class EventCountService {
   }
 
   private void addSuggestionsForExternalEventCounts(final EventCountRequestDto eventCountRequestDto,
-                                                    final List<EventCountDto> eventCountDtos) {
+                                                    final List<EventCountResponseDto> eventCountDtos) {
     if (eventCountRequestDto.getXml() == null
       || eventCountRequestDto.getTargetFlowNodeId() == null
       || eventCountRequestDto.getMappings().isEmpty()) {

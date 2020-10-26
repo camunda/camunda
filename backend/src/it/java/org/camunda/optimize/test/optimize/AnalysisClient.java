@@ -9,8 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
@@ -29,37 +29,37 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @AllArgsConstructor
 public class AnalysisClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
-  public Response getProcessDefinitionCorrelationRawResponse(BranchAnalysisQueryDto branchAnalysisQueryDto) {
-    return getProcessDefinitionCorrelationRawResponseAsUser(branchAnalysisQueryDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  public Response getProcessDefinitionCorrelationRawResponse(BranchAnalysisRequestDto branchAnalysisRequestDto) {
+    return getProcessDefinitionCorrelationRawResponseAsUser(branchAnalysisRequestDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public Response getProcessDefinitionCorrelationRawResponseAsUser(BranchAnalysisQueryDto branchAnalysisQueryDto,
+  public Response getProcessDefinitionCorrelationRawResponseAsUser(BranchAnalysisRequestDto branchAnalysisRequestDto,
                                                                    String username, String password) {
     return getRequestExecutor()
-      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
+      .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
       .withUserAuthentication(username, password)
       .execute();
   }
 
-  public Response getProcessDefinitionCorrelationRawResponseWithoutAuth(BranchAnalysisQueryDto branchAnalysisQueryDto) {
+  public Response getProcessDefinitionCorrelationRawResponseWithoutAuth(BranchAnalysisRequestDto branchAnalysisRequestDto) {
     return getRequestExecutor()
-      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
+      .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
       .withoutAuthentication()
       .execute();
   }
 
-  public BranchAnalysisDto getProcessDefinitionCorrelation(BranchAnalysisQueryDto branchAnalysisQueryDto) {
+  public BranchAnalysisResponseDto getProcessDefinitionCorrelation(BranchAnalysisRequestDto branchAnalysisRequestDto) {
     return getRequestExecutor()
-      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-      .execute(BranchAnalysisDto.class, Response.Status.OK.getStatusCode());
+      .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
+      .execute(BranchAnalysisResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public BranchAnalysisQueryDto createAnalysisDto(final String processDefinitionKey,
-                                                  final List<String> processDefinitionVersion,
-                                                  final List<String> tenantIds,
-                                                  String splittingGateway,
-                                                  String endEvent) {
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+  public BranchAnalysisRequestDto createAnalysisDto(final String processDefinitionKey,
+                                                    final List<String> processDefinitionVersion,
+                                                    final List<String> tenantIds,
+                                                    String splittingGateway,
+                                                    String endEvent) {
+    BranchAnalysisRequestDto dto = new BranchAnalysisRequestDto();
     dto.setProcessDefinitionKey(processDefinitionKey);
     dto.setProcessDefinitionVersions(processDefinitionVersion);
     dto.setTenantIds(tenantIds);
@@ -68,12 +68,12 @@ public class AnalysisClient {
     return dto;
   }
 
-  public BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                 final List<String> processDefinitionVersions,
-                                                 final List<String> tenantIds,
-                                                 final String gatewayID,
-                                                 final String endEventId) {
-    BranchAnalysisQueryDto dto = createAnalysisDto(
+  public BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
+                                                         final List<String> processDefinitionVersions,
+                                                         final List<String> tenantIds,
+                                                         final String gatewayID,
+                                                         final String endEventId) {
+    BranchAnalysisRequestDto dto = createAnalysisDto(
       processDefinitionKey,
       processDefinitionVersions,
       tenantIds,

@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
@@ -47,8 +47,8 @@ public class SharingReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  private Optional<ReportShareDto> findReportShareByQuery(QueryBuilder query) {
-    Optional<ReportShareDto> result = Optional.empty();
+  private Optional<ReportShareRestDto> findReportShareByQuery(QueryBuilder query) {
+    Optional<ReportShareRestDto> result = Optional.empty();
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
@@ -69,7 +69,7 @@ public class SharingReader {
         result = Optional.of(
           objectMapper.readValue(
             searchResponse.getHits().getAt(0).getSourceAsString(),
-            ReportShareDto.class
+            ReportShareRestDto.class
           )
         );
       } catch (IOException e) {
@@ -79,8 +79,8 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<ReportShareDto> getReportShare(String shareId) {
-    Optional<ReportShareDto> result = Optional.empty();
+  public Optional<ReportShareRestDto> getReportShare(String shareId) {
+    Optional<ReportShareRestDto> result = Optional.empty();
     log.debug("Fetching report share with id [{}]", shareId);
     GetRequest getRequest = new GetRequest(REPORT_SHARE_INDEX_NAME).id(shareId);
 
@@ -95,7 +95,7 @@ public class SharingReader {
 
     if (getResponse.isExists()) {
       try {
-        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), ReportShareDto.class));
+        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), ReportShareRestDto.class));
       } catch (IOException e) {
         String reason = "Could deserialize report share with id [" + shareId + "] from Elasticsearch.";
         log.error(reason, e);
@@ -105,8 +105,8 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<DashboardShareDto> findDashboardShare(String shareId) {
-    Optional<DashboardShareDto> result = Optional.empty();
+  public Optional<DashboardShareRestDto> findDashboardShare(String shareId) {
+    Optional<DashboardShareRestDto> result = Optional.empty();
     log.debug("Fetching dashboard share with id [{}]", shareId);
     GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_INDEX_NAME).id(shareId);
 
@@ -121,7 +121,7 @@ public class SharingReader {
 
     if (getResponse.isExists()) {
       try {
-        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), DashboardShareDto.class));
+        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), DashboardShareRestDto.class));
       } catch (IOException e) {
         String reason = "Could deserialize dashboard share with id [" + shareId + "] from Elasticsearch.";
         log.error(reason, e);
@@ -131,7 +131,7 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<ReportShareDto> findShareForReport(String reportId) {
+  public Optional<ReportShareRestDto> findShareForReport(String reportId) {
     log.debug("Fetching share for resource [{}]", reportId);
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
@@ -139,21 +139,21 @@ public class SharingReader {
     return findReportShareByQuery(boolQueryBuilder);
   }
 
-  public Optional<DashboardShareDto> findShareForDashboard(String dashboardId) {
+  public Optional<DashboardShareRestDto> findShareForDashboard(String dashboardId) {
     log.debug("Fetching share for resource [{}]", dashboardId);
 
     SearchResponse searchResponse = performSearchShareForDashboardIdRequest(dashboardId);
     return extractDashboardShareFromResponse(dashboardId, searchResponse);
   }
 
-  private Optional<DashboardShareDto> extractDashboardShareFromResponse(String dashboardId,
-                                                                        SearchResponse searchResponse) {
-    Optional<DashboardShareDto> result = Optional.empty();
+  private Optional<DashboardShareRestDto> extractDashboardShareFromResponse(String dashboardId,
+                                                                            SearchResponse searchResponse) {
+    Optional<DashboardShareRestDto> result = Optional.empty();
     if (searchResponse.getHits().getTotalHits().value != 0) {
       String firstHitSource = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         result = Optional.of(
-          objectMapper.readValue(firstHitSource, DashboardShareDto.class)
+          objectMapper.readValue(firstHitSource, DashboardShareRestDto.class)
         );
       } catch (IOException e) {
         String reason = "Could deserialize dashboard share with id [" + dashboardId + "] from Elasticsearch.";
@@ -184,7 +184,7 @@ public class SharingReader {
     return searchResponse;
   }
 
-  private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
+  private Map<String, ReportShareRestDto> findReportSharesByQuery(QueryBuilder query) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
@@ -200,35 +200,35 @@ public class SharingReader {
       throw new OptimizeRuntimeException("Was not able to retrieve report shares!", e);
     }
 
-    List<ReportShareDto> reportShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
+    List<ReportShareRestDto> reportShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
-      ReportShareDto.class,
+      ReportShareRestDto.class,
       objectMapper,
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
     );
 
     return reportShareDtos.stream().collect(Collectors.toMap(
-      ReportShareDto::getReportId,
+      ReportShareRestDto::getReportId,
       Function.identity()
     ));
   }
 
-  public Map<String, ReportShareDto> findShareForReports(List<String> reports) {
+  public Map<String, ReportShareRestDto> findShareForReports(List<String> reports) {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
       .must(QueryBuilders.termsQuery(ReportShareIndex.REPORT_ID, reports));
     return findReportSharesByQuery(boolQueryBuilder);
   }
 
-  public Map<String, DashboardShareDto> findShareForDashboards(List<String> dashboards) {
+  public Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards) {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
       .must(QueryBuilders.termsQuery(DashboardShareIndex.DASHBOARD_ID, dashboards));
     return findDashboardSharesByQuery(boolQueryBuilder);
   }
 
-  private Map<String, DashboardShareDto> findDashboardSharesByQuery(BoolQueryBuilder query) {
+  private Map<String, DashboardShareRestDto> findDashboardSharesByQuery(BoolQueryBuilder query) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
@@ -244,16 +244,16 @@ public class SharingReader {
       throw new OptimizeRuntimeException("Was not able to retrieve dashboard shares!", e);
     }
 
-    List<DashboardShareDto> dashboardShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
+    List<DashboardShareRestDto> dashboardShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
-      DashboardShareDto.class,
+      DashboardShareRestDto.class,
       objectMapper,
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
     );
 
     return dashboardShareDtos.stream().collect(Collectors.toMap(
-      DashboardShareDto::getDashboardId,
+      DashboardShareRestDto::getDashboardId,
       Function.identity()
     ));
   }

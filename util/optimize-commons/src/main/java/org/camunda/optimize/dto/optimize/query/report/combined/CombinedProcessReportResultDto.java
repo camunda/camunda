@@ -10,7 +10,7 @@ import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.Map;
@@ -20,7 +20,7 @@ public class CombinedProcessReportResultDto<RESULT extends SingleReportResultDto
 
   @Getter
   @Setter
-  protected Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionDto>> data;
+  protected Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionRequestDto>> data;
 
   @Getter
   @Setter
@@ -30,7 +30,7 @@ public class CombinedProcessReportResultDto<RESULT extends SingleReportResultDto
   }
 
   public CombinedProcessReportResultDto(final Map<String, ReportEvaluationResult<RESULT,
-    SingleProcessReportDefinitionDto>> data, final long instanceCount) {
+    SingleProcessReportDefinitionRequestDto>> data, final long instanceCount) {
     this.data = data;
     this.instanceCount = instanceCount;
   }

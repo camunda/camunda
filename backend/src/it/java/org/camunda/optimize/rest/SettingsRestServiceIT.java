@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +25,12 @@ public class SettingsRestServiceIT extends AbstractIT {
     // given
     final TelemetryConfiguration defaultTelemetryConfig =
       embeddedOptimizeExtension.getConfigurationService().getTelemetryConfiguration();
-    final SettingsDto expectedSettings = SettingsDto.builder()
+    final SettingsResponseDto expectedSettings = SettingsResponseDto.builder()
       .metadataTelemetryEnabled(defaultTelemetryConfig.isInitializeTelemetry())
       .build();
 
     // when
-    final SettingsDto settings = getSettings();
+    final SettingsResponseDto settings = getSettings();
 
     // then
     assertThat(settings).isEqualTo(expectedSettings);
@@ -40,11 +40,11 @@ public class SettingsRestServiceIT extends AbstractIT {
   public void testCreateSettings() {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
     setSettings(newSettings);
-    final SettingsDto settings = getSettings();
+    final SettingsResponseDto settings = getSettings();
 
     // then
     assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
@@ -57,14 +57,14 @@ public class SettingsRestServiceIT extends AbstractIT {
   public void testUpdateExistingSettings() {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SettingsDto existingSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto existingSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
     setSettings(existingSettings);
 
-    final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(false).build();
+    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(false).build();
 
     // when
     setSettings(newSettings);
-    final SettingsDto settings = getSettings();
+    final SettingsResponseDto settings = getSettings();
 
     // then
     assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
@@ -73,20 +73,20 @@ public class SettingsRestServiceIT extends AbstractIT {
     assertThat(settings.isManuallyConfirmed()).isTrue();
   }
 
-  private void setSettings(final SettingsDto newSettings) {
+  private void setSettings(final SettingsResponseDto newSettings) {
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
 
     embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildSetSettingsRequest(newSettings)
-      .execute(SettingsDto.class, Response.Status.NO_CONTENT.getStatusCode());
+      .execute(SettingsResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private SettingsDto getSettings() {
+  private SettingsResponseDto getSettings() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetSettingsRequest()
-      .execute(SettingsDto.class, Response.Status.OK.getStatusCode());
+      .execute(SettingsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 }

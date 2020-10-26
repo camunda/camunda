@@ -11,8 +11,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
@@ -23,8 +23,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
@@ -88,10 +88,10 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void createNewDashboard() {
     // when
-    IdDto idDto = embeddedOptimizeExtension
+    IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto).isNotNull();
@@ -100,10 +100,10 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void createNewDashboardWithDefinition() {
     // when
-    IdDto idDto = embeddedOptimizeExtension
+    IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(generateDashboardDefinitionDto())
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto).isNotNull();
@@ -113,20 +113,20 @@ public class DashboardRestServiceIT extends AbstractIT {
   @MethodSource("validFilterCombinations")
   public void createNewDashboardWithFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
     // given
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilterDtos);
 
     // when
-    final IdDto idDto = embeddedOptimizeExtension
+    final IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto.getId()).isNotNull();
-    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+    final DashboardDefinitionRestDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(idDto.getId())
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
     if (dashboardFilterDtos == null) {
       assertThat(savedDefinition.getAvailableFilters()).isNull();
     } else {
@@ -138,7 +138,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @MethodSource("invalidFilterCombinations")
   public void createNewDashboardWithInvalidFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
     // given
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
 
     // when
@@ -155,7 +155,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   public void createNewDashboardWithFilterSpecification_dashboardContainsExternalReport() {
     // given
     final List<DashboardFilterDto> dashboardFilters = variableFilter();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
     final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
 
@@ -165,16 +165,16 @@ public class DashboardRestServiceIT extends AbstractIT {
     dashboardDefinitionDto.setReports(Arrays.asList(externalReport, variableReport));
 
     // when
-    final IdDto idDto = embeddedOptimizeExtension
+    final IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto.getId()).isNotNull();
-    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+    final DashboardDefinitionRestDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(idDto.getId())
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
     assertThat(savedDefinition.getReports())
       .containsExactlyInAnyOrder(variableReport, externalReport);
     assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
@@ -184,7 +184,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   public void createNewDashboardWithVariableFilter_variableNameNotInContainedReport() {
     // given
     final List<DashboardFilterDto> variableFilter = variableFilter();
-    final DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setAvailableFilters(variableFilter);
 
     // when
@@ -205,20 +205,20 @@ public class DashboardRestServiceIT extends AbstractIT {
       new StringVariableFilterDataDto("stringVar", IN, Collections.singletonList("thisValueIsNotInReport"))
     ));
 
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
 
     // when
-    final IdDto idDto = embeddedOptimizeExtension
+    final IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto.getId()).isNotNull();
-    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+    final DashboardDefinitionRestDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(idDto.getId())
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
     assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
   }
 
@@ -229,11 +229,11 @@ public class DashboardRestServiceIT extends AbstractIT {
     createEmptyReportToDashboard(dashboardId);
 
     // when
-    IdDto copyId = dashboardClient.copyDashboard(dashboardId);
+    IdResponseDto copyId = dashboardClient.copyDashboard(dashboardId);
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
 
@@ -260,14 +260,14 @@ public class DashboardRestServiceIT extends AbstractIT {
     final String testDashboardCopyName = "This is my new report copy! ;-)";
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
+    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("name", testDashboardCopyName)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(testDashboardCopyName);
   }
@@ -288,11 +288,11 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void getDashboard() {
     //given
-    DashboardDefinitionDto definitionDto = generateDashboardDefinitionDto();
+    DashboardDefinitionRestDto definitionDto = generateDashboardDefinitionDto();
     String id = dashboardClient.createDashboard(generateDashboardDefinitionDto());
 
     // when
-    DashboardDefinitionDto returnedDashboard = dashboardClient.getDashboard(id);
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -310,11 +310,11 @@ public class DashboardRestServiceIT extends AbstractIT {
     String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
 
     // when
-    DashboardDefinitionDto returnedDashboard = embeddedOptimizeExtension
+    DashboardDefinitionRestDto returnedDashboard = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -354,7 +354,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionDto())
+      .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionRestDto())
       .execute();
 
     // then
@@ -369,7 +369,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, new DashboardDefinitionDto())
+      .buildUpdateDashboardRequest(id, new DashboardDefinitionRestDto())
       .execute();
 
     // then the status code is okay
@@ -380,16 +380,16 @@ public class DashboardRestServiceIT extends AbstractIT {
   @MethodSource("validFilterCombinations")
   public void updateDashboardFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
     // given
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // then
     assertThat(dashboardId).isNotNull();
-    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto savedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
-    final DashboardDefinitionDto dashboardUpdate =
+    final DashboardDefinitionRestDto dashboardUpdate =
       createDashboardForReportContainingAllVariables(dashboardFilterDtos);
     dashboardUpdate.setId(dashboardId);
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
@@ -397,7 +397,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboardUpdate)
       .execute();
-    final DashboardDefinitionDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -413,14 +413,14 @@ public class DashboardRestServiceIT extends AbstractIT {
   public void updateDashboardWithFilterSpecification_dashboardContainsExternalReport() {
     // given a dashboard with a variable filter
     final List<DashboardFilterDto> dashboardFilters = variableFilter();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
     final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // then
     assertThat(dashboardId).isNotNull();
-    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto savedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(savedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
 
     // when an external report is added to the dashboard
@@ -431,11 +431,11 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardId).isNotNull();
-    final DashboardDefinitionDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(updatedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
     assertThat(updatedDefinition.getReports())
       .containsExactlyInAnyOrder(externalReport, variableReport);
@@ -444,12 +444,12 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void updateDashboardWithVariableFilter_variableNotInContainedReport() {
     // given
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // then
     assertThat(dashboardId).isNotNull();
-    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto savedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
@@ -467,15 +467,15 @@ public class DashboardRestServiceIT extends AbstractIT {
   @MethodSource("invalidFilterCombinations")
   public void updateDashboardFilterSpecification_invalidFilters(List<DashboardFilterDto> dashboardFilterDtos) {
     // when
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
-    IdDto idDto = embeddedOptimizeExtension
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto.getId()).isNotNull();
-    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(idDto.getId());
+    final DashboardDefinitionRestDto savedDefinition = dashboardClient.getDashboard(idDto.getId());
     assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
@@ -493,15 +493,15 @@ public class DashboardRestServiceIT extends AbstractIT {
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
     String id = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when
-    dashboardClient.updateDashboard(id, new DashboardDefinitionDto());
+    dashboardClient.updateDashboard(id, new DashboardDefinitionRestDto());
 
     // then
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(id);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(id);
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
   }
 
@@ -627,7 +627,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     List<String> storedShareIds = new ArrayList<>();
     for (SearchHit searchHitFields : idsResp.getHits()) {
       storedShareIds.add(elasticSearchIntegrationTestExtension.getObjectMapper()
-                           .readValue(searchHitFields.getSourceAsString(), DashboardShareDto.class).getId());
+                           .readValue(searchHitFields.getSourceAsString(), DashboardShareRestDto.class).getId());
     }
     return storedShareIds.contains(shareId);
   }
@@ -742,13 +742,13 @@ public class DashboardRestServiceIT extends AbstractIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
   }
 
-  private DashboardDefinitionDto generateDashboardDefinitionDto() {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+  private DashboardDefinitionRestDto generateDashboardDefinitionDto() {
+    DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setName("Dashboard name");
     return dashboardDefinitionDto;
   }
 
-  private DashboardDefinitionDto createDashboardForReportContainingAllVariables(final List<DashboardFilterDto> dashboardFilterDtos) {
+  private DashboardDefinitionRestDto createDashboardForReportContainingAllVariables(final List<DashboardFilterDto> dashboardFilterDtos) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("someProcess").startEvent().endEvent().done();
     final ProcessInstanceEngineDto deployedInstanceWithAllVariables =
       engineIntegrationExtension.deployAndStartProcessWithVariables(
@@ -756,7 +756,7 @@ public class DashboardRestServiceIT extends AbstractIT {
         ALL_VARIABLES
       );
     importAllEngineEntitiesFromScratch();
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       reportClient.createSingleProcessReportDefinitionDto(
         null,
         deployedInstanceWithAllVariables.getProcessDefinitionKey(),
@@ -765,7 +765,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     singleProcessReportDefinitionDto.getData()
       .setProcessDefinitionVersion(deployedInstanceWithAllVariables.getProcessDefinitionVersion());
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     dashboardDefinitionDto.setReports(Collections.singletonList(ReportLocationDto.builder().id(reportId).build()));
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
     return dashboardDefinitionDto;

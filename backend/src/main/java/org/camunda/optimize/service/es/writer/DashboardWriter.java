@@ -10,8 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
@@ -52,8 +52,8 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createNewDashboard(@NonNull final String userId,
-                                  @NonNull final DashboardDefinitionDto dashboardDefinitionDto) {
+  public IdResponseDto createNewDashboard(@NonNull final String userId,
+                                          @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     log.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();
@@ -86,7 +86,7 @@ public class DashboardWriter {
     }
 
     log.debug("Dashboard with id [{}] has successfully been created.", id);
-    return new IdDto(id);
+    return new IdResponseDto(id);
   }
 
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {

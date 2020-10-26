@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -29,13 +29,13 @@ import java.util.List;
 public class DecisionVariablesRestService {
 
   private final DecisionVariableService decisionVariableService;
-  private SessionService sessionService;
+  private final SessionService sessionService;
 
   @POST
   @Path("/inputs/names")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<DecisionVariableNameDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     return decisionVariableService.getInputVariableNames(variableRequestDto);
   }
 
@@ -43,7 +43,7 @@ public class DecisionVariablesRestService {
   @Path("/outputs/names")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<DecisionVariableNameDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     return decisionVariableService.getOutputVariableNames(variableRequestDto);
   }
 

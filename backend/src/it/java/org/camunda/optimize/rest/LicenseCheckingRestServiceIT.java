@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
@@ -344,8 +344,8 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
   }
 
   private void assertResult(Response response, String customerId, OffsetDateTime validUntil, boolean isUnlimited) {
-    LicenseInformationDto licenseInfo =
-      response.readEntity(new GenericType<LicenseInformationDto>() {
+    LicenseInformationResponseDto licenseInfo =
+      response.readEntity(new GenericType<LicenseInformationResponseDto>() {
       });
     assertThat(licenseInfo.getCustomerId(), is(customerId));
     assertThat(licenseInfo.getValidUntil(), is(validUntil));

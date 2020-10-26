@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class CustomCollectionEntityDeserializer extends StdDeserializer<Collecti
     if (isReport(node)) {
       return objectMapper.readValue(json, ReportDefinitionDto.class);
     } else {
-      return objectMapper.readValue(json, DashboardDefinitionDto.class);
+      return objectMapper.readValue(json, DashboardDefinitionRestDto.class);
     }
   }
 

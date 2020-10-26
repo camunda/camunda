@@ -13,14 +13,14 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -131,8 +131,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return new JobKey(id + "-check-job", "statusCheck-job");
   }
 
-  protected AlertCreationDto createBasicAlertWithReminder() {
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+  protected AlertCreationRequestDto createBasicAlertWithReminder() {
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
     reminderInterval.setUnit("Seconds");
@@ -140,19 +140,19 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return simpleAlert;
   }
 
-  protected AlertCreationDto setupBasicDecisionAlert() {
+  protected AlertCreationRequestDto setupBasicDecisionAlert() {
     String collectionId = collectionClient.createNewCollectionWithDefaultDecisionScope();
     String id = createNumberReportForCollection(collectionId, DECISION);
     return alertClient.createSimpleAlert(id);
   }
 
-  protected AlertCreationDto setupBasicProcessAlert() {
+  protected AlertCreationRequestDto setupBasicProcessAlert() {
     return setupBasicProcessAlertAsUser("aProcess", DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  protected AlertCreationDto setupBasicProcessAlertAsUser(final String definitionKey,
-                                                          final String user,
-                                                          final String password) {
+  protected AlertCreationRequestDto setupBasicProcessAlertAsUser(final String definitionKey,
+                                                                 final String user,
+                                                                 final String password) {
     String collectionId = collectionClient.createNewCollection(user, password);
     final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(PROCESS, definitionKey, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollectionAsUser(collectionId, scopeEntry, user, password);
@@ -168,7 +168,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected String createNewProcessReportAsUser(final String collectionId,
                                                 final ProcessDefinitionEngineDto processDefinition) {
-    SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(
+    SingleProcessReportDefinitionRequestDto procReport = getProcessNumberReportDefinitionDto(
       collectionId,
       processDefinition
     );
@@ -177,7 +177,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   private String createNewProcessReportAsUser(final String user, final String password, final String collectionId,
                                               final ProcessDefinitionEngineDto processDefinition) {
-    SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(
+    SingleProcessReportDefinitionRequestDto procReport = getProcessNumberReportDefinitionDto(
       collectionId,
       processDefinition
     );
@@ -185,18 +185,18 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   private String createNewProcessReportAsUser(final String user, final String password,
-                                              final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+                                              final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
   private String createNewDecisionReportAsUser(final String user, final String password, final String collectionId,
                                                final DecisionDefinitionEngineDto decisionDefinitionDto) {
-    SingleDecisionReportDefinitionDto decReport = getDecisionNumberReportDefinitionDto(
+    SingleDecisionReportDefinitionRequestDto decReport = getDecisionNumberReportDefinitionDto(
       collectionId,
       decisionDefinitionDto
     );
@@ -204,7 +204,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -229,7 +229,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
                                                           final String processDefinitionVersion,
                                                           final String user,
                                                           final String password) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       getDurationReportDefinitionDto(collectionId, processDefinitionKey, processDefinitionVersion);
     return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
   }
@@ -263,8 +263,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
     }
   }
 
-  private SingleDecisionReportDefinitionDto getDecisionNumberReportDefinitionDto(String collectionId,
-                                                                                 DecisionDefinitionEngineDto decisionDefinitionDto) {
+  private SingleDecisionReportDefinitionRequestDto getDecisionNumberReportDefinitionDto(String collectionId,
+                                                                                        DecisionDefinitionEngineDto decisionDefinitionDto) {
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto.getVersion());
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
@@ -272,7 +272,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
 
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    SingleDecisionReportDefinitionRequestDto report = new SingleDecisionReportDefinitionRequestDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -286,8 +286,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return report;
   }
 
-  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
-                                                                                 ProcessDefinitionEngineDto processDefinition) {
+  protected SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                        ProcessDefinitionEngineDto processDefinition) {
     return getProcessNumberReportDefinitionDto(
       collectionId,
       processDefinition.getKey(),
@@ -296,16 +296,16 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
 
-  private SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
-                                                                               String processDefinitionKey,
-                                                                               String processDefinitionVersion) {
+  private SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                      String processDefinitionKey,
+                                                                                      String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("something");
     report.setCollectionId(collectionId);
@@ -326,16 +326,16 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
   }
 
-  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String collectionId,
-                                                                          String processDefinitionKey,
-                                                                          String processDefinitionVersion) {
+  private SingleProcessReportDefinitionRequestDto getDurationReportDefinitionDto(String collectionId,
+                                                                                 String processDefinitionKey,
+                                                                                 String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("something");
     report.setCollectionId(collectionId);

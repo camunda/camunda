@@ -11,7 +11,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -33,7 +33,7 @@ public class EventProcessRoleService implements ConfigurationReloadable {
   private final EventProcessMappingWriter eventProcessMappingWriter;
   private final IdentityService identityService;
 
-  private final LoadingCache<String, List<EventProcessRoleDto<IdentityDto>>> eventProcessRoleReadCache;
+  private final LoadingCache<String, List<EventProcessRoleRequestDto<IdentityDto>>> eventProcessRoleReadCache;
 
   public EventProcessRoleService(final EventProcessMappingReader eventProcessMappingReader,
                                  final EventProcessMappingWriter eventProcessMappingWriter,
@@ -53,19 +53,19 @@ public class EventProcessRoleService implements ConfigurationReloadable {
       .build(eventProcessMappingReader::getEventProcessRoles);
   }
 
-  public List<EventProcessRoleDto<IdentityDto>> getRoles(final String eventProcessMappingId) {
+  public List<EventProcessRoleRequestDto<IdentityDto>> getRoles(final String eventProcessMappingId) {
     return eventProcessRoleReadCache.get(eventProcessMappingId);
   }
 
   public void updateRoles(final String eventProcessId,
-                          final List<EventProcessRoleDto<IdentityDto>> rolesDtoRequest,
+                          final List<EventProcessRoleRequestDto<IdentityDto>> rolesDtoRequest,
                           final String userId) {
     if (rolesDtoRequest.isEmpty()) {
       throw new OptimizeValidationException("Roles are not allowed to be empty!");
     }
 
     final Set<IdentityDto> invalidIdentities = rolesDtoRequest.stream()
-      .map(EventProcessRoleDto::getIdentity)
+      .map(EventProcessRoleRequestDto::getIdentity)
       .filter(identityDto -> identityDto == null
         || identityDto.getId() == null
         || identityDto.getType() == null

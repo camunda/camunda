@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
@@ -64,12 +64,12 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 @Slf4j
 public class EventSequenceCountReader {
 
-  private static final String GROUP_AGG = EventCountDto.Fields.group;
-  private static final String SOURCE_AGG = EventCountDto.Fields.source;
-  private static final String EVENT_NAME_AGG = EventCountDto.Fields.eventName;
+  private static final String GROUP_AGG = EventCountResponseDto.Fields.group;
+  private static final String SOURCE_AGG = EventCountResponseDto.Fields.source;
+  private static final String EVENT_NAME_AGG = EventCountResponseDto.Fields.eventName;
   private static final String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
     "compositeEventNameSourceAndGroupAggregation";
-  private static final String COUNT_AGG = EventCountDto.Fields.count;
+  private static final String COUNT_AGG = EventCountResponseDto.Fields.count;
   private static final String KEYWORD_ANALYZER = "keyword";
 
   private final String indexKey;
@@ -101,7 +101,7 @@ public class EventSequenceCountReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
-  public List<EventCountDto> getEventCountsWithSearchTerm(final String searchTerm) {
+  public List<EventCountResponseDto> getEventCountsWithSearchTerm(final String searchTerm) {
     log.debug("Fetching event counts with searchTerm [{}}]", searchTerm);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -111,7 +111,7 @@ public class EventSequenceCountReader {
 
     final SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder);
-    List<EventCountDto> eventCountDtos = new ArrayList<>();
+    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
     CompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
@@ -121,7 +121,7 @@ public class EventSequenceCountReader {
     return eventCountDtos;
   }
 
-  public List<EventCountDto> getEventCountsForCamundaSources(final List<EventSourceEntryDto> eventSourceEntryDtos) {
+  public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<EventSourceEntryDto> eventSourceEntryDtos) {
     log.debug("Fetching event counts for event sources: {}", eventSourceEntryDtos);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -134,7 +134,7 @@ public class EventSequenceCountReader {
       .collect(Collectors.toList()).toArray(new String[eventSourceEntryDtos.size()]);
     final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
       .source(searchSourceBuilder);
-    List<EventCountDto> eventCountDtos = new ArrayList<>();
+    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
     CompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
@@ -296,14 +296,14 @@ public class EventSequenceCountReader {
       .subAggregation(eventCountAggregation);
   }
 
-  private EventCountDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
+  private EventCountResponseDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
     final String eventName = (String) (bucket.getKey()).get(EVENT_NAME_AGG);
     final String source = (String) (bucket.getKey().get(SOURCE_AGG));
     final String group = (String) (bucket.getKey().get(GROUP_AGG));
 
     final long count = (long) ((Sum) bucket.getAggregations().get(COUNT_AGG)).getValue();
 
-    return EventCountDto.builder()
+    return EventCountResponseDto.builder()
       .group(group)
       .source(source)
       .eventName(eventName)

@@ -6,11 +6,11 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
@@ -60,15 +60,15 @@ public class CollectionRestServiceIT extends AbstractIT {
     // when
     String collectionName = "some collection";
     Map<String, String> configMap = Collections.singletonMap("Foo", "Bar");
-    PartialCollectionDefinitionDto partialCollectionDefinitionDto = new PartialCollectionDefinitionDto();
+    PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto = new PartialCollectionDefinitionRequestDto();
     partialCollectionDefinitionDto.setName(collectionName);
     PartialCollectionDataDto partialCollectionDataDto = new PartialCollectionDataDto();
     partialCollectionDataDto.setConfiguration(configMap);
     partialCollectionDefinitionDto.setData(partialCollectionDataDto);
-    IdDto idDto = embeddedOptimizeExtension
+    IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequestWithPartialDefinition(partialCollectionDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto).isNotNull();
@@ -97,7 +97,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionDto())
+      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionRequestDto())
       .execute();
 
     // given
@@ -108,7 +108,7 @@ public class CollectionRestServiceIT extends AbstractIT {
   public void updateNameOfCollection() {
     //given
     String id = collectionClient.createNewCollection();
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
     // when
     Response response = embeddedOptimizeExtension
@@ -140,7 +140,7 @@ public class CollectionRestServiceIT extends AbstractIT {
 
     // when
     CollectionDefinitionRestDto collection = collectionClient.getCollectionById(id);
-    List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(id);
+    List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(id);
 
     // then
     assertThat(collection).isNotNull();

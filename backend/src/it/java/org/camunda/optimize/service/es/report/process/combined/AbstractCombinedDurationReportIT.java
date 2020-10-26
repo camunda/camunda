@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -46,13 +46,13 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     //when
-    final CombinedReportDefinitionDto combinedReport = createCombinedReport(
+    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -84,13 +84,13 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     //when
-    final CombinedReportDefinitionDto combinedReport = createCombinedReport(
+    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -123,13 +123,13 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     //when
-    final CombinedReportDefinitionDto combinedReport = createCombinedReport(
+    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
-    final IdDto response = embeddedOptimizeExtension
+    final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     //then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -148,8 +148,8 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       });
   }
 
-  private CombinedReportDefinitionDto createCombinedReport(final String firstReportDefinitionKey,
-                                                           final String secondReportDefinitionKey) {
+  private CombinedReportDefinitionRequestDto createCombinedReport(final String firstReportDefinitionKey,
+                                                                  final String secondReportDefinitionKey) {
     final String reportId1 = createAndStoreDefaultReportDefinition(firstReportDefinitionKey);
     final String reportId2 = createAndStoreDefaultReportDefinition(secondReportDefinitionKey);
 
@@ -159,7 +159,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     reportIds.add(new CombinedReportItemDto(reportId2));
 
     combinedReportData.setReports(reportIds);
-    final CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
     return combinedReport;
   }

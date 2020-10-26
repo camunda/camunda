@@ -7,9 +7,9 @@ package org.camunda.optimize.service.event;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -291,7 +291,7 @@ public class IndexRolloverIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration();
   }
 
-  private List<EventDto> getAllStoredExternalEvents() {
+  private List<EventResponseDto> getAllStoredExternalEvents() {
     return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
@@ -304,7 +304,7 @@ public class IndexRolloverIT extends AbstractIT {
   }
 
   private void ingestExternalEvents() {
-    final List<CloudEventDto> eventDtos = IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 

@@ -7,7 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 
 import javax.ws.rs.core.Response;
@@ -43,11 +43,11 @@ public class UiConfigurationClient {
     );
   }
 
-  public UIConfigurationDto getUIConfiguration() {
+  public UIConfigurationResponseDto getUIConfiguration() {
     return requestExecutorSupplier.get()
       .withoutAuthentication()
       .buildGetUIConfigurationRequest()
-      .execute(UIConfigurationDto.class, Response.Status.OK.getStatusCode());
+      .execute(UIConfigurationResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public WebhookConfiguration createWebhookConfiguration(final String url,

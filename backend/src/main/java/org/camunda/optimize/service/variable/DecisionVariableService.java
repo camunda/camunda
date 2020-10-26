@@ -8,7 +8,7 @@ package org.camunda.optimize.service.variable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
@@ -30,7 +30,7 @@ public class DecisionVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
 
 
-  public List<DecisionVariableNameDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
     return decisionVariableReader.getInputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),
@@ -39,7 +39,7 @@ public class DecisionVariableService {
     );
   }
 
-  public List<DecisionVariableNameDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
     return decisionVariableReader.getOutputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),

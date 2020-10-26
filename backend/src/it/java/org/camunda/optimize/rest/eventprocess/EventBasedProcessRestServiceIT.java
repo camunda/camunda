@@ -28,7 +28,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -111,7 +111,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       Arguments.of(
         PUT,
         "/eventBasedProcess/someId/role",
-        Collections.singleton(new EventProcessRoleRestDto(new UserDto("someId")))
+        Collections.singleton(new EventProcessRoleResponseDto(new UserDto("someId")))
       ),
       Arguments.of(POST, "/eventBasedProcess/_mappingCleanup", EventMappingCleanupRequestDto.builder()
         .xml("<xml></xml>")

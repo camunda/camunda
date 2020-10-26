@@ -7,12 +7,12 @@ package org.camunda.optimize.test.query.performance;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
-import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -57,7 +57,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitions()
-        .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 
@@ -89,7 +89,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitions()
-        .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 
@@ -113,9 +113,9 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitionsGroupedByTenant()
-        .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode()),
+        .executeAndReturnList(TenantWithDefinitionsResponseDto.class, Response.Status.OK.getStatusCode()),
       elements -> assertThat(elements)
-        .extracting(TenantWithDefinitionsDto::getDefinitions)
+        .extracting(TenantWithDefinitionsResponseDto::getDefinitions)
         .allSatisfy(definitions -> {
           assertThat(definitions).hasSize(definitionCount);
         }), getMaxAllowedQueryTime()
@@ -151,9 +151,9 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitionsGroupedByTenant()
-        .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode()),
+        .executeAndReturnList(TenantWithDefinitionsResponseDto.class, Response.Status.OK.getStatusCode()),
       elements -> assertThat(elements)
-        .extracting(TenantWithDefinitionsDto::getDefinitions)
+        .extracting(TenantWithDefinitionsResponseDto::getDefinitions)
         .allSatisfy(definitions -> {
           assertThat(definitions).hasSize(definitionCount);
         }), getMaxAllowedQueryTime()
@@ -178,7 +178,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitionKeysByType(definitionType.getId())
-        .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 
@@ -210,7 +210,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitionKeysByType(definitionType.getId())
-        .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 
@@ -239,7 +239,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       .range(0, definitionCount)
       .mapToObj(String::valueOf)
       .forEach(i -> {
-        final DefinitionOptimizeDto def = createDefinition(
+        final DefinitionOptimizeResponseDto def = createDefinition(
           definitionType, "key" + i, "1", tenantId, "Definition " + i, engineAlias
         );
         definitionMap.put(def.getId(), def);
@@ -247,11 +247,11 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     return definitionMap;
   }
 
-  private DefinitionOptimizeDto createDefinition(final DefinitionType definitionType,
-                                                 final String key,
-                                                 final String version,
-                                                 final String tenantId,
-                                                 final String name, final String engineAlias) {
+  private DefinitionOptimizeResponseDto createDefinition(final DefinitionType definitionType,
+                                                         final String key,
+                                                         final String version,
+                                                         final String tenantId,
+                                                         final String name, final String engineAlias) {
     switch (definitionType) {
       case PROCESS:
         return createProcessDefinition(key, version, tenantId, name, engineAlias);

@@ -8,10 +8,10 @@ package org.camunda.optimize.service.config;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.math3.analysis.function.Gaussian;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -53,11 +53,11 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     importAllEngineEntitiesFromScratch();
 
-    final List<DefinitionWithTenantsDto> allDefinitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> allDefinitions = definitionClient.getAllDefinitions();
 
     // then the result should not contain the decision/process definitions from the first engine
     assertThat(allDefinitions)
-      .extracting(DefinitionWithTenantsDto::getKey)
+      .extracting(DefinitionWithTenantsResponseDto::getKey)
       .containsExactlyInAnyOrder(PROCESS_KEY_2, DECISION_KEY_2);
   }
 
@@ -115,7 +115,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto branchAnalysisRequestDto = analysisClient.createAnalysisDto(
       PROCESS_KEY_1,
       Lists.newArrayList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS,
@@ -124,7 +124,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     );
 
     // then the analysis should be fine even if it would include a definition from a non existing engine alias
-    final BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(branchAnalysisQueryDto);
+    final BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
     assertThat(result.getTotal()).isEqualTo(2L);
   }
 

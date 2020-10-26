@@ -7,9 +7,8 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
-import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 
 import javax.ws.rs.core.Response;
@@ -23,10 +22,10 @@ public class IdentityClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
 
-  public IdentityWithMetadataDto getIdentityById(final String id) {
+  public IdentityWithMetadataResponseDto getIdentityById(final String id) {
     return getRequestExecutor()
       .buildGetIdentityById(id)
-      .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdentityWithMetadataResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public UserResponseDto getCurrentUserIdentity(final String username, final String password) {
@@ -36,24 +35,24 @@ public class IdentityClient {
       .execute(UserResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public IdentitySearchResultDto searchForIdentity(final String searchTerms, final Integer limit) {
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final Integer limit) {
     return searchForIdentity(searchTerms, limit, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public IdentitySearchResultDto searchForIdentity(final String searchTerms, final String username, final String password) {
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final String username, final String password) {
     return searchForIdentity(searchTerms, null, username, password);
   }
 
-  public IdentitySearchResultDto searchForIdentity(final String searchTerms) {
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms) {
     return searchForIdentity(searchTerms, null);
   }
 
-  public IdentitySearchResultDto searchForIdentity(final String searchTerms, final Integer limit,
-                                                   final String username, final String password) {
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final Integer limit,
+                                                           final String username, final String password) {
     return getRequestExecutor()
       .buildSearchForIdentities(searchTerms, limit)
       .withUserAuthentication(username, password)
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

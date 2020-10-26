@@ -13,40 +13,40 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.SettingsDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
@@ -306,14 +306,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationDto alert) {
+  public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationRequestDto alert) {
     this.body = getBody(alert);
     this.path = ALERT;
     this.method = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateAlertRequest(String id, AlertCreationDto alert) {
+  public OptimizeRequestExecutor buildUpdateAlertRequest(String id, AlertCreationRequestDto alert) {
     this.body = getBody(alert);
     this.path = ALERT + "/" + id;
     this.method = PUT;
@@ -381,7 +381,7 @@ public class OptimizeRequestExecutor {
     return buildCreateSingleProcessReportRequest(null);
   }
 
-  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     this.path = "report/process/single";
     Optional.ofNullable(singleProcessReportDefinitionDto)
       .ifPresent(definitionDto -> this.body = getBody(definitionDto));
@@ -389,7 +389,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
     this.path = "report/decision/single";
     Optional.ofNullable(singleDecisionReportDefinitionDto)
       .ifPresent(definitionDto -> this.body = getBody(definitionDto));
@@ -401,7 +401,7 @@ public class OptimizeRequestExecutor {
     return buildCreateCombinedReportRequest(null);
   }
 
-  public OptimizeRequestExecutor buildCreateCombinedReportRequest(final CombinedReportDefinitionDto combinedReportDefinitionDto) {
+  public OptimizeRequestExecutor buildCreateCombinedReportRequest(final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
     this.path = "report/process/combined";
     Optional.ofNullable(combinedReportDefinitionDto).ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.method = POST;
@@ -473,12 +473,12 @@ public class OptimizeRequestExecutor {
     this.path = "report/evaluate";
     if (entity instanceof ProcessReportDataDto) {
       ProcessReportDataDto dataDto = (ProcessReportDataDto) entity;
-      SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
+      SingleProcessReportDefinitionRequestDto definitionDto = new SingleProcessReportDefinitionRequestDto();
       definitionDto.setData(dataDto);
       this.body = getBody(definitionDto);
     } else if (entity instanceof DecisionReportDataDto) {
       DecisionReportDataDto dataDto = (DecisionReportDataDto) entity;
-      SingleDecisionReportDefinitionDto definitionDto = new SingleDecisionReportDefinitionDto();
+      SingleDecisionReportDefinitionRequestDto definitionDto = new SingleDecisionReportDefinitionRequestDto();
       definitionDto.setData(dataDto);
       this.body = getBody(definitionDto);
     } else if (entity == null) {
@@ -492,9 +492,9 @@ public class OptimizeRequestExecutor {
 
   public <T extends SingleReportDefinitionDto> OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T definitionDto) {
     this.path = "report/evaluate";
-    if (definitionDto instanceof SingleProcessReportDefinitionDto) {
+    if (definitionDto instanceof SingleProcessReportDefinitionRequestDto) {
       this.body = getBody(definitionDto);
-    } else if (definitionDto instanceof SingleDecisionReportDefinitionDto) {
+    } else if (definitionDto instanceof SingleDecisionReportDefinitionRequestDto) {
       this.body = getBody(definitionDto);
     } else if (definitionDto == null) {
       this.body = getBody(null);
@@ -508,15 +508,15 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(CombinedReportDataDto combinedReportData) {
     this.path = "report/evaluate";
     this.method = POST;
-    this.body = getBody(new CombinedReportDefinitionDto(combinedReportData));
+    this.body = getBody(new CombinedReportDefinitionRequestDto(combinedReportData));
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateDashboardRequest() {
-    return buildCreateDashboardRequest(new DashboardDefinitionDto());
+    return buildCreateDashboardRequest(new DashboardDefinitionRestDto());
   }
 
-  public OptimizeRequestExecutor buildCreateDashboardRequest(DashboardDefinitionDto dashboardDefinitionDto) {
+  public OptimizeRequestExecutor buildCreateDashboardRequest(DashboardDefinitionRestDto dashboardDefinitionDto) {
     this.method = POST;
     this.body = Optional.ofNullable(dashboardDefinitionDto)
       .map(definitionDto -> getBody(dashboardDefinitionDto))
@@ -529,7 +529,7 @@ public class OptimizeRequestExecutor {
     return buildCreateCollectionRequestWithPartialDefinition(null);
   }
 
-  public OptimizeRequestExecutor buildCreateCollectionRequestWithPartialDefinition(PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public OptimizeRequestExecutor buildCreateCollectionRequestWithPartialDefinition(PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     this.method = POST;
     this.body = Optional.ofNullable(partialCollectionDefinitionDto)
       .map(definitionDto -> getBody(partialCollectionDefinitionDto))
@@ -538,7 +538,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateDashboardRequest(String id, DashboardDefinitionDto entity) {
+  public OptimizeRequestExecutor buildUpdateDashboardRequest(String id, DashboardDefinitionRestDto entity) {
     this.path = "dashboard/" + id;
     this.method = PUT;
     this.body = getBody(entity);
@@ -546,7 +546,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdatePartialCollectionRequest(String id,
-                                                                     PartialCollectionDefinitionDto updateDto) {
+                                                                     PartialCollectionDefinitionRequestDto updateDto) {
     this.path = "collection/" + id;
     this.method = PUT;
     this.body = getBody(updateDto);
@@ -560,13 +560,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
-                                                                  final CollectionRoleDto... roleToAdd) {
+                                                                  final CollectionRoleRequestDto... roleToAdd) {
     buildAddRolesToCollectionRequest(collectionId, Arrays.asList(roleToAdd));
     return this;
   }
 
   private OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
-                                                                   final List<CollectionRoleDto> rolesToAdd) {
+                                                                   final List<CollectionRoleRequestDto> rolesToAdd) {
     this.path = "collection/" + collectionId + "/role/";
     this.method = POST;
     this.body = getBody(rolesToAdd);
@@ -575,7 +575,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildUpdateRoleToCollectionRequest(final String id,
                                                                     final String roleEntryId,
-                                                                    final CollectionRoleUpdateDto updateDto) {
+                                                                    final CollectionRoleUpdateRequestDto updateDto) {
     this.path = "collection/" + id + "/role/" + roleEntryId;
     this.method = PUT;
     this.body = getBody(updateDto);
@@ -689,14 +689,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildShareDashboardRequest(DashboardShareDto share) {
+  public OptimizeRequestExecutor buildShareDashboardRequest(DashboardShareRestDto share) {
     this.path = "share/dashboard";
     this.body = getBody(share);
     this.method = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildShareReportRequest(ReportShareDto share) {
+  public OptimizeRequestExecutor buildShareReportRequest(ReportShareRestDto share) {
     this.path = "share/report";
     this.body = getBody(share);
     this.method = POST;
@@ -736,7 +736,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckSharingStatusRequest(ShareSearchDto shareSearchDto) {
+  public OptimizeRequestExecutor buildCheckSharingStatusRequest(ShareSearchRequestDto shareSearchDto) {
     this.path = "share/status";
     this.method = POST;
     this.body = getBody(shareSearchDto);
@@ -804,7 +804,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildProcessDefinitionCorrelation(BranchAnalysisQueryDto entity) {
+  public OptimizeRequestExecutor buildProcessDefinitionCorrelation(BranchAnalysisRequestDto entity) {
     this.path = "analysis/correlation";
     this.method = POST;
     this.body = getBody(entity);
@@ -1160,7 +1160,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateEventProcessRolesRequest(String eventProcessId,
-                                                                     List<EventProcessRoleDto<IdentityDto>> roleRestDtos) {
+                                                                     List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
     this.path = "eventBasedProcess/" + eventProcessId + "/role";
     this.method = PUT;
     this.body = getBody(roleRestDtos);
@@ -1291,11 +1291,11 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventDto> eventDtos, final String secret) {
+  public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventRequestDto> eventDtos, final String secret) {
     return buildIngestEventBatchWithMediaType(eventDtos, secret, CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH);
   }
 
-  public OptimizeRequestExecutor buildIngestEventBatchWithMediaType(final List<CloudEventDto> eventDtos,
+  public OptimizeRequestExecutor buildIngestEventBatchWithMediaType(final List<CloudEventRequestDto> eventDtos,
                                                                     final String secret,
                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
@@ -1354,7 +1354,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildSetSettingsRequest(final SettingsDto settingsDto) {
+  public OptimizeRequestExecutor buildSetSettingsRequest(final SettingsResponseDto settingsDto) {
     this.path = "settings/";
     this.method = PUT;
     this.body = getBody(settingsDto);
@@ -1372,7 +1372,7 @@ public class OptimizeRequestExecutor {
   }
 
   private String authenticateUserRequest(String username, String password) {
-    final CredentialsDto entity = new CredentialsDto(username, password);
+    final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
     final Response response = defaultWebTarget.path("authentication")
       .request()
       .post(Entity.json(entity));

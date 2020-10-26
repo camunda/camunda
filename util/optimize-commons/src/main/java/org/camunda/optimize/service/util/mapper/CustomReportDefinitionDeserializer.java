@@ -13,9 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 
 import java.io.IOException;
 
@@ -54,12 +54,12 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
 
     String json = readJsonTree.toString();
     if (isCombined) {
-      return objectMapper.readValue(json, CombinedReportDefinitionDto.class);
+      return objectMapper.readValue(json, CombinedReportDefinitionRequestDto.class);
     } else {
       if (reportType.equals(PROCESS)) {
-        return objectMapper.readValue(json, SingleProcessReportDefinitionDto.class);
+        return objectMapper.readValue(json, SingleProcessReportDefinitionRequestDto.class);
       } else if (reportType.equals(DECISION)) {
-        return objectMapper.readValue(json, SingleDecisionReportDefinitionDto.class);
+        return objectMapper.readValue(json, SingleDecisionReportDefinitionRequestDto.class);
       }
     }
     String errorMessage = String.format(

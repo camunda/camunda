@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -58,14 +58,14 @@ public class ReportAuthorizationService {
   public boolean isAuthorizedToAccessReportDefinition(final String userId,
                                                       final ReportDefinitionDto report) {
     final boolean authorizedToAccessDefinition;
-    if (report instanceof SingleProcessReportDefinitionDto) {
-      final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
+    if (report instanceof SingleProcessReportDefinitionRequestDto) {
+      final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionRequestDto) report).getData();
       authorizedToAccessDefinition = isAuthorizedToAccessProcessReportDefinition(userId, reportData);
-    } else if (report instanceof SingleDecisionReportDefinitionDto) {
-      final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionDto) report).getData();
+    } else if (report instanceof SingleDecisionReportDefinitionRequestDto) {
+      final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionRequestDto) report).getData();
       authorizedToAccessDefinition = isAuthorizedToAccessDecisionReportDefinition(userId, reportData);
-    } else if (report instanceof CombinedReportDefinitionDto) {
-      final CombinedReportDataDto reportData = ((CombinedReportDefinitionDto) report).getData();
+    } else if (report instanceof CombinedReportDefinitionRequestDto) {
+      final CombinedReportDataDto reportData = ((CombinedReportDefinitionRequestDto) report).getData();
       authorizedToAccessDefinition = reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds())
         .stream()
         .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(userId, r.getData()));

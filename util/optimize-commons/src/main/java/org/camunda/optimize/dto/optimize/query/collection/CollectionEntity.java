@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 
 import java.time.OffsetDateTime;
 
@@ -21,5 +21,5 @@ public interface CollectionEntity {
 
   OffsetDateTime getLastModified();
 
-  EntityDto toEntityDto();
+  EntityResponseDto toEntityDto();
 }

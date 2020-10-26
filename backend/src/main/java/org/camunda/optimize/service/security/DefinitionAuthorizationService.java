@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -107,8 +107,8 @@ public class DefinitionAuthorizationService {
     }
   }
 
-  public <T extends DefinitionOptimizeDto> boolean isAuthorizedToAccessDefinition(final String userId,
-                                                                                  final T definition) {
+  public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(final String userId,
+                                                                                          final T definition) {
     switch (definition.getType()) {
       case PROCESS:
         return isAuthorizedToAccessProcessDefinition(userId, (ProcessDefinitionOptimizeDto) definition);

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -45,7 +45,7 @@ public class EventProcessMappingWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+  public IdResponseDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     String id = IdGenerator.getNextId();
     eventProcessMappingDto.setId(id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -72,7 +72,7 @@ public class EventProcessMappingWriter {
       final String errorMessage = String.format("Could not write event based process [%s].", id);
       throw new OptimizeRuntimeException(errorMessage);
     }
-    return new IdDto(id);
+    return new IdResponseDto(id);
   }
 
   public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {

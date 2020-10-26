@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -120,8 +120,8 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     assertThat(newProcessDefinition)
       .get()
-      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.id, newProcessDefinitionId)
-      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.name, newName);
+      .hasFieldOrPropertyWithValue(DefinitionOptimizeResponseDto.Fields.id, newProcessDefinitionId)
+      .hasFieldOrPropertyWithValue(DefinitionOptimizeResponseDto.Fields.name, newName);
   }
 
   @Test
@@ -147,10 +147,10 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     publishEventBasedProcess(eventProcessMappingId);
 
     // then the definition XML in existing reports for that event process are updated as well
-    final SingleProcessReportDefinitionDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
+    final SingleProcessReportDefinitionRequestDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
     assertThat(reportDefinition1.getData().getConfiguration().getXml())
       .isEqualTo(newXml);
-    final SingleProcessReportDefinitionDto reportDefinition2 = reportClient.getSingleProcessReportById(reportId2);
+    final SingleProcessReportDefinitionRequestDto reportDefinition2 = reportClient.getSingleProcessReportById(reportId2);
     assertThat(reportDefinition2.getData().getConfiguration().getXml())
       .isEqualTo(newXml);
   }
@@ -180,7 +180,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     publishEventBasedProcess(eventProcessMappingId2);
 
     // then the definition XML a the report on the first event process is not affected
-    final SingleProcessReportDefinitionDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
+    final SingleProcessReportDefinitionRequestDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
     assertThat(reportDefinition1.getData().getConfiguration().getXml())
       .isEqualTo(simpleEventProcessMappingDto1.getXml());
   }
@@ -257,7 +257,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
   }
 
   private String createEventProcessReport(final String eventProcessMappingId, final String definitionXml) {
-    final SingleProcessReportDefinitionDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
       null, eventProcessMappingId, Collections.emptyList()
     );
     reportDefinitionDto.getData().getConfiguration().setXml(definitionXml);

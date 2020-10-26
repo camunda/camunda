@@ -224,8 +224,8 @@ public class CamundaEventImportService {
 
   private Stream<CamundaActivityEventDto> convertRunningProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    final Optional<ProcessDefinitionOptimizeDto> definition = getProcessDefinitionForDefinitionId(
-      processInstanceDto.getProcessDefinitionId());
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(processInstanceDto.getProcessDefinitionId());
     if (!definition.isPresent()) {
       log.info("Cannot retrieve definition for definition {}, cannot create events for running process instance {}",
                processInstanceDto.getProcessDefinitionId(), processInstanceDto
@@ -239,8 +239,8 @@ public class CamundaEventImportService {
 
   private Stream<CamundaActivityEventDto> convertCompletedProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    final Optional<ProcessDefinitionOptimizeDto> definition = getProcessDefinitionForDefinitionId(
-      processInstanceDto.getProcessDefinitionId());
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(processInstanceDto.getProcessDefinitionId());
     if (!definition.isPresent()) {
       log.info("Cannot retrieve definition for definition {}, cannot create events for completed process instance {}",
                processInstanceDto.getProcessDefinitionId(), processInstanceDto

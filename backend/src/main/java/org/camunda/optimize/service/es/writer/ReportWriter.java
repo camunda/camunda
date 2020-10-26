@@ -11,15 +11,15 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -80,13 +80,13 @@ public class ReportWriter {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
-  public IdDto createNewCombinedReport(@NonNull final String userId,
-                                       @NonNull final CombinedReportDataDto reportData,
-                                       @NonNull final String reportName,
-                                       final String collectionId) {
+  public IdResponseDto createNewCombinedReport(@NonNull final String userId,
+                                               @NonNull final CombinedReportDataDto reportData,
+                                               @NonNull final String reportName,
+                                               final String collectionId) {
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
-    final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto reportDefinitionDto = new CombinedReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -112,7 +112,7 @@ public class ReportWriter {
       }
 
       log.debug("Report with id [{}] has successfully been created.", id);
-      return new IdDto(id);
+      return new IdResponseDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert combined report.!";
       log.error(errorMessage, e);
@@ -121,14 +121,14 @@ public class ReportWriter {
   }
 
 
-  public IdDto createNewSingleProcessReport(@NonNull final String userId,
-                                            @NonNull final ProcessReportDataDto reportData,
-                                            @NonNull final String reportName,
-                                            final String collectionId) {
+  public IdResponseDto createNewSingleProcessReport(@NonNull final String userId,
+                                                    @NonNull final ProcessReportDataDto reportData,
+                                                    @NonNull final String reportName,
+                                                    final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -154,7 +154,7 @@ public class ReportWriter {
       }
 
       log.debug("Single process report with id [{}] has successfully been created.", id);
-      return new IdDto(id);
+      return new IdResponseDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single process report.";
       log.error(errorMessage, e);
@@ -162,14 +162,14 @@ public class ReportWriter {
     }
   }
 
-  public IdDto createNewSingleDecisionReport(@NonNull final String userId,
-                                             @NonNull final DecisionReportDataDto reportData,
-                                             @NonNull final String reportName,
-                                             final String collectionId) {
+  public IdResponseDto createNewSingleDecisionReport(@NonNull final String userId,
+                                                     @NonNull final DecisionReportDataDto reportData,
+                                                     @NonNull final String reportName,
+                                                     final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = OffsetDateTime.now();
     reportDefinitionDto.setCreated(now);
@@ -195,7 +195,7 @@ public class ReportWriter {
       }
 
       log.debug("Single decision report with id [{}] has successfully been created.", id);
-      return new IdDto(id);
+      return new IdResponseDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single decision report.";
       log.error(errorMessage, e);

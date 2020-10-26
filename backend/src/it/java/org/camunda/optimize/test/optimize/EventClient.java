@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import java.time.Instant;
@@ -27,20 +27,20 @@ public class EventClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
   private final Supplier<String> accessTokenSupplier;
 
-  public void ingestEventBatch(final List<CloudEventDto> eventDtos) {
+  public void ingestEventBatch(final List<CloudEventRequestDto> eventDtos) {
     requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, accessTokenSupplier.get()).execute();
   }
 
-  public List<CloudEventDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
-    final List<CloudEventDto> ingestedEvents = IntStream.range(0, eventCount)
+  public List<CloudEventRequestDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
+    final List<CloudEventRequestDto> ingestedEvents = IntStream.range(0, eventCount)
       .mapToObj(operand -> createCloudEventDto().toBuilder().time(timestamp).build())
       .collect(toList());
     ingestEventBatch(ingestedEvents);
     return ingestedEvents;
   }
 
-  public CloudEventDto createCloudEventDto() {
-    return CloudEventDto.builder()
+  public CloudEventRequestDto createCloudEventDto() {
+    return CloudEventRequestDto.builder()
       .id(IdGenerator.getNextId())
       .source(RandomStringUtils.randomAlphabetic(10))
       .specversion("1.0")

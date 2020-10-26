@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -130,11 +130,11 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
 
-    final SingleProcessReportDefinitionDto singleReport1 = createDateReport(
+    final SingleProcessReportDefinitionRequestDto singleReport1 = createDateReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE
     );
     singleReport1.getData().setProcessDefinitionKey("runningInstanceDef");
-    final SingleProcessReportDefinitionDto singleReport2 = createDateReport(
+    final SingleProcessReportDefinitionRequestDto singleReport2 = createDateReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE
     );
     singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
@@ -179,8 +179,8 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       .build();
   }
 
-  private SingleProcessReportDefinitionDto createDateReport(final ProcessReportDataType reportDataType) {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+  private SingleProcessReportDefinitionRequestDto createDateReport(final ProcessReportDataType reportDataType) {
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto runningReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)

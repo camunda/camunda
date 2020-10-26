@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -41,7 +41,7 @@ public class SettingsWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void upsertSettings(final SettingsDto settingsDto) {
+  public void upsertSettings(final SettingsResponseDto settingsDto) {
     log.debug("Writing settings to ES");
 
     try {
@@ -54,7 +54,7 @@ public class SettingsWriter {
     }
   }
 
-  private UpdateRequest createSettingsUpsert(final SettingsDto settingsDto)
+  private UpdateRequest createSettingsUpsert(final SettingsResponseDto settingsDto)
     throws JsonProcessingException {
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,

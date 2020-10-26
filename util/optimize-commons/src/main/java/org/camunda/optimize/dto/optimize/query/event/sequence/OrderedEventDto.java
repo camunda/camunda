@@ -8,12 +8,12 @@ package org.camunda.optimize.dto.optimize.query.event.sequence;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
-public class OrderedEventDto extends EventDto {
+public class OrderedEventDto extends EventResponseDto {
 
   private Long orderCounter;
 

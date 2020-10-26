@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.security.SessionService;
@@ -32,14 +32,14 @@ public class SettingsRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public SettingsDto getSettings(@Context final ContainerRequestContext requestContext) {
+  public SettingsResponseDto getSettings(@Context final ContainerRequestContext requestContext) {
     return settingsService.getSettings();
   }
 
   @PUT
   @Produces(MediaType.APPLICATION_JSON)
   public void setSettings(@Context final ContainerRequestContext requestContext,
-                          @NotNull final SettingsDto settingsDto) {
+                          @NotNull final SettingsResponseDto settingsDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     settingsService.setSettings(userId, settingsDto);
   }

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.frequency.groupby.variable.none;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -36,7 +36,7 @@ public class CountProcessInstanceFrequencyGroupByVariableCmd extends ProcessCmd<
   }
 
   @Override
-  public SingleProcessMapReportResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public SingleProcessMapReportResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }

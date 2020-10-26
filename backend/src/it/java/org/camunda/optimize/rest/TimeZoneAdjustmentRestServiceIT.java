@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -926,7 +926,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), instanceStartDate);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto branchAnalysisRequestDto = analysisClient.createAnalysisDto(
       gatewayDefinition.getKey(),
       Lists.newArrayList(String.valueOf(gatewayDefinition.getVersion())),
       Collections.singletonList(null),
@@ -941,14 +941,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
         .start(0L, DateFilterUnit.YEARS)
         .add()
         .buildList();
-    branchAnalysisQueryDto.setFilter(relativeStartDateFilter);
+    branchAnalysisRequestDto.setFilter(relativeStartDateFilter);
 
     // when
-    final BranchAnalysisDto result = embeddedOptimizeExtension
+    final BranchAnalysisResponseDto result = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
-      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-      .execute(BranchAnalysisDto.class, Response.Status.OK.getStatusCode());
+      .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
+      .execute(BranchAnalysisResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     // if the timezone of the request was not respected then the result would be not be empty

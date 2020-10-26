@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CountDecisionInstanceFrequencyGroupByMatchedRuleCmd
-  implements Command<SingleDecisionReportDefinitionDto> {
+  implements Command<SingleDecisionReportDefinitionRequestDto> {
 
   private final DecisionReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
 
@@ -37,7 +37,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleCmd
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleDecisionReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult evaluate(final CommandContext<SingleDecisionReportDefinitionRequestDto> commandContext) {
     final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleDecisionMapReportResult(evaluate, commandContext.getReportDefinition());
   }

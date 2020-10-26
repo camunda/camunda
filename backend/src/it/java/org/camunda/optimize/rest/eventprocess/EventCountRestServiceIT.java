@@ -20,10 +20,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -79,33 +79,33 @@ public class EventCountRestServiceIT extends AbstractIT {
   private static final String FOURTH_TASK_ID = "taskID_4";
   private static final String END_EVENT_ID = "endEventID";
 
-  private CloudEventDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
-  private CloudEventDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
-  private CloudEventDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
-  private CloudEventDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
-  private CloudEventDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
-  private CloudEventDto nullGroupEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
+  private CloudEventRequestDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
+  private CloudEventRequestDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
+  private CloudEventRequestDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
+  private CloudEventRequestDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
+  private CloudEventRequestDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
+  private CloudEventRequestDto nullGroupEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
 
-  private final List<CloudEventDto> eventTraceOne = createTraceFromEventList(
+  private final List<CloudEventRequestDto> eventTraceOne = createTraceFromEventList(
     "traceIdOne",
     Arrays.asList(
       backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
     )
   );
-  private final List<CloudEventDto> eventTraceTwo = createTraceFromEventList(
+  private final List<CloudEventRequestDto> eventTraceTwo = createTraceFromEventList(
     "traceIdTwo",
     Arrays.asList(
       backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
     )
   );
-  private final List<CloudEventDto> eventTraceThree = createTraceFromEventList(
+  private final List<CloudEventRequestDto> eventTraceThree = createTraceFromEventList(
     "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent)
   );
-  private final List<CloudEventDto> eventTraceFour = createTraceFromEventList(
+  private final List<CloudEventRequestDto> eventTraceFour = createTraceFromEventList(
     "traceIdFour", Collections.singletonList(backendKetchupEvent)
   );
 
-  private final List<CloudEventDto> allEventDtos =
+  private final List<CloudEventRequestDto> allEventDtos =
     Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
       .flatMap(Collection::stream)
       .collect(toList());
@@ -147,8 +147,8 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_noSources_noResults() {
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(Collections.emptyList())
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(Collections.emptyList())
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos).isEmpty();
@@ -157,8 +157,8 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_externalOnly() {
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are sorted using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -181,8 +181,8 @@ public class EventCountRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are sorted using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -200,9 +200,9 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(definitionKey, EventScopeType.START_END, ImmutableList.of("1"))
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos).containsExactlyInAnyOrder(
@@ -221,12 +221,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         EventScopeType.PROCESS_INSTANCE,
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos).containsExactlyInAnyOrder(
@@ -245,9 +245,9 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -269,12 +269,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         Arrays.asList(EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -296,12 +296,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE),
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -325,12 +325,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         Arrays.asList(EventScopeType.ALL, EventScopeType.START_END),
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -352,12 +352,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -384,9 +384,9 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -414,9 +414,9 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(definitionKey, EventScopeType.ALL, versions)
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -445,7 +445,7 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequest(Lists.newArrayList(
         EventSourceEntryDto.builder()
           .type(EventSourceType.CAMUNDA)
@@ -454,7 +454,7 @@ public class EventCountRestServiceIT extends AbstractIT {
           .eventScope(Collections.singletonList(EventScopeType.ALL))
           .tenants(ImmutableList.of(tenantId2))
           .build()
-      )).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      )).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -480,7 +480,7 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
           createCamundaEventSourceEntryDto(
@@ -494,7 +494,7 @@ public class EventCountRestServiceIT extends AbstractIT {
             ImmutableList.of("1")
           )
         )
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -520,7 +520,7 @@ public class EventCountRestServiceIT extends AbstractIT {
     processEventTracesAndSequences();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
           createExternalEventSourceEntry(),
@@ -530,7 +530,7 @@ public class EventCountRestServiceIT extends AbstractIT {
             ImmutableList.of("1")
           )
         )
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -571,8 +571,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       )
       .build();
     // search with all lowercase should still find camunda events containing `Etch`
-    final List<EventCountDto> eventCountDtos = createPostEventCountsRequest("etch", countRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    final List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest("etch", countRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -593,8 +593,8 @@ public class EventCountRestServiceIT extends AbstractIT {
   @ValueSource(strings = {"registered_ev", "registered_event", "regISTERED_event"})
   public void getEventCounts_usingSearchTermLongerThanNGramMax(String searchTerm) {
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(searchTerm)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(searchTerm)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -611,8 +611,8 @@ public class EventCountRestServiceIT extends AbstractIT {
     eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
@@ -649,14 +649,14 @@ public class EventCountRestServiceIT extends AbstractIT {
     );
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildPostEventCountRequest(
           eventCountSorter,
           null,
           EventCountRequestDto.builder().eventSources(sources).build()
         )
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the event counts are sorted by the highest count first
     assertThat(eventCountDtos)
@@ -672,7 +672,7 @@ public class EventCountRestServiceIT extends AbstractIT {
         createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
         createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
       )
-      .isSortedAccordingTo(Comparator.comparing(EventCountDto::getCount, nullsFirst(naturalOrder())).reversed());
+      .isSortedAccordingTo(Comparator.comparing(EventCountResponseDto::getCount, nullsFirst(naturalOrder())).reversed());
   }
 
   @Test
@@ -703,42 +703,42 @@ public class EventCountRestServiceIT extends AbstractIT {
       ));
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildPostEventCountRequest(
           eventCountSorter,
           null,
           EventCountRequestDto.builder().eventSources(sources).build()
         )
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the event counts are listed according to sort parameters according to label if available, or name if not
     assertThat(eventCountDtos)
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        EventCountDto.builder()
+        EventCountResponseDto.builder()
           .eventName(applyCamundaTaskEndEventSuffix(userTaskId))
           .eventLabel(applyCamundaTaskEndEventSuffix("aardvark"))
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
           .count(0L)
           .build(),
-        EventCountDto.builder()
+        EventCountResponseDto.builder()
           .eventName(applyCamundaTaskStartEventSuffix(userTaskId))
           .eventLabel(applyCamundaTaskStartEventSuffix("aardvark"))
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
           .count(1L)
           .build(),
-        EventCountDto.builder()
+        EventCountResponseDto.builder()
           .eventName(endEventId)
           .eventLabel(endEventId)
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
           .count(0L)
           .build(),
-        EventCountDto.builder()
+        EventCountResponseDto.builder()
           .eventName(startEventId)
           .eventLabel("zebra")
           .source(EVENT_SOURCE_CAMUNDA)
@@ -756,8 +756,8 @@ public class EventCountRestServiceIT extends AbstractIT {
     eventCountSorter.setSortOrder(SortOrder.ASC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
@@ -794,8 +794,8 @@ public class EventCountRestServiceIT extends AbstractIT {
     eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, "etch")
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, "etch")
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then matching events are returned with ordering parameters respected
     assertThat(eventCountDtos)
@@ -827,8 +827,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
@@ -881,8 +881,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
@@ -914,8 +914,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then only the event in sequence before closest neighbour is suggested, non-suggestions use default ordering
     assertThat(eventCountDtos)
@@ -947,8 +947,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then no suggestions returned as matching sequence event has already been mapped
     assertThat(eventCountDtos)
@@ -980,8 +980,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then event count list contains suggestions and already mapped target event is included
     assertThat(eventCountDtos)
@@ -1012,9 +1012,9 @@ public class EventCountRestServiceIT extends AbstractIT {
     eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(
       eventCountSorter, eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then counts that are not suggestions respect custom ordering
     assertThat(eventCountDtos)
@@ -1042,8 +1042,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest("ayon", eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest("ayon", eventCountSuggestionsRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then only results matching search term are returned
     assertThat(eventCountDtos)
@@ -1070,9 +1070,9 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(
       "etch", eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then suggested and non-suggested counts are filtered out by search term
     assertThat(eventCountDtos)
@@ -1094,8 +1094,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then result is using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -1125,8 +1125,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then no suggestions are returned, result is using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -1158,8 +1158,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then only event sequenced to the mapped end event is suggested
     assertThat(eventCountDtos)
@@ -1185,7 +1185,7 @@ public class EventCountRestServiceIT extends AbstractIT {
 
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1203,7 +1203,7 @@ public class EventCountRestServiceIT extends AbstractIT {
 
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1218,7 +1218,7 @@ public class EventCountRestServiceIT extends AbstractIT {
 
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1233,7 +1233,7 @@ public class EventCountRestServiceIT extends AbstractIT {
 
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1245,12 +1245,12 @@ public class EventCountRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<EventCountDto> eventCountDtos =
+    List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequestCamundaSourceOnly(
         definitionKey,
         Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
         ImmutableList.of("1")
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
@@ -1273,8 +1273,8 @@ public class EventCountRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX));
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos).isEmpty();
@@ -1282,31 +1282,31 @@ public class EventCountRestServiceIT extends AbstractIT {
       "Cannot fetch external event counts as sequence count index for external events does not exist");
   }
 
-  private EventCountDto createNullGroupCountDto(final boolean suggested) {
+  private EventCountResponseDto createNullGroupCountDto(final boolean suggested) {
     return toEventCountDto(nullGroupEvent, 2L, suggested);
   }
 
-  private EventCountDto createFrontendMayoCountDto(final boolean suggested) {
+  private EventCountResponseDto createFrontendMayoCountDto(final boolean suggested) {
     return toEventCountDto(frontendMayoEvent, 2L, suggested);
   }
 
-  private EventCountDto createBackendMayoCountDto(final boolean suggested) {
+  private EventCountResponseDto createBackendMayoCountDto(final boolean suggested) {
     return toEventCountDto(backendMayoEvent, 3L, suggested);
   }
 
-  private EventCountDto createKetchupMayoCountDto(final boolean suggested) {
+  private EventCountResponseDto createKetchupMayoCountDto(final boolean suggested) {
     return toEventCountDto(ketchupMayoEvent, 2L, suggested);
   }
 
-  private EventCountDto createManagementBbqCountDto(final boolean suggested) {
+  private EventCountResponseDto createManagementBbqCountDto(final boolean suggested) {
     return toEventCountDto(managementBbqEvent, 1L, suggested);
   }
 
-  private EventCountDto createBackendKetchupCountDto(final boolean suggested) {
+  private EventCountResponseDto createBackendKetchupCountDto(final boolean suggested) {
     return toEventCountDto(backendKetchupEvent, 4L, suggested);
   }
 
-  private EventTypeDto eventTypeFromEvent(CloudEventDto event) {
+  private EventTypeDto eventTypeFromEvent(CloudEventRequestDto event) {
     return EventTypeDto.builder()
       .group(event.getGroup().orElse(null))
       .source(event.getSource())
@@ -1314,8 +1314,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto toEventCountDto(CloudEventDto event, Long count, boolean suggested) {
-    return EventCountDto.builder()
+  private EventCountResponseDto toEventCountDto(CloudEventRequestDto event, Long count, boolean suggested) {
+    return EventCountResponseDto.builder()
       .group(event.getGroup().orElse(null))
       .source(event.getSource())
       .eventName(event.getType())
@@ -1331,7 +1331,7 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private List<CloudEventDto> createTraceFromEventList(String traceId, List<CloudEventDto> events) {
+  private List<CloudEventRequestDto> createTraceFromEventList(String traceId, List<CloudEventRequestDto> events) {
     AtomicInteger incrementCounter = new AtomicInteger(0);
     Instant currentTimestamp = Instant.now();
     return events.stream()
@@ -1341,7 +1341,7 @@ public class EventCountRestServiceIT extends AbstractIT {
       .collect(toList());
   }
 
-  private CloudEventDto createEventDtoWithProperties(final String group, final String source, final String type) {
+  private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source, final String type) {
     return eventClient.createCloudEventDto()
       .toBuilder()
       .group(group)
@@ -1450,8 +1450,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createProcessInstanceStartEventCountDto(final String definitionKey) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createProcessInstanceStartEventCountDto(final String definitionKey) {
+    return EventCountResponseDto.builder()
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
       .eventName(applyCamundaProcessInstanceStartEventSuffix(definitionKey))
@@ -1459,8 +1459,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createProcessInstanceEndEventCount(final String definitionKey) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createProcessInstanceEndEventCount(final String definitionKey) {
+    return EventCountResponseDto.builder()
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
       .eventName(applyCamundaProcessInstanceEndEventSuffix(definitionKey))
@@ -1468,8 +1468,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createStartEventCountDto(final String definitionKey, final Long count) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createStartEventCountDto(final String definitionKey, final Long count) {
+    return EventCountResponseDto.builder()
       .eventName(CAMUNDA_START_EVENT)
       .eventLabel(CAMUNDA_START_EVENT)
       .source(EVENT_SOURCE_CAMUNDA)
@@ -1478,8 +1478,8 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createEndEventCountDto(final String definitionKey, final Long count) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createEndEventCountDto(final String definitionKey, final Long count) {
+    return EventCountResponseDto.builder()
       .eventName(CAMUNDA_END_EVENT)
       .eventLabel(CAMUNDA_END_EVENT)
       .source(EVENT_SOURCE_CAMUNDA)
@@ -1488,9 +1488,9 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createTaskEndEventCountDto(final String definitionKey, final String activityId,
-                                                   final Long count) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createTaskEndEventCountDto(final String definitionKey, final String activityId,
+                                                           final Long count) {
+    return EventCountResponseDto.builder()
       .eventName(applyCamundaTaskEndEventSuffix(activityId))
       .eventLabel(applyCamundaTaskEndEventSuffix(activityId))
       .source(EVENT_SOURCE_CAMUNDA)
@@ -1499,9 +1499,9 @@ public class EventCountRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createTaskStartEventCountDto(final String definitionKey, final String activityId,
-                                                     final Long count) {
-    return EventCountDto.builder()
+  private EventCountResponseDto createTaskStartEventCountDto(final String definitionKey, final String activityId,
+                                                             final Long count) {
+    return EventCountResponseDto.builder()
       .eventName(applyCamundaTaskStartEventSuffix(activityId))
       .eventLabel(applyCamundaTaskStartEventSuffix(activityId))
       .source(EVENT_SOURCE_CAMUNDA)

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.result.NumberResult;
 
@@ -16,11 +16,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class SingleDecisionNumberReportResult
-  extends ReportEvaluationResult<NumberResultDto, SingleDecisionReportDefinitionDto>
+  extends ReportEvaluationResult<NumberResultDto, SingleDecisionReportDefinitionRequestDto>
   implements NumberResult {
 
   public SingleDecisionNumberReportResult(@NotNull final NumberResultDto reportResult,
-                                          @NotNull final SingleDecisionReportDefinitionDto reportDefinition) {
+                                          @NotNull final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

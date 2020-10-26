@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.proce
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -66,8 +66,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(getResponse.isExists()).isTrue();
-    SingleProcessReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
-      .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class);
+    SingleProcessReportDefinitionRequestDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
+      .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionRequestDto.class);
     assertThat(definitionDto.getData()).isNotNull();
     ProcessReportDataDto data = definitionDto.getData();
     assertThat(data.getFilter()).isNotNull();
@@ -139,7 +139,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
     reportData.getConfiguration().setProcessPart(processPartDto);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setId(shouldNotBeUpdatedString);
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -155,7 +155,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(reports.size()).isEqualTo(1);
-    SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
+    SingleProcessReportDefinitionRequestDto newReport = (SingleProcessReportDefinitionRequestDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey()).isEqualTo("procdef");
     assertThat(newReport.getData().getDefinitionVersions()).containsExactly("123");
     assertThat(newReport.getData().getConfiguration().getYLabel()).isEqualTo("fooYLabel");
@@ -182,7 +182,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .put("flowNodeId", new HeatmapTargetValueEntryDto(TargetValueUnit.DAYS, "55"));
     reportData.setConfiguration(configuration);
 
-    final SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -197,7 +197,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(reports.size()).isEqualTo(1);
-    SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
+    SingleProcessReportDefinitionRequestDto newReport = (SingleProcessReportDefinitionRequestDto) reports.get(0);
     assertThat(newReport.getData().getConfiguration().getHeatmapTargetValue().getValues()).isEmpty();
   }
 
@@ -205,7 +205,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   public void updateReportWithoutPDInformation() {
     // given
     String id = reportClient.createEmptySingleProcessReport();
-    SingleProcessReportDefinitionDto updatedReport = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
     updatedReport.setData(new ProcessReportDataDto());
 
     //when
@@ -255,7 +255,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .addAll(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(null).add().buildList());
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -271,8 +271,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(reports.size()).isEqualTo(1);
-    SingleProcessReportDefinitionDto newReport =
-      (SingleProcessReportDefinitionDto) reports.get(0);
+    SingleProcessReportDefinitionRequestDto newReport =
+      (SingleProcessReportDefinitionRequestDto) reports.get(0);
     assertThat(newReport.getData()).isNotNull();
     reportData = newReport.getData();
     assertThat(reportData.getFilter().size()).isEqualTo(3);
@@ -298,7 +298,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   public void doNotUpdateNullFieldsInReport() {
     // given
     String id = reportClient.createEmptySingleProcessReport();
-    SingleProcessReportDefinitionDto report = constructSingleProcessReportWithFakePD();
+    SingleProcessReportDefinitionRequestDto report = constructSingleProcessReportWithFakePD();
 
     // when
     reportClient.updateSingleProcessReport(id, report);
@@ -325,7 +325,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .setProcessDefinitionVersion(FOO_PROCESS_DEFINITION_VERSION)
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
@@ -336,7 +336,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       reportClient.evaluateRawReportById(reportId);
 
     // then
-    final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
+    final SingleProcessReportDefinitionRequestDto reportDefinition = result.getReportDefinition();
     assertThat(reportDefinition.getId()).isEqualTo(reportId);
     assertThat(reportDefinition.getName()).isEqualTo("name");
     assertThat(reportDefinition.getOwner()).isEqualTo(DEFAULT_FULLNAME);
@@ -367,8 +367,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  private SingleProcessReportDefinitionDto constructSingleProcessReportWithFakePD() {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+  private SingleProcessReportDefinitionRequestDto constructSingleProcessReportWithFakePD() {
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");

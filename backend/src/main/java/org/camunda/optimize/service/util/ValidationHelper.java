@@ -8,9 +8,9 @@ package org.camunda.optimize.service.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -31,7 +31,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
@@ -43,7 +43,7 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
 
-  public static void validate(BranchAnalysisQueryDto dto) {
+  public static void validate(BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
@@ -64,10 +64,10 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
+  public static void validateCombinedReportDefinition(final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
                                                       final RoleType currentUserRole) {
-    AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
-      new AuthorizedReportDefinitionDto(combinedReportDefinitionDto, currentUserRole);
+    AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+      new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Report data for a combined report is not allowed to be null!");

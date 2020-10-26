@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -113,7 +113,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -283,7 +283,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -310,7 +310,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(3), now.plusDays(5));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -337,7 +337,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);

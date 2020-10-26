@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.security.SessionService;
@@ -37,8 +37,8 @@ public class AlertRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createAlert(@Context ContainerRequestContext requestContext,
-                           AlertCreationDto toCreate) {
+  public IdResponseDto createAlert(@Context ContainerRequestContext requestContext,
+                                   AlertCreationRequestDto toCreate) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
     String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.createAlert(toCreate, user);
@@ -50,7 +50,7 @@ public class AlertRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateAlert(@Context ContainerRequestContext requestContext,
                           @PathParam("id") String alertId,
-                          AlertCreationDto toCreate) {
+                          AlertCreationRequestDto toCreate) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
     String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.updateAlert(alertId, toCreate, user);

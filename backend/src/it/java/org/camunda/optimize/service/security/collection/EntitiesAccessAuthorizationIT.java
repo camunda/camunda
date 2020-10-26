@@ -9,9 +9,9 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
@@ -50,16 +50,16 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(1));
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getId).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(collectionId)
     );
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getCurrentUserRole).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
       contains(accessIdentityRolePairs.roleType)
     );
   }
@@ -86,12 +86,12 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
 
     // then
     assertThat(authorizedEntities.size(), is(1));
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getId).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(collectionId)
     );
 
@@ -106,21 +106,21 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = reportClient.createEmptyCombinedReport(null);
-    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto());
-    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionDto());
+    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
+    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
     final String dashboardId = dashboardClient.createDashboard(null);
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(5));
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getId).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId)
     );
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getCurrentUserRole).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
       everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
     );
   }
@@ -138,7 +138,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     reportClient.createSingleDecisionReportDefinitionDto(unauthorizedDecision.getKey()).getId();
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(0));
@@ -151,12 +151,12 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     collectionClient.createNewCollectionForAllDefinitionTypes();
     reportClient.createEmptyCombinedReport(null);
-    reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto());
-    reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionDto());
+    reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
+    reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
     dashboardClient.createDashboard(null);
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(0));
@@ -185,12 +185,12 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     dashboardClient.createDashboardAsUser(null, actualUserId, actualUserId);
 
     // when
-    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
 
     // then
     assertThat(authorizedEntities.size(), is(5));
     assertThat(
-      authorizedEntities.stream().map(EntityDto::getCurrentUserRole).collect(Collectors.toList()),
+      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
       everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
     );
 

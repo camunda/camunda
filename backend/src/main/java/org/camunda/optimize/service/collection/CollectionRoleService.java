@@ -8,9 +8,9 @@ package org.camunda.optimize.service.collection;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
@@ -39,14 +39,14 @@ public class CollectionRoleService {
 
   public void addRolesToCollection(final String userId,
                                    final String collectionId,
-                                   final List<CollectionRoleDto> rolesToAdd) {
+                                   final List<CollectionRoleRequestDto> rolesToAdd) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    final List<CollectionRoleDto> resolvedRolesToAdd = validateAndResolveIdentities(userId, rolesToAdd);
+    final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(userId, rolesToAdd);
     collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, userId);
   }
 
-  private List<CollectionRoleDto> validateAndResolveIdentities(final String userId,
-                                                               List<CollectionRoleDto> rolesToAdd) {
+  private List<CollectionRoleRequestDto> validateAndResolveIdentities(final String userId,
+                                                                      List<CollectionRoleRequestDto> rolesToAdd) {
     return rolesToAdd.stream()
       .map(roleData -> {
         enrichWithIdentityIfMissing(roleData);
@@ -57,7 +57,7 @@ public class CollectionRoleService {
       .collect(Collectors.toList());
   }
 
-  private void enrichWithIdentityIfMissing(CollectionRoleDto role) {
+  private void enrichWithIdentityIfMissing(CollectionRoleRequestDto role) {
     final IdentityDto requestIdentityDto = role.getIdentity();
     if (requestIdentityDto.getType() == null) {
       final IdentityDto resolvedIdentityDto =
@@ -72,7 +72,7 @@ public class CollectionRoleService {
     }
   }
 
-  private void validateIdentity(final CollectionRoleDto role) {
+  private void validateIdentity(final CollectionRoleRequestDto role) {
     if (!identityService.doesIdentityExist(role.getIdentity())) {
       throw new OptimizeValidationException(
         String.format(
@@ -87,7 +87,7 @@ public class CollectionRoleService {
   public void updateRoleOfCollection(final String userId,
                                      final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws OptimizeConflictException {
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
@@ -96,11 +96,11 @@ public class CollectionRoleService {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
-  public List<CollectionRoleRestDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
+  public List<CollectionRoleResponseDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
     AuthorizedCollectionDefinitionDto authCollectionDto =
       authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
-    List<CollectionRoleRestDto> roles = authCollectionDto.getDefinitionDto()
+    List<CollectionRoleResponseDto> roles = authCollectionDto.getDefinitionDto()
       .getData()
       .getRoles()
       .stream()
@@ -109,7 +109,7 @@ public class CollectionRoleService {
       .collect(toList());
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
-      for (CollectionRoleRestDto role : roles) {
+      for (CollectionRoleResponseDto role : roles) {
         List<CollectionScopeEntryDto> scopes = authCollectionDto.getDefinitionDto().getData().getScope();
         Boolean hasFullScopeAuthorizations = scopes.stream()
           .allMatch(s -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
@@ -127,9 +127,9 @@ public class CollectionRoleService {
     return roles;
   }
 
-  private CollectionRoleRestDto mapRoleDtoToRoleRestDto(final CollectionRoleDto roleDto) {
+  private CollectionRoleResponseDto mapRoleDtoToRoleRestDto(final CollectionRoleRequestDto roleDto) {
     return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
-      .map(identityDto -> new CollectionRoleRestDto(identityDto, roleDto.getRole()))
+      .map(identityDto -> new CollectionRoleResponseDto(identityDto, roleDto.getRole()))
       .orElseThrow(() -> new OptimizeRuntimeException(
         "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
           + roleDto.getIdentity().toString() + "] could not be found."

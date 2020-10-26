@@ -14,11 +14,11 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -26,12 +26,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -160,7 +160,7 @@ public class Generator {
 
   private void generateAlert(final String definitionKey, final String collectionId) {
     final String collectionNumberReportId = createSingleNumberReportInCollection(collectionId, definitionKey);
-    AlertCreationDto alertCreation = prepareAlertCreation(collectionNumberReportId);
+    AlertCreationRequestDto alertCreation = prepareAlertCreation(collectionNumberReportId);
     alertClient.createAlert(alertCreation);
   }
 
@@ -186,7 +186,7 @@ public class Generator {
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     singleProcessReportDefinitionDto.setData(reportData);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -235,21 +235,21 @@ public class Generator {
   }
 
   private String createProcessReport(final ProcessReportDataDto reportData, final String collectionId) {
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionDto(reportData);
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto(reportData);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createDecisionReport(final DecisionReportDataDto reportData, final String collectionId) {
-    final SingleDecisionReportDefinitionDto decisionReportDefinition =
-      new SingleDecisionReportDefinitionDto(reportData);
+    final SingleDecisionReportDefinitionRequestDto decisionReportDefinition =
+      new SingleDecisionReportDefinitionRequestDto(reportData);
     decisionReportDefinition.setCollectionId(collectionId);
     return reportClient.createSingleDecisionReport(decisionReportDefinition);
   }
 
   private void ingestExternalEvents() {
-    final List<CloudEventDto> cloudEvents = IntStream.range(0, 10)
+    final List<CloudEventRequestDto> cloudEvents = IntStream.range(0, 10)
       .mapToObj(traceId -> Lists.newArrayList(
         eventClient.createCloudEventDto().toBuilder()
           .source("dataMigration")
@@ -310,8 +310,8 @@ public class Generator {
     return eventProcessMappingId;
   }
 
-  private static AlertCreationDto prepareAlertCreation(String id) {
-    AlertCreationDto alertCreation = new AlertCreationDto();
+  private static AlertCreationRequestDto prepareAlertCreation(String id) {
+    AlertCreationRequestDto alertCreation = new AlertCreationRequestDto();
 
     alertCreation.setReportId(id);
     alertCreation.setThreshold(700.0);
@@ -330,7 +330,7 @@ public class Generator {
     return alertCreation;
   }
 
-  private static DashboardDefinitionDto prepareDashboard(final List<String> reportIds, final String collectionId) {
+  private static DashboardDefinitionRestDto prepareDashboard(final List<String> reportIds, final String collectionId) {
     List<ReportLocationDto> reportLocations = reportIds.stream().map(reportId -> {
       ReportLocationDto report = new ReportLocationDto();
       report.setId(reportId);
@@ -348,7 +348,7 @@ public class Generator {
       return report;
     }).collect(Collectors.toList());
 
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setCollectionId(collectionId);
     dashboard.setReports(reportLocations);
 

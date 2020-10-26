@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.relations;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 
 public interface DashboardReferencingService {
-  void handleDashboardDeleted(DashboardDefinitionDto definition);
+  void handleDashboardDeleted(DashboardDefinitionRestDto definition);
 
-  void handleDashboardUpdated(final DashboardDefinitionDto updateDefinition);
+  void handleDashboardUpdated(final DashboardDefinitionRestDto updateDefinition);
 }

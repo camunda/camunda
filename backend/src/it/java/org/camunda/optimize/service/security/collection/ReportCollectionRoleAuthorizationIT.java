@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
@@ -252,8 +252,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
     assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
@@ -295,8 +295,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
     assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
@@ -337,8 +337,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
     assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
@@ -395,8 +395,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
     assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
@@ -591,7 +591,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
@@ -612,7 +612,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
@@ -635,7 +635,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String otherReportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
@@ -644,7 +644,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(authorizedReports).hasSize(2);
     assertThat(
       authorizedReports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(otherReportId, kermitReportId);
@@ -887,14 +887,14 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(RoleType.EDITOR);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
-    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
+    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
-    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
       .findFirst();
-    Optional<CollectionRoleRestDto> kermit = roles.stream()
+    Optional<CollectionRoleResponseDto> kermit = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
       .findFirst();
 
@@ -916,18 +916,18 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(kermitRoleType);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRolesAsUser(
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRolesAsUser(
       collectionId,
       USER_KERMIT,
       USER_KERMIT
     );
-    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
-    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
       .findFirst();
-    Optional<CollectionRoleRestDto> kermit = roles.stream()
+    Optional<CollectionRoleResponseDto> kermit = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
       .findFirst();
 
@@ -967,15 +967,15 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_GROUP);
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
 
-    final CollectionRoleDto testGroupRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto testGroupRole = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
-    final CollectionRoleDto missPiggyUserRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto missPiggyUserRole = new CollectionRoleRequestDto(
       new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
       RoleType.EDITOR
     );
-    final CollectionRoleDto kermitUserRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitUserRole = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       kermitRoleType
     );
@@ -1013,7 +1013,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
                                            final String user,
                                            final String password) {
     return createReportInCollectionAsUser(reportScenario, null, user, password)
-      .readEntity(IdDto.class)
+      .readEntity(IdResponseDto.class)
       .getId();
   }
 
@@ -1025,7 +1025,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   private String createReportInCollectionAsDefaultUser(final ReportScenario reportScenario,
                                                        final String collectionId) {
     return createReportInCollectionAsUser(reportScenario, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .readEntity(IdDto.class)
+      .readEntity(IdResponseDto.class)
       .getId();
   }
 
@@ -1052,9 +1052,9 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     }
   }
 
-  private AuthorizedReportDefinitionDto getReportByIdAsKermit(final String reportId) {
+  private AuthorizedReportDefinitionResponseDto getReportByIdAsKermit(final String reportId) {
     return reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
-      .readEntity(AuthorizedReportDefinitionDto.class);
+      .readEntity(AuthorizedReportDefinitionResponseDto.class);
   }
 
   private Response updateReportAsKermit(final String reportId, final ReportScenario reportScenario) {

@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
@@ -37,10 +37,10 @@ public class EntitiesRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext,
-                                     @BeanParam final EntitySorter entitySorter) {
+  public List<EntityResponseDto> getEntities(@Context ContainerRequestContext requestContext,
+                                             @BeanParam final EntitySorter entitySorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<EntityDto> entities = entitiesService.getAllEntities(userId);
+    List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
   }
@@ -48,7 +48,7 @@ public class EntitiesRestService {
   @GET
   @Path("/names")
   @Produces(MediaType.APPLICATION_JSON)
-  public EntityNameDto getEntityNames(@BeanParam EntityNameRequestDto requestDto) {
+  public EntityNameResponseDto getEntityNames(@BeanParam EntityNameRequestDto requestDto) {
     return entitiesService.getEntityNames(requestDto);
   }
 }

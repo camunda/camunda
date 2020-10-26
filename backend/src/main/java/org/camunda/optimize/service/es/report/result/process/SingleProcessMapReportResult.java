@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.result.process;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
@@ -16,10 +16,10 @@ import java.time.ZoneId;
 import java.util.List;
 
 public class SingleProcessMapReportResult
-  extends ReportEvaluationResult<ReportMapResultDto, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportMapResultDto, SingleProcessReportDefinitionRequestDto> {
 
   public SingleProcessMapReportResult(@NotNull final ReportMapResultDto reportResult,
-                                      @NotNull final SingleProcessReportDefinitionDto reportDefinition) {
+                                      @NotNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

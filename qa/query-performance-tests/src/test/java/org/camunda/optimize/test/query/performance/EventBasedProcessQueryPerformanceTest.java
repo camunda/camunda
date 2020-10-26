@@ -8,7 +8,7 @@ package org.camunda.optimize.test.query.performance;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
@@ -61,7 +61,7 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
           .eventSources(Collections.emptyList())
           .lastModifier(DEFAULT_USER)
           .lastModified(OffsetDateTime.now())
-          .roles(Collections.singletonList(new EventProcessRoleDto(new IdentityDto(DEFAULT_USER, IdentityType.USER))))
+          .roles(Collections.singletonList(new EventProcessRoleRequestDto(new IdentityDto(DEFAULT_USER, IdentityType.USER))))
           .build();
       })
       .collect(Collectors.toMap(IndexableEventProcessMappingDto::getId, mapping -> mapping));

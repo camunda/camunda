@@ -8,10 +8,10 @@ package org.camunda.optimize.service.alert;
 import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,12 +51,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
 
     alertClient.createAlert(simpleAlert);
 
     // when
-    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
+    SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
@@ -74,7 +74,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void reportDeletionRemovesAlert() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     alertClient.createAlert(simpleAlert);
 
@@ -91,7 +91,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void createNewAlertPropagatedToScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     // when
     String id = alertClient.createAlert(simpleAlert);
@@ -104,7 +104,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void createNewAlertDecisionReport() {
     //given
-    AlertCreationDto simpleAlert = setupBasicDecisionAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicDecisionAlert();
     setEmailConfiguration();
 
     // when
@@ -117,7 +117,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void deletedAlertsAreRemovedFromScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
 
@@ -131,7 +131,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void updatedAlertIsRescheduled() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
 
@@ -185,7 +185,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     setEmailConfiguration();
 
     // when
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     alertClient.createAlert(simpleAlert);
 
     assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
@@ -219,7 +219,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
 
     // when
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     alertClient.createAlert(simpleAlert);
 
     assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
@@ -312,14 +312,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   }
 
   private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, String intervalUnit) {
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
 
     AlertDefinitionDto alert = createFakeReport(simpleAlert);
     alert.setId(UUID.randomUUID().toString());
     return alert;
   }
 
-  private AlertDefinitionDto createFakeReport(AlertCreationDto fakeReportAlert) {
+  private AlertDefinitionDto createFakeReport(AlertCreationRequestDto fakeReportAlert) {
     AlertDefinitionDto result = new AlertDefinitionDto();
 
     AlertUtil.mapBasicFields(fakeReportAlert, result);

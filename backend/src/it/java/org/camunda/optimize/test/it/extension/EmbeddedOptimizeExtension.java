@@ -12,7 +12,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -380,7 +380,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public Response authenticateUserRequest(String username, String password) {
-    final CredentialsDto entity = new CredentialsDto(username, password);
+    final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
     return target("authentication")
       .request()
       .post(Entity.json(entity));

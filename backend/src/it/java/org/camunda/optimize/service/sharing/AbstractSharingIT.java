@@ -7,16 +7,16 @@ package org.camunda.optimize.service.sharing;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -50,7 +50,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
   protected String createReportWithInstance(String definitionKey, final String collectionId) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     importAllEngineEntitiesFromScratch();
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReport(
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReport(
       processInstance.getProcessDefinitionKey(),
       Collections.singletonList("ALL"),
       ProcessReportDataType.RAW_DATA
@@ -60,7 +60,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
   }
 
   protected String createReport(String definitionKey, List<String> versions) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReport(
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReport(
       definitionKey,
       versions,
       ProcessReportDataType.RAW_DATA
@@ -68,16 +68,16 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  protected SingleProcessReportDefinitionDto createSingleProcessReport(final String definitionKey,
-                                                                       final List<String> versions,
-                                                                       final ProcessReportDataType type) {
+  protected SingleProcessReportDefinitionRequestDto createSingleProcessReport(final String definitionKey,
+                                                                              final List<String> versions,
+                                                                              final ProcessReportDataType type) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(type)
       .build();
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     return singleProcessReportDefinitionDto;
   }
@@ -85,15 +85,15 @@ public abstract class AbstractSharingIT extends AbstractIT {
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
     assertThat(errorMessage.getReportDefinition()).isNotNull();
     ReportDefinitionDto<?> reportDefinitionDto = errorMessage.getReportDefinition().getDefinitionDto();
-    if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
-      SingleProcessReportDefinitionDto singleProcessReport =
-        (SingleProcessReportDefinitionDto) reportDefinitionDto;
+    if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto) {
+      SingleProcessReportDefinitionRequestDto singleProcessReport =
+        (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
       assertThat(singleProcessReport.getData()).isNotNull();
       assertThat(singleProcessReport.getName()).isNotNull();
       assertThat(singleProcessReport.getId()).isNotNull();
-    } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
-      SingleDecisionReportDefinitionDto singleDecisionReport =
-        (SingleDecisionReportDefinitionDto) reportDefinitionDto;
+    } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionRequestDto) {
+      SingleDecisionReportDefinitionRequestDto singleDecisionReport =
+        (SingleDecisionReportDefinitionRequestDto) reportDefinitionDto;
       assertThat(singleDecisionReport.getData()).isNotNull();
       assertThat(singleDecisionReport.getName()).isNotNull();
       assertThat(singleDecisionReport.getId()).isNotNull();
@@ -119,7 +119,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
   }
 
   void addReportToDashboard(String dashboardId, String... reportIds) {
-    DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto fullBoard = new DashboardDefinitionRestDto();
     fullBoard.setId(dashboardId);
 
     List<ReportLocationDto> reports = new ArrayList<>();
@@ -147,38 +147,38 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
   protected String addShareForDashboard(String dashboardId) {
-    DashboardShareDto share = createDashboardShareDto(dashboardId);
+    DashboardShareRestDto share = createDashboardShareDto(dashboardId);
     Response response = sharingClient.createDashboardShareResponse(share);
 
-    return response.readEntity(IdDto.class).getId();
+    return response.readEntity(IdResponseDto.class).getId();
   }
 
-  ReportShareDto createReportShare() {
+  ReportShareRestDto createReportShare() {
     return createReportShare(FAKE_REPORT_ID);
   }
 
-  protected ReportShareDto createReportShare(String reportId) {
-    ReportShareDto sharingDto = new ReportShareDto();
+  protected ReportShareRestDto createReportShare(String reportId) {
+    ReportShareRestDto sharingDto = new ReportShareRestDto();
     sharingDto.setReportId(reportId);
     return sharingDto;
   }
 
-  protected DashboardShareDto createDashboardShareDto(String dashboardId) {
-    DashboardShareDto sharingDto = new DashboardShareDto();
+  protected DashboardShareRestDto createDashboardShareDto(String dashboardId) {
+    DashboardShareRestDto sharingDto = new DashboardShareRestDto();
     sharingDto.setDashboardId(dashboardId);
     return sharingDto;
   }
 
   protected String addShareForReport(String reportId) {
-    ReportShareDto share = createReportShare(reportId);
+    ReportShareRestDto share = createReportShare(reportId);
     Response response = sharingClient.createReportShareResponse(share);
 
-    return response.readEntity(IdDto.class).getId();
+    return response.readEntity(IdResponseDto.class).getId();
   }
 
   private Response findShareForReport(String reportId) {
@@ -188,9 +188,9 @@ public abstract class AbstractSharingIT extends AbstractIT {
       .execute();
   }
 
-  protected ReportShareDto getShareForReport(String reportId) {
+  protected ReportShareRestDto getShareForReport(String reportId) {
     Response response = findShareForReport(reportId);
-    return response.readEntity(ReportShareDto.class);
+    return response.readEntity(ReportShareRestDto.class);
   }
 
   protected void assertReportData(String reportId, HashMap<?, ?> evaluatedReportAsMap) {

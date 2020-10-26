@@ -8,12 +8,12 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
@@ -75,10 +75,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("frodo");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("frodo");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(userIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
   }
 
   @Test
@@ -89,10 +89,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("hobbit");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("hobbit");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(groupIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(groupIdentity)));
   }
 
   @Test
@@ -108,12 +108,12 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
-      .isEqualTo(new IdentitySearchResultDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
+      .isEqualTo(new IdentitySearchResultResponseDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
   }
 
   @Test
@@ -131,7 +131,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getSyncedIdentityCacheService().synchronizeIdentities();
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult.getResult())
@@ -151,13 +151,13 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("");
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins, empty user is second because name == id and is `testUser2`
       // group is last because it starts with `Th`
-      .isEqualTo(new IdentitySearchResultDto(
+      .isEqualTo(new IdentitySearchResultResponseDto(
         3L, Lists.newArrayList(userIdentity, emptyMetaDataUserIdentity, groupIdentity)
       ));
   }
@@ -174,25 +174,25 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", 1);
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("", 1);
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
       // total count is 3 as there are two more identities (the baggins group & testUser2)
-      .isEqualTo(new IdentitySearchResultDto(
+      .isEqualTo(new IdentitySearchResultResponseDto(
         3L, Lists.newArrayList(userIdentity)
       ));
   }
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_presentInCache(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_presentInCache(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedIdentity);
 
     // when
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
@@ -200,7 +200,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     switch (expectedIdentity.getType()) {
       case USER:
@@ -220,7 +220,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     }
 
     // when
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
@@ -228,7 +228,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identitiesAndAuthorizationResponse")
-  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataDto expectedIdentity,
+  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataResponseDto expectedIdentity,
                                                                 final ErrorResponseMock mockedResp) {
     // given
     final HttpRequest engineFetchRequestMatcher;
@@ -270,7 +270,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identitiesAndAuthorizationResponse")
-  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataDto expectedIdentity,
+  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
                                                         final ErrorResponseMock mockedResp) {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
@@ -296,7 +296,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     syncedIdentityCacheService.synchronizeIdentities();
 
     String collectionId = collectionClient.createNewCollection();
-    CollectionRoleDto roleDto = new CollectionRoleDto(expectedIdentity, RoleType.EDITOR);
+    CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(expectedIdentity, RoleType.EDITOR);
     collectionClient.addRolesToCollection(collectionId, roleDto);
 
     final HttpRequest engineAuthorizationsRequest = request()
@@ -310,9 +310,9 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThrows(Exception.class, syncedIdentityCacheService::synchronizeIdentities);
 
     // then
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
-    assertThat(roles).extracting(CollectionRoleRestDto::getId).contains(roleDto.getId());
+    assertThat(roles).extracting(CollectionRoleResponseDto::getId).contains(roleDto.getId());
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
@@ -357,7 +357,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
@@ -386,7 +386,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // when
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).hasNoNullFieldsOrPropertiesExcept(
@@ -398,7 +398,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_postFetchFailsIfIdentityNotAuthorizedToAccessOptimize(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache_postFetchFailsIfIdentityNotAuthorizedToAccessOptimize(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     switch (expectedIdentity.getType()) {
       case USER:
@@ -509,7 +509,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
 
-  private static Stream<IdentityWithMetadataDto> identities() {
+  private static Stream<IdentityWithMetadataResponseDto> identities() {
     return Stream.of(
       new UserDto("testUser", DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "testUser" + DEFAULT_EMAIL_DOMAIN),
       new GroupDto(KERMIT_GROUP_NAME, KERMIT_GROUP_NAME, 0L)

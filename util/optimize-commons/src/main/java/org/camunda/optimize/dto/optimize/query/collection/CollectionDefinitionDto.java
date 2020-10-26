@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityData;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import java.time.OffsetDateTime;
@@ -36,8 +36,8 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
     this.owner = owner;
   }
 
-  public EntityDto toEntityDto(final RoleType roleType) {
-    return new EntityDto(
+  public EntityResponseDto toEntityDto(final RoleType roleType) {
+    return new EntityResponseDto(
       getId(),
       getName(),
       getLastModified(),
