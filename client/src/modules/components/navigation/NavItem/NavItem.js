@@ -81,17 +81,19 @@ export default withRouter(
       const {breadcrumbs} = this.state;
       const breadcrumbsCount = breadcrumbs.length;
 
+      const active = this.isActive();
+
       return (
-        <li className={classnames('NavItem', {activeBorder})}>
+        <li className={classnames('NavItem', {activeBorder, active})}>
           <Link
             to={linksTo}
-            className={classnames({active: !breadcrumbsCount && this.isActive()})}
+            className={classnames({active: !breadcrumbsCount && active})}
             title={name}
-            replace={this.isActive()}
+            replace={active}
           >
             {name}
           </Link>
-          {this.isActive() &&
+          {active &&
             breadcrumbs.map(({id, name, url}, i) => (
               <Link title={name} className="breadcrumb" key={id} to={url}>
                 <span className="arrow">›</span>

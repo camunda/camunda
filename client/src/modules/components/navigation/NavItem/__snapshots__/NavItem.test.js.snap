@@ -2,7 +2,7 @@
 
 exports[`should render a breadcrumbs links when specified 1`] = `
 <li
-  className="NavItem"
+  className="NavItem active"
 >
   <Link
     className=""
