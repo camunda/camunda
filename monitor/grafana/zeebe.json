@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1603290773510,
+  "iteration": 1603456725508,
   "links": [],
   "panels": [
     {
@@ -2807,7 +2807,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 4
           },
           "hiddenSeries": false,
           "id": 102,
@@ -2904,7 +2904,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 4
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2962,7 +2962,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 105,
@@ -3056,7 +3056,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3112,7 +3112,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 182,
@@ -3137,7 +3137,7 @@
           "renderer": "flot",
           "seriesOverrides": [],
           "spaceLength": 10,
-          "stack": false,
+          "stack": true,
           "steppedLine": false,
           "targets": [
             {
@@ -3167,6 +3167,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:2030",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3175,6 +3176,7 @@
               "show": true
             },
             {
+              "$$hashKey": "object:2031",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3201,7 +3203,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 110,
@@ -3289,7 +3291,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 108,
@@ -3826,16 +3828,12 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "(process_open_fds{namespace=~\"$namespace\",pod=~\"$pod\"} / process_max_fds{namespace=~\"$namespace\",pod=~\"$pod\"}) * 100",
+              "expr": "container_file_descriptors{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
               "format": "time_series",
+              "hide": false,
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} used fds",
-              "refId": "A"
-            },
-            {
-              "expr": "",
-              "format": "time_series",
-              "intervalFactor": 1,
+              "legendFormat": "{{pod}} use fds",
               "refId": "B"
             }
           ],
@@ -3860,7 +3858,7 @@
           "yaxes": [
             {
               "$$hashKey": "object:556",
-              "format": "percent",
+              "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -4097,7 +4095,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 6
           },
           "hiddenSeries": false,
           "id": 122,
@@ -4185,7 +4183,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 6
           },
           "hiddenSeries": false,
           "id": 124,
@@ -4273,7 +4271,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 126,
@@ -4361,7 +4359,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 127,
@@ -5560,7 +5558,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5624,7 +5622,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5683,7 +5681,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 16
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 79,
@@ -5775,7 +5773,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 16
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 114,
@@ -5868,7 +5866,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 102
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5932,7 +5930,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 102
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5997,7 +5995,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 109
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6057,7 +6055,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 109
           },
           "hiddenSeries": false,
           "id": 72,
@@ -6151,7 +6149,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 38
+            "y": 117
           },
           "hiddenSeries": false,
           "id": 95,
@@ -6252,7 +6250,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 38
+            "y": 117
           },
           "hiddenSeries": false,
           "id": 180,
@@ -6344,7 +6342,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 46
+            "y": 125
           },
           "id": 205,
           "maxPerRow": 6,
@@ -6421,15 +6419,15 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 46
+            "y": 125
           },
-          "id": 218,
+          "id": 225,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -6500,15 +6498,15 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 46
+            "y": 125
           },
-          "id": 219,
+          "id": 226,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -6579,7 +6577,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 51
+            "y": 130
           },
           "id": 209,
           "maxPerRow": 6,
@@ -6656,15 +6654,15 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 51
+            "y": 130
           },
-          "id": 220,
+          "id": 227,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -6735,15 +6733,15 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 51
+            "y": 130
           },
-          "id": 221,
+          "id": 228,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -6806,7 +6804,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 135
           },
           "id": 215,
           "options": {
@@ -6857,7 +6855,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 135
           },
           "id": 217,
           "options": {
@@ -6932,7 +6930,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 11
           },
           "hiddenSeries": false,
           "id": 154,
@@ -6961,9 +6959,10 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition))",
+              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[1m])) by (pod, partition) * 10)",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{pod}} Table Reader {{partition}}",
+              "legendFormat": "{{pod}} memory {{partition}}",
               "refId": "A"
             }
           ],
@@ -7023,7 +7022,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 11
           },
           "hiddenSeries": false,
           "id": 144,
@@ -7114,7 +7113,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 16
+            "y": 17
           },
           "hiddenSeries": false,
           "id": 142,
@@ -7205,7 +7204,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 23
           },
           "hiddenSeries": false,
           "id": 151,
@@ -7296,7 +7295,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 23
           },
           "hiddenSeries": false,
           "id": 152,
@@ -7387,7 +7386,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 150,
@@ -7478,7 +7477,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 147,
@@ -7569,7 +7568,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 149,
@@ -7661,7 +7660,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 42
           },
           "hiddenSeries": false,
           "id": 148,
@@ -7752,7 +7751,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 48
           },
           "hiddenSeries": false,
           "id": 155,
@@ -7843,7 +7842,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 48
           },
           "hiddenSeries": false,
           "id": 156,
@@ -7936,7 +7935,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 55
+            "y": 56
           },
           "id": 158,
           "pageSize": null,
@@ -8044,7 +8043,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 55
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 157,
@@ -8135,7 +8134,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 146,
@@ -8226,7 +8225,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 159,
@@ -8317,7 +8316,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 160,
@@ -8408,7 +8407,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 153,
@@ -8519,7 +8518,7 @@
             "h": 10,
             "w": 8,
             "x": 0,
-            "y": 51
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8582,7 +8581,7 @@
             "h": 10,
             "w": 8,
             "x": 8,
-            "y": 51
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8639,7 +8638,7 @@
             "h": 10,
             "w": 8,
             "x": 16,
-            "y": 51
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 185,
@@ -8737,7 +8736,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 61
+            "y": 22
           },
           "height": "400",
           "hiddenSeries": false,
@@ -8858,7 +8857,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 13
           },
           "id": 170,
           "maxPerRow": 6,
@@ -8902,8 +8901,8 @@
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-0",
-              "value": "dd-test-startup-metrics-zeebe-0"
+              "text": "zell-test-metrics-zeebe-0",
+              "value": "zell-test-metrics-zeebe-0"
             }
           },
           "targets": [
@@ -8932,9 +8931,9 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 12
+            "y": 13
           },
-          "id": 183,
+          "id": 223,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -8973,13 +8972,13 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1596122668847,
+          "repeatIteration": 1603456725491,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-1",
-              "value": "dd-test-startup-metrics-zeebe-1"
+              "text": "zell-test-metrics-zeebe-1",
+              "value": "zell-test-metrics-zeebe-1"
             }
           },
           "targets": [
@@ -9008,9 +9007,9 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 12
+            "y": 13
           },
-          "id": 184,
+          "id": 224,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -9049,13 +9048,13 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1596122668847,
+          "repeatIteration": 1603456725491,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-2",
-              "value": "dd-test-startup-metrics-zeebe-2"
+              "text": "zell-test-metrics-zeebe-2",
+              "value": "zell-test-metrics-zeebe-2"
             }
           },
           "targets": [
@@ -9084,7 +9083,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 19
           },
           "id": 174,
           "options": {
@@ -9144,7 +9143,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -9266,5 +9265,5 @@
   "variables": {
     "list": []
   },
-  "version": 17
+  "version": 18
 }
