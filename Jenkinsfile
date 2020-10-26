@@ -191,7 +191,9 @@ pipeline {
                 stage('BPMN TCK') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/test-tck.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/test-tck.sh'
+                            }
                         }
                     }
 
