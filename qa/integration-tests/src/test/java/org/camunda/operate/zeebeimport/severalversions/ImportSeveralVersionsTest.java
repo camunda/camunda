@@ -65,10 +65,10 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   private int incidentCount;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v24.processors.ElasticsearchBulkProcessor importerv1;
+  private org.camunda.operate.zeebeimport.v25.processors.ElasticsearchBulkProcessor importerv1;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v25.processors.ElasticsearchBulkProcessor importerv2;
+  private org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor importerv2;
 
   public TestContainerUtil testContainerUtil = new TestContainerUtil();
 
