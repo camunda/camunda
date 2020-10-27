@@ -165,6 +165,16 @@ export function createBarOptions({
           ticks: {
             fontColor: getColorFor('label', isDark),
             autoSkip,
+            callback: function (label, idx, allLabels) {
+              const width = this.maxWidth / allLabels.length;
+              const widthPerCharacter = 7;
+
+              if (stacked && label.length > width / widthPerCharacter) {
+                return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
+              }
+
+              return label;
+            },
             ...(groupedByDurationMaxValue
               ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
               : {}),
