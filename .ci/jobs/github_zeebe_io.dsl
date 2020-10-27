@@ -44,10 +44,10 @@ organizationFolder('zeebe-io') {
     configure {
 
         def traits = it / navigators / 'org.jenkinsci.plugins.github__branch__source.GitHubSCMNavigator' / traits
-        traits << 'org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait' {
-            strategyId 2
-        }
-
+        // Note: disable discovery of Pull Requests as of https://jira.camunda.com/browse/INFRA-1924
+        // traits << 'org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait' {
+        //     strategyId 2
+        // }
     }
 
 }
