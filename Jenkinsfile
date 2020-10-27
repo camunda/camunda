@@ -491,7 +491,10 @@ pipeline {
         }
         stage('Build Docker') {
           when {
-            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+            expression {
+              // first part of the expessrion covers pure branch builds,
+              // the second covers PR builds where BRANCH_NAME is not available
+              BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
