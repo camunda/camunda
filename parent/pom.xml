@@ -61,7 +61,7 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.13.3</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>3.5.15</version.mockito>
+    <version.mockito>3.6.0</version.mockito>
     <version.mockito-jupiter>3.5.15</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.21</version.msgpack>
