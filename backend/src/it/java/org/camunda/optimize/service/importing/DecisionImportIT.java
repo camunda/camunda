@@ -499,6 +499,30 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void decisionDefinitionMarkedAsDeletedIfImportedInSameBatchAsNewerDeployment() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    final DecisionDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    engineDatabaseExtension.changeVersionOfDecisionDefinitionWithDeploymentId(
+      newDefinition.getVersionAsString(),
+      originalDefinition.getDeploymentId()
+    );
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).hasSize(2)
+      .extracting(DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(true, false);
+  }
+
+  @Test
   public void decisionInstanceFieldDataIsAvailable() {
     // given
     engineIntegrationExtension.deployAndStartDecisionDefinition();

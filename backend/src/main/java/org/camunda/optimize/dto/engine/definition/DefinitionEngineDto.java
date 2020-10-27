@@ -23,4 +23,10 @@ public class DefinitionEngineDto implements Serializable, EngineDto {
    * us to perform the process definition import based on the timestamp.
    */
   protected OffsetDateTime deploymentTime;
+  /**
+   * This property is not available directly from the engine. Instead, we determine whether it is
+   * deleted based on whether or not another definition with a newer deployment time is imported
+   * with the same key/version/tenant
+   */
+  protected boolean deleted;
 }

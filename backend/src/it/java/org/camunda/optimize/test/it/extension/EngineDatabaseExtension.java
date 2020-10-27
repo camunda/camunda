@@ -627,8 +627,33 @@ public class EngineDatabaseExtension implements Extension {
     while (resultSet.next()) {
       result.add(resultSet.getString(1));
     }
-
     return result;
+  }
+
+  @SneakyThrows
+  public void changeVersionOfDecisionDefinitionWithDeploymentId(final String version,
+                                                                final String deploymentId) {
+    String sql = "UPDATE ACT_RE_DECISION_DEF " +
+      "SET VERSION_ = ? " +
+      "WHERE DEPLOYMENT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, version);
+    statement.setString(2, deploymentId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeVersionOfProcessDefinitionWithDeploymentId(final String version,
+                                                               final String deploymentId) {
+    String sql = "UPDATE ACT_RE_PROCDEF " +
+      "SET VERSION_ = ? " +
+      "WHERE DEPLOYMENT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, version);
+    statement.setString(2, deploymentId);
+    statement.executeUpdate();
+    connection.commit();
   }
 
   @SneakyThrows

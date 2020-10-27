@@ -63,8 +63,15 @@ public class DecisionInstanceImportServiceTest {
   public void init() {
     when(engineContext.getEngineAlias()).thenReturn("1");
     when(decisionDefinitionResolverService.getDefinition(any(), any()))
-      .thenReturn(Optional.of(new DecisionDefinitionOptimizeDto("123", "key", VERSION_RESULT, "", "", "", "")));
-
+      .thenReturn(Optional.of(
+        DecisionDefinitionOptimizeDto.builder()
+          .id("123").key("key")
+          .version(VERSION_RESULT)
+          .versionTag("")
+          .name("")
+          .engine("")
+          .tenantId("")
+          .build()));
     this.underTest = new DecisionInstanceImportService(
       elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,
       decisionDefinitionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider

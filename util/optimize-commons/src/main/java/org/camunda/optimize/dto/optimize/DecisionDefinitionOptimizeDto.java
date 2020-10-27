@@ -29,16 +29,6 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
   }
 
   public DecisionDefinitionOptimizeDto(final String id,
-                                       final String key,
-                                       final String version,
-                                       final String versionTag,
-                                       final String name,
-                                       final String engine,
-                                       final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.DECISION);
-  }
-
-  public DecisionDefinitionOptimizeDto(final String id,
                                        final String engine,
                                        final String dmn10Xml,
                                        final List<DecisionVariableNameResponseDto> inputVariableNames,
@@ -58,9 +48,10 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
                                        final String engine,
                                        final String tenantId,
                                        final String dmn10Xml,
+                                       final boolean deleted,
                                        final List<DecisionVariableNameResponseDto> inputVariableNames,
                                        final List<DecisionVariableNameResponseDto> outputVariableNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.DECISION);
+    super(id, key, version, versionTag, name, engine, tenantId, deleted, DefinitionType.DECISION);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;

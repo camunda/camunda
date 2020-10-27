@@ -876,6 +876,30 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void processDefinitionMarkedAsDeletedIfImportedInSameBatchAsNewerDeployment() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    final ProcessDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    engineDatabaseExtension.changeVersionOfProcessDefinitionWithDeploymentId(
+      newDefinition.getVersionAsString(),
+      originalDefinition.getDeploymentId()
+    );
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).hasSize(2)
+      .extracting(ProcessDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(true, false);
+  }
+
+  @Test
   public void doNotSkipProcessInstancesWithSameEndTime() {
     // given
     int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()

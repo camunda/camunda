@@ -155,14 +155,30 @@ public class DecisionDefinitionResolverServiceTest {
 
   private void mockDecisionDefinitionsOnReaderLevel(final String id, final String version) {
     List<DecisionDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null)
+      DecisionDefinitionOptimizeDto.builder()
+        .id(id)
+        .key(TEST_KEY)
+        .version(version)
+        .versionTag("aVersionTag")
+        .name("name")
+        .engine("engine")
+        .dmn10Xml("")
+        .build()
     );
     when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(mockedDefinitions);
   }
 
   private void mockDecisionDefinitionForEngineContext(final String id, final String version) {
     DecisionDefinitionOptimizeDto mockedDefinition =
-      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null);
+      DecisionDefinitionOptimizeDto.builder()
+        .id(id)
+        .key(TEST_KEY)
+        .version(version)
+        .versionTag("aVersionTag")
+        .name("name")
+        .engine("engine")
+        .dmn10Xml("")
+        .build();
     when(engineContext.fetchDecisionDefinition(any())).thenReturn(mockedDefinition);
   }
 

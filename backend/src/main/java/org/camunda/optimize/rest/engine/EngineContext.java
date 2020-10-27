@@ -194,15 +194,15 @@ public class EngineContext {
   }
 
   private DecisionDefinitionOptimizeDto mapToOptimizeDecisionDefinition(final DecisionDefinitionEngineDto engineDto) {
-    return new DecisionDefinitionOptimizeDto(
-      engineDto.getId(),
-      engineDto.getKey(),
-      engineDto.getVersionAsString(),
-      engineDto.getVersionTag(),
-      engineDto.getName(),
-      this.getEngineAlias(),
-      engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
-    );
+    return DecisionDefinitionOptimizeDto.builder()
+      .id(engineDto.getId())
+      .key(engineDto.getKey())
+      .version(engineDto.getVersionAsString())
+      .versionTag(engineDto.getVersionTag())
+      .name(engineDto.getName())
+      .engine(this.getEngineAlias())
+      .tenantId(engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null)))
+      .build();
   }
 
   public ProcessDefinitionOptimizeDto fetchProcessDefinition(final String processDefinitionId) {
