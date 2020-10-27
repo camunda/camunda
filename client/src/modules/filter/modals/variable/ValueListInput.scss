@@ -5,6 +5,10 @@
 
   .undefinedOption {
     margin-top: 14px;
+
+    input[type='checkbox'] {
+      margin-right: 10px;
+    }
   }
 
   .singeValueInput {

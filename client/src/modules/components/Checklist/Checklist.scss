@@ -22,6 +22,7 @@
       height: 30px;
       border-radius: 15px;
       color: $grey-darken-36;
+      padding-left: 15px;
 
       .tagText {
         position: relative;
@@ -48,6 +49,7 @@
 
     input[type='checkbox'] {
       margin-right: 10px;
+      margin-left: 6px;
     }
   }
 
@@ -65,6 +67,10 @@
 
   .searchInputContainer {
     position: relative;
+
+    .Input {
+      padding: 6px 30px 6px 15px;
+    }
 
     .Input:valid ~ .searchIcon {
       display: none;
