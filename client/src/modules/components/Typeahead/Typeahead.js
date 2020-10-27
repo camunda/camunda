@@ -111,7 +111,7 @@ export default class Typeahead extends React.Component {
 
   render() {
     const {children, disabled, loading, hasMore, async, typedOption, className} = this.props;
-    const {query, open} = this.state;
+    const {query, open, selected} = this.state;
     const isEmpty = !loading && !query && React.Children.count(children) === 0;
     const isInputDisabled = isEmpty || disabled;
 
@@ -119,7 +119,7 @@ export default class Typeahead extends React.Component {
       <div className={classnames(className, 'Typeahead')}>
         <Input
           type="text"
-          className="typeaheadInput"
+          className={classnames('typeaheadInput', {selectionVisible: open && selected})}
           value={query}
           onFocus={this.open}
           onBlur={(evt) => {

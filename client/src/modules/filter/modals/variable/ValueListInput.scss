@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ValueListInput {
   margin-bottom: 20px;
 
@@ -18,6 +20,12 @@
     .Tag .Button {
       background-color: #7fa8c5;
       color: white;
+    }
+
+    .Tag.invalid,
+    .Tag.invalid .Button {
+      background-color: $red-lighten-85;
+      color: $grey-lighten-50;
     }
   }
 }
