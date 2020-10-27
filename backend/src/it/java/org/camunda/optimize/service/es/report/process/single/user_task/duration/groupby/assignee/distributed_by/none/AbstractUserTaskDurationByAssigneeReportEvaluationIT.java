@@ -194,15 +194,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected void assertMap_ForSeveralProcesses(final ReportMapResultDto result) {
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(DEFAULT_USERNAME).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS));
-    assertThat(result.getEntryForKey(SECOND_USER).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]));
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()))
-      .isEqualTo(UNASSIGNED_TASK_DURATION);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS)));
+    assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()))
+        .isEqualTo(UNASSIGNED_TASK_DURATION));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
@@ -281,12 +284,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(DEFAULT_USERNAME).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]));
-    assertThat(result.getEntryForKey(SECOND_USER).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]));
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue())
-      .isEqualTo(UNASSIGNED_TASK_DURATION);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+    assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .isEqualTo(UNASSIGNED_TASK_DURATION));
   }
 
   @Test
@@ -515,17 +521,20 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportMapResultDto result1,
                                                                        final ReportMapResultDto result2) {
     assertThat(result1.getData()).hasSize(1);
-    assertThat(result1.getEntryForKey(DEFAULT_USERNAME).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]));
+    assertThat(result1.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
 
     assertThat(result2.getData()).hasSize(2);
-    assertThat(result2.getEntryForKey(DEFAULT_USERNAME).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2")
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]));
-    assertThat(result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()) + " in result 2")
-      .isEqualTo(UNASSIGNED_TASK_DURATION);
+    assertThat(result2.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+    assertThat(result2.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()) + " in result 2")
+        .isEqualTo(UNASSIGNED_TASK_DURATION));
   }
 
   @Test

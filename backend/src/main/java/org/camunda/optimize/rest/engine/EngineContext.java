@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -180,7 +181,7 @@ public class EngineContext {
           "remnants of historic decision instances for that definition left! Response from the engine: \n%s",
         decisionDefinitionId, response.readEntity(String.class)
       );
-      throw new OptimizeDecisionDefinitionFetchException(message);
+      throw new OptimizeDecisionDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve decision definition with id [%s] from the engine. Maybe the Optimize user utilized " +

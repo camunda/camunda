@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
@@ -14,13 +15,16 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
@@ -28,6 +32,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -60,6 +65,12 @@ public class DecisionImportIT extends AbstractImportIT {
 
   private static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(DecisionDefinitionIndex.TENANT_ID);
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer = LogCapturer.create()
+    .forLevel(Level.DEBUG)
+    .captureForType(DecisionInstanceImportService.class);
 
   @Test
   public void importOfDecisionDataCanBeDisabled() {
@@ -678,6 +689,76 @@ public class DecisionImportIT extends AbstractImportIT {
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     List<DecisionDefinitionOptimizeDto> decisionDefinitions = definitionClient.getAllDecisionDefinitions();
     assertThat(decisionDefinitions).hasSize(1);
+  }
+
+  @Test
+  public void decisionInstanceImportIsSkippedIfDefinitionCannotBeResolved() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deleteDeploymentById(decisionDefinitionEngineDto.getDeploymentId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then no definition or instances are saved
+    assertThat(definitionClient.getAllDecisionDefinitions()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    logCapturer.assertContains(String.format(
+      "Cannot retrieve definition for definition with ID %s.", decisionDefinitionEngineDto.getId()));
+  }
+
+  @Test
+  public void decisionInstanceImportIsSkippedIfDefinitionCannotBeResolved_otherInstancesInImportNotAffected() {
+    // given
+    final DecisionDefinitionEngineDto deletedDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deleteDeploymentById(deletedDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto otherDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then only the resolvable non-deleted definition and instances are saved
+    assertThat(definitionClient.getAllDecisionDefinitions())
+      .singleElement()
+      .satisfies(savedDefinition -> assertThat(savedDefinition.getId()).isEqualTo(otherDefinition.getId()));
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(otherDefinition.getId()));
+    logCapturer.assertContains(String.format(
+      "Cannot retrieve definition for definition with ID %s.", deletedDefinition.getId()));
+  }
+
+  @Test
+  public void decisionInstanceImportIsNotSkippedForDefinitionAlreadyImportedButSinceDeleted() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then the original definition and instance is imported
+    final List<DecisionDefinitionOptimizeDto> savedDefinitions = definitionClient.getAllDecisionDefinitions();
+    assertThat(savedDefinitions)
+      .singleElement()
+      .satisfies(savedDefinition -> assertThat(savedDefinition.getId()).isEqualTo(decisionDefinition.getId()));
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(decisionDefinition.getId()));
+
+    // when a new instance is started and the definition is deleted
+    engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId());
+    engineIntegrationExtension.deleteDeploymentById(decisionDefinition.getDeploymentId());
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the new instance is also saved
+    assertThat(definitionClient.getAllDecisionDefinitions()).isEqualTo(savedDefinitions);
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .hasSize(2)
+      .allSatisfy(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(decisionDefinition.getId()));
   }
 
   private SearchResponse getDecisionDefinitionIndexById() throws IOException {

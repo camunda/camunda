@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
-import static org.camunda.optimize.service.metadata.Version.VERSION;
 
 @RequiredArgsConstructor
 @Component

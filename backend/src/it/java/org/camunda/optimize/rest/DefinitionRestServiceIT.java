@@ -68,7 +68,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey(final DefinitionType definitionType) {
-    //given
+    // given
     final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
       definitionType, "key", "1", null, "the name"
     );
@@ -79,6 +79,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       expectedDefinition
     );
 
+    // then
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
     assertThat(definition.getType()).isEqualTo(definitionType);
@@ -88,11 +89,14 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getEventDefinitionByTypeAndKey() {
-    //given
+    // given
     final DefinitionOptimizeResponseDto expectedDefinition = createEventBasedDefinition("key", "the name");
 
     // when
-    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(PROCESS, expectedDefinition);
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
+      PROCESS,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -1139,7 +1143,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -1195,7 +1200,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -1287,7 +1293,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()

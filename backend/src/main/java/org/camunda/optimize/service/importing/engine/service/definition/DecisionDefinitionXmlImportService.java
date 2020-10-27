@@ -10,15 +10,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
-import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.DmnModelUtil.extractInputVariables;
@@ -56,6 +58,8 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     final List<DecisionDefinitionXmlEngineDto> engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
@@ -69,27 +73,35 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     return importJob;
   }
 
-  private DecisionDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final DecisionDefinitionXmlEngineDto engineEntity) {
+  private Optional<DecisionDefinitionOptimizeDto> mapEngineEntityToOptimizeEntity(final DecisionDefinitionXmlEngineDto engineEntity) {
     final DmnModelInstance dmnModelInstance = parseDmnModel(engineEntity.getDmnXml());
-    String decisionKey = resolveDecisionDefinitionKey(engineEntity);
-    return new DecisionDefinitionOptimizeDto(
-      engineEntity.getId(),
-      engineContext.getEngineAlias(),
-      engineEntity.getDmnXml(),
-      extractInputVariables(dmnModelInstance, decisionKey),
-      extractOutputVariables(dmnModelInstance, decisionKey)
-    );
+
+    final Optional<String> definitionKey = resolveDecisionDefinitionKey(engineEntity);
+    if (!definitionKey.isPresent()) {
+      log.info(
+        "Cannot retrieve definition key for definition with ID {}, skipping engine entity",
+        engineEntity.getId()
+      );
+      return Optional.empty();
+    }
+    return definitionKey.map(
+      decisionKey -> new DecisionDefinitionOptimizeDto(
+        engineEntity.getId(),
+        engineContext.getEngineAlias(),
+        engineEntity.getDmnXml(),
+        extractInputVariables(dmnModelInstance, decisionKey),
+        extractOutputVariables(dmnModelInstance, decisionKey)
+      ));
   }
 
-  private String resolveDecisionDefinitionKey(final DecisionDefinitionXmlEngineDto engineEntity) {
-    return decisionDefinitionResolverService
-      .getDefinition(engineEntity.getId(), engineContext)
-      .map(DecisionDefinitionOptimizeDto::getKey)
-      .orElseThrow(() -> {
-        final String message =
-          "Required Decision Definition couldn't be obtained, skipping current decision xml import cycle.";
-        return new OptimizeDecisionDefinitionFetchException(message);
-      });
+  private Optional<String> resolveDecisionDefinitionKey(final DecisionDefinitionXmlEngineDto engineEntity) {
+    try {
+      return decisionDefinitionResolverService.getDefinition(engineEntity.getId(), engineContext)
+        .map(DefinitionOptimizeResponseDto::getKey);
+    } catch (OptimizeDecisionDefinitionNotFoundException ex) {
+      log.debug("Could not find the definition with ID {}", engineEntity.getId());
+      return Optional.empty();
+    }
   }
 
 }

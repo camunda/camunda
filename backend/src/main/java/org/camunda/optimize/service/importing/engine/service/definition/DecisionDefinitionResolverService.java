@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DecisionDefinitionResolverService extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto>{
+public class DecisionDefinitionResolverService extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
 

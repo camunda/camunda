@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class ProcessDefinitionResolverService extends AbstractDefinitionResolverService<ProcessDefinitionOptimizeDto>{
+public class ProcessDefinitionResolverService extends AbstractDefinitionResolverService<ProcessDefinitionOptimizeDto> {
 
   private final ProcessDefinitionReader processDefinitionReader;
 
