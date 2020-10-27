@@ -3387,7 +3387,7 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
-          "description": "Memory limits and requests are get from the k8 pod metrics.",
+          "description": "Memory limits and requests are taken from the k8 pod metrics.",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
