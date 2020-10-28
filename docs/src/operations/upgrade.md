@@ -76,7 +76,7 @@ After the processing is paused and snapshot have been taken successfully you sho
 
 #### Performing the Upgrade
 
-If you using helm you can update the image tag in you values file.
+If you using helm you can update the image tag in your values file.
 
 ```yaml
 image:
