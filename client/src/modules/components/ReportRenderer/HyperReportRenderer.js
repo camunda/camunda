@@ -67,7 +67,8 @@ function getVisualization(visualization) {
 
 function formatResult(data, result) {
   const {
-    configuration: {distributedBy, distributeByDateVariableUnit},
+    distributedBy,
+    configuration: {distributeByDateVariableUnit},
   } = data;
 
   const distributedByDateVar =
@@ -92,11 +93,11 @@ function formatResult(data, result) {
 }
 
 function isVisible(report) {
-  const {distributedBy, hiddenNodes} = report.data.configuration;
+  const {hiddenNodes} = report.data.configuration;
 
   return ({key}) => {
     if (
-      ['flowNode', 'userTask'].includes(distributedBy.type) &&
+      ['flowNode', 'userTask'].includes(report.data.distributedBy.type) &&
       hiddenNodes.active &&
       hiddenNodes.keys.includes(key)
     ) {

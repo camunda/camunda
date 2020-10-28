@@ -14,11 +14,11 @@ import BucketSize from './BucketSize';
 const report = {
   data: {
     groupBy: {type: 'variable', value: {type: 'Integer'}},
+    distributedBy: {
+      type: 'none',
+      value: null,
+    },
     configuration: {
-      distributedBy: {
-        type: 'none',
-        value: null,
-      },
       customBucket: {
         active: false,
         bucketSize: '10',
@@ -84,8 +84,8 @@ it('should include a unit selection when report is distributed by number variabl
   const distributedByVariableReport = {
     data: {
       groupBy: {type: 'startDate'},
+      distributedBy: {type: 'variable', value: {type: 'Double'}},
       configuration: {
-        distributedBy: {type: 'variable', value: {type: 'Double'}},
         distributeByCustomBucket: report.data.configuration.customBucket,
       },
     },

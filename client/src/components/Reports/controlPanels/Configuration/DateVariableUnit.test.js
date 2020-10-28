@@ -42,11 +42,11 @@ it('should render a unit selection for distributed by date variable', () => {
     <DateVariableUnit
       report={{
         data: {
+          distributedBy: {
+            type: 'variable',
+            value: {type: 'Date'},
+          },
           configuration: {
-            distributedBy: {
-              type: 'variable',
-              value: {type: 'Date'},
-            },
             groupByDateVariableUnit: 'automatic',
           },
         },

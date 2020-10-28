@@ -7,10 +7,6 @@ exports[`should convert a hypermap to a combined report 1`] = `
       "combined": true,
       "data": Object {
         "configuration": Object {
-          "distributedBy": Object {
-            "type": "userTask",
-            "value": null,
-          },
           "hiddenNodes": Object {
             "active": true,
             "keys": Array [
@@ -37,16 +33,16 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": Object {
-                  "type": "userTask",
-                  "value": null,
-                },
                 "hiddenNodes": Object {
                   "active": true,
                   "keys": Array [
                     "taskId3",
                   ],
                 },
+              },
+              "distributedBy": Object {
+                "type": "userTask",
+                "value": null,
               },
               "groupBy": Object {
                 "type": "assignee",
@@ -89,16 +85,16 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": Object {
-                  "type": "userTask",
-                  "value": null,
-                },
                 "hiddenNodes": Object {
                   "active": true,
                   "keys": Array [
                     "taskId3",
                   ],
                 },
+              },
+              "distributedBy": Object {
+                "type": "userTask",
+                "value": null,
               },
               "groupBy": Object {
                 "type": "assignee",

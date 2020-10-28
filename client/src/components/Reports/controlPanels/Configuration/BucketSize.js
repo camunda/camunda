@@ -15,11 +15,10 @@ import './BucketSize.scss';
 
 export default function BucketSize({
   report: {
-    data: {configuration, groupBy},
+    data: {configuration, groupBy, distributedBy},
   },
   onChange,
 }) {
-  const {distributedBy} = configuration;
   const isDistributedByVariable =
     distributedBy?.type === 'variable' &&
     ['Integer', 'Double', 'Short', 'Long'].includes(distributedBy.value.type);

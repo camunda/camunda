@@ -143,8 +143,8 @@ export default function DashboardTemplateModal({onClose}) {
               view: {entity: 'userTask', property: 'frequency'},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
               visualization: 'bar',
+              distributedBy: {type: 'assignee', value: null},
               configuration: {
-                distributedBy: {type: 'assignee', value: null},
                 xLabel: t('report.groupBy.startDate'),
                 yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
               },
@@ -160,8 +160,8 @@ export default function DashboardTemplateModal({onClose}) {
               view: {entity: 'userTask', property: 'frequency'},
               groupBy: {type: 'endDate', value: {unit: 'month'}},
               visualization: 'bar',
+              distributedBy: {type: 'assignee', value: null},
               configuration: {
-                distributedBy: {type: 'assignee', value: null},
                 xLabel: t('report.groupBy.endDate'),
                 yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
               },

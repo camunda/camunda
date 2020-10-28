@@ -26,8 +26,8 @@ it('should convert a hypermap to a combined report', () => {
             type: 'assignee',
           },
           visualization: 'bar',
+          distributedBy: {type: 'userTask', value: null},
           configuration: {
-            distributedBy: {type: 'userTask', value: null},
             hiddenNodes: {active: true, keys: ['taskId3']},
           },
         },
@@ -89,11 +89,11 @@ it('should format single reports names for hyper reports distributed by date var
             type: 'startDate',
           },
           visualization: 'bar',
+          distributedBy: {
+            type: 'variable',
+            value: {type: 'Date'},
+          },
           configuration: {
-            distributedBy: {
-              type: 'variable',
-              value: {type: 'Date'},
-            },
             distributeByDateVariableUnit: 'month',
           },
         },

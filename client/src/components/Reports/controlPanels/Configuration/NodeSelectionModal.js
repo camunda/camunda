@@ -110,7 +110,7 @@ export default class NodeSelectionModal extends React.Component {
 }
 
 function getFlowNodesKeys(report) {
-  const distributionType = report.data.configuration.distributedBy.type;
+  const distributionType = report.data.distributedBy.type;
   if (['flowNode', 'userTask'].includes(distributionType)) {
     return report.result.data[0].value.map(({key}) => key);
   }

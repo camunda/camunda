@@ -61,7 +61,6 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "processPart": null,
@@ -90,7 +89,8 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null
+      "visualization": null,
+      "distributedBy": {"type": "none", "value": null}
     },
     "combined": false,
     "reportType": "process",
@@ -193,7 +193,6 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "sorting": null
@@ -205,7 +204,8 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null
+      "visualization": null,
+      "distributedBy": {"type": "none", "value": null}
     },
     "combined": false,
     "reportType": "decision",

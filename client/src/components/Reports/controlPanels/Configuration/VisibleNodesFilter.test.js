@@ -19,8 +19,8 @@ const report = {
     ],
   },
   data: {
+    distributedBy: {},
     configuration: {
-      distributedBy: {},
       color: 'testColor',
       xml: 'fooXml',
       hiddenNodes: {active: false, keys: ['foo']},
@@ -59,8 +59,8 @@ it('should display component if distributed by flowNode', () => {
         ...report,
         data: {
           ...report.data,
+          distributedBy: {type: 'flowNode'},
           groupBy: {type: 'startDate'},
-          configuration: {...report.data.configuration, distributedBy: {type: 'flowNode'}},
         },
       }}
     />

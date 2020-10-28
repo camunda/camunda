@@ -18,7 +18,7 @@ export function DistributedBy({
       processDefinitionKey,
       processDefinitionVersions,
       tenantIds,
-      configuration,
+      distributedBy,
       view,
       groupBy,
       visualization,
@@ -63,18 +63,18 @@ export function DistributedBy({
               popover.style.height = 'auto';
             }
           }}
-          value={getValue(configuration)}
+          value={getValue(distributedBy)}
           onChange={(value) => {
-            const change = {configuration: {distributedBy: {$set: {type: value, value: null}}}};
+            const change = {distributedBy: {$set: {type: value, value: null}}};
 
             if (isInstanceDateReport(view, groupBy) && value !== 'none') {
               const variable = variables.find(({name}) => name === value);
-              change.configuration.distributedBy.$set = {type: 'variable', value: variable};
+              change.distributedBy.$set = {type: 'variable', value: variable};
             }
 
             if (isInstanceVariableReport(view, groupBy) && value !== 'none') {
               const [type, unit] = value.split('_');
-              change.configuration.distributedBy.$set = {type, value: {unit}};
+              change.distributedBy.$set = {type, value: {unit}};
             }
 
             if (value !== 'none' && !['line', 'table'].includes(visualization)) {
@@ -93,17 +93,17 @@ export function DistributedBy({
   return null;
 }
 
-function getValue(configuration) {
-  if (configuration.distributedBy.type === 'variable') {
-    return configuration.distributedBy.value.name;
+function getValue(distributedBy) {
+  if (distributedBy.type === 'variable') {
+    return distributedBy.value.name;
   }
 
-  if (['startDate', 'endDate'].includes(configuration.distributedBy.type)) {
-    const {value, type} = configuration.distributedBy;
+  if (['startDate', 'endDate'].includes(distributedBy.type)) {
+    const {value, type} = distributedBy;
     return type + '_' + value.unit;
   }
 
-  return configuration.distributedBy.type;
+  return distributedBy.type;
 }
 
 function canDistributeData(view, groupBy) {

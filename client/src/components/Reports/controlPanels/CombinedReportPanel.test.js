@@ -41,6 +41,7 @@ const singleReportData = {
     type: 'flowNodes',
     value: null,
   },
+  distributedBy: {},
   configuration: {
     groupByDateVariableUnit: 'day',
     customBucket: {
@@ -48,7 +49,6 @@ const singleReportData = {
       bucketSize: '10',
       baseline: '-10',
     },
-    distributedBy: {},
   },
   visualization: 'bar',
 };

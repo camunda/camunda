@@ -23,8 +23,8 @@ jest.mock('services', () => ({
 const data = {
   visualization: 'heat',
   view: {entity: 'userTask'},
-  configuration: {distributedBy: {}},
   groupBy: {type: 'userTasks'},
+  distributedBy: {},
 };
 
 it('should match snapshot', () => {
@@ -53,7 +53,7 @@ it('should change the visualization if it is incompatible with the new configura
 
   expect(spy).toHaveBeenCalledWith(
     {
-      configuration: {distributedBy: {$set: {type: 'userTask', value: null}}},
+      distributedBy: {$set: {type: 'userTask', value: null}},
       visualization: {$set: 'bar'},
     },
     true
@@ -145,9 +145,7 @@ it('should invoke onChange with the selected variable', () => {
 
   expect(spy).toHaveBeenCalledWith(
     {
-      configuration: {
-        distributedBy: {$set: {type: 'variable', value: {name: 'var1', type: 'String'}}},
-      },
+      distributedBy: {$set: {type: 'variable', value: {name: 'var1', type: 'String'}}},
       visualization: {$set: 'bar'},
     },
     true
@@ -175,9 +173,7 @@ it('should invoke onChange with correct start date configuration', () => {
 
   expect(spy).toHaveBeenCalledWith(
     {
-      configuration: {
-        distributedBy: {$set: {type: 'startDate', value: {unit: 'month'}}},
-      },
+      distributedBy: {$set: {type: 'startDate', value: {unit: 'month'}}},
       visualization: {$set: 'bar'},
     },
     true

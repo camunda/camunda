@@ -11,11 +11,10 @@ import {t} from 'translation';
 
 export default function DateVariableUnit({
   report: {
-    data: {configuration, groupBy},
+    data: {configuration, groupBy, distributedBy},
   },
   onChange,
 }) {
-  const {distributedBy} = configuration;
   const isDistributedByVariable =
     distributedBy?.type === 'variable' && ['Date'].includes(distributedBy.value.type);
   const groupByDateVariableUnit = isDistributedByVariable

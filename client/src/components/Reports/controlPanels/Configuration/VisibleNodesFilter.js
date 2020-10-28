@@ -29,7 +29,8 @@ export default class VisibleNodesFilter extends React.Component {
     const {
       combined,
       data: {
-        configuration: {hiddenNodes, distributedBy},
+        distributedBy,
+        configuration: {hiddenNodes},
         groupBy,
       },
     } = this.props.report;

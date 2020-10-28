@@ -19,8 +19,8 @@ const report = {
     ],
   },
   data: {
+    distributedBy: {},
     configuration: {
-      distributedBy: {},
       color: 'testColor',
       xml: 'fooXml',
       hiddenNodes: {active: false, keys: []},
