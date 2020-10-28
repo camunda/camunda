@@ -22,7 +22,7 @@ Note that this procedure results in a downtime of the whole cluster. Currently, 
 
 ### Upgrade in Kubernetes
 #### Preparing the Upgrade
-##### From broker version < 24.4
+##### From broker version < 0.24.4
 
 1. Stop the workflow processing
     * Close all job workers
@@ -35,7 +35,7 @@ Note that this procedure results in a downtime of the whole cluster. Currently, 
     * If you're using Kubernetes 1.17+, then there is a new beta feature, which you can use to snapshot your pvc. Check [this documentation](https://kubernetes.io/docs/concepts/storage/volume-snapshots/) for more information.
     * If you're using an older Kubernetes version then you need to create snapshot's of your pvc's with help of your cloud provider.  For example for the google cloud kubernetes engine follow [this guide](https://cloud.google.com/compute/docs/disks/create-snapshots).
 
-##### From broker version >= 24.4
+##### From broker version >= 0.24.4
 
 The [Partitions Admin Endpoint](#partitions-admin-endpoint) can be used to query the status of the partitions and perform operations for the upgrade.
 
@@ -130,7 +130,7 @@ In this case, the broker should be rolled back to the previous version and the b
 
 #### Preparing the Upgrade
 
-##### From broker version < 24.4
+##### From broker version < 0.24.4
 
 1. Stop the workflow processing
     * Close all job workers
@@ -141,7 +141,7 @@ In this case, the broker should be rolled back to the previous version and the b
     * Note that no snapshot is created if no processing happened since the last snapshot
 1. Make a backup of the `data` folder
 
-##### From broker version >= 24.4
+##### From broker version >= 0.24.4
 
 The [Partitions Admin Endpoint](#partitions-admin-endpoint) can be used to query the status of the partitions and perform operations for the upgrade.
 
