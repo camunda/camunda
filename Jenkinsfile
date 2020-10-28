@@ -73,11 +73,7 @@ pipeline {
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
             }
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh '.ci/scripts/distribution/build-java.sh'
-                    }
-                }
+                runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
                 container('maven') {
                     sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
@@ -120,16 +116,12 @@ pipeline {
                             junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
                         }
                     }
-                }
+               }
 
-                stage('Analyse (Java)') {
-                    steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/analyse-java.sh'
-                            }
-                        }
-                    }
+               stage('Analyse (Java)') {
+                      steps {
+                          runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
+                      }
                 }
 
                 stage('Unit (Java)') {
@@ -138,11 +130,7 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
                     }
 
                     post {
@@ -157,11 +145,7 @@ pipeline {
                     }
 
                     steps {
-                        container('maven-jdk8') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java8.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-java8.sh', 'jdk8')
                     }
 
                     post {
@@ -197,11 +181,7 @@ pipeline {
                         container('docker') {
                             sh '.ci/scripts/docker/build.sh'
                         }
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/it-java.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
                     }
 
                     post {
@@ -213,11 +193,7 @@ pipeline {
 
                 stage('BPMN TCK') {
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-tck.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
                     }
 
                     post {
@@ -258,11 +234,7 @@ pipeline {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
-                    container('maven') {
-                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                            sh '.ci/scripts/distribution/upload.sh'
-                        }
-                    }
+                    runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
                 }
             }
         }
@@ -339,6 +311,17 @@ pipeline {
                             message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
                 }
             }
+        }
+    }
+}
+
+//////////////////// Helper functions ////////////////////
+
+def runMavenContainerCommand(String shellCommand, String jdk = null) {
+    String mavenContainerName = "maven${jdk ? '-'+jdk : ''}"
+    container(mavenContainerName) {
+        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh shellCommand
         }
     }
 }
