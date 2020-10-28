@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1603780843903,
+  "iteration": 1603892399276,
   "links": [],
   "panels": [
     {
@@ -99,6 +99,7 @@
       "panels": [
         {
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the current processing of records per partition per second.",
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -150,11 +151,12 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Processing per Partition",
+          "title": "Processing Records per Partition",
           "type": "gauge"
         },
         {
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the current exporting of records per partition per second.",
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -206,8 +208,171 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Exporting per Partition",
+          "title": "Exporting Records per Partition",
           "type": "gauge"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Flow node instances completed or terminated per second per partition.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 17,
+            "x": 0,
+            "y": 7
+          },
+          "hiddenSeries": false,
+          "id": 230,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_flow_node_instance_counter{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (partition, type)",
+              "interval": "",
+              "legendFormat": "Partition {{partition}} FNI {{type}} per s",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "FNI per s per partition [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:402",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:403",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "cacheTimeout": null,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Flow node instances completed or terminated per second over all partitions.",
+          "gridPos": {
+            "h": 8,
+            "w": 7,
+            "x": 17,
+            "y": 7
+          },
+          "id": 232,
+          "links": [],
+          "options": {
+            "colorMode": "value",
+            "fieldOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "defaults": {
+                "mappings": [
+                  {
+                    "$$hashKey": "object:725",
+                    "id": 0,
+                    "op": "=",
+                    "text": "0",
+                    "type": 1,
+                    "value": "null"
+                  }
+                ],
+                "nullValueMode": "connected",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 5
+                    },
+                    {
+                      "color": "green",
+                      "value": 10
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal"
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_flow_node_instance_counter{namespace=~\"$namespace\", pod=~\"$pod\"}[1m]))",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "Partition {{partition}} FNI per s",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Overall FNI  per s [1m]",
+          "type": "stat"
         },
         {
           "columns": [
@@ -222,7 +387,7 @@
             "h": 9,
             "w": 5,
             "x": 0,
-            "y": 7
+            "y": 15
           },
           "id": 68,
           "links": [],
@@ -344,7 +509,7 @@
             "h": 9,
             "w": 9,
             "x": 5,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 116,
@@ -451,7 +616,7 @@
             "h": 9,
             "w": 5,
             "x": 14,
-            "y": 7
+            "y": 15
           },
           "id": 129,
           "pageSize": null,
@@ -558,7 +723,7 @@
             "h": 9,
             "w": 5,
             "x": 19,
-            "y": 7
+            "y": 15
           },
           "id": 54,
           "pageSize": null,
@@ -652,7 +817,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 16
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 58,
@@ -765,7 +930,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 16
+            "y": 24
           },
           "id": 117,
           "interval": null,
@@ -840,7 +1005,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 16
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 74,
@@ -941,7 +1106,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 20
+            "y": 28
           },
           "id": 118,
           "interval": null,
@@ -1011,7 +1176,7 @@
             "h": 8,
             "w": 7,
             "x": 0,
-            "y": 24
+            "y": 32
           },
           "id": 189,
           "links": [],
@@ -1081,7 +1246,7 @@
             "h": 8,
             "w": 8,
             "x": 7,
-            "y": 24
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 87,
@@ -1192,7 +1357,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 24
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 31,
@@ -1305,7 +1470,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 40
           },
           "hiddenSeries": false,
           "id": 62,
@@ -1395,7 +1560,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 40
           },
           "hiddenSeries": false,
           "id": 93,
@@ -9157,7 +9322,7 @@
       "type": "row"
     }
   ],
-  "refresh": "",
+  "refresh": "10s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -9287,5 +9452,5 @@
   "variables": {
     "list": []
   },
-  "version": 19
+  "version": 21
 }
