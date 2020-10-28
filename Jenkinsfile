@@ -168,11 +168,35 @@ pipeline {
                 }
 
                 stage('IT (Java)') {
+                    agent {
+                        kubernetes {
+                            cloud 'zeebe-ci'
+                            label "zeebe-ci-build_${buildName}_it"
+                            defaultContainer 'jnlp'
+                            yamlFile '.ci/podSpecs/distribution.yml'
+                        }
+                    }
+
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
+                        SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
+                        NEXUS = credentials("camunda-nexus")
+                        IMAGE = "camunda/zeebe"
+                        VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                        TAG = 'current-test'
                     }
 
                     steps {
+                        container('maven') {
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/prepare.sh'
+                                sh '.ci/scripts/distribution/build-java.sh'
+                                sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                            }
+                        }
+                        container('docker') {
+                            sh '.ci/scripts/docker/build.sh'
+                            sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                        }
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                 sh '.ci/scripts/distribution/it-java.sh'
