@@ -433,7 +433,6 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
-  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_combinedDateReport() {
     // given
@@ -536,7 +535,6 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     }
   }
 
-  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_evaluationById() {
     // given
@@ -574,7 +572,6 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
-  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_sharedReportEvaluation() {
     // given
@@ -613,7 +610,6 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
-  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_reportEvaluationOfSharedDashboard() {
     // given
