@@ -95,7 +95,7 @@
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
     <version.jqwik>1.3.6</version.jqwik>
-    <version.jmock>2.11.0</version.jmock>
+    <version.jmock>2.12.0</version.jmock>
 
 
     <!-- maven plugins -->
