@@ -15,5 +15,6 @@
   .OptimizeReport .visualization,
   .ExternalReport iframe {
     opacity: 0.5;
+    overflow: auto;
   }
 }

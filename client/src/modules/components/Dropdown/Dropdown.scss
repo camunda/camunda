@@ -50,10 +50,6 @@
     height: auto;
     top: -999em;
 
-    ul:not(:empty) + ul.fixedList {
-      border-top: 1px solid #bbb;
-    }
-
     > ul {
       list-style: none;
       padding: 0;
