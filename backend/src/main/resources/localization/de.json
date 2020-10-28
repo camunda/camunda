@@ -925,11 +925,7 @@
           "candidateGroup": "Potenzielle Gruppe"
         },
         "unassigned": "Nicht zugewiesen",
-        "selectValue": "Filter für ID",
-        "info": {
-          "included": "Die folgenden Auswahlen werden eingeschlossen sein:",
-          "excluded": "Die folgenden Auswahlen werden ausgeschlossen sein:"
-        }
+        "selectValue": "Filter für ID"
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },

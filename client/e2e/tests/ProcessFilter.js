@@ -253,12 +253,8 @@ test('add assignee filter', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Assignee'));
 
-  await t.click(Filter.typeahead);
-  await t.click(Filter.typeaheadOption('unassigned'));
-  await t.click(Filter.typeaheadAddButton);
-  await t.click(Filter.typeahead);
-  await t.click(Filter.typeaheadOption('demo'));
-  await t.click(Filter.typeaheadAddButton);
+  await t.click(Filter.multiSelect);
+  await t.click(Filter.multiSelectOption('demo'));
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
 

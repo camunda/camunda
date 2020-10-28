@@ -925,11 +925,7 @@
           "candidateGroup": "Candidate groups"
         },
         "unassigned": "unassigned",
-        "selectValue": "Filter for ID",
-        "info": {
-          "included": "The following selections will be included:",
-          "excluded": "The following selections will be excluded:"
-        }
+        "selectValue": "Filter for ID"
       },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },

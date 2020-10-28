@@ -7,13 +7,13 @@
 import {Selector} from 'testcafe';
 
 export const typeahead = Selector('.Modal__content .Typeahead');
+export const multiSelect = Selector('.Modal__content .MultiSelect');
 export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
-export const typeaheadOption = (text) =>
-  Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
+export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
+export const multiSelectOption = (text) => multiSelect.find('.DropdownOption').withText(text);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .ValueListInput input').nth(0);
-export const typeaheadAddButton = Selector('.InputGroup > .Button').withText('Add');
 export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
 export const dateFilterTypeOption = (text) =>
   Selector('.DateRangeInput .DropdownOption').withText(text);
