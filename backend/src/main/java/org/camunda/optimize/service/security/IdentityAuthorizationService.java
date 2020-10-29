@@ -20,14 +20,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 
 @Component
 public class IdentityAuthorizationService
   extends AbstractCachingAuthorizationService<Map<IdentityType, ResolvedResourceTypeAuthorizations>> {
-  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
+  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_PERMISSION);
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
 
