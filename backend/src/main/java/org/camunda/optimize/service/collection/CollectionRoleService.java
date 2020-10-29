@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -87,7 +86,8 @@ public class CollectionRoleService {
   public void updateRoleOfCollection(final String userId,
                                      final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws OptimizeConflictException {
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws
+                                                                                         OptimizeConflictException {
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
@@ -105,7 +105,10 @@ public class CollectionRoleService {
       .getRoles()
       .stream()
       .filter(role -> identityService.isUserAuthorizedToAccessIdentity(userId, role.getIdentity()))
-      .map(this::mapRoleDtoToRoleRestDto)
+      .map(roleDto -> CollectionRoleResponseDto.from(
+        roleDto,
+        identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+      ))
       .collect(toList());
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
@@ -125,15 +128,6 @@ public class CollectionRoleService {
 
     Collections.sort(roles);
     return roles;
-  }
-
-  private CollectionRoleResponseDto mapRoleDtoToRoleRestDto(final CollectionRoleRequestDto roleDto) {
-    return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
-      .map(identityDto -> new CollectionRoleResponseDto(identityDto, roleDto.getRole()))
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
-          + roleDto.getIdentity().toString() + "] could not be found."
-      ));
   }
 
 }

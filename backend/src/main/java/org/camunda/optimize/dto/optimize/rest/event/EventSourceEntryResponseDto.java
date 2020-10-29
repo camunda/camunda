@@ -40,7 +40,7 @@ public class EventSourceEntryResponseDto {
   private boolean tracedByBusinessKey;
   private String traceVariable;
 
-  public static EventSourceEntryResponseDto mapSourceEntryToRestDtos(EventSourceEntryDto eventSource, String definitionName){
+  public static EventSourceEntryResponseDto from(EventSourceEntryDto eventSource, String definitionName){
    return EventSourceEntryResponseDto.builder()
             .id(eventSource.getId())
             .type(eventSource.getType())

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,11 +26,20 @@ public class CollectionScopeEntryResponseDto {
   private List<TenantDto> tenants = new ArrayList<>();
 
   public String getDefinitionName() {
-    return definitionName == null? definitionKey : definitionName;
+    return definitionName == null ? definitionKey : definitionName;
   }
 
   public List<String> getTenantIds() {
     return tenants.stream().map(TenantDto::getId).collect(Collectors.toList());
+  }
+
+  public static CollectionScopeEntryResponseDto from(CollectionScopeEntryDto scope,
+                                                     List<TenantDto> authorizedTenantDtos) {
+    return new CollectionScopeEntryResponseDto()
+      .setId(scope.getId())
+      .setDefinitionKey(scope.getDefinitionKey())
+      .setDefinitionType(scope.getDefinitionType())
+      .setTenants(authorizedTenantDtos);
   }
 }
 

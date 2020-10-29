@@ -252,7 +252,7 @@ public class EventBasedProcessRestService {
 
   private EventProcessMappingResponseDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
     final Optional<String> lastModifierName = identityService.getIdentityNameById(dto.getLastModifier());
-    return EventProcessMappingResponseDto.mapMappingDtoToRestDto(
+    return EventProcessMappingResponseDto.from(
       dto,
       lastModifierName,
       mapSourceEntriesToRestDtos(
@@ -265,7 +265,7 @@ public class EventBasedProcessRestService {
   private List<EventSourceEntryResponseDto> mapSourceEntriesToRestDtos(final String userId,
                                                                        final List<EventSourceEntryDto> eventSourceDtos) {
     return eventSourceDtos.stream()
-      .map(eventSource -> EventSourceEntryResponseDto.mapSourceEntryToRestDtos(
+      .map(eventSource -> EventSourceEntryResponseDto.from(
         eventSource,
         getDefinitionName(userId, eventSource)
       ))

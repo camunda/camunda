@@ -54,9 +54,9 @@ public class EventProcessMappingResponseDto {
 
   private List<EventSourceEntryResponseDto> eventSources = new ArrayList<>();
 
-  public static EventProcessMappingResponseDto mapMappingDtoToRestDto(final EventProcessMappingDto dto,
-                                                                      Optional<String> lastModifierName,
-                                                                      List<EventSourceEntryResponseDto> eventSourcesDtos) {
+  public static EventProcessMappingResponseDto from(final EventProcessMappingDto dto,
+                                                    Optional<String> lastModifierName,
+                                                    List<EventSourceEntryResponseDto> eventSourcesDtos) {
     return EventProcessMappingResponseDto.builder()
       .id(dto.getId())
       .lastModified(dto.getLastModified())

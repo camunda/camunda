@@ -84,7 +84,11 @@ public class DefinitionService {
                                                                   final List<String> tenantIds) {
     final List<DefinitionVersionResponseDto> definitionVersions = new ArrayList<>();
 
-    final Optional<DefinitionWithTenantsResponseDto> optionalDefinition = getDefinitionWithAvailableTenants(type, key, userId);
+    final Optional<DefinitionWithTenantsResponseDto> optionalDefinition = getDefinitionWithAvailableTenants(
+      type,
+      key,
+      userId
+    );
     if (optionalDefinition.isPresent()) {
       final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
         .map(TenantDto::getId)
@@ -397,7 +401,7 @@ public class DefinitionService {
     final Collection<DefinitionWithTenantIdsDto> definitionsWithTenantIds) {
     return definitionsWithTenantIds
       .stream()
-      .map(definitionWithTenantIdsDto -> mapToDefinitionWithTenantsDto(
+      .map(definitionWithTenantIdsDto -> DefinitionWithTenantsResponseDto.from(
         definitionWithTenantIdsDto,
         definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
           userId,
@@ -409,18 +413,6 @@ public class DefinitionService {
       .filter(definitionWithTenantsDto -> !definitionWithTenantsDto.getTenants().isEmpty());
   }
 
-  private DefinitionWithTenantsResponseDto mapToDefinitionWithTenantsDto(
-    final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
-    final List<TenantDto> authorizedTenants) {
-    return new DefinitionWithTenantsResponseDto(
-      definitionWithTenantIdsDto.getKey(),
-      definitionWithTenantIdsDto.getName(),
-      definitionWithTenantIdsDto.getType(),
-      definitionWithTenantIdsDto.getIsEventProcess(),
-      authorizedTenants,
-      definitionWithTenantIdsDto.getEngines()
-    );
-  }
 
   private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {
     return tenantService.getTenantsForUser(userId).stream()

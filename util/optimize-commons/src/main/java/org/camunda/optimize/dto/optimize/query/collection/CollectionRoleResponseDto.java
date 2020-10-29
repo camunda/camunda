@@ -16,11 +16,15 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
+
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
@@ -66,5 +70,15 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
 
   private String convertIdentityToRoleId(final IdentityWithMetadataResponseDto identity) {
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
+
+  public static CollectionRoleResponseDto from(final CollectionRoleRequestDto roleDto, Optional<?
+    extends IdentityWithMetadataResponseDto> identityWithMetaData) {
+    return identityWithMetaData
+      .map(identityDto -> new CollectionRoleResponseDto(identityDto, roleDto.getRole()))
+      .orElseThrow(() -> new OptimizeRuntimeException(
+        "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
+          + roleDto.getIdentity().toString() + "] could not be found."
+      ));
   }
 }

@@ -86,11 +86,7 @@ public class CollectionScopeService {
         authorizedTenantDtos.addAll(
           unauthorizedTenantsIds.stream().map((t) -> UNAUTHORIZED_TENANT_MASK).collect(Collectors.toList())
         );
-        return new CollectionScopeEntryResponseDto()
-          .setId(scope.getId())
-          .setDefinitionKey(scope.getDefinitionKey())
-          .setDefinitionType(scope.getDefinitionType())
-          .setTenants(authorizedTenantDtos);
+        return CollectionScopeEntryResponseDto.from(scope, authorizedTenantDtos);
       })
       // at least one authorized tenant is required for an entry to be included in the result
       .filter(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.getTenants()
@@ -415,7 +411,11 @@ public class CollectionScopeService {
   }
 
   private String getDefinitionName(final String userId, final CollectionScopeEntryResponseDto scope) {
-    return definitionService.getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
+    return definitionService.getDefinitionWithAvailableTenants(
+      scope.getDefinitionType(),
+      scope.getDefinitionKey(),
+      userId
+    )
       .map(DefinitionWithTenantsResponseDto::getName)
       .orElse(scope.getDefinitionKey());
   }
