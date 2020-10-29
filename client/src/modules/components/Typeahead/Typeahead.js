@@ -131,7 +131,6 @@ export default class Typeahead extends React.Component {
           ref={this.input}
           placeholder={this.getPlaceholderText(isEmpty)}
           disabled={isInputDisabled}
-          onClear={this.open}
         />
         <Button
           tabIndex="-1"

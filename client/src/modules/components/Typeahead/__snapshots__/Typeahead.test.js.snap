@@ -9,7 +9,6 @@ exports[`should render an empty Input 1`] = `
     disabled={true}
     onBlur={[Function]}
     onChange={[Function]}
-    onClear={[Function]}
     onFocus={[Function]}
     placeholder="No results found"
     type="text"
