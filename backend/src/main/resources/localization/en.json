@@ -544,12 +544,14 @@
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
+      "selectValue": "Select variable value",
       "modal": {
         "pretext": {
           "Date": "Date selection will be available in the resulting filter.",
           "Boolean": "True and false values will be available in the resulting filter.",
           "default": "Selected options will be available in the resulting filter."
-        }
+        },
+        "allowCustomValues": "Allow viewer to add filter values"
       },
       "types": {
         "state": "Instance State",

@@ -220,7 +220,12 @@ export function DashboardView(props) {
           </div>
         </div>
         {filtersShown && (
-          <FiltersView availableFilters={availableFilters} filter={filter} setFilter={setFilter} />
+          <FiltersView
+            reports={reports}
+            availableFilters={availableFilters}
+            filter={filter}
+            setFilter={setFilter}
+          />
         )}
         <Deleter
           type="dashboard"

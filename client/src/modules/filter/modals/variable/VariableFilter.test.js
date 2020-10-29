@@ -196,6 +196,14 @@ it('should allow rendering a pretext if provided', () => {
   expect(node.find('.pretext')).toExist();
 });
 
+it('should allow rendering a posttext if provided', () => {
+  const spy = jest.fn().mockReturnValue(<span className="posttext">posttext value</span>);
+  const node = shallow(<VariableFilter {...props} filterData={filterData} getPosttext={spy} />);
+
+  expect(spy).toHaveBeenCalledWith({id: undefined, name: 'foo', type: 'String'});
+  expect(node.find('.posttext')).toExist();
+});
+
 it('should allow forcing the add button to be enabled', () => {
   const node = shallow(<VariableFilter {...props} />);
 

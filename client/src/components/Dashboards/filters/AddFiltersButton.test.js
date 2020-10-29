@@ -98,7 +98,11 @@ it('should include the allowed values for string and number variables', () => {
 
   const newFilter = {
     type: 'variable',
-    data: {type: 'String', name: 'stringVar', data: {operator: 'in', values: ['aStringValue']}},
+    data: {
+      type: 'String',
+      name: 'stringVar',
+      data: {operator: 'in', values: ['aStringValue'], allowCustomValues: false},
+    },
   };
 
   modal.prop('addFilter')(newFilter);
@@ -143,4 +147,16 @@ it('should not include a data field for boolean and date variables', () => {
       },
     },
   ]);
+});
+
+it('should include a checkbox to allow custom values', () => {
+  const node = shallow(<AddFiltersButton {...props} />);
+
+  node.find(Dropdown.Option).last().simulate('click');
+
+  const postText = shallow(
+    node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'})
+  );
+
+  expect(postText.find('[type="checkbox"]')).toExist();
 });

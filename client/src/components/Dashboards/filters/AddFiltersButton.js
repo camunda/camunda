@@ -9,7 +9,7 @@ import useDeepCompareEffect from 'use-deep-compare-effect';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {Dropdown, Icon} from 'components';
+import {Dropdown, Icon, LabeledInput} from 'components';
 import {VariableFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -28,6 +28,7 @@ export function AddFiltersButton({
     null
   );
   const [availableVariables, setAvailableVariables] = useState([]);
+  const [allowCustomValues, setAllowCustomValues] = useState(false);
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
   const hasUnsavedReports = reports.some(({id, report}) => report && !id);
@@ -115,7 +116,9 @@ export function AddFiltersButton({
       {showVariableModal && (
         <VariableFilter
           className="dashboardVariableFilter"
-          forceEnabled={(variable) => ['Date', 'Boolean'].includes(variable?.type)}
+          forceEnabled={(variable) =>
+            ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
+          }
           addFilter={({type, data}) => {
             if (['Boolean', 'Date'].includes(data.type)) {
               setAvailableFilters([
@@ -125,10 +128,14 @@ export function AddFiltersButton({
             } else {
               setAvailableFilters([
                 ...availableFilters,
-                {type, data: {data: data.data, name: data.name, type: data.type}},
+                {
+                  type,
+                  data: {data: {...data.data, allowCustomValues}, name: data.name, type: data.type},
+                },
               ]);
             }
             setShowVariableModal(false);
+            setAllowCustomValues(false);
           }}
           getPretext={(variable) => {
             if (variable) {
@@ -144,7 +151,24 @@ export function AddFiltersButton({
               return <div className="preText">{text}</div>;
             }
           }}
-          close={() => setShowVariableModal(false)}
+          getPosttext={(variable) => {
+            if (variable && !['Date', 'Boolean'].includes(variable.type)) {
+              return (
+                <LabeledInput
+                  type="checkbox"
+                  label={t('dashboard.filter.modal.allowCustomValues')}
+                  className="customValueCheckbox"
+                  checked={allowCustomValues}
+                  onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+                />
+              );
+            }
+            return null;
+          }}
+          close={() => {
+            setShowVariableModal(false);
+            setAllowCustomValues(false);
+          }}
           config={{
             getVariables: () => availableVariables,
             getValues: (...args) => getVariableValues(reportIds, ...args),

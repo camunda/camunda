@@ -13,4 +13,28 @@
     margin: 0;
     padding: 5px 0;
   }
+
+  .customValue {
+    display: flex;
+
+    .Switch {
+      margin-right: 0;
+    }
+
+    .Typeahead {
+      min-width: 200px;
+
+      &.invalid .typeaheadInput {
+        border-color: $red-base-62;
+      }
+    }
+
+    > .Button:hover {
+      background: none;
+    }
+  }
+
+  .customValueAddButton {
+    width: auto;
+  }
 }

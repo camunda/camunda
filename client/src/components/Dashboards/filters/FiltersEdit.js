@@ -8,7 +8,7 @@ import React, {useState} from 'react';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {Button, Icon} from 'components';
+import {Button, Icon, LabeledInput} from 'components';
 import {VariableFilter} from 'filter';
 import {t} from 'translation';
 
@@ -20,6 +20,7 @@ import './FiltersEdit.scss';
 
 export default function FiltersEdit({availableFilters, setAvailableFilters, reports}) {
   const [filterToEdit, setFilterToEdit] = useState();
+  const [allowCustomValues, setAllowCustomValues] = useState(false);
 
   function removeFilter(idxToRemove) {
     setAvailableFilters(availableFilters.filter((_, idx) => idx !== idxToRemove));
@@ -53,7 +54,14 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
           case 'variable':
             return (
               <DashboardVariableFilter key={idx} config={data}>
-                <Button className="editButton" icon onClick={() => setFilterToEdit(idx)}>
+                <Button
+                  className="editButton"
+                  icon
+                  onClick={() => {
+                    setFilterToEdit(idx);
+                    setAllowCustomValues(data.data?.allowCustomValues ?? false);
+                  }}
+                >
                   <Icon type="edit" />
                 </Button>
                 {deleter}
@@ -66,7 +74,9 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
       {typeof filterToEdit !== 'undefined' && (
         <VariableFilter
           className="dashboardVariableFilter"
-          forceEnabled={(variable) => ['Date', 'Boolean'].includes(variable?.type)}
+          forceEnabled={(variable) =>
+            ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
+          }
           addFilter={({type, data}) => {
             setAvailableFilters(
               availableFilters.map((filter, idx) => {
@@ -76,11 +86,19 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                 if (['Boolean', 'Date'].includes(data.type)) {
                   return {type, data: {name: data.name, type: data.type}};
                 } else {
-                  return {type, data: {data: data.data, name: data.name, type: data.type}};
+                  return {
+                    type,
+                    data: {
+                      data: {...data.data, allowCustomValues},
+                      name: data.name,
+                      type: data.type,
+                    },
+                  };
                 }
               })
             );
             setFilterToEdit();
+            setAllowCustomValues(false);
           }}
           getPretext={(variable) => {
             if (variable) {
@@ -96,7 +114,24 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
               return <div className="preText">{text}</div>;
             }
           }}
-          close={() => setFilterToEdit()}
+          getPosttext={(variable) => {
+            if (variable && !['Date', 'Boolean'].includes(variable.type)) {
+              return (
+                <LabeledInput
+                  type="checkbox"
+                  label={t('dashboard.filter.modal.allowCustomValues')}
+                  className="customValueCheckbox"
+                  checked={allowCustomValues}
+                  onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+                />
+              );
+            }
+            return null;
+          }}
+          close={() => {
+            setFilterToEdit();
+            setAllowCustomValues(false);
+          }}
           config={{
             getVariables: () => getVariableNames(reportIds),
             getValues: (...args) => getVariableValues(reportIds, ...args),

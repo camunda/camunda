@@ -61,12 +61,17 @@ export default class Typeahead extends React.Component {
   }
 
   findAndSelect = (value) => {
-    const {children} = this.props;
+    const {children, typedOption} = this.props;
     const foundOption = React.Children.toArray(children).find(
       (option) => option.props.value === value
     );
 
-    if (foundOption) {
+    if (typedOption) {
+      this.setState({
+        selected: value,
+        query: value,
+      });
+    } else if (foundOption) {
       const {label, children} = foundOption.props;
       const selected = label || children;
       this.setState({
@@ -112,7 +117,7 @@ export default class Typeahead extends React.Component {
   render() {
     const {children, disabled, loading, hasMore, async, typedOption, className} = this.props;
     const {query, open, selected} = this.state;
-    const isEmpty = !loading && !query && React.Children.count(children) === 0;
+    const isEmpty = !loading && !query && !typedOption && React.Children.count(children) === 0;
     const isInputDisabled = isEmpty || disabled;
 
     return (

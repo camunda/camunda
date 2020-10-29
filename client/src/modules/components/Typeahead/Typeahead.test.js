@@ -87,3 +87,9 @@ it('should function as a controlled select', () => {
 
   expect(node.find(Input).prop('value')).toBe('Option One');
 });
+
+it('should always select value if typedOption is set', () => {
+  const node = shallow(<Typeahead value="typed" typedOption />);
+
+  expect(node.find(Input).prop('value')).toBe('typed');
+});

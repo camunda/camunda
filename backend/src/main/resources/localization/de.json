@@ -544,12 +544,14 @@
       "resetAll": "Alle zurücksetzen",
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
+      "selectValue": "Variablenwert auswählen",
       "modal": {
         "pretext": {
           "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",
           "Boolean": "Wahr und Falsch Werte werden im resultierenden Filter verfügbar sein.",
           "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein."
-        }
+        },
+        "allowCustomValues": "Betrachter können Filterwerte hinzufügen"
       },
       "types": {
         "state": "Instanzstatus",

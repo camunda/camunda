@@ -36,7 +36,7 @@ export default function OptionsList({
     );
   }
 
-  if (filter && typedOption && filteredOptions.length === 0) {
+  if (filter && typedOption) {
     filteredOptions.unshift(
       <Dropdown.Option key={filter} value={filter} label={filter}>
         {filter}
