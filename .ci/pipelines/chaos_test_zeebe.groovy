@@ -61,7 +61,7 @@ pipeline {
                     sh "kubens ${CHAOS_TEST_NAMESPACE}"
                     sh "kubectl get pods"
                     dir('zeebe/benchmarks/setup/cloud-default') {
-                      sh "kubectl apply -f worker.yaml"
+                        sh "kubectl apply -f worker.yaml"
                     }
                 }
             }
@@ -100,8 +100,8 @@ pipeline {
         changed {
             script {
                 slackSend(
-                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-                    message: "Zeebe ${env.JOB_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+                        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                        message: "Zeebe ${env.JOB_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
             }
         }
 
