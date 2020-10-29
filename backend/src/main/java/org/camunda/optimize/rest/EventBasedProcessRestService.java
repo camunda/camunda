@@ -51,7 +51,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -251,7 +250,8 @@ public class EventBasedProcessRestService {
   }
 
   private EventProcessMappingResponseDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
-    final Optional<String> lastModifierName = identityService.getIdentityNameById(dto.getLastModifier());
+    final String lastModifierName = identityService.getIdentityNameById(dto.getLastModifier())
+      .orElse(dto.getLastModifier());
     return EventProcessMappingResponseDto.from(
       dto,
       lastModifierName,

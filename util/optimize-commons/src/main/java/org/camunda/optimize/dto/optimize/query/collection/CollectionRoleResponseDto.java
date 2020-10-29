@@ -72,13 +72,8 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 
-  public static CollectionRoleResponseDto from(final CollectionRoleRequestDto roleDto, Optional<?
-    extends IdentityWithMetadataResponseDto> identityWithMetaData) {
-    return identityWithMetaData
-      .map(identityDto -> new CollectionRoleResponseDto(identityDto, roleDto.getRole()))
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
-          + roleDto.getIdentity().toString() + "] could not be found."
-      ));
+  public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(final CollectionRoleRequestDto roleDto,
+                                                                                           T identityWithMetaData) {
+    return new CollectionRoleResponseDto(identityWithMetaData, roleDto.getRole());
   }
 }

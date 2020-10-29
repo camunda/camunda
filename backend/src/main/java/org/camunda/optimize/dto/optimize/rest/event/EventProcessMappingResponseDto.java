@@ -23,7 +23,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -55,12 +54,12 @@ public class EventProcessMappingResponseDto {
   private List<EventSourceEntryResponseDto> eventSources = new ArrayList<>();
 
   public static EventProcessMappingResponseDto from(final EventProcessMappingDto dto,
-                                                    Optional<String> lastModifierName,
+                                                    String lastModifierName,
                                                     List<EventSourceEntryResponseDto> eventSourcesDtos) {
     return EventProcessMappingResponseDto.builder()
       .id(dto.getId())
       .lastModified(dto.getLastModified())
-      .lastModifier(lastModifierName.orElse(dto.getLastModifier()))
+      .lastModifier(lastModifierName)
       .mappings(dto.getMappings())
       .name(dto.getName())
       .state(dto.getState())

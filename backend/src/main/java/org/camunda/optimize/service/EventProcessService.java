@@ -119,7 +119,7 @@ public class EventProcessService {
       return autogenerateEventProcessMapping(userId, createRequestDto);
     }
     final EventProcessMappingDto eventProcessMappingDto =
-      EventProcessMappingCreateRequestDto.createServiceDTO(userId, createRequestDto);
+      EventProcessMappingCreateRequestDto.to(userId, createRequestDto);
     validateMappingsAndXmlCompatibility(eventProcessMappingDto);
     validateEventSources(userId, eventProcessMappingDto);
     return eventProcessMappingWriter.createEventProcessMapping(eventProcessMappingDto);

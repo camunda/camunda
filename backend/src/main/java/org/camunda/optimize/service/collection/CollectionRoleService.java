@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -108,6 +109,12 @@ public class CollectionRoleService {
       .map(roleDto -> CollectionRoleResponseDto.from(
         roleDto,
         identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+          .orElseThrow(() -> new OptimizeRuntimeException(
+                         "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
+                           + roleDto.getIdentity().toString() + "] could not be found."
+
+                       )
+          )
       ))
       .collect(toList());
 
