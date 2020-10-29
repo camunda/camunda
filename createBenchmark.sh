@@ -1,6 +1,17 @@
 #!/bin/bash
 set -exo pipefail
 
+# The purpose of this script is to make it easier for developers to setup new benchmarks.
+# As input the benchmark name is expected, which is used for the docker image tag and k8 namespace.
+# This script does the following:
+#
+# 1. Build the current branch
+# 2. Build the docker dev image
+# 3. Publish the docker image
+# 4. Setups new namespace
+# 5. Configures the benchmark
+# 6. Deploy's the benchmark
+
 # Contains OS specific sed function
 . benchmarks/setup/utils.sh
 
