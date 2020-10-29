@@ -66,7 +66,10 @@ public class ElasticsearchWriterUtil {
       }
     }
 
-    return createDefaultScriptWithPrimitiveParams(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+    return createDefaultScriptWithPrimitiveParams(
+      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
+      params
+    );
   }
 
   static Script createFieldUpdateScript(final Set<String> fields,
@@ -255,8 +258,9 @@ public class ElasticsearchWriterUtil {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
         throw new OptimizeRuntimeException(String.format(
-          "There were failures while performing bulk on %s with message: %s",
+          "There were failures while performing bulk on %s.%n%s Message: %s",
           itemName,
+          getHintForErrorMsg(bulkResponse.buildFailureMessage()),
           bulkResponse.buildFailureMessage()
         ));
       }
@@ -278,6 +282,16 @@ public class ElasticsearchWriterUtil {
         bulkByScrollResponse.getBulkFailures()
       ));
     }
+  }
+
+  private static String getHintForErrorMsg(final String errorMsg) {
+    if (errorMsg.contains("nested")) {
+      // exception potentially related to nested object limit
+      return "If you are experiencing failures due to too many nested documents, " +
+        "try carefully increasing the configured nested object limit (es.settings.index.nested_documents_limit). " +
+        "See Optimize documentation for details.";
+    }
+    return "";
   }
 
   private static Map<String, Object> mapParamsForScriptCreation(final Map<String, Object> parameters,

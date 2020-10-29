@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -12,15 +13,25 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.util.VariableTestUtil;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
+import org.slf4j.event.LoggingEvent;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +40,7 @@ import java.util.stream.Stream;
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.service.util.importing.EngineConstants.COMPLETED_USER_TASK_INSTANCE_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_LOG_ENDPOINT;
@@ -48,6 +60,11 @@ public class ImportIT extends AbstractImportIT {
   private static final String END_EVENT = "endEvent";
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().captureForType(VariableUpdateElasticsearchImportJob.class);
 
   private static Stream<Arguments> getEndpointsAndErrorResponses() {
     return Stream.of(
@@ -83,18 +100,18 @@ public class ImportIT extends AbstractImportIT {
     final HttpRequest importFetcherEndpointMatcher = request()
       .withPath(".*" + endpoint)
       .withMethod(GET);
-    final ClientAndServer esMockServer = useAndGetEngineMockServer();
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    mockResp.mock(importFetcherEndpointMatcher, Times.unlimited(), esMockServer);
+    mockResp.mock(importFetcherEndpointMatcher, Times.unlimited(), engineMockServer);
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();
     Awaitility.catchUncaughtExceptions()
       .timeout(10, TimeUnit.SECONDS)
-      .untilAsserted(() -> esMockServer.verify(importFetcherEndpointMatcher));
+      .untilAsserted(() -> engineMockServer.verify(importFetcherEndpointMatcher));
 
     // endpoint no longer fails
-    esMockServer.reset();
+    engineMockServer.reset();
 
     // wait for import to finish
     embeddedOptimizeExtension.ensureImportSchedulerIsIdle(5000L);
@@ -121,6 +138,51 @@ public class ImportIT extends AbstractImportIT {
         assertThat(processInstanceDto.getVariables()).hasSize(variables.size());
         assertThat(processInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
       });
+  }
+
+  @SneakyThrows
+  @Test
+  public void nestedDocsLimitExceptionLogIncludesConfigHint() {
+    // given a process instance with more nested docs than the limit
+    final int originalNestedDocLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    updateProcessInstanceNestedDocLimit(1);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", 1);
+    variables.put("var2", 2);
+    deployAndStartSimpleTwoUserTaskProcessWithVariables(variables);
+
+    // when
+    try {
+      embeddedOptimizeExtension.startContinuousImportScheduling();
+      Awaitility.dontCatchUncaughtExceptions()
+        .timeout(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(logCapturer.getEvents())
+          .extracting(LoggingEvent::getThrowable)
+          .extracting(Throwable::getMessage)
+          .isNotEmpty()
+          .anyMatch(msg -> msg.contains("If you are experiencing failures due to too many nested documents, " +
+                                          "try carefully increasing the configured nested object limit (es.settings" +
+                                          ".index.nested_documents_limit). " +
+                                          "See Optimize documentation for details.")));
+    } finally {
+      updateProcessInstanceNestedDocLimit(originalNestedDocLimit);
+    }
+  }
+
+  @SneakyThrows
+  private void updateProcessInstanceNestedDocLimit(final int nestedDocLimit) {
+    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(nestedDocLimit);
+    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    final String indexName =
+      esClient.getIndexNameService().getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndex());
+
+    esClient.getHighLevelClient().indices().putSettings(
+      new UpdateSettingsRequest(
+        buildDynamicSettings(embeddedOptimizeExtension.getConfigurationService()),
+        indexName
+      ),
+      RequestOptions.DEFAULT
+    );
   }
 
   private void assertDocumentCountInES(final String elasticsearchIndex,
