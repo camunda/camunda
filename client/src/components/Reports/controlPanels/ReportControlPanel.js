@@ -120,6 +120,7 @@ export default withErrorHandling(
                 ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
                 : null,
           },
+          processPart: {$set: null},
         },
         filter: {
           $set: filter.filter(
