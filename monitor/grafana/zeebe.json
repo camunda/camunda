@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1603892399276,
+  "iteration": 1604053043635,
   "links": [],
   "panels": [
     {
@@ -253,10 +253,10 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(zeebe_flow_node_instance_counter{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (partition, type)",
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m])) by (partition, action)",
               "interval": "",
-              "legendFormat": "Partition {{partition}} FNI {{type}} per s",
-              "refId": "A"
+              "legendFormat": "Partition {{partition}} FNI {{action}} per s",
+              "refId": "B"
             }
           ],
           "thresholds": [],
@@ -361,12 +361,11 @@
           "pluginVersion": "6.7.1",
           "targets": [
             {
-              "expr": "sum(rate(zeebe_flow_node_instance_counter{namespace=~\"$namespace\", pod=~\"$pod\"}[1m]))",
-              "format": "time_series",
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
               "instant": true,
               "interval": "",
               "legendFormat": "Partition {{partition}} FNI per s",
-              "refId": "A"
+              "refId": "B"
             }
           ],
           "timeFrom": null,
@@ -9322,7 +9321,7 @@
       "type": "row"
     }
   ],
-  "refresh": "10s",
+  "refresh": "",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -9452,5 +9451,5 @@
   "variables": {
     "list": []
   },
-  "version": 21
+  "version": 23
 }
