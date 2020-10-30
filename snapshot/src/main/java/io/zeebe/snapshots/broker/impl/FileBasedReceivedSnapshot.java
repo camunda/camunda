@@ -14,7 +14,6 @@ import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.util.ChecksumUtil;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,10 +27,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
-  private static final Logger LOGGER = new ZbLogger(FileBasedReceivedSnapshot.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedReceivedSnapshot.class);
   private static final boolean FAILED = false;
   private static final boolean SUCCESS = true;
 

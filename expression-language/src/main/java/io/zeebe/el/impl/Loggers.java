@@ -7,9 +7,9 @@
  */
 package io.zeebe.el.impl;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
-  public static final Logger LOGGER = new ZbLogger("io.zeebe.expression-language");
+  public static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.expression-language");
 }

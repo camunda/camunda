@@ -21,7 +21,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.util.Map;
 import org.elasticsearch.client.Request;
@@ -30,6 +29,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -99,7 +99,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   protected ElasticsearchTestClient createElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration) {
     return new ElasticsearchTestClient(
-        configuration, new ZbLogger("io.zeebe.exporter.elasticsearch"));
+        configuration, LoggerFactory.getLogger("io.zeebe.exporter.elasticsearch"));
   }
 
   protected Map<String, Object> recordToMap(final Record<?> record) {
