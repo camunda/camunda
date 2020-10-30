@@ -82,17 +82,11 @@ public class MetricsExporter implements Exporter {
     if (currentIntent == WorkflowInstanceIntent.ELEMENT_ACTIVATING
         && isWorkflowInstanceRecord(record)) {
       storeWorkflowInstanceCreation(record.getTimestamp(), recordKey);
-    } else if (currentIntent == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
-      if (isWorkflowInstanceRecord(record)) {
-        final var creationTime = workflowInstanceKeyToCreationTimeMap.remove(recordKey);
-        executionLatencyMetrics.observeWorkflowInstanceExecutionTime(
-            partitionId, creationTime, record.getTimestamp());
-      } else {
-        FNIMetrics.addFlowNodeInstanceCompleted(partitionId);
-      }
-    } else if (currentIntent == WorkflowInstanceIntent.ELEMENT_TERMINATED
-        && !isWorkflowInstanceRecord(record)) {
-      FNIMetrics.addFlowNodeInstanceTerminated(partitionId);
+    } else if (currentIntent == WorkflowInstanceIntent.ELEMENT_COMPLETED
+        && isWorkflowInstanceRecord(record)) {
+      final var creationTime = workflowInstanceKeyToCreationTimeMap.remove(recordKey);
+      executionLatencyMetrics.observeWorkflowInstanceExecutionTime(
+          partitionId, creationTime, record.getTimestamp());
     }
   }
 
