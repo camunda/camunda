@@ -8,6 +8,8 @@ import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a').withText('Event Based Processes');
 export const createDropdown = Selector('.Events .Dropdown');
+export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
+export const editAccess = (element) => element.find('.DropdownOption').withText('Edit Access');
 export const dropdownOption = (text) => Selector('.DropdownOption').withText(text);
 export const fileInput = Selector('input').withAttribute('type', 'file');
 export const entity = (title) => Selector('.name .entity').withText(title);
@@ -21,6 +23,8 @@ export const addSource = Selector('button.addProcess');
 export const modalContainer = Selector('.Modal__content-container');
 export const processTypeahead = Selector('.selectionPanel .Typeahead');
 export const variableTypeahead = Selector('.FormGroup .Typeahead');
+export const notification = Selector('.Notification')
+export const notificationCloseButton = (element) => element.find('.close')
 export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
 export const typeaheadInput = (typeahead) => typeahead.find('input');
 export const typeaheadOption = (typeahead, text) =>
