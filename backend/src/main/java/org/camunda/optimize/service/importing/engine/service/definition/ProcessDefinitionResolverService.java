@@ -27,7 +27,7 @@ public class ProcessDefinitionResolverService extends AbstractDefinitionResolver
 
   @Override
   protected void syncCache() {
-    processDefinitionReader.getProcessDefinitions(false, false)
+    processDefinitionReader.getProcessDefinitions(false, false, true)
       .forEach(this::addToCacheIfNotNull);
   }
 

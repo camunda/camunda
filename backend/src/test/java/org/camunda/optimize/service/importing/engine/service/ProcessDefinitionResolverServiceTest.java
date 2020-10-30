@@ -61,7 +61,7 @@ public class ProcessDefinitionResolverServiceTest {
       .get()
       .extracting(ProcessDefinitionOptimizeDto::getId)
       .isEqualTo(id);
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
   }
 
   @Test
@@ -81,7 +81,7 @@ public class ProcessDefinitionResolverServiceTest {
     assertThat(processDefinitionSecondTry).isPresent();
     assertThat(processDefinitionFirstTry.get().getId()).isEqualTo(processDefinitionSecondTry.get().getId());
 
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
   }
 
   @Test
@@ -104,7 +104,7 @@ public class ProcessDefinitionResolverServiceTest {
         ProcessDefinitionOptimizeDto::getKey
       )
       .containsExactly(id, TEST_KEY);
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchProcessDefinition(id);
   }
 
@@ -121,13 +121,13 @@ public class ProcessDefinitionResolverServiceTest {
 
     //then
     assertThat(firstProcessDefinitionTry).isPresent();
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchProcessDefinition(id);
 
     // when
     final Optional<ProcessDefinitionOptimizeDto> secondProcessDefinitionTry =
       underTest.getDefinition(id, engineContext);
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchProcessDefinition(id);
     assertThat(secondProcessDefinitionTry).isPresent();
     assertThat(firstProcessDefinitionTry).contains(secondProcessDefinitionTry.get());
@@ -146,7 +146,7 @@ public class ProcessDefinitionResolverServiceTest {
 
     //then
     assertThat(processDefinitionResult).isNotPresent();
-    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchProcessDefinition(id);
   }
 
@@ -161,7 +161,7 @@ public class ProcessDefinitionResolverServiceTest {
         .deleted(false)
         .build()
     );
-    when(processDefinitionReader.getProcessDefinitions(false, false)).thenReturn(mockedDefinitions);
+    when(processDefinitionReader.getProcessDefinitions(false, false, true)).thenReturn(mockedDefinitions);
   }
 
   private void mockProcessDefinitionForEngineContext(final String id) {

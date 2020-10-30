@@ -714,7 +714,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void processDefinitiosnMarkedAsDeletedIfMultipleNewDeployments() {
+  public void processDefinitionsMarkedAsDeletedIfMultipleNewDeployments() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto firstDeletedDefinition =

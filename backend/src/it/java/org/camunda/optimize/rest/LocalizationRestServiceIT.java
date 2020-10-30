@@ -17,8 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalizationRestServiceIT extends AbstractIT {
 
@@ -34,7 +33,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = localizationClient.getLocalizationJson(localeCode);
 
     // then
-    assertThat(localeJson, is(expectedLocaleJson));
+    assertThat(localeJson).isEqualTo(expectedLocaleJson);
   }
 
   @Test
@@ -49,7 +48,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = localizationClient.getLocalizationJson(localeCode);
 
     // then
-    assertThat(localeJson, is(expectedLocaleJson));
+    assertThat(localeJson).isEqualTo(expectedLocaleJson);
   }
 
   @Test
@@ -63,7 +62,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = localizationClient.getLocalizationJson(null);
 
     // then
-    assertThat(localeJson, is(expectedLocaleJson));
+    assertThat(localeJson).isEqualTo(expectedLocaleJson);
   }
 
   @Test
@@ -79,7 +78,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @ParameterizedTest
@@ -92,7 +91,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
 
     // then
-    assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
+    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
   }
 
   @Test
@@ -107,7 +106,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
 
     // then
-    assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
+    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
   }
 
   @Test
@@ -120,7 +119,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(null);
 
     // then
-    assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
+    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
   }
 
 
@@ -137,7 +136,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @SneakyThrows

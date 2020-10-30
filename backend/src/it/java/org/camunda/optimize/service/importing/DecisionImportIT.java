@@ -375,6 +375,30 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void decisionDefinitionIsResolvedAsDeletedWhenImportingInstance() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto definitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition(definitionModel, DEFAULT_TENANT);
+    engineIntegrationExtension.deleteDeploymentById(definitionEngineDto.getDeploymentId());
+    saveDeletedDefinitionToElasticsearch(definitionEngineDto);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<DecisionInstanceDto> allDecisionInstances =
+      elasticSearchIntegrationTestExtension.getAllDecisionInstances();
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+
+    // then
+    assertThat(allDecisionDefinitions).singleElement()
+      .satisfies(def -> assertThat(def.isDeleted()).isTrue());
+    assertThat(allDecisionInstances).isNotEmpty()
+      .extracting(DecisionInstanceDto::getDecisionDefinitionKey)
+      .allMatch(key -> key.equals(definitionEngineDto.getKey()));
+  }
+
+  @Test
   public void decisionDefinitionMarkedAsDeletedOtherVersionsNotAffected() {
     // given
     final DmnModelInstance definitionModel = createDefaultDmnModel();
@@ -900,6 +924,24 @@ public class DecisionImportIT extends AbstractImportIT {
     });
     assertThat(dto.getEngine()).isNotNull();
     assertThat(dto.getTenantId()).isNull();
+  }
+
+  private void saveDeletedDefinitionToElasticsearch(final DecisionDefinitionEngineDto definitionEngineDto) {
+    final DecisionDefinitionOptimizeDto expectedDto = DecisionDefinitionOptimizeDto.builder()
+      .id(definitionEngineDto.getId())
+      .key(definitionEngineDto.getKey())
+      .name(definitionEngineDto.getName())
+      .version(definitionEngineDto.getVersionAsString())
+      .tenantId(definitionEngineDto.getTenantId().orElse(null))
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .deleted(true)
+      .dmn10Xml("someXml")
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      DECISION_DEFINITION_INDEX_NAME,
+      expectedDto.getId(),
+      expectedDto
+    );
   }
 
 }

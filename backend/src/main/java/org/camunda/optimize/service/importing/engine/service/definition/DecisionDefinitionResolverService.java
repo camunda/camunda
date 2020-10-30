@@ -27,7 +27,7 @@ public class DecisionDefinitionResolverService extends AbstractDefinitionResolve
 
   @Override
   protected void syncCache() {
-    decisionDefinitionReader.getDecisionDefinitions(false, false)
+    decisionDefinitionReader.getDecisionDefinitions(false, false, true)
       .forEach(this::addToCacheIfNotNull);
   }
 

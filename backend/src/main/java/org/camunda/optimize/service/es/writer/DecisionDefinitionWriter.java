@@ -64,8 +64,6 @@ public class DecisionDefinitionWriter {
   }
 
   public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
-    log.info("Marking old definitions with new deployments as deleted");
-
     final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
     importedDefinitions
       .forEach(definition -> {
@@ -81,7 +79,7 @@ public class DecisionDefinitionWriter {
         definitionsToDeleteQuery.should(matchingDefinitionQuery);
       });
 
-    return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+    final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       "decisionDefinition",
       "decision definition deleted",
@@ -89,6 +87,10 @@ public class DecisionDefinitionWriter {
       definitionsToDeleteQuery,
       DECISION_DEFINITION_INDEX_NAME
     );
+    if (definitionsUpdated) {
+      log.debug("Marked old definitions with new deployments as deleted");
+    }
+    return definitionsUpdated;
   }
 
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {

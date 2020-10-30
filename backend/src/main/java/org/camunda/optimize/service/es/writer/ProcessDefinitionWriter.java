@@ -62,8 +62,6 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
   }
 
   public boolean markRedeployedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
-    log.info("Marking old definitions with new deployments as deleted");
-
     final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
     importedDefinitions
       .forEach(definition -> {
@@ -79,7 +77,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
         definitionsToDeleteQuery.should(matchingDefinitionQuery);
       });
 
-    return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+    final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       "processDefinition",
       "process definition deleted",
@@ -87,6 +85,10 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
       definitionsToDeleteQuery,
       PROCESS_DEFINITION_INDEX_NAME
     );
+    if (definitionsUpdated) {
+      log.debug("Marked old definitions with new deployments as deleted");
+    }
+    return definitionsUpdated;
   }
 
   @Override

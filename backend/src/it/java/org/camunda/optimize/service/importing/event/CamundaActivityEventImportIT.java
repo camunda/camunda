@@ -9,6 +9,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -39,8 +41,12 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
@@ -505,6 +511,31 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isFalse();
   }
 
+  @Test
+  public void processDefinitionIsResolvedAsDeletedWhenImportingInstanceData() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto deletedDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+    engineIntegrationExtension.startProcessInstance(deletedDefinition.getId());
+    engineIntegrationExtension.deleteDeploymentById(deletedDefinition.getDeploymentId());
+    saveDeletedDefinitionToElasticsearch(deletedDefinition);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<CamundaActivityEventDto> savedCamundaEvents =
+      elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(deletedDefinition.getKey());
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+
+    // then
+    assertThat(allProcessDefinitions).singleElement()
+      .satisfies(def -> assertThat(def.isDeleted()).isTrue());
+    assertThat(savedCamundaEvents).isNotEmpty()
+      .extracting(CamundaActivityEventDto::getProcessDefinitionKey)
+      .allMatch(key -> key.equals(deletedDefinition.getKey()));
+  }
+
   private CamundaActivityEventDto createAssertionEvent(final String activityId,
                                                        final String activityName,
                                                        final String activityType,
@@ -580,6 +611,24 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .getHighLevelClient()
       .indices()
       .create(request, RequestOptions.DEFAULT);
+  }
+
+  private void saveDeletedDefinitionToElasticsearch(final ProcessDefinitionEngineDto definitionEngineDto) {
+    final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
+      .id(definitionEngineDto.getId())
+      .key(definitionEngineDto.getKey())
+      .name(definitionEngineDto.getName())
+      .version(definitionEngineDto.getVersionAsString())
+      .tenantId(definitionEngineDto.getTenantId().orElse(null))
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .deleted(true)
+      .bpmn20Xml("someXml")
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      expectedDto.getId(),
+      expectedDto
+    );
   }
 
 }

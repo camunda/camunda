@@ -28,8 +28,6 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
@@ -56,7 +54,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
           report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(3L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(3L);
     }
   }
 
@@ -80,7 +78,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
           report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(5L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(5L);
     }
   }
 
@@ -103,7 +101,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
           report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(1L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(1L);
     }
 
     // when
@@ -118,7 +116,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
           report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(4L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(4L);
     }
   }
 
@@ -138,7 +136,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
       ProcessReportResultDto result = reportClient.evaluateReport(report).getResult();
 
       // then
-      assertThat(result.getInstanceCount()).isEqualTo(0);
+      assertThat(result.getInstanceCount()).isZero();
     }
   }
 

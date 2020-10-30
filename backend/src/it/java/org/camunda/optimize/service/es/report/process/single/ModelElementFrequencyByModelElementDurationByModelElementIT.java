@@ -347,6 +347,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     );
     AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
+
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData())

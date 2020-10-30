@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,10 +39,10 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     return Stream.of(EVENT_BASED, NOT_EVENT_BASED);
   }
 
-  @ParameterizedTest(name = "Get {0} process definitions.")
+  @ParameterizedTest
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitions(final String processDefinitionType) {
-    //given
+    // given
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addDefinitionToElasticsearch(
       KEY,
       processDefinitionType
@@ -50,14 +51,31 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     // when
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
-    // then the status code is okay
+    // then
     assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionOptimizeDto.getId());
   }
 
+  @Test
+  public void getProcessDefinitionsExcludesDeletedDefinitions() {
+    // given
+    final ProcessDefinitionOptimizeDto definition = addProcessDefinitionToElasticsearch(KEY, "1", null, false);
+    // the deleted definition will be excluded from the results
+    addProcessDefinitionToElasticsearch(KEY, "2", null, true);
+
+    // when
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
+
+    // then
+    assertThat(definitions).singleElement()
+      .satisfies(returnedDef -> {
+        assertThat(returnedDef.getKey()).isEqualTo(definition.getKey());
+        assertThat(returnedDef.isDeleted()).isFalse();
+      });
+  }
 
   @Test
   public void getProcessDefinitionsReturnOnlyThoseAuthorizedToSeeAndAllEventProcessDefinitions() {
-    //given
+    // given
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey1 = "access1";
     final String authorizedDefinitionKey2 = "access2";
@@ -74,7 +92,10 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey3, new UserDto(KERMIT_USER)).getId();
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(KERMIT_USER, KERMIT_USER);
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then we only get 3 definitions, the one kermit is authorized to see and all event based definitions
     assertThat(definitions)
@@ -98,7 +119,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get {0} process definitions with XML.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionsWithXml(final String processDefinitionType) {
-    //given
+    // given
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addDefinitionToElasticsearch(
       KEY,
       processDefinitionType
@@ -120,7 +141,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get XML of {0} process definition.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXml(final String processDefinitionType) {
-    //given
+    // given
     ProcessDefinitionOptimizeDto expectedDto = addDefinitionToElasticsearch(KEY, processDefinitionType);
 
     // when
@@ -133,7 +154,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get the latest XML of {0} process definition.")
   @MethodSource("processDefinitionTypes")
   public void getLatestProcessDefinitionXml(final String processDefinitionType) {
-    //given
+    // given
     ProcessDefinitionOptimizeDto expectedDto1 = addDefinitionToElasticsearch(KEY, "1", processDefinitionType);
     ProcessDefinitionOptimizeDto expectedDto2 = addDefinitionToElasticsearch(KEY, "2", processDefinitionType);
 
@@ -146,7 +167,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   @Test
   public void getProcessDefinitionXmlByTenant() {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     final String secondTenantId = "tenant2";
     ProcessDefinitionOptimizeDto firstTenantDefinition = addProcessDefinitionToElasticsearch(KEY, firstTenantId);
@@ -162,7 +183,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   @Test
   public void getSharedProcessDefinitionXmlByNullTenant() {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     ProcessDefinitionOptimizeDto firstTenantDefinition = addProcessDefinitionToElasticsearch(
       KEY,
@@ -174,7 +195,11 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     );
 
     // when
-    String actualXml = definitionClient.getProcessDefinitionXml(secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null);
+    String actualXml = definitionClient.getProcessDefinitionXml(
+      secondTenantDefinition.getKey(),
+      secondTenantDefinition.getVersion(),
+      null
+    );
 
     // then
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getBpmn20Xml());
@@ -183,12 +208,16 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get XML of {0} process definition for null tenant.")
   @MethodSource("processDefinitionTypes")
   public void getSharedProcessDefinitionXmlByTenantWithNoSpecificDefinition(final String processDefinitionType) {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     ProcessDefinitionOptimizeDto sharedTenantDefinition = addDefinitionToElasticsearch(KEY, processDefinitionType);
 
     // when
-    String actualXml = definitionClient.getProcessDefinitionXml(sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId);
+    String actualXml = definitionClient.getProcessDefinitionXml(
+      sharedTenantDefinition.getKey(),
+      sharedTenantDefinition.getVersion(),
+      firstTenantId
+    );
 
     // then
     assertThat(actualXml).isEqualTo(sharedTenantDefinition.getBpmn20Xml());
@@ -197,7 +226,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get XML of {0} process definition with null parameter returns 404.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXmlWithNullParameter(final String processDefinitionType) {
-    //given
+    // given
     ProcessDefinitionOptimizeDto expectedDto = addDefinitionToElasticsearch(KEY, processDefinitionType);
 
     // when
@@ -269,7 +298,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get {0} process definition with nonexistent version returns 404 message.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXmlWithNonsenseVersionReturns404Code(final String processDefinitionType) {
-    //given
+    // given
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
       addDefinitionToElasticsearch(
         KEY,
@@ -290,7 +319,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @ParameterizedTest(name = "Get {0} process definition with nonexistent key returns 404 message.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXmlWithNonsenseKeyReturns404Code(final String processDefinitionType) {
-    //given
+    // given
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
       addDefinitionToElasticsearch(
         KEY,
@@ -338,28 +367,28 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                            final String tenantId) {
-    return addProcessDefinitionToElasticsearch(key, "1", tenantId, null);
+    return addProcessDefinitionToElasticsearch(key, "1", tenantId);
   }
 
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                            final String version,
                                                                            final String tenantId) {
-    return addProcessDefinitionToElasticsearch(key, version, tenantId, null);
+    return addProcessDefinitionToElasticsearch(key, version, tenantId, false);
   }
 
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                            final String version,
                                                                            final String tenantId,
-                                                                           final String name) {
+                                                                           final boolean deleted) {
     final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
-      .name(name)
       .version(version)
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
       .engine(DEFAULT_ENGINE_ALIAS)
       .bpmn20Xml(key + version + tenantId)
+      .deleted(deleted)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME,

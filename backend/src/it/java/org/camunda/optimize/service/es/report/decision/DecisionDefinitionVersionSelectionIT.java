@@ -26,8 +26,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_AMOUNT;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefinitionIT {
 
@@ -46,11 +44,11 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(3L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(3L);
     }
   }
 
@@ -70,11 +68,10 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
       AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(
-        report);
+        reportClient.evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(5L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(5L);
     }
   }
 
@@ -90,11 +87,11 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(1L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(1L);
     }
 
     deployDecisionAndStartInstances(4);
@@ -103,11 +100,11 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(4L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(4L);
     }
   }
 
@@ -127,7 +124,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       DecisionReportResultDto result = reportClient.evaluateReport(report).getResult();
 
       // then
-      assertThat(result.getInstanceCount()).isEqualTo(0);
+      assertThat(result.getInstanceCount()).isZero();
     }
   }
 

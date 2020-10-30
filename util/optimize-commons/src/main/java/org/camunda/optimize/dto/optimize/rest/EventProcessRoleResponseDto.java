@@ -7,12 +7,10 @@ package org.camunda.optimize.dto.optimize.rest;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 public class EventProcessRoleResponseDto extends EventProcessRoleRequestDto<IdentityWithMetadataResponseDto> {
 
   public EventProcessRoleResponseDto(final IdentityWithMetadataResponseDto identity) {

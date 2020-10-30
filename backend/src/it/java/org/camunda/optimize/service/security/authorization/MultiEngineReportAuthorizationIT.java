@@ -25,12 +25,11 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
@@ -75,8 +74,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     engineMockServer.verify(
       request().withPath(engineIntegrationExtension.getEnginePath() + "/authorization"));
     secondaryEngineMockServer.verify(
@@ -107,7 +106,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -136,7 +135,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -163,7 +162,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -190,7 +189,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -241,7 +240,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -278,7 +277,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -315,7 +314,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -365,8 +364,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseDefaultEngineKey.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -405,7 +404,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -444,7 +443,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

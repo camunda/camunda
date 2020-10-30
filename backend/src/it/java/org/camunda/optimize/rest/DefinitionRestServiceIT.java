@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -87,6 +88,28 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKeyReturnsNonDeletedDefinition(final DefinitionType definitionType) {
+    // given
+    final DefinitionOptimizeResponseDto nonDeletedDefinition = createDefinitionAndAddToElasticsearch(
+      definitionType, "key", "1", null, "not deleted", false
+    );
+    createDefinitionAndAddToElasticsearch(definitionType, "key", "1", null, "deleted", true);
+
+    // when
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      nonDeletedDefinition
+    );
+
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(nonDeletedDefinition.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(nonDeletedDefinition.getName());
+    assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
+  }
+
   @Test
   public void getEventDefinitionByTypeAndKey() {
     // given
@@ -132,8 +155,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionByTypeAndKey_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -148,7 +169,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_specificTenantDefinitions(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     // should not be in the result
@@ -177,7 +198,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_sharedDefinition(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
@@ -204,7 +225,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_sharedAndSpecificDefinition(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
@@ -232,7 +253,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions() {
-    //given
+    // given
     final DefinitionOptimizeResponseDto processDefinition1 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process1", "1", null, "Process Definition1"
     );
@@ -259,6 +280,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
     final DefinitionOptimizeResponseDto eventProcessDefinition3 = createEventBasedDefinition(
       "eventProcess3", "an event process Definition3"
+    );
+    // deleted definitions will not be included in the result
+    createDefinitionAndAddToElasticsearch(
+      PROCESS, "process1", "1", null, "Process Definition1", true
+    );
+    createDefinitionAndAddToElasticsearch(
+      DECISION, "decision1", "1", null, "Decision Definition1", true
     );
 
     // when
@@ -323,7 +351,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_specificTenantDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -391,7 +419,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_sharedDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -436,7 +464,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -537,8 +565,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -569,6 +595,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
     final DefinitionOptimizeResponseDto definition3 = createDefinitionAndAddToElasticsearch(
       definitionType, "3", "1", null, "a"
+    );
+    // another definition that is deleted, which should not be returned
+    final DefinitionOptimizeResponseDto deleted = createDefinitionAndAddToElasticsearch(
+      definitionType, "deletedKey", "1", null, "deleted", true
     );
     // also create a definition of another type, should not be returned
     final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
@@ -645,8 +675,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionKeysByType_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -813,6 +841,28 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .containsExactly(
         new DefinitionVersionResponseDto("4", VERSION_TAG),
         new DefinitionVersionResponseDto("3", VERSION_TAG),
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKeyExcludesDeletedDefinitions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "deleted", true);
+
+    // when
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
         new DefinitionVersionResponseDto("2", VERSION_TAG),
         new DefinitionVersionResponseDto("1", VERSION_TAG)
       );
@@ -1102,9 +1152,35 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(tenantsForAllVersions).isEmpty();
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_excludesDeletedDefinitions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_3.getId(), "deleted", true);
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2")
+      );
+
+    // then only the non-deleted tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
+      );
+  }
+
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_specificTenantDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1141,6 +1217,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
+    // the deleted definition should not be included in the grouped results
+    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_3.getId(), processName1, true);
 
     // when
     final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
@@ -1173,7 +1251,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1233,7 +1311,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1340,7 +1418,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_unauthenticated() {
-    //given
+    // given
 
     // when
     final Response response = embeddedOptimizeExtension
@@ -1386,7 +1464,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
-    //given
+    // given
     final Integer bucketLimit = 1000;
     final Integer definitionCount = bucketLimit * 2;
 
@@ -1425,11 +1503,20 @@ public class DefinitionRestServiceIT extends AbstractIT {
                                                                               final String version,
                                                                               final String tenantId,
                                                                               final String name) {
+    return createDefinitionAndAddToElasticsearch(definitionType, key, version, tenantId, name, false);
+  }
+
+  private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
+                                                                              final String key,
+                                                                              final String version,
+                                                                              final String tenantId,
+                                                                              final String name,
+                                                                              final boolean deleted) {
     switch (definitionType) {
       case PROCESS:
-        return addProcessDefinitionToElasticsearch(key, version, tenantId, name);
+        return addProcessDefinitionToElasticsearch(key, version, tenantId, name, deleted);
       case DECISION:
-        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name);
+        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name, deleted);
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + definitionType);
     }
@@ -1438,9 +1525,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
   private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
                                                                              final String version,
                                                                              final String tenantId,
-                                                                             final String name) {
+                                                                             final String name,
+                                                                             final boolean deleted) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
       .version(version)
       .versionTag(VERSION_TAG)
@@ -1448,6 +1536,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .engine(DEFAULT_ENGINE_ALIAS)
       .name(name)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
+      .deleted(deleted)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
@@ -1458,8 +1547,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                            final String version,
                                                                            final String tenantId,
-                                                                           final String name) {
+                                                                           final String name,
+                                                                           final boolean deleted) {
     final ProcessDefinitionOptimizeDto expectedDto = createProcessDefinition(key, version, tenantId, name);
+    expectedDto.setDeleted(deleted);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
@@ -1473,7 +1564,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
                                                                final String tenantId,
                                                                final String name) {
     return ProcessDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
       .name(name)
       .version(version)

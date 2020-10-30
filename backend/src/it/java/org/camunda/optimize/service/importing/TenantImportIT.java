@@ -10,10 +10,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TenantImportIT extends AbstractImportIT {
 
@@ -30,11 +29,11 @@ public class TenantImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
-    assertThat(hit.getSourceAsMap().get(TenantDto.Fields.name.name()), is(tenantName));
-    assertThat(hit.getSourceAsMap().get(TenantDto.Fields.engine.name()), is(DEFAULT_ENGINE_ALIAS));
+    assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.id.name(), tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.name.name(), tenantName);
+    assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.engine.name(), DEFAULT_ENGINE_ALIAS);
   }
 
   @Test
@@ -51,7 +50,7 @@ public class TenantImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(3L);
   }
 
   @Test
@@ -72,10 +71,10 @@ public class TenantImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
-    assertThat(hit.getSourceAsMap().get(TenantDto.Fields.name.name()), is(newTenantName));
+    assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.id.name(), tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.name.name(), newTenantName);
   }
 
   @Test
@@ -93,10 +92,8 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getIndexHandlerRegistry().getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex(),
-      is(2L)
-    );
+    assertThat(embeddedOptimizeExtension.getIndexHandlerRegistry()
+                 .getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex()).isEqualTo(2L);
   }
 
 }

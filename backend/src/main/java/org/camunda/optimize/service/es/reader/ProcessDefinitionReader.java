@@ -21,8 +21,9 @@ public class ProcessDefinitionReader {
   private final DefinitionReader definitionReader;
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final boolean fullyImported,
-                                                                  final boolean withXml) {
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, fullyImported, withXml);
+                                                                  final boolean withXml,
+                                                                  final boolean includeDeleted) {
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, fullyImported, withXml, includeDeleted);
   }
 
   public String getLatestVersionToKey(String key) {
