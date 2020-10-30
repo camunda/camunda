@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
+
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
@@ -66,5 +67,10 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
 
   private String convertIdentityToRoleId(final IdentityWithMetadataResponseDto identity) {
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
+
+  public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(final CollectionRoleRequestDto roleDto,
+                                                                                           T identityWithMetaData) {
+    return new CollectionRoleResponseDto(identityWithMetaData, roleDto.getRole());
   }
 }

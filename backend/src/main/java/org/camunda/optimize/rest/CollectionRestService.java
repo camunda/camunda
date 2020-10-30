@@ -266,7 +266,10 @@ public class CollectionRestService {
   public List<AuthorizedReportDefinitionResponseDto> getReports(@Context ContainerRequestContext requestContext,
                                                                 @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<AuthorizedReportDefinitionResponseDto> reports = collectionEntityService.findAndFilterReports(userId, collectionId);
+    List<AuthorizedReportDefinitionResponseDto> reports = collectionEntityService.findAndFilterReports(
+      userId,
+      collectionId
+    );
     reports.forEach(reportRestMapper::prepareRestResponse);
     return reports;
   }

@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -25,5 +26,23 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
                                                final CollectionDefinitionRestDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
+  }
+
+  public static AuthorizedCollectionDefinitionRestDto from(
+    final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
+
+    final CollectionDefinitionDto collectionDefinitionDto = authorizedCollectionDto.getDefinitionDto();
+    final CollectionDefinitionRestDto resolvedCollection = new CollectionDefinitionRestDto();
+    resolvedCollection.setId(collectionDefinitionDto.getId());
+    resolvedCollection.setName(collectionDefinitionDto.getName());
+    resolvedCollection.setLastModifier(collectionDefinitionDto.getLastModifier());
+    resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
+    resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
+    resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
+
+    resolvedCollection.setData(collectionDefinitionDto.getData());
+    return new AuthorizedCollectionDefinitionRestDto(
+      authorizedCollectionDto.getCurrentUserRole(), resolvedCollection
+    );
   }
 }

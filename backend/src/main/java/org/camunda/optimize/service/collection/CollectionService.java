@@ -54,7 +54,7 @@ public class CollectionService {
         collectionId
       );
 
-    return mapToCollectionRestDto(collectionDefinition);
+    return AuthorizedCollectionDefinitionRestDto.from(collectionDefinition);
   }
 
   public void updatePartialCollection(final String userId,
@@ -105,23 +105,6 @@ public class CollectionService {
     return authorizedCollectionService.getAuthorizedCollectionDefinitions(userId);
   }
 
-  public AuthorizedCollectionDefinitionRestDto mapToCollectionRestDto(
-    final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
-
-    final CollectionDefinitionDto collectionDefinitionDto = authorizedCollectionDto.getDefinitionDto();
-    final CollectionDefinitionRestDto resolvedCollection = new CollectionDefinitionRestDto();
-    resolvedCollection.setId(collectionDefinitionDto.getId());
-    resolvedCollection.setName(collectionDefinitionDto.getName());
-    resolvedCollection.setLastModifier(collectionDefinitionDto.getLastModifier());
-    resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
-    resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
-    resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
-
-    resolvedCollection.setData(collectionDefinitionDto.getData());
-    return new AuthorizedCollectionDefinitionRestDto(
-      authorizedCollectionDto.getCurrentUserRole(), resolvedCollection
-    );
-  }
 
   public IdResponseDto copyCollection(String userId, String collectionId, String newCollectionName) {
     AuthorizedCollectionDefinitionDto oldCollection = authorizedCollectionService
@@ -155,6 +138,6 @@ public class CollectionService {
 
   private AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(
     final AuthorizedCollectionDefinitionDto collectionDefinitionDto) {
-    return mapToCollectionRestDto(collectionDefinitionDto);
+    return AuthorizedCollectionDefinitionRestDto.from(collectionDefinitionDto);
   }
 }

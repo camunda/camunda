@@ -55,4 +55,17 @@ public class DefinitionWithTenantsResponseDto extends SimpleDefinitionDto {
     super(key, name, type, false, Collections.singleton(engine));
     this.tenants = tenants;
   }
+
+  public static DefinitionWithTenantsResponseDto from(
+    final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
+    final List<TenantDto> authorizedTenants) {
+    return new DefinitionWithTenantsResponseDto(
+      definitionWithTenantIdsDto.getKey(),
+      definitionWithTenantIdsDto.getName(),
+      definitionWithTenantIdsDto.getType(),
+      definitionWithTenantIdsDto.getIsEventProcess(),
+      authorizedTenants,
+      definitionWithTenantIdsDto.getEngines()
+    );
+  }
 }

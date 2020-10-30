@@ -51,7 +51,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -251,34 +250,25 @@ public class EventBasedProcessRestService {
   }
 
   private EventProcessMappingResponseDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
-    final Optional<String> lastModifierName = identityService.getIdentityNameById(dto.getLastModifier());
-    return EventProcessMappingResponseDto.builder()
-      .id(dto.getId())
-      .lastModified(dto.getLastModified())
-      .lastModifier(lastModifierName.orElse(dto.getLastModifier()))
-      .mappings(dto.getMappings())
-      .name(dto.getName())
-      .state(dto.getState())
-      .publishingProgress(dto.getPublishingProgress())
-      .xml(dto.getXml())
-      .eventSources(mapSourceEntriesToRestDtos(userId, dto.getEventSources()))
-      .build();
+    final String lastModifierName = identityService.getIdentityNameById(dto.getLastModifier())
+      .orElse(dto.getLastModifier());
+    return EventProcessMappingResponseDto.from(
+      dto,
+      lastModifierName,
+      mapSourceEntriesToRestDtos(
+        userId,
+        dto.getEventSources()
+      )
+    );
   }
 
   private List<EventSourceEntryResponseDto> mapSourceEntriesToRestDtos(final String userId,
                                                                        final List<EventSourceEntryDto> eventSourceDtos) {
     return eventSourceDtos.stream()
-      .map(eventSource -> EventSourceEntryResponseDto.builder()
-        .id(eventSource.getId())
-        .type(eventSource.getType())
-        .eventScope(eventSource.getEventScope())
-        .processDefinitionKey(eventSource.getProcessDefinitionKey())
-        .processDefinitionName(getDefinitionName(userId, eventSource))
-        .tracedByBusinessKey(eventSource.isTracedByBusinessKey())
-        .traceVariable(eventSource.getTraceVariable())
-        .versions(eventSource.getVersions())
-        .tenants(eventSource.getTenants())
-        .build())
+      .map(eventSource -> EventSourceEntryResponseDto.from(
+        eventSource,
+        getDefinitionName(userId, eventSource)
+      ))
       .collect(toList());
   }
 

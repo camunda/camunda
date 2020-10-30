@@ -62,10 +62,9 @@ public class CollectionRoleService {
     if (requestIdentityDto.getType() == null) {
       final IdentityDto resolvedIdentityDto =
         identityService.getIdentityWithMetadataForId(requestIdentityDto.getId())
-          .orElseThrow(
-            () -> new OptimizeUserOrGroupIdNotFoundException(
-              String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
-            )
+          .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
+                         String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
+                       )
           )
           .toIdentityDto();
       role.setIdentity(resolvedIdentityDto);
@@ -105,7 +104,14 @@ public class CollectionRoleService {
       .getRoles()
       .stream()
       .filter(role -> identityService.isUserAuthorizedToAccessIdentity(userId, role.getIdentity()))
-      .map(this::mapRoleDtoToRoleRestDto)
+      .map(roleDto -> CollectionRoleResponseDto.from(
+        roleDto,
+        identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+          .orElseThrow(() -> new OptimizeRuntimeException(
+                         "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
+                           + roleDto.getIdentity().toString() + "] could not be found."
+                       ))
+      ))
       .collect(toList());
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
@@ -125,15 +131,6 @@ public class CollectionRoleService {
 
     Collections.sort(roles);
     return roles;
-  }
-
-  private CollectionRoleResponseDto mapRoleDtoToRoleRestDto(final CollectionRoleRequestDto roleDto) {
-    return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
-      .map(identityDto -> new CollectionRoleResponseDto(identityDto, roleDto.getRole()))
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
-          + roleDto.getIdentity().toString() + "] could not be found."
-      ));
   }
 
 }
