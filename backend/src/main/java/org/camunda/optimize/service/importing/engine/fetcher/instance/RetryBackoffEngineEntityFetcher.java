@@ -14,6 +14,9 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,16 +56,14 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     while (result == null) {
       try {
         result = fetchFunction.get();
-      } catch (Exception exception) {
-        if (exception instanceof ClientErrorException) {
-          logger.warn("ClientError on fetching entity: {}", exception.getMessage(), exception);
-          result = new ArrayList<>();
-        } else {
-          logError(exception);
-          long timeToSleep = backoffCalculator.calculateSleepTime();
-          logDebugSleepInformation(timeToSleep);
-          sleep(timeToSleep);
-        }
+      } catch (ClientErrorException ex) {
+        logger.warn("ClientError on fetching entity: {}", ex.getMessage(), ex);
+        result = new ArrayList<>();
+      } catch (Exception ex) {
+        logError(ex);
+        long timeToSleep = backoffCalculator.calculateSleepTime();
+        logDebugSleepInformation(timeToSleep);
+        sleep(timeToSleep);
       }
     }
     backoffCalculator.resetBackoff();
@@ -85,11 +86,18 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
   }
 
   private void logError(Exception e) {
-    logger.error(
-      "Error during fetching of entities. Please check the connection with [{}]!",
-      engineContext.getEngineAlias(),
-      e
-    );
+    StringBuilder errorMessageBuilder = new StringBuilder();
+    errorMessageBuilder.append(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!",
+      engineContext.getEngineAlias()
+    ));
+    if (e instanceof NotFoundException || e instanceof ForbiddenException) {
+      errorMessageBuilder.append(" Make sure all required engine authorizations exist");
+    } else if (e instanceof NotAuthorizedException) {
+      errorMessageBuilder.append(" Make sure you have configured an authorized user");
+    }
+    final String msg = errorMessageBuilder.toString();
+    logger.error(msg, e);
   }
 
 }

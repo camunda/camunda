@@ -13,7 +13,9 @@ import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
+import org.mockserver.model.HttpResponse;
 
+import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -86,6 +88,16 @@ public abstract class AbstractImportIT extends AbstractIT {
 
   protected static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<ErrorResponseMock> engineAuthorizationErrors() {
+    return Stream.of(
+      (request, times, mockServer) -> mockServer.when(request, times)
+        .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode())),
+      (request, times, mockServer) -> mockServer.when(request, times)
+        .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))
+    );
   }
 
 }

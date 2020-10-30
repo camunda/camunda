@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,9 +32,11 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -68,9 +71,12 @@ public class DecisionImportIT extends AbstractImportIT {
 
   @RegisterExtension
   @Order(5)
-  protected final LogCapturer logCapturer = LogCapturer.create()
-    .forLevel(Level.DEBUG)
-    .captureForType(DecisionInstanceImportService.class);
+  protected final LogCapturer importServiceLogCapturer =
+    LogCapturer.create().forLevel(Level.DEBUG).captureForType(DecisionInstanceImportService.class);
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer definitionFetcherLogCapturer =
+    LogCapturer.create().captureForType(DecisionDefinitionFetcher.class);
 
   @Test
   public void importOfDecisionDataCanBeDisabled() {
@@ -704,7 +710,7 @@ public class DecisionImportIT extends AbstractImportIT {
     // then no definition or instances are saved
     assertThat(definitionClient.getAllDecisionDefinitions()).isEmpty();
     assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
-    logCapturer.assertContains(String.format(
+    importServiceLogCapturer.assertContains(String.format(
       "Cannot retrieve definition for definition with ID %s.", decisionDefinitionEngineDto.getId()));
   }
 
@@ -727,7 +733,7 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(otherDefinition.getId()));
-    logCapturer.assertContains(String.format(
+    importServiceLogCapturer.assertContains(String.format(
       "Cannot retrieve definition for definition with ID %s.", deletedDefinition.getId()));
   }
 
@@ -759,6 +765,48 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
       .hasSize(2)
       .allSatisfy(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(decisionDefinition.getId()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("engineAuthorizationErrors")
+  public void definitionImportMissingAuthorizationLogsMessage(final ErrorResponseMock authorizationError) {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    authorizationError.mock(requestMatcher, Times.once(), engineMockServer);
+
+    // when
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    definitionFetcherLogCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure all required engine authorizations exist", DEFAULT_ENGINE_ALIAS));
+  }
+
+  @Test
+  public void definitionImportBadAuthorizationLogsMessage() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    engineMockServer.when(requestMatcher, Times.once())
+      .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
+
+    // when
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    definitionFetcherLogCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure you have configured an authorized user", DEFAULT_ENGINE_ALIAS));
   }
 
   private SearchResponse getDecisionDefinitionIndexById() throws IOException {

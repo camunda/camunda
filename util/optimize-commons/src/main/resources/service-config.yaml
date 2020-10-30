@@ -103,7 +103,7 @@ engines:
       # of the user and password.
       # Also note, when enabled, it is required that the user has
       # * READ & READ_HISTORY permission on the Process and Decision Definition resources
-      # * READ permission on the Authorization, Group, User & Tenant resources
+      # * READ permission on the Authorization, Group, User, Deployment & Tenant resources
       # to enable users to log in and Optimize to import the engine data.
       enabled: false
       # When basic authentication is enabled, this password is used to

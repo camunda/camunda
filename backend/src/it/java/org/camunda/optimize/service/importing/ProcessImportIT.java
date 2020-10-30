@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchRequest;
@@ -28,14 +30,18 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import org.mockserver.verify.VerificationTimes;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -51,6 +57,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
@@ -70,6 +77,11 @@ public class ProcessImportIT extends AbstractImportIT {
     Collections.singleton(ProcessInstanceIndex.TENANT_ID);
   private static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(ProcessDefinitionIndex.TENANT_ID);
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().captureForType(ProcessDefinitionFetcher.class);
 
   @Test
   public void importCanBeDisabled() {
@@ -603,6 +615,48 @@ public class ProcessImportIT extends AbstractImportIT {
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     List<ProcessDefinitionOptimizeDto> processDefinitions = definitionClient.getAllProcessDefinitions();
     assertThat(processDefinitions).hasSize(1);
+  }
+
+  @ParameterizedTest
+  @MethodSource("engineAuthorizationErrors")
+  public void definitionImportMissingAuthorizationLogsMessage(final ErrorResponseMock authorizationError) {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    authorizationError.mock(requestMatcher, Times.once(), engineMockServer);
+
+    // when
+    deployAndStartSimpleServiceTask();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    logCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure all required engine authorizations exist", DEFAULT_ENGINE_ALIAS));
+  }
+
+  @Test
+  public void definitionImportBadAuthorizationLogsMessage() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    engineMockServer.when(requestMatcher, Times.once())
+      .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
+
+    // when
+    deployAndStartSimpleServiceTask();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    logCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure you have configured an authorized user", DEFAULT_ENGINE_ALIAS));
   }
 
   private static Stream<String> tenants() {

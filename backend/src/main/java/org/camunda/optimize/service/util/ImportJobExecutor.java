@@ -36,7 +36,7 @@ public abstract class ImportJobExecutor {
   private ThreadPoolExecutor importExecutor;
 
   public boolean isActive() {
-    return importExecutor.getActiveCount() > 0 || importExecutor.getQueue().size() > 0;
+    return importExecutor.getActiveCount() > 0 || !importExecutor.getQueue().isEmpty();
   }
 
   public void executeImportJob(final Runnable elasticsearchImportJob) {
