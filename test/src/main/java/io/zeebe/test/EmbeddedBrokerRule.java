@@ -26,7 +26,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -46,13 +45,14 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
-  protected static final Logger LOG = new ZbLogger("io.zeebe.test");
+  protected static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =

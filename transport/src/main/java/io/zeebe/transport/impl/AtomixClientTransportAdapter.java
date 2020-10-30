@@ -11,7 +11,6 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -22,10 +21,11 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AtomixClientTransportAdapter extends Actor implements ClientTransport {
 
-  private static final Logger LOG = new ZbLogger(AtomixClientTransportAdapter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AtomixClientTransportAdapter.class);
   private static final Duration RETRY_DELAY = Duration.ofMillis(10);
   private static final String NO_REMOTE_ADDRESS_FOUND_ERROR_MESSAGE =
       "Failed to send request to %s, no remote address found.";

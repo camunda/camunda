@@ -7,10 +7,10 @@
  */
 package io.zeebe.protocol.impl;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
 
-  public static final Logger PROTOCOL_LOGGER = new ZbLogger("io.zeebe.protocol");
+  public static final Logger PROTOCOL_LOGGER = LoggerFactory.getLogger("io.zeebe.protocol");
 }

@@ -7,11 +7,11 @@
  */
 package io.zeebe.test.util;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestEnvironment {
-  private static final Logger LOG = new ZbLogger("io.zeebe.test.util");
+  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.util");
 
   private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
   private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";

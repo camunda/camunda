@@ -8,12 +8,12 @@
 package io.zeebe.test.util.socket;
 
 import io.zeebe.test.util.TestEnvironment;
-import io.zeebe.util.ZbLogger;
 import java.net.InetSocketAddress;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SocketUtil {
-  static final Logger LOG = new ZbLogger("io.zeebe.test.util.SocketUtil");
+  static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.util.SocketUtil");
 
   private static final String DEFAULT_HOST = "localhost";
   private static final int BASE_PORT = 25600;
