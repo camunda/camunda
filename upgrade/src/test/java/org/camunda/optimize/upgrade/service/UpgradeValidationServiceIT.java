@@ -48,7 +48,7 @@ public class UpgradeValidationServiceIT {
     assertThatThrownBy(underTest::validateEnvironmentConfigInClasspath)
       // then
       .isInstanceOf(UpgradeRuntimeException.class)
-      .hasMessage("Couldn't read environment-config.yaml from environment folder in Optimize root!");
+      .hasMessage("Couldn't read environment-config.yaml from config folder in Optimize root!");
   }
 
   @Test

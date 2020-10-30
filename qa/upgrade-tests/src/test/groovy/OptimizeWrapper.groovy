@@ -35,7 +35,7 @@ class OptimizeWrapper {
   def copyLicense(String licensePath) {
     Files.copy(
       new File(licensePath).toPath(),
-      new File(optimizeDirectory + "/environment/OptimizeLicense.txt").toPath(),
+      new File(optimizeDirectory + "/config/OptimizeLicense.txt").toPath(),
       StandardCopyOption.REPLACE_EXISTING
     )
   }

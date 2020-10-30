@@ -22,14 +22,14 @@
     </fileSet>
 
     <fileSet>
-      <directory>src/environment/</directory>
+      <directory>src/config/</directory>
       <excludes>
-        <exclude>${exclude.from.environment}</exclude>
+        <exclude>${exclude.from.config}</exclude>
         <exclude>environment-logback.xml</exclude>
         <!-- this will be included in files section -->
         <exclude>environment-logback-demo.xml</exclude>
       </excludes>
-      <outputDirectory>environment/</outputDirectory>
+      <outputDirectory>config/</outputDirectory>
     </fileSet>
   </fileSets>
 
@@ -63,8 +63,8 @@
 
     <!-- logback configuration -->
     <file>
-      <source>src/environment/environment-logback-demo.xml</source>
-      <outputDirectory>environment</outputDirectory>
+      <source>src/config/environment-logback-demo.xml</source>
+      <outputDirectory>config</outputDirectory>
       <destName>environment-logback.xml</destName>
     </file>
   </files>

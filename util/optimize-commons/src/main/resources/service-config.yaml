@@ -421,7 +421,7 @@ historyCleanup:
 
 locales:
   # all locales available
-  # Note: for others than the default there must be a <localeCode>.json file available under ./environment/localization.
+  # Note: for others than the default there must be a <localeCode>.json file available under ./config/localization.
   availableLocales: ['en', 'de']
   # the fallback locale is used if there is a locale requested that is not available in availableLocales
   fallbackLocale: 'en'
@@ -432,7 +432,7 @@ ui:
     textColor: 'dark'
     # Path to the logo that is displayed in the header of Optimize.
     # Path can be:
-    # * relative: starting from the environment folder you can provide a relative path.
+    # * relative: starting from the config folder you can provide a relative path.
     # * absolute: full path in the file system.
     #
     # Supported image formats can be found here:

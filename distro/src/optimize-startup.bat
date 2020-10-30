@@ -38,7 +38,7 @@ IF "%~1"=="--debug" (
 
 :: Set up the optimize classpaths, i.e. add the environment folder, the Optimize back-end dependencies
 :: and the optimize jar
-set OPTIMIZE_CLASSPATH="%BASEDIR%environment;%BASEDIR%lib\*;%BASEDIR%optimize-backend-${project.version}.jar"
+set OPTIMIZE_CLASSPATH="%BASEDIR%config;%BASEDIR%lib\*;%BASEDIR%optimize-backend-${project.version}.jar"
 
 :: forward any java system properties
 set JAVA_SYSTEM_PROPERTIES=

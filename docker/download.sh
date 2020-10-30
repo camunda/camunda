@@ -44,4 +44,4 @@ fi
 
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables: SRE-523
-rm environment/environment-config.yaml
+rm config/environment-config.yaml

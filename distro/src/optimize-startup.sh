@@ -38,7 +38,7 @@ fi
 
 # Set up the optimize classpaths, i.e. add the environment folder, the Optimize back-end dependencies
 # and the optimize jar
-OPTIMIZE_CLASSPATH="${BASEDIR}/environment:${BASEDIR}/lib/*:${BASEDIR}/optimize-backend-${project.version}.jar"
+OPTIMIZE_CLASSPATH="${BASEDIR}/config:${BASEDIR}/lib/*:${BASEDIR}/optimize-backend-${project.version}.jar"
 
 RUN_UPGRADE=false
 for argument in "$@"

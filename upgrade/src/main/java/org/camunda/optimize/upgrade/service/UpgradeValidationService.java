@@ -59,7 +59,7 @@ public class UpgradeValidationService {
 
     if (!configAvailable) {
       throw new UpgradeRuntimeException(
-        "Couldn't read " + ENVIRONMENT_CONFIG_FILE + " from environment folder in Optimize root!"
+        "Couldn't read " + ENVIRONMENT_CONFIG_FILE + " from config folder in Optimize root!"
       );
     }
   }

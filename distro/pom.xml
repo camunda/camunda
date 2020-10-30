@@ -12,7 +12,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <exclude.from.environment>OptimizeLicense.txt</exclude.from.environment>
+    <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -38,7 +38,7 @@
     <profile>
       <id>add-license-key</id>
       <properties>
-        <exclude.from.environment />
+        <exclude.from.config />
       </properties>
     </profile>
   </profiles>

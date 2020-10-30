@@ -13,11 +13,11 @@
 
     <fileSet>
       <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
-      <outputDirectory>environment/localization</outputDirectory>
+      <outputDirectory>config/localization</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${project.basedir}/../backend/src/main/resources/logo/</directory>
-      <outputDirectory>environment/logo</outputDirectory>
+      <outputDirectory>config/logo</outputDirectory>
     </fileSet>
 
     <fileSet>
@@ -118,11 +118,11 @@
       <fileMode>0755</fileMode>
     </file>
 
-    <!-- environment directory -->
+    <!-- config directory -->
     <file>
-      <source>src/environment/environment-config.yaml</source>
+      <source>src/config/environment-config.yaml</source>
       <filtered>true</filtered>
-      <outputDirectory>environment</outputDirectory>
+      <outputDirectory>config</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
   </files>
