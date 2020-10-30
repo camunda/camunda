@@ -16,9 +16,6 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -62,10 +62,9 @@ public class CollectionRoleService {
     if (requestIdentityDto.getType() == null) {
       final IdentityDto resolvedIdentityDto =
         identityService.getIdentityWithMetadataForId(requestIdentityDto.getId())
-          .orElseThrow(
-            () -> new OptimizeUserOrGroupIdNotFoundException(
-              String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
-            )
+          .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
+                         String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
+                       )
           )
           .toIdentityDto();
       role.setIdentity(resolvedIdentityDto);
@@ -87,8 +86,7 @@ public class CollectionRoleService {
   public void updateRoleOfCollection(final String userId,
                                      final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws
-                                                                                         OptimizeConflictException {
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws OptimizeConflictException {
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
@@ -112,7 +110,6 @@ public class CollectionRoleService {
           .orElseThrow(() -> new OptimizeRuntimeException(
                          "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
                            + roleDto.getIdentity().toString() + "] could not be found."
-
                        )
           )
       ))
