@@ -110,8 +110,7 @@ public class CollectionRoleService {
           .orElseThrow(() -> new OptimizeRuntimeException(
                          "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
                            + roleDto.getIdentity().toString() + "] could not be found."
-                       )
-          )
+                       ))
       ))
       .collect(toList());
 
