@@ -13,6 +13,7 @@ import com.google.rpc.Status;
 import com.google.rpc.Status.Builder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
+import io.netty.channel.ConnectTimeoutException;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
@@ -87,7 +88,7 @@ public final class GrpcErrorMapper {
       // of error logs that is, in fact, expected
       logger.trace("Expected to handle gRPC request, but all retries have been exhausted", error);
     } else if (error instanceof ConnectTimeoutException) {
-      builder.setCode(Code.DEADLINE_EXCEEDED).setMessage(error.getMessage());
+      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
       logger.warn(
           "Expected to handle gRPC request, but a connection timeout exception occurred", error);
     } else {
