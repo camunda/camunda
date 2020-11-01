@@ -86,6 +86,10 @@ public final class GrpcErrorMapper {
       // partitions - it will then also occur when back pressure kicks in, leading to a large burst
       // of error logs that is, in fact, expected
       logger.trace("Expected to handle gRPC request, but all retries have been exhausted", error);
+    } else if (error instanceof ConnectTimeoutException) {
+      builder.setCode(Code.DEADLINE_EXCEEDED).setMessage(error.getMessage());
+      logger.warn(
+          "Expected to handle gRPC request, but a connection timeout exception occurred", error);
     } else {
       builder
           .setCode(Code.INTERNAL_VALUE)
