@@ -52,9 +52,6 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpdateMappingIndexStep(new ProcessDefinitionIndex()))
-      .addUpgradeStep(new UpdateMappingIndexStep(new DecisionDefinitionIndex()))
-      .addUpgradeStep(new UpdateMappingIndexStep(new EventProcessDefinitionIndex()))
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleDecisionReportIndex()))
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
@@ -66,12 +63,15 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
   private List<UpgradeStep> markExistingDefinitionsAsNotDeleted() {
     final String script = "ctx._source.deleted = false;";
     return Arrays.asList(
+      new UpdateMappingIndexStep(new ProcessDefinitionIndex()),
+      new UpdateMappingIndexStep(new DecisionDefinitionIndex()),
+      new UpdateMappingIndexStep(new EventProcessDefinitionIndex()),
       new UpdateDataStep(PROCESS_DEFINITION_INDEX_NAME, matchAllQuery(), script),
       new UpdateDataStep(DECISION_DEFINITION_INDEX_NAME, matchAllQuery(), script),
       new UpdateDataStep(EVENT_PROCESS_DEFINITION_INDEX_NAME, matchAllQuery(), script)
     );
   }
-  
+
   private UpgradeStep migrateDistributedByField(final String indexName) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()

@@ -6,14 +6,10 @@
 package org.camunda.optimize.upgrade.migrate32To33;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,17 +22,14 @@ public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT
     executeBulk("steps/3.2/definition_data/32-process-definition-bulk.json");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
+    // then the delete field does not exist
+    assertThatDocumentsOfIndexHaveDeletionState(PROCESS_DEFINITION_INDEX.getIndexName(), 2, null);
+
     // when
     upgradePlan.execute();
 
-    // then
-    final List<ProcessDefinitionOptimizeDto> processDefinitions = getAllDocumentsOfIndexAs(
-      PROCESS_DEFINITION_INDEX.getIndexName(),
-      ProcessDefinitionOptimizeDto.class
-    );
-    assertThat(processDefinitions)
-      .hasSize(2)
-      .allSatisfy(definition -> assertThat(definition.isDeleted()).isFalse());
+    // then the field exists and is marked as false
+    assertThatDocumentsOfIndexHaveDeletionState(PROCESS_DEFINITION_INDEX.getIndexName(), 2, false);
   }
 
   @SneakyThrows
@@ -46,17 +39,14 @@ public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT
     executeBulk("steps/3.2/definition_data/32-decision-definition-bulk.json");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
+    // then the delete field does not exist
+    assertThatDocumentsOfIndexHaveDeletionState(DECISION_DEFINITION_INDEX.getIndexName(), 2, null);
+
     // when
     upgradePlan.execute();
 
-    // then
-    final List<DecisionDefinitionOptimizeDto> decisionDefinitions = getAllDocumentsOfIndexAs(
-      DECISION_DEFINITION_INDEX.getIndexName(),
-      DecisionDefinitionOptimizeDto.class
-    );
-    assertThat(decisionDefinitions)
-      .hasSize(2)
-      .allSatisfy(definition -> assertThat(definition.isDeleted()).isFalse());
+    // then the field exists and is marked as false
+    assertThatDocumentsOfIndexHaveDeletionState(DECISION_DEFINITION_INDEX.getIndexName(), 2, false);
   }
 
   @SneakyThrows
@@ -66,17 +56,25 @@ public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT
     executeBulk("steps/3.2/definition_data/32-event-process-definition-bulk.json");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
+    // then the delete field does not exist
+    assertThatDocumentsOfIndexHaveDeletionState(EVENT_PROCESS_DEFINITION_INDEX.getIndexName(), 2, null);
+
     // when
     upgradePlan.execute();
 
-    // then
-    final List<EventProcessDefinitionDto> eventProcessDefinitions = getAllDocumentsOfIndexAs(
-      EVENT_PROCESS_DEFINITION_INDEX.getIndexName(),
-      EventProcessDefinitionDto.class
-    );
-    assertThat(eventProcessDefinitions)
-      .hasSize(2)
-      .allSatisfy(definition -> assertThat(definition.isDeleted()).isFalse());
+    // then the field exists and is marked as false
+    assertThatDocumentsOfIndexHaveDeletionState(EVENT_PROCESS_DEFINITION_INDEX.getIndexName(), 2, false);
+  }
+
+  private void assertThatDocumentsOfIndexHaveDeletionState(final String indexName,
+                                                           final int expectedSize,
+                                                           final Boolean expectedDeletionState) {
+    assertThat(getAllDocumentsOfIndex(indexName))
+      .hasSize(expectedSize)
+      .allSatisfy(def -> {
+        final Boolean isDeleted = (Boolean) def.getSourceAsMap().get(DefinitionOptimizeResponseDto.Fields.deleted);
+        assertThat(isDeleted).isEqualTo(expectedDeletionState);
+      });
   }
 
 }
