@@ -30,7 +30,7 @@
 
     <version.zeebe>0.25.0</version.zeebe>
 
-    <version.elasticsearch>6.8.9</version.elasticsearch>
+    <version.elasticsearch>6.8.13</version.elasticsearch>
     <version.spring.boot>2.3.5.RELEASE</version.spring.boot>
     <version.log4j>2.13.3</version.log4j>
     <version.junit>4.13.1</version.junit>
