@@ -42,13 +42,8 @@ organizationFolder('zeebe-io') {
     }
 
     configure {
-
         def traits = it / navigators / 'org.jenkinsci.plugins.github__branch__source.GitHubSCMNavigator' / traits
-        // Note: disable discovery of Pull Requests as of https://jira.camunda.com/browse/INFRA-1924
-        // traits << 'org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait' {
-        //     strategyId 2
-        // }
+        // Note: the 'traits' variable can be used to configure options that are
+        // not exposed via normal Jenkins API like above 'gitHubBranchDiscovery'
     }
-
 }
-
