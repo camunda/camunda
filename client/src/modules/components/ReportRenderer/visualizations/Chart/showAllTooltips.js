@@ -6,7 +6,7 @@
 
 import Chart from 'chart.js';
 
-export default {
+const showAllTooltips = {
   beforeRender: function (chart) {
     if (chart.config.options.showAllTooltips) {
       // create an array of tooltips
@@ -47,3 +47,5 @@ export default {
     }
   },
 };
+
+export default showAllTooltips;

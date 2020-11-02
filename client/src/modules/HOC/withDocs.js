@@ -30,4 +30,6 @@ export function DocsProvider({children}) {
   );
 }
 
-export default (Component) => (props) => <Component {...useContext(DocsContext)} {...props} />;
+export default function withDocs(Component) {
+  return (props) => <Component {...useContext(DocsContext)} {...props} />;
+}

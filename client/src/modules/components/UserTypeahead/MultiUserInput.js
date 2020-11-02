@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import debounce from 'debounce';
 
 import {MultiSelect} from 'components';
@@ -27,15 +27,16 @@ export default function MultiUserInput({
   const [empty, setEmpty] = useState(true);
   const [identities, setIdentities] = useState([]);
 
-  const search = useCallback(
-    debounce(async (query) => {
-      const {total, result} = await searchIdentities(query);
-      setIdentities(result);
-      setLoading(false);
-      setHasMore(total > result.length);
-      setEmpty(result.length === 0);
-      setInitialDataLoaded(!query);
-    }, 800),
+  const search = useMemo(
+    () =>
+      debounce(async (query) => {
+        const {total, result} = await searchIdentities(query);
+        setIdentities(result);
+        setLoading(false);
+        setHasMore(total > result.length);
+        setEmpty(result.length === 0);
+        setInitialDataLoaded(!query);
+      }, 800),
     []
   );
 

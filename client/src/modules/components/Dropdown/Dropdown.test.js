@@ -55,11 +55,11 @@ function setupRefs(node) {
 
 function simulateDropdown(
   node,
-  {oneItemHeight, buttonPosition, menuHeight, menuPosition, footerTop, headerBottom, buttonHeight}
+  {oneItemHeight, buttonPosition, menuHeight, menuPosition, footerTop, headerBottom}
 ) {
   node.instance().container = {
     querySelector: () => ({
-      offsetHeight: buttonHeight,
+      offsetHeight: 10,
       getBoundingClientRect: () => buttonPosition,
       offsetParent: {
         getBoundingClientRect: () => ({
@@ -67,7 +67,6 @@ function simulateDropdown(
           left: 0,
         }),
       },
-      offsetHeight: 10,
     }),
   };
 
@@ -390,7 +389,6 @@ it('flip dropdown vertically when there is no enough space', () => {
     menuPosition: {top: 53},
     footerTop: 110,
     headerBottom: 0,
-    buttonHeight: 50,
   };
 
   simulateDropdown(node, specs);

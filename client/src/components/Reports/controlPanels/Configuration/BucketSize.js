@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useCallback, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import debounce from 'debounce';
 
 import {LabeledInput, Switch, Input, Message, Select} from 'components';
@@ -28,13 +28,14 @@ export default function BucketSize({
   const [sizeValid, setSizeValid] = useState(true);
   const [baseValid, setBaseValid] = useState(true);
 
-  const applyChanges = useCallback(
-    debounce((property, value, valid) => {
-      if (valid) {
-        onChange({[customBucket]: {[property]: {$set: value}}}, true);
-      }
-    }, 800),
-    []
+  const applyChanges = useMemo(
+    () =>
+      debounce((property, value, valid) => {
+        if (valid) {
+          onChange({[customBucket]: {[property]: {$set: value}}}, true);
+        }
+      }, 800),
+    [customBucket, onChange]
   );
 
   const isBucketableVariableReport =

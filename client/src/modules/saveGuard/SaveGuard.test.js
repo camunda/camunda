@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 import {Prompt} from 'react-router-dom';
 
 import {Modal, Button} from 'components';
-import {default as SaveGuard, nowDirty, nowPristine} from './SaveGuard';
+import {default as SaveGuard, nowDirty} from './SaveGuard';
 
 it('should pass dirty state to Prompt', () => {
   const node = shallow(<SaveGuard />);

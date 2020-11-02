@@ -25,7 +25,11 @@ const props = {
   entity: 'report',
   templates: [
     {name: 'blank'},
-    {name: 'heatmap', img: <img />, config: {view: {entity: 'flowNode', property: 'frequency'}}},
+    {
+      name: 'heatmap',
+      img: <img alt="" />,
+      config: {view: {entity: 'flowNode', property: 'frequency'}},
+    },
   ],
 };
 

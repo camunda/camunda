@@ -28,11 +28,11 @@ export default class Popover extends React.Component {
 
   componentDidMount() {
     this.mounted = true;
-    document.body.addEventListener('click', this.close);
+    document.body.addEventListener('click', this.close, {capture: true});
   }
 
   componentWillUnmount() {
-    document.body.removeEventListener('click', this.close);
+    document.body.removeEventListener('click', this.close, {capture: true});
     this.mounted = false;
   }
 
