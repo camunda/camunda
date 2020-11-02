@@ -46,12 +46,8 @@ pipeline {
             steps {
                 setHumanReadableBuildDisplayName()
 
-                container('maven') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
-                container('maven-jdk8') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
+                prepareMavenContainer()
+                prepareMavenContainer('jdk8')
                 container('golang') {
                     sh '.ci/scripts/distribution/prepare-go.sh'
                 }
@@ -164,9 +160,7 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            sh '.ci/scripts/distribution/prepare.sh'
-                        }
+                        prepareMavenContainer()
                         unstash name: "zeebe-build"
                         unstash name: "zeebe-distro"
                         container('docker') {
@@ -303,9 +297,18 @@ pipeline {
 
 //////////////////// Helper functions ////////////////////
 
+def getMavenContainerNameForJDK(String jdk = null) {
+    "maven${jdk ? '-'+jdk : ''}"
+}
+
+def prepareMavenContainer(String jdk = null) {
+    container(getMavenContainerNameForJDK(jdk)) {
+        sh '.ci/scripts/distribution/prepare.sh'
+    }
+}
+
 def runMavenContainerCommand(String shellCommand, String jdk = null) {
-    String mavenContainerName = "maven${jdk ? '-'+jdk : ''}"
-    container(mavenContainerName) {
+    container(getMavenContainerNameForJDK(jdk)) {
         configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
             sh shellCommand
         }
