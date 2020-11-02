@@ -18,9 +18,9 @@ package io.zeebe.client.impl.worker;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.impl.Loggers;
-import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.response.ActivatedJobImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
@@ -39,7 +39,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   private final GatewayStub gatewayStub;
   private final Builder requestBuilder;
-  private final ZeebeObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final long requestTimeout;
   private final Predicate<Throwable> retryPredicate;
 
@@ -52,12 +52,12 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   public JobPoller(
       final GatewayStub gatewayStub,
       final Builder requestBuilder,
-      final ZeebeObjectMapper objectMapper,
+      final JsonMapper jsonMapper,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
     this.gatewayStub = gatewayStub;
     this.requestBuilder = requestBuilder;
-    this.objectMapper = objectMapper;
+    this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout.toMillis();
     this.retryPredicate = retryPredicate;
   }
@@ -96,7 +96,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   public void onNext(final ActivateJobsResponse activateJobsResponse) {
     activatedJobs += activateJobsResponse.getJobsCount();
     activateJobsResponse.getJobsList().stream()
-        .map(job -> new ActivatedJobImpl(objectMapper, job))
+        .map(job -> new ActivatedJobImpl(jsonMapper, job))
         .forEach(jobConsumer);
   }
 

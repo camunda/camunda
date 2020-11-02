@@ -16,11 +16,11 @@
 package io.zeebe.client.impl.worker;
 
 import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.zeebe.client.impl.command.FailJobCommandImpl;
 import io.zeebe.client.impl.command.ThrowErrorCommandImpl;
@@ -31,24 +31,24 @@ public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
-  private final ZeebeObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final Predicate<Throwable> retryPredicate;
 
   public JobClientImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
-      final ZeebeObjectMapper objectMapper,
+      final JsonMapper jsonMapper,
       final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.config = config;
-    this.objectMapper = objectMapper;
+    this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
   }
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
-        asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override

@@ -16,12 +16,12 @@
 package io.zeebe.client.impl.command;
 
 import io.grpc.stub.StreamObserver;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceWithResultCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.response.WorkflowInstanceResult;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.response.CreateWorkflowInstanceWithResultResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
@@ -38,7 +38,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
     implements CreateWorkflowInstanceWithResultCommandStep1 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
-  private final ZeebeObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final CreateWorkflowInstanceRequest.Builder createWorkflowInstanceRequestBuilder;
   private final Builder builder;
@@ -46,12 +46,12 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
   private Duration requestTimeout;
 
   public CreateWorkflowInstanceWithResultCommandImpl(
-      final ZeebeObjectMapper objectMapper,
+      final JsonMapper jsonMapper,
       final GatewayStub asyncStub,
       final CreateWorkflowInstanceRequest.Builder builder,
       final Predicate<Throwable> retryPredicate,
       final Duration requestTimeout) {
-    this.objectMapper = objectMapper;
+    this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
     createWorkflowInstanceRequestBuilder = builder;
     this.retryPredicate = retryPredicate;
@@ -78,8 +78,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
             WorkflowInstanceResult, GatewayOuterClass.CreateWorkflowInstanceWithResultResponse>
         future =
             new RetriableClientFutureImpl<>(
-                response ->
-                    new CreateWorkflowInstanceWithResultResponseImpl(objectMapper, response),
+                response -> new CreateWorkflowInstanceWithResultResponseImpl(jsonMapper, response),
                 retryPredicate,
                 streamObserver -> send(request, streamObserver));
 

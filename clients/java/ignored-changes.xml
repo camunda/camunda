@@ -7,4 +7,14 @@
     <className>io/zeebe/client/util/VersionUtil</className>
     <differenceType>8001</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/ZeebeClientBuilder</className>
+    <method>io.zeebe.client.ZeebeClientBuilder withJsonMapper(io.zeebe.client.api.JsonMapper)</method>
+    <differenceType>7012</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/ZeebeClientConfiguration</className>
+    <method>io.zeebe.client.api.JsonMapper getJsonMapper()</method>
+    <differenceType>7012</differenceType>
+  </difference>
 </differences>

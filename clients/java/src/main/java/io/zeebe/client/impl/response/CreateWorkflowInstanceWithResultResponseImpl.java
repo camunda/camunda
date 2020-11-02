@@ -15,14 +15,14 @@
  */
 package io.zeebe.client.impl.response;
 
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.response.WorkflowInstanceResult;
-import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
 import java.util.Map;
 
 public final class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowInstanceResult {
 
-  private final ZeebeObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final long workflowKey;
   private final String bpmnProcessId;
   private final int version;
@@ -30,9 +30,8 @@ public final class CreateWorkflowInstanceWithResultResponseImpl implements Workf
   private final String variables;
 
   public CreateWorkflowInstanceWithResultResponseImpl(
-      final ZeebeObjectMapper objectMapper,
-      final GatewayOuterClass.CreateWorkflowInstanceWithResultResponse response) {
-    this.objectMapper = objectMapper;
+      final JsonMapper jsonMapper, final CreateWorkflowInstanceWithResultResponse response) {
+    this.jsonMapper = jsonMapper;
     workflowKey = response.getWorkflowKey();
     bpmnProcessId = response.getBpmnProcessId();
     version = response.getVersion();
@@ -67,12 +66,12 @@ public final class CreateWorkflowInstanceWithResultResponseImpl implements Workf
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    return objectMapper.fromJsonAsMap(variables);
+    return jsonMapper.fromJsonAsMap(variables);
   }
 
   @Override
   public <T> T getVariablesAsType(final Class<T> variableType) {
-    return objectMapper.fromJson(variables, variableType);
+    return jsonMapper.fromJson(variables, variableType);
   }
 
   @Override
