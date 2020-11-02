@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -48,7 +48,6 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -242,8 +241,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
       .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
   }
-
-  @Disabled
+  
   @ParameterizedTest
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
