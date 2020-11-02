@@ -44,17 +44,8 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                script {
-                    commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
-                    displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
+                setHumanReadableBuildDisplayName()
 
-                    if (displayNameFull.length() <= 45) {
-                        currentBuild.displayName = displayNameFull
-                    } else {
-                        displayStringHardTruncate = displayNameFull.take(45)
-                        currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
-                    }
-                }
                 container('maven') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
@@ -317,6 +308,21 @@ def runMavenContainerCommand(String shellCommand, String jdk = null) {
     container(mavenContainerName) {
         configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
             sh shellCommand
+        }
+    }
+}
+
+// TODO: can be extracted to zeebe-jenkins-shared-library
+def setHumanReadableBuildDisplayName(int maximumLength = 45) {
+    script {
+        commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
+        displayNameFull = "#${env.BUILD_NUMBER}: ${commit_summary}"
+
+        if (displayNameFull.length() <= maximumLength) {
+            currentBuild.displayName = displayNameFull
+        } else {
+            displayStringHardTruncate = displayNameFull.take(maximumLength)
+            currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(' '))
         }
     }
 }
