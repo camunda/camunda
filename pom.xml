@@ -42,8 +42,8 @@
     <version.graphql>8.0.0</version.graphql>
     <version.graphql.tools>6.2.0</version.graphql.tools>
 
-    <version.node>v13.13.0</version.node>
-    <version.yarn>v1.22.4</version.yarn>
+    <version.node>v14.15.0</version.node>
+    <version.yarn>v1.22.10</version.yarn>
 
     <zeebe-test-container.version>1.0.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.14.3</elasticsearch-test-container.version>
