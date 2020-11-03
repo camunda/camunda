@@ -41,6 +41,10 @@ pipeline {
         timeout(time: 45, unit: 'MINUTES')
     }
 
+    parameters {
+        booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
+    }
+
     stages {
         stage('Prepare') {
             steps {
@@ -248,6 +252,19 @@ pipeline {
                         if (fileExists('./target/FlakyTests.txt')) {
                             currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
                         }
+                    }
+                }
+            }
+        }
+
+        stage('QA') {
+            when {
+                expression { params.RUN_QA }
+            }
+            steps {
+                container('maven') {
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh 'echo ${GIT_COMMIT}'
                     }
                 }
             }
