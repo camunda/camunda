@@ -13,6 +13,9 @@ def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def daysToKeep = isDevelopBranch ? '7' : '-1'
 def numToKeep = isDevelopBranch ? '-1' : '10'
 
+def shortTimeoutMinutes = 10
+def longTimeoutMinutes = 45
+
 //the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
 def cronTrigger = isDevelopBranch ? '@hourly' : ''
 
@@ -38,18 +41,24 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr: daysToKeep, numToKeepStr: numToKeep))
         timestamps()
-        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    parameters {
+        booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
         stage('Prepare Distribution') {
             steps {
-                setHumanReadableBuildDisplayName()
+                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    setHumanReadableBuildDisplayName()
 
-                prepareMavenContainer()
-                prepareMavenContainer('jdk8')
-                container('golang') {
-                    sh '.ci/scripts/distribution/prepare-go.sh'
+                    prepareMavenContainer()
+                    prepareMavenContainer('jdk8')
+                    container('golang') {
+                        sh '.ci/scripts/distribution/prepare-go.sh'
+                    }
                 }
             }
         }
@@ -59,12 +68,14 @@ pipeline {
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
             }
             steps {
-                runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
-                container('maven') {
-                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
+                    container('maven') {
+                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                    }
+                    stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
+                    stash name: "zeebe-distro", includes: "zeebe-distribution.tar.gz"
                 }
-                stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
-                stash name: "zeebe-distro", includes: "zeebe-distribution.tar.gz"
             }
         }
 
@@ -76,9 +87,11 @@ pipeline {
             }
 
             steps {
-                container('docker') {
-                    sh '.ci/scripts/docker/build.sh'
-                    sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    container('docker') {
+                        sh '.ci/scripts/docker/build.sh'
+                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                    }
                 }
             }
         }
@@ -87,13 +100,17 @@ pipeline {
             parallel {
                 stage('Analyse') {
                     steps {
-                        runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                            runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
+                        }
                     }
                 }
 
                 stage('BPMN TCK') {
                     steps {
-                        runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                            runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
+                        }
                     }
 
                     post {
@@ -105,12 +122,14 @@ pipeline {
 
                 stage('Test (Go)') {
                     steps {
-                        container('golang') {
-                            sh '.ci/scripts/distribution/build-go.sh'
-                        }
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                            container('golang') {
+                                sh '.ci/scripts/distribution/build-go.sh'
+                            }
 
-                        container('golang') {
-                            sh '.ci/scripts/distribution/test-go.sh'
+                            container('golang') {
+                                sh '.ci/scripts/distribution/test-go.sh'
+                            }
                         }
                     }
 
@@ -127,7 +146,9 @@ pipeline {
                     }
 
                     steps {
-                        runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                            runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                        }
                     }
 
                     post {
@@ -143,7 +164,9 @@ pipeline {
                     }
 
                     steps {
-                        runMavenContainerCommand('.ci/scripts/distribution/test-java8.sh', 'jdk8')
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                            runMavenContainerCommand('.ci/scripts/distribution/test-java8.sh', 'jdk8')
+                        }
                     }
 
                     post {
@@ -166,7 +189,9 @@ pipeline {
                     stages {
                         stage('Prepare') {
                             steps {
-                                prepareMavenContainer()
+                                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                                    prepareMavenContainer()
+                                }
                             }
                         }
 
@@ -178,9 +203,11 @@ pipeline {
                             }
 
                             steps {
-                                unstash name: "zeebe-distro"
-                                container('docker') {
-                                    sh '.ci/scripts/docker/build.sh'
+                                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                                    unstash name: "zeebe-distro"
+                                    container('docker') {
+                                        sh '.ci/scripts/docker/build.sh'
+                                    }
                                 }
                             }
                         }
@@ -191,8 +218,10 @@ pipeline {
                             }
 
                             steps {
-                                unstash name: "zeebe-build"
-                                runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
+                                timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                                    unstash name: "zeebe-build"
+                                    runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
+                                }
                             }
 
                             post {
@@ -232,11 +261,54 @@ pipeline {
             }
         }
 
+        stage('QA') {
+            when {
+                expression { params.RUN_QA }
+            }
+            environment {
+                IMAGE = "gcr.io/zeebe-io/zeebe"
+                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                TAG = "${env.VERSION}-${env.GIT_COMMIT}"
+                DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
+                ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
+                ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
+                QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", \"channel\": \"Internal Dev\", " +
+                                   "\"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\"}"
+            }
+
+            steps {
+                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    container('docker') {
+                        sh '.ci/scripts/docker/upload-gcr.sh'
+                        withVault(
+                        [ vaultSecrets:
+                            [
+                            [ path: 'secret/common/ci-zeebe/testbench-secrets-int',
+                                secretValues:
+                                [
+                                    [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
+                                    [envVar: 'ZEEBE_ADDRESS', vaultKey: 'contactPoint'],
+                                ]
+                            ],
+                            ]
+                        ]
+                        ) {
+                        sh '.ci/scripts/distribution/qa-testbench.sh'
+                        }
+                    }
+                }
+
+                input message: 'Were all QA tests successful?', ok: 'Yes'
+            }
+        }
+
         stage('Upload') {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
-                    runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
+                    timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                        runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
+                    }
                 }
             }
         }
@@ -254,12 +326,14 @@ pipeline {
 
                     steps {
                         retry(3) {
-                            build job: 'zeebe-docker', parameters: [
-                                string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                string(name: 'VERSION', value: env.VERSION),
-                                booleanParam(name: 'IS_LATEST', value: isMasterBranch),
-                                booleanParam(name: 'PUSH', value: isDevelopBranch)
-                            ]
+                            timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                                build job: 'zeebe-docker', parameters: [
+                                    string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                    string(name: 'VERSION', value: env.VERSION),
+                                    booleanParam(name: 'IS_LATEST', value: isMasterBranch),
+                                    booleanParam(name: 'PUSH', value: isDevelopBranch)
+                                ]
+                            }
                         }
                     }
                 }
