@@ -38,45 +38,48 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr: daysToKeep, numToKeepStr: numToKeep))
         timestamps()
-        timeout(time: 45, unit: 'MINUTES')
     }
 
     parameters {
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
         stage('Prepare') {
             steps {
-                script {
-                    commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
-                    displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
+                timeout(1) {
+                    script {
+                        commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
+                        displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
 
-                    if (displayNameFull.length() <= 45) {
-                        currentBuild.displayName = displayNameFull
-                    } else {
-                        displayStringHardTruncate = displayNameFull.take(45)
-                        currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
+                        if (displayNameFull.length() <= 45) {
+                            currentBuild.displayName = displayNameFull
+                        } else {
+                            displayStringHardTruncate = displayNameFull.take(45)
+                            currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
+                        }
+                    }
+                    container('maven') {
+                        sh '.ci/scripts/distribution/prepare.sh'
+                    }
+                    container('maven-jdk8') {
+                        sh '.ci/scripts/distribution/prepare.sh'
+                    }
+                    container('golang') {
+                        sh '.ci/scripts/distribution/prepare-go.sh'
                     }
                 }
-                container('maven') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
-                container('maven-jdk8') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
-                container('golang') {
-                    sh '.ci/scripts/distribution/prepare-go.sh'
-                }
-
             }
         }
 
         stage('Build (Java)') {
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh '.ci/scripts/distribution/build-java.sh'
+                timeout(5) {
+                    container('maven') {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/distribution/build-java.sh'
+                        }
                     }
                 }
             }
@@ -90,13 +93,15 @@ pipeline {
             }
 
             steps {
-                container('maven') {
-                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                }
+                timeout(3) {
+                    container('maven') {
+                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                    }
 
-                container('docker') {
-                    sh '.ci/scripts/docker/build.sh'
-                    sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                    container('docker') {
+                        sh '.ci/scripts/docker/build.sh'
+                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                    }
                 }
             }
         }
@@ -106,12 +111,14 @@ pipeline {
             parallel {
                 stage('Go') {
                     steps {
-                        container('golang') {
-                            sh '.ci/scripts/distribution/build-go.sh'
-                        }
+                        timeout(10) {
+                            container('golang') {
+                                sh '.ci/scripts/distribution/build-go.sh'
+                            }
 
-                        container('golang') {
-                            sh '.ci/scripts/distribution/test-go.sh'
+                            container('golang') {
+                                sh '.ci/scripts/distribution/test-go.sh'
+                            }
                         }
                     }
 
@@ -124,9 +131,11 @@ pipeline {
 
                 stage('Analyse (Java)') {
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/analyse-java.sh'
+                        timeout(10) {
+                            container('maven') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/analyse-java.sh'
+                                }
                             }
                         }
                     }
@@ -138,9 +147,11 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java.sh'
+                        timeout(20) {
+                            container('maven') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/test-java.sh'
+                                }
                             }
                         }
                     }
@@ -157,9 +168,11 @@ pipeline {
                     }
 
                     steps {
-                        container('maven-jdk8') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java8.sh'
+                        timeout(3) {
+                            container('maven-jdk8') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/test-java8.sh'
+                                }
                             }
                         }
                     }
@@ -190,19 +203,21 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/prepare.sh'
-                                sh '.ci/scripts/distribution/build-java.sh'
-                                sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                        timeout(20) {
+                            container('maven') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/prepare.sh'
+                                    sh '.ci/scripts/distribution/build-java.sh'
+                                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                                }
                             }
-                        }
-                        container('docker') {
-                            sh '.ci/scripts/docker/build.sh'
-                        }
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/it-java.sh'
+                            container('docker') {
+                                sh '.ci/scripts/docker/build.sh'
+                            }
+                            container('maven') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/it-java.sh'
+                                }
                             }
                         }
                     }
@@ -216,9 +231,11 @@ pipeline {
 
                 stage('BPMN TCK') {
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-tck.sh'
+                        timeout(10) {
+                            container('maven') {
+                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/test-tck.sh'
+                                }
                             }
                         }
                     }
@@ -258,22 +275,45 @@ pipeline {
         }
 
         stage('QA') {
-            //when {
-            //    expression { params.RUN_QA }
-            //}
+            when {
+                expression { params.RUN_QA }
+            }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
-                TAG = "${env.GIT_COMMIT}"
+                TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
+                ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
+                ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
+                QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", \"channel\": \"Internal Dev\", " +
+                                   "\"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\"}"
             }
 
             steps {
-                container('docker') {
-                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                    sh '.ci/scripts/docker/build.sh'
-                    sh '.ci/scripts/docker/upload-gcr.sh'
+                timeout(3) {
+                    container('docker') {
+                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                        sh '.ci/scripts/docker/build.sh'
+                        sh '.ci/scripts/docker/upload-gcr.sh'
+                        withVault(
+                        [ vaultSecrets:
+                            [
+                            [ path: 'secret/common/ci-zeebe/testbench-secrets-int',
+                                secretValues:
+                                [
+                                    [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
+                                    [envVar: 'ZEEBE_ADDRESS', vaultKey: 'contactPoint'],
+                                ]
+                            ],
+                            ]
+                        ]
+                        ) {
+                        sh '.ci/scripts/distribution/qa-testbench.sh'
+                        }
+                    }
                 }
+
+                input message: 'Were all QA tests successful?', ok: 'Yes'
             }
         }
 
@@ -281,9 +321,11 @@ pipeline {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
-                    container('maven') {
-                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                            sh '.ci/scripts/distribution/upload.sh'
+                    timeout(15) {
+                        container('maven') {
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/upload.sh'
+                            }
                         }
                     }
                 }
@@ -303,12 +345,14 @@ pipeline {
 
                     steps {
                         retry(3) {
-                            build job: 'zeebe-docker', parameters: [
-                                    string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                    string(name: 'VERSION', value: env.VERSION),
-                                    booleanParam(name: 'IS_LATEST', value: isMasterBranch),
-                                    booleanParam(name: 'PUSH', value: isDevelopBranch)
-                            ]
+                            timeout(5) {
+                                build job: 'zeebe-docker', parameters: [
+                                        string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                        string(name: 'VERSION', value: env.VERSION),
+                                        booleanParam(name: 'IS_LATEST', value: isMasterBranch),
+                                        booleanParam(name: 'PUSH', value: isDevelopBranch)
+                                ]
+                            }
                         }
                     }
                 }
