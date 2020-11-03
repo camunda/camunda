@@ -98,7 +98,9 @@ spec:
         stage('Build') {
             steps {
                 container('golang') {
-                    sh '.ci/scripts/release/build-go.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/build-go.sh'
+                    }
                 }
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -148,7 +150,9 @@ spec:
                 }
 
                 container('golang') {
-                    sh '.ci/scripts/release/post-github.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/post-github.sh'
+                    }
                 }
             }
         }
