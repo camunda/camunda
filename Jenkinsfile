@@ -43,6 +43,7 @@ pipeline {
 
     parameters {
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
@@ -258,14 +259,17 @@ pipeline {
         }
 
         stage('QA') {
-            //when {
-            //    expression { params.RUN_QA }
-            //}
+            when {
+                expression { params.RUN_QA }
+            }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
-                TAG = "${env.GIT_COMMIT}"
+                TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
+                ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
+                ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
+                QA_RUN_VARIABLES = "{\"zeebeImage\": \"${IMAGE}:${TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", \"channel\": \"Internal Dev\"}"
             }
 
             steps {
@@ -273,7 +277,24 @@ pipeline {
                     sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                     sh '.ci/scripts/docker/build.sh'
                     sh '.ci/scripts/docker/upload-gcr.sh'
+                    withVault(
+                      [ vaultSecrets:
+                        [
+                          [ path: 'secret/common/ci-zeebe/testbench-secrets-int',
+                            secretValues:
+                              [
+                                [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
+                                [envVar: 'ZEEBE_ADDRESS', vaultKey: 'contactPoint'],
+                              ]
+                          ],
+                        ]
+                      ]
+                    ) {
+                      sh '.ci/scripts/distribution/qa-testbench.sh'
+                    }
                 }
+
+                input message: 'Were all QA tests successful?', ok: 'Yes'
             }
         }
 
