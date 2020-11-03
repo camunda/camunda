@@ -258,14 +258,21 @@ pipeline {
         }
 
         stage('QA') {
-            when {
-                expression { params.RUN_QA }
+            //when {
+            //    expression { params.RUN_QA }
+            //}
+            environment {
+                IMAGE = "gcr.io/zeebe-io/zeebe"
+                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                TAG = "${env.GIT_COMMIT}"
+                DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
             }
+
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh 'echo ${GIT_COMMIT}'
-                    }
+                container('docker') {
+                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                    sh '.ci/scripts/docker/build.sh'
+                    sh '.ci/scripts/docker/upload-gcr.sh'
                 }
             }
         }
