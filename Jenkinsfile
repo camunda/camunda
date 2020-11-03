@@ -265,15 +265,14 @@ pipeline {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
                 TAG = "${env.GIT_COMMIT}"
+                DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
             }
 
             steps {
-                container('maven') {
-                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                }
-
                 container('docker') {
+                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                     sh '.ci/scripts/docker/build.sh'
+                    sh '.ci/scripts/docker/upload-gcr.sh'
                 }
             }
         }
