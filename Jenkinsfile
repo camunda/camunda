@@ -253,6 +253,16 @@ pipeline {
             }
         }
 
+        stage('QA') {
+            steps {
+                container('maven') {
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh 'echo QA'
+                    }
+                }
+            }
+        }
+
         stage('Upload') {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
