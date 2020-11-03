@@ -140,7 +140,7 @@ final class ExporterContainer implements Controller {
       }
       return true;
     } catch (final Exception ex) {
-      context.getLogger().error("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       return false;
     }
   }
