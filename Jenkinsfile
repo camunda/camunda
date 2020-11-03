@@ -41,6 +41,10 @@ pipeline {
         timeout(time: 45, unit: 'MINUTES')
     }
 
+    parameters {
+        booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
+    }
+
     stages {
         stage('Prepare') {
             steps {
@@ -254,10 +258,13 @@ pipeline {
         }
 
         stage('QA') {
+            when {
+                expression { params.RUN_QA }
+            }
             steps {
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh 'echo QA'
+                        sh 'echo ${GIT_COMMIT}'
                     }
                 }
             }
