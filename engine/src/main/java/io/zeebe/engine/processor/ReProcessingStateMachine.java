@@ -18,7 +18,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
@@ -375,9 +374,6 @@ public final class ReProcessingStateMachine {
     // if a record is not written to the log stream then the state could be corrupted
     reprocessingStreamWriter.getRecords().stream()
         .filter(record -> record.getSourceRecordPosition() < currentEvent.getSourceRecordPosition())
-        // ignore deployment distributed events because they are written again on reprocessing
-        // (#3124)
-        .filter(record -> record.getIntent() != DeploymentIntent.DISTRIBUTED)
         .findFirst()
         .ifPresent(
             missingRecordOnLogStream -> {
