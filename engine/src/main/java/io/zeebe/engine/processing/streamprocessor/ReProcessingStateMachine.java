@@ -273,7 +273,6 @@ public final class ReProcessingStateMachine {
       verifyRecordMatchesToReprocessing(typedEvent);
     }
 
-
     if (currentEvent.getPosition() <= lastSourceEventPosition) {
       // don't reprocess records after the last source event
       reprocessingStreamWriter.configureSourceContext(currentEvent.getPosition());

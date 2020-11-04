@@ -60,18 +60,21 @@ public class StreamProcessingComposite {
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessor(partitionId, factory);
+    return startTypedStreamProcessor(partitionId, factory, false);
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final boolean detectReprocessingInconsistency) {
     return streams.startStreamProcessor(
         getLogName(partitionId),
         zeebeDbFactory,
         (processingContext -> {
           zeebeState = processingContext.getZeebeState();
           return factory.createProcessors(processingContext);
-        }));
+        }),
+        detectReprocessingInconsistency);
   }
 
   public void pauseProcessing(final int partitionId) {

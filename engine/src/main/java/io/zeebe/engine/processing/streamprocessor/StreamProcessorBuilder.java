@@ -69,7 +69,8 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder detectReprocessingInconsistency(final boolean detectReprocessingInconsistency) {
+  public StreamProcessorBuilder detectReprocessingInconsistency(
+      final boolean detectReprocessingInconsistency) {
     this.processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
     return this;
   }
