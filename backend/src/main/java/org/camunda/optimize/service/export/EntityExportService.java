@@ -8,8 +8,11 @@ package org.camunda.optimize.service.export;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.ReportReader;
@@ -45,7 +48,7 @@ public class EntityExportService {
       case PROCESS:
         return (Optional<T>) getSingleProcessReportExportDto(userId, reportId);
       case DECISION:
-        return Optional.empty(); // not yet implemented
+        return (Optional<T>) getSingleDecisionReportExportDto(userId, reportId);
       default:
         throw new IllegalArgumentException("Unknown reportType: " + reportType);
     }
@@ -61,14 +64,28 @@ public class EntityExportService {
     if (!reportDefinition.isPresent()) {
       log.debug("Could not find report with ID {} to export.", reportId);
     }
-
     reportDefinition.ifPresent(def -> validateReportAuthorizationOrFail(userId, def));
 
     return reportDefinition.map(SingleProcessReportDefinitionExportDto::new);
   }
 
+  private Optional<SingleDecisionReportDefinitionExportDto> getSingleDecisionReportExportDto(final String userId,
+                                                                                             final String reportId) {
+    log.debug("Exporting report with ID {}.", reportId);
+
+    final Optional<SingleDecisionReportDefinitionRequestDto> reportDefinition =
+      reportReader.getSingleDecisionReportOmitXml(reportId);
+
+    if (!reportDefinition.isPresent()) {
+      log.debug("Could not find report with ID {} to export.", reportId);
+    }
+    reportDefinition.ifPresent(def -> validateReportAuthorizationOrFail(userId, def));
+
+    return reportDefinition.map(SingleDecisionReportDefinitionExportDto::new);
+  }
+
   private void validateReportAuthorizationOrFail(final String userId,
-                                                 final SingleProcessReportDefinitionRequestDto reportDefinition) {
+                                                 final ReportDefinitionDto<?> reportDefinition) {
     if (!reportAuthorizationService.isAuthorizedToReport(userId, reportDefinition)) {
       throw new ForbiddenException(
         String.format(

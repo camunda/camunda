@@ -371,7 +371,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -415,7 +415,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -433,7 +433,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -453,7 +453,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -1053,7 +1053,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private AuthorizedReportDefinitionResponseDto getReportByIdAsKermit(final String reportId) {
-    return reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
+    return reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
       .readEntity(AuthorizedReportDefinitionResponseDto.class);
   }
 

@@ -126,12 +126,12 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     // when
     collectionClient.deleteCollection(collectionId);
 
-    Response report1Response = reportClient.getSingleProcessReportRawResponse(
+    Response report1Response = reportClient.getSingleReportRawResponse(
       reportId1,
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD
     );
-    Response report2Response = reportClient.getSingleProcessReportRawResponse(
+    Response report2Response = reportClient.getSingleReportRawResponse(
       reportId2,
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD
