@@ -31,7 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsByteArray;
-import static org.camunda.optimize.service.export.ExportService.DEFAULT_RECORD_LIMIT;
+import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 

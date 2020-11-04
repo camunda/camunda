@@ -27,7 +27,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class CombinedProcessExportServiceIT extends AbstractIT {
+public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";

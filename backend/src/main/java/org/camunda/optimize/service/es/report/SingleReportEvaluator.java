@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.export.ExportService.DEFAULT_RECORD_LIMIT;
+import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
 
 @RequiredArgsConstructor
 @Component

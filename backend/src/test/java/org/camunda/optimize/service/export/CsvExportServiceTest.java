@@ -32,7 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ExportServiceTest {
+public class CsvExportServiceTest {
 
   @Mock
   private AuthorizationCheckReportEvaluationHandler reportService;
@@ -41,7 +41,7 @@ public class ExportServiceTest {
   private ConfigurationService configurationService;
 
   @InjectMocks
-  private ExportService exportService;
+  private CsvExportService CSVExportService;
 
   @BeforeEach
   public void init() {
@@ -61,7 +61,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
+    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
@@ -84,7 +84,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
+    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(

@@ -22,7 +22,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class ExportService {
+public class CsvExportService {
 
   public static final Integer DEFAULT_RECORD_LIMIT = 1_000;
 

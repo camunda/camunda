@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 
-public class DecisionExportServiceIT extends AbstractIT {
+public class DecisionCsvExportServiceIT extends AbstractIT {
 
   private static final String FAKE = "FAKE";
 

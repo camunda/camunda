@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -24,9 +25,9 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -890,6 +891,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildJsonExportRequest(final ReportType reportType,
+                                                        final String reportId,
+                                                        final String fileName) {
+    this.path = "export/json/" + reportType + "/" + reportId + "/" + fileName;
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCsvExportRequest(String reportId, String fileName) {
     this.path = "export/csv/" + reportId + "/" + fileName;
     this.method = GET;
@@ -1291,7 +1300,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventRequestDto> eventDtos, final String secret) {
+  public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventRequestDto> eventDtos,
+                                                       final String secret) {
     return buildIngestEventBatchWithMediaType(eventDtos, secret, CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH);
   }
 

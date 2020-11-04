@@ -29,7 +29,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProcessHyperMapExportServiceIT extends AbstractIT {
+public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";

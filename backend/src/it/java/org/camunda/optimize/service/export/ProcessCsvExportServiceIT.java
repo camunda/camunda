@@ -33,7 +33,7 @@ import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessExportServiceIT extends AbstractIT {
+public class ProcessCsvExportServiceIT extends AbstractIT {
   private static final String FAKE = "FAKE";
 
   @ParameterizedTest
