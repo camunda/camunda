@@ -117,6 +117,7 @@ public final class ReProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
+  private boolean detectReprocessingInconsistency;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -131,6 +132,7 @@ public final class ReProcessingStateMachine {
 
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
+    detectReprocessingInconsistency = context.isDetectReprocessingInconsistency();
   }
 
   /**
@@ -267,7 +269,10 @@ public final class ReProcessingStateMachine {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
 
-    verifyRecordMatchesToReprocessing(typedEvent);
+    if (detectReprocessingInconsistency) {
+      verifyRecordMatchesToReprocessing(typedEvent);
+    }
+
 
     if (currentEvent.getPosition() <= lastSourceEventPosition) {
       // don't reprocess records after the last source event
