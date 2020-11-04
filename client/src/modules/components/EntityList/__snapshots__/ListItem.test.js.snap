@@ -22,43 +22,52 @@ exports[`should match snapshot 1`] = `
       >
         Item Type
       </span>
-      <span
-        className="entity"
-        title="Test List Entry"
+      <Tooltip
+        content="Test List Entry"
+        overflowOnly={true}
       >
-        Test List Entry
-      </span>
+        <span
+          className="entity"
+        >
+          Test List Entry
+        </span>
+      </Tooltip>
     </div>
-    <div
-      className="meta"
+    <Tooltip
+      content="Column 1"
       key="0"
-      title="Column 1"
+      overflowOnly={true}
     >
-      Column 1
-    </div>
-    <div
-      className="meta"
+      <div
+        className="meta"
+      >
+        Column 1
+      </div>
+    </Tooltip>
+    <Tooltip
+      content="Column 2"
       key="1"
-      title="Column 2"
+      overflowOnly={true}
     >
-      Column 2
-    </div>
+      <div
+        className="meta"
+      >
+        Column 2
+      </div>
+    </Tooltip>
     <div
       className="warning"
     >
-      <Icon
-        size="18"
-        type="error"
-      />
-      <div
-        className="Tooltip dark"
+      <Tooltip
+        content="Warning Text"
+        delay={0}
+        theme="dark"
       >
-        <div
-          className="Tooltip__text-bottom"
-        >
-          Warning Text
-        </div>
-      </div>
+        <Icon
+          size="18"
+          type="error"
+        />
+      </Tooltip>
     </div>
     <ListItemAction
       actions={

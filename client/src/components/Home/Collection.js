@@ -12,7 +12,7 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {Icon, Dropdown, EntityList, Deleter} from 'components';
+import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
 import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {loadCollectionEntities} from './service';
 import {showError, addNotification} from 'notifications';
@@ -119,9 +119,9 @@ export default withErrorHandling(
             <Icon size="24" type="collection" />
             {collection && (
               <>
-                <span className="text" title={collection.name}>
-                  {collection.name}
-                </span>
+                <Tooltip content={collection.name} position="bottom" overflowOnly>
+                  <span className="text">{collection.name}</span>
+                </Tooltip>
                 {collection.currentUserRole === 'manager' && (
                   <Dropdown icon label={<Icon type="context-menu" size="24px" />}>
                     <Dropdown.Option onClick={this.startEditingCollection}>

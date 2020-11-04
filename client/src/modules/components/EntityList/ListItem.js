@@ -7,7 +7,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {Input, Icon} from 'components';
+import {Input, Icon, Tooltip} from 'components';
 
 import ListItemAction from './ListItemAction';
 
@@ -25,24 +25,21 @@ export default function ListItem({
       <Icon type={icon} />
       <div className="name">
         <span className="type">{type}</span>
-        <span className="entity" title={name}>
-          {name}
-        </span>
+        <Tooltip content={name} overflowOnly>
+          <span className="entity">{name}</span>
+        </Tooltip>
       </div>
       {meta.map((content, idx) => (
-        <div className="meta" key={idx} title={content ? content : undefined}>
-          {content}
-        </div>
+        <Tooltip key={idx} content={content} overflowOnly>
+          <div className="meta">{content}</div>
+        </Tooltip>
       ))}
       {hasWarning && (
         <div className="warning">
           {warning && (
-            <>
+            <Tooltip content={warning} theme="dark" delay={0}>
               <Icon type="error" size="18" />
-              <div className="Tooltip dark">
-                <div className="Tooltip__text-bottom">{warning}</div>
-              </div>
-            </>
+            </Tooltip>
           )}
         </div>
       )}

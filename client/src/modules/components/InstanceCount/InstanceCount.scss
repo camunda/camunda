@@ -128,17 +128,16 @@
             top: 0;
             left: 0;
             padding: 0;
+            margin: 0;
             transform: none;
 
-            .Tooltip__text-bottom {
-              border: none;
-              box-shadow: none;
-              padding: 0;
+            border: none;
+            box-shadow: none;
+            padding: 0;
 
-              &:before,
-              &:after {
-                display: none;
-              }
+            &:before,
+            &:after {
+              display: none;
             }
           }
         }

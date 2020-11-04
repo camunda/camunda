@@ -7,7 +7,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {Icon} from 'components';
+import {Icon, Tooltip} from 'components';
 import './DropdownOption.scss';
 import classnames from 'classnames';
 
@@ -28,14 +28,21 @@ export default React.forwardRef(function DropdownOption({active, link, ...props}
 
   if (link) {
     return (
-      <Link {...commonProps} to={link}>
-        {content}
-      </Link>
+      <Tooltip content={content} overflowOnly>
+        <Link {...commonProps} to={link}>
+          {content}
+        </Link>
+      </Tooltip>
     );
   }
   return (
-    <div {...commonProps} onClick={(evt) => !props.disabled && props.onClick && props.onClick(evt)}>
-      {content}
-    </div>
+    <Tooltip content={content} overflowOnly>
+      <div
+        {...commonProps}
+        onClick={(evt) => !props.disabled && props.onClick && props.onClick(evt)}
+      >
+        {content}
+      </div>
+    </Tooltip>
   );
 });

@@ -1,0 +1,105 @@
+.Tooltip {
+  display: inline-block;
+  position: absolute;
+  max-width: 500px;
+  background-color: #000;
+  color: #fff;
+  padding: 9px 13px 9px 11px;
+  margin: 7px 0;
+  border-radius: 6px;
+  z-index: var(--z-tooltip);
+
+  &.center {
+    &:before,
+    &:after {
+      left: 50%;
+    }
+
+    &.top {
+      transform: translate(-50%, -100%) translateY(-16px);
+    }
+    &.bottom {
+      transform: translateX(-50%);
+    }
+  }
+
+  &.left {
+    &:before,
+    &:after {
+      left: 8px;
+    }
+
+    &.top {
+      transform: translate(0, -100%) translateY(-16px);
+    }
+  }
+
+  &.right {
+    &:before,
+    &:after {
+      right: 4px;
+    }
+
+    &.top {
+      transform: translate(-100%, -100%) translateY(-16px);
+    }
+    &.bottom {
+      transform: translateX(-100%);
+    }
+  }
+
+  &:before,
+  &:after {
+    content: ' ';
+    position: absolute;
+    border: 5px solid transparent;
+    margin-left: -5px;
+  }
+
+  &.light {
+    background: #fff;
+    color: #000;
+    border: 1px solid grey;
+
+    &:before {
+      bottom: calc(100%);
+    }
+
+    &.bottom {
+      &:before {
+        border-bottom-color: gray;
+      }
+
+      &:after {
+        border-bottom-color: #fff;
+      }
+    }
+
+    &.top {
+      &:before {
+        bottom: -11px;
+        border-top-color: gray;
+      }
+
+      &:after {
+        border-top-color: #fff;
+      }
+    }
+  }
+
+  &.top {
+    &:after {
+      bottom: -10px;
+      border-top-color: #000;
+    }
+  }
+
+  &.bottom:after {
+    bottom: calc(100% - 1px);
+    border-bottom-color: #000;
+  }
+}
+
+body > .Tooltip {
+  pointer-events: none;
+}

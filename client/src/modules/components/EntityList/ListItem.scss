@@ -87,23 +87,6 @@
       font-size: 18px;
       vertical-align: initial;
     }
-
-    .Tooltip {
-      display: none;
-      position: absolute;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-
-      .Tooltip__text-bottom {
-        width: max-content;
-        max-width: 170px;
-      }
-    }
-
-    &:hover .Tooltip {
-      display: block;
-    }
   }
 
   &:not(:hover) .ListItemAction {

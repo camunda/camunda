@@ -136,32 +136,30 @@ export default class FilterList extends React.Component {
                     {filtersCount}{' '}
                     {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
                   </span>
-                  <div className="Tooltip light">
-                    <div className="Tooltip__text-bottom">
-                      {Object.keys(filters).map((key, i) => {
-                        const {value, unit, operator} = filters[key];
-                        return (
-                          <div key={key}>
-                            <div key={key} className="flowNode">
-                              <span className="previewItemValue">{flowNodeNames[key] || key}</span>
-                              {operator === '<' &&
-                                this.createOperator(t('common.filter.list.operators.less'))}
-                              {operator === '>' &&
-                                this.createOperator(t('common.filter.list.operators.more'))}
-                              <span className="previewItemValue">
-                                {value.toString()}{' '}
-                                {t(
-                                  `common.unit.${unit.slice(0, -1)}.label${
-                                    value !== 1 ? '-plural' : ''
-                                  }`
-                                )}
-                              </span>
-                            </div>
-                            {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
+                  <div className="Tooltip center light bottom">
+                    {Object.keys(filters).map((key, i) => {
+                      const {value, unit, operator} = filters[key];
+                      return (
+                        <div key={key}>
+                          <div key={key} className="flowNode">
+                            <span className="previewItemValue">{flowNodeNames[key] || key}</span>
+                            {operator === '<' &&
+                              this.createOperator(t('common.filter.list.operators.less'))}
+                            {operator === '>' &&
+                              this.createOperator(t('common.filter.list.operators.more'))}
+                            <span className="previewItemValue">
+                              {value.toString()}{' '}
+                              {t(
+                                `common.unit.${unit.slice(0, -1)}.label${
+                                  value !== 1 ? '-plural' : ''
+                                }`
+                              )}
+                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
+                          {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
+                        </div>
+                      );
+                    })}
                   </div>
                 </span>
               </ActionItem>

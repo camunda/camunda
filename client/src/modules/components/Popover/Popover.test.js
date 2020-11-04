@@ -22,7 +22,7 @@ it('should include a button to toggle the popover', () => {
 it('should render the provided title in the button', () => {
   const node = shallow(<Popover title="Foobar" />);
 
-  expect(node).toIncludeText('Foobar');
+  expect(node.find(Button)).toIncludeText('Foobar');
 });
 
 it('should specify the open button as icon button if it has an icon, but no title', () => {
@@ -111,7 +111,7 @@ it('should display tooltip on button', () => {
     </Popover>
   );
 
-  expect(node.find(Button)).toHaveProp('title', 'myTooltip');
+  expect(node.find('Tooltip')).toHaveProp('content', 'myTooltip');
 });
 
 it('should limit the height and show scrollbar when there is not space', () => {

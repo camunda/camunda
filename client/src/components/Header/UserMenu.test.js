@@ -8,6 +8,7 @@ import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {isLogoutHidden, areSettingsManuallyConfirmed} from 'config';
+import {Dropdown} from 'components';
 
 import {TelemetrySettings} from './TelemetrySettings';
 import {UserMenu} from './UserMenu';
@@ -32,14 +33,14 @@ it('matches the snapshot', async () => {
 it('should go to temporary logout route on logout', () => {
   const node = shallow(<UserMenu {...props} />);
 
-  node.find('.UserMenu [title="Logout"]').simulate('click');
+  node.find(Dropdown.Option).at(1).simulate('click');
   expect(props.history.push).toHaveBeenCalledWith('/logout');
 });
 
 it('should hide Telemetry settings entry if the user is not authorized', async () => {
   const node = shallow(<UserMenu {...props} user={{name: 'Johnny Depp', authorizations: []}} />);
 
-  expect(node.find('.UserMenu [title="Telemetry Settings"]')).not.toExist();
+  expect(node.find(Dropdown.Option)).toHaveLength(1);
 });
 
 it('should hide logout button if specified by the ui config', async () => {
@@ -47,7 +48,7 @@ it('should hide logout button if specified by the ui config', async () => {
   const node = shallow(<UserMenu {...props} />);
   runLastEffect();
 
-  expect(node.find('.UserMenu [title="Logout"]')).not.toExist();
+  expect(node.find(Dropdown.Option)).toHaveLength(1);
 });
 
 it('should automatically open the telemetry settings modal if the settings are not confirmed', async () => {
@@ -62,7 +63,7 @@ it('should automatically open the telemetry settings modal if the settings are n
 it('should open telemetry settings modal when clicking the telemetry option', async () => {
   const node = shallow(<UserMenu {...props} />);
 
-  node.find('.UserMenu [title="Telemetry Settings"]').simulate('click');
+  node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(node.find(TelemetrySettings).prop('open')).toBe(true);
 });

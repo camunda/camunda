@@ -9,7 +9,7 @@ import useDeepCompareEffect from 'use-deep-compare-effect';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {Dropdown, Icon, LabeledInput} from 'components';
+import {Dropdown, Icon, LabeledInput, Tooltip} from 'components';
 import {VariableFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -86,31 +86,35 @@ export function AddFiltersButton({
             {t('dashboard.filter.types.' + type)}
           </Dropdown.Option>
         ))}
-        <Dropdown.Option
-          disabled={disableVariableFilter}
-          title={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
-          onClick={() => {
-            if (hasUnsavedReports) {
-              showPrompt(
-                {
-                  title: t('dashboard.saveModal.unsaved'),
-                  body: t('dashboard.saveModal.text'),
-                  yes: t('common.saveContinue'),
-                  no: t('common.cancel'),
-                },
-                () =>
-                  new Promise((resolve) => {
-                    setOpenVariableModalAfterReportUpdate(() => resolve);
-                    persistReports();
-                  })
-              );
-            } else {
-              setShowVariableModal(true);
-            }
-          }}
+        <Tooltip
+          content={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
+          position="bottom"
         >
-          {t('dashboard.filter.types.variable')}
-        </Dropdown.Option>
+          <Dropdown.Option
+            disabled={disableVariableFilter}
+            onClick={() => {
+              if (hasUnsavedReports) {
+                showPrompt(
+                  {
+                    title: t('dashboard.saveModal.unsaved'),
+                    body: t('dashboard.saveModal.text'),
+                    yes: t('common.saveContinue'),
+                    no: t('common.cancel'),
+                  },
+                  () =>
+                    new Promise((resolve) => {
+                      setOpenVariableModalAfterReportUpdate(() => resolve);
+                      persistReports();
+                    })
+                );
+              } else {
+                setShowVariableModal(true);
+              }
+            }}
+          >
+            {t('dashboard.filter.types.variable')}
+          </Dropdown.Option>
+        </Tooltip>
       </Dropdown>
 
       {showVariableModal && (

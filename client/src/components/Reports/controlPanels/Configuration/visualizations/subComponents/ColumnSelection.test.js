@@ -51,8 +51,11 @@ it('should change the switches labels to space case instead of camelCase for non
       }}
     />
   );
-  expect(node.find('.columnSelectionSwitch').at(0).dive()).toIncludeText('Process Definition Key');
-  expect(node.find('.columnSelectionSwitch').at(1).dive()).toIncludeText('Variable: testVariable');
+
+  expect(node.find('.columnSelectionSwitch').at(0).prop('label').props.children).toContain(
+    'Process Definition Key'
+  );
+  expect(node.find('.columnSelectionSwitch').at(1).prop('label').props.children).toMatchSnapshot();
 });
 
 it('should call onChange with an empty included if all columns are excluded', () => {

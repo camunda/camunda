@@ -9,7 +9,6 @@ exports[`matches the snapshot 1`] = `
     <ForwardRef(DropdownOption)
       key="telemetry"
       onClick={[Function]}
-      title="Telemetry Settings"
     >
       Telemetry Settings
     </ForwardRef(DropdownOption)>
@@ -19,7 +18,6 @@ exports[`matches the snapshot 1`] = `
     <ForwardRef(DropdownOption)
       key="logout"
       onClick={[Function]}
-      title="Logout"
     >
       Logout
     </ForwardRef(DropdownOption)>

@@ -31,23 +31,6 @@
     }
   }
 
-  .Tooltip {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 346px;
-    pointer-events: none;
-
-    .Tooltip__text-bottom {
-      padding: 9px 13px 9px 11px;
-      color: rgba(255, 255, 255, 0.85);
-      font-size: 14px;
-      font-weight: normal;
-      text-align: left;
-    }
-  }
-
   .Popover {
     display: inline-block;
     vertical-align: top;

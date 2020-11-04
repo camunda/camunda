@@ -13,7 +13,6 @@ exports[`matches the snapshot 1`] = `
   <Link
     className="appLink"
     replace={true}
-    title="Camunda Optimize"
     to="/"
   >
     <img

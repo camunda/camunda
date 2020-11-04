@@ -255,7 +255,7 @@ export class DefinitionSelection extends React.Component {
                   noValuesMessage={t('common.definitionSelection.noDefinition')}
                 >
                   {availableDefinitions.map(({name, key}) => (
-                    <Typeahead.Option key={key} value={key} title={name || key}>
+                    <Typeahead.Option key={key} value={key}>
                       {name || key}
                     </Typeahead.Option>
                   ))}

@@ -46,25 +46,22 @@
           top: 28px;
           left: 50%;
           transform: translateX(-50%);
+          width: max-content;
+          border-radius: 0;
+          font-weight: normal;
+          text-align: left;
+          font-size: 1em;
+          border: 1px solid $silver-darken-80;
+          box-shadow: 0 2px 7px -4px #555;
+          border-radius: 8px;
+          padding: 10px 20px 15px 20px;
 
-          .Tooltip__text-bottom {
-            width: max-content;
-            border-radius: 0;
-            font-weight: normal;
-            text-align: left;
-            font-size: 1em;
-            border: 1px solid $silver-darken-80;
-            box-shadow: 0 2px 7px -4px #555;
-            border-radius: 8px;
-            padding: 10px 20px 15px 20px;
+          &:before {
+            border-color: transparent transparent $silver-darken-80 transparent;
+          }
 
-            &:before {
-              border-color: transparent transparent $silver-darken-80 transparent;
-            }
-
-            .flowNode {
-              padding: 5px 0;
-            }
+          .flowNode {
+            padding: 5px 0;
           }
         }
 

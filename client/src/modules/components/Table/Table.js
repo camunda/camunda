@@ -9,7 +9,7 @@ import classnames from 'classnames';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 
 import {t} from 'translation';
-import {Select, Icon, Button, LoadingIndicator} from 'components';
+import {Select, Icon, Button, LoadingIndicator, Tooltip} from 'components';
 
 import {flatten} from './service';
 
@@ -152,8 +152,10 @@ export default function Table({
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
                   {...column.getHeaderProps()}
                 >
-                  <div className="cellContent" {...getSortingProps(column)} title={column.title}>
-                    <span className="text">{column.render('Header')}</span>
+                  <div className="cellContent" {...getSortingProps(column)} title={undefined}>
+                    <Tooltip content={column.title} overflowOnly>
+                      <span className="text">{column.render('Header')}</span>
+                    </Tooltip>
                     {column.isSorted && sorting && (
                       <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
                     )}

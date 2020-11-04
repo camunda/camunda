@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Icon, Dropdown, Button} from 'components';
+import {Icon, Dropdown, Button, Tooltip} from 'components';
 
 import './ListItemAction.scss';
 
@@ -17,17 +17,18 @@ export default function ListItemAction({actions = [], singleAction}) {
   if (singleAction) {
     const {icon, action, text} = actions[0];
     return (
-      <Button
-        icon
-        className="ListItemAction"
-        onClick={(evt) => {
-          evt.preventDefault();
-          action(evt);
-        }}
-        title={text}
-      >
-        <Icon type={icon} />
-      </Button>
+      <Tooltip content={text} align="right">
+        <Button
+          icon
+          className="ListItemAction"
+          onClick={(evt) => {
+            evt.preventDefault();
+            action(evt);
+          }}
+        >
+          <Icon type={icon} />
+        </Button>
+      </Tooltip>
     );
   }
 

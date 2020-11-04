@@ -2,8 +2,7 @@
   display: flex;
   flex-grow: 1;
 
-  .Tooltip .Tooltip__text-top,
-  .Tooltip .Tooltip__text-bottom {
+  .Tooltip {
     text-align: left;
     line-height: 1.5em;
     .text {

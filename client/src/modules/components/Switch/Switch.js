@@ -7,22 +7,23 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Input} from 'components';
+import {Input, Tooltip} from 'components';
 import './Switch.scss';
 
 export default function Switch({label, ...props}) {
   return (
-    <label
-      title={props.title}
-      className={classnames(
-        'Switch',
-        {withLabel: label, disabled: props.disabled},
-        props.className
-      )}
-    >
-      <Input type="checkbox" {...props} className="Switch__Input" />
-      <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
-      {label && <span className="label">{label}</span>}
-    </label>
+    <Tooltip content={props.title}>
+      <label
+        className={classnames(
+          'Switch',
+          {withLabel: label, disabled: props.disabled},
+          props.className
+        )}
+      >
+        <Input type="checkbox" {...props} className="Switch__Input" />
+        <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
+        {label && <span className="label">{label}</span>}
+      </label>
+    </Tooltip>
   );
 }

@@ -27,11 +27,9 @@ export default function Checkmark({event: {eventLabel, eventName, source}}) {
   return (
     <div className="Checkmark" ref={checkMark}>
       <Icon type="check-circle" size="18" onMouseOver={calculateTooltipPosition} />
-      <div className={classnames('Tooltip light', tooltipPosition)}>
-        <div className={`Tooltip__text-${tooltipPosition}`}>
-          <span>{eventLabel || eventName}</span>
-          <br /> source: {source}
-        </div>
+      <div className={classnames('Tooltip center light', tooltipPosition)}>
+        <span>{eventLabel || eventName}</span>
+        <br /> source: {source}
       </div>
     </div>
   );

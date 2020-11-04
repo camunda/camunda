@@ -6,9 +6,11 @@
 
 import React from 'react';
 
-import './Footer.scss';
 import {getOptimizeVersion} from 'config';
 import {t} from 'translation';
+import {Tooltip} from 'components';
+
+import './Footer.scss';
 
 export default class Footer extends React.Component {
   constructor(props) {
@@ -71,9 +73,9 @@ export default class Footer extends React.Component {
     }
 
     return (
-      <li key={key} className={className} title={title}>
-        {key}
-      </li>
+      <Tooltip key={key} content={title} align="left">
+        <li className={className}>{key}</li>
+      </Tooltip>
     );
   };
 
@@ -106,9 +108,9 @@ export default class Footer extends React.Component {
               </ul>
             )
           )}
-          <div className="timezone" title={timezoneInfo}>
-            {timezoneInfo}
-          </div>
+          <Tooltip content={timezoneInfo} overflowOnly>
+            <div className="timezone">{timezoneInfo}</div>
+          </Tooltip>
           <div className="colophon">
             © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
             {optimizeVersion}

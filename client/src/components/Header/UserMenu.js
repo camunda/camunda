@@ -36,11 +36,7 @@ export function UserMenu({user, history, mightFail}) {
   const isTelemetryAdmin = user?.authorizations.includes('telemetry_administration');
   if (isTelemetryAdmin) {
     options.push(
-      <Dropdown.Option
-        key="telemetry"
-        onClick={() => setTelemetrySettingsOpen(true)}
-        title={t('navigation.telemetry')}
-      >
+      <Dropdown.Option key="telemetry" onClick={() => setTelemetrySettingsOpen(true)}>
         {t('navigation.telemetry')}
       </Dropdown.Option>
     );
@@ -51,11 +47,7 @@ export function UserMenu({user, history, mightFail}) {
       options.push([<hr key="seperator" />]);
     }
     options.push(
-      <Dropdown.Option
-        key="logout"
-        onClick={() => history.push('/logout')}
-        title={t('navigation.logout')}
-      >
+      <Dropdown.Option key="logout" onClick={() => history.push('/logout')}>
         {t('navigation.logout')}
       </Dropdown.Option>
     );

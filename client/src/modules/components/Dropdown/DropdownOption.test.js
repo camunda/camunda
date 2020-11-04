@@ -23,7 +23,7 @@ it('should render a normal div if it is not a link', () => {
 
   expect(node.find('div')).toExist();
 
-  node.simulate('click');
+  node.find('div').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
