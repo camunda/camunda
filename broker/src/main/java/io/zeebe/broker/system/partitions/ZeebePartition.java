@@ -518,6 +518,8 @@ public final class ZeebePartition extends Actor
         .zeebeDb(zeebeDb)
         .nodeId(localBroker.getNodeId())
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
+        .detectReprocessingInconsistency(
+            brokerCfg.getExperimental().isDetectReprocessingInconsistency())
         .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
         .streamProcessorFactory(
             (processingContext) -> {
