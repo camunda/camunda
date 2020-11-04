@@ -20,6 +20,7 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_A
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -56,10 +57,12 @@ public final class BrokerCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
-  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER =
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER =
       "zeebe.broker.experimental.maxAppendsPerFollower";
-  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE =
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE =
       "zeebe.broker.experimental.maxAppendBatchSize";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY =
+      "zeebe.broker.experimental.detectReprocessingInconsistency";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
       "zeebe.broker.experimental.disableExplicitRaftFlush";
 
@@ -439,7 +442,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideMaxAppendsViaEnvironment() {
     // given
-    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER, "8");
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER, "8");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -452,7 +455,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideMaxAppendBatchSizeViaEnvironment() {
     // given
-    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE, "256KB");
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE, "256KB");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -460,6 +463,43 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(experimentalCfg.getMaxAppendBatchSizeInBytes()).isEqualTo(256 * 1024);
+  }
+
+  @Test
+  public void shouldDisableDetectReprocessingInconsistencyPerDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
+    // when
+
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDisableExplicitRaftFlush()).isFalse();
+  }
+
+  @Test
+  public void shouldOverrideDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDetectReprocessingInconsistency()).isTrue();
+  }
+
+  @Test
+  public void
+      shouldThrowExceptionWhenInvalidValueIsUsedForDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "XXX");
+
+    // thrown
+    assertThatThrownBy(() -> TestConfigReader.readConfig("default", environment))
+        .hasMessageContaining(
+            "Failed to bind properties under 'zeebe.broker.experimental.detect-reprocessing-inconsistency' to boolean");
   }
 
   @Test
