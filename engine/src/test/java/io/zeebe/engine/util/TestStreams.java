@@ -200,15 +200,24 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final SynchronousLogStream stream = getLogStream(log);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, false);
+  }
+
+  public StreamProcessor startStreamProcessor(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final boolean detectReprocessingInconsistency) {
+    final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream, zeebeDbFactory, typedRecordProcessorFactory, SNAPSHOT_INTERVAL);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, detectReprocessingInconsistency);
   }
 
   private StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
-      final Duration snapshotInterval) {
+      final boolean detectReprocessingInconsistency) {
     final var storage = createRuntimeFolder(stream);
     final String logName = stream.getLogName();
 
@@ -221,6 +230,7 @@ public final class TestStreams {
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
+            .detectReprocessingInconsistency(detectReprocessingInconsistency)
             .build();
     streamProcessor.openAsync().join(15, TimeUnit.SECONDS);
 

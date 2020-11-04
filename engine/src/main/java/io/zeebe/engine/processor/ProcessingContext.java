@@ -100,7 +100,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext setDetectReprocessingInconsistency(final boolean detectReprocessingInconsistency) {
+  public ProcessingContext setDetectReprocessingInconsistency(
+      final boolean detectReprocessingInconsistency) {
     this.detectReprocessingInconsistency = detectReprocessingInconsistency;
     return this;
   }
