@@ -106,7 +106,7 @@
                 </goals>
                 <phase>test</phase>
                 <configuration>
-                  <arguments>--cwd e2e install</arguments>
+                  <arguments>install</arguments>
                 </configuration>
               </execution>
               <execution>
@@ -116,7 +116,7 @@
                 </goals>
                 <phase>test</phase>
                 <configuration>
-                  <arguments>--cwd e2e test:ci</arguments>
+                  <arguments>test:e2e:ci</arguments>
                 </configuration>
               </execution>
             </executions>

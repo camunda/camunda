@@ -3,6 +3,16 @@
   "version": "0.26.0-SNAPSHOT",
   "private": true,
   "dependencies": {
+    "@types/enzyme": "^3.10.7",
+    "@types/history": "^4.7.8",
+    "@types/jest": "^26.0.15",
+    "@types/lodash": "^4.14.162",
+    "@types/node": "^14.14.2",
+    "@types/react": "^16.9.53",
+    "@types/react-dom": "^16.9.8",
+    "@types/react-router-dom": "^5.1.6",
+    "@types/react-transition-group": "^4.4.0",
+    "@types/styled-components": "^5.1.4",
     "bpmn-js": "^7.4.0",
     "bpmn-moddle": "^7.0.3",
     "date-fns": "^2.16.1",
@@ -11,24 +21,30 @@
     "mobx": "^5.15.7",
     "mobx-react": "^6.3.1",
     "polished": "^4.0.3",
-    "prop-types": "^15.6.2",
     "react": "^16.14.0",
     "react-contenteditable": "^3.3.5",
     "react-dom": "^16.14.0",
     "react-router-dom": "^5.2.0",
     "react-textarea-autosize": "^8.2.0",
     "react-transition-group": "^4.4.1",
-    "styled-components": "^5.2.0"
+    "styled-components": "^5.2.0",
+    "ts-migrate": "^0.1.7",
+    "ts-toolbelt": "^8.0.7",
+    "typescript": "^4.0.3"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "TSC_COMPILE_ON_ERROR=true react-scripts start",
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
     "eject": "react-scripts eject",
-    "lint": "eslint ./src",
-    "fix:prettier": "prettier --write \"**/*.js\""
+    "lint": "tsc && eslint src/** --ignore-pattern *.css --no-error-on-unmatched-pattern true --ext .ts,.tsx,.js,.jsx",
+    "fix:prettier": "prettier --write \"**/*.ts\"",
+    "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
+    "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
+    "test:browserstack": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 node e2e/scripts/browserstack.js",
+    "test:ci-browserstack": "PORT=8080 node e2e/scripts/browserstack.js"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -43,6 +59,8 @@
     "@testing-library/jest-dom": "^5.11.5",
     "@testing-library/react": "^11.1.0",
     "@testing-library/react-hooks": "^3.4.2",
+    "@testing-library/testcafe": "^4.2.3",
+    "@types/node-fetch": "^2.5.7",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.5",
     "eslint": "^6.8.0",
@@ -56,14 +74,20 @@
     "jest-styled-components": "^7.0.3",
     "lint-staged": "^10.5.0",
     "msw": "^0.21.3",
+    "node-fetch": "^2.6.1",
     "prettier": "^2.1.2",
     "react-scripts": "3.4.4",
-    "react-test-renderer": "^16.14.0"
+    "react-test-renderer": "^16.14.0",
+    "testcafe": "^1.9.4",
+    "testcafe-browser-provider-browserstack": "^1.13.1",
+    "zeebe-node": "^0.25.0"
   },
   "lint-staged": {
-    "{src,e2e}/**/*.js": [
-      "eslint",
+    "*": [
       "prettier --write"
+    ],
+    "*.{js,jsx,ts,tsx}": [
+      "yarn lint"
     ]
   },
   "browserslist": [

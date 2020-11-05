@@ -208,9 +208,6 @@ pipeline {
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
          	sh '''
-            cd ./client/e2e
-            yarn install
-            sleep 60
             yarn run test:ci-browserstack
           '''
          }

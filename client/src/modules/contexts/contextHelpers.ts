@@ -1,0 +1,12 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+export const wrapWithContexts = (wrappers = [], WrappedComponent: any) => {
+  return wrappers.reverse().reduce((acc, contextWrapper) => {
+    // @ts-expect-error ts-migrate(2349) FIXME: Type 'never' has no call signatures.
+    return contextWrapper(acc);
+  }, WrappedComponent);
+};
