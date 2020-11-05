@@ -51,7 +51,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
@@ -71,7 +71,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")

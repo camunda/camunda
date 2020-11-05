@@ -25,7 +25,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
@@ -257,7 +256,7 @@ public class AlertService implements ReportReferencingService {
       String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
         toCreate.getReportId() + "] does not exist.";
       logger.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage, e);
+      throw new BadRequestException(errorMessage, e);
     }
 
     if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {

@@ -47,8 +47,8 @@ public class ValidationHelper {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
-    ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
-    ValidationHelper.ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
+    ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
+    ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
     validateProcessFilters(dto.getFilter());
   }
 
