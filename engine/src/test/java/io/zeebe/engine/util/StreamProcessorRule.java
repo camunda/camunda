@@ -125,12 +125,15 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessor(startPartitionId, factory);
+    return startTypedStreamProcessor(startPartitionId, factory, false);
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final boolean detectReprocessingInconsistency) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId, factory, detectReprocessingInconsistency);
   }
 
   public void pauseProcessing(final int partitionId) {

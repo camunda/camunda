@@ -21,12 +21,11 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.health.HealthStatus;
-import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class ReprocessingIssueDetectionTest {
+public final class ReprocessingIssueDetectionTurnedOffTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -68,41 +67,7 @@ public final class ReprocessingIssueDetectionTest {
   }
 
   @Test
-  public void shouldDetectNoIssues() {
-    // given
-    engine.writeRecords(
-        RecordToWrite.command()
-            .job(JobIntent.COMPLETE, jobCreated.getValue())
-            .key(jobCreated.getKey()),
-        RecordToWrite.event()
-            .job(JobIntent.COMPLETED, jobCreated.getValue())
-            .key(jobCreated.getKey())
-            .causedBy(0),
-        RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETING, serviceTaskActivated.getValue())
-            .key(serviceTaskActivated.getKey())
-            .causedBy(1));
-
-    // when
-    engine.startWithReprocessingDetection();
-
-    // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
-        .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final var streamProcessor = engine.getStreamProcessor(1);
-    assertThat(streamProcessor.isFailed()).isFalse();
-    assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
-  }
-
-  @Test
-  public void shouldDetectDifferentKey() {
+  public void shouldNotDetectDifferentKey() {
     // given
     engine.writeRecords(
         RecordToWrite.command()
@@ -120,21 +85,18 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(1));
 
     // when
-    engine.startWithReprocessingDetection();
+    engine.start();
 
     // then
-    final var streamProcessor = engine.getStreamProcessor(1);
+    engine.awaitReprocessingCompleted();
 
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              assertThat(streamProcessor.isFailed()).isTrue();
-              assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-            });
+    final var streamProcessor = engine.getStreamProcessor(1);
+    assertThat(streamProcessor.isFailed()).isFalse();
+    assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
-  public void shouldDetectDifferentIntent() {
+  public void shouldNotDetectDifferentIntent() {
     // given
     engine.writeRecords(
         RecordToWrite.command()
@@ -152,21 +114,18 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(1));
 
     // when
-    engine.startWithReprocessingDetection();
+    engine.start();
 
     // then
-    final var streamProcessor = engine.getStreamProcessor(1);
+    engine.awaitReprocessingCompleted();
 
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              assertThat(streamProcessor.isFailed()).isTrue();
-              assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-            });
+    final var streamProcessor = engine.getStreamProcessor(1);
+    assertThat(streamProcessor.isFailed()).isFalse();
+    assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
-  public void shouldDetectMissingRecordOnLogStream() {
+  public void shouldNotDetectMissingRecordOnLogStream() {
     // given
     engine.writeRecords(
         RecordToWrite.command()
@@ -187,16 +146,13 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(2));
 
     // when
-    engine.startWithReprocessingDetection();
+    engine.start();
 
     // then
-    final var streamProcessor = engine.getStreamProcessor(1);
+    engine.awaitReprocessingCompleted();
 
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              assertThat(streamProcessor.isFailed()).isTrue();
-              assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-            });
+    final var streamProcessor = engine.getStreamProcessor(1);
+    assertThat(streamProcessor.isFailed()).isFalse();
+    assertThat(streamProcessor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 }
