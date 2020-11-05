@@ -69,6 +69,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder detectReprocessingInconsistency(
+      final boolean detectReprocessingInconsistency) {
+    this.processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
+    return this;
+  }
+
   public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
     return typedRecordProcessorFactory;
   }

@@ -20,10 +20,12 @@ public class ExperimentalCfg {
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
+  private static final boolean DEFAULT_DETECT_REPROCESSING_INCONSISTENCY = false;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
+  private boolean detectReprocessingInconsistency = DEFAULT_DETECT_REPROCESSING_INCONSISTENCY;
 
   public int getMaxAppendsPerFollower() {
     return maxAppendsPerFollower;
@@ -53,6 +55,14 @@ public class ExperimentalCfg {
     this.disableExplicitRaftFlush = disableExplicitRaftFlush;
   }
 
+  public boolean isDetectReprocessingInconsistency() {
+    return detectReprocessingInconsistency;
+  }
+
+  public void setDetectReprocessingInconsistency(final boolean detectReprocessingInconsistency) {
+    this.detectReprocessingInconsistency = detectReprocessingInconsistency;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -62,6 +72,8 @@ public class ExperimentalCfg {
         + maxAppendBatchSize
         + ", disableExplicitRaftFlush="
         + disableExplicitRaftFlush
+        + ", detectReprocessingInconsistency="
+        + detectReprocessingInconsistency
         + '}';
   }
 }

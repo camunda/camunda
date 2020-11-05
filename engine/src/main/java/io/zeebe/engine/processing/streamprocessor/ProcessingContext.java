@@ -35,6 +35,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
   private int maxFragmentSize;
+  private boolean detectReprocessingInconsistency;
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -102,6 +103,12 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
+  public ProcessingContext setDetectReprocessingInconsistency(
+      final boolean detectReprocessingInconsistency) {
+    this.detectReprocessingInconsistency = detectReprocessingInconsistency;
+    return this;
+  }
+
   @Override
   public ActorControl getActor() {
     return actor;
@@ -164,5 +171,9 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public Consumer<TypedRecord> getOnProcessedListener() {
     return onProcessedListener;
+  }
+
+  public boolean isDetectReprocessingInconsistency() {
+    return detectReprocessingInconsistency;
   }
 }
