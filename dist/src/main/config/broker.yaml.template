@@ -132,14 +132,14 @@
       # logSegmentSize: 512MB
 
       # Configure whether data log segment file channels should be memory mapped.
-      # WARNING: This is an experimental setting. It is not yet as mature as direct file channels (default).
+      # WARNING: This setting has been deprecated. In future versions, log segment file channels will always be memory mapped.
       #
       # Zeebe reads the data log segment files using file channels.
       # Memory mapping these should generally allow for faster processing,
       # resulting in reduced cycle times (i.e. total duration of a single process instance).
       #
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_USEMMAP.
-      # useMmap: false
+      # useMmap: true
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
