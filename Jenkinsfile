@@ -183,7 +183,6 @@ pipeline {
                         }
                         container('docker') {
                             sh '.ci/scripts/docker/build.sh'
-                            sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                         }
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
