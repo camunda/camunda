@@ -40,7 +40,7 @@ public class ActiveIncidentResolver implements IncidentResolver {
         // retry the incident can be resolved.
         engineClient.addVariableToProcessInstance(incident.getProcessInstanceId(), "missingVariable", variableValueDto);
       });
-    engineClient.increaseRetry(processInstanceIdsToRetry);
+    engineClient.increaseJobRetry(processInstanceIdsToRetry);
   }
 
 }

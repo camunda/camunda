@@ -8,9 +8,9 @@ package org.camunda.optimize.data.generation;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.camunda.bpm.engine.rest.dto.identity.UserCredentialsDto;
-import org.camunda.bpm.engine.rest.dto.identity.UserDto;
-import org.camunda.bpm.engine.rest.dto.identity.UserProfileDto;
+import org.camunda.optimize.rest.engine.dto.EngineUserDto;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.nio.charset.StandardCharsets;
@@ -29,8 +29,8 @@ public class UserGenerator {
       .forEach(rawUserLine -> {
         final String[] properties = rawUserLine.split(",");
 
-        final UserDto engineUserDto = new UserDto();
-        final UserProfileDto userProfileDto = new UserProfileDto();
+        final EngineUserDto engineUserDto = new EngineUserDto();
+        final UserProfileDto userProfileDto = UserProfileDto.builder().build();
         engineUserDto.setProfile(userProfileDto);
         userProfileDto.setFirstName(properties[1]);
         userProfileDto.setLastName(properties[0]);
