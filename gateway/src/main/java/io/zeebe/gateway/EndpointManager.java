@@ -34,6 +34,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -99,6 +100,11 @@ public final class EndpointManager {
                 } else {
                   return;
                 }
+              }
+              if (topology.isPartitionHealthy(brokerId, partitionId)) {
+                partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
+              } else {
+                partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
               }
               brokerInfo.addPartitions(partitionBuilder);
             });
