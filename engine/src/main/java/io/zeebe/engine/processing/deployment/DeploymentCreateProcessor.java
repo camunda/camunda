@@ -13,12 +13,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
-  public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
-      "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
 
   private final WorkflowState workflowState;
   private final int partitionId;
@@ -40,15 +37,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedStreamWriter streamWriter) {
 
     final DeploymentRecord deploymentEvent = event.getValue();
-    if (workflowState.putDeployment(event.getKey(), deploymentEvent)) {
-      streamWriter.appendFollowUpEvent(event.getKey(), DeploymentIntent.CREATED, deploymentEvent);
-    } else {
-      streamWriter.appendRejection(
-          event,
-          RejectionType.ALREADY_EXISTS,
-          String.format(DEPLOYMENT_ALREADY_EXISTS_MESSAGE, event.getKey()));
-    }
-
+    workflowState.putDeployment(deploymentEvent);
+    streamWriter.appendFollowUpEvent(event.getKey(), DeploymentIntent.CREATED, deploymentEvent);
     deploymentResponder.sendDeploymentResponse(event.getKey(), partitionId);
   }
 }

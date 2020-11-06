@@ -45,8 +45,8 @@ public final class WorkflowState {
     return (int) versionManager.getNextValue(bpmnProcessId);
   }
 
-  public boolean putDeployment(final long deploymentKey, final DeploymentRecord deploymentRecord) {
-    return workflowPersistenceCache.putDeployment(deploymentKey, deploymentRecord);
+  public void putDeployment(final DeploymentRecord deploymentRecord) {
+    workflowPersistenceCache.putDeployment(deploymentRecord);
   }
 
   public DeployedWorkflow getWorkflowByProcessIdAndVersion(

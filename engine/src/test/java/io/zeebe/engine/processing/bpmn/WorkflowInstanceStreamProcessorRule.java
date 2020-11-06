@@ -129,8 +129,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
         });
   }
 
-  public void deploy(
-      final BpmnModelInstance modelInstance, final int deploymentKey, final int version) {
+  public void deploy(final BpmnModelInstance modelInstance, final int version) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
@@ -155,11 +154,11 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(version);
 
-    actor.call(() -> workflowState.putDeployment(deploymentKey, record)).join();
+    actor.call(() -> workflowState.putDeployment(record)).join();
   }
 
   public void deploy(final BpmnModelInstance modelInstance) {
-    deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
+    deploy(modelInstance, VERSION);
   }
 
   public Record<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(

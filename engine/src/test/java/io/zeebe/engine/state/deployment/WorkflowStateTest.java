@@ -140,7 +140,7 @@ public final class WorkflowStateTest {
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
 
     // when
-    workflowState.putDeployment(1, deploymentRecord);
+    workflowState.putDeployment(deploymentRecord);
 
     // then
     final DeployedWorkflow deployedWorkflow =
@@ -155,7 +155,7 @@ public final class WorkflowStateTest {
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
 
     // when
-    workflowState.putDeployment(1, deploymentRecord);
+    workflowState.putDeployment(deploymentRecord);
     deploymentRecord.workflows().iterator().next().setKey(212).setBpmnProcessId("other");
 
     // then
@@ -175,8 +175,8 @@ public final class WorkflowStateTest {
     // given
 
     // when
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // then
     final DeployedWorkflow deployedWorkflow =
@@ -201,10 +201,10 @@ public final class WorkflowStateTest {
   @Test
   public void shouldRestartVersionCountOnDifferentProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, "otherId"));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // then
     final DeployedWorkflow deployedWorkflow =
@@ -228,8 +228,8 @@ public final class WorkflowStateTest {
   @Test
   public void shouldGetLatestDeployedWorkflow() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
     final DeployedWorkflow latestWorkflow =
@@ -263,12 +263,12 @@ public final class WorkflowStateTest {
   @Test
   public void shouldGetLatestDeployedWorkflowAfterDeploymentWasAdded() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
     final DeployedWorkflow firstLatest =
         workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
 
     // when
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // then
     final DeployedWorkflow latestWorkflow =
@@ -293,7 +293,7 @@ public final class WorkflowStateTest {
   public void shouldGetExecutableWorkflow() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    workflowState.putDeployment(1, deploymentRecord);
+    workflowState.putDeployment(deploymentRecord);
 
     // when
     final DeployedWorkflow deployedWorkflow =
@@ -310,8 +310,7 @@ public final class WorkflowStateTest {
   public void shouldGetExecutableWorkflowByKey() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final long deploymentKey = FIRST_WORKFLOW_KEY;
-    workflowState.putDeployment(deploymentKey, deploymentRecord);
+    workflowState.putDeployment(deploymentRecord);
 
     // when
     final long workflowKey = FIRST_WORKFLOW_KEY;
@@ -328,8 +327,7 @@ public final class WorkflowStateTest {
   public void shouldGetExecutableWorkflowByLatestWorkflow() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final int deploymentKey = 1;
-    workflowState.putDeployment(deploymentKey, deploymentRecord);
+    workflowState.putDeployment(deploymentRecord);
 
     // when
     final DeployedWorkflow deployedWorkflow =
@@ -345,9 +343,9 @@ public final class WorkflowStateTest {
   @Test
   public void shouldGetAllWorkflows() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(3, creatingDeploymentRecord(zeebeState, "otherId"));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
     final Collection<DeployedWorkflow> workflows = workflowState.getWorkflows();
@@ -367,8 +365,8 @@ public final class WorkflowStateTest {
   @Test
   public void shouldGetAllWorkflowsWithProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
     final Collection<DeployedWorkflow> workflows =
@@ -388,8 +386,8 @@ public final class WorkflowStateTest {
   @Test
   public void shouldNotGetWorkflowsWithOtherProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, "otherId"));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
     final Collection<DeployedWorkflow> workflows =
@@ -412,8 +410,8 @@ public final class WorkflowStateTest {
   public void shouldReturnHighestVersionInsteadOfMostRecent() {
     // given
     final String processId = "process";
-    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, processId, 2));
-    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState, processId, 1));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 2));
+    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 1));
 
     // when
     final DeployedWorkflow latestWorkflow =

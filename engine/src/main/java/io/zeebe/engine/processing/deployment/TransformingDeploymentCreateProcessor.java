@@ -39,8 +39,6 @@ import org.agrona.DirectBuffer;
 public final class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
 
-  private static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
-      "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
   private final DeploymentTransformer deploymentTransformer;
@@ -71,23 +69,19 @@ public final class TransformingDeploymentCreateProcessor
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
       final long key = keyGenerator.nextKey();
-      if (workflowState.putDeployment(key, deploymentEvent)) {
-        try {
-          createTimerIfTimerStartEvent(command, streamWriter);
-        } catch (final RuntimeException e) {
-          final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-          responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-          streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-          return;
-        }
-        responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-        streamWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-      } else {
-        // should not be possible
-        final String reason = String.format(DEPLOYMENT_ALREADY_EXISTS_MESSAGE, key);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, reason);
-        streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, reason);
+      workflowState.putDeployment(deploymentEvent);
+
+      try {
+        createTimerIfTimerStartEvent(command, streamWriter);
+      } catch (final RuntimeException e) {
+        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        return;
       }
+
+      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+      streamWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
     } else {
       responseWriter.writeRejectionOnCommand(
           command,
