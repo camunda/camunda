@@ -20,6 +20,7 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_A
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -58,6 +59,8 @@ public final class BrokerCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY =
+      "zeebe.broker.experimental.detectReprocessingInconsistency";
 
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
@@ -430,6 +433,43 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(cfgCluster.getClusterSize()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldDisableDetectReprocessingInconsistencyPerDefault() {
+    // given
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    // when
+
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDetectReprocessingInconsistency()).isFalse();
+  }
+
+  @Test
+  public void shouldOverrideDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "true");
+
+    // when
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDetectReprocessingInconsistency()).isTrue();
+  }
+
+  @Test
+  public void
+      shouldThrowExceptionWhenInvalidValueIsUsedForDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "XXX");
+
+    // thrown
+    assertThatThrownBy(() -> readConfig("cluster-cfg"))
+        .hasMessageContaining(
+            "Failed to bind properties under 'zeebe.broker.experimental.detect-reprocessing-inconsistency' to boolean");
   }
 
   @Test

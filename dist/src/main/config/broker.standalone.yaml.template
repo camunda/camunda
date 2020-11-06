@@ -473,3 +473,12 @@
         #     workflowInstanceSubscription: false
         #
         #     ignoreVariablesAbove: 32677
+    # experimental
+      # Be aware that all configuration's which are part of the experimental section
+      # are subject to change and can be dropped at any time.
+      # It might be that also some of them are actually dangerous so be aware when you change one of these!
+
+      # Enables the detection of an inconsistency during reprocessing. If a inconsistency is detect the StreamProcessor is
+      # failed and the partition becomes unhealthy, no further progress will made on that specific partition.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
+      # detectReprocessingInconsistency = false;
