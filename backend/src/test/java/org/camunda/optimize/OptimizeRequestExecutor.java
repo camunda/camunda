@@ -256,15 +256,17 @@ public class OptimizeRequestExecutor {
 
   public Response execute(int expectedResponseCode) {
     final Response response = execute();
-    assertThat(response.getStatus()).isEqualTo(expectedResponseCode);
+
+    assertStatusCode(response, expectedResponseCode);
     return response;
   }
 
   public <T> T execute(TypeReference<T> classToExtractFromResponse) {
     try (final Response response = execute()) {
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      String jsonString = response.readEntity(String.class);
-      return objectMapper.readValue(jsonString, classToExtractFromResponse);
+      assertStatusCode(response, Response.Status.OK.getStatusCode());
+
+      String responseString = response.readEntity(String.class);
+      return objectMapper.readValue(responseString, classToExtractFromResponse);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
@@ -272,21 +274,32 @@ public class OptimizeRequestExecutor {
 
   public <T> T execute(Class<T> classToExtractFromResponse, int responseCode) {
     try (final Response response = execute()) {
-      assertThat(response.getStatus()).isEqualTo(responseCode);
+      assertStatusCode(response, responseCode);
+
       return response.readEntity(classToExtractFromResponse);
     }
   }
 
   public <T> List<T> executeAndReturnList(Class<T> classToExtractFromResponse, int responseCode) {
     try (final Response response = execute()) {
-      assertThat(response.getStatus()).isEqualTo(responseCode);
-      String jsonString = response.readEntity(String.class);
+      assertStatusCode(response, responseCode);
+
+      String responseString = response.readEntity(String.class);
       TypeFactory factory = objectMapper.getTypeFactory();
       JavaType listOfT = factory.constructCollectionType(List.class, classToExtractFromResponse);
-      return objectMapper.readValue(jsonString, listOfT);
+      return objectMapper.readValue(responseString, listOfT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
+  }
+
+  private void assertStatusCode(Response response, int expectedStatus) {
+    String responseString = response.readEntity(String.class);
+    assertThat(response.getStatus())
+      .withFailMessage("Expected status code " + expectedStatus +
+                         ", actual status code: " + response.getStatus() +
+                         ".\nResponse contains the following message:\n" + responseString)
+      .isEqualTo(expectedStatus);
   }
 
   private void resetBuilder() {
