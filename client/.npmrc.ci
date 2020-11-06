@@ -1,0 +1,2 @@
+@camunda-cloud:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN}

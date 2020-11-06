@@ -4,10 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import ReactDOM from 'react-dom';
-import {App} from './App';
-import './index.css';
-import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
+import {useContext} from 'react';
+import {NotificationContext} from 'modules/contexts/NotificationContext';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+export default function useNotifications() {
+  return useContext(NotificationContext);
+}

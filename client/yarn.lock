@@ -2533,6 +2533,18 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
+"@camunda-cloud/common-ui-react@^0.0.13-3":
+  version "0.0.13-3"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui-react/0.0.13-3/1c699a21b3aecaf35710fafe7c81de0189cb3e1c7a16e5447559dcdce2392734#2a0405affa21d9d41cfaf5ecab908bde758ab661"
+  integrity sha512-MQQgEAYr7/0fHFRI/HPPAu+LbDZi4jmuyD6qeXHPHan+hdWrrrPZT7E4Wfq+77pIiXgaUGm0K7Fqd74LdEJB3w==
+  dependencies:
+    "@camunda-cloud/common-ui" "0.0.13-3"
+
+"@camunda-cloud/common-ui@0.0.13-3", "@camunda-cloud/common-ui@^0.0.13-3":
+  version "0.0.13-3"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui/0.0.13-3/cda2aa739bb35601eecf14adbe405f7ec5485acf5a4756bb85920140f4126ccf#c482bb27d3d536a882ebb2d2abdf9067c9b92211"
+  integrity sha512-o9XZKKBNDniLmO+U7jdhndsBd+PhqDrdzXqE7vENqU+62o2jNQPswT3+TnGJJBNDSTaXYiL1NO1sNRU7h+3jPA==
+
 "@cnakazawa/watch@^1.0.3":
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/@cnakazawa/watch/-/watch-1.0.3.tgz#099139eaec7ebf07a27c1786a3ff64f39464d2ef"

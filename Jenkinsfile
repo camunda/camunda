@@ -39,6 +39,7 @@ pipeline {
   environment {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
+    GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials("github-camunda-cloud-packages-token")
   }
 
   options {
@@ -53,6 +54,7 @@ pipeline {
         container('node') {
           sh '''
             cd ./client
+            mv .npmrc.ci .npmrc
             yarn install --frozen-lockfile
             yarn run eslint src/
             yarn build

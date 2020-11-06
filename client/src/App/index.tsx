@@ -9,6 +9,7 @@ import {HashRouter as Router, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+import {NotificationProvider} from 'modules/contexts/NotificationContext';
 
 import Authentication from './Authentication';
 import Header from './Header';
@@ -21,20 +22,22 @@ import GlobalStyles from './GlobalStyles';
 function App() {
   return (
     <ThemeProvider>
-      <CollapsablePanelProvider>
-        <GlobalStyles />
-        <Router>
-          <Switch>
-            <Route path="/login" component={Login} />
-            <Authentication>
-              <Header />
-              <Route exact path="/" component={Dashboard} />
-              <Route exact path="/instances" component={Instances} />
-              <Route exact path="/instances/:id" component={Instance} />
-            </Authentication>
-          </Switch>
-        </Router>
-      </CollapsablePanelProvider>
+      <NotificationProvider>
+        <CollapsablePanelProvider>
+          <GlobalStyles />
+          <Router>
+            <Switch>
+              <Route path="/login" component={Login} />
+              <Authentication>
+                <Header />
+                <Route exact path="/" component={Dashboard} />
+                <Route exact path="/instances" component={Instances} />
+                <Route exact path="/instances/:id" component={Instance} />
+              </Authentication>
+            </Switch>
+          </Router>
+        </CollapsablePanelProvider>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }
