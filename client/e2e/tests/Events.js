@@ -9,7 +9,6 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Events.elements.js';
-import * as Homepage from "./Homepage.elements";
 
 fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
 
@@ -94,16 +93,6 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
-
-  // Listing
-  await t.click(e.navItem);
-  await t.hover(e.entity('Event Invoice process'));
-  await t.click(Homepage.contextMenu(e.invoiceEventProcess));
-  await t.takeScreenshot('event-based-processes/processList.png');
-
-  // Edit Access
-  await t.click(e.editAccess(e.invoiceEventProcess));
-  await t.takeElementScreenshot(e.modalContainer.nth(0), 'event-based-processes/editAccess.png');
 });
 
 test('auto generate a process', async (t) => {
