@@ -30,7 +30,9 @@ const PrivateRoute: React.FC<Props> = observer(
       <Redirect
         to={{
           pathname: redirectPath,
-          state: {referrer: location?.pathname},
+          state: {
+            referrer: location,
+          },
         }}
       />
     );

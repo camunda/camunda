@@ -16,12 +16,16 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 
 const fetchMock = jest.spyOn(window, 'fetch');
 const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
-const historyMock = createMemoryHistory();
-const Wrapper: React.FC = ({children}) => (
-  <Router history={historyMock}>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </Router>
-);
+function createWrapper(
+  history = createMemoryHistory({initialEntries: ['/login']}),
+) {
+  const Wrapper: React.FC = ({children}) => (
+    <Router history={history}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </Router>
+  );
+  return Wrapper;
+}
 
 describe('<Login />', () => {
   afterEach(() => {
@@ -35,10 +39,12 @@ describe('<Login />', () => {
     getFullYearMock.mockRestore();
   });
 
-  it('should redirect to the initial on success', async () => {
+  it('should redirect to the initial path on success', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
+    login.disableSession();
+    const historyMock = createMemoryHistory({initialEntries: ['/login']});
     render(<Login />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(historyMock),
     });
 
     await userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
@@ -49,10 +55,54 @@ describe('<Login />', () => {
     expect(historyMock.location.pathname).toBe('/');
   });
 
+  it('should redirect to the referrer page', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
+    login.disableSession();
+    const referrer = createMemoryHistory({
+      initialEntries: [
+        {
+          pathname: '/1',
+          search: '?filter=unclaimed',
+        },
+      ],
+    }).location;
+    const historyMock = createMemoryHistory({
+      initialEntries: [
+        {
+          pathname: '/login',
+          state: {
+            referrer,
+          },
+        },
+      ],
+    });
+    render(<Login />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    await userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
+    await userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(historyMock.location.pathname).toBe('/1');
+    expect(historyMock.location.search).toBe('?filter=unclaimed');
+  });
+
+  it('should redirect to the initial page if the user is already logged in', async () => {
+    const historyMock = createMemoryHistory({initialEntries: ['/login']});
+    render(<Login />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    expect(historyMock.location.pathname).toBe('/');
+  });
+
   it('should show an error on failure', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 404}));
+    login.disableSession();
     render(<Login />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     await userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
@@ -67,9 +117,10 @@ describe('<Login />', () => {
 
   it.skip('should show a loading overlay while the login form is submitting', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
+    login.disableSession();
 
     render(<Login />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     await userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
@@ -84,8 +135,9 @@ describe('<Login />', () => {
   it('should have the correct copyright notice', () => {
     const mockYear = 1984;
     getFullYearMock.mockReturnValue(mockYear);
+    login.disableSession();
     render(<Login />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     expect(
@@ -98,9 +150,10 @@ describe('<Login />', () => {
   // Currently there is an issue with jsdom which is making forms not respect required fields https://github.com/jsdom/jsdom/issues/2898
   it.skip('should not submit with empty fields', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
-
+    login.disableSession();
+    const historyMock = createMemoryHistory({initialEntries: ['/login']});
     render(<Login />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(historyMock),
     });
 
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
