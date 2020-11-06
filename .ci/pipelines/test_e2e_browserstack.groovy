@@ -133,7 +133,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.26.0-alpha1-rc1
+      image: camunda/zeebe:0.26.0-alpha1
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
@@ -149,6 +149,7 @@ spec:
           memory: 8Gi
     - name: operate
       image: camunda/operate:SNAPSHOT
+      imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
@@ -187,30 +188,39 @@ pipeline {
     }
   }
 
-  environment {
-    NEXUS = credentials("camunda-nexus")
-    BROWSERSTACK_USERNAME = credentials('browserstack-username')
-    BROWSERSTACK_ACCESS_KEY = credentials('browserstack-accesskey')
-  }
-
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 45, unit: 'MINUTES')
+    timeout(time: 30, unit: 'MINUTES')
   }
 
   stages {
-    stage('Run E2E tests') {
+    stage('Prepare') {
       steps {
         container('node'){
           git url: 'git@github.com:camunda/camunda-operate',
-            branch: "master",
+            branch: "${params.OPERATE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
-         	sh '''
-            yarn run test:ci-browserstack
-          '''
-         }
+          dir('client') {
+            sh 'yarn install'
+          }
+        }
+      }
+    }
+
+    stage('E2E tests') {
+      environment {
+        BROWSERSTACK_USERNAME = credentials('browserstack-username')
+        BROWSERSTACK_ACCESS_KEY = credentials('browserstack-accesskey')
+        OPERATE_BROWSERSTACK_BROWSER = "${params.OPERATE_BROWSERSTACK_BROWSER}"
+      }
+      steps {
+        container('node') {
+          dir('client') {
+            sh 'yarn run test:ci-browserstack'
+          }
+        }
       }
     }
   }

@@ -1,0 +1,3 @@
+folder('browserstack') {
+  displayName 'Browserstack'
+}

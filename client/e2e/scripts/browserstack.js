@@ -5,7 +5,11 @@
  */
 
 const createTestCafe = require('testcafe');
-const browsers = ['browserstack:edge@85.0:Windows 10'];
+const fetch = require('node-fetch');
+
+const OPERATE_CHECK_INTERVAL = 5000;
+const browser =
+  process.env.OPERATE_BROWSERSTACK_BROWSER || 'browserstack:Chrome';
 
 if (!process.env.BROWSERSTACK_USERNAME) {
   console.log(`
@@ -25,25 +29,47 @@ process.env.BROWSERSTACK_PROJECT_NAME = 'Operate';
 process.env.BROWSERSTACK_BUILD_ID = 'Operate E2E Tests';
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
-process.env.BROWSERSTACK_CONSOLE = 'verbose';
+process.env.BROWSERSTACK_CONSOLE = 'debug';
 process.env.BROWSERSTACK_NETWORK_LOGS = true;
 process.env.BROWSERSTACK_DEBUG = true;
+
+const waitForOperate = new Promise((resolve, reject) => {
+  const intervalId = setInterval(async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:${process.env.PORT}/actuator/health/readiness`
+      );
+      if (response.ok) {
+        clearInterval(intervalId);
+        resolve();
+      } else {
+        throw new Error();
+      }
+    } catch {
+      console.log(
+        `Operate is not ready yet, retrying in ${OPERATE_CHECK_INTERVAL}ms...`
+      );
+    }
+  }, OPERATE_CHECK_INTERVAL);
+});
 
 async function start() {
   const testCafe = await createTestCafe('localhost');
   let hasFailures = false;
 
+  await waitForOperate.then(() => {
+    console.log('Operate is ready');
+  });
+
   try {
-    for (let i = 0; i < browsers.length; i++) {
-      if (
-        await testCafe
-          .createRunner()
-          .src('./tests/*.js')
-          .browsers(browsers[i])
-          .run()
-      ) {
-        hasFailures = true;
-      }
+    if (
+      await testCafe
+        .createRunner()
+        .src('./e2e/tests/*.ts')
+        .browsers(browser)
+        .run()
+    ) {
+      hasFailures = true;
     }
   } catch (ex) {
     console.error(ex);

@@ -1,4 +1,4 @@
-pipelineJob('test_e2e_browserstack') {
+pipelineJob('browserstack/test_e2e_browserstack') {
 
   displayName 'e2e browserstack'
   description '''Running our e2e tests remotely in Browserstack'''
@@ -10,13 +10,8 @@ pipelineJob('test_e2e_browserstack') {
     }
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 4 * * *')
-        }
-      }
-    }
+  parameters {
+    stringParam('OPERATE_BROWSERSTACK_BROWSER', 'browserstack:Firefox', 'The ID that determines which browser to use for E2E tests in Browserstack.')
+    stringParam('OPERATE_BRANCH', 'master', 'Operate branch to use for E2E test code.')
   }
 }
