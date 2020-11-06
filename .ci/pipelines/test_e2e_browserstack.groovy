@@ -194,6 +194,10 @@ pipeline {
     timeout(time: 30, unit: 'MINUTES')
   }
 
+  environment {
+    GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials("github-camunda-cloud-packages-token")
+  }
+
   stages {
     stage('Prepare') {
       steps {
@@ -203,7 +207,10 @@ pipeline {
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
           dir('client') {
-            sh 'yarn install'
+            sh '''
+            mv .npmrc.ci .npmrc
+            yarn install
+            '''
           }
         }
       }
