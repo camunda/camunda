@@ -5,220 +5,235 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-import {Redirect} from 'react-router-dom';
-
 import {
-  flushPromises,
-  mockResolvedAsyncFn,
-  mockRejectedAsyncFn,
-} from 'modules/testUtils';
+  render,
+  screen,
+  fireEvent,
+  waitForElementToBeRemoved,
+  waitFor,
+} from '@testing-library/react';
+import {Router} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+
 import {Login} from './index';
-import * as Styled from './styled';
-import * as api from 'modules/api/login';
-import {PAGE_TITLE} from 'modules/constants';
-import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
+import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 
-jest.mock('modules/request');
+function createWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <Router history={history}>{children}</Router>
+      </ThemeProvider>
+    );
+  };
 
-describe('Login', () => {
-  let node: any;
-  let usernameInput: any;
-  let passwordInput: any;
+  return Wrapper;
+}
 
-  beforeEach(() => {
-    jest.spyOn(localStorage, 'clear');
-    node = shallow(<Login location={{}} />, {
-      wrappingComponent: ThemeProvider,
-    });
-
-    usernameInput = node.findWhere(
-      // @ts-expect-error ts-migrate(7006) FIXME: Parameter 'element' implicitly has an 'any' type.
-      (element) =>
-        element.prop('type') === 'text' && element.prop('name') === 'username'
+describe('<Login />', () => {
+  it('should login', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    passwordInput = node.findWhere(
-      // @ts-expect-error ts-migrate(7006) FIXME: Parameter 'element' implicitly has an 'any' type.
-      (element) =>
-        element.prop('type') === 'password' &&
-        element.prop('name') === 'password'
+    const mockHistory = createMemoryHistory({initialEntries: ['/login']});
+    render(<Login />, {
+      wrapper: createWrapper(mockHistory),
+    });
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    await waitFor(() => expect(mockHistory.location.pathname).toBe('/'));
+  });
+
+  it('should show a loading spinner', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.text(''))
+      )
+    );
+
+    render(<Login />, {
+      wrapper: createWrapper(),
+    });
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+  });
+
+  it('should redirect to the previous page', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
+    );
+
+    const INITIAL_ROUTE = '/instances';
+    const mockHistory = createMemoryHistory({initialEntries: [INITIAL_ROUTE]});
+    mockHistory.push({
+      pathname: '/login',
+      state: {
+        referrer: INITIAL_ROUTE,
+      },
+    });
+    render(<Login />, {
+      wrapper: createWrapper(mockHistory),
+    });
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    await waitFor(() =>
+      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE)
     );
   });
 
-  afterEach(() => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockClear' does not exist on type '() =>... Remove this comment to see the full error message
-    localStorage.clear.mockClear();
+  it('should disable the login button when any field is empty', () => {
+    render(<Login />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+
+    expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+
+    expect(screen.getByRole('button', {name: /log in/i})).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: '',
+      },
+    });
+
+    expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
   });
 
-  it('should render initially with no state data', () => {
-    expect(node.state('username')).toEqual('');
-    expect(node.state('password')).toEqual('');
-    expect(node.state('forceRedirect')).toBe(false);
-    expect(node.state('error')).toBeNull();
-  });
-
-  it('should set proper page title', () => {
-    expect(document.title).toBe(PAGE_TITLE.LOGIN);
-  });
-
-  it('should render login form by default', () => {
-    // given
-    const submitInput = node.findWhere(
-      (element: any) => element.prop('type') === 'submit'
+  it('should handle wrong credentials', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) =>
+        res.once(ctx.status(401), ctx.text(''))
+      )
     );
 
-    // then
-    expect(node.find(Styled.Login)).toHaveLength(1);
-    expect(usernameInput).toHaveLength(1);
-    expect(passwordInput).toHaveLength(1);
-    expect(submitInput).toHaveLength(1);
+    render(<Login />, {
+      wrapper: createWrapper(),
+    });
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'wrong',
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'credentials',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    expect(await screen.findByText(LOGIN_ERROR)).toBeInTheDocument();
   });
 
-  it('should change state according to inputs change', () => {
-    //given
-    const username = 'foo';
-    const password = 'bar';
+  it('should handle generic errors', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.text(''))
+      )
+    );
 
-    // when
-    usernameInput.simulate('change', {
-      target: {name: 'username', value: username},
+    render(<Login />, {
+      wrapper: createWrapper(),
     });
 
-    passwordInput.simulate('change', {
-      target: {name: 'password', value: password},
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
     });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
 
-    // then
-    expect(node.state('username')).toEqual(username);
-    expect(node.state('password')).toEqual(password);
+    expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
   });
 
-  it('should reset the stored state on login', async () => {
-    // given
-    node.setState({username: 'foo', password: 'bar'});
+  it('should handle request failures', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res) => res.networkError('Request failed'))
+    );
 
-    // when
-    node.instance().handleLogin({preventDefault: () => {}});
-    await flushPromises();
-
-    // then
-    expect(localStorage.clear).toHaveBeenCalled();
-  });
-
-  describe('redirection', () => {
-    let originalLogin = api.login;
-    let username = 'foo',
-      password = 'bar';
-    // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-    api.login = mockResolvedAsyncFn();
-
-    beforeEach(() => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockClear' does not exist on type '({ us... Remove this comment to see the full error message
-      api.login.mockClear();
-      node.setState({username, password});
+    render(<Login />, {
+      wrapper: createWrapper(),
     });
 
-    afterAll(() => {
-      // reset api.login
-      // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-      api.login = originalLogin.bind(api);
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
     });
-
-    it('should redirect to home page on successful login', async () => {
-      // when
-      node.instance().handleLogin({preventDefault: () => {}});
-      await flushPromises();
-      node.update();
-
-      // then
-      expect(api.login).toBeCalledWith({username, password});
-      const RedirectNode = node.find(Redirect);
-      expect(RedirectNode).toHaveLength(1);
-      expect(RedirectNode.prop('to')).toEqual({
-        state: {isLoggedIn: true},
-        pathname: '/',
-      });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
     });
-    it('should render spinner correctly ', async () => {
-      // when
-      node.instance().handleLogin({preventDefault: () => {}});
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
 
-      // then
-      expect(node.find('[data-testid="spinner"]').exists()).toBe(true);
-
-      // when
-      await flushPromises();
-      node.update();
-
-      // then
-      expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
-    });
-    it('should redirect to referrer page on successful login', async () => {
-      // given
-      const referrer = '/some/page';
-      node.setProps({location: {state: {referrer}}});
-
-      // when
-      node.instance().handleLogin({preventDefault: () => {}});
-      await flushPromises();
-      node.update();
-
-      // then
-      expect(api.login).toBeCalledWith({username, password});
-      const RedirectNode = node.find(Redirect);
-      expect(RedirectNode).toHaveLength(1);
-      expect(RedirectNode.prop('to')).toEqual({
-        state: {isLoggedIn: true},
-        pathname: '/some/page',
-      });
-    });
-  });
-
-  it.skip('should display an error if any field is empty', async () => {
-    // mock api.login
-    const originalLogin = api.login;
-    // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-    api.login = jest.fn();
-
-    // when
-    node.instance().handleLogin({preventDefault: () => {}});
-    await flushPromises();
-    node.update();
-
-    // then
-    expect(api.login).not.toHaveBeenCalled();
-    const errorSpan = node.find(Styled.FormError).render();
-    expect(node.state('error')).toEqual(REQUIRED_FIELD_ERROR);
-    expect(errorSpan.text()).toContain(REQUIRED_FIELD_ERROR);
-    expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
-
-    // reset api.login
-    // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-    api.login = originalLogin.bind(api);
-  });
-
-  it.skip('should display an error on unsuccessful login', async () => {
-    // mock api.login
-    const originalLogin = api.login;
-    // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-    api.login = mockRejectedAsyncFn();
-    node.setState({username: 'foo', password: 'bar'});
-
-    // when
-    node.instance().handleLogin({preventDefault: () => {}});
-    await flushPromises();
-    node.update();
-
-    // then
-    const errorSpan = node.find(Styled.FormError).render();
-    expect(node.state('error')).toEqual(LOGIN_ERROR);
-    expect(errorSpan.text()).toContain(LOGIN_ERROR);
-    expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
-
-    // reset api.login
-    // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'login' because it is a read-only... Remove this comment to see the full error message
-    api.login = originalLogin.bind(api);
+    expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
   });
 });

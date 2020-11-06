@@ -4,7 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const LOGIN_ERROR = 'Username and Password do not match';
-const GENERIC_ERROR = 'Credentials could not be verified';
-
-export {LOGIN_ERROR, GENERIC_ERROR};
+export declare global {
+  interface Window {
+    clientConfig?: {
+      isEnterprise: boolean;
+    };
+  }
+}

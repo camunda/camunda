@@ -180,7 +180,6 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                           {incident.errorMessage}
                         </Styled.ErrorMessageCell>
                         {incident.errorMessage.length >= 58 && (
-                          // @ts-expect-error ts-migrate(2322) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message
                           <Button
                             size="small"
                             // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message

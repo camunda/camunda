@@ -133,7 +133,6 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
           </Styled.FilterRow>
         </Styled.PillsWrapper>
         <Styled.ButtonWrapper>
-          {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
           <Styled.ClearButton
             data-testid="clear-button"
             size="small"

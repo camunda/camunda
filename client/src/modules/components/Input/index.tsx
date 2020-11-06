@@ -8,11 +8,8 @@ import React from 'react';
 
 import * as Styled from './styled';
 
-type Props = {
-  placeholder?: string;
-  hasError?: boolean;
+const Input: React.FC<React.ComponentProps<typeof Styled.Input>> = (props) => {
+  return <Styled.Input {...props} aria-label={props.placeholder} />;
 };
 
-export default function Input(props: Props) {
-  return <Styled.Input {...props} aria-label={props.placeholder} />;
-}
+export default Input;

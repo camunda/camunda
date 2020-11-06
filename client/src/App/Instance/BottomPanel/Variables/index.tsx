@@ -175,7 +175,6 @@ const Variables = observer(function Variables() {
       <TR data-testid="add-key-row">
         <Styled.EditInputTD>
           <Styled.TextInput
-            // @ts-expect-error ts-migrate(2769) FIXME: Property 'autoFocus' does not exist on type 'Intri... Remove this comment to see the full error message
             autoFocus
             type="text"
             placeholder="Variable"
@@ -318,7 +317,6 @@ const Variables = observer(function Variables() {
         {renderContent()}
       </Styled.VariablesContent>
       <Styled.Footer>
-        {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
         <Styled.Button
           title="Add variable"
           size="small"

@@ -6,17 +6,22 @@
 
 import {post} from 'modules/request';
 
-export const login = async ({username, password}: any) => {
-  const body = `username=${username}&password=${password}`;
-  const response = await post('/api/login', body, {
+type Credentials = {
+  username: string;
+  password: string;
+};
+
+async function login({username, password}: Credentials) {
+  const body = new URLSearchParams([
+    ['username', username],
+    ['password', password],
+  ]).toString();
+
+  return post('/api/login', body, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   });
+}
 
-  if (response && response.status >= 200 && response.status < 300) {
-    return response;
-  } else {
-    throw response;
-  }
-};
+export {login};

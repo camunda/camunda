@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {css} from 'styled-components';
+import {css, ThemedInterpolationFunction} from 'styled-components';
 
-const focusCss = ({theme}: any) => {
+const focusCss: ThemedInterpolationFunction = ({theme}) => {
   const shadow = theme.shadows.modules.focus;
 
   return css`
@@ -34,7 +34,14 @@ const focus = {
   selector: focusSelector,
 };
 
-const errorBorders = ({theme, hasError}: any) => {
+type ErrorBorderProps = {
+  hasError?: boolean;
+};
+
+const errorBorders: ThemedInterpolationFunction<ErrorBorderProps> = ({
+  theme,
+  hasError,
+}) => {
   return css`
     &:not(:focus) {
       ${hasError

@@ -10,7 +10,7 @@ import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
 import Input from 'modules/components/Input';
 import BasicCopyright from 'modules/components/Copyright';
 
-const Login = styled.div`
+const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -94,7 +94,7 @@ const Copyright = styled(BasicCopyright)`
 `;
 
 export {
-  Login,
+  Container,
   LoginHeader,
   Logo,
   LoginTitle,

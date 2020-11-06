@@ -2,20 +2,20 @@
 
 exports[`DiagramControls should render diagram controls 1`] = `
 <styled.div>
-  <Styled(Styled(Component))
+  <Styled(Styled(styled.button))
     onClick={[MockFunction]}
   >
     <ForwardRef(SvgDiagramReset) />
-  </Styled(Styled(Component))>
-  <Styled(Styled(Component))
+  </Styled(Styled(styled.button))>
+  <Styled(Styled(styled.button))
     onClick={[MockFunction]}
   >
     <ForwardRef(SvgPlus) />
-  </Styled(Styled(Component))>
-  <Styled(Styled(Component))
+  </Styled(Styled(styled.button))>
+  <Styled(Styled(styled.button))
     onClick={[MockFunction]}
   >
     <ForwardRef(SvgMinus) />
-  </Styled(Styled(Component))>
+  </Styled(Styled(styled.button))>
 </styled.div>
 `;

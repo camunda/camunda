@@ -430,7 +430,6 @@ const Filters = observer(
             />
           </Styled.Filters>
           <Styled.ResetButtonContainer>
-            {/* @ts-expect-error ts-migrate(2322) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
             <Button
               title="Reset filters"
               size="small"

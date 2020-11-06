@@ -13,6 +13,10 @@ const DISCLAIMER_TEXT =
   'This Camunda Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the Terms and Conditions of the Operate Trial Version.';
 
 describe('<Disclaimer />', () => {
+  afterEach(() => {
+    window.clientConfig = undefined;
+  });
+
   it('should show the disclaimer', () => {
     const {rerender} = render(<Disclaimer />, {wrapper: ThemeProvider});
 
@@ -29,7 +33,10 @@ describe('<Disclaimer />', () => {
       'https://zeebe.io/legal/operate-evaluation-license'
     );
 
-    rerender(<Disclaimer isEnterprise={false} />);
+    window.clientConfig = {
+      isEnterprise: false,
+    };
+    rerender(<Disclaimer />);
 
     expect(
       screen.getByText((content, element) => {
@@ -45,7 +52,10 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    render(<Disclaimer isEnterprise={true} />, {wrapper: ThemeProvider});
+    window.clientConfig = {
+      isEnterprise: true,
+    };
+    render(<Disclaimer />);
 
     expect(
       screen.queryByText((content, element) => {

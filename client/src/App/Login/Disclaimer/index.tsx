@@ -8,12 +8,8 @@ import React from 'react';
 
 import {Container, Anchor} from './styled';
 
-type Props = {
-  isEnterprise?: boolean;
-};
-
-function Disclaimer({isEnterprise}: Props) {
-  return isEnterprise ? null : (
+const Disclaimer: React.FC = () => {
+  return window.clientConfig?.isEnterprise ? null : (
     <Container>
       This Camunda Operate distribution is available under an evaluation license
       that is valid for development (non-production) use only. By continuing
@@ -24,6 +20,6 @@ function Disclaimer({isEnterprise}: Props) {
       of the Operate Trial Version.
     </Container>
   );
-}
+};
 
 export {Disclaimer};

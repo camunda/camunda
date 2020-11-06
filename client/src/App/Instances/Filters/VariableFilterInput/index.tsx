@@ -60,7 +60,6 @@ export default function VariableFilterInput({
   return (
     <Styled.VariableFilterInput {...props}>
       <Styled.TextInput
-        // @ts-expect-error ts-migrate(2769) FIXME: Property 'value' does not exist on type 'Intrinsic... Remove this comment to see the full error message
         value={variable.name}
         placeholder="Variable"
         name="name"
@@ -69,7 +68,6 @@ export default function VariableFilterInput({
         hasError={!isNameComplete}
       />
       <Styled.TextInput
-        // @ts-expect-error ts-migrate(2769) FIXME: Property 'value' does not exist on type 'Intrinsic... Remove this comment to see the full error message
         value={variable.value}
         placeholder="Value"
         name="value"

@@ -2391,6 +2391,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.10.0":
+  version "7.12.1"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.12.1.tgz#b4116a6b6711d010b2dad3b7b6e43bf1b9954740"
+  integrity sha512-J5AIf3vPj3UwXaAzb5j1xM4WAQDX3EMgemF8rjCP3SoW09LfRKAXQKt6CoVYl230P6iWdRcBbnLDDdnqWxZSCA==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/template@^7.10.4":
   version "7.10.4"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.10.4.tgz#3251996c4200ebc71d1a8fc405fba940f36ba278"
@@ -8780,6 +8787,13 @@ fill-range@^7.0.1:
   dependencies:
     to-regex-range "^5.0.1"
 
+final-form@^4.20.1:
+  version "4.20.1"
+  resolved "https://registry.yarnpkg.com/final-form/-/final-form-4.20.1.tgz#525a7f7f27f55c28d8994b157b24d6104fc560e9"
+  integrity sha512-IIsOK3JRxJrN72OBj7vFWZxtGt3xc1bYwJVPchjVWmDol9DlzMSAOPB+vwe75TUYsw1JaH0fTQnIgwSQZQ9Acg==
+  dependencies:
+    "@babel/runtime" "^7.10.0"
+
 finalhandler@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/finalhandler/-/finalhandler-1.1.2.tgz#b7e7d000ffd11938d0fdb053506f6ebabe9f587d"
@@ -14571,6 +14585,13 @@ react-error-overlay@^6.0.7:
   version "6.0.7"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-6.0.7.tgz#1dcfb459ab671d53f660a991513cb2f0a0553108"
   integrity sha512-TAv1KJFh3RhqxNvhzxj6LeT5NWklP6rDr2a0jaTfsZ5wSZWHOGeqQyejUp3xxLfPt2UpyJEcVQB/zyPcmonNFA==
+
+react-final-form@^6.5.1:
+  version "6.5.1"
+  resolved "https://registry.yarnpkg.com/react-final-form/-/react-final-form-6.5.1.tgz#baf798129d459c669cfda5ce60a77801ef52badc"
+  integrity sha512-+Hzd9PqYY1Cv3MnWzw64QOl5BjC5BtSDakx+N7Re49r0FASdFhgpXLFFCJ31fvegq2euP6hz6Ow9K6XM9BSqCA==
+  dependencies:
+    "@babel/runtime" "^7.10.0"
 
 react-is@^16.12.0, react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   version "16.13.1"
