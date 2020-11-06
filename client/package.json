@@ -30,7 +30,7 @@
     "react-final-form": "^6.5.2",
     "react-final-form-arrays": "^3.1.3",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "3.4.4",
+    "react-scripts": "4.0.0",
     "react-textarea-autosize": "^8.2.0",
     "styled-components": "^5.2.1",
     "typescript": "~4.0.5"
@@ -39,7 +39,7 @@
     "start": "react-scripts start",
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --env=jest-environment-jsdom-fifteen",
+    "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true yarn test --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",

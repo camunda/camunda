@@ -6,6 +6,7 @@
     "plugin:prettier/recommended"
   ],
   "rules": {
+    "import/no-anonymous-default-export": 0,
     "testing-library/await-async-query": "error",
     "testing-library/await-async-utils": "error",
     "testing-library/no-await-sync-query": "error",
