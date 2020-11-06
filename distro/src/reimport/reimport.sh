@@ -27,7 +27,7 @@ if [ -z "$OPTIMIZE_JAVA_OPTS" ]; then
 fi
 
 # Set up the classpath
-OPTIMIZE_CLASSPATH="${BASEDIR}/../environment:${BASEDIR}/*:${BASEDIR}/../lib/*:${BASEDIR}/../optimize-backend-${project.version}.jar"
+OPTIMIZE_CLASSPATH="${BASEDIR}/../config:${BASEDIR}/*:${BASEDIR}/../lib/*:${BASEDIR}/../optimize-backend-${project.version}.jar"
 
 echo
 echo "Starting Camunda Optimize Reimport ${project.version}...";

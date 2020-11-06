@@ -24,7 +24,7 @@ RUN /tmp/download.sh
 
 FROM alpine:3.12.1
 
-ENV OPTIMIZE_CLASSPATH=/optimize/environment:/optimize/*:/optimize/lib/*
+ENV OPTIMIZE_CLASSPATH=/optimize/config:/optimize/*:/optimize/lib/*
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
 ENV TZ=UTC

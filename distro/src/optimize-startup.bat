@@ -36,7 +36,7 @@ IF "%~1"=="--debug" (
   set DEBUG_JAVA_OPTS=-Xdebug -agentlib:jdwp=transport=dt_socket,address=%DEBUG_PORT%,server=y,suspend=n
 )
 
-:: Set up the optimize classpaths, i.e. add the environment folder, the Optimize back-end dependencies
+:: Set up the optimize classpaths, i.e. add the config folder, the Optimize back-end dependencies
 :: and the optimize jar
 set OPTIMIZE_CLASSPATH="%BASEDIR%config;%BASEDIR%lib\*;%BASEDIR%optimize-backend-${project.version}.jar"
 
