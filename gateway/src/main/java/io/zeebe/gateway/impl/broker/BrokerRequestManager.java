@@ -116,6 +116,11 @@ final class BrokerRequestManager extends Actor {
     } catch (final PartitionNotFoundException e) {
       returnFuture.completeExceptionally(e);
       return;
+    } catch (final NoTopologyAvailableException e) {
+      returnFuture.completeExceptionally(e);
+      GatewayMetrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), "NO_TOPOLOGY");
+      return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
@@ -160,7 +165,7 @@ final class BrokerRequestManager extends Actor {
     if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
-        throw new PartitionNotFoundException();
+        throw new PartitionNotFoundException(request.getPartitionId());
       }
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
@@ -188,21 +193,17 @@ final class BrokerRequestManager extends Actor {
   private void determinePartitionIdForPublishMessageRequest(
       final BrokerPublishMessageRequest request) {
     final BrokerClusterState topology = topologyManager.getTopology();
-    if (topology != null) {
-      final int partitionsCount = topology.getPartitionsCount();
-
-      final int partitionId =
-          SubscriptionUtil.getSubscriptionPartitionId(request.getCorrelationKey(), partitionsCount);
-
-      request.setPartitionId(partitionId);
-    } else {
-      // should not happen as the the broker request manager fetches topology before publish message
-      // request if not present
+    if (topology == null || topology.getPartitionsCount() == 0) {
       throw new NoTopologyAvailableException(
           String.format(
               "Expected to pick partition for message with correlation key '%s', but no topology is available",
               request.getCorrelationKey()));
     }
+
+    final int partitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(
+            request.getCorrelationKey(), topology.getPartitionsCount());
+    request.setPartitionId(partitionId);
   }
 
   private interface TransportRequestSender {

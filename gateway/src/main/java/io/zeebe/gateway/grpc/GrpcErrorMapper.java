@@ -17,6 +17,7 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
+import io.zeebe.gateway.cmd.NoTopologyAvailableException;
 import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
@@ -63,7 +64,7 @@ public final class GrpcErrorMapper {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
       logger.debug("Expected to handle gRPC request, but messagepack property was invalid", error);
     } else if (error instanceof PartitionNotFoundException) {
-      builder.setCode(Code.NOT_FOUND_VALUE).setMessage(error.getMessage());
+      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
       logger.debug("Expected to handle gRPC request, but request could not be delivered", error);
     } else if (error instanceof RequestRetriesExhaustedException) {
       builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
@@ -78,6 +79,11 @@ public final class GrpcErrorMapper {
       // partitions - it will then also occur when back pressure kicks in, leading to a large burst
       // of error logs that is, in fact, expected
       logger.trace("Expected to handle gRPC request, but all retries have been exhausted", error);
+    } else if (error instanceof NoTopologyAvailableException) {
+      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+      logger.trace(
+          "Expected to handle gRPC request, but the gateway does not know any partitions yet",
+          error);
     } else {
       builder
           .setCode(Code.INTERNAL_VALUE)
