@@ -77,11 +77,11 @@ final class BrokerRequestManager extends Actor {
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(final BrokerRequest<T> request) {
-    return sendRequestWithRetry(request, this.requestTimeout);
+    return sendRequestWithRetry(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
-    return sendRequest(request, this.requestTimeout);
+    return sendRequest(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(
@@ -113,13 +113,8 @@ final class BrokerRequestManager extends Actor {
     final BrokerAddressProvider nodeIdProvider;
     try {
       nodeIdProvider = determineBrokerNodeIdProvider(request);
-    } catch (final PartitionNotFoundException e) {
+    } catch (final PartitionNotFoundException | NoTopologyAvailableException e) {
       returnFuture.completeExceptionally(e);
-      return;
-    } catch (final NoTopologyAvailableException e) {
-      returnFuture.completeExceptionally(e);
-      GatewayMetrics.registerFailedRequest(
-          request.getPartitionId(), request.getType(), "NO_TOPOLOGY");
       return;
     }
 

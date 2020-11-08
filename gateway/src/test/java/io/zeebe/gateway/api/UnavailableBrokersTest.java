@@ -58,7 +58,8 @@ class UnavailableBrokersTest {
 
     final String gatewayAddress =
         io.zeebe.util.SocketUtil.toHostAndPortString(networkCfg.toSocketAddress());
-    client = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).usePlaintext().build();
+    client =
+        ZeebeClient.newClientBuilder().brokerContactPoint(gatewayAddress).usePlaintext().build();
   }
 
   @AfterAll
