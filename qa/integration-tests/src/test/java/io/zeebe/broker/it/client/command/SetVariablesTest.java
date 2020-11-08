@@ -12,15 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.client.api.response.SetVariablesResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
+import io.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -154,10 +157,11 @@ public final class SetVariablesTest {
 
     // then
     final String expectedMessage =
-        "Expected to execute command, but this command refers to an element that doesn't exist.";
+        "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
     assertThatThrownBy(command::join)
-        .isInstanceOf(ClientException.class)
+        .isInstanceOf(ClientStatusException.class)
         .hasMessageContaining(expectedMessage)
-        .hasRootCauseMessage("NOT_FOUND: " + expectedMessage);
+        .asInstanceOf(ClientStatusExceptionAssert.assertFactory())
+        .hasStatusSatisfying(s -> assertThat(s.getCode()).isEqualTo(Code.UNAVAILABLE));
   }
 }
