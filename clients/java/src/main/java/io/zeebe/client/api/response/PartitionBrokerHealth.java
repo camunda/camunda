@@ -15,18 +15,7 @@
  */
 package io.zeebe.client.api.response;
 
-public interface PartitionInfo {
-  /** @return the partition's id */
-  int getPartitionId();
-
-  /** @return the current role of the broker for this partition (i.e. leader or follower) */
-  PartitionBrokerRole getRole();
-
-  /** @return <code>true</code> if the broker is the current leader of this partition */
-  boolean isLeader();
-
-  /**
-   * @return the current health status for the broker for this partition (i.e. healthy or unhealthy)
-   */
-  PartitionBrokerHealth getHealth();
+public enum PartitionBrokerHealth {
+  HEALTHY,
+  UNHEALTHY
 }
