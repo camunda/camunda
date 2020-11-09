@@ -5,24 +5,10 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-/*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.util.sched;
 
 import io.zeebe.util.BoundedArrayQueue;
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
 import java.util.concurrent.CompletableFuture;
@@ -32,13 +18,14 @@ import java.util.function.Consumer;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.slf4j.Logger;
 import org.slf4j.MDC;
 import sun.misc.Unsafe;
 
-@SuppressWarnings("restriction")
 public class ActorThread extends Thread implements Consumer<Runnable> {
   static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
   private static final long STATE_OFFSET;
+  private static final Logger LOG = Loggers.ACTOR_LOGGER;
 
   static {
     try {
@@ -108,7 +95,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     } catch (final Exception e) {
       // TODO: check interrupt state?
       // TODO: Handle Exception
-      e.printStackTrace();
+      LOG.error("Unexpected error occurred in task {}", currentTask, e);
 
       // TODO: resubmit on exception?
       //                resubmit = true;
@@ -203,7 +190,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       try {
         doWork();
       } catch (final Exception e) {
-        e.printStackTrace();
+        LOG.error("Unexpected error occurred while in the actor thread {}", getName(), e);
       }
     }
 
