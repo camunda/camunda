@@ -19,7 +19,7 @@ describe('Validators', () => {
     it('should not validate', () => {
       [undefined, 'abc', '"abc', '{name: "value"}', '[[0]', '() => {}'].forEach(
         (value) => {
-          expect(validateJSON(value)).toBe('Value must be JSON');
+          expect(validateJSON(value)).toBe('Value has to be JSON');
         },
       );
     });
@@ -34,7 +34,7 @@ describe('Validators', () => {
 
     it('should not validate', () => {
       [undefined, '', ' ', '           '].forEach((value) => {
-        expect(validateNonEmpty(value)).toBe('Value must not be empty');
+        expect(validateNonEmpty(value)).toBe('Variable has to be filled');
       });
     });
   });

@@ -9,15 +9,10 @@ import {rgba} from 'polished';
 import {ReactComponent as CrossIcon} from 'modules/icons/cross.svg';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
 import {Button} from 'modules/components/Button';
-import {ReactComponent as Warning} from 'modules/icons/warning.svg';
 import BasicTextareaAutosize from 'react-textarea-autosize';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
 import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table';
-
-const WarningIcon = styled(Warning)`
-  width: 16px;
-  margin-bottom: 1px;
-`;
+import {Warning as BaseWarning} from 'modules/components/Warning';
 
 const Container = styled.div`
   display: grid;
@@ -80,13 +75,11 @@ const ValueInputTD = styled.td`
 
 const IconTD = styled.td`
   width: 69px;
-  vertical-align: top;
-  padding-top: 10px;
   min-width: 104px;
+`;
 
-  & ${WarningIcon} {
-    margin-left: 14px;
-  }
+const Warning = styled(BaseWarning)`
+  margin-left: 9px;
 `;
 
 const CreateButton = styled(Button)`
@@ -155,7 +148,7 @@ const EditTextarea = styled(BasicTextareaAutosize)`
 
 const IconButton = styled(BaseIconButton)`
   margin-right: 22px;
-  margin-left: 28px;
+  margin-left: 23px;
 `;
 
 const IconContainer = styled.div`
@@ -178,11 +171,11 @@ export {
   NameInputTD,
   ValueInputTD,
   IconTD,
+  Warning,
   CreateButton,
   Plus,
   Header,
   NameInput,
   IconButton,
   IconContainer,
-  WarningIcon,
 };

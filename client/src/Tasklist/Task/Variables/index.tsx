@@ -9,7 +9,6 @@ import React, {useEffect, useRef} from 'react';
 import {useParams} from 'react-router-dom';
 import {Field, useForm, useField} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
-import {validateJSON, validateNonEmpty} from './validators';
 
 import {
   GET_TASK_VARIABLES,
@@ -33,12 +32,13 @@ import {
   VariableNameTH,
   VariableValueTH,
   IconTD,
+  Warning,
   IconContainer,
   NameInput,
   IconButton,
   RowTH,
-  WarningIcon,
 } from './styled';
+import {validateJSON, validateNonEmpty} from './validators';
 
 const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
@@ -77,6 +77,32 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
 
   const handleAddVariable = () => {
     form.mutators.push('new-variables');
+  };
+
+  const isVariableDirty = (variable: string): boolean => {
+    return Boolean(
+      form.getFieldState(`${variable}.name`)?.dirty ||
+        form.getFieldState(`${variable}.value`)?.dirty,
+    );
+  };
+
+  const getError = (variable: string): string | void => {
+    const nameFieldError = form.getFieldState(`${variable}.name`)?.error;
+    const valueFieldError = form.getFieldState(`${variable}.value`)?.error;
+    const isDirty = isVariableDirty(variable);
+
+    if (
+      !isDirty ||
+      (nameFieldError === undefined && valueFieldError === undefined)
+    ) {
+      return;
+    }
+
+    if (nameFieldError !== undefined && valueFieldError !== undefined) {
+      return `${nameFieldError} and ${valueFieldError}`;
+    }
+
+    return nameFieldError ?? valueFieldError;
   };
 
   const {variables} = data.task;
@@ -137,7 +163,8 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                           <IconTD>
                             {form.getFieldState(variable.name)?.error !==
                               undefined && (
-                              <WarningIcon
+                              <Warning
+                                title={form.getFieldState(variable.name)?.error}
                                 data-testid={`warning-icon-${variable.name}`}
                               />
                             )}
@@ -156,9 +183,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                   <FieldArray name="new-variables">
                     {({fields}) =>
                       fields.map((variable, index) => {
-                        const fieldState = form.getFieldState(
-                          `${variable}.value`,
-                        );
+                        const error = getError(variable);
                         return (
                           <TR key={variable}>
                             <NameInputTD>
@@ -172,7 +197,8 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                                     placeholder="Variable"
                                     aria-label={`${variable}.name`}
                                     aria-invalid={
-                                      meta.error !== undefined && meta.dirty
+                                      meta.error !== undefined &&
+                                      isVariableDirty(variable)
                                     }
                                   />
                                 )}
@@ -189,7 +215,8 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                                     aria-label={`${variable}.value`}
                                     placeholder="Value"
                                     aria-invalid={
-                                      meta.error !== undefined && meta.dirty
+                                      meta.error !== undefined &&
+                                      isVariableDirty(variable)
                                     }
                                   />
                                 )}
@@ -197,8 +224,9 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                             </ValueInputTD>
                             <IconTD>
                               <IconContainer>
-                                {fieldState?.error && fieldState.dirty && (
-                                  <WarningIcon
+                                {error !== undefined && (
+                                  <Warning
+                                    title={error}
                                     data-testid={`warning-icon-${variable}.value`}
                                   />
                                 )}

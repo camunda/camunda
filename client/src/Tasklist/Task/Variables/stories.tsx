@@ -19,7 +19,7 @@ import {
   NameInput,
   IconButton,
   RowTH,
-  WarningIcon,
+  Warning,
 } from './styled';
 import {Table, TD, TR} from 'modules/components/Table';
 
@@ -76,7 +76,7 @@ const VariablesTable: React.FC = () => {
             <EditTextarea name="mwst" id="mwst" aria-invalid value={42.37} />
           </ValueInputTD>
           <IconTD>
-            <WarningIcon />
+            <Warning title="invalid" />
           </IconTD>
         </TR>
         <TR>
@@ -103,7 +103,7 @@ const VariablesTable: React.FC = () => {
           </ValueInputTD>
           <IconTD>
             <IconContainer>
-              <WarningIcon />
+              <Warning title="invalid" />
               <IconButton type="button">
                 <Cross />
               </IconButton>

@@ -7,18 +7,18 @@
 const validateJSON = (value?: string) => {
   try {
     if (value === undefined || value === '') {
-      return 'Value must be JSON';
+      return 'Value has to be JSON';
     }
     JSON.parse(value);
   } catch {
-    return 'Value must be JSON';
+    return 'Value has to be JSON';
   }
   return undefined;
 };
 
 const validateNonEmpty = (value?: string) => {
   if (value === undefined || value.trim() === '') {
-    return 'Value must not be empty';
+    return 'Variable has to be filled';
   }
   return undefined;
 };

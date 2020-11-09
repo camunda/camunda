@@ -154,4 +154,83 @@ describe('<Variables />', () => {
       screen.getByRole('textbox', {name: 'new-variables[0].value'}),
     ).toBeInTheDocument();
   });
+
+  it('should add validation error on empty variable name', async () => {
+    render(<Variables canEdit />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      {target: {value: '"valid_value"'}},
+    );
+
+    expect(
+      await screen.findByTitle('Variable has to be filled'),
+    ).toBeInTheDocument();
+  });
+
+  it('should add validation error on empty variable value', async () => {
+    render(<Variables canEdit />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      {target: {value: 'valid_name'}},
+    );
+
+    expect(
+      await screen.findByTitle('Value has to be JSON'),
+    ).toBeInTheDocument();
+  });
+
+  it('should add validation error on invalid variable name', async () => {
+    render(<Variables canEdit />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      {target: {value: 'invalid_value}}}'}},
+    );
+
+    expect(
+      await screen.findByTitle(
+        'Variable has to be filled and Value has to be JSON',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should show no validation error on valid name/value', async () => {
+    render(<Variables canEdit />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      {target: {value: 'valid_name'}},
+    );
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      {target: {value: '"valid_value"'}},
+    );
+
+    expect(
+      screen.queryByTitle('Variable has to be filled and Value has to be JSON'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('Variable has to be filled'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+  });
 });
