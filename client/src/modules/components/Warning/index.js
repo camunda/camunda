@@ -4,12 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {PropTypes} from 'prop-types';
 import React from 'react';
+import {WarningIcon, Container} from './styled';
 
-import * as Styled from './styled';
+const Warning = ({title, ...props}) => (
+  <Container title={title} {...props}>
+    <WarningIcon>!</WarningIcon>
+  </Container>
+);
 
-const Input: React.FC<React.ComponentProps<typeof Styled.Input>> = (props) => {
-  return <Styled.Input {...props} aria-label={props.placeholder} />;
+Warning.propTypes = {
+  title: PropTypes.string,
 };
 
-export {Input};
+export {Warning};

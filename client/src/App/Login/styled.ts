@@ -7,7 +7,7 @@
 import styled, {css} from 'styled-components';
 
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
-import Input from 'modules/components/Input';
+import {Input} from 'modules/components/Input';
 import BasicCopyright from 'modules/components/Copyright';
 
 const Container = styled.div`

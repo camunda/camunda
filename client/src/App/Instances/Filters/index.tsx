@@ -10,7 +10,7 @@ import {Location} from 'history';
 
 import {FiltersPanel} from './FiltersPanel';
 import Button from 'modules/components/Button';
-import Input from 'modules/components/Input';
+import {Input} from 'modules/components/Input';
 import {
   DEFAULT_FILTER,
   FILTER_TYPES,
@@ -315,6 +315,7 @@ const Filters = observer(
                 checkIsComplete={isIdComplete}
                 checkIsValid={isIdValid}
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+                errorMessage="Id has to be 16 to 19 digit numbers, separated by space or comma"
               >
                 <Styled.Textarea />
               </Styled.ValidationTextInput>
@@ -341,11 +342,12 @@ const Filters = observer(
               <Styled.ValidationTextInput
                 value={startDate}
                 name="startDate"
-                placeholder="Start Date yyyy-mm-dd hh:mm:ss"
+                placeholder="Start Date YYYY-MM-DD hh:mm:ss"
                 onChange={this.handleControlledInputChange}
                 checkIsComplete={isDateComplete}
                 checkIsValid={isDateValid}
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+                errorMessage="Date has to be in format YYYY-MM-DD hh:mm:ss"
               >
                 <Input />
               </Styled.ValidationTextInput>
@@ -355,11 +357,12 @@ const Filters = observer(
               <Styled.ValidationTextInput
                 value={endDate}
                 name="endDate"
-                placeholder="End Date yyyy-mm-dd hh:mm:ss"
+                placeholder="End Date YYYY-MM-DD hh:mm:ss"
                 onChange={this.handleControlledInputChange}
                 checkIsComplete={isDateComplete}
                 checkIsValid={isDateValid}
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+                errorMessage="Date has to be in format YYYY-MM-DD hh:mm:ss"
               >
                 <Input />
               </Styled.ValidationTextInput>
@@ -402,6 +405,7 @@ const Filters = observer(
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
                 checkIsComplete={isBatchOperationIdComplete}
                 checkIsValid={isBatchOperationIdValid}
+                errorMessage="Id has to be a UUID"
               >
                 <Input />
               </Styled.ValidationTextInput>

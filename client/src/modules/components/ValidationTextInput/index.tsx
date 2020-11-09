@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import * as Styled from './styled';
+import {InputContainer, Warning} from './styled';
 
 type OwnProps = {
   onChange: (...args: any[]) => any;
@@ -16,6 +16,7 @@ type OwnProps = {
   name?: string;
   value?: string;
   children?: React.ReactNode;
+  errorMessage?: string;
 };
 
 type Props = OwnProps & typeof ValidationTextInput.defaultProps;
@@ -28,6 +29,7 @@ function ValidationTextInput({
   onFilterChange,
   name,
   value,
+  errorMessage,
   ...props
 }: Props) {
   const [isComplete, setIsComplete] = useState(true);
@@ -59,7 +61,7 @@ function ValidationTextInput({
   };
 
   return (
-    <Styled.InputContainer>
+    <InputContainer>
       {React.Children.map(children, (child) =>
         // @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
         React.cloneElement(child, {
@@ -71,8 +73,8 @@ function ValidationTextInput({
           hasError: !isValid || !isComplete,
         })
       )}
-      {(!isComplete || !isValid) && <Styled.WarningIcon>!</Styled.WarningIcon>}
-    </Styled.InputContainer>
+      {(!isComplete || !isValid) && <Warning title={errorMessage} />}
+    </InputContainer>
   );
 }
 
@@ -82,4 +84,4 @@ ValidationTextInput.defaultProps = {
   onFilterChange: () => {},
 };
 
-export default ValidationTextInput;
+export {ValidationTextInput};

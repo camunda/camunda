@@ -23,11 +23,11 @@ describe('Filters/service', () => {
       expect(isDateComplete('2019-01-01')).toBe(true);
     });
 
-    it('should return true for YYYY-MM-DD HH:mm', () => {
+    it('should return true for YYYY-MM-DD hh:mm', () => {
       expect(isDateComplete('2019-03-01 12:59')).toBe(true);
     });
 
-    it('should return true for YYYY-MM-DD HH:mm:ss', () => {
+    it('should return true for YYYY-MM-DD hh:mm:ss', () => {
       expect(isDateComplete('2019-03-12 12:59:30')).toBe(true);
     });
 
@@ -47,7 +47,7 @@ describe('Filters/service', () => {
       expect(isDateComplete('2019-03-1')).toBe(false);
     });
 
-    it('should return false for YYYY-MM-DD HH', () => {
+    it('should return false for YYYY-MM-DD hh', () => {
       expect(isDateComplete('2019-03-12 12')).toBe(false);
     });
 
@@ -69,7 +69,7 @@ describe('Filters/service', () => {
   });
 
   describe('isDateValid', () => {
-    it('should return true for YYYY-MM-DD HH:mm:ss', () => {
+    it('should return true for YYYY-MM-DD hh:mm:ss', () => {
       expect(isDateValid('2019-03-12 12:59:30')).toBe(true);
     });
 

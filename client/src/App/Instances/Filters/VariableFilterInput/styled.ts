@@ -5,16 +5,15 @@
  */
 
 import styled, {css} from 'styled-components';
-import BasicTextInput from 'modules/components/Input';
-import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
-
-const VariableFilterInput = styled.div`
+import {Input as BasicInput} from 'modules/components/Input';
+import {Warning as BasicWarning} from 'modules/components/Warning';
+const Container = styled.div`
   position: relative;
   display: flex;
   justify-content: space-between;
 `;
 
-const TextInput = styled(BasicTextInput)`
+const TextInput = styled(BasicInput)`
   ${({hasError}) => {
     return css`
       min-width: 0;
@@ -42,16 +41,9 @@ const TextInput = styled(BasicTextInput)`
   }}
 `;
 
-const WarningIcon = styled(Warning)`
-  ${({theme}) => {
-    return css`
-      position: absolute;
-      width: 16px;
-      fill: ${theme.colors.incidentsAndErrors};
-      top: 3px;
-      right: -21px;
-    `;
-  }}
+const Warning = styled(BasicWarning)`
+  position: absolute;
+  right: -26px;
 `;
 
-export {VariableFilterInput, TextInput, WarningIcon};
+export {Container, TextInput, Warning};

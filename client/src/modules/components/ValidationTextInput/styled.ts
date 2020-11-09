@@ -4,24 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
-import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
+import {Warning as BasicWarning} from 'modules/components/Warning';
 
 const InputContainer = styled.div`
   position: relative;
 `;
 
-const WarningIcon = styled(Warning)`
-  ${({theme}) => {
-    return css`
-      position: absolute;
-      width: 16px;
-      fill: ${theme.colors.incidentsAndErrors};
-      top: 3px;
-      right: -16px;
-    `;
-  }}
+const Warning = styled(BasicWarning)`
+  position: absolute;
+  right: -21px;
+  top: 0;
 `;
 
-export {InputContainer, WarningIcon};
+export {InputContainer, Warning};

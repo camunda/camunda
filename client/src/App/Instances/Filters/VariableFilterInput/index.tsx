@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import * as Styled from './styled';
+import {Container, TextInput, Warning} from './styled';
 
 type OwnProps = {
   onFilterChange: (...args: any[]) => any;
@@ -19,7 +19,7 @@ type OwnProps = {
 
 type Props = OwnProps & typeof VariableFilterInput.defaultProps;
 
-export default function VariableFilterInput({
+function VariableFilterInput({
   onFilterChange,
   onChange,
   variable,
@@ -57,9 +57,20 @@ export default function VariableFilterInput({
     setIsValueComplete(checkIsValueComplete(newVariable));
   }
 
+  const getErrorMessage = () => {
+    if (!isValueValid && isValueComplete && !isNameComplete) {
+      return 'Variable has to be filled and Value has to be JSON';
+    } else if (!isValueValid || !isValueComplete) {
+      return 'Value has to be JSON';
+    } else if (!isNameComplete) {
+      return 'Variable has to be filled';
+    }
+    return '';
+  };
+
   return (
-    <Styled.VariableFilterInput {...props}>
-      <Styled.TextInput
+    <Container {...props}>
+      <TextInput
         value={variable.name}
         placeholder="Variable"
         name="name"
@@ -67,7 +78,7 @@ export default function VariableFilterInput({
         onChange={handleChange}
         hasError={!isNameComplete}
       />
-      <Styled.TextInput
+      <TextInput
         value={variable.value}
         placeholder="Value"
         name="value"
@@ -76,9 +87,9 @@ export default function VariableFilterInput({
         hasError={(!isValueValid && isValueComplete) || !isValueComplete}
       />
       {(!isNameComplete || !isValueComplete || !isValueValid) && (
-        <Styled.WarningIcon>!</Styled.WarningIcon>
+        <Warning title={getErrorMessage()} />
       )}
-    </Styled.VariableFilterInput>
+    </Container>
   );
 }
 
@@ -87,3 +98,5 @@ VariableFilterInput.defaultProps = {
   checkIsNameComplete: () => true,
   checkIsValueComplete: () => true,
 };
+
+export {VariableFilterInput};

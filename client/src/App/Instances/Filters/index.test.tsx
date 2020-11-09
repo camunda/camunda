@@ -1217,7 +1217,7 @@ describe('Filters', () => {
       // then
       expect(field.length).toEqual(1);
       expect(field.props().placeholder).toEqual(
-        'Start Date yyyy-mm-dd hh:mm:ss'
+        'Start Date YYYY-MM-DD hh:mm:ss'
       );
       expect(field.props().value).toEqual('');
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDate' does not exist on type '{}'.
@@ -1344,7 +1344,7 @@ describe('Filters', () => {
 
       expect(field.length).toEqual(1);
       expect(field.props().name).toEqual('endDate');
-      expect(field.props().placeholder).toEqual('End Date yyyy-mm-dd hh:mm:ss');
+      expect(field.props().placeholder).toEqual('End Date YYYY-MM-DD hh:mm:ss');
       expect(field.props().value).toEqual('');
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDate' does not exist on type '{}'.
       expect(filtersStore.state.filter.endDate).toBe('1984-10-08');

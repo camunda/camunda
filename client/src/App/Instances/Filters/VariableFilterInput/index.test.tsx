@@ -10,7 +10,7 @@ import {act} from 'react-dom/test-utils';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-import VariableFilterInput from './index';
+import {VariableFilterInput} from './index';
 import * as Styled from './styled';
 
 import {mockDefaultProps} from './index.setup';

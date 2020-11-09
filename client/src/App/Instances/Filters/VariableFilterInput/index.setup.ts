@@ -14,4 +14,5 @@ export const mockDefaultProps = {
   checkIsNameComplete: jest.fn(),
   checkIsValueComplete: jest.fn(),
   checkIsValueValid: jest.fn(),
+  errorMessage: 'Variable has to be filled and Value has to be JSON',
 };

@@ -9,7 +9,7 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import Panel from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import IconButton from 'modules/components/IconButton';
-import BasicInput from 'modules/components/Input';
+import {Input as BasicInput} from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import Modal from 'modules/components/Modal';
 

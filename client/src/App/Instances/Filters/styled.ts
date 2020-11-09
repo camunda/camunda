@@ -8,12 +8,12 @@ import styled, {css} from 'styled-components';
 
 import {errorBorders} from 'modules/theme/interactions';
 import Panel from 'modules/components/Panel';
-import BasicTextInput from 'modules/components/Input';
+import {Input as BasicTextInput} from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
-import BasicValidationTextInput from 'modules/components/ValidationTextInput';
+import {ValidationTextInput as BasicValidationTextInput} from 'modules/components/ValidationTextInput';
 import BasicCheckboxGroup from './CheckboxGroup';
-import {default as VariableFilterInputComp} from './VariableFilterInput';
+import {VariableFilterInput as BasicVariableFilterInput} from './VariableFilterInput';
 
 const Filters = styled.div`
   padding: 20px 21px 0 19px;
@@ -57,7 +57,7 @@ const CheckboxGroup = styled(BasicCheckboxGroup)`
   ${widthStyle};
 `;
 
-const VariableFilterInput = styled(VariableFilterInputComp)`
+const VariableFilterInput = styled(BasicVariableFilterInput)`
   ${widthStyle};
 `;
 

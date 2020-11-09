@@ -5,13 +5,11 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {act} from 'react-dom/test-utils';
-
-import Input from 'modules/components/Input';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {Input} from 'modules/components/Input';
 import Textarea from 'modules/components/Textarea';
-import ValidationTextInput from './index';
+import {ValidationTextInput} from './index';
 import {mocks} from './index.setup';
 
 describe('ValidationTextInput', () => {
@@ -21,7 +19,7 @@ describe('ValidationTextInput', () => {
 
   it('should render text input', () => {
     // when
-    const node = mount(
+    render(
       <ThemeProvider>
         <ValidationTextInput
           name="myInput"
@@ -34,13 +32,13 @@ describe('ValidationTextInput', () => {
     );
 
     // then
-    const inputNode = node.find('input');
-    expect(inputNode.props().value).toEqual('myPreset');
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    expect(input.value).toBe('myPreset');
   });
 
   it('should render textarea', () => {
     // when
-    const node = mount(
+    render(
       <ThemeProvider>
         <ValidationTextInput
           name="myInput"
@@ -53,17 +51,19 @@ describe('ValidationTextInput', () => {
     );
 
     // then
-    const inputNode = node.find('textarea');
-    expect(inputNode.props().value).toEqual('myPreset');
+    const textarea = screen.getByRole('textbox') as HTMLInputElement;
+    expect(textarea.value).toBe('myPreset');
   });
 
-  it('should trigger onChange and onFilterChange', () => {
+  it('should render error tooltip', async () => {
     // given
-    const node = mount(
+    render(
       <ThemeProvider>
         <ValidationTextInput
           onChange={mocks.onChange}
           onFilterChange={mocks.onFilterChange}
+          checkIsValid={() => false}
+          errorMessage="Error"
         >
           <Input />
         </ValidationTextInput>
@@ -71,57 +71,20 @@ describe('ValidationTextInput', () => {
     );
 
     // when
-    const inputNode = node.find('input');
-
-    inputNode.simulate('change', {
-      target: {name: 'ErrorMessage', value: 'ERROR'},
-    });
+    fireEvent.change(screen.getByRole('textbox'), {target: {value: 'ERROR'}});
 
     // then
-    expect(mocks.onChange.mock.calls[0][0].target).toEqual({
-      name: 'ErrorMessage',
-      value: 'ERROR',
-    });
-    expect(mocks.onFilterChange).toHaveBeenCalled();
+    expect(screen.getByTitle('Error')).toBeInTheDocument();
   });
 
-  it('should validate on blur immediately', () => {
+  it('should not render error tooltip', async () => {
     // given
-    const node = mount(
-      <ThemeProvider>
-        <ValidationTextInput
-          value={'incompleteValue'}
-          onChange={mocks.onChange}
-          checkIsComplete={mocks.checkIsComplete.mockImplementation(
-            () => false
-          )}
-        >
-          <Input />
-        </ValidationTextInput>
-      </ThemeProvider>
-    );
-
-    // when
-    const inputNode = node.find('input');
-    inputNode.simulate('blur');
-
-    // then
-
-    const InputNode = node.find(Input);
-    expect(InputNode.props().hasError).toBe(true);
-    expect(mocks.checkIsComplete).toBeCalledWith('incompleteValue');
-  });
-
-  it('should validate incomplete values', async () => {
-    // given
-    const node = mount(
+    render(
       <ThemeProvider>
         <ValidationTextInput
           onChange={mocks.onChange}
           onFilterChange={mocks.onFilterChange}
-          checkIsComplete={mocks.checkIsComplete.mockImplementation(
-            () => false
-          )}
+          errorMessage="Error"
         >
           <Input />
         </ValidationTextInput>
@@ -129,58 +92,9 @@ describe('ValidationTextInput', () => {
     );
 
     // when
-    const inputNode = node.find('input');
-
-    await act(async () => {
-      inputNode.simulate('change', {
-        target: {name: 'ErrorMessage', value: 'This is an error message'},
-      });
-    });
-
-    node.update();
+    fireEvent.change(screen.getByRole('textbox'), {target: {value: 'ERROR'}});
 
     // then
-    const InputNode = node.find(Input);
-    expect(mocks.checkIsComplete).toBeCalledWith('This is an error message');
-    expect(InputNode.props().hasError).toBe(true);
-  });
-
-  it('should should pass correct checkIsComplete state to Input component', async () => {
-    // given
-    const node = mount(
-      <ThemeProvider>
-        <ValidationTextInput
-          value={'comple'}
-          onChange={mocks.onChange}
-          onFilterChange={mocks.onFilterChange}
-          checkIsComplete={mocks.checkIsComplete.mockImplementation(
-            (value) => value === 'complete'
-          )}
-        >
-          <Input />
-        </ValidationTextInput>
-      </ThemeProvider>
-    );
-
-    // when
-
-    node.setProps({value: 'complete'});
-
-    const inputNode = node.find('input');
-
-    await act(async () => {
-      inputNode.simulate('change', {
-        target: {name: 'ErrorMessage', value: 'complete'},
-      });
-    });
-
-    node.update();
-
-    // then
-    const InputNode = node.find(Input);
-
-    expect(mocks.checkIsComplete).toHaveBeenNthCalledWith(1, 'comple');
-    expect(mocks.checkIsComplete).toHaveBeenNthCalledWith(2, 'complete');
-    expect(InputNode.props().hasError).toBe(false);
+    expect(screen.queryByTitle('Error')).not.toBeInTheDocument();
   });
 });
