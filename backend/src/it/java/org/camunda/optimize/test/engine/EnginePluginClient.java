@@ -12,6 +12,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 
@@ -47,7 +48,8 @@ public class EnginePluginClient {
           log.info("Engine with name {} was already deployed.", engineName);
           break;
         default:
-          log.error("Error deploying engine {}, got status code {}.", engineName, statusCode);
+          String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+          log.error("Error deploying engine {}, got status code {}. Error message was: {}", engineName, statusCode, responseString);
           throw new RuntimeException("Something really bad happened during engine deployment, please check the logs.");
       }
     } catch (IOException e) {

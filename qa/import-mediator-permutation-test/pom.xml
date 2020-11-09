@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>qa</artifactId>
+    <version>3.3.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>import-mediator-permutation-test</artifactId>
+
+  <properties>
+    <skip.tests>true</skip.tests>
+    <version.camunda>${camunda.engine.version}</version.camunda>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <allure.version>2.13.2</allure.version>
+    <aspectj.version>1.9.6</aspectj.version>
+    <argLine>-Xmx1024m</argLine>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>engine-it-plugin</artifactId>
+      <scope>test</scope>
+      <type>war</type>
+      <version>${project.version}</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>${skip.tests}</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>import-mediator-permutation-test</id>
+
+      <properties>
+        <skip.tests>false</skip.tests>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.cargo</groupId>
+            <artifactId>cargo-maven2-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>start-container</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>redeploy</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <!-- Container configuration -->
+              <container>
+                <type>remote</type>
+                <containerId>tomcat8x</containerId>
+              </container>
+              <configuration>
+                <type>runtime</type>
+                <properties>
+                  <cargo.remote.username>admin</cargo.remote.username>
+                  <cargo.remote.password>admin</cargo.remote.password>
+                  <cargo.servlet.port>8080</cargo.servlet.port>
+                </properties>
+              </configuration>
+              <deployer>
+                <type>remote</type>
+              </deployer>
+              <deployables>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-it-plugin</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>engine-it-plugin</context>
+                  </properties>
+                </deployable>
+              </deployables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+
+      <reporting>
+        <excludeDefaults>true</excludeDefaults>
+      </reporting>
+    </profile>
+  </profiles>
+
+
+</project>

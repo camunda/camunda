@@ -25,6 +25,7 @@
     <module>cleanup-performance-tests</module>
     <module>clustering-tests</module>
     <module>optimize-data-generator</module>
+    <module>import-mediator-permutation-test</module>
   </modules>
 
 </project>
