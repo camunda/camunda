@@ -88,7 +88,7 @@ final class GrpcErrorMapperTest {
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
     assertThat(recorder.getAppendedEvents()).hasSize(2);
     assertThat(recorder.getAppendedEvents().get(0).getLevel())
-        .isEqualTo(Level.ERROR); // partition leader mismatch
+        .isEqualTo(Level.TRACE); // partition leader mismatch
     assertThat(recorder.getAppendedEvents().get(1).getLevel())
         .isEqualTo(Level.TRACE); // resource exhausted
     assertThat(status.getDetailsCount()).isEqualTo(1);
