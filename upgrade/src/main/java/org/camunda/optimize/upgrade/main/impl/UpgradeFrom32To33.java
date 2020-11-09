@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -57,7 +58,29 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
       .addUpgradeStep(migrateDistributedByField(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateDistributedByField(SINGLE_PROCESS_REPORT_INDEX_NAME))
+      .addUpgradeStep(migrateDashboardAvailableFilters())
       .build();
+  }
+
+  private UpgradeStep migrateDashboardAvailableFilters() {
+    //@formatter:off
+    final String script =
+      "def currentFilters = ctx._source.availableFilters;\n" +
+      "for (def currentFilter : currentFilters) {\n" +
+      "  if (currentFilter.type == \'variable\' && currentFilter.data != null) {\n" +
+      "    if (currentFilter.data.type == \'Boolean\' || currentFilter.data.type == \'Date\') {\n" +
+      "      currentFilter.data.data = null;\n" +
+      "    } else {\n" +
+      "      currentFilter.data.data.allowCustomValues = false;\n" +
+      "    }\n" +
+      "  }" +
+      "}\n";
+    //@formatter:on
+    return new UpdateDataStep(
+      DASHBOARD_INDEX_NAME,
+      matchAllQuery(),
+      script
+    );
   }
 
   private List<UpgradeStep> markExistingDefinitionsAsNotDeleted() {

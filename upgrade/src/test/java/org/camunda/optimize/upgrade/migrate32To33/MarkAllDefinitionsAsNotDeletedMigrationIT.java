@@ -13,13 +13,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT {
+public class MarkAllDefinitionsAsNotDeletedMigrationIT extends AbstractUpgrade32IT {
 
   @SneakyThrows
   @Test
   public void processDefinitionsAreMarkedAsDeleted() {
     // given
-    executeBulk("steps/3.2/definition_data/32-process-definition-bulk.json");
+    executeBulk("steps/3.2/definitions/32-process-definition-bulk");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
     // then the delete field does not exist
@@ -36,7 +36,7 @@ public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT
   @Test
   public void decisionDefinitionsAreMarkedAsDeleted() {
     // given
-    executeBulk("steps/3.2/definition_data/32-decision-definition-bulk.json");
+    executeBulk("steps/3.2/definitions/32-decision-definition-bulk");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
     // then the delete field does not exist
@@ -53,7 +53,7 @@ public class MarkAllDefinitionsAsNotDeletedUpgradeIT extends AbstractUpgrade32IT
   @Test
   public void eventProcessDefinitionsAreMarkedAsDeleted() {
     // given
-    executeBulk("steps/3.2/definition_data/32-event-process-definition-bulk.json");
+    executeBulk("steps/3.2/definitions/32-event-process-definition-bulk");
     final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
 
     // then the delete field does not exist

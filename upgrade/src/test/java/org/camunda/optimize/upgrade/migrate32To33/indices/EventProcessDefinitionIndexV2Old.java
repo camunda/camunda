@@ -13,7 +13,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class EventProcessDefinitionIndexV3Old extends DefaultIndexMappingCreator {
+public class EventProcessDefinitionIndexV2Old extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 2;
 

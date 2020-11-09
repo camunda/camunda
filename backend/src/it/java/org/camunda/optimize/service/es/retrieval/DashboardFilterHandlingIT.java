@@ -16,9 +16,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -53,9 +53,14 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   private static final DashboardFilterDto STATE_DASHBOARD_FILTER =
     new DashboardFilterDto(DashboardFilterType.STATE, null);
   private static final DashboardFilterDto DATE_VAR_DASHBOARD_FILTER =
-    new DashboardFilterDto(DashboardFilterType.VARIABLE, new DateVariableFilterDataDto(DATE_VAR, null));
+    new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DashboardVariableFilterDataDto(VariableType.DATE, DATE_VAR, null)
+    );
   private static final DashboardFilterDto BOOL_VAR_DASHBOARD_FILTER =
-    new DashboardFilterDto(DashboardFilterType.VARIABLE, new BooleanVariableFilterDataDto(BOOL_VAR, null)
+    new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DashboardVariableFilterDataDto(VariableType.BOOLEAN, BOOL_VAR, null)
     );
 
   @Test
@@ -503,7 +508,8 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
-    final CombinedReportDefinitionRequestDto updatedDef = reportClient.getCombinedProcessReportDefinitionDto(combinedReportId);
+    final CombinedReportDefinitionRequestDto updatedDef = reportClient.getCombinedProcessReportDefinitionDto(
+      combinedReportId);
     updatedDef.setName("I changed the name");
     reportClient.updateDecisionReport(combinedReportId, updatedDef);
 

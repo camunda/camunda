@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 
 @Data
 @NoArgsConstructor
@@ -18,5 +18,5 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 @FieldNameConstants
 public class DashboardFilterDto {
   private DashboardFilterType type;
-  private VariableFilterDataDto data;
+  private DashboardVariableFilterDataDto data;
 }

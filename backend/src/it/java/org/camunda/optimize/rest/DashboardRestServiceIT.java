@@ -15,16 +15,12 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.IntegerVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
@@ -200,10 +196,11 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void createNewDashboardWithVariableFilter_variableValueNotInContainedReport() {
     // given
-    final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(new DashboardFilterDto(
-      DashboardFilterType.VARIABLE,
-      new StringVariableFilterDataDto("stringVar", IN, Collections.singletonList("thisValueIsNotInReport"))
-    ));
+    final DashboardFilterDto dashboardFilter = createDashboardVariableFilter(
+      VariableType.STRING, "stringVar", IN,
+      Collections.singletonList("thisValueIsNotInReport"), false
+    );
+    final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(dashboardFilter);
 
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
@@ -646,47 +643,68 @@ public class DashboardRestServiceIT extends AbstractIT {
         new DashboardFilterDto(DashboardFilterType.END_DATE, null),
         new DashboardFilterDto(DashboardFilterType.STATE, null)
       ),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new BooleanVariableFilterDataDto("boolVar", null)
-      )),
+      Collections.singletonList(createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar")),
+      Collections.singletonList(createDashboardVariableFilter(VariableType.DATE, "dateVar")),
       variableFilter(),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new LongVariableFilterDataDto("longVar", IN, Arrays.asList("1", "2"))
-      )),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new ShortVariableFilterDataDto("shortVar", IN, Arrays.asList("1", "2"))
-      )),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new IntegerVariableFilterDataDto("integerVar", IN, Arrays.asList("1", "2"))
-      )),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), false)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.SHORT, "shortVar", IN, Arrays.asList("1", "2"), false)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.INTEGER, "integerVar", IN, Arrays.asList("1", "2"), false)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.INTEGER, "integerVar", IN, Arrays.asList("1", "2"), true)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), true)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.SHORT, "shortVar", IN, Arrays.asList("1", "2"), true)),
       Arrays.asList(
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new BooleanVariableFilterDataDto("boolVar", null)
+        createDashboardVariableFilter(VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), false),
+        createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", IN, Arrays.asList("1", "2"), true)
+      ),
+      Arrays.asList(
+        createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar"),
+        createDashboardVariableFilter(VariableType.DATE, "dateVar"),
+        createDashboardVariableFilter(VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), false),
+        createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", IN, Arrays.asList("1.0", "2.0"), false),
+        createDashboardVariableFilter(VariableType.STRING, "stringVar", IN, Arrays.asList("StringA", "StringB"), false),
+        createDashboardVariableFilter(
+          VariableType.STRING,
+          "stringVar",
+          CONTAINS,
+          Arrays.asList("StringA", "StringB"),
+          false
         ),
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new LongVariableFilterDataDto("longVar", IN, Arrays.asList("1", "2"))
+        createDashboardVariableFilter(
+          VariableType.STRING,
+          "stringVar",
+          NOT_CONTAINS,
+          Collections.singletonList("foo"),
+          false
         ),
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new DoubleVariableFilterDataDto("doubleVar", IN, Arrays.asList("1.0", "2.0"))
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.STATE, null)
+      ),
+      Arrays.asList(
+        createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar"),
+        createDashboardVariableFilter(VariableType.DATE, "dateVar"),
+        createDashboardVariableFilter(VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), true),
+        createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", IN, Arrays.asList("1.0", "2.0"), true),
+        createDashboardVariableFilter(VariableType.STRING, "stringVar", IN, Arrays.asList("StringA", "StringB"), true),
+        createDashboardVariableFilter(
+          VariableType.STRING,
+          "stringVar",
+          CONTAINS,
+          Arrays.asList("StringA", "StringB"),
+          false
         ),
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new StringVariableFilterDataDto("stringVar", IN, Arrays.asList("StringA", "StringB"))
-        ),
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new StringVariableFilterDataDto("stringVar", CONTAINS, Arrays.asList("StringA", "StringB"))
-        ),
-        new DashboardFilterDto(
-          DashboardFilterType.VARIABLE,
-          new StringVariableFilterDataDto("stringVar", NOT_CONTAINS, Arrays.asList("foo"))
+        createDashboardVariableFilter(
+          VariableType.STRING,
+          "stringVar",
+          NOT_CONTAINS,
+          Collections.singletonList("foo"),
+          false
         ),
         new DashboardFilterDto(DashboardFilterType.START_DATE, null),
         new DashboardFilterDto(DashboardFilterType.END_DATE, null),
@@ -700,15 +718,15 @@ public class DashboardRestServiceIT extends AbstractIT {
       Collections.singletonList(new DashboardFilterDto(null, null)),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.START_DATE,
-        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
+        new DashboardVariableFilterDataDto(VariableType.DATE, "dateVar", null)
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.END_DATE,
-        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
+        new DashboardVariableFilterDataDto(VariableType.DATE, "dateVar", null)
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.STATE,
-        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
+        new DashboardVariableFilterDataDto(VariableType.DATE, "dateVar", null)
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
@@ -726,14 +744,17 @@ public class DashboardRestServiceIT extends AbstractIT {
         new DashboardFilterDto(DashboardFilterType.STATE, null),
         new DashboardFilterDto(DashboardFilterType.STATE, null)
       ),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new DateVariableFilterDataDto("dateVar", new FixedDateFilterDataDto(null, OffsetDateTime.now()))
-      )),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
-      ))
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.DATE, "dateVar", IN, Collections.singletonList(OffsetDateTime.now().toString()), false)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.DATE, "dateVar", IN, Collections.singletonList(OffsetDateTime.now().toString()), true)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.BOOLEAN, "boolVar", IN, Collections.singletonList("true"), false)),
+      Collections.singletonList(createDashboardVariableFilter(
+        VariableType.BOOLEAN, "boolVar", IN, Collections.singletonList("true"), true)),
+      Collections.singletonList(createDashboardVariableFilter(VariableType.LONG, "longVar", null)),
+      Collections.singletonList(createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", null)),
+      Collections.singletonList(createDashboardVariableFilter(VariableType.STRING, "stringVar", null))
     );
   }
 
@@ -771,10 +792,34 @@ public class DashboardRestServiceIT extends AbstractIT {
     return dashboardDefinitionDto;
   }
 
+  private static DashboardFilterDto createDashboardVariableFilter(final VariableType type, final String variableName) {
+    return createDashboardVariableFilter(type, variableName, null);
+  }
+
+  private static DashboardFilterDto createDashboardVariableFilter(final VariableType type, final String variableName,
+                                                                  final FilterOperator operator,
+                                                                  final List<String> values,
+                                                                  final boolean allowCustomValues) {
+    final DashboardVariableFilterDataDto filterData = new DashboardVariableFilterDataDto(
+      type, variableName, new DashboardVariableFilterSubDataDto(operator, values, allowCustomValues));
+    return new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      filterData
+    );
+  }
+
+  private static DashboardFilterDto createDashboardVariableFilter(final VariableType type, final String variableName,
+                                                                  final DashboardVariableFilterSubDataDto dataDto) {
+    return new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DashboardVariableFilterDataDto(type, variableName, dataDto)
+    );
+  }
+
   private static List<DashboardFilterDto> variableFilter() {
     return Collections.singletonList(new DashboardFilterDto(
       DashboardFilterType.VARIABLE,
-      new DateVariableFilterDataDto("dateVar", null)
+      new DashboardVariableFilterDataDto(VariableType.DATE, "dateVar", null)
     ));
   }
 

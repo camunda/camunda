@@ -18,8 +18,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpda
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.BooleanVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -129,7 +128,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     dashboardWriter.deleteDashboardsOfCollection(definition.getId());
   }
 
-  public IdResponseDto createNewDashboardAndReturnId(final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto createNewDashboardAndReturnId(final String userId,
+                                                     final DashboardDefinitionRestDto dashboardDefinitionDto) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
@@ -223,7 +223,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         final List<DashboardFilterDto> filtersToRemove = dashboard.getAvailableFilters().stream()
           .filter(dashboardFilter -> DashboardFilterType.VARIABLE.equals(dashboardFilter.getType()))
           .filter(variableFilter -> {
-            final VariableFilterDataDto filterData = variableFilter.getData();
+            final DashboardVariableFilterDataDto filterData = variableFilter.getData();
             final ProcessVariableNameResponseDto processVariableForFilter =
               new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType());
             return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
@@ -356,7 +356,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
           Collectors.mapping(ProcessVariableNameResponseDto::getType, Collectors.toList())
         )
       );
-
     final List<DashboardFilterDto> invalidFilters = availableFilters.stream()
       .filter(isInvalidVariableFilter(possibleVarTypesByName))
       .collect(Collectors.toList());
@@ -382,23 +381,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<DashboardFilterDto> variableFilters = filtersByType.get(DashboardFilterType.VARIABLE);
     if (variableFilters != null) {
       variableFilters.forEach(variableFilter -> {
-        final VariableFilterDataDto<?> filterData = variableFilter.getData();
+        final DashboardVariableFilterDataDto filterData = variableFilter.getData();
         if (filterData == null) {
           throw new BadRequestException("Variable dashboard filters require additional data");
         }
         final VariableType variableType = filterData.getType();
-        if (variableType.equals(VariableType.DATE)) {
-          if (filterData.getData() != null) {
-            throw new BadRequestException(String.format(
-              "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
-          }
-        } else if (variableType.equals(VariableType.BOOLEAN)) {
-          final BooleanVariableFilterSubDataDto booleanFilterData =
-            (BooleanVariableFilterSubDataDto) variableFilter.getData().getData();
-          if (booleanFilterData.getValues() != null) {
-            throw new BadRequestException(String.format(
-              "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
-          }
+        if ((variableType.equals(VariableType.DATE) || variableType.equals(VariableType.BOOLEAN)) && filterData.getData() != null) {
+          throw new BadRequestException(String.format(
+            "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
         }
       });
     }

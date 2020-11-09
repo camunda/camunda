@@ -6,9 +6,10 @@
 package org.camunda.optimize.upgrade.migrate32To33;
 
 import org.assertj.core.util.Lists;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate32To33.indices.DecisionDefinitionIndexV3Old;
-import org.camunda.optimize.upgrade.migrate32To33.indices.EventProcessDefinitionIndexV3Old;
+import org.camunda.optimize.upgrade.migrate32To33.indices.EventProcessDefinitionIndexV2Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.ProcessDefinitionIndexV3Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.SingleDecisionReportIndexV4Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.SingleProcessReportIndexV4Old;
@@ -23,8 +24,9 @@ public class AbstractUpgrade32IT extends AbstractUpgradeIT {
     new SingleDecisionReportIndexV4Old();
   protected static final ProcessDefinitionIndexV3Old PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndexV3Old();
   protected static final DecisionDefinitionIndexV3Old DECISION_DEFINITION_INDEX = new DecisionDefinitionIndexV3Old();
-  protected static final EventProcessDefinitionIndexV3Old EVENT_PROCESS_DEFINITION_INDEX =
-    new EventProcessDefinitionIndexV3Old();
+  protected static final EventProcessDefinitionIndexV2Old EVENT_PROCESS_DEFINITION_INDEX =
+    new EventProcessDefinitionIndexV2Old();
+  protected static final DashboardIndex DASHBOARD_INDEX = new DashboardIndex();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -36,7 +38,8 @@ public class AbstractUpgrade32IT extends AbstractUpgradeIT {
         SINGLE_DECISION_REPORT_INDEX,
         PROCESS_DEFINITION_INDEX,
         DECISION_DEFINITION_INDEX,
-        EVENT_PROCESS_DEFINITION_INDEX
+        EVENT_PROCESS_DEFINITION_INDEX,
+        DASHBOARD_INDEX
       )
     );
     setMetadataVersion(FROM_VERSION);
