@@ -43,21 +43,13 @@ public final class GrpcErrorMapper {
     if (error instanceof ExecutionException) {
       return mapErrorToStatus(error.getCause(), logger);
     } else if (error instanceof BrokerErrorException) {
-      final Status status = mapBrokerErrorToStatus(((BrokerErrorException) error).getError());
+      final Status status =
+          mapBrokerErrorToStatus(((BrokerErrorException) error).getError(), logger);
       builder.mergeFrom(status);
-
-      // When there is back pressure, there will be a lot of `RESOURCE_EXHAUSTED` errors and the log
-      // can get flooded, so log them at the lowest level possible
-      if (status.getCode() != Code.RESOURCE_EXHAUSTED.getNumber()) {
-        logger.error("Expected to handle gRPC request, but received error from broker", error);
-      } else {
-        logger.trace("Expected to handle gRPC request, but broker is overloaded", error);
-      }
     } else if (error instanceof BrokerRejectionException) {
       final Status status = mapRejectionToStatus(((BrokerRejectionException) error).getRejection());
       builder.mergeFrom(status);
-
-      logger.debug("Expected to handle gRPC request, but broker rejected request", error);
+      logger.trace("Expected to handle gRPC request, but the broker rejected it", error);
     } else if (error instanceof TimeoutException) { // can be thrown by transport
       builder
           .setCode(Code.DEADLINE_EXCEEDED_VALUE)
@@ -103,7 +95,7 @@ public final class GrpcErrorMapper {
     return builder.build();
   }
 
-  private Status mapBrokerErrorToStatus(final BrokerError error) {
+  private Status mapBrokerErrorToStatus(final BrokerError error, final Logger logger) {
     final Builder builder = Status.newBuilder();
     String message = error.getMessage();
 
@@ -113,22 +105,20 @@ public final class GrpcErrorMapper {
         break;
       case RESOURCE_EXHAUSTED:
         builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE);
+        logger.trace("Target broker is currently overloaded: {}", error);
         break;
       case PARTITION_LEADER_MISMATCH:
         // return UNAVAILABLE to indicate to the user that retrying might solve the issue, as this
         // is usually a transient issue
+        logger.trace("Target broker was not the leader of the partition: {}", error);
         builder.setCode(Code.UNAVAILABLE_VALUE);
         break;
-        // all the following are not errors which retrying (with the same gateway) will solve
-      case INVALID_MESSAGE_TEMPLATE:
-      case INVALID_DEPLOYMENT_PARTITION:
-      case MALFORMED_REQUEST:
-      case INVALID_CLIENT_VERSION:
-      case UNSUPPORTED_MESSAGE:
-      case INTERNAL_ERROR:
-      case SBE_UNKNOWN:
-      case NULL_VAL:
       default:
+        // all the following are for cases where retrying (with the same gateway) is not expected
+        // to solve anything
+        logger.error(
+            "Expected to handle gRPC request, but received an internal error from broker: {}",
+            error);
         builder.setCode(Code.INTERNAL_VALUE);
         message =
             String.format(
