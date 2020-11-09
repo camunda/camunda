@@ -77,10 +77,10 @@ function shouldResetDistributedBy(type, data, report) {
       return true;
     }
 
-    // user task report: reset when it's distributed by assignee and we switch to group by assignee
+    // user task report: reset when it's distributed by assignee and we switch to group by assignee/duration
     if (
       type === 'groupBy' &&
-      ['assignee', 'candidateGroup'].includes(data.type) &&
+      ['assignee', 'candidateGroup', 'duration'].includes(data.type) &&
       ['assignee', 'candidateGroup'].includes(report.distributedBy.type)
     ) {
       return true;

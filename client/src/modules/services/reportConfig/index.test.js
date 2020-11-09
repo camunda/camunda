@@ -99,6 +99,21 @@ describe('process update', () => {
 
     changes = config.process.update(
       'groupBy',
+      {type: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'userTask'},
+            distributedBy: {type: 'assignee', value: null},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'groupBy',
       {type: 'startDate'},
       {
         report: {
