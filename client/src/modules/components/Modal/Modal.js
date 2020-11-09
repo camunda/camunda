@@ -77,26 +77,6 @@ export default class Modal extends React.Component {
     }
   };
 
-  onBackdropClick = (evt) => {
-    evt.stopPropagation();
-    if (this.insideClick) {
-      this.insideClick = false;
-      return;
-    }
-
-    const handler = this.props.onClose;
-    handler && handler();
-  };
-
-  onMouseDown = (evt) => {
-    this.insideClick = true;
-  };
-
-  onMouseClick = (evt) => {
-    evt.stopPropagation();
-    this.insideClick = false;
-  };
-
   handleKeyPress = (evt) => {
     if (evt.key === 'Escape') {
       const handler = this.props.onClose;
@@ -121,7 +101,7 @@ export default class Modal extends React.Component {
           <div
             className="Modal"
             role="dialog"
-            onClick={this.onBackdropClick}
+            onClick={(evt) => evt.stopPropagation()}
             onKeyDown={this.handleKeyPress}
           >
             <div className="Modal__scroll-container">
@@ -132,8 +112,6 @@ export default class Modal extends React.Component {
                 })}
                 tabIndex="-1"
                 ref={this.container}
-                onMouseDown={this.onMouseDown}
-                onClick={this.onMouseClick}
               >
                 {children}
               </div>

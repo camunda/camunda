@@ -21,33 +21,6 @@ it('should render basic children', () => {
   expect(node).toIncludeText('ModalContent');
 });
 
-it('should call the onClose function on backdrop click', () => {
-  const spy = jest.fn();
-  const node = mount(
-    <Modal open={true} onClose={spy}>
-      ModalContent
-    </Modal>
-  );
-
-  node.simulate('click');
-
-  expect(spy).toHaveBeenCalled();
-});
-
-it('should not call the onClose function when modal content is clicked', () => {
-  const spy = jest.fn();
-  const node = mount(
-    <Modal open={true} onClose={spy}>
-      <button>Some button in the modal</button>
-    </Modal>
-  );
-
-  node.instance().insideClick = true;
-  node.find('button').simulate('click');
-
-  expect(spy).not.toHaveBeenCalled();
-});
-
 it('should call the onConfirm function when enter is pressed', () => {
   const spy = jest.fn();
   const node = mount(
