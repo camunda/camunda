@@ -27,8 +27,7 @@ public final class DeploymentClusteredTest {
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public final Timeout testTimeout = Timeout.seconds(120);
-  public final ClusteringRule clusteringRule =
-      new ClusteringRule(3, 3, 3, cfg -> cfg.getData().setUseMmap(false));
+  public final ClusteringRule clusteringRule = new ClusteringRule(3, 3, 3);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
