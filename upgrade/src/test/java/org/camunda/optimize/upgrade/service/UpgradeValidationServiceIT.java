@@ -5,124 +5,76 @@
  */
 package org.camunda.optimize.upgrade.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
-public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
+public class UpgradeValidationServiceIT {
 
-  private UpgradeValidationService underTest;
+  private final UpgradeValidationService underTest = new UpgradeValidationService();
 
-  @BeforeEach
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    underTest = new UpgradeValidationService(new ElasticsearchMetadataService(new ObjectMapper()), prefixAwareClient);
-    initSchema(Lists.newArrayList(METADATA_INDEX));
+  @ParameterizedTest
+  @MethodSource("invalidSchemaVersionScenarios")
+  public void versionValidationInvalid(final String schemaVersion, final String fromVersion, final String toVersion) {
+    // when
+    assertThatThrownBy(() -> underTest.validateSchemaVersions(schemaVersion, fromVersion, toVersion))
+      // then
+      .isInstanceOf(UpgradeRuntimeException.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validSchemaVersionScenarios")
+  public void versionValidationValid(final String schemaVersion, final String fromVersion, final String toVersion) {
+    // when
+    assertThatNoException()
+      .isThrownBy(() -> underTest.validateSchemaVersions(schemaVersion, fromVersion, toVersion));
   }
 
   @Test
-  public void versionValidationBreaksWithoutIndex() {
-    try {
-      underTest.validateSchemaVersions("2.0", "2.1");
-    } catch (UpgradeRuntimeException e) {
-      //expected
-      return;
-    }
-
-    fail("Exception expected");
-  }
-
-  @Test
-  public void versionValidationBreaksWithoutMatchingVersion() {
-    //given
-    setMetadataIndexVersion("Test");
-
-    try {
-      //when
-      underTest.validateSchemaVersions("2.0", "2.1");
-    } catch (UpgradeRuntimeException e) {
-      //expected
-      //then
-      return;
-    }
-
-    fail("Exception expected");
-  }
-
-  @Test
-  public void versionValidationPassesWithMatchingVersion() {
-    //given
-    setMetadataIndexVersion("2.0");
-
-    //when
-    underTest.validateSchemaVersions("2.0", "2.1");
-
-    //then - no exception
-  }
-
-  @Test
-  public void toVersionIsNotAllowedToBeNull() {
-    //given
-    setMetadataIndexVersion("2.0");
-
-    try {
-      //when
-      underTest.validateSchemaVersions("2.0", null);
-    } catch (UpgradeRuntimeException e) {
-      //expected
-      //then
-      return;
-    }
-
-    fail("Exception expected");
-  }
-
-  @Test
-  public void toVersionIsNotAllowedToBeEmptyString() {
-    //given
-    setMetadataIndexVersion("2.0");
-
-    try {
-      //when
-      underTest.validateSchemaVersions("2.0", "");
-    } catch (UpgradeRuntimeException e) {
-      //expected
-      //then
-      return;
-    }
-
-    fail("Exception expected");
-  }
-
-  @Test
-  public void validateThrowsExceptionWithoutEnvironmentConfig() throws Exception {
+  public void validateEnvironmentFailsWithoutEnvironmentConfig() throws Exception {
     // given
     deleteEnvConfig();
 
-    // then throws exception
-    RuntimeException exception =
-      assertThrows(RuntimeException.class, () -> underTest.validateEnvironmentConfigInClasspath());
-    assertThat(exception.getMessage(), is("Couldn't read environment-config.yaml from environment folder in Optimize root!"));
+    // when
+    assertThatThrownBy(underTest::validateEnvironmentConfigInClasspath)
+      // then
+      .isInstanceOf(UpgradeRuntimeException.class)
+      .hasMessage("Couldn't read environment-config.yaml from config folder in Optimize root!");
   }
 
   @Test
-  public void validateWithEnvironmentConfig() throws Exception {
-    //given
+  public void validateEnvironmentSucceeds() throws Exception {
+    // given
     createEmptyEnvConfig();
 
-    //when
-    underTest.validateEnvironmentConfigInClasspath();
+    // when & then
+    assertThatNoException()
+      .isThrownBy(underTest::validateEnvironmentConfigInClasspath);
+  }
+
+  private static Stream<Arguments> invalidSchemaVersionScenarios() {
+    return Stream.of(
+      Arguments.of("Test", "2.0", "2.1"),
+      Arguments.of("", "2.0", "2.1"),
+      Arguments.of("1.9", "2.0", "2.1"),
+      Arguments.of("2.0", "", "2.1"),
+      Arguments.of("2.0", "2.1", "")
+    );
+  }
+
+  private static Stream<Arguments> validSchemaVersionScenarios() {
+    return Stream.of(
+      Arguments.of("2.0", "2.0", "2.1"),
+      Arguments.of("2.1", "2.0", "2.1")
+    );
   }
 }

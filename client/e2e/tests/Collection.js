@@ -26,6 +26,17 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.collectionTitle.visible).ok();
   await t.expect(e.collectionTitle.textContent).contains('Test Collection');
 
+  await t.click(e.sourcesTab);
+
+  await t.click(e.addButton);
+  const definitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
+  await t.click(e.typeaheadOption(definitionName));
+  await t.click(e.checkbox('Select All'));
+  await t.click(e.confirmModalButton);
+
+  await t.click(e.entitiesTab);
+
   await t.click(e.createNewMenu);
 
   await t.expect(e.createNewMenu.textContent).notContains('New Collection');
@@ -33,6 +44,8 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.createNewMenu.textContent).contains('New Report');
 
   await t.click(e.option('New Dashboard'));
+  await t.click(Homepage.modalConfirmbutton);
+
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
@@ -68,17 +81,30 @@ test('copy a collection', async (t) => {
 test('user permissions', async (t) => {
   await createCollection(t);
 
+  await t.click(e.sourcesTab);
+
+  await t.click(e.addButton);
+  const definitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
+  await t.click(e.typeaheadOption(definitionName));
+  await t.click(e.checkbox('Select All'));
+  await t.click(e.confirmModalButton);
+
+  await t.click(e.entitiesTab);
+
   await t.click(e.createNewMenu);
   await t.click(e.option('New Dashboard'));
+  await t.click(Homepage.modalConfirmbutton);
+
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
   await t.click(e.userTab);
 
   await t.click(e.addButton);
-  await t.click(e.optionsButton);
-  await t.typeText(e.typeaheadInput, 'sales', {replace: true});
-  await t.click(e.typeaheadOption('sales'));
+  await t.click(e.usersTypeahead);
+  await t.typeText(e.usersTypeahead, 'sales', {replace: true});
+  await t.click(e.option('sales'));
   await t.click(e.confirmModalButton);
 
   await t.expect(e.groupItem.visible).ok();
@@ -87,16 +113,13 @@ test('user permissions', async (t) => {
   await t.expect(e.groupItem.textContent).contains('Viewer');
 
   await t.click(e.addButton);
-  await t.typeText(e.typeaheadInput, 'mary', {replace: true});
-  await t.click(e.typeaheadOption('mary'));
+  await t.typeText(e.usersTypeahead, 'mary', {replace: true});
+  await t.click(e.option('mary'));
+  await t.typeText(e.usersTypeahead, 'peter', {replace: true});
+  await t.click(e.option('peter'));
+  await t.selectText(e.usersTypeahead).pressKey('delete');
+  await t.click(e.roleOption('Editor'));
   await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
-  await t.click(e.roleOption('Editor'));
-  await t.click(e.confirmModalButton);
-
-  await t.click(e.addButton);
-  await t.typeText(e.typeaheadInput, 'peter', {replace: true});
-  await t.click(e.typeaheadOption('peter'));
-  await t.click(e.roleOption('Editor'));
   await t.click(e.confirmModalButton);
 
   await t
@@ -115,8 +138,8 @@ test('user permissions', async (t) => {
   const {username} = getUser(t, 'user2');
 
   await t.click(e.addButton);
-  await t.typeText(e.typeaheadInput, username, {replace: true});
-  await t.click(e.typeaheadOption(username));
+  await t.typeText(e.usersTypeahead, username, {replace: true});
+  await t.click(e.option(username));
   await t.click(e.roleOption('Manager'));
   await t.click(e.confirmModalButton);
 

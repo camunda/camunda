@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.2.0</version>
+    <version>3.3.0</version>
   </parent>
 
   <artifactId>import-performance-tests</artifactId>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.16</version>
+      <version>42.2.18</version>
       <scope>test</scope>
     </dependency>
 

@@ -16,6 +16,8 @@ import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -32,6 +34,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.Objects.nonNull;
 
 @AllArgsConstructor
 @Data
@@ -51,6 +57,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
+  protected ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
   protected ProcessVisualization visualization;
 
   @JsonIgnore
@@ -89,10 +96,23 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
+    String distributedByCommandKey = createDistributedByCommandKey();
     String configurationCommandKey = Optional.ofNullable(getConfiguration())
-      .map(c -> c.createCommandKey(getView()))
+      .map(SingleReportConfigurationDto::createCommandKey)
       .orElse("null");
-    return viewCommandKey + "_" + groupByCommandKey + "_" + configurationCommandKey;
+    return viewCommandKey + "_" +
+      groupByCommandKey + "_" +
+      Stream.of(distributedByCommandKey, configurationCommandKey)
+        .filter(Objects::nonNull)
+        .collect(Collectors.joining("-"));
+  }
+
+  public String createDistributedByCommandKey() {
+    if (distributedBy != null
+      && (isModelElementCommand() || isInstanceCommand())) {
+      return distributedBy.createCommandKey();
+    }
+    return null;
   }
 
   @Override
@@ -106,7 +126,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(view, that.view) &&
       isGroupByCombinable(that) &&
-      Combinable.isCombinable(getConfiguration(), that.getConfiguration()) &&
+      Combinable.isCombinable(getDistributedBy(), that.getDistributedBy()) &&
       Objects.equals(visualization, that.visualization);
   }
 
@@ -172,8 +192,20 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       (
         ProcessGroupByType.VARIABLE.equals(groupBy.getType())
           && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()))
-        || ProcessGroupByType.DURATION.equals(groupBy.getType())
+          || ProcessGroupByType.DURATION.equals(groupBy.getType())
       );
+  }
+
+  private boolean isModelElementCommand() {
+    return nonNull(view) && nonNull(view.getEntity()) &&
+      (ProcessViewEntity.USER_TASK.equals(view.getEntity())
+        || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
+  }
+
+  private boolean isInstanceCommand() {
+    return nonNull(view)
+      && nonNull(view.getEntity())
+      && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
   }
 
 }

@@ -8,15 +8,14 @@ package org.camunda.optimize.service.es.filter.process;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CompletedInstancesOnlyFilterIT extends AbstractFilterIT {
 
@@ -43,9 +42,10 @@ public class CompletedInstancesOnlyFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getData().get(0).getProcessInstanceId(), is(not(thirdProcInst.getId())));
-    assertThat(result.getData().get(1).getProcessInstanceId(), is(not(thirdProcInst.getId())));
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getData())
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .doesNotContain(thirdProcInst.getId());
   }
 
 }

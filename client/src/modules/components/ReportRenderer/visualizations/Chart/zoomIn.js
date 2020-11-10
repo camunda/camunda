@@ -10,7 +10,7 @@ import {format} from 'dates';
 
 import './zoomIn.scss';
 
-export default ({updateReport, filters, type, valueRange: {min, max}}) => {
+export default function zoomIn({updateReport, filters, type, valueRange: {min, max}}) {
   let currentlyDragging = false;
   let currentPosition = null;
   let startPosition = null;
@@ -131,4 +131,4 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
       canvas.removeEventListener('mousedown', mousedown);
     },
   };
-};
+}

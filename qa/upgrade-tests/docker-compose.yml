@@ -1,0 +1,73 @@
+version: '2.4'
+
+services:
+  cambpm:
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.14.0}
+    container_name: cambpm
+    environment:
+      - TZ=Europe/Berlin
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+    ports:
+      - 8080:8080
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/engine-rest/engine | grep -q default" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  elasticsearch-old:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${OLD_ES_VERSION:-7.0.0}
+    container_name: upgrade-schema-tests-old-elasticsearch-version
+    volumes:
+      - essnapshot:/var/tmp:rw
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - path.repo=/var/tmp
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "${OLD_ES_PORT:-9250}:9200"
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  elasticsearch-new:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${NEW_ES_VERSION:-7.0.0}
+    container_name: upgrade-schema-tests-new-elasticsearch-version
+    volumes:
+      - essnapshot:/var/tmp:rw
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - path.repo=/var/tmp
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "${NEW_ES_PORT:-9200}:9200"
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  # dummy container to wait for all others to be healthy and block docker-compose up until that happened
+  wait_until_ready:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.0.0}
+    container_name: wait_until_ready
+    command: /usr/bin/true
+    depends_on: {
+      "cambpm": { "condition": "service_healthy" },
+      "elasticsearch-old": { "condition": "service_healthy" },
+      "elasticsearch-new": { "condition": "service_healthy" }
+    }
+volumes:
+  essnapshot:

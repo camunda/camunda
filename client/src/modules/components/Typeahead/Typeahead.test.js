@@ -5,11 +5,11 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
 
-import Typeahead from './Typeahead';
 import {Input} from 'components';
 
-import {shallow} from 'enzyme';
+import Typeahead from './Typeahead';
 
 it('should render an empty Input', () => {
   const node = shallow(<Typeahead />);
@@ -86,4 +86,10 @@ it('should function as a controlled select', () => {
   node.setProps({value: '1'});
 
   expect(node.find(Input).prop('value')).toBe('Option One');
+});
+
+it('should always select value if typedOption is set', () => {
+  const node = shallow(<Typeahead value="typed" typedOption />);
+
+  expect(node.find(Input).prop('value')).toBe('typed');
 });

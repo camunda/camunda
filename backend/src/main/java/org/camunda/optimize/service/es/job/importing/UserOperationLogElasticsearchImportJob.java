@@ -32,7 +32,7 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
   }
 
   @Override
-  protected void persistEntities(final List<UserOperationLogEntryDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(final List<UserOperationLogEntryDto> newOptimizeEntities) {
     runningProcessInstanceWriter.importProcessInstancesFromUserOperationLogs(
       filterAndMapInstanceSuspensionByInstanceIdOperationsLogsToProcessInstanceDtos(newOptimizeEntities)
     );

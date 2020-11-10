@@ -8,24 +8,23 @@ package org.camunda.optimize.service.alert;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
@@ -200,7 +199,7 @@ public class AlertService implements ReportReferencingService {
     final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
     final Map<String, List<String>> missingWebhookMap = alerts.stream()
       .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
-      .collect(groupingBy(AlertCreationDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
+      .collect(groupingBy(AlertCreationRequestDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
     if (!missingWebhookMap.isEmpty()) {
       final String missingWebhookSummary = missingWebhookMap.entrySet()
         .stream()
@@ -225,11 +224,11 @@ public class AlertService implements ReportReferencingService {
       .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
       .collect(toList());
 
-    return alertReader.findFirstAlertsForReports(authorizedReportIds);
+    return alertReader.getAlertsForReports(authorizedReportIds);
   }
 
-  private List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
-    return alertReader.findFirstAlertsForReport(reportId);
+  private List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+    return alertReader.getAlertsForReport(reportId);
   }
 
   private AlertDefinitionDto getAlert(String alertId) {
@@ -242,14 +241,14 @@ public class AlertService implements ReportReferencingService {
     return alertOptional.get();
   }
 
-  public IdDto createAlert(AlertCreationDto toCreate, String userId) {
+  public IdResponseDto createAlert(AlertCreationRequestDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
-    return new IdDto(alertId);
+    return new IdResponseDto(alertId);
   }
 
-  private void validateAlert(AlertCreationDto toCreate, String userId) {
+  private void validateAlert(AlertCreationRequestDto toCreate, String userId) {
     ReportDefinitionDto report;
     try {
       report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
@@ -257,7 +256,7 @@ public class AlertService implements ReportReferencingService {
       String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
         toCreate.getReportId() + "] does not exist.";
       logger.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage, e);
+      throw new BadRequestException(errorMessage, e);
     }
 
     if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {
@@ -279,14 +278,14 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
+  private AlertDefinitionDto createAlertForUser(AlertCreationRequestDto toCreate, String userId) {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     scheduleAlert(alert);
     return alert;
   }
 
   public void copyAndMoveAlerts(String oldReportId, String newReportId) {
-    List<AlertDefinitionDto> oldAlerts = findFirstAlertsForReport(oldReportId);
+    List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
     for (AlertDefinitionDto alert : oldAlerts) {
       alert.setReportId(newReportId);
       createAlert(alert, alert.getOwner());
@@ -304,7 +303,7 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private static AlertDefinitionDto newAlert(AlertCreationDto toCreate, String userId) {
+  private static AlertDefinitionDto newAlert(AlertCreationRequestDto toCreate, String userId) {
     AlertDefinitionDto result = new AlertDefinitionDto();
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     result.setOwner(userId);
@@ -316,12 +315,12 @@ public class AlertService implements ReportReferencingService {
     return result;
   }
 
-  public void updateAlert(String alertId, AlertCreationDto toCreate, String userId) {
+  public void updateAlert(String alertId, AlertCreationRequestDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     this.updateAlertForUser(alertId, toCreate, userId);
   }
 
-  private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
+  private void updateAlertForUser(String alertId, AlertCreationRequestDto toCreate, String userId) {
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
 
     AlertDefinitionDto toUpdate = getAlert(alertId);
@@ -374,7 +373,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private void deleteAlertsForReport(String reportId) {
-    List<AlertDefinitionDto> alerts = alertReader.findFirstAlertsForReport(reportId);
+    List<AlertDefinitionDto> alerts = alertReader.getAlertsForReport(reportId);
 
     for (AlertDefinitionDto alert : alerts) {
       unscheduleJob(alert);
@@ -387,22 +386,22 @@ public class AlertService implements ReportReferencingService {
    * Check if it's still evaluated as number.
    */
   private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
-      SingleProcessReportDefinitionDto singleReport = (SingleProcessReportDefinitionDto) reportDefinition;
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
+      SingleProcessReportDefinitionRequestDto singleReport = (SingleProcessReportDefinitionRequestDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
     }
   }
 
-  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionRequestDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
       && ProcessVisualization.NUMBER.equals(data.getVisualization());
   }
 
-  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionRequestDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
@@ -419,7 +418,7 @@ public class AlertService implements ReportReferencingService {
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
-    return mapAlertsToConflictingItems(findFirstAlertsForReport(reportDefinition.getId()));
+    return mapAlertsToConflictingItems(getAlertsForReport(reportDefinition.getId()));
   }
 
   @Override
@@ -432,15 +431,15 @@ public class AlertService implements ReportReferencingService {
                                                                   ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
-    if (currentDefinition instanceof SingleProcessReportDefinitionDto) {
-      if (validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) currentDefinition)
-        && !validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+    if (currentDefinition instanceof SingleProcessReportDefinitionRequestDto) {
+      if (validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionRequestDto) currentDefinition)
+        && !validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionRequestDto) updateDefinition)) {
+        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
-    } else if (currentDefinition instanceof SingleDecisionReportDefinitionDto) {
-      if (validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) currentDefinition)
-        && !validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+    } else if (currentDefinition instanceof SingleDecisionReportDefinitionRequestDto) {
+      if (validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionRequestDto) currentDefinition)
+        && !validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionRequestDto) updateDefinition)) {
+        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
     }
 
@@ -459,8 +458,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   private void verifyUserAuthorizedToEditAlertOrFail(
-    final AlertCreationDto alertDto, final String userId) {
-    AuthorizedReportDefinitionDto reportDefinitionDto = reportService.getReportDefinition(
+    final AlertCreationRequestDto alertDto, final String userId) {
+    AuthorizedReportDefinitionResponseDto reportDefinitionDto = reportService.getReportDefinition(
       alertDto.getReportId(),
       userId
     );

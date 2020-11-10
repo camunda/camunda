@@ -11,20 +11,20 @@ import lombok.Builder;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
@@ -95,7 +95,7 @@ public class CollectionClient {
   public String createNewCollection() {
     return getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -103,15 +103,15 @@ public class CollectionClient {
     return getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
-  public void updateCollection(final String collectionId, final PartialCollectionDefinitionDto updatedCollection) {
+  public void updateCollection(final String collectionId, final PartialCollectionDefinitionRequestDto updatedCollection) {
     updateCollectionAsUser(collectionId, updatedCollection, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public void updateCollectionAsUser(final String collectionId, final PartialCollectionDefinitionDto updatedCollection,
+  public void updateCollectionAsUser(final String collectionId, final PartialCollectionDefinitionRequestDto updatedCollection,
                                      final String username, final String password) {
     getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
@@ -139,23 +139,23 @@ public class CollectionClient {
       .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
+  public List<AuthorizedReportDefinitionResponseDto> getReportsForCollection(final String collectionId) {
     return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .executeAndReturnList(
-        AuthorizedReportDefinitionDto.class,
+        AuthorizedReportDefinitionResponseDto.class,
         200
       );
   }
 
-  public List<AuthorizedReportDefinitionDto> getReportsForCollectionAsUser(final String collectionId,
-                                                                           final String username,
-                                                                           final String password) {
+  public List<AuthorizedReportDefinitionResponseDto> getReportsForCollectionAsUser(final String collectionId,
+                                                                                   final String username,
+                                                                                   final String password) {
     return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .withUserAuthentication(username, password)
       .executeAndReturnList(
-        AuthorizedReportDefinitionDto.class,
+        AuthorizedReportDefinitionResponseDto.class,
         200
       );
   }
@@ -166,24 +166,24 @@ public class CollectionClient {
       .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId) {
+  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId) {
     return getEntitiesForCollection(collectionId, null);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId, final String user, final String pass) {
+  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId, final String user, final String pass) {
     return getEntitiesForCollection(collectionId, null, user, pass);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter) {
+  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter) {
     return getEntitiesForCollection(collectionId, entitySorter, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter,
-                                                  final String username, final String password) {
+  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter,
+                                                          final String username, final String password) {
     return getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId, entitySorter)
       .withUserAuthentication(username, password)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public void updateCollectionScopeAsKermit(final String collectionId,
@@ -205,18 +205,18 @@ public class CollectionClient {
     addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, definitionType));
   }
 
-  public List<CollectionScopeEntryRestDto> getCollectionScope(final String collectionId) {
+  public List<CollectionScopeEntryResponseDto> getCollectionScope(final String collectionId) {
     return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
   }
 
-  public List<CollectionScopeEntryRestDto> getCollectionScopeForKermit(final String collectionId) {
+  public List<CollectionScopeEntryResponseDto> getCollectionScopeForKermit(final String collectionId) {
     return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
   }
 
@@ -264,7 +264,7 @@ public class CollectionClient {
     getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
       .withUserAuthentication(user, password)
-      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void updateCollectionScopeEntry(final String collectionId,
@@ -289,23 +289,31 @@ public class CollectionClient {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
-    return addRoleToCollectionAsUser(collectionId, roleDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  public void addRoleToCollectionAsUser(final String collectionId,
+                                        final CollectionRoleRequestDto roleDto,
+                                        final String username,
+                                        final String password) {
+    addRolesToCollectionAsUser(collectionId, new CollectionRoleRequestDto[]{roleDto}, username, password);
   }
 
-  public IdDto addRoleToCollectionAsUser(final String collectionId,
-                                         final CollectionRoleDto roleDto,
-                                         final String username,
-                                         final String password) {
-    return getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+  public void addRolesToCollection(final String collectionId,
+                                   final CollectionRoleRequestDto... rolesToAdd) {
+    addRolesToCollectionAsUser(collectionId, rolesToAdd, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  }
+
+  private void addRolesToCollectionAsUser(final String collectionId,
+                                          final CollectionRoleRequestDto[] rolesToAdd,
+                                          final String username,
+                                          final String password) {
+    getRequestExecutor()
+      .buildAddRolesToCollectionRequest(collectionId, rolesToAdd)
       .withUserAuthentication(username, password)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void updateCollectionRoleAsUser(final String collectionId,
                                          final String roleId,
-                                         final CollectionRoleUpdateDto updateDto,
+                                         final CollectionRoleUpdateRequestDto updateDto,
                                          final String username,
                                          final String password) {
     getRequestExecutor()
@@ -330,25 +338,25 @@ public class CollectionClient {
       .withUserAuthentication(userId, password);
   }
 
-  public List<CollectionRoleRestDto> getCollectionRolesAsUser(final String collectionId,
-                                                              final String username,
-                                                              final String password) {
+  public List<CollectionRoleResponseDto> getCollectionRolesAsUser(final String collectionId,
+                                                                  final String username,
+                                                                  final String password) {
     return getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .withUserAuthentication(username, password)
-      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(CollectionRoleResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<CollectionRoleRestDto> getCollectionRoles(final String collectionId) {
+  public List<CollectionRoleResponseDto> getCollectionRoles(final String collectionId) {
     return getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(CollectionRoleResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<IdDto> getCollectionRoleIdDtos(final String collectionId) {
+  public List<IdResponseDto> getCollectionRoleIdDtos(final String collectionId) {
     return getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public CollectionDefinitionRestDto copyCollection(final String collectionId) {

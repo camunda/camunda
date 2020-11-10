@@ -5,19 +5,16 @@
  */
 
 import React from 'react';
-import {shallow, mount} from 'enzyme';
-
-import {Dropdown, ActionItem} from 'components';
+import {shallow} from 'enzyme';
 
 import {getVariableNames} from './service';
 
-import {FiltersEdit} from './FiltersEdit';
+import FiltersEdit from './FiltersEdit';
 
 const props = {
   availableFilters: [],
   setAvailableFilters: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  reports: ['reportId'],
+  reports: [{id: 'reportId'}],
 };
 
 jest.mock('./service', () => ({
@@ -29,121 +26,47 @@ beforeEach(() => {
   getVariableNames.mockClear();
 });
 
-it('should contain a dropdown to add more filters', () => {
-  const node = shallow(<FiltersEdit {...props} />);
-
-  expect(node.find(Dropdown)).toExist();
-
-  node.find(Dropdown.Option).at(0).simulate('click');
-  expect(props.setAvailableFilters).toHaveBeenCalledWith([{type: 'startDate'}]);
-});
-
 it('should show added filters', () => {
   const node = shallow(<FiltersEdit {...props} availableFilters={[{type: 'state'}]} />);
 
-  expect(node.find(ActionItem)).toExist();
+  expect(node.find('InstanceStateFilter')).toExist();
 });
 
 it('should allow removing existing filters', () => {
   const node = shallow(<FiltersEdit {...props} availableFilters={[{type: 'state'}]} />);
 
-  node.find(ActionItem).simulate('click');
+  node.find('InstanceStateFilter .deleteButton').simulate('click');
 
   expect(props.setAvailableFilters).toHaveBeenCalledWith([]);
 });
 
-it('should not allow adding the same filter twice', () => {
-  const node = shallow(<FiltersEdit {...props} availableFilters={[{type: 'startDate'}]} />);
+it('should allow editing variable filters', () => {
+  const node = shallow(
+    <FiltersEdit {...props} availableFilters={[{type: 'variable', data: {name: 'varName'}}]} />
+  );
 
-  expect(node.find(Dropdown.Option).at(0)).toBeDisabled();
+  node.find('VariableFilter .editButton').simulate('click');
+
+  expect(node.find('.dashboardVariableFilter')).toExist();
+  expect(node.find('.dashboardVariableFilter').prop('filterData')).toEqual({
+    type: 'variable',
+    data: {name: 'varName'},
+  });
 });
 
-it('should disable the variable option if there are no reports', () => {
-  const node = shallow(<FiltersEdit {...props} />);
-
-  expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
-  node.setProps({reports: []});
-  expect(node.find(Dropdown.Option).last()).toBeDisabled();
-});
-
-it('should fetch variable names', () => {
-  const node = mount(<FiltersEdit {...props} />);
-
-  expect(getVariableNames).toHaveBeenCalledWith(['reportId']);
-});
-
-it('should remove filters that are no longer valid', () => {
-  getVariableNames.mockReturnValue([{type: 'String', name: 'a'}]);
-
-  mount(
+it('should include a checkbox to allow custom values', () => {
+  const node = shallow(
     <FiltersEdit
       {...props}
-      availableFilters={[
-        {type: 'variable', data: {name: 'a', type: 'String'}},
-        {type: 'variable', data: {name: 'b', type: 'Boolean'}},
-      ]}
+      availableFilters={[{type: 'variable', data: {name: 'varName', type: 'String'}}]}
     />
   );
 
-  expect(props.setAvailableFilters).toHaveBeenCalledWith([
-    {type: 'variable', data: {name: 'a', type: 'String'}},
-  ]);
-});
+  node.find('VariableFilter .editButton').simulate('click');
 
-it('should include the allowed values for string and number variables', () => {
-  const node = shallow(<FiltersEdit {...props} />);
+  const postText = shallow(
+    node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'})
+  );
 
-  node.find(Dropdown.Option).last().simulate('click');
-
-  const modal = node.find('.dashboardVariableFilter');
-
-  expect(modal).toExist();
-
-  const newFilter = {
-    type: 'variable',
-    data: {type: 'String', name: 'stringVar', data: {operator: 'in', values: ['aStringValue']}},
-  };
-
-  modal.prop('addFilter')(newFilter);
-  expect(props.setAvailableFilters).toHaveBeenCalledWith([newFilter]);
-});
-
-it('should not include a data field for boolean and date variables', () => {
-  const node = shallow(<FiltersEdit {...props} />);
-
-  node.find(Dropdown.Option).last().simulate('click');
-
-  const modal = node.find('.dashboardVariableFilter');
-
-  modal.prop('addFilter')({
-    type: 'variable',
-    data: {type: 'Boolean', name: 'newVar', data: {value: true}},
-  });
-  expect(props.setAvailableFilters).toHaveBeenCalledWith([
-    {
-      type: 'variable',
-      data: {
-        type: 'Boolean',
-        name: 'newVar',
-      },
-    },
-  ]);
-
-  modal.prop('addFilter')({
-    type: 'variable',
-    data: {
-      type: 'Date',
-      name: 'newVar',
-      data: {type: 'relative', start: {value: 1, unit: 'years'}, end: null},
-    },
-  });
-  expect(props.setAvailableFilters).toHaveBeenCalledWith([
-    {
-      type: 'variable',
-      data: {
-        type: 'Date',
-        name: 'newVar',
-      },
-    },
-  ]);
+  expect(postText.find('[type="checkbox"]')).toExist();
 });

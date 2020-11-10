@@ -4,10 +4,10 @@
 @Library('camunda-ci') _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
-def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
+def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
+def static GCLOUD_DOCKER_IMAGE() { "google/cloud-sdk:alpine" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
-static String kubectlAgent(env, postgresVersion='9.6-alpine') {
+static String kubectlAgent(postgresVersion='9.6-alpine') {
   return """
 metadata:
   labels:
@@ -88,7 +88,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml kubectlAgent(env)
+      yaml kubectlAgent()
     }
   }
 

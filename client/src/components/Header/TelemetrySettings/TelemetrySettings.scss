@@ -4,18 +4,25 @@
   .options {
     margin-left: 40px;
 
-    .label {
+    .checkLabel {
+      align-items: unset;
+    }
+
+    .label.after {
       margin-left: 10px;
-      font-weight: bold;
+
+      h2 {
+        font-weight: bold;
+      }
+
+      p {
+        margin: 5px 0 0;
+      }
     }
   }
 
   p {
     font-size: 14px;
     color: $grey-darken-36;
-  }
-
-  .Input[type='checkbox'] {
-    align-self: center;
   }
 }

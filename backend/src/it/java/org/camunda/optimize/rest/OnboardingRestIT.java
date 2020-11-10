@@ -36,7 +36,7 @@ public class OnboardingRestIT extends AbstractIT {
     final OnboardingStateRestDto onboardingStateRestDto = getOnboardingState(KEY_WHATSNEW);
 
     // then
-    assertThat(onboardingStateRestDto.isSeen()).isEqualTo(false);
+    assertThat(onboardingStateRestDto.isSeen()).isFalse();
   }
 
   @Test
@@ -79,7 +79,7 @@ public class OnboardingRestIT extends AbstractIT {
 
     // then
     final OnboardingStateRestDto onboardingStateRestDto = getOnboardingState(KEY_WHATSNEW);
-    assertThat(onboardingStateRestDto.isSeen()).isEqualTo(true);
+    assertThat(onboardingStateRestDto.isSeen()).isTrue();
     final Optional<OnboardingStateDto> stateFromElasticsearch = getOnboardingStateFromElasticsearch(
       DEFAULT_USERNAME, KEY_WHATSNEW
     );

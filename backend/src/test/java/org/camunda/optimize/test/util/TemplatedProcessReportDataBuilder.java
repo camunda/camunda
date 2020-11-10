@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -32,8 +32,9 @@ public class TemplatedProcessReportDataBuilder {
   private List<String> tenantIds = Collections.singletonList(null);
   private String variableName;
   private VariableType variableType;
-  private GroupByDateUnit dateInterval;
-  private GroupByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
+  private AggregateByDateUnit groupByDateInterval;
+  private AggregateByDateUnit distributeByDateInterval;
+  private AggregateByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;
   private String endFlowNodeId;
   private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTime();
@@ -87,7 +88,37 @@ public class TemplatedProcessReportDataBuilder {
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_START_DATE_BY_VARIABLE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_START_DATE_BY_VARIABLE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
           .build();
         break;
       case PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART:
@@ -98,7 +129,7 @@ public class TemplatedProcessReportDataBuilder {
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processPartStart(startFlowNodeId)
           .processPartEnd(endFlowNodeId)
           .build();
@@ -111,7 +142,37 @@ public class TemplatedProcessReportDataBuilder {
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_BY_VARIABLE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_BY_VARIABLE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
           .build();
         break;
       case PROC_INST_DUR_GROUP_BY_END_DATE_WITH_PART:
@@ -122,7 +183,7 @@ public class TemplatedProcessReportDataBuilder {
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processPartStart(startFlowNodeId)
           .processPartEnd(endFlowNodeId)
           .build();
@@ -153,6 +214,66 @@ public class TemplatedProcessReportDataBuilder {
           .processPartEnd(endFlowNodeId)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.START_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_START_DATE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.START_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.END_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_END_DATE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.END_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
+          .build();
+        break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -169,7 +290,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.START_DATE)
           .visualization(ProcessVisualization.TABLE)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
@@ -181,7 +302,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.START_DATE)
           .distributedByType(DistributedByType.VARIABLE)
           .visualization(ProcessVisualization.TABLE)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .variableName(variableName)
@@ -194,7 +315,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.END_DATE)
           .visualization(ProcessVisualization.TABLE)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
@@ -206,7 +327,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedByType(DistributedByType.VARIABLE)
           .visualization(ProcessVisualization.TABLE)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .variableName(variableName)
@@ -219,7 +340,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.RUNNING_DATE)
           .visualization(ProcessVisualization.TABLE)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
@@ -241,7 +362,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.START_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE_BY_FLOW_NODE:
@@ -252,7 +373,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.FLOW_NODE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE:
@@ -262,7 +383,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.END_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE_BY_FLOW_NODE:
@@ -273,7 +394,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.FLOW_NODE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION:
@@ -312,7 +433,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.START_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_END_DATE:
@@ -322,7 +443,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.END_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE_BY_FLOW_NODE:
@@ -333,7 +454,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.FLOW_NODE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_END_DATE_BY_FLOW_NODE:
@@ -344,7 +465,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.FLOW_NODE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE:
@@ -352,6 +473,34 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.VARIABLE)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableType(variableType)
+          .variableName(variableName)
+          .build();
+        break;
+      case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.START_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableType(variableType)
+          .variableName(variableName)
+          .build();
+        break;
+      case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.END_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
           .visualization(ProcessVisualization.HEAT)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
@@ -385,7 +534,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.START_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
@@ -396,7 +545,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.USER_TASK)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE:
@@ -407,7 +556,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.ASSIGNEE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
@@ -418,7 +567,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE:
@@ -428,7 +577,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.END_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK:
@@ -439,7 +588,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.USER_TASK)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE_BY_ASSIGNEE:
@@ -450,7 +599,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.ASSIGNEE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE_BY_CANDIDATE_GROUP:
@@ -461,7 +610,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE:
@@ -564,7 +713,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.START_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
@@ -575,7 +724,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.USER_TASK)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE:
@@ -586,7 +735,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.ASSIGNEE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
@@ -597,7 +746,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE:
@@ -607,7 +756,7 @@ public class TemplatedProcessReportDataBuilder {
           .groupByType(ProcessGroupByType.END_DATE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK:
@@ -618,7 +767,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.USER_TASK)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_ASSIGNEE:
@@ -629,7 +778,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.ASSIGNEE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_CANDIDATE_GROUP:
@@ -640,7 +789,7 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
-          .dateInterval(dateInterval)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE:
@@ -718,6 +867,50 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .build();
         break;
+      case INCIDENT_FREQUENCY_GROUP_BY_NONE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.INCIDENT)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.NONE)
+          .distributedByType(DistributedByType.NONE)
+          .visualization(ProcessVisualization.NUMBER)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
+      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.INCIDENT)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .distributedByType(DistributedByType.NONE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
+      case INCIDENT_DURATION_GROUP_BY_NONE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.INCIDENT)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.NONE)
+          .distributedByType(DistributedByType.NONE)
+          .visualization(ProcessVisualization.NUMBER)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
+      case INCIDENT_DURATION_GROUP_BY_FLOW_NODE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.INCIDENT)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .distributedByType(DistributedByType.NONE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
       default:
         String errorMessage = String.format("Unknown ProcessReportDataType: [%s]", reportDataType.name());
         throw new OptimizeRuntimeException(errorMessage);
@@ -765,8 +958,13 @@ public class TemplatedProcessReportDataBuilder {
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setDateInterval(GroupByDateUnit dateInterval) {
-    this.dateInterval = dateInterval;
+  public TemplatedProcessReportDataBuilder setGroupByDateInterval(AggregateByDateUnit groupByDateInterval) {
+    this.groupByDateInterval = groupByDateInterval;
+    return this;
+  }
+
+  public TemplatedProcessReportDataBuilder setDistributeByDateInterval(AggregateByDateUnit distributeByDateInterval) {
+    this.distributeByDateInterval = distributeByDateInterval;
     return this;
   }
 
@@ -800,7 +998,7 @@ public class TemplatedProcessReportDataBuilder {
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setGroupByDateVariableUnit(final GroupByDateUnit groupByDateVariableUnit) {
+  public TemplatedProcessReportDataBuilder setGroupByDateVariableUnit(final AggregateByDateUnit groupByDateVariableUnit) {
     this.groupByDateVariableUnit = groupByDateVariableUnit;
     return this;
   }

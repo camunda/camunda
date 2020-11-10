@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
@@ -24,6 +25,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.WithOpenIncidentsOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.WithResolvedIncidentsOnlyFilterDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +43,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final ProcessVariableQueryFilter variableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
   private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
+  private final CanceledFlowNodeQueryFilter canceledFlowNodeQueryFilter;
   private final DurationQueryFilter durationQueryFilter;
   private final RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
   private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
@@ -50,6 +54,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final FlowNodeDurationQueryFilter flowNodeDurationQueryFilter;
   private final AssigneeQueryFilter assigneeQueryFilter;
   private final CandidateGroupQueryFilter candidateGroupQueryFilter;
+  private final WithOpenIncidentsOnlyQueryFilter withOpenIncidentsOnlyQueryFilter;
+  private final WithResolvedIncidentsOnlyQueryFilter withResolvedIncidentsOnlyQueryFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
@@ -63,6 +69,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         extractFilters(filters, ExecutingFlowNodeFilterDto.class),
         timezone
       );
+      canceledFlowNodeQueryFilter.addFilters(query, extractFilters(filters, CanceledFlowNodeFilterDto.class), timezone);
       durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class), timezone);
       runningInstancesOnlyQueryFilter.addFilters(
         query,
@@ -93,6 +100,16 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class), timezone);
       assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class), timezone);
       candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class), timezone);
+      withOpenIncidentsOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filters, WithOpenIncidentsOnlyFilterDto.class),
+        timezone
+      );
+      withResolvedIncidentsOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filters, WithResolvedIncidentsOnlyFilterDto.class),
+        timezone
+      );
     }
   }
 

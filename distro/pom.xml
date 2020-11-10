@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.2.0</version>
+    <version>3.3.0</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
   <packaging>pom</packaging>
 
   <properties>
-    <exclude.from.environment>OptimizeLicense.txt</exclude.from.environment>
+    <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -38,7 +38,7 @@
     <profile>
       <id>add-license-key</id>
       <properties>
-        <exclude.from.environment />
+        <exclude.from.config />
       </properties>
     </profile>
   </profiles>

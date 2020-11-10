@@ -2,7 +2,7 @@
   display: flex;
   flex-grow: 1;
   flex-direction: row;
-  height: 0;
+  min-height: 0;
 
   .component {
     display: flex;
@@ -10,7 +10,6 @@
     max-width: calc(100% - 175px);
     position: relative;
     flex-direction: column;
-    overflow: auto;
 
     &:only-child {
       max-width: 100%;

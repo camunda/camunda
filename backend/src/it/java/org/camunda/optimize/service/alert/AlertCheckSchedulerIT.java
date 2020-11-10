@@ -8,10 +8,10 @@ package org.camunda.optimize.service.alert;
 import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
@@ -54,33 +51,30 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
 
     alertClient.createAlert(simpleAlert);
 
     // when
-    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
+    SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
 
     // then
     // scheduler does not contain any triggers
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
 
     //alert is deleted from ES
     List<AlertDefinitionDto> alertDefinitionDtos = alertClient.getAllAlerts();
 
-    assertThat(alertDefinitionDtos.size(), is(0));
+    assertThat(alertDefinitionDtos).isEmpty();
   }
 
   @Test
   public void reportDeletionRemovesAlert() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     alertClient.createAlert(simpleAlert);
 
@@ -88,48 +82,42 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     reportClient.deleteReport(simpleAlert.getReportId(), true);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
 
     List<AlertDefinitionDto> alertDefinitionDtos = alertClient.getAllAlerts();
-    assertThat(alertDefinitionDtos.size(), is(0));
+    assertThat(alertDefinitionDtos).isEmpty();
   }
 
   @Test
   public void createNewAlertPropagatedToScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     // when
     String id = alertClient.createAlert(simpleAlert);
 
     // then
-    assertThat(id, is(notNullValue()));
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(1)
-    );
+    assertThat(id).isNotNull();
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(1);
   }
 
   @Test
   public void createNewAlertDecisionReport() {
     //given
-    AlertCreationDto simpleAlert = setupBasicDecisionAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicDecisionAlert();
     setEmailConfiguration();
 
     // when
     alertClient.createAlert(simpleAlert);
 
     // then
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+    assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
   }
 
   @Test
   public void deletedAlertsAreRemovedFromScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
 
@@ -137,26 +125,19 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertClient.deleteAlert(alertId);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
   }
 
   @Test
   public void updatedAlertIsRescheduled() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicProcessAlert();
+    AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
 
     Trigger trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
-    assertThat(
-      getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
-      is(
-        Instant.now().plus(1, ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
-      )
-    );
+    assertThat(getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS))
+      .isEqualTo(Instant.now().plus(1, ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS));
 
     // when
     simpleAlert.getCheckInterval().setValue(30);
@@ -165,7 +146,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // then
     List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
-    assertThat(allAlerts.get(0).isTriggered(), is(false));
+    assertThat(allAlerts.get(0).isTriggered()).isFalse();
 
     trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     int secondsUntilItShouldFireNext = 30;
@@ -184,8 +165,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     Instant upperBound = Instant.now()
       .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
-    assertThat(lowerBound.isBefore(nextTimeToFire), is(true));
-    assertThat(upperBound.isAfter(nextTimeToFire), is(true));
+    assertThat(lowerBound.isBefore(nextTimeToFire)).isTrue();
+    assertThat(upperBound.isAfter(nextTimeToFire)).isTrue();
   }
 
   private TriggerKey getTriggerKey(String alertId) {
@@ -204,26 +185,24 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     setEmailConfiguration();
 
     // when
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     alertClient.createAlert(simpleAlert);
 
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+    assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
 
     //then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
-    assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+    assertThat(emails).hasSize(1);
+    assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
     String content = emails[0].getContent().toString();
-    assertThat(content, containsString(simpleAlert.getName()));
-    assertThat(
-      content,
-      containsString(String.format(
+    assertThat(content)
+      .contains(simpleAlert.getName())
+      .contains(String.format(
         "http://localhost:%d/#/collection/%s/report/%s/",
         getOptimizeHttpPort(),
         collectionId,
         reportId
-      ))
-    );
+      ));
   }
 
   @Test
@@ -240,23 +219,21 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
 
     // when
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     alertClient.createAlert(simpleAlert);
 
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+    assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
 
     //then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
+    assertThat(emails).hasSize(1);
     String content = emails[0].getContent().toString();
-    assertThat(
-      content,
-      containsString(String.format(
+    assertThat(content)
+      .contains(String.format(
         "http://test.de:8090/#/collection/%s/report/%s/",
         collectionId,
         reportId
-      ))
-    );
+      ));
   }
 
   @Test
@@ -272,12 +249,10 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     Instant nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
 
-    assertThat(
-      nextFireTime,
-      is(now.truncatedTo(ChronoUnit.MINUTES)
-           .plus(intervalValue, ChronoUnit.MINUTES)
-           .truncatedTo(ChronoUnit.MINUTES))
-    );
+    assertThat(nextFireTime).isEqualTo(
+      now.truncatedTo(ChronoUnit.MINUTES)
+        .plus(intervalValue, ChronoUnit.MINUTES)
+        .truncatedTo(ChronoUnit.MINUTES));
   }
 
   @Test
@@ -295,7 +270,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     Instant targetTime = now.plus(intervalValue, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
 
-    assertThat(nextFireTime.truncatedTo(ChronoUnit.HOURS), is(targetTime));
+    assertThat(nextFireTime.truncatedTo(ChronoUnit.HOURS)).isEqualTo(targetTime);
   }
 
   @Test
@@ -313,7 +288,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     Instant targetTime = now.truncatedTo(ChronoUnit.DAYS).plus(intervalValue, ChronoUnit.DAYS);
 
-    assertThat(nextFireTime.truncatedTo(ChronoUnit.DAYS), is(targetTime));
+    assertThat(nextFireTime.truncatedTo(ChronoUnit.DAYS)).isEqualTo(targetTime);
   }
 
   @Test
@@ -328,10 +303,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     Instant nextFireTime = getNextFireTime(trigger);
 
-    assertThat(
-      nextFireTime.truncatedTo(ChronoUnit.SECONDS),
-      is(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
-    );
+    assertThat(nextFireTime.truncatedTo(ChronoUnit.SECONDS))
+      .isEqualTo(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS));
   }
 
   private Instant getNextFireTime(Trigger cronTrigger) {
@@ -339,14 +312,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   }
 
   private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, String intervalUnit) {
-    AlertCreationDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
 
     AlertDefinitionDto alert = createFakeReport(simpleAlert);
     alert.setId(UUID.randomUUID().toString());
     return alert;
   }
 
-  private AlertDefinitionDto createFakeReport(AlertCreationDto fakeReportAlert) {
+  private AlertDefinitionDto createFakeReport(AlertCreationRequestDto fakeReportAlert) {
     AlertDefinitionDto result = new AlertDefinitionDto();
 
     AlertUtil.mapBasicFields(fakeReportAlert, result);

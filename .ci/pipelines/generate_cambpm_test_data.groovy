@@ -18,7 +18,7 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
 
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String dataGenerationAgent(env, postgresVersion = '9.6-alpine', cambpmVersion) {
+static String dataGenerationAgent(postgresVersion = '9.6-alpine', cambpmVersion) {
     return """
 metadata:
   labels:
@@ -31,7 +31,7 @@ spec:
      operator: "Exists"
      effect: "NoSchedule"
   imagePullSecrets:
-    - name: registry-camunda-cloud-secret
+    - name: registry-camunda-cloud
   securityContext:
     fsGroup: 1000
   volumes:
@@ -226,7 +226,7 @@ pipeline {
                     label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
                     defaultContainer 'jnlp'
                     slaveConnectTimeout 600
-                    yaml dataGenerationAgent(env, POSTGRES_VERSION, env.CAMBPM_VERSION)
+                    yaml dataGenerationAgent(POSTGRES_VERSION, env.CAMBPM_VERSION)
                 }
             }
             stages {

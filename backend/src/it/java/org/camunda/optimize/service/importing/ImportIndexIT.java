@@ -11,10 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 
 public class ImportIndexIT extends AbstractImportIT {
 
@@ -25,7 +23,7 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     for (Long index : indexes) {
-      assertThat(index, is(0L));
+      assertThat(index).isZero();
     }
   }
 
@@ -50,7 +48,7 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
+      assertThat(firstRoundIndexes.get(i)).isEqualTo(secondsRoundIndexes.get(i));
     }
   }
 
@@ -58,15 +56,7 @@ public class ImportIndexIT extends AbstractImportIT {
   @SneakyThrows
   public void latestImportIndexAfterRestartOfOptimize() {
     // given
-    deployAndStartUserTaskProcess();
-    // we need finished ones
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    // as well as running & suspended ones
-    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
-    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
-    deployAndStartSimpleServiceTask();
-    engineIntegrationExtension.deployAndStartDecisionDefinition();
-    engineIntegrationExtension.createTenant("id", "name");
+    deployAllPossibleEngineData();
 
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
@@ -80,7 +70,7 @@ public class ImportIndexIT extends AbstractImportIT {
     // then
     List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
     for (Long index : indexes) {
-      assertThat(index, greaterThan(0L));
+      assertThat(index).isGreaterThan(0L);
     }
   }
 
@@ -101,7 +91,7 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
+      assertThat(firstRoundIndexes.get(i)).isEqualTo(secondsRoundIndexes.get(i));
     }
   }
 
@@ -121,7 +111,7 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), lessThanOrEqualTo(secondsRoundIndexes.get(i)));
+      assertThat(firstRoundIndexes.get(i)).isLessThanOrEqualTo(secondsRoundIndexes.get(i));
     }
   }
 
@@ -140,7 +130,27 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     for (Long index : indexes) {
-      assertThat(index, is(0L));
+      assertThat(index).isZero();
     }
+  }
+
+  private void deployAllPossibleEngineData() {
+    deployAndStartUserTaskProcess();
+    // we need finished ones
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    // as well as running & suspended ones
+    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
+    deployAndStartSimpleServiceTask();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.createTenant("id", "name");
+
+    // create incident data
+    ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
   }
 }

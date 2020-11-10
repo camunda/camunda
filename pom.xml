@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.2.0</version>
+  <version>3.3.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,18 +23,18 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.1.0</project.previousVersion>
+    <project.previousVersion>3.2.0</project.previousVersion>
 
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
-    <camunda.engine.version>7.13.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.13.0-ee</camunda.maven.artifacts.version>
+    <camunda.engine.version>7.14.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.14.0-ee</camunda.maven.artifacts.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
 
-    <jackson.version>2.11.2</jackson.version>
+    <jackson.version>2.11.3</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
     <elasticsearch.version>7.0.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -43,18 +43,18 @@
     <previous.optimize.elasticsearch.version>7.0.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.13.3</elasticsearch.log4j.version>
-    <guava.version>29.0-jre</guava.version>
-    <spring.version>5.2.8.RELEASE</spring.version>
-    <mockito.version>3.5.10</mockito.version>
-    <httpclient.version>4.5.12</httpclient.version>
+    <guava.version>30.0-jre</guava.version>
+    <spring.version>5.3.0</spring.version>
+    <mockito.version>3.6.0</mockito.version>
+    <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
-    <junit.jupiter.version>5.6.2</junit.jupiter.version>
-    <junit.platform.version>1.6.2</junit.platform.version>
-    <mockserver.version>5.11.1</mockserver.version>
+    <junit.jupiter.version>5.7.0</junit.jupiter.version>
+    <junit.platform.version>1.7.0</junit.platform.version>
+    <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.17.1</assertj.version>
+    <assertj.version>3.18.0</assertj.version>
 
-    <lombok.version>1.18.12</lombok.version>
+    <lombok.version>1.18.16</lombok.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
 
@@ -112,21 +112,14 @@
     <profile>
       <id>engine-7.13</id>
       <properties>
-        <camunda.engine.version>7.13.0</camunda.engine.version>
+        <camunda.engine.version>7.13.5</camunda.engine.version>
       </properties>
     </profile>
 
     <profile>
       <id>engine-7.12</id>
       <properties>
-        <camunda.engine.version>7.12.6</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.11</id>
-      <properties>
-        <camunda.engine.version>7.11.13</camunda.engine.version>
+        <camunda.engine.version>7.12.11</camunda.engine.version>
       </properties>
     </profile>
 
@@ -212,7 +205,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>camunda</sonar.organization>
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
-        <sonar.moduleKey>${artifactId}</sonar.moduleKey>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
       </properties>
       <build>
@@ -300,9 +293,27 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-core</artifactId>
+      <version>1.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-logback</artifactId>
+      <version>1.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
       <version>${httpclient.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.0.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -392,7 +403,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.8.0</version>
+          <version>1.8.2</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -413,7 +424,7 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.10.0</version>
+          <version>1.10.3</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
@@ -429,7 +440,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.5</version>
+          <version>0.8.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -438,7 +449,7 @@
       <plugin>
         <groupId>com.amashchenko.maven.plugin</groupId>
         <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.14.0</version>
+        <version>1.15.0</version>
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>

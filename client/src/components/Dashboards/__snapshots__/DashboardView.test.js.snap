@@ -5,5 +5,6 @@ Array [
   <AutoRefreshBehavior
     interval={3600000}
   />,
+  <DiagramScrollLock />,
 ]
 `;

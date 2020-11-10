@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.result.process;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -18,10 +18,10 @@ import java.util.List;
 import static org.camunda.optimize.service.security.util.LocalDateUtil.atSameTimezoneOffsetDateTime;
 
 public class SingleProcessRawDataReportResult
-  extends ReportEvaluationResult<RawDataProcessReportResultDto, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<RawDataProcessReportResultDto, SingleProcessReportDefinitionRequestDto> {
 
   public SingleProcessRawDataReportResult(@NotNull final RawDataProcessReportResultDto reportResult,
-                                          @NotNull final SingleProcessReportDefinitionDto reportDefinition) {
+                                          @NotNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

@@ -11,7 +11,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.IdentityLinkLogWriter;
+import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

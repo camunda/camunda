@@ -54,7 +54,12 @@ export function TelemetrySettings({onClose, mightFail}) {
         <div className="options">
           <LabeledInput
             type="checkbox"
-            label={t('telemetry.enable')}
+            label={
+              <>
+                <h2>{t('telemetry.enable')}</h2>
+                <p>{t('telemetry.info')}</p>
+              </>
+            }
             checked={telemetryEnabled}
             onChange={(evt) => setTelemetryEnabled(evt.target.checked)}
           />

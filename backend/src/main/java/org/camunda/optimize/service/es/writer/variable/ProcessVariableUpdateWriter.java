@@ -81,7 +81,11 @@ public class ProcessVariableUpdateWriter {
     List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
     Map<String, Object> params = buildParameters(variables);
 
-    final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
+    final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+      createInlineUpdateScript(),
+      params,
+      objectMapper
+    );
 
     if (variablesWithAllInformation.isEmpty()) {
       //all is lost, no variables to persist, should have crashed before.
@@ -196,10 +200,11 @@ public class ProcessVariableUpdateWriter {
                                                    final String tenantId,
                                                    final List<SimpleProcessVariableDto> variables)
     throws JsonProcessingException {
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessInstanceId(processInstanceId)
-      .setEngine(engineAlias)
-      .setTenantId(tenantId);
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processInstanceId(processInstanceId)
+      .engine(engineAlias)
+      .tenantId(tenantId)
+      .build();
     procInst.getVariables().addAll(variables);
 
     return objectMapper.writeValueAsString(procInst);

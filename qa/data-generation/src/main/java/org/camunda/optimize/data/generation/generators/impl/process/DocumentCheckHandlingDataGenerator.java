@@ -9,14 +9,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/document-check-handling.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/document-check-handling.bpmn";
 
   public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
@@ -31,13 +29,6 @@ public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
     Map<String, Object> variables = new HashMap<>();
     variables.put("approved", ThreadLocalRandom.current().nextDouble());
     return variables;
-  }
-
-
-  public Set<String> getPathVariableNames() {
-    Set<String> variableNames = new HashSet<>();
-    variableNames.add("approved");
-    return variableNames;
   }
 
 }

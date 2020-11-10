@@ -10,15 +10,15 @@ import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class RunningActivityInstanceElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeEventDto> {
 
-  private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaEventImportService camundaEventImportService;
+  private final RunningActivityInstanceWriter runningActivityInstanceWriter;
+  private final CamundaEventImportService camundaEventImportService;
 
   public RunningActivityInstanceElasticsearchImportJob(RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                        CamundaEventImportService camundaEventImportService,

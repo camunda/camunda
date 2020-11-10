@@ -6,10 +6,9 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.util.BpmnModels;
 import org.hamcrest.MatcherAssert;
@@ -22,10 +21,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 
 public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractCollectionRoleIT {
@@ -46,12 +44,12 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
     );
 
     // when
-    List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
+    List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
       DefinitionType.PROCESS, collectionId, KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitionKeys).extracting(DefinitionKeyDto::getKey).containsExactly(DEFAULT_DEFINITION_KEY);
+    assertThat(definitionKeys).extracting(DefinitionKeyResponseDto::getKey).containsExactly(DEFAULT_DEFINITION_KEY);
   }
 
   @Test
@@ -90,12 +88,12 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
     );
 
     // when
-    List<DefinitionVersionDto> definitionVersions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+    List<DefinitionVersionResponseDto> definitionVersions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
       DefinitionType.PROCESS, DEFAULT_DEFINITION_KEY, collectionId, KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitionVersions).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+    assertThat(definitionVersions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("1");
   }
 
   @Test
@@ -166,11 +164,10 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
     MatcherAssert.assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
-  private ProcessDefinitionEngineDto deployAndImportSimpleProcess(final String definitionKey) {
-    final ProcessDefinitionEngineDto processDefinitionEngineDto = engineIntegrationExtension
+  private void deployAndImportSimpleProcess(final String definitionKey) {
+    engineIntegrationExtension
       .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
     importAllEngineEntitiesFromScratch();
 
-    return processDefinitionEngineDto;
   }
 }

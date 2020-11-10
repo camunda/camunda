@@ -14,8 +14,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RunningInstancesOnlyFilterIT extends AbstractFilterIT {
 
@@ -42,8 +41,8 @@ public class RunningInstancesOnlyFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().get(0).getProcessInstanceId(), is(thirdProcInst.getId()));
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getData().get(0).getProcessInstanceId()).isEqualTo(thirdProcInst.getId());
   }
 
 }

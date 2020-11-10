@@ -6,24 +6,24 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -68,14 +68,14 @@ public class ReportConflictIT extends AbstractIT {
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
-    final SingleProcessReportDefinitionDto firstSingleReport =
-      (SingleProcessReportDefinitionDto) reportClient.getReportById(firstSingleReportId);
-    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto firstSingleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(firstSingleReportId);
+    final SingleProcessReportDefinitionRequestDto reportUpdate = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(firstSingleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(firstSingleReport.getData().getDefinitionVersions())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);
@@ -102,12 +102,12 @@ public class ReportConflictIT extends AbstractIT {
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
-    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto reportUpdate = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto userTaskReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
-    userTaskReport.getConfiguration().setDistributedBy(new UserTaskDistributedByDto());
+    userTaskReport.setDistributedBy(new UserTaskDistributedByDto());
     reportUpdate.setData(userTaskReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       singleReportId,
@@ -134,14 +134,14 @@ public class ReportConflictIT extends AbstractIT {
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
-    final SingleProcessReportDefinitionDto singleReport =
-      (SingleProcessReportDefinitionDto) reportClient.getReportById(reportId);
-    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
+    final SingleProcessReportDefinitionRequestDto singleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(reportId);
+    final SingleProcessReportDefinitionRequestDto reportUpdate = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(singleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(singleReport.getData().getDefinitionVersions())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);
@@ -167,7 +167,7 @@ public class ReportConflictIT extends AbstractIT {
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
-    final SingleDecisionReportDefinitionDto reportUpdate = new SingleDecisionReportDefinitionDto();
+    final SingleDecisionReportDefinitionRequestDto reportUpdate = new SingleDecisionReportDefinitionRequestDto();
     reportData = DecisionReportDataBuilder.create()
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
@@ -196,9 +196,9 @@ public class ReportConflictIT extends AbstractIT {
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
-    final SingleProcessReportDefinitionDto firstSingleReport =
-      (SingleProcessReportDefinitionDto) reportClient.getReportById(firstSingleReportId);
-    firstSingleReport.getData().getConfiguration().setDistributedBy(new AssigneeDistributedByDto());
+    final SingleProcessReportDefinitionRequestDto firstSingleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(firstSingleReportId);
+    firstSingleReport.getData().setDistributedBy(new AssigneeDistributedByDto());
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       firstSingleReportId,
       firstSingleReport,
@@ -317,9 +317,9 @@ public class ReportConflictIT extends AbstractIT {
   private void checkDashboardsStillContainReport(String[] dashboardIds, String reportId) {
     Arrays.stream(dashboardIds)
       .forEach(dashboardId -> {
-        final DashboardDefinitionDto dashboard = embeddedOptimizeExtension.getRequestExecutor()
+        final DashboardDefinitionRestDto dashboard = embeddedOptimizeExtension.getRequestExecutor()
           .buildGetDashboardRequest(dashboardId)
-          .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+          .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
         assertThat(dashboard).isNotNull();
         assertThat(dashboard.getReports()).extracting(ReportLocationDto::getId).contains(reportId);
       });
@@ -327,8 +327,8 @@ public class ReportConflictIT extends AbstractIT {
 
   private void checkCombinedReportContainsSingleReports(String combinedReportId, String... singleReportIds) {
     final ReportDefinitionDto combinedReport = reportClient.getReportById(combinedReportId);
-    if (combinedReport instanceof CombinedReportDefinitionDto) {
-      final CombinedReportDataDto dataDto = ((CombinedReportDefinitionDto) combinedReport).getData();
+    if (combinedReport instanceof CombinedReportDefinitionRequestDto) {
+      final CombinedReportDataDto dataDto = ((CombinedReportDefinitionRequestDto) combinedReport).getData();
       assertThat(dataDto.getReportIds())
         .containsExactlyInAnyOrder(singleReportIds);
     }
@@ -356,19 +356,19 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private void checkReportStillExistsInCollection(String reportId, String collectionId) {
-    List<AuthorizedReportDefinitionDto> reportDefinitionDtos = collectionClient.getReportsForCollection(collectionId);
+    List<AuthorizedReportDefinitionResponseDto> reportDefinitionDtos = collectionClient.getReportsForCollection(collectionId);
 
     assertThat(reportDefinitionDtos)
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .contains(reportId);
   }
 
   private void checkPrivateReportsStillExist(String[] expectedReportIds) {
-    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
+    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
     assertThat(reports)
       .hasSize(expectedReportIds.length)
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactlyInAnyOrder(expectedReportIds);
   }
@@ -380,20 +380,20 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private String createNewAlertForReport(String reportId) {
-    final AlertCreationDto alertCreationDto = new AlertCreationDto();
+    final AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
     AlertInterval interval = new AlertInterval();
     interval.setUnit("Seconds");
     interval.setValue(1);
-    alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0.0);
-    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
-    alertCreationDto.setEmails(Collections.singletonList("test@camunda.com"));
-    alertCreationDto.setName("test alert");
-    alertCreationDto.setReportId(reportId);
+    alertCreationRequestDto.setCheckInterval(interval);
+    alertCreationRequestDto.setThreshold(0.0);
+    alertCreationRequestDto.setThresholdOperator(AlertThresholdOperator.GREATER);
+    alertCreationRequestDto.setEmails(Collections.singletonList("test@camunda.com"));
+    alertCreationRequestDto.setName("test alert");
+    alertCreationRequestDto.setReportId(reportId);
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCreateAlertRequest(alertCreationDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .buildCreateAlertRequest(alertCreationRequestDto)
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -403,7 +403,7 @@ public class ReportConflictIT extends AbstractIT {
 
   private String createAndStoreProcessReportWithDefinition(String collectionId,
                                                            ProcessReportDataDto reportDataViewRawAsTable) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportDataViewRawAsTable);
     singleProcessReportDefinitionDto.setId(RANDOM_STRING);
     singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -417,7 +417,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(String collectionId, DecisionReportDataDto reportData) {
-    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
     singleDecisionReportDefinitionDto.setData(reportData);
     singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -439,7 +439,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
-                                                           SingleProcessReportDefinitionDto updatedReport,
+                                                           SingleProcessReportDefinitionRequestDto updatedReport,
                                                            Boolean force) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -448,7 +448,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
-                                                           SingleDecisionReportDefinitionDto updatedReport,
+                                                           SingleDecisionReportDefinitionRequestDto updatedReport,
                                                            Boolean force) {
     return embeddedOptimizeExtension
       .getRequestExecutor()

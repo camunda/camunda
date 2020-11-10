@@ -58,4 +58,10 @@ public class UserOperationLogEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportUserOperationLogsMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
 }

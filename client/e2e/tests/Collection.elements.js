@@ -30,7 +30,6 @@ export const userTab = Selector('.Collection .header .navigation a').withText('U
 export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
 export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');
 export const addButton = Selector('.Collection .content .header .Button.primary');
-export const optionsButton = Selector('.Typeahead .optionsButton');
 export const typeaheadInput = Selector('.Typeahead input');
 export const typeaheadOption = (text) => Selector('.Typeahead .DropdownOption').withText(text);
 export const checkbox = (text) => Selector('.Checklist .label').withText(text);
@@ -48,3 +47,4 @@ export const addUserModal = Selector('.AddUserModal');
 export const addSourceModal = Selector('.AddSourceModal');
 export const logoutButton = Selector('header .Dropdown .DropdownOption');
 export const usernameDropdown = Selector('header .Dropdown');
+export const usersTypeahead = Selector('.MultiUserInput .Input');

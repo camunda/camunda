@@ -7,22 +7,18 @@ package org.camunda.optimize.service.es.retrieval;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -50,13 +46,6 @@ import static org.mockserver.model.HttpRequest.request;
 
 public class DashboardHandlingIT extends AbstractIT {
 
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
-
   @AfterEach
   public void cleanUp() {
     LocalDateUtil.reset();
@@ -82,7 +71,7 @@ public class DashboardHandlingIT extends AbstractIT {
     String id = addEmptyPrivateDashboard();
 
     // when
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(id);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(dashboard).isNotNull();
@@ -96,8 +85,8 @@ public class DashboardHandlingIT extends AbstractIT {
     String id2 = addEmptyPrivateDashboard();
 
     // when
-    DashboardDefinitionDto dashboard1 = dashboardClient.getDashboard(id1);
-    DashboardDefinitionDto dashboard2 = dashboardClient.getDashboard(id2);
+    DashboardDefinitionRestDto dashboard1 = dashboardClient.getDashboard(id1);
+    DashboardDefinitionRestDto dashboard2 = dashboardClient.getDashboard(id2);
 
     // then
     assertThat(dashboard1).isNotNull();
@@ -115,11 +104,11 @@ public class DashboardHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
@@ -147,11 +136,11 @@ public class DashboardHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
@@ -176,11 +165,11 @@ public class DashboardHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
@@ -196,7 +185,7 @@ public class DashboardHandlingIT extends AbstractIT {
                                                            .collect(Collectors.toList()));
     assertThat(newReportIds).allSatisfy(str -> assertThat(str).isEqualTo(newReportIds.get(0)));
 
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).hasSize(2);
   }
 
@@ -223,14 +212,14 @@ public class DashboardHandlingIT extends AbstractIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();
     assertThat(dashboardWithNameExists(oldDashboard.getName() + " – Copy")).isFalse();
 
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities)
       .hasSize(1)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactly("New Report – Copy");
   }
 
@@ -257,11 +246,11 @@ public class DashboardHandlingIT extends AbstractIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();
     assertThat(dashboardWithNameExists(oldDashboard.getName() + " – Copy")).isFalse();
 
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).isEmpty();
   }
 
@@ -276,11 +265,11 @@ public class DashboardHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
@@ -295,7 +284,7 @@ public class DashboardHandlingIT extends AbstractIT {
                                                            .map(ReportLocationDto::getId)
                                                            .collect(Collectors.toList()));
 
-    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).hasSize(3);
   }
 
@@ -307,14 +296,14 @@ public class DashboardHandlingIT extends AbstractIT {
     addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
+    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", "null")
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getCollectionId()).isNull();
     assertThat(oldDashboard.getCollectionId()).isEqualTo(collectionId);
@@ -340,14 +329,14 @@ public class DashboardHandlingIT extends AbstractIT {
     final String newCollectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
+    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", newCollectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
-    DashboardDefinitionDto newDashboard = dashboardClient.getDashboard(copyId.getId());
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto newDashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(newDashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(newDashboard.getCollectionId()).isEqualTo(newCollectionId);
     assertThat(oldDashboard.getCollectionId()).isEqualTo(oldCollectionId);
@@ -374,7 +363,7 @@ public class DashboardHandlingIT extends AbstractIT {
     reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
 
-    final DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setReports(Collections.singletonList(reportLocationDto));
     dashboard.setId(shouldBeIgnoredString);
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
@@ -385,7 +374,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // when
     dashboardClient.updateDashboard(id, dashboard);
-    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
+    DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(updatedDashboard.getReports()).hasSize(1);
@@ -467,7 +456,7 @@ public class DashboardHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     // when
@@ -481,11 +470,11 @@ public class DashboardHandlingIT extends AbstractIT {
   public void doNotUpdateNullFieldsInDashboard() {
     // given
     String id = addEmptyPrivateDashboard();
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
 
     // when
     dashboardClient.updateDashboard(id, dashboard);
-    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
+    DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(updatedDashboard.getId()).isEqualTo(id);
@@ -505,7 +494,7 @@ public class DashboardHandlingIT extends AbstractIT {
     ReportLocationDto reportToBeDeletedReportLocationDto = new ReportLocationDto();
     reportToBeDeletedReportLocationDto.setId(reportIdToDelete);
     reportToBeDeletedReportLocationDto.setConfiguration("testConfiguration");
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setReports(Collections.singletonList(reportToBeDeletedReportLocationDto));
     dashboardClient.updateDashboard(dashboardId, dashboard);
 
@@ -513,7 +502,7 @@ public class DashboardHandlingIT extends AbstractIT {
     deleteReport(reportIdToDelete);
 
     // then
-    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(dashboardId);
     updatedDashboard.getReports().forEach(
       reportLocationDto -> assertThat(reportLocationDto.getId()).isNotEqualTo(reportIdToDelete));
   }
@@ -550,7 +539,7 @@ public class DashboardHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateDashboardRequest(
         dashboardId,
-        new DashboardDefinitionDto(Collections.singletonList(reportLocationDto))
+        new DashboardDefinitionRestDto(Collections.singletonList(reportLocationDto))
       )
       .execute();
   }
@@ -562,7 +551,7 @@ public class DashboardHandlingIT extends AbstractIT {
     List<String> storedDashboards = new ArrayList<>();
     for (SearchHit searchHitFields : idsResp.getHits()) {
       storedDashboards.add(elasticSearchIntegrationTestExtension.getObjectMapper()
-                             .readValue(searchHitFields.getSourceAsString(), DashboardDefinitionDto.class).getName());
+                             .readValue(searchHitFields.getSourceAsString(), DashboardDefinitionRestDto.class).getName());
     }
     return storedDashboards.contains(dashboardName);
   }

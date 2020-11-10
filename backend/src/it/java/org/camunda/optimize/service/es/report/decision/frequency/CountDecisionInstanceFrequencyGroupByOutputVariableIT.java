@@ -8,12 +8,11 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -40,8 +39,8 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
@@ -352,6 +351,47 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(resultData)
       .extracting(MapResultEntryDto::getKey)
       .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
+  }
+
+  @Test
+  public void reportEvaluationMultiBucket_numberVariable_notTooManyAutomaticBuckets() {
+    // given
+    // given
+    final String outputVarName = "outputVarName";
+    final String inputVarName = "inputVarName";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
+      outputVarName,
+      inputVarName,
+      "-",
+      DecisionTypeRef.DOUBLE
+    );
+
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, 9100000000000000000.)
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, -9200000000000000000.)
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto,
+      decisionDefinitionDto.getVersionAsString(),
+      outputVarName,
+      null,
+      VariableType.DOUBLE
+    ).getResult().getData();
+
+    // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
+    // (a precaution to avoid too many buckets for distributed reports)
+    assertThat(resultData)
+      .isNotNull()
+      .isNotEmpty()
+      .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
   }
 
   @Test
@@ -880,8 +920,8 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
-  public void dateVariableGroupByWorksWithAllStaticUnits(final GroupByDateUnit unit) {
+  @MethodSource("staticAggregateByDateUnits")
+  public void dateVariableGroupByWorksWithAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final int numberOfInstances = 3;
     final String outputClauseId = "outputClauseId";
@@ -947,11 +987,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
-    Assertions.assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -983,11 +1023,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
-    Assertions.assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
@@ -1140,7 +1180,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit unit) {
+    final AggregateByDateUnit unit) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto,
       decisionDefinitionVersion,
@@ -1167,7 +1207,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableId,
       variableName,
       variableType,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       baseline,
       numberVariableBucketSize
     );
@@ -1179,7 +1219,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit unit,
+    final AggregateByDateUnit unit,
     final Double baseline,
     final Double numberVariableBucketSize) {
     DecisionReportDataDto reportData = createReportDataDto(

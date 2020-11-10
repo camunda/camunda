@@ -10,11 +10,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,6 +30,8 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
 
   private boolean autogenerate = false;
 
+  private static final String DEFAULT_PROCESS_NAME = "New Process";
+
   @Builder(builderMethodName = "eventProcessMappingCreateBuilder")
   public EventProcessMappingCreateRequestDto(String name,
                                              String xml,
@@ -32,6 +40,18 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
                                              boolean autogenerate) {
     super(name, xml, mappings, eventSources);
     this.autogenerate = autogenerate;
+  }
+
+  public static EventProcessMappingDto to(final String userId,
+                                          final EventProcessMappingCreateRequestDto createRequestDto) {
+    return EventProcessMappingDto.builder()
+      .name(Optional.ofNullable(createRequestDto.getName()).orElse(DEFAULT_PROCESS_NAME))
+      .xml(createRequestDto.getXml())
+      .mappings(createRequestDto.getMappings())
+      .lastModifier(userId)
+      .eventSources(createRequestDto.getEventSources())
+      .roles(Collections.singletonList(new EventProcessRoleRequestDto<>(new IdentityDto(userId, IdentityType.USER))))
+      .build();
   }
 
 }

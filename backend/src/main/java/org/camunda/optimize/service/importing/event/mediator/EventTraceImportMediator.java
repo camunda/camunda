@@ -6,10 +6,11 @@
 package org.camunda.optimize.service.importing.event.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -25,7 +26,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EventTraceImportMediator
-  extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
+  extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventResponseDto> {
 
   private final EventFetcherService eventService;
   private final ConfigurationService configurationService;
@@ -43,12 +44,12 @@ public class EventTraceImportMediator
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final EventDto eventDto) {
+  protected OffsetDateTime getTimestamp(final EventResponseDto eventDto) {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(eventDto.getIngestionTimestamp()), ZoneId.systemDefault());
   }
 
   @Override
-  protected List<EventDto> getEntitiesNextPage() {
+  protected List<EventResponseDto> getEntitiesNextPage() {
     return eventService.getEventsIngestedAfter(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli(),
       getMaxPageSize()
@@ -56,7 +57,7 @@ public class EventTraceImportMediator
   }
 
   @Override
-  protected List<EventDto> getEntitiesLastTimestamp() {
+  protected List<EventResponseDto> getEntitiesLastTimestamp() {
     return eventService.getEventsIngestedAt(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
     );
@@ -65,6 +66,11 @@ public class EventTraceImportMediator
   @Override
   public int getMaxPageSize() {
     return configurationService.getEventImportConfiguration().getMaxPageSize();
+  }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
   }
 
 }

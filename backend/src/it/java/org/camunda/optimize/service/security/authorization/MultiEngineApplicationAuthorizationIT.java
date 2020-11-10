@@ -7,18 +7,14 @@ package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.mockserver.model.HttpError;
 
 import javax.ws.rs.core.Response;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
@@ -39,14 +35,14 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity, is(notNullValue()));
+    assertThat(responseEntity).isNotNull();
 
     response = embeddedOptimizeExtension.authenticateUserRequest("gonzo", "gonzo");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -59,7 +55,7 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -76,8 +72,8 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     Response response2 = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response1.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(response2.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response1.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(response2.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -91,9 +87,9 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrongPassword");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity, containsString(INVALID_CREDENTIALS_ERROR_MESSAGE));
+    assertThat(responseEntity).contains(INVALID_CREDENTIALS_ERROR_MESSAGE);
   }
 
   @Test
@@ -112,7 +108,7 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), CoreMatchers.is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
 }

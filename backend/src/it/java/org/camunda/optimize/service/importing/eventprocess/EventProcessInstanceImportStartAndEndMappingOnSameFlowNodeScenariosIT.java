@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -133,7 +133,8 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
@@ -145,7 +146,8 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, FOURTH_EVENT_DATETIME)
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
-              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
               .extracting(
                 FlowNodeInstanceDto::getId,
                 FlowNodeInstanceDto::getActivityId,

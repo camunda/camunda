@@ -6,25 +6,18 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import UsersModalWithErrorHandling from './UsersModal';
 
-import {updateUsers, getUser} from './service';
+import {UserTypeahead} from 'components';
 
-const UsersModal = UsersModalWithErrorHandling.WrappedComponent;
+import {UsersModal} from './UsersModal';
+import {updateUsers} from './service';
 
 jest.mock('./service', () => ({
   updateUsers: jest.fn(),
-  getUser: jest.fn().mockReturnValue({id: 'USER:test', type: 'user', name: 'Test'}),
-  getUsers: jest.fn().mockReturnValue([
-    {
-      id: 'USER:kermit',
-      identity: {
-        id: 'kermit',
-        type: 'user', // or group
-      },
-    },
-  ]),
+  getUsers: jest.fn().mockReturnValue([]),
 }));
+
+beforeEach(() => updateUsers.mockClear());
 
 const props = {
   id: 'processId',
@@ -32,60 +25,25 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-it('should add user/group to the list', () => {
-  const node = shallow(<UsersModal {...props} />);
-
-  expect(node.find('.confirm').props('disabled')).toBeTruthy();
-
-  node.find('UserTypeahead').prop('onChange')({
-    id: 'sales',
-    type: 'group',
-    name: 'Sales',
-    memberCount: '2',
-  });
-
-  node.find('.confirm').simulate('click');
-
-  expect(node.find('EntityList').props('data').data).toMatchSnapshot();
-});
-
 it('should disable the save button if the user list is empty', () => {
   const node = shallow(<UsersModal {...props} />);
 
-  node.find('EntityList').props('data').data[0].actions[0].action();
-
-  expect(node.find('EntityList').props('data').data.length).toBe(0);
+  expect(node.find(UserTypeahead).prop('users').length).toBe(0);
   expect(node.find('[primary]')).toBeDisabled();
 });
 
-it('should show an error when adding already existing user/group', () => {
+it('should update the list of users based on the UserTypeahead', () => {
   const node = shallow(<UsersModal {...props} />);
-  node.find('UserTypeahead').prop('onChange')({
-    id: 'kermit',
-    name: 'Kermit',
-    type: 'user',
-  });
-  node.find('.confirm').simulate('click');
 
-  expect(node.find({error: true})).toExist();
-});
+  node.find(UserTypeahead).prop('onChange')([
+    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
+  ]);
 
-it('should update the event with the selected users', () => {
-  const node = shallow(<UsersModal {...props} />);
   node.find('[primary]').simulate('click');
 
-  expect(updateUsers).toHaveBeenCalled();
-  expect(props.onClose).toHaveBeenCalledWith([
+  expect(updateUsers).toHaveBeenCalledWith('processId', [
     {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
   ]);
-});
-
-it('should load non imported user before adding it to the list', () => {
-  const node = shallow(<UsersModal {...props} />);
-  node.find('UserTypeahead').prop('onChange')({
-    id: 'test',
-  });
-  node.find('.confirm').simulate('click');
-  expect(getUser).toHaveBeenCalledWith('test');
-  expect(node.find('EntityList').props('data').data[1].name).toBe('Test');
 });

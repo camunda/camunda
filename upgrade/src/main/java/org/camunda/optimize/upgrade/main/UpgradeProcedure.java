@@ -8,10 +8,14 @@ package org.camunda.optimize.upgrade.main;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
+
+import java.util.Optional;
 
 @Slf4j
 public abstract class UpgradeProcedure {
@@ -19,16 +23,19 @@ public abstract class UpgradeProcedure {
   @Getter
   protected final UpgradeExecutionDependencies upgradeDependencies;
   protected final OptimizeElasticsearchClient esClient;
-  private UpgradeValidationService upgradeValidationService;
+  protected final ElasticsearchMetadataService elasticsearchMetadataService;
+  protected final UpgradeValidationService upgradeValidationService;
 
   public UpgradeProcedure() {
-    this(UpgradeUtil.createUpgradeDependencies());
+    this(UpgradeUtil.createUpgradeDependencies(), new UpgradeValidationService());
   }
 
-  public UpgradeProcedure(UpgradeExecutionDependencies upgradeDependencies) {
+  public UpgradeProcedure(final UpgradeExecutionDependencies upgradeDependencies,
+                          final UpgradeValidationService upgradeValidationService) {
     this.upgradeDependencies = upgradeDependencies;
     this.esClient = upgradeDependencies.getEsClient();
-    this.upgradeValidationService = new UpgradeValidationService(upgradeDependencies.getMetadataService(), esClient);
+    this.elasticsearchMetadataService = upgradeDependencies.getMetadataService();
+    this.upgradeValidationService = upgradeValidationService;
   }
 
   public abstract String getInitialVersion();
@@ -36,25 +43,33 @@ public abstract class UpgradeProcedure {
   public abstract String getTargetVersion();
 
   public void performUpgrade() {
-    validateVersions();
+    final Optional<String> optionalSchemaVersion = elasticsearchMetadataService.getSchemaVersion(esClient);
 
-    try {
-      UpgradePlan upgradePlan = buildUpgradePlan();
-      upgradePlan.execute();
-    } catch (Exception e) {
-      log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
-      System.exit(2);
+    if (optionalSchemaVersion.isPresent()) {
+      final String schemaVersion = optionalSchemaVersion.get();
+      validateVersions(schemaVersion);
+
+      if (!getTargetVersion().equals(schemaVersion)) {
+        try {
+          UpgradePlan upgradePlan = buildUpgradePlan();
+          upgradePlan.execute();
+        } catch (Exception e) {
+          log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
+          throw new UpgradeRuntimeException("Upgrade failed.", e);
+        }
+      } else {
+        log.info("Target optionalSchemaVersion is already present, no upgrade to perform.");
+      }
+    } else {
+      log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
     }
   }
 
   protected abstract UpgradePlan buildUpgradePlan();
 
-  private void validateVersions() {
+  private void validateVersions(final String schemaVersion) {
     upgradeValidationService.validateESVersion(esClient, getTargetVersion());
-    upgradeValidationService.validateSchemaVersions(getInitialVersion(), getTargetVersion());
+    upgradeValidationService.validateSchemaVersions(schemaVersion, getInitialVersion(), getTargetVersion());
   }
 
-  void setUpgradeValidationService(final UpgradeValidationService upgradeValidationService) {
-    this.upgradeValidationService = upgradeValidationService;
-  }
 }

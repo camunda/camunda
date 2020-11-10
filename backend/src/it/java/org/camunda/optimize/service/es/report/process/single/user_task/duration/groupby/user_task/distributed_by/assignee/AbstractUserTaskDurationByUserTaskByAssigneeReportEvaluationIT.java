@@ -1005,7 +1005,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     );
     assertThat(
       "Distributed by should be ASSIGNEE.",
-      resultReportDataDto.getConfiguration().getDistributedBy().getType(),
+      resultReportDataDto.getDistributedBy().getType(),
       is(DistributedByType.ASSIGNEE)
     );
   }

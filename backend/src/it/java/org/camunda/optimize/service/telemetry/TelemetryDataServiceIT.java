@@ -5,16 +5,20 @@
  */
 package org.camunda.optimize.service.telemetry;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
+import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
+import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
@@ -24,17 +28,26 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.licensecheck.LicenseType.OPTIMIZE;
+import static org.camunda.bpm.licensecheck.LicenseType.UNIFIED;
+import static org.camunda.optimize.service.telemetry.TelemetryDataService.CAMUNDA_BPM_FEATURE;
+import static org.camunda.optimize.service.telemetry.TelemetryDataService.CAWEMO_FEATURE;
+import static org.camunda.optimize.service.telemetry.TelemetryDataService.FEATURE_NAMES;
 import static org.camunda.optimize.service.telemetry.TelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
+import static org.camunda.optimize.service.telemetry.TelemetryDataService.OPTIMIZE_FEATURE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 
-public class TelemetryDataServiceIT extends AbstractIT {
+public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
   public void retrieveTelemetryData() {
@@ -46,7 +59,7 @@ public class TelemetryDataServiceIT extends AbstractIT {
     final Optional<MetadataDto> metadata = getMetadata();
     assertThat(metadata).isPresent();
 
-    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetryWithLicenseKey(
       elasticSearchIntegrationTestExtension.getEsVersion(),
       metadata.get().getInstallationId(),
       getLicense()
@@ -55,7 +68,19 @@ public class TelemetryDataServiceIT extends AbstractIT {
   }
 
   @Test
-  public void retrieveTelemetryData_missingMetadata_doesNotFail() {
+  public void retrieveTelemetryDataForTwoEngines() {
+    addSecondEngineToConfiguration();
+    // when
+    final TelemetryDataDto telemetryData =
+      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+
+    // then
+    assertThat(telemetryData.getProduct().getInternals().getEngineInstallationIds())
+      .containsExactly(INFORMATION_UNAVAILABLE_STRING, INFORMATION_UNAVAILABLE_STRING);
+  }
+
+  @Test
+  public void retrieveTelemetryData_missingMetadata_returnsUnavailableString() {
     // given
     removeMetadata();
 
@@ -65,12 +90,7 @@ public class TelemetryDataServiceIT extends AbstractIT {
 
     // then
     assertThat(getMetadata()).isNotPresent();
-    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
-      elasticSearchIntegrationTestExtension.getEsVersion(),
-      INFORMATION_UNAVAILABLE_STRING,
-      getLicense()
-    );
-    assertThat(telemetryData).isEqualTo(expectedTelemetry);
+    assertThat(telemetryData.getInstallation()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
   }
 
   @Test
@@ -91,15 +111,9 @@ public class TelemetryDataServiceIT extends AbstractIT {
     // then
     final Optional<MetadataDto> metadata = getMetadata();
     assertThat(metadata).isPresent();
-
-    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
-      INFORMATION_UNAVAILABLE_STRING,
-      metadata.get().getInstallationId(),
-      getLicense()
-    );
-
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(telemetryData).isEqualTo(expectedTelemetry);
+    assertThat(telemetryData.getProduct().getInternals().getDatabase().getVersion())
+      .isEqualTo(INFORMATION_UNAVAILABLE_STRING);
   }
 
   @Test
@@ -117,14 +131,84 @@ public class TelemetryDataServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
 
     // then
-    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
-      elasticSearchIntegrationTestExtension.getEsVersion(),
-      INFORMATION_UNAVAILABLE_STRING,
-      getLicense()
-    );
-
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(telemetryData).isEqualTo(expectedTelemetry);
+    assertThat(telemetryData.getInstallation()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
+  }
+
+  @Test
+  public void retrieveTelemetryData_legacyLicenseKey() {
+    // given
+    final String license = FileReaderUtil.readFile("/license/TestLegacyLicense_Valid.txt");
+    storeLicense(license);
+
+    // when
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
+
+    // then
+    assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("schrottis inn");
+    assertThat(telemetryLicenseKey.getType()).isEqualTo(OPTIMIZE.name());
+    assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo("9999-01-01");
+    assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
+    assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
+    assertThat(telemetryLicenseKey.getFeatures())
+      .containsExactlyInAnyOrderEntriesOf(
+        ImmutableMap.of(
+          OPTIMIZE_FEATURE, "true",
+          CAMUNDA_BPM_FEATURE, "false",
+          CAWEMO_FEATURE, "false"
+        )
+      );
+    assertThat(telemetryLicenseKey.getRaw()).isEqualTo("schrottis inn;9999-01-01");
+  }
+
+  @Test
+  public void retrieveTelemetryData_unifiedLicenseKey_unlimited() {
+    // given
+    final String license = FileReaderUtil.readFile("/license/ValidUnifiedOptimizeLicense.txt");
+    storeLicense(license);
+
+    // when
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
+
+    // then
+    assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("Testaccount Camunda");
+    assertThat(telemetryLicenseKey.getType()).isEqualTo(UNIFIED.name());
+    assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
+    assertThat(telemetryLicenseKey.isUnlimited()).isTrue();
+    assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
+    assertThat(telemetryLicenseKey.getFeatures())
+      .extractingByKeys(OPTIMIZE_FEATURE, CAWEMO_FEATURE, CAMUNDA_BPM_FEATURE)
+      .containsOnly("true");
+    assertThat(telemetryLicenseKey.getRaw())
+      .isEqualTo(
+        "customer = Testaccount Camunda;expiryDate = unlimited;camundaBPM = true;optimize = true;cawemo = true;");
+  }
+
+  @Test
+  public void retrieveTelemetryData_unifiedLicenseKey_limited() {
+    // given
+    final String license = FileReaderUtil.readFile("/license/TestUnifiedLicense_LimitedWithOptimize.txt");
+    storeLicense(license);
+
+    // when
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
+
+    // then
+    assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("license generator test");
+    assertThat(telemetryLicenseKey.getType()).isEqualTo(UNIFIED.name());
+    assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo("9999-01-01");
+    assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
+    assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
+    assertThat(telemetryLicenseKey.getFeatures())
+      .containsExactlyInAnyOrderEntriesOf(
+        ImmutableMap.of(
+          OPTIMIZE_FEATURE, "true",
+          CAMUNDA_BPM_FEATURE, "false",
+          CAWEMO_FEATURE, "false"
+        )
+      );
+    assertThat(telemetryLicenseKey.getRaw())
+      .isEqualTo("customer = license generator test;expiryDate = 9999-01-01;optimize = true;");
   }
 
   @Test
@@ -134,36 +218,73 @@ public class TelemetryDataServiceIT extends AbstractIT {
       removeLicense();
 
       // when
-      final TelemetryDataDto telemetryData =
-        embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
 
       // then
-      final Optional<MetadataDto> metadata = getMetadata();
-      assertThat(metadata).isPresent();
-      final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
-        elasticSearchIntegrationTestExtension.getEsVersion(),
-        metadata.get().getInstallationId(),
-        INFORMATION_UNAVAILABLE_STRING
-      );
-
-      assertThat(telemetryData).isEqualTo(expectedTelemetry);
+      assertThat(telemetryLicenseKey.getCustomer()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
+      assertThat(telemetryLicenseKey.getType()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
+      assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
+      assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
+      assertThat(telemetryLicenseKey.getFeatures()).isEmpty();
+      assertThat(telemetryLicenseKey.getRaw()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
     } finally {
       initOptimizeLicense();
     }
   }
 
-  private TelemetryDataDto createExpectedTelemetry(final String expectedDatabaseVersion,
-                                                   final String expectedInstallationId,
-                                                   final String expectedLicenseKey) {
+  @SneakyThrows
+  private TelemetryDataDto createExpectedTelemetryWithLicenseKey(final String databaseVersion,
+                                                                 final String installationId,
+                                                                 final String licenseKey) {
+
+    final LicenseKeyImpl licenseKeyImpl = new LicenseKeyImpl(licenseKey);
+
+    Map<String, String> features = licenseKeyImpl.getProperties().entrySet().stream()
+      .filter(entry -> FEATURE_NAMES.contains(entry.getKey()))
+      .collect(toMap(
+        Map.Entry::getKey,
+        Map.Entry::getValue
+      ));
+    FEATURE_NAMES.forEach(featureName -> features.putIfAbsent(featureName, "false"));
+
+    return createExpectedTelemetry(
+      databaseVersion,
+      installationId,
+      licenseKeyImpl.getCustomerId(),
+      licenseKeyImpl.getLicenseType().name(),
+      Optional.ofNullable(licenseKeyImpl.getValidUntil()).map(Date::toString).orElse(INFORMATION_UNAVAILABLE_STRING),
+      licenseKeyImpl.isUnlimited(),
+      features,
+      licenseKeyImpl.getLicenseBody()
+    );
+  }
+
+  private TelemetryDataDto createExpectedTelemetry(final String databaseVersion,
+                                                   final String installationId,
+                                                   final String customerName,
+                                                   final String type,
+                                                   final String validUntil,
+                                                   final Boolean unlimited,
+                                                   final Map<String, String> features,
+                                                   final String licenseKeyRaw) {
     final DatabaseDto databaseDto = DatabaseDto.builder()
-      .version(expectedDatabaseVersion)
+      .version(databaseVersion)
       .vendor("elasticsearch")
       .build();
 
+    final LicenseKeyDto licenseKeyDto = LicenseKeyDto.builder()
+      .customer(customerName)
+      .type(type)
+      .validUntil(validUntil)
+      .unlimited(unlimited)
+      .features(features)
+      .raw(licenseKeyRaw)
+      .build();
+
     final InternalsDto internalsDto = InternalsDto.builder()
-      .engineInstallationIds(new ArrayList<>()) // adjust once engine installation ID retrieval is implemented
+      .engineInstallationIds(Collections.singletonList(INFORMATION_UNAVAILABLE_STRING))
       .database(databaseDto)
-      .licenseKey(expectedLicenseKey)
+      .licenseKey(licenseKeyDto)
       .build();
 
     final ProductDto productDto = ProductDto.builder()
@@ -171,7 +292,7 @@ public class TelemetryDataServiceIT extends AbstractIT {
       .build();
 
     return TelemetryDataDto.builder()
-      .installation(expectedInstallationId)
+      .installation(installationId)
       .product(productDto)
       .build();
   }
@@ -183,6 +304,15 @@ public class TelemetryDataServiceIT extends AbstractIT {
       .setRefreshPolicy(IMMEDIATE);
 
     elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+  }
+
+  private LicenseKeyDto getTelemetryLicenseKey() {
+    return embeddedOptimizeExtension.getApplicationContext()
+      .getBean(TelemetryDataService.class)
+      .getTelemetryData()
+      .getProduct()
+      .getInternals()
+      .getLicenseKey();
   }
 
   private Optional<MetadataDto> getMetadata() {
@@ -198,6 +328,10 @@ public class TelemetryDataServiceIT extends AbstractIT {
   @SneakyThrows
   private void initOptimizeLicense() {
     embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).init();
+  }
+
+  private void storeLicense(final String licenseString) {
+    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).storeLicense(licenseString);
   }
 
   private String getLicense() {

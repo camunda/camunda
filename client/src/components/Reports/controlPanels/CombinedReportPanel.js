@@ -6,14 +6,16 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-
-import {loadReports, getCollection} from 'services';
-import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
-import {Configuration} from './Configuration';
 import equal from 'deep-equal';
 
-import './CombinedReportPanel.scss';
+import {loadReports, getCollection} from 'services';
+import {Popover, ColorPicker} from 'components';
 import {t} from 'translation';
+
+import {Configuration} from './Configuration';
+import {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';
+
+import './CombinedReportPanel.scss';
 
 export default withRouter(
   class CombinedReportPanel extends React.Component {
@@ -36,7 +38,7 @@ export default withRouter(
           !report.combined &&
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
-          report.data.configuration.distributedBy.type === 'none' &&
+          report.data.distributedBy.type === 'none' &&
           report.data.view.property !== 'rawData'
       );
 
@@ -161,7 +163,7 @@ export default withRouter(
     };
 
     checkSameConfiguration = ({groupBy, configuration}, data) => {
-      if (groupBy?.type === 'variable') {
+      if (groupBy?.type.toLowerCase().includes('variable')) {
         if (groupBy.value?.type === 'Date') {
           return (
             configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit

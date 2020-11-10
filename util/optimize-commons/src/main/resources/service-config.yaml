@@ -103,7 +103,7 @@ engines:
       # of the user and password.
       # Also note, when enabled, it is required that the user has
       # * READ & READ_HISTORY permission on the Process and Decision Definition resources
-      # * READ permission on the Authorization, Group, User & Tenant resources
+      # * READ permission on the Authorization, Group, User, Deployment & Tenant resources
       # to enable users to log in and Optimize to import the engine data.
       enabled: false
       # When basic authentication is enabled, this password is used to
@@ -137,6 +137,9 @@ import:
   data:
     activity-instance:
       # Determines the page size for historic activity instance fetching.
+      maxPageSize: 10000
+    incident:
+      # Determines the page size for historic incident fetching.
       maxPageSize: 10000
     process-definition-xml:
       # Determines the page size for process definition xml model
@@ -418,7 +421,7 @@ historyCleanup:
 
 locales:
   # all locales available
-  # Note: for others than the default there must be a <localeCode>.json file available under ./environment/localization.
+  # Note: for others than the default there must be a <localeCode>.json file available under ./config/localization.
   availableLocales: ['en', 'de']
   # the fallback locale is used if there is a locale requested that is not available in availableLocales
   fallbackLocale: 'en'
@@ -429,7 +432,7 @@ ui:
     textColor: 'dark'
     # Path to the logo that is displayed in the header of Optimize.
     # Path can be:
-    # * relative: starting from the environment folder you can provide a relative path.
+    # * relative: starting from the config folder you can provide a relative path.
     # * absolute: full path in the file system.
     #
     # Supported image formats can be found here:
@@ -437,9 +440,14 @@ ui:
     pathToLogoIcon: 'logo/camunda_icon.svg'
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
+  # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
+  logoutHidden: false
 
 eventBasedProcess:
+  # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
   authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
+  # A list of groupIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
+  authorizedGroupIds: []
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
@@ -469,3 +477,23 @@ telemetry:
   reportingIntervalInHours: 24
   # Telemetry endpoint to send data to (production environment)
   telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
+
+# Configuration of application internal in-memory caches
+caches:
+  # This cache is used to hold the list of available tenants.
+  # It helps to optimize the performance for reads on definitions, reports and collections.
+  tenants:
+    # the time a read result will be cached
+    defaultTtlMillis: 10000
+  # This cache is used to cache the list of engines a particular definition is available on by definition key.
+  # It helps to optimize the performance for listings of reports, collection data sources and collection roles.
+  definitionEngines:
+    maxSize: 1000
+    # the time a read result will be cached
+    defaultTtlMillis: 10000
+  # This cache is used to cache the roles/permissions of an event based process by event process id.
+  # It helps to optimize the performance of listing reports.
+  eventProcessRoles:
+    maxSize: 100
+    # the time a read result will be cached
+    defaultTtlMillis: 10000

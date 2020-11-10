@@ -10,7 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -44,19 +44,18 @@ import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.END_LOOP;
+import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
-
-  private static final String START_LOOP = "mergeExclusiveGateway";
-  private static final String END_LOOP = "splittingGateway";
 
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
 
@@ -66,7 +65,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
   @Test
   public void reportEvaluationForOneProcess() {
-
     // given
     OffsetDateTime procInstReferenceDate = OffsetDateTime.now();
     OffsetDateTime activityStartDate = OffsetDateTime.now();
@@ -90,7 +88,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
 
@@ -138,7 +136,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     String reportId = createNewReport(reportDataDto);
@@ -178,7 +176,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setProcessDefinitionVersion(procDefDto.getVersionAsString())
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -210,7 +208,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setProcessDefinitionVersion(procDefDto.getVersionAsString())
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
 
@@ -240,7 +238,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -281,7 +279,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -311,7 +309,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_LOOP)
       .setEndFlowNodeId(END_LOOP)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -344,7 +342,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId("foo")
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -374,7 +372,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId("foo")
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -394,7 +392,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -435,7 +433,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -471,7 +469,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .build();
 
     reportData.setTenantIds(selectedTenants);
@@ -502,7 +500,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setFilter(createVariableFilter("true"))
@@ -559,7 +557,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setStartFlowNodeId(START_EVENT)
@@ -604,7 +602,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setStartFlowNodeId(START_EVENT)
@@ -641,7 +639,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setStartFlowNodeId(START_EVENT)
@@ -659,7 +657,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       // expect ascending order
       .isSortedAccordingTo(Comparator.naturalOrder());
   }
-
 
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
@@ -696,7 +693,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
       final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-        .setDateInterval(GroupByDateUnit.DAY)
+        .setGroupByDateInterval(AggregateByDateUnit.DAY)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessDefinitionVersion(processDefinitionVersion)
         .setStartFlowNodeId(START_EVENT)
@@ -739,7 +736,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(procDefDto.getKey())
       .setProcessDefinitionVersion(procDefDto.getVersionAsString())
       .setStartFlowNodeId(START_EVENT)
@@ -766,8 +763,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
-  public void groupedByStaticDateUnit(final GroupByDateUnit unit) {
+  @MethodSource("staticAggregateByDateUnits")
+  public void groupedByStaticDateUnit(final AggregateByDateUnit unit) {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
@@ -778,7 +775,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(unit)
+      .setGroupByDateInterval(unit)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setStartFlowNodeId(START_EVENT)
@@ -838,33 +835,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway(START_LOOP)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .exclusiveGateway(END_LOOP)
-        .condition("Take another round", "${!anotherRound}")
-      .endEvent("endEvent")
-    .moveToLastGateway()
-      .condition("End process", "${anotherRound}")
-      .serviceTask("serviceTask")
-        .camundaExpression("${true}")
-        .camundaInputParameter("anotherRound", "${anotherRound}")
-        .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .scriptTask("scriptTask")
-        .scriptFormat("groovy")
-        .scriptText("sleep(10)")
-      .connectTo("mergeExclusiveGateway")
-    .done();
-    // @formatter:on
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("anotherRound", true);
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {

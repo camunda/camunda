@@ -8,8 +8,8 @@ package org.camunda.optimize.service.events;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.importing.engine.handler.VariableUpda
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class CamundaActivityEventFetcherService implements EventFetcherService {
+public class CamundaActivityEventFetcherService implements EventFetcherService<CamundaActivityEventDto> {
 
   private final String definitionKey;
   private final EventSourceEntryDto eventSource;

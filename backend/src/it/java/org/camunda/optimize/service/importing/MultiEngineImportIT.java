@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 
 public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
@@ -149,16 +150,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   @Test
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
-    addSecondEngineToConfiguration();
-    deployAndStartProcessDefinitionForAllEngines();
-    // we need finished user tasks
-    deployAndStartUserTaskProcessForAllEngines();
-    finishAllUserTasksForAllEngines();
-    // as well as running & suspended ones
-    final List<ProcessInstanceEngineDto> processInstancesToSuspend = deployAndStartUserTaskProcessForAllEngines();
-    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(0).getId());
-    secondaryEngineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(1).getId());
-    deployAndStartDecisionDefinitionForAllEngines();
+    deployAllPossibleEngineDataForAllEngines();
+
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -172,7 +165,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
-    assertThat(searchResponse.getHits().getTotalHits().value).isEqualTo(24L);
+    assertThat(searchResponse.getHits().getTotalHits().value).isEqualTo(28L);
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
       OffsetDateTime timestamp = OffsetDateTime.parse(
@@ -181,6 +174,33 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       );
       assertThat(timestamp).isAfter(OffsetDateTime.now().minusHours(1));
     }
+  }
+
+  private void deployAllPossibleEngineDataForAllEngines() {
+    addSecondEngineToConfiguration();
+    deployAndStartProcessDefinitionForAllEngines();
+    // we need finished user tasks
+    deployAndStartUserTaskProcessForAllEngines();
+    finishAllUserTasksForAllEngines();
+    // as well as running & suspended ones
+    final List<ProcessInstanceEngineDto> processInstancesToSuspend = deployAndStartUserTaskProcessForAllEngines();
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(0).getId());
+    secondaryEngineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(1).getId());
+    deployAndStartDecisionDefinitionForAllEngines();
+
+    // add incident data
+    ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+
+    processInstanceEngineDto = secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    secondaryEngineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    secondaryEngineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    secondaryEngineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
   }
 
   private void assertProcessInstanceImportResults(final List<ProcessInstanceDto> processInstances,

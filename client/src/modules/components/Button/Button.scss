@@ -4,19 +4,26 @@
   .Button {
     color: $silver-darken-87;
     background-color: $grey-darken-33;
-    border: 1px solid $grey-darken-36;
+    border: 1px solid $grey-darken-33;
 
     &:hover,
     &:active,
     &.active {
       color: $silver-darken-87;
       background-color: $grey-darken-23;
-      border: 1px solid $grey-darken-33;
+      border: 1px solid $grey-darken-23;
+    }
+
+    &:disabled,
+    &[disabled] {
+      color: $grey-lighten-56;
+      border-color: $silver-darken-87;
+      background-color: $silver-base-97;
     }
 
     &.main {
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
-      border: 1px solid $grey-darken-36;
+      border: 1px solid $grey-darken-33;
       background-color: $grey-darken-33;
       color: $silver-darken-87;
 
@@ -30,7 +37,7 @@
 
       &:active,
       &.active {
-        border: 1px solid $grey-darken-33;
+        border: 1px solid $grey-darken-23;
         background-color: $grey-darken-23;
       }
 

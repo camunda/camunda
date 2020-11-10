@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .NodeFilter {
   .modalContent {
     display: flex;
@@ -9,9 +11,18 @@
       display: flex;
     }
 
-    .preview {
-      margin-bottom: 24px;
+    .note {
+      &.hidden {
+        visibility: hidden;
+      }
 
+      font-size: 13px;
+      color: $grey-lighten-56;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .preview {
       .parameterName {
         font-style: italic;
         font-weight: bold;

@@ -12,12 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
-
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_RECORD_LIMIT;
 
 @Getter
 @Setter(AccessLevel.PROTECTED)
@@ -28,10 +27,12 @@ public class ReportEvaluationInfo {
   private String reportId;
 
   private String userId;
-  private Integer customRecordLimit = DEFAULT_RECORD_LIMIT;
   private AdditionalProcessReportEvaluationFilterDto additionalFilters =
     new AdditionalProcessReportEvaluationFilterDto();
   private ZoneId timezone = ZoneId.systemDefault();
+  private PaginationDto pagination;
+  private boolean isExport;
+  private boolean isSharedReport;
 
   public void postFetchSavedReport(final ReportReader reportReader) {
     if (reportId != null) {
@@ -62,11 +63,6 @@ public class ReportEvaluationInfo {
       return this;
     }
 
-    public ReportEvaluationInfoBuilder customRecordLimit(final Integer customRecordLimit) {
-      this.reportEvaluationInfo.setCustomRecordLimit(customRecordLimit);
-      return this;
-    }
-
     public ReportEvaluationInfoBuilder additionalFilters(final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
       this.reportEvaluationInfo.setAdditionalFilters(additionalFilters);
       return this;
@@ -74,6 +70,21 @@ public class ReportEvaluationInfo {
 
     public ReportEvaluationInfoBuilder timezone(final ZoneId timezone) {
       this.reportEvaluationInfo.setTimezone(timezone);
+      return this;
+    }
+
+    public ReportEvaluationInfoBuilder pagination(final PaginationDto paginationDto) {
+      this.reportEvaluationInfo.setPagination(paginationDto);
+      return this;
+    }
+
+    public ReportEvaluationInfoBuilder isExport(final boolean isExport) {
+      this.reportEvaluationInfo.setExport(isExport);
+      return this;
+    }
+
+    public ReportEvaluationInfoBuilder isSharedReport(final boolean isSharedReport) {
+      this.reportEvaluationInfo.setSharedReport(isSharedReport);
       return this;
     }
 

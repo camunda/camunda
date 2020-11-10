@@ -5,43 +5,33 @@
  */
 package org.camunda.optimize.upgrade.service;
 
+import lombok.AllArgsConstructor;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
+@AllArgsConstructor
+@Slf4j
 public class UpgradeValidationService {
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
-  private static final Logger logger = LoggerFactory.getLogger(UpgradeValidationService.class);
 
-  private ElasticsearchMetadataService metadataService;
-  private OptimizeElasticsearchClient esClient;
-
-  public UpgradeValidationService(final ElasticsearchMetadataService metadataService,
-                                  final OptimizeElasticsearchClient esClient) {
-    this.metadataService = metadataService;
-    this.esClient = esClient;
-  }
-
-  public void validateSchemaVersions(final String fromVersion, final String toVersion) {
-    final String schemaVersion = metadataService.readMetadata(esClient)
-      .orElseThrow(() -> new UpgradeRuntimeException("No Optimize Metadata present."))
-      .getSchemaVersion();
-
-    if (!fromVersion.equals(schemaVersion)) {
+  public void validateSchemaVersions(@NonNull final String schemaVersion,
+                                     @NonNull final String fromVersion,
+                                     @NonNull final String toVersion) {
+    if (!Objects.equals(fromVersion, schemaVersion) && !Objects.equals(toVersion, schemaVersion)) {
       throw new UpgradeRuntimeException(
-        "Schema version saved in Metadata [" + schemaVersion + "] does not match required [" + fromVersion + "]"
+        String.format(
+          "Schema version saved in Metadata [%s] must be one of [%s, %s]",
+          schemaVersion, fromVersion, toVersion
+        )
       );
-    }
-
-    if (toVersion == null || toVersion.isEmpty()) {
-      throw new UpgradeRuntimeException("New schema version is not allowed to be empty or null!");
     }
   }
 
@@ -64,12 +54,12 @@ public class UpgradeValidationService {
         configAvailable = true;
       }
     } catch (IOException e) {
-      logger.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
+      log.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 
     if (!configAvailable) {
       throw new UpgradeRuntimeException(
-        "Couldn't read " + ENVIRONMENT_CONFIG_FILE + " from environment folder in Optimize root!"
+        "Couldn't read " + ENVIRONMENT_CONFIG_FILE + " from config folder in Optimize root!"
       );
     }
   }

@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class IdentityServiceIT extends AbstractIT {
 
@@ -32,8 +31,7 @@ public class IdentityServiceIT extends AbstractIT {
     identityService.addIdentity(new UserDto("otherId", "Frodo", "Baggins", "frodo.baggins@camunda.com"));
 
     final Optional<UserDto> retrievedUserDto = identityService.getUserById("testUser");
-    assertThat(retrievedUserDto.isPresent(), is(true));
-    assertThat(retrievedUserDto.get(), is(userIdentity));
+    assertThat(retrievedUserDto).isPresent().get().isEqualTo(userIdentity);
   }
 
   @Test
@@ -43,7 +41,6 @@ public class IdentityServiceIT extends AbstractIT {
     identityService.addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     final Optional<GroupDto> retrievedUserDto = identityService.getGroupById("hobbits");
-    assertThat(retrievedUserDto.isPresent(), is(true));
-    assertThat(retrievedUserDto.get(), is(groupIdentity));
+    assertThat(retrievedUserDto).isPresent().get().isEqualTo(groupIdentity);
   }
 }

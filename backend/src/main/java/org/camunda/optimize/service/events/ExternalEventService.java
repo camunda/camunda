@@ -7,7 +7,7 @@ package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.service.es.reader.ExternalEventReader;
 import org.camunda.optimize.service.es.writer.ExternalEventWriter;
 import org.springframework.stereotype.Component;
@@ -18,22 +18,22 @@ import java.util.Optional;
 
 @AllArgsConstructor
 @Component
-public class ExternalEventService implements EventFetcherService {
+public class ExternalEventService implements EventFetcherService<EventResponseDto> {
 
   private final ExternalEventReader externalEventReader;
   private final ExternalEventWriter eventWriter;
 
-  public void saveEventBatch(final List<EventDto> eventDtos) {
+  public void saveEventBatch(final List<EventResponseDto> eventDtos) {
     eventWriter.upsertEvents(eventDtos);
   }
 
   @Override
-  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+  public List<EventResponseDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
     return externalEventReader.getEventsIngestedAfter(ingestTimestamp, limit);
   }
 
   @Override
-  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+  public List<EventResponseDto> getEventsIngestedAt(final Long ingestTimestamp) {
     return externalEventReader.getEventsIngestedAt(ingestTimestamp);
   }
 

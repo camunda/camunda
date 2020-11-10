@@ -10,19 +10,16 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,9 +28,6 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
@@ -41,11 +35,6 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   private static final String END_EVENT = "endEvent";
   private static final String VARIABLE_NAME = "IntegerVar";
   private static final String DEFINITION_KEY = "aProcess";
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void processReportAcrossAllVersions() {
@@ -60,11 +49,12 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(3L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(3L);
     }
   }
 
@@ -83,12 +73,12 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result =
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
         reportClient.evaluateReport(
-        report);
+          report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(5L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(5L);
     }
   }
 
@@ -106,11 +96,12 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(1L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(1L);
     }
 
     // when
@@ -120,11 +111,12 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
-      assertThat(result.getResult().getInstanceCount(), is(4L));
+      assertThat(result.getResult().getInstanceCount()).isEqualTo(4L);
     }
   }
 
@@ -144,7 +136,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
       ProcessReportResultDto result = reportClient.evaluateReport(report).getResult();
 
       // then
-      assertThat(result.getInstanceCount()).isEqualTo(0);
+      assertThat(result.getInstanceCount()).isZero();
     }
   }
 
@@ -158,7 +150,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
         .setProcessDefinitionVersions(definitionVersions)
         .setVariableName(VARIABLE_NAME)
         .setVariableType(VariableType.INTEGER)
-        .setDateInterval(GroupByDateUnit.DAY)
+        .setGroupByDateInterval(AggregateByDateUnit.DAY)
+        .setDistributeByDateInterval(AggregateByDateUnit.DAY)
         .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
         .setStartFlowNodeId(START_EVENT)
         .setEndFlowNodeId(END_EVENT)
@@ -180,6 +173,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(DEFINITION_KEY));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
+      DEFINITION_KEY));
   }
 }

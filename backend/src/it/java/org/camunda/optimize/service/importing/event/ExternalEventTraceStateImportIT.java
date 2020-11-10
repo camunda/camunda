@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.junit.jupiter.api.Test;
@@ -45,11 +45,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
   @Test
   public void processSingleBatchOfEventsNewUniqueTraceIds() throws IOException {
     // given
-    CloudEventDto eventDtoTraceOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOne = createCloudEventDtoWithProperties(
       "traceOne", "eventIdOne", "backend", "ketchup", "signup-event", 100L);
-    CloudEventDto eventDtoTraceTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwo = createCloudEventDtoWithProperties(
       "traceTwo", "eventIdTwo", "backend", "mayonnaise", "register-event", 200L);
-    CloudEventDto eventDtoTraceThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceThree = createCloudEventDtoWithProperties(
       "traceThree", "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
     eventClient.ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
@@ -84,13 +84,13 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
   public void processSingleBatchOfEventsIncludingSharedTraceIds() throws IOException {
     // given
     String traceId = "someTraceId";
-    CloudEventDto eventDtoOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoOne = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L
     );
-    CloudEventDto eventDtoTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTwo = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L
     );
-    CloudEventDto eventDtoThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoThree = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
     eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
@@ -121,22 +121,22 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
-    CloudEventDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdOne", "backend", "ketchup", "signup-event", 100L
     );
-    CloudEventDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdTwo", "backend", "ketchup", "signup-event", 200L
     );
-    CloudEventDto eventDtoTraceThreeEventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceThreeEventOne = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdThree", "backend", "ketchup", "signup-event", 300L
     );
-    CloudEventDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L
     );
-    CloudEventDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L
     );
-    CloudEventDto eventDtoTraceThreeEventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceThreeEventTwo = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdSix", "backend", "ketchup", "onboarded-event", 600L
     );
     eventClient.ingestEventBatch(Arrays.asList(
@@ -181,11 +181,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
-    CloudEventDto eventOneTraceOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventOneTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    CloudEventDto eventOneTraceTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventOneTraceTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdTwo", null, "ketchup", "signup-event", 200L);
-    CloudEventDto eventOneTraceThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventOneTraceThree = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdThree", null, "ketchup", "signup-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
@@ -204,11 +204,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds further trace events
-    CloudEventDto eventTwoTraceOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTwoTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L);
-    CloudEventDto eventTwoTraceTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTwoTraceTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L);
-    CloudEventDto eventThreeTraceOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventThreeTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdSix", "backend", "ketchup", "onboard-event", 600L);
     eventClient.ingestEventBatch(Arrays.asList(eventTwoTraceOne, eventTwoTraceTwo, eventThreeTraceOne));
     processEventCountAndTraces();
@@ -244,11 +244,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     throws IOException {
     // given
     String traceId = "traceId";
-    CloudEventDto eventDtoOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoOne = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
-    CloudEventDto eventDtoTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTwo = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", null, "ketchup", "register-event", 200L);
-    CloudEventDto eventDtoThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoThree = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
@@ -271,7 +271,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch includes already ingested event with a new timestamp (a modification)
-    CloudEventDto eventDtoThreeModified = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoThreeModified = createCloudEventDtoWithProperties(
       traceId,
       eventDtoThree.getId(),
       eventDtoThree.getGroup().orElse(null),
@@ -306,11 +306,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
   public void processMultipleBatchesOfEventsWithSingleTraceDuplicateEventsAcrossBatches() throws IOException {
     // given
     String traceId = "traceIdOne";
-    CloudEventDto eventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventOne = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    CloudEventDto eventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTwo = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
-    CloudEventDto eventThree = createCloudEventDtoWithProperties
+    CloudEventRequestDto eventThree = createCloudEventDtoWithProperties
       (traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
 
@@ -333,7 +333,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds repeated event trace already processes
-    CloudEventDto eventTwoRepeated = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTwoRepeated = createCloudEventDtoWithProperties(
       traceId, eventTwo.getId(), eventTwo.getGroup().orElse(null), eventTwo.getSource(), eventTwo.getType(), 200L);
 
     eventClient.ingestEventBatch(Collections.singletonList(eventTwoRepeated));
@@ -360,11 +360,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     throws IOException {
     // given
     String traceId = "traceIdOne";
-    CloudEventDto eventTaskA = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskA = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    CloudEventDto eventTaskB = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskB = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
-    CloudEventDto eventTaskC = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskC = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
 
@@ -388,9 +388,9 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
     // when second batch adds the second occurrence of an event with a new event ID, reflecting a loop in the
     // BPMN model
-    CloudEventDto eventTaskD = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskD = createCloudEventDtoWithProperties(
       traceId, "eventIdFour", "backend", "ketchup", "complained-event", 400L);
-    CloudEventDto eventTaskBSecondOccurrence = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskBSecondOccurrence = createCloudEventDtoWithProperties(
       traceId, "eventIdFive", eventTaskB.getGroup().orElse(null), eventTaskB.getSource(), eventTaskB.getType(), 500L
     );
 
@@ -419,13 +419,13 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
     // when third batch adds further occurrences of events with new IDs, reflecting further loops and events beyond
     // the loop in the BPMN model
-    CloudEventDto eventTaskCSecondOccurrence = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskCSecondOccurrence = createCloudEventDtoWithProperties(
       traceId, "eventIdSix", eventTaskC.getGroup().orElse(null), eventTaskC.getSource(), eventTaskC.getType(), 600L);
-    CloudEventDto eventTaskDSecondOccurrence = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskDSecondOccurrence = createCloudEventDtoWithProperties(
       traceId, "eventIdSeven", eventTaskD.getGroup().orElse(null), eventTaskD.getSource(), eventTaskD.getType(), 700L);
-    CloudEventDto eventTaskBThirdOccurrence = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventTaskBThirdOccurrence = createCloudEventDtoWithProperties(
       traceId, "eventIdEight", eventTaskB.getGroup().orElse(null), eventTaskB.getSource(), eventTaskB.getType(), 800L);
-    CloudEventDto eventTaskE = createCloudEventDtoWithProperties
+    CloudEventRequestDto eventTaskE = createCloudEventDtoWithProperties
       (traceId, "eventIdNine", "backend", "ketchup", "helped-event", 900L);
 
     eventClient.ingestEventBatch(Arrays.asList(
@@ -468,13 +468,13 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     // given
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
-    CloudEventDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdOne", "backend", "ketchup", "first-event", 100L
     );
-    CloudEventDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdTwo", "backend", "ketchup", "second-event", 200L
     );
-    CloudEventDto eventDtoTraceOneEventThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceOneEventThree = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdThree", "backend", "ketchup", "third-event", 300L
     );
     eventClient.ingestEventBatch(Arrays.asList(
@@ -497,13 +497,13 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when events ingested with identical timestamp events for new trace
-    CloudEventDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFour", "backend", "ketchup", "first-event", 100L
     );
-    CloudEventDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFive", "backend", "ketchup", "second-event", 100L
     );
-    CloudEventDto eventDtoTraceTwoEventThree = createCloudEventDtoWithProperties(
+    CloudEventRequestDto eventDtoTraceTwoEventThree = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdSix", "backend", "ketchup", "third-event", 200L
     );
     eventClient.ingestEventBatch(Arrays.asList(
@@ -529,7 +529,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
-  private TracedEventDto mapToTracedEventDto(final CloudEventDto cloudEventDto) {
+  private TracedEventDto mapToTracedEventDto(final CloudEventRequestDto cloudEventDto) {
     return TracedEventDto.fromEventDto(mapToEventDto(cloudEventDto));
   }
 
@@ -539,12 +539,12 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
   private Long findMostRecentEventTimestamp() {
     return getAllStoredExternalEvents().stream()
-      .map(EventDto::getIngestionTimestamp)
+      .map(EventResponseDto::getIngestionTimestamp)
       .mapToLong(e -> e).max().getAsLong();
   }
 
-  private CloudEventDto createCloudEventDtoWithProperties(String traceId, String eventId, String group,
-                                                          String source, String eventName, Long timestamp) {
+  private CloudEventRequestDto createCloudEventDtoWithProperties(String traceId, String eventId, String group,
+                                                                 String source, String eventName, Long timestamp) {
     return eventClient.createCloudEventDto()
       .toBuilder()
       .id(eventId)
@@ -556,8 +556,8 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       .build();
   }
 
-  private EventDto mapToEventDto(final CloudEventDto cloudEventDto) {
-    return EventDto.builder()
+  private EventResponseDto mapToEventDto(final CloudEventRequestDto cloudEventDto) {
+    return EventResponseDto.builder()
       .id(cloudEventDto.getId())
       .eventName(cloudEventDto.getType())
       .timestamp(
@@ -572,8 +572,8 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       .build();
   }
 
-  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(CloudEventDto sourceEventDto,
-                                                                        CloudEventDto targetEventDto, long count) {
+  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(CloudEventRequestDto sourceEventDto,
+                                                                        CloudEventRequestDto targetEventDto, long count) {
     EventTypeDto sourceEvent = Optional.ofNullable(sourceEventDto)
       .map(source -> EventTypeDto.builder()
         .eventName(source.getType())

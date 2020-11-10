@@ -8,9 +8,9 @@ package org.camunda.optimize.service;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -41,9 +41,10 @@ public class UIConfigurationService implements ConfigurationReloadable {
   // cached version
   private String logoAsBase64;
 
-  public UIConfigurationDto getUIConfiguration() {
-    UIConfigurationDto uiConfigurationDto = new UIConfigurationDto();
+  public UIConfigurationResponseDto getUIConfiguration() {
+    UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setHeader(getHeaderCustomization());
+    uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
@@ -51,7 +52,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
 
-    final SettingsDto settings = settingService.getSettings();
+    final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
     uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
 

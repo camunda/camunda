@@ -72,40 +72,32 @@ public class ElasticsearchMetadataService {
     });
   }
 
-  public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
-    Optional<MetadataDto> result = Optional.empty();
+  public Optional<String> getSchemaVersion(final OptimizeElasticsearchClient esClient) {
+    return readMetadata(esClient).map(MetadataDto::getSchemaVersion);
+  }
 
+  public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
     final SearchRequest searchRequest = new SearchRequest(METADATA_INDEX_NAME);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery());
     searchRequest.source(searchSourceBuilder);
-
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
       long totalHits = searchResponse.getHits().getTotalHits().value;
       if (totalHits == 1) {
-        try {
-          MetadataDto parsed = objectMapper.readValue(
-            searchResponse.getHits().getAt(0).getSourceAsString(),
-            MetadataDto.class
-          );
-          result = Optional.ofNullable(parsed);
-        } catch (IOException e) {
-          log.error("Can't parse metadata", e);
-        }
+        MetadataDto parsed = objectMapper.readValue(
+          searchResponse.getHits().getAt(0).getSourceAsString(),
+          MetadataDto.class
+        );
+        return Optional.ofNullable(parsed);
       } else if (totalHits > 1) {
         throw new OptimizeRuntimeException("Metadata search returned [" + totalHits + "] hits");
       }
     } catch (IOException | ElasticsearchException e) {
-      log.info(
-        "Was not able to retrieve metadata index, schema might not have been initialized yet if this is the first " +
-          "startup!"
-      );
+      log.info("Was not able to retrieve metadata index!");
     }
-
-    return result;
+    return Optional.empty();
   }
 
   public void upsertMetadata(final OptimizeElasticsearchClient esClient, final String schemaVersion) {

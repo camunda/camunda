@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -492,8 +491,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListOtherTenantFirst);
 
     // then
-    Assertions.assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
-    Assertions.assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
+    assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
+    assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
   }
 
   @SneakyThrows
@@ -603,7 +602,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void evaluateReportWithExecutionStateRunning() throws SQLException {
+  public void evaluateReportWithExecutionStateRunning() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -627,20 +626,53 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
         processDefinition.getVersionAsString()
       );
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(START_EVENT).get().getValue()).isNull();
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200.));
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCompleted() throws SQLException {
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
+    changeActivityDuration(processInstanceDto, USER_TASK_1, 100.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData()).hasSize(3);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100.));
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCompleted() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);

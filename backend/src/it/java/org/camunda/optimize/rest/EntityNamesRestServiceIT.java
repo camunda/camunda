@@ -6,14 +6,11 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +18,6 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
@@ -35,7 +31,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
 
     // then
     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
@@ -53,7 +49,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
+    EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
 
     // then
     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
@@ -71,7 +67,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();
@@ -87,7 +83,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();
@@ -103,7 +99,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName()).isNull();

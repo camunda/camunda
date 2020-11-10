@@ -42,7 +42,7 @@ export default function BooleanFilter({filter, setFilter}) {
         </fieldset>
         <hr />
         <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
-          {t('common.reset')}
+          {t('common.off')}
         </Button>
       </Form>
     </Popover>

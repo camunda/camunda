@@ -15,22 +15,21 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.READ_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_AUTHORIZATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_AUTHORIZATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class BasicAuthenticationEnabledIT extends AbstractIT {
 
@@ -71,7 +70,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
 
     //then
     Integer activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
-    assertThat(activityCount, is(3));
+    assertThat(activityCount).isEqualTo(3);
   }
 
   @Test
@@ -80,7 +79,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   private void createRequiredAuthorizationsForBasicAuth() {

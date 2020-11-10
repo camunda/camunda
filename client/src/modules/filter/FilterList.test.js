@@ -127,6 +127,7 @@ it('should display nodeListPreview for flow node filter', async () => {
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode', name: 'flow node name'}],
     operator: 'in',
+    type: 'executedFlowNodes',
   });
 });
 
@@ -145,6 +146,7 @@ it('should display a flow node filter with executing nodes', () => {
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode1', name: undefined}],
     operator: undefined,
+    type: 'executingFlowNodes',
   });
 });
 

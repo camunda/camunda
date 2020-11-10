@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
@@ -38,19 +38,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleIT {
 
@@ -137,7 +134,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(identityAndReport.reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -156,7 +153,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(identityAndReport.reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -177,7 +174,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(identityAndReport.reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -198,7 +195,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(identityAndReport.reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -216,7 +213,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -233,7 +230,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = createReportInCollectionAsKermit(reportScenario, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -254,10 +251,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @ParameterizedTest
@@ -277,7 +274,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -297,10 +294,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @ParameterizedTest
@@ -318,7 +315,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -339,10 +336,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, "null", KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @ParameterizedTest
@@ -360,7 +357,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, "null", KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -374,10 +371,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -397,10 +394,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final AuthorizedReportDefinitionResponseDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @ParameterizedTest
@@ -418,10 +415,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -436,10 +433,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -456,10 +453,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response = reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -476,7 +473,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -507,7 +504,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -537,9 +534,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final AuthorizedEntityDto evaluationResultDto = response.readEntity(AuthorizedEntityDto.class);
-    assertThat(evaluationResultDto.getCurrentUserRole(), is(getExpectedResourceRoleForCollectionRole(identityAndRole)));
+    assertThat(evaluationResultDto.getCurrentUserRole()).isEqualTo(getExpectedResourceRoleForCollectionRole(
+      identityAndRole));
   }
 
   @ParameterizedTest
@@ -558,12 +556,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     final ErrorResponseDto errorResponseDto = response.readEntity(ErrorResponseDto.class);
-    assertThat(
-      errorResponseDto.getReportDefinition().getCurrentUserRole(),
-      is(getExpectedResourceRoleForCollectionRole(identityAndRole))
-    );
+    assertThat(errorResponseDto.getReportDefinition().getCurrentUserRole())
+      .isEqualTo(getExpectedResourceRoleForCollectionRole(identityAndRole));
   }
 
   @ParameterizedTest
@@ -581,7 +577,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -595,13 +591,13 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
 
     // then
-    assertThat(authorizedReports.size(), is(0));
+    assertThat(authorizedReports).isEmpty();
   }
 
   @ParameterizedTest
@@ -616,13 +612,13 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
 
     // then
-    assertThat(authorizedReports.size(), is(0));
+    assertThat(authorizedReports).isEmpty();
   }
 
   @ParameterizedTest
@@ -639,20 +635,19 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String otherReportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+    final List<AuthorizedReportDefinitionResponseDto> authorizedReports = reportClient.getAllReportsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
 
     // then only private reports are included in the results
-    assertThat(authorizedReports.size(), is(2));
+    assertThat(authorizedReports).hasSize(2);
     assertThat(
       authorizedReports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getId)
-        .collect(Collectors.toList()),
-      containsInAnyOrder(otherReportId, kermitReportId)
-    );
+        .collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(otherReportId, kermitReportId);
   }
 
   @ParameterizedTest
@@ -669,7 +664,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -688,7 +683,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -709,7 +704,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, identityAndReport.reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -729,7 +724,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, identityAndReport.reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -749,7 +744,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -767,7 +762,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = updateReportAsKermit(reportId, reportScenario);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -784,7 +779,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -803,7 +798,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -824,7 +819,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -845,7 +840,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -865,7 +860,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -883,7 +878,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -892,26 +887,26 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(RoleType.EDITOR);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
-    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
+    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
-    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
       .findFirst();
-    Optional<CollectionRoleRestDto> kermit = roles.stream()
+    Optional<CollectionRoleResponseDto> kermit = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
       .findFirst();
 
     // then
-    assertThat(testGroup.isPresent(), is(true));
-    assertThat(missPiggy.isPresent(), is(true));
-    assertThat(kermit.isPresent(), is(true));
+    assertThat(testGroup).isPresent();
+    assertThat(missPiggy).isPresent();
+    assertThat(kermit).isPresent();
 
     // if manager gets all roles, hasFullScopeAuthorizations should be boolean
-    assertThat(testGroup.get().getHasFullScopeAuthorizations(), is(false));
-    assertThat(missPiggy.get().getHasFullScopeAuthorizations(), is(false));
-    assertThat(kermit.get().getHasFullScopeAuthorizations(), is(true));
+    assertThat(testGroup.get().getHasFullScopeAuthorizations()).isFalse();
+    assertThat(missPiggy.get().getHasFullScopeAuthorizations()).isFalse();
+    assertThat(kermit.get().getHasFullScopeAuthorizations()).isTrue();
   }
 
   @ParameterizedTest(name = "Get authorizations as non manager role type {0}")
@@ -921,30 +916,30 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(kermitRoleType);
 
     // when
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRolesAsUser(
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRolesAsUser(
       collectionId,
       USER_KERMIT,
       USER_KERMIT
     );
-    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
-    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
       .findFirst();
-    Optional<CollectionRoleRestDto> kermit = roles.stream()
+    Optional<CollectionRoleResponseDto> kermit = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
       .findFirst();
 
     // then
-    assertThat(testGroup.isPresent(), is(true));
-    assertThat(missPiggy.isPresent(), is(true));
-    assertThat(kermit.isPresent(), is(true));
+    assertThat(testGroup).isPresent();
+    assertThat(missPiggy).isPresent();
+    assertThat(kermit).isPresent();
 
     // if non manager get all roles, hasFullScopeAuthorizations should be null
-    assertThat(testGroup.get().getHasFullScopeAuthorizations(), is(nullValue()));
-    assertThat(missPiggy.get().getHasFullScopeAuthorizations(), is(nullValue()));
-    assertThat(kermit.get().getHasFullScopeAuthorizations(), is(nullValue()));
+    assertThat(testGroup.get().getHasFullScopeAuthorizations()).isNull();
+    assertThat(missPiggy.get().getHasFullScopeAuthorizations()).isNull();
+    assertThat(kermit.get().getHasFullScopeAuthorizations()).isNull();
   }
 
   private String createCollectionAndAddRolesWithKermitRoleType(RoleType kermitRoleType) {
@@ -972,22 +967,22 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_GROUP);
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
 
-    final CollectionRoleDto testGroupRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto testGroupRole = new CollectionRoleRequestDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
     );
-    final CollectionRoleDto missPiggyUserRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto missPiggyUserRole = new CollectionRoleRequestDto(
       new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
       RoleType.EDITOR
     );
-    final CollectionRoleDto kermitUserRole = new CollectionRoleDto(
+    final CollectionRoleRequestDto kermitUserRole = new CollectionRoleRequestDto(
       new IdentityDto(USER_KERMIT, IdentityType.USER),
       kermitRoleType
     );
 
-    collectionClient.addRoleToCollection(collectionId, testGroupRole);
-    collectionClient.addRoleToCollection(collectionId, missPiggyUserRole);
-    collectionClient.addRoleToCollection(collectionId, kermitUserRole);
+    collectionClient.addRolesToCollection(collectionId, testGroupRole);
+    collectionClient.addRolesToCollection(collectionId, missPiggyUserRole);
+    collectionClient.addRolesToCollection(collectionId, kermitUserRole);
 
     return collectionId;
   }
@@ -1018,7 +1013,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
                                            final String user,
                                            final String password) {
     return createReportInCollectionAsUser(reportScenario, null, user, password)
-      .readEntity(IdDto.class)
+      .readEntity(IdResponseDto.class)
       .getId();
   }
 
@@ -1030,7 +1025,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   private String createReportInCollectionAsDefaultUser(final ReportScenario reportScenario,
                                                        final String collectionId) {
     return createReportInCollectionAsUser(reportScenario, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .readEntity(IdDto.class)
+      .readEntity(IdResponseDto.class)
       .getId();
   }
 
@@ -1057,9 +1052,9 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     }
   }
 
-  private AuthorizedReportDefinitionDto getReportByIdAsKermit(final String reportId) {
-    return reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
-      .readEntity(AuthorizedReportDefinitionDto.class);
+  private AuthorizedReportDefinitionResponseDto getReportByIdAsKermit(final String reportId) {
+    return reportClient.getSingleReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
+      .readEntity(AuthorizedReportDefinitionResponseDto.class);
   }
 
   private Response updateReportAsKermit(final String reportId, final ReportScenario reportScenario) {

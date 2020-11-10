@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-export default (Component) => {
+export default function withErrorHandling(Component) {
   class WithErrorHandling extends React.Component {
     constructor(props) {
       super(props);
@@ -48,4 +48,4 @@ export default (Component) => {
   WithErrorHandling.WrappedComponent = Component;
 
   return WithErrorHandling;
-};
+}

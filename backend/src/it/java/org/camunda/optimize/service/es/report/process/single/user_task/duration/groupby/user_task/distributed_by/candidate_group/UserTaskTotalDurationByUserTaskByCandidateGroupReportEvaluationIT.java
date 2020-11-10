@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -55,6 +56,7 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
                                                         final FlowNodeExecutionState executionState) {
     switch (executionState) {
       case RUNNING:
+      case CANCELED:
         // @formatter:off
         HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -93,6 +95,8 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
           .doAssert(result);
         // @formatter:on
         break;
+      default:
+        throw new OptimizeIntegrationTestException("No assertions for execution state: " + executionState);
     }
   }
 }

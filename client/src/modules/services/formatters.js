@@ -189,7 +189,11 @@ export function formatReportResult(data, result) {
   let unit;
   if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);
-  } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
+  } else if (
+    groupBy.value &&
+    groupBy.type.toLowerCase().includes('variable') &&
+    groupBy.value.type === 'Date'
+  ) {
     unit = determineUnit(data.configuration.groupByDateVariableUnit, result);
   }
 

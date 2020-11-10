@@ -89,6 +89,9 @@ export default withErrorHandling(
         processDefinitionName: {$set: name},
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
+        distributedBy: {
+          $set: {type: 'none', value: null},
+        },
         configuration: {
           tableColumns: {
             $set: {
@@ -117,6 +120,7 @@ export default withErrorHandling(
                 ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
                 : null,
           },
+          processPart: {$set: null},
         },
         filter: {
           $set: filter.filter(
@@ -124,6 +128,7 @@ export default withErrorHandling(
               ![
                 'executedFlowNodes',
                 'executingFlowNodes',
+                'canceledFlowNodes',
                 'variable',
                 'assignee',
                 'candidateGroup',

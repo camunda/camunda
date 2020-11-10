@@ -9,10 +9,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalizationServiceIT extends AbstractIT {
 
@@ -26,8 +23,8 @@ public class LocalizationServiceIT extends AbstractIT {
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {
-      assertThat(configurationException, is(notNullValue()));
-      assertThat(configurationException.getMessage(), containsString("xyz.json]"));
+      assertThat(configurationException).isNotNull();
+      assertThat(configurationException.getMessage()).contains("xyz.json]");
     }
   }
 
@@ -41,11 +38,9 @@ public class LocalizationServiceIT extends AbstractIT {
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {
-      assertThat(configurationException, is(notNullValue()));
-      assertThat(
-        configurationException.getMessage(),
-        containsString(" not a valid JSON file [localization/invalid.json]")
-      );
+      assertThat(configurationException).isNotNull();
+      assertThat(configurationException.getMessage())
+        .contains(" not a valid JSON file [localization/invalid.json]");
     }
   }
 
@@ -59,9 +54,9 @@ public class LocalizationServiceIT extends AbstractIT {
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {
-      assertThat(configurationException, is(notNullValue()));
-      assertThat(configurationException.getMessage(), containsString("[xyz]"));
-      assertThat(configurationException.getMessage(), containsString("[en, de]"));
+      assertThat(configurationException).isNotNull();
+      assertThat(configurationException.getMessage()).contains("[xyz]");
+      assertThat(configurationException.getMessage()).contains("[en, de]");
     }
   }
 }

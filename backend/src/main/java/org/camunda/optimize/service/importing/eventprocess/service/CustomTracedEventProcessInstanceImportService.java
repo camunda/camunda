@@ -8,9 +8,10 @@ package org.camunda.optimize.service.importing.eventprocess.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CancelableEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -38,7 +39,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 @Slf4j
 public class CustomTracedEventProcessInstanceImportService implements ImportService<CamundaActivityEventDto> {
 
-  public static final String EVENT_SOURCE_CAMUNDA = "camunda";
+  private static final String EVENT_SOURCE_CAMUNDA = "camunda";
 
   private final EventSourceEntryDto eventSource;
 
@@ -51,12 +52,12 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   @Override
   public void executeImport(final List<CamundaActivityEventDto> camundaActivities,
                             final Runnable importCompleteCallback) {
-    final List<EventDto> filteredEvents = filterForConfiguredTenantsAndVersions(camundaActivities)
+    final List<EventResponseDto> filteredEvents = filterForConfiguredTenantsAndVersions(camundaActivities)
       .stream()
       .map(this::mapToEventDto)
       .collect(Collectors.toList());
 
-    final List<EventDto> correlatedEvents = correlateCamundaEvents(filteredEvents);
+    final List<EventResponseDto> correlatedEvents = correlateCamundaEvents(filteredEvents);
     eventProcessInstanceImportService.executeImport(correlatedEvents, importCompleteCallback);
   }
 
@@ -78,13 +79,12 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     return filteredActivities;
   }
 
-  private List<EventDto> correlateCamundaEvents(final List<EventDto> eventDtosToImport) {
+  private List<EventResponseDto> correlateCamundaEvents(final List<EventResponseDto> eventDtosToImport) {
     log.trace("Correlating [{}] camunda activity events for process definition key {}.",
-              eventDtosToImport.size(), eventSource.getProcessDefinitionKey()
-    );
+              eventDtosToImport.size(), eventSource.getProcessDefinitionKey());
 
     Set<String> processInstanceIds = eventDtosToImport.stream()
-      .map(EventDto::getTraceId)
+      .map(EventResponseDto::getTraceId)
       .collect(Collectors.toSet());
 
     final Map<String, List<VariableUpdateInstanceDto>> processInstanceToVariableUpdates =
@@ -96,7 +96,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     eventDtosToImport.forEach(
       eventDto -> eventDto.setData(extractVariablesDataForEvent(processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
 
-    List<EventDto> correlatedEvents;
+    List<EventResponseDto> correlatedEvents;
     if (eventSource.isTracedByBusinessKey()) {
       Map<String, String> instanceIdToBusinessKeys =
         businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds)
@@ -191,8 +191,8 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     return versionsForFilter;
   }
 
-  private EventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {
-    return EventDto.builder()
+  private CancelableEventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {
+    return CancelableEventDto.builder()
       .id(camundaActivityEventDto.getActivityInstanceId())
       .eventName(camundaActivityEventDto.getActivityId())
       .traceId(camundaActivityEventDto.getProcessInstanceId())
@@ -200,6 +200,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
       .ingestionTimestamp(camundaActivityEventDto.getTimestamp().toInstant().toEpochMilli())
       .group(camundaActivityEventDto.getProcessDefinitionKey())
       .source(EVENT_SOURCE_CAMUNDA)
+      .canceled(camundaActivityEventDto.isCanceled())
       .build();
   }
 

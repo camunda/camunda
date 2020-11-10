@@ -9,8 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.websocket.StatusWebSocket;
@@ -211,24 +210,12 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   @Override
   public void startEngineImportSchedulers() {
-    EngineImportSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
-    List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
-    if (importSchedulers != null) {
-      for (EngineImportScheduler scheduler : importSchedulers) {
-        if (getConfigurationService().isEngineImportEnabled(scheduler.getEngineAlias())) {
-          scheduler.startImportScheduling();
-        } else {
-          log.info("Engine import was disabled by config for engine with alias {}.", scheduler.getEngineAlias());
-        }
-      }
-    }
+    getImportSchedulerManager().startSchedulers();
   }
 
   @Override
   public void stopEngineImportSchedulers() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.stopImportScheduling();
-    }
+    getImportSchedulerManager().stopSchedulers();
   }
 
   public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
@@ -239,11 +226,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jerseyCamundaOptimize.getApplicationContext();
   }
 
-  private ConfigurationService getConfigurationService() {
-    return getOptimizeApplicationContext().getBean(ConfigurationService.class);
-  }
-
-  private EngineImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimizeApplicationContext().getBean(EngineImportSchedulerFactory.class);
+  private EngineImportSchedulerManagerService getImportSchedulerManager() {
+    return getOptimizeApplicationContext().getBean(EngineImportSchedulerManagerService.class);
   }
 }

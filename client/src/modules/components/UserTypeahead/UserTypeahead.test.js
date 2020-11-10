@@ -7,72 +7,71 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import UserTypeahead from './UserTypeahead';
-import {searchIdentities} from './service';
+import {showError} from 'notifications';
 
-jest.mock('debounce', () =>
-  jest.fn((fn) => {
-    fn.clear = jest.fn();
-    return fn;
-  })
-);
+import {UserTypeahead} from './UserTypeahead';
+import {getUser} from './service';
+
+jest.mock('notifications', () => ({showError: jest.fn()}));
 
 jest.mock('./service', () => ({
-  searchIdentities: jest.fn().mockReturnValue({result: [], total: 50}),
+  getUser: jest.fn().mockReturnValue({id: 'kermit', type: 'user', name: 'Kermit'}),
 }));
 
-const props = {
-  onChange: jest.fn(),
-};
+it('should invoke onChange when adding a user', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <UserTypeahead
+      users={[{id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}]}
+      onChange={spy}
+    />
+  );
 
-it('should render a Typeahead', () => {
-  const node = shallow(<UserTypeahead {...props} />);
-
-  expect(node.find('Typeahead')).toExist();
-});
-
-it('should load initial data when component is mounted', () => {
-  shallow(<UserTypeahead />);
-
-  expect(searchIdentities).toHaveBeenCalledWith('');
-});
-
-it('should enable loading while loading data and enable hasMore if there are more data available', async () => {
-  const node = shallow(<UserTypeahead {...props} />);
-
-  expect(node.find('Typeahead').prop('loading')).toBe(true);
-  await node.update();
-  expect(node.find('Typeahead').prop('loading')).toBe(false);
-  expect(node.find('Typeahead').prop('hasMore')).toBe(true);
-});
-
-it('should enable loading if typeahead is closed while empty', async () => {
-  const node = shallow(<UserTypeahead />);
-
-  node.find('Typeahead').prop('onSearch')('test');
-  await node.update();
-  node.find('Typeahead').prop('onClose')();
-  expect(node.find('Typeahead').prop('loading')).toBe(true);
-});
-
-it('should format user list information correctly', () => {
-  const node = shallow(<UserTypeahead {...props} />);
-
-  node.setState({
-    identities: [
-      {id: 'testUser'},
-      {id: 'user2', email: 'testUser@test.com'},
-      {id: 'groupId', name: 'groupName', email: 'group@test.com', type: 'group'},
-    ],
+  node.find('MultiUserInput').prop('onAdd')({
+    id: 'sales',
+    type: 'group',
+    name: 'Sales',
+    memberCount: '2',
   });
 
-  expect(node).toMatchSnapshot();
+  expect(spy).toHaveBeenCalledWith([
+    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
+  ]);
 });
 
-it('should invoke onChange when selecting an identity even if it is not in loaded identities', async () => {
-  searchIdentities.mockReturnValue({result: [{id: 'notTest'}], total: 1});
-  const node = shallow(<UserTypeahead {...props} />);
+it('should show an error when adding already existing user/group', () => {
+  const node = shallow(
+    <UserTypeahead
+      users={[{id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}]}
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      onChange={jest.fn()}
+    />
+  );
 
-  node.find('Typeahead').prop('onChange')('test');
-  expect(props.onChange).toHaveBeenCalledWith({id: 'test'});
+  node.find('MultiUserInput').prop('onAdd')({id: 'kermit'});
+
+  expect(showError).toHaveBeenCalled();
+});
+
+it('should load non imported user before adding it to the list', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <UserTypeahead
+      users={[]}
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      onChange={spy}
+    />
+  );
+  node.find('MultiUserInput').prop('onAdd')({
+    id: 'kermit',
+  });
+  expect(getUser).toHaveBeenCalledWith('kermit');
+
+  expect(spy).toHaveBeenCalledWith([
+    {
+      id: 'USER:kermit',
+      identity: {id: 'kermit', memberCount: undefined, name: 'Kermit', type: 'user'},
+    },
+  ]);
 });

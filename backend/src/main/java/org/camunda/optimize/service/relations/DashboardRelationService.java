@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.relations;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +21,13 @@ public class DashboardRelationService {
     this.referenceServices = referenceServices;
   }
 
-  public void handleDeleted(DashboardDefinitionDto definition) {
+  public void handleDeleted(DashboardDefinitionRestDto definition) {
     for (DashboardReferencingService referencingService : referenceServices) {
       referencingService.handleDashboardDeleted(definition);
     }
   }
 
-  public void handleUpdated(final DashboardDefinitionDto updateDefinition) {
+  public void handleUpdated(final DashboardDefinitionRestDto updateDefinition) {
     for (DashboardReferencingService referencingService : referenceServices) {
       referencingService.handleDashboardUpdated(updateDefinition);
     }

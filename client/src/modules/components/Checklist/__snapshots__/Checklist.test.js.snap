@@ -1,0 +1,70 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="Checklist"
+>
+  <div
+    className="header"
+  >
+    <ForwardRef(LabeledInput)
+      checked={false}
+      className="selectAll"
+      label="Select All"
+      onChange={[Function]}
+      type="checkbox"
+    />
+    <div
+      className="searchInputContainer"
+    >
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Search for items"
+        type="text"
+        value=""
+      />
+      <Icon
+        className="searchIcon"
+        size="20"
+        type="search"
+      />
+    </div>
+    <Tag
+      onRemove={[Function]}
+    >
+      1
+       Selected
+    </Tag>
+  </div>
+  <div
+    className="itemsList"
+  >
+    <ForwardRef(LabeledInput)
+      checked={true}
+      className="highlight"
+      key="item1"
+      label="item 1"
+      onChange={[Function]}
+      type="checkbox"
+    />
+    <ForwardRef(LabeledInput)
+      checked={false}
+      className=""
+      key="item2"
+      label="item 2"
+      onChange={[Function]}
+      type="checkbox"
+    />
+    <ForwardRef(LabeledInput)
+      className=""
+      disabled={true}
+      key="id3"
+      label="unauthorized"
+      onChange={[Function]}
+      type="checkbox"
+    />
+  </div>
+</div>
+`;

@@ -8,31 +8,20 @@ package org.camunda.optimize.upgrade.steps.schema;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 @AllArgsConstructor
 public class DeleteIndexIfExistsStep implements UpgradeStep {
-  private final String aliasName;
-  private final int indexVersion;
 
-  public DeleteIndexIfExistsStep(final IndexMappingCreator index) {
-    this(index.getIndexName(), index.getVersion());
-  }
-
-  public DeleteIndexIfExistsStep(final IndexMappingCreator index, final Integer version) {
-    this.aliasName = index.getIndexName();
-    this.indexVersion = version;
-  }
+  private final IndexMappingCreator index;
 
   @Override
-  public void execute(final ESIndexAdjuster esIndexAdjuster) {
-    final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
-    final String fullIndexName = OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
-      indexNameService.getOptimizeIndexAliasForIndex(aliasName), String.valueOf(indexVersion)
-    );
-    if (esIndexAdjuster.indexExists(fullIndexName)) {
-      esIndexAdjuster.deleteIndex(fullIndexName);
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+    final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
+    final String fullIndexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(index);
+    if (schemaUpgradeClient.indexExists(fullIndexName)) {
+      schemaUpgradeClient.deleteIndex(fullIndexName);
     }
   }
 }

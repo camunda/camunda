@@ -64,7 +64,7 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
     );
 
     compositeCommandResult.setGroups(durationHistogramData);
-    compositeCommandResult.setKeyIsOfNumericType(true);
+    compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
     compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
       response.getAggregations(), response.getHits().getTotalHits().value
     ));

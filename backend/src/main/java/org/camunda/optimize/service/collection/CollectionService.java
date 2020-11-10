@@ -7,12 +7,12 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -39,8 +39,8 @@ public class CollectionService {
   private final CollectionEntityService collectionEntityService;
   private final CollectionWriter collectionWriter;
 
-  public IdDto createNewCollectionAndReturnId(final String userId,
-                                              final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public IdResponseDto createNewCollectionAndReturnId(final String userId,
+                                                      final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
   }
 
@@ -54,12 +54,12 @@ public class CollectionService {
         collectionId
       );
 
-    return mapToCollectionRestDto(collectionDefinition);
+    return AuthorizedCollectionDefinitionRestDto.from(collectionDefinition);
   }
 
   public void updatePartialCollection(final String userId,
                                       final String collectionId,
-                                      final PartialCollectionDefinitionDto collectionUpdate) {
+                                      final PartialCollectionDefinitionRequestDto collectionUpdate) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     final CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();
@@ -105,25 +105,8 @@ public class CollectionService {
     return authorizedCollectionService.getAuthorizedCollectionDefinitions(userId);
   }
 
-  public AuthorizedCollectionDefinitionRestDto mapToCollectionRestDto(
-    final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
 
-    final CollectionDefinitionDto collectionDefinitionDto = authorizedCollectionDto.getDefinitionDto();
-    final CollectionDefinitionRestDto resolvedCollection = new CollectionDefinitionRestDto();
-    resolvedCollection.setId(collectionDefinitionDto.getId());
-    resolvedCollection.setName(collectionDefinitionDto.getName());
-    resolvedCollection.setLastModifier(collectionDefinitionDto.getLastModifier());
-    resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
-    resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
-    resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
-
-    resolvedCollection.setData(collectionDefinitionDto.getData());
-    return new AuthorizedCollectionDefinitionRestDto(
-      authorizedCollectionDto.getCurrentUserRole(), resolvedCollection
-    );
-  }
-
-  public IdDto copyCollection(String userId, String collectionId, String newCollectionName) {
+  public IdResponseDto copyCollection(String userId, String collectionId, String newCollectionName) {
     AuthorizedCollectionDefinitionDto oldCollection = authorizedCollectionService
       .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
@@ -144,7 +127,7 @@ public class CollectionService {
     collectionWriter.createNewCollection(newCollection);
 
     collectionEntityService.copyCollectionEntities(userId, oldResolvedCollection, newCollection.getId());
-    return new IdDto(newCollection.getId());
+    return new IdResponseDto(newCollection.getId());
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
@@ -155,6 +138,6 @@ public class CollectionService {
 
   private AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(
     final AuthorizedCollectionDefinitionDto collectionDefinitionDto) {
-    return mapToCollectionRestDto(collectionDefinitionDto);
+    return AuthorizedCollectionDefinitionRestDto.from(collectionDefinitionDto);
   }
 }

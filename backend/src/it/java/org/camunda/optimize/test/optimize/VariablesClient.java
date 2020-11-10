@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -207,37 +207,37 @@ public class VariablesClient {
       .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DecisionVariableNameDto> getDecisionInputVariableNames(final DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getDecisionInputVariableNames(final DecisionVariableNameRequestDto variableRequestDto) {
     return getRequestExecutor()
       .buildDecisionInputVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DecisionVariableNameDto> getDecisionInputVariableNames(final String key, List<String> versions) {
+  public List<DecisionVariableNameResponseDto> getDecisionInputVariableNames(final String key, List<String> versions) {
     DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
     variableRequestDto.setDecisionDefinitionKey(key);
     variableRequestDto.setDecisionDefinitionVersions(versions);
     return getDecisionInputVariableNames(variableRequestDto);
   }
 
-  public List<DecisionVariableNameDto> getDecisionInputVariableNames(final DecisionDefinitionEngineDto decisionDefinition) {
+  public List<DecisionVariableNameResponseDto> getDecisionInputVariableNames(final DecisionDefinitionEngineDto decisionDefinition) {
     return getDecisionInputVariableNames(decisionDefinition.getKey(), of(decisionDefinition.getVersionAsString()));
   }
 
-  public List<DecisionVariableNameDto> getDecisionOutputVariableNames(final DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameResponseDto> getDecisionOutputVariableNames(final DecisionVariableNameRequestDto variableRequestDto) {
     return getRequestExecutor()
       .buildDecisionOutputVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DecisionVariableNameDto> getDecisionOutputVariableNames(final String key, List<String> versions) {
+  public List<DecisionVariableNameResponseDto> getDecisionOutputVariableNames(final String key, List<String> versions) {
     DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
     variableRequestDto.setDecisionDefinitionKey(key);
     variableRequestDto.setDecisionDefinitionVersions(versions);
     return getDecisionOutputVariableNames(variableRequestDto);
   }
 
-  public List<DecisionVariableNameDto> getDecisionOutputVariableNames(final DecisionDefinitionEngineDto decisionDefinition) {
+  public List<DecisionVariableNameResponseDto> getDecisionOutputVariableNames(final DecisionDefinitionEngineDto decisionDefinition) {
     return getDecisionOutputVariableNames(decisionDefinition.getKey(), of(decisionDefinition.getVersionAsString()));
   }
 

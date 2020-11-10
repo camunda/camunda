@@ -17,7 +17,7 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: services
   imagePullSecrets:
-    - name: registry-camunda-cloud-secret
+    - name: registry-camunda-cloud
   serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud

@@ -30,7 +30,7 @@ public class TimeZoneUtil {
       return ZoneId.of(headerString);
     } else if (headerString != null) {
       log.warn(
-        "The provided timezone [{}] is not being recognized. Falling back to server timezone [{}] instead.",
+        "The provided timezone [{}] was not recognized. Falling back to server timezone [{}] instead.",
         headerString,
         ZoneId.systemDefault().getId()
       );

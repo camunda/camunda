@@ -9,20 +9,31 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class IdentityAuthorizationIT extends AbstractIT {
 
-  @Test
-  public void searchingForAllIdentitiesIsFilteredByAuthorizations() {
+  private static Stream<String> relevantPermissions() {
+    return Stream.of(ALL_PERMISSION, READ_PERMISSION);
+  }
+
+  @ParameterizedTest
+  @MethodSource("relevantPermissions")
+  public void searchingForAllIdentitiesIsFilteredByAuthorizations(final String permission) {
     // given
     final GroupDto groupIdentity1 = new GroupDto("testGroup1", "Group 1", 4L);
     final GroupDto groupIdentity2 = new GroupDto("testGroup2", "Group 2", 4L);
@@ -37,17 +48,22 @@ public class IdentityAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity2);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.grantSingleResourceAuthorizationForKermit(groupIdentity1.getId(), RESOURCE_TYPE_GROUP);
-    authorizationClient.grantSingleResourceAuthorizationForKermit(userIdentity1.getId(), RESOURCE_TYPE_USER);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, Collections.singletonList(permission), groupIdentity1.getId(), RESOURCE_TYPE_GROUP
+    );
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, Collections.singletonList(permission), userIdentity1.getId(), RESOURCE_TYPE_USER
+    );
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
 
-    // then only return identities the current user has access to
+    // then only return identities the current user has access to are returned
+    // the total count however still reflects all users
     assertThat(searchResult)
       .isEqualTo(
-        new IdentitySearchResultDto(
-          2L, Lists.newArrayList(userIdentity1, groupIdentity1)
+        new IdentitySearchResultResponseDto(
+          4L, Lists.newArrayList(userIdentity1, groupIdentity1)
         ));
   }
 
@@ -90,8 +106,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Test
-  public void limitResults_partialAuthorizations() {
+  @ParameterizedTest
+  @MethodSource("relevantPermissions")
+  public void limitResults_partialAuthorizations_readPermission(final String permission) {
     // given
     final UserDto user1 = new UserDto("testUser1", null, null, null);
     final UserDto user2 = new UserDto("testUser2", null, null, null);
@@ -102,26 +119,32 @@ public class IdentityAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(user3);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, Collections.singletonList(permission), user2.getId(), RESOURCE_TYPE_USER
+    );
 
-    // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+    // when we search for a term that matches all users, but with a limit of 1 result
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity(
       "testUser",
       1,
       KERMIT_USER,
       KERMIT_USER
     );
 
-    // then
+    // then the limit of 1 is applied correctly:
+    // the search returns the 1 match which kermit is permitted to see.
+    // If the limit did not work properly, the result would be empty because the first limited search result returns
+    // user1, which kermit is not allowed to see.
+    // The total count however still reflects all users.
     assertThat(searchResult)
-      // user2 is still returned although being not the first internal search result based on sorting
-      .isEqualTo(new IdentitySearchResultDto(
-        1L, Lists.newArrayList(user2)
+      .isEqualTo(new IdentitySearchResultResponseDto(
+        3L, Lists.newArrayList(user2)
       ));
   }
 
-  @Test
-  public void limitResults_partialAuthorizationsForMultipleResults() {
+  @ParameterizedTest
+  @MethodSource("relevantPermissions")
+  public void limitResults_partialAuthorizationsForMultipleResults(final String permission) {
     // given
     final UserDto user1 = new UserDto("testUser1", null, null, null);
     final UserDto user2 = new UserDto("testUser2", null, null, null);
@@ -134,23 +157,29 @@ public class IdentityAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(user4);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
-    authorizationClient.grantSingleResourceAuthorizationForKermit(user4.getId(), RESOURCE_TYPE_USER);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, Collections.singletonList(permission), user2.getId(), RESOURCE_TYPE_USER
+    );
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, Collections.singletonList(permission), user4.getId(), RESOURCE_TYPE_USER
+    );
 
-    // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+    // when we search for a term that matches all users, but with a limit of 2 results
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity(
       "testUser",
       2,
       KERMIT_USER,
       KERMIT_USER
     );
 
-    // then
+    // then the limit of 2 is applied correctly:
+    // The search returns the 2 matches which kermit is permitted to see.
+    // If the limit did not work properly, the result would only have user2 in it because the first limited search
+    // result returns user1 and user2, and of those kermit is only allowed to see user2.
+    // The total count however still reflects all users.
     assertThat(searchResult)
-      // user2 and user4 are still returned even though they are not in the first internal search result based on
-      // sorting
-      .isEqualTo(new IdentitySearchResultDto(
-        2L, Lists.newArrayList(user2, user4)
+      .isEqualTo(new IdentitySearchResultResponseDto(
+        4L, Lists.newArrayList(user2, user4)
       ));
   }
 }

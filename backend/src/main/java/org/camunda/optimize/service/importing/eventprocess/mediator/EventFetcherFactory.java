@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.events.CamundaActivityEventFetcherService;

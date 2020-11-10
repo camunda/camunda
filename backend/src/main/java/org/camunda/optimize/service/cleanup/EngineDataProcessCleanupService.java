@@ -130,7 +130,7 @@ public class EngineDataProcessCleanupService implements CleanupService {
   }
 
   private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
-    return processDefinitionReader.getProcessDefinitions(false, false)
+    return processDefinitionReader.getProcessDefinitions(false, false, true)
       .stream()
       .filter(definition -> !definition.isEventBased())
       .map(ProcessDefinitionOptimizeDto::getKey)

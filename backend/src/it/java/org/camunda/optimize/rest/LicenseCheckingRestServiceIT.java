@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,11 +23,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class LicenseCheckingRestServiceIT extends AbstractIT {
@@ -54,7 +52,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
   }
 
@@ -70,7 +68,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
   }
 
@@ -87,7 +85,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertResult(response, CUSTOMER_ID, null, true);
   }
 
@@ -99,7 +97,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     response = embeddedOptimizeExtension
@@ -108,7 +106,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -124,7 +122,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("License Key has wrong format."), is(true));
+    assertThat(errorMessage).contains("License Key has wrong format.");
   }
 
   @Test
@@ -140,7 +138,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license has expired."), is(true));
+    assertThat(errorMessage).contains("Your license has expired.");
   }
 
   @Test
@@ -156,10 +154,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
       // then
-      assertThat(
-        errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"),
-        is(true)
-      );
+      assertThat(errorMessage).contains("No license stored in Optimize. Please provide a valid Optimize license");
     } finally {
       licenseManager.init();
     }
@@ -180,7 +175,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       requestExecutor = requestExecutorBuilder.apply(requestExecutor);
       Response response = requestExecutor.execute();
 
-      assertThat(response.getStatus(), is(not(Response.Status.FORBIDDEN.getStatusCode())));
+      assertThat(response.getStatus()).isNotEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     } finally {
       licenseManager.init();
     }
@@ -212,7 +207,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -228,7 +223,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -244,7 +239,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -260,7 +255,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+    assertThat(errorMessage.contains("Your license is invalid.")).isTrue();
   }
 
   @Test
@@ -276,7 +271,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+    assertThat(errorMessage.contains("Your license is invalid.")).isTrue();
   }
 
   @Test
@@ -292,7 +287,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+    assertThat(errorMessage.contains("Your license is invalid.")).isTrue();
   }
 
   @Test
@@ -308,7 +303,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+    assertThat(errorMessage.contains("Your license is invalid.")).isTrue();
   }
 
   @Test
@@ -324,7 +319,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license has expired."), is(true));
+    assertThat(errorMessage.contains("Your license has expired.")).isTrue();
   }
 
   @Test
@@ -340,16 +335,16 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(errorMessage.contains("Your license has expired."), is(true));
+    assertThat(errorMessage.contains("Your license has expired.")).isTrue();
   }
 
   private void assertResult(Response response, String customerId, OffsetDateTime validUntil, boolean isUnlimited) {
-    LicenseInformationDto licenseInfo =
-      response.readEntity(new GenericType<LicenseInformationDto>() {
+    LicenseInformationResponseDto licenseInfo =
+      response.readEntity(new GenericType<LicenseInformationResponseDto>() {
       });
-    assertThat(licenseInfo.getCustomerId(), is(customerId));
-    assertThat(licenseInfo.getValidUntil(), is(validUntil));
-    assertThat(licenseInfo.isUnlimited(), is(isUnlimited));
+    assertThat(licenseInfo.getCustomerId()).isEqualTo(customerId);
+    assertThat(licenseInfo.getValidUntil()).isEqualTo(validUntil);
+    assertThat(licenseInfo.isUnlimited()).isEqualTo(isUnlimited);
   }
 
 }

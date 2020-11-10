@@ -33,7 +33,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -104,7 +104,7 @@ public class ReportsGenerator {
         .setProcessDefinitionVersion(definition.getVersionAsString())
         .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
-        .setDateInterval(GroupByDateUnit.WEEK)
+        .setGroupByDateInterval(AggregateByDateUnit.WEEK)
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
         .setFilter(createProcessFilter());
@@ -125,7 +125,7 @@ public class ReportsGenerator {
       .map(type -> DecisionReportDataBuilder.create().setReportDataType(type)
         .setDecisionDefinitionKey(definition.getKey())
         .setDecisionDefinitionVersion(definition.getVersionAsString())
-        .setDateInterval(GroupByDateUnit.DAY)
+        .setDateInterval(AggregateByDateUnit.DAY)
         .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
         .setVariableId(INPUT_AMOUNT_ID)

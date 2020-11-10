@@ -9,10 +9,10 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
@@ -60,13 +60,13 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionType);
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollectionAsUser(
+    List<AuthorizedReportDefinitionResponseDto> reports = collectionClient.getReportsForCollectionAsUser(
       collectionId1,
       KERMIT_USER,
       KERMIT_USER
@@ -89,13 +89,13 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(typePair.get(0));
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
 
     // when
-    List<AuthorizedReportDefinitionDto> allAlerts = collectionClient.getReportsForCollectionAsUser(
+    List<AuthorizedReportDefinitionResponseDto> allAlerts = collectionClient.getReportsForCollectionAsUser(
       collectionId1,
       KERMIT_USER,
       KERMIT_USER
@@ -131,7 +131,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   private String createReportForCollection(final String collectionId, final int resourceType) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionDto procReport = reportClient.createSingleProcessReportDefinitionDto(
+        SingleProcessReportDefinitionRequestDto procReport = reportClient.createSingleProcessReportDefinitionDto(
           collectionId,
           DEFAULT_DEFINITION_KEY,
           DEFAULT_TENANTS
@@ -139,7 +139,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
         return reportClient.createSingleProcessReport(procReport);
 
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
+        SingleDecisionReportDefinitionRequestDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
           collectionId,
           DEFAULT_DEFINITION_KEY,
           DEFAULT_TENANTS

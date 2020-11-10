@@ -61,12 +61,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionViewRawData extends DecisionViewPart {
 
+  public static final String INPUT_VARIABLE_PREFIX = "inputVariable:";
+  public static final String OUTPUT_VARIABLE_PREFIX = "outputVariable:";
+
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
-
-  public static final String INPUT_VARIABLE_PREFIX = "inputVariable:";
-  public static final String OUTPUT_VARIABLE_PREFIX = "outputVariable:";
 
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawDecisionDataResultDtoMapper();
@@ -77,15 +77,22 @@ public class DecisionViewRawData extends DecisionViewPart {
                                   final ExecutionContext<DecisionReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
-    searchRequest.source()
-      .fetchSource(true)
-      // size of each scroll page, needs to be capped to max size of elasticsearch
-      .size(context.getRecordLimit() > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : context.getRecordLimit());
-
+    final SearchSourceBuilder search = searchRequest.source()
+      .fetchSource(true);
+    if (context.isExport()) {
+      search.size(
+        context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
+          MAX_RESPONSE_SIZE_LIMIT : context.getPagination().getLimit());
+      searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+    } else {
+      if (context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
+        context.getPagination().setLimit(MAX_RESPONSE_SIZE_LIMIT);
+      }
+      search
+        .size(context.getPagination().getLimit())
+        .from(context.getPagination().getOffset());
+    }
     addSortingToQuery(context.getReportData(), searchRequest.source());
-
-    searchRequest
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
@@ -170,17 +177,27 @@ public class DecisionViewRawData extends DecisionViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
-    final List<DecisionInstanceDto> rawDataDecisionInstanceDtos =
-      ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
-        response,
+    final List<DecisionInstanceDto> rawDataDecisionInstanceDtos;
+    if (context.isExport()) {
+      rawDataDecisionInstanceDtos =
+        ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
+          response,
+          DecisionInstanceDto.class,
+          objectMapper,
+          esClient,
+          configurationService.getEsScrollTimeoutInSeconds(),
+          context.getPagination().getLimit()
+        );
+    } else {
+      rawDataDecisionInstanceDtos = ElasticsearchReaderUtil.mapHits(
+        response.getHits(),
         DecisionInstanceDto.class,
-        objectMapper,
-        esClient,
-        configurationService.getEsScrollTimeoutInSeconds(),
-        context.getRecordLimit()
+        objectMapper
       );
+    }
+
     final RawDataDecisionReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value, context.getUnfilteredInstanceCount()
+      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value, context
     );
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);
     return new ViewResult().setDecisionRawData(rawDataSingleReportResultDto);

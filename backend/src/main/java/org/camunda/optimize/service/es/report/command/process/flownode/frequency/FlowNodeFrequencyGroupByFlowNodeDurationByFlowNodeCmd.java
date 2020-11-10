@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
@@ -36,8 +36,8 @@ public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends Proce
   }
 
   @Override
-  public ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> evaluate(
-    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionRequestDto> evaluate(
+    final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
   }

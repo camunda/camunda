@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {Button, ReportRenderer, InstanceCount} from 'components';
 
-import Sharing from './Sharing';
+import {Sharing} from './Sharing';
 import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
@@ -25,6 +25,7 @@ const props = {
       id: 123,
     },
   },
+  location: {search: ''},
 };
 
 it('should render without crashing', () => {
@@ -83,7 +84,7 @@ it('should retrieve report for the given id', () => {
   props.match.params.type = 'report';
   shallow(<Sharing {...props} />);
 
-  expect(evaluateEntity).toHaveBeenCalledWith(123, 'report');
+  expect(evaluateEntity).toHaveBeenCalledWith(123, 'report', undefined);
 });
 
 it('should display the report name and include report details', () => {
@@ -125,11 +126,32 @@ it('should have dashboard if everything is fine', () => {
   expect(node.find('DashboardRenderer')).toExist();
 });
 
+it('should include filters on a dashboard', () => {
+  props.match.params.type = 'dashboard';
+  const node = shallow(
+    <Sharing
+      {...props}
+      location={{
+        search: '?filter=%5B%7B%22type%22%3A%22runningInstancesOnly%22%2C%22data%22%3Anull%7D%5D',
+      }}
+    />
+  );
+
+  node.setState({
+    loading: false,
+    evaluationResult: {reportShares: 'foo'},
+  });
+
+  expect(node.find('DashboardRenderer').prop('filter')).toEqual([
+    {data: null, type: 'runningInstancesOnly'},
+  ]);
+});
+
 it('should retrieve dashboard for the given id', () => {
   props.match.params.type = 'dashboard';
   shallow(<Sharing {...props} />);
 
-  expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard');
+  expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard', undefined);
 });
 
 it('should display the dashboard name and last modification info', () => {
@@ -156,4 +178,18 @@ it('should render a button linking to view mode', () => {
   });
 
   expect(node.find(Button)).toExist();
+});
+
+it('should add a DiagramScrollLock when a shared report is embedded', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?mode=embed';
+
+  const node = shallow(<Sharing {...props} />);
+
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name'},
+  });
+
+  expect(node.find('DiagramScrollLock')).toExist();
 });

@@ -7,13 +7,14 @@ package org.camunda.optimize.test.query.performance;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -59,7 +60,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
-    EmbeddedOptimizeExtension.customPropertiesBuilder().beforeAllMode(true).build();
+    new EmbeddedOptimizeExtension(true);
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
@@ -74,47 +75,28 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     // given the report to evaluate
 
     // when
-    log.info("Evaluating report {}", report);
-    Instant start = Instant.now();
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(report)
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    Instant finish = Instant.now();
-
-    long timeElapsed = Duration.between(start, finish).toMillis();
-    log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-    // then
-    assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    log.info("Evaluating report {}", getPrintableReportDetails(report));
+    executeRequestAndAssertBelowMaxQueryTime(
+      embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSingleUnsavedReportRequest(report)
+    );
   }
 
   @ParameterizedTest
   @MethodSource("getPossibleReports")
   public void testQueryPerformance_savedReportEvaluation(SingleReportDataDto report) {
     // given a saved report
-    final Response saveReportResponse = saveReportToOptimize(report);
+    try (final Response saveReportResponse = saveReportToOptimize(report)) {
 
-    // we only evaluate reports that are valid and can be saved
-    if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
-      // when
-      final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
+      // we only evaluate reports that are valid and can be saved
+      if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
+        // when
+        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
 
-      log.info("Evaluating report with Id {}", reportId);
-      Instant start = Instant.now();
-      Response evaluationResponse = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSavedReportRequest(reportId)
-        .execute();
-      assertThat(evaluationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      Instant finish = Instant.now();
-
-      long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-      // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+        log.info("Evaluating report {}", getPrintableReportDetails(report));
+        executeRequestAndAssertBelowMaxQueryTime(
+          embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(reportId)
+        );
+      }
     }
   }
 
@@ -122,26 +104,18 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   @MethodSource("getPossibleReports")
   public void testQueryPerformance_savedReportCsvExport(SingleReportDataDto report) {
     // given a saved report
-    final Response saveReportResponse = saveReportToOptimize(report);
+    try (final Response saveReportResponse = saveReportToOptimize(report)) {
 
-    // we only export reports that are valid and can be saved
-    if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
-      // when
-      final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
-      log.info("CSV export request for report with Id {}", reportId);
-      Instant start = Instant.now();
-      Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildCsvExportRequest(reportId, IdGenerator.getNextId() + ".csv")
-        .execute();
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      Instant finish = Instant.now();
-
-      long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-      // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+      // we only export reports that are valid and can be saved
+      if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
+        // when
+        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
+        log.info("CSV export request for report {}", getPrintableReportDetails(report));
+        executeRequestAndAssertBelowMaxQueryTime(
+          embeddedOptimizeExtension.getRequestExecutor()
+            .buildCsvExportRequest(reportId, IdGenerator.getNextId() + ".csv")
+        );
+      }
     }
   }
 
@@ -153,18 +127,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
     // when
     log.info("Fetching process variable names for request {}", request);
-    Instant start = Instant.now();
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableNamesRequest(request)
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
-    log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-    // then
-    assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    executeRequestAndAssertBelowMaxQueryTime(
+      embeddedOptimizeExtension.getRequestExecutor().buildProcessVariableNamesRequest(request)
+    );
   }
 
   @Test
@@ -186,18 +151,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
       // when
       log.info("Fetching process variable values for request {}", varValueRequest);
-      Instant start = Instant.now();
-      Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(varValueRequest)
-        .execute();
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      Instant finish = Instant.now();
-      long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-      // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+      executeRequestAndAssertBelowMaxQueryTime(
+        embeddedOptimizeExtension.getRequestExecutor().buildProcessVariableValuesRequest(varValueRequest)
+      );
     }
   }
 
@@ -209,18 +165,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
     // when
     log.info("Fetching decision input variable names for request {}", request);
-    Instant start = Instant.now();
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionInputVariableNamesRequest(request)
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
-    log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-    // then
-    assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    executeRequestAndAssertBelowMaxQueryTime(
+      embeddedOptimizeExtension.getRequestExecutor().buildDecisionInputVariableNamesRequest(request)
+    );
   }
 
   @Test
@@ -231,30 +178,21 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
     // when
     log.info("Fetching decision output variable names for request {}", request);
-    Instant start = Instant.now();
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionOutputVariableNamesRequest(request)
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
-    log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-    // then
-    assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    executeRequestAndAssertBelowMaxQueryTime(
+      embeddedOptimizeExtension.getRequestExecutor().buildDecisionOutputVariableNamesRequest(request)
+    );
   }
 
   @Test
   public void testQueryPerformance_getInputVariableValuesForDecisionReportVariables() {
     // given
     final DecisionVariableNameRequestDto varNameRequest = buildDecisionVariableNameRequest();
-    List<DecisionVariableNameDto> varNamesResponse = embeddedOptimizeExtension
+    List<DecisionVariableNameResponseDto> varNamesResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionInputVariableNamesRequest(varNameRequest)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    for (DecisionVariableNameDto varName : varNamesResponse) {
+    for (DecisionVariableNameResponseDto varName : varNamesResponse) {
       DecisionVariableValueRequestDto varValueRequest = new DecisionVariableValueRequestDto();
       varValueRequest.setDecisionDefinitionKey(varNameRequest.getDecisionDefinitionKey());
       varValueRequest.setVariableId(varName.getId());
@@ -264,18 +202,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
       // when
       log.info("Fetching decision input variable values for request {}", varValueRequest);
-      Instant start = Instant.now();
-      Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDecisionInputVariableValuesRequest(varValueRequest)
-        .execute();
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      Instant finish = Instant.now();
-      long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-      // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+      executeRequestAndAssertBelowMaxQueryTime(
+        embeddedOptimizeExtension.getRequestExecutor().buildDecisionInputVariableValuesRequest(varValueRequest)
+      );
     }
   }
 
@@ -283,12 +212,12 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public void testQueryPerformance_getOutputVariableValuesForDecisionReportVariables() {
     // given
     final DecisionVariableNameRequestDto varNameRequest = buildDecisionVariableNameRequest();
-    List<DecisionVariableNameDto> varNamesResponse = embeddedOptimizeExtension
+    List<DecisionVariableNameResponseDto> varNamesResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionOutputVariableNamesRequest(varNameRequest)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    for (DecisionVariableNameDto varName : varNamesResponse) {
+    for (DecisionVariableNameResponseDto varName : varNamesResponse) {
       DecisionVariableValueRequestDto varValueRequest = new DecisionVariableValueRequestDto();
       varValueRequest.setDecisionDefinitionKey(varNameRequest.getDecisionDefinitionKey());
       varValueRequest.setVariableId(varName.getId());
@@ -298,18 +227,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
       // when
       log.info("Fetching decision output variable values for request {}", varValueRequest);
-      Instant start = Instant.now();
-      Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDecisionOutputVariableValuesRequest(varValueRequest)
-        .execute();
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-      Instant finish = Instant.now();
-      long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
-
-      // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+      executeRequestAndAssertBelowMaxQueryTime(
+        embeddedOptimizeExtension.getRequestExecutor().buildDecisionOutputVariableValuesRequest(varValueRequest)
+      );
     }
   }
 
@@ -363,14 +283,27 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     return request;
   }
 
+  protected void executeRequestAndAssertBelowMaxQueryTime(final OptimizeRequestExecutor requestExecutor) {
+    final Instant start = Instant.now();
+    try (final Response response = requestExecutor.execute()) {
+      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+      final Instant finish = Instant.now();
+      long timeElapsed = Duration.between(start, finish).toMillis();
+      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
+
+      // then
+      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    }
+  }
+
   private Response saveReportToOptimize(final SingleReportDataDto report) {
     if (report instanceof ProcessReportDataDto) {
       return embeddedOptimizeExtension.getRequestExecutor()
-        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto((ProcessReportDataDto) report))
+        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) report))
         .execute();
     } else {
       return embeddedOptimizeExtension.getRequestExecutor()
-        .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionDto((DecisionReportDataDto) report))
+        .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) report))
         .execute();
     }
   }
@@ -390,6 +323,13 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       throw new TimeoutException("Import was not able to finish import in " + importTimeout + " hours!");
     }
     log.info("Finished importing engine data...");
+  }
+
+  private String getPrintableReportDetails(SingleReportDataDto report) {
+    return String.format(
+      "definitionKey=%s, definitionVersion=%s, tenants=%s, configuration=%s",
+      report.getDefinitionKey(), report.getDefinitionVersions(), report.getTenantIds(), report.createCommandKey()
+    );
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {

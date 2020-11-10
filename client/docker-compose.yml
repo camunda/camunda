@@ -8,6 +8,7 @@ services:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - discovery.type=single-node
+      - action.auto_create_index=true
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
       memlock:
@@ -25,7 +26,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: camunda/camunda-bpm-platform:${CAMBPM_VERSION:-7.13.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.14.0}
     container_name: cambpm
     environment:
       - DB_DRIVER=org.postgresql.Driver

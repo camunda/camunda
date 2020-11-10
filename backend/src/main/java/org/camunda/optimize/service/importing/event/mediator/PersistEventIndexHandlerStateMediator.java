@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -91,6 +92,11 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   @Override
   public void shutdown() {
     importService.shutdown();
+  }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.IMPORT_META_DATA;
   }
 
   private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {

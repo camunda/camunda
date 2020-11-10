@@ -45,18 +45,12 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
 
   await t.click(Filter.variableFilterOperatorButton('contains'));
-  await t.typeText(Filter.variableFilterValueInput, 'aSubString', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, 'anotherSubstring', {replace: true});
+  await t.typeText(Filter.variableFilterValueInput, 'aSubString anotherSubstring', {replace: true});
 
   await t.typeText(Filter.typeaheadInput, 'integerVar', {replace: true});
   await t.click(Filter.typeaheadOption('integerVar'));
 
-  await t.typeText(Filter.variableFilterValueInput, '14', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, '30', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
+  await t.typeText(Filter.variableFilterValueInput, '14 30 100', {replace: true});
 
   await t.takeElementScreenshot(
     Report.modalContainer,
@@ -259,12 +253,8 @@ test('add assignee filter', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Assignee'));
 
-  await t.click(Filter.typeahead);
-  await t.click(Filter.typeaheadOption('unassigned'));
-  await t.click(Filter.typeaheadAddButton);
-  await t.click(Filter.typeahead);
-  await t.click(Filter.typeaheadOption('demo'));
-  await t.click(Filter.typeaheadAddButton);
+  await t.click(Filter.multiSelect);
+  await t.click(Filter.multiSelectOption('demo'));
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
 
@@ -304,7 +294,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
 
-  await t.expect(controlPanelFilterText).contains('Executed Flow Node');
+  await t.expect(controlPanelFilterText).contains('was Executed');
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);

@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.exceptions.evaluation;
 
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 public class ReportEvaluationException extends OptimizeRuntimeException {
 
-  protected AuthorizedReportDefinitionDto reportDefinition;
+  protected AuthorizedReportDefinitionResponseDto reportDefinition;
 
   public ReportEvaluationException() {
     super();
@@ -24,16 +24,16 @@ public class ReportEvaluationException extends OptimizeRuntimeException {
     super(message, e);
   }
 
-  public ReportEvaluationException(AuthorizedReportDefinitionDto reportDefinition, Exception e) {
+  public ReportEvaluationException(AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
     super(e.getMessage(), e);
     setReportDefinition(reportDefinition);
   }
 
-  public void setReportDefinition(AuthorizedReportDefinitionDto reportDefinition) {
+  public void setReportDefinition(AuthorizedReportDefinitionResponseDto reportDefinition) {
     this.reportDefinition = reportDefinition;
   }
 
-  public AuthorizedReportDefinitionDto getReportDefinition() {
+  public AuthorizedReportDefinitionResponseDto getReportDefinition() {
     return reportDefinition;
   }
 

@@ -1,4 +1,4 @@
-FROM alpine:3.12.0 as builder
+FROM alpine:3.12.1 as builder
 
 ARG SKIP_DOWNLOAD=false
 ARG VERSION=2.0.0
@@ -22,9 +22,9 @@ RUN /tmp/download.sh
 
 ##### FINAL IMAGE #####
 
-FROM alpine:3.12.0
+FROM alpine:3.12.1
 
-ENV OPTIMIZE_CLASSPATH=/optimize/environment:/optimize/*:/optimize/lib/*
+ENV OPTIMIZE_CLASSPATH=/optimize/config:/optimize/*:/optimize/lib/*
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
 ENV TZ=UTC

@@ -8,7 +8,7 @@ import {Cell} from 'table-js/lib/components';
 
 import {createComponentVNode, createVNode, createTextVNode, Component} from 'inferno';
 
-export default () => {
+export default function HitsColumnAddon() {
   const entryPoints = {rules: {}};
 
   const CustomCell = class CustomCell extends Component {
@@ -28,14 +28,12 @@ export default () => {
     }
   };
 
-  const HitsColumnAddon = (components) => {
+  function addHitsColumn(components) {
     components.onGetComponent('table.foot', () => (props) => {
       const emptyCells = [];
-
       for (let i = 0; i < props.cols.length + 1; i++) {
         emptyCells.push(createVNode(1, 'td'));
       }
-
       return createVNode(
         1,
         'tfoot',
@@ -54,24 +52,22 @@ export default () => {
         2
       );
     });
-
     components.onGetComponent('cell', ({cellType}) => {
       if (cellType === 'after-label-cells') {
-        return () => createVNode(1, 'th', 'hit header', createTextVNode('Hits'), 2, {rowspan: 3});
+        return () => createVNode(1, 'th', 'hit header', createTextVNode('Hits'), 2);
       }
-
       if (cellType === 'after-rule-cells') {
         return CustomCell;
       }
     });
-  };
-  HitsColumnAddon.$inject = ['components'];
+  }
+  addHitsColumn.$inject = ['components'];
 
   return {
     entryPoints,
     Addon: {
       __init__: ['hitsColumn'],
-      hitsColumn: ['type', HitsColumnAddon],
+      hitsColumn: ['type', addHitsColumn],
     },
   };
-};
+}

@@ -26,6 +26,10 @@ public class ProcessFilterBuilder {
     return ExecutingFlowNodeFilterBuilder.construct(this);
   }
 
+  public CanceledFlowNodeFilterBuilder canceledFlowNodes() {
+    return CanceledFlowNodeFilterBuilder.construct(this);
+  }
+
   public CanceledInstancesOnlyFilterBuilder canceledInstancesOnly() {
     return CanceledInstancesOnlyFilterBuilder.construct(this);
   }
@@ -48,6 +52,14 @@ public class ProcessFilterBuilder {
 
   public RunningInstancesOnlyFilterBuilder runningInstancesOnly() {
     return RunningInstancesOnlyFilterBuilder.construct(this);
+  }
+
+  public WithOpenIncidentsOnlyFilterBuilder withOpenIncidentsOnly() {
+    return WithOpenIncidentsOnlyFilterBuilder.construct(this);
+  }
+
+  public WithResolvedIncidentsOnlyFilterBuilder withResolvedIncidentsOnly() {
+    return WithResolvedIncidentsOnlyFilterBuilder.construct(this);
   }
 
   public RollingDateFilterBuilder rollingEndDate() {

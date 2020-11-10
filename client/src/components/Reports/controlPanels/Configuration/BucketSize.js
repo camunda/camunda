@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useCallback, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import debounce from 'debounce';
 
 import {LabeledInput, Switch, Input, Message, Select} from 'components';
@@ -15,32 +15,38 @@ import './BucketSize.scss';
 
 export default function BucketSize({
   report: {
-    data: {
-      configuration: {customBucket},
-      groupBy,
-    },
+    data: {configuration, groupBy, distributedBy},
   },
   onChange,
 }) {
+  const isDistributedByVariable =
+    distributedBy?.type === 'variable' &&
+    ['Integer', 'Double', 'Short', 'Long'].includes(distributedBy.value.type);
+
+  const customBucket = isDistributedByVariable ? 'distributeByCustomBucket' : 'customBucket';
+
   const [sizeValid, setSizeValid] = useState(true);
   const [baseValid, setBaseValid] = useState(true);
 
-  const applyChanges = useCallback(
-    debounce((property, value, valid) => {
-      if (valid) {
-        onChange({customBucket: {[property]: {$set: value}}}, true);
-      }
-    }, 800),
-    []
+  const applyChanges = useMemo(
+    () =>
+      debounce((property, value, valid) => {
+        if (valid) {
+          onChange({[customBucket]: {[property]: {$set: value}}}, true);
+        }
+      }, 800),
+    [customBucket, onChange]
   );
 
   const isBucketableVariableReport =
-    groupBy?.type === 'variable' &&
+    groupBy?.type.toLowerCase().includes('variable') &&
     ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type);
   const isGroupedByDuration = groupBy?.type === 'duration';
 
-  if (isBucketableVariableReport || isGroupedByDuration) {
-    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = customBucket;
+  if (isBucketableVariableReport || isGroupedByDuration || isDistributedByVariable) {
+    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = configuration[
+      customBucket
+    ];
     const flush = () => applyChanges.flush();
 
     const units = (
@@ -61,7 +67,9 @@ export default function BucketSize({
         <legend>
           <Switch
             checked={active}
-            onChange={(evt) => onChange({customBucket: {active: {$set: evt.target.checked}}}, true)}
+            onChange={(evt) =>
+              onChange({[customBucket]: {active: {$set: evt.target.checked}}}, true)
+            }
             label={t('report.config.bucket.bucketSize')}
           />
         </legend>
@@ -99,7 +107,7 @@ export default function BucketSize({
             onBlur={flush}
             onChange={(evt) => {
               const valid = isGroupedByDuration
-                ? numberParser.isPositiveNumber(evt.target.value)
+                ? numberParser.isNonNegativeNumber(evt.target.value)
                 : numberParser.isFloatNumber(evt.target.value);
               setBaseValid(valid);
               applyChanges('baseline', evt.target.value, valid);
@@ -119,13 +127,7 @@ export default function BucketSize({
             </Select>
           )}
         </div>
-        {!baseValid && (
-          <Message error>
-            {isGroupedByDuration
-              ? t('common.errors.postiveNum')
-              : t('report.config.bucket.invalidNumber')}
-          </Message>
-        )}
+        {!baseValid && <Message error>{t('report.config.bucket.invalidNumber')}</Message>}
       </fieldset>
     );
   }

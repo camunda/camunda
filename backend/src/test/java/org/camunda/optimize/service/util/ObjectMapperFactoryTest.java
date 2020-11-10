@@ -9,11 +9,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -65,7 +65,7 @@ public class ObjectMapperFactoryTest {
     assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
-      .isInstanceOf(SingleProcessReportDefinitionDto.class)
+      .isInstanceOf(SingleProcessReportDefinitionRequestDto.class)
       .satisfies(processDefinition -> {
         assertThat(processDefinition.getData()).isNotNull();
       });
@@ -73,41 +73,41 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testCanDeserializeToSingleProcessReport() throws Exception {
-    final SingleProcessReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
-      SingleProcessReportDefinitionDto.class
+      SingleProcessReportDefinitionRequestDto.class
     );
 
     assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
-      .isInstanceOf(SingleProcessReportDefinitionDto.class);
+      .isInstanceOf(SingleProcessReportDefinitionRequestDto.class);
   }
 
   @Test
   public void testCanDeserializeToSingleDecisionReport() throws Exception {
-    final SingleDecisionReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
       getClass().getResourceAsStream("/test/data/single-decision-report-definition-create-request.json"),
-      SingleDecisionReportDefinitionDto.class
+      SingleDecisionReportDefinitionRequestDto.class
     );
 
     assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.DECISION);
     assertThat(reportDefinitionDto)
-      .isInstanceOf(SingleDecisionReportDefinitionDto.class);
+      .isInstanceOf(SingleDecisionReportDefinitionRequestDto.class);
   }
 
   @Test
   public void testCanDeserializeToCombinedProcessReport() throws Exception {
-    final CombinedReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+    final CombinedReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
       getClass().getResourceAsStream("/test/data/combined-process-report-definition-create-request.json"),
-      CombinedReportDefinitionDto.class
+      CombinedReportDefinitionRequestDto.class
     );
 
     assertThat(reportDefinitionDto.isCombined()).isTrue();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
-      .isInstanceOf(CombinedReportDefinitionDto.class);
+      .isInstanceOf(CombinedReportDefinitionRequestDto.class);
   }
 
   @Test

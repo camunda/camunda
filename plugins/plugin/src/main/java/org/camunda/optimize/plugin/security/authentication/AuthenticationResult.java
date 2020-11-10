@@ -5,15 +5,12 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthenticationResult {
-
-  public AuthenticationResult() {
-  }
-
-  public AuthenticationResult(boolean isAuthenticated, String authenticatedUser) {
-    this.isAuthenticated = isAuthenticated;
-    this.authenticatedUser = authenticatedUser;
-  }
 
   private boolean isAuthenticated;
   private String authenticatedUser;
@@ -33,4 +30,5 @@ public class AuthenticationResult {
   public void setAuthenticatedUser(String authenticatedUser) {
     this.authenticatedUser = authenticatedUser;
   }
+
 }

@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -149,8 +149,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final DashboardDefinitionRestDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
@@ -190,8 +190,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final DashboardDefinitionRestDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
@@ -245,8 +245,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final DashboardDefinitionRestDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
@@ -267,8 +267,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsKermit(copyId).getDefinitionDto();
+    final String copyId = response.readEntity(IdResponseDto.class).getId();
+    final DashboardDefinitionRestDto dashboardCopy = getDashboardByIdAsKermit(copyId).getDefinitionDto();
     assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
@@ -349,7 +349,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final AuthorizedDashboardDefinitionDto dashboard = getDashboardByIdAsKermit(dashboardId);
+    final AuthorizedDashboardDefinitionResponseDto dashboard = getDashboardByIdAsKermit(dashboardId);
 
     // then
     assertThat(dashboard.getCurrentUserRole(), is(getExpectedResourceRoleForCollectionRole(identityAndRole)));
@@ -366,7 +366,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
-    final AuthorizedDashboardDefinitionDto dashboard = getDashboardByIdAsKermit(dashboardId);
+    final AuthorizedDashboardDefinitionResponseDto dashboard = getDashboardByIdAsKermit(dashboardId);
 
     // then
     assertThat(dashboard.getCurrentUserRole(), is(RoleType.EDITOR));
@@ -622,12 +622,12 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     );
   }
 
-  private AuthorizedDashboardDefinitionDto getDashboardByIdAsKermit(final String dashboardId) {
+  private AuthorizedDashboardDefinitionResponseDto getDashboardByIdAsKermit(final String dashboardId) {
     return dashboardClient.getDashboardAsUser(dashboardId, KERMIT_USER, KERMIT_USER);
   }
 
   private Response updateDashboardAsKermit(final String dashboardId) {
-    return dashboardClient.updateDashboardAsUser(dashboardId, new DashboardDefinitionDto(), KERMIT_USER, KERMIT_USER);
+    return dashboardClient.updateDashboardAsUser(dashboardId, new DashboardDefinitionRestDto(), KERMIT_USER, KERMIT_USER);
   }
 
   private Response deleteDashboardAsKermit(final String dashboardId) {

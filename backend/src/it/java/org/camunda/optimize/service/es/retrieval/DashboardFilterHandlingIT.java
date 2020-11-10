@@ -10,14 +10,15 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.HttpMethod.POST;
@@ -51,9 +53,14 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   private static final DashboardFilterDto STATE_DASHBOARD_FILTER =
     new DashboardFilterDto(DashboardFilterType.STATE, null);
   private static final DashboardFilterDto DATE_VAR_DASHBOARD_FILTER =
-    new DashboardFilterDto(DashboardFilterType.VARIABLE, new DateVariableFilterDataDto(DATE_VAR, null));
+    new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DashboardVariableFilterDataDto(VariableType.DATE, DATE_VAR, null)
+    );
   private static final DashboardFilterDto BOOL_VAR_DASHBOARD_FILTER =
-    new DashboardFilterDto(DashboardFilterType.VARIABLE, new BooleanVariableFilterDataDto(BOOL_VAR, null)
+    new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DashboardVariableFilterDataDto(VariableType.BOOLEAN, BOOL_VAR, null)
     );
 
   @Test
@@ -61,7 +68,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -70,7 +77,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when
     reportClient.deleteReport(reportId, true);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter for the deleted report is removed from the dashboard filters
     assertThat(dashboard.getAvailableFilters())
@@ -85,14 +92,14 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
 
-    final DashboardDefinitionDto firstDashboardDefinitionDto =
+    final DashboardDefinitionRestDto firstDashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
       );
     final String firstDashboardId = dashboardClient.createDashboard(firstDashboardDefinitionDto);
 
-    final DashboardDefinitionDto secondDashboardDefinitionDto =
+    final DashboardDefinitionRestDto secondDashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, BOOL_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -101,8 +108,8 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when
     reportClient.deleteReport(reportId, true);
-    final DashboardDefinitionDto firstDashboard = dashboardClient.getDashboard(firstDashboardId);
-    final DashboardDefinitionDto secondDashboard = dashboardClient.getDashboard(secondDashboardId);
+    final DashboardDefinitionRestDto firstDashboard = dashboardClient.getDashboard(firstDashboardId);
+    final DashboardDefinitionRestDto secondDashboard = dashboardClient.getDashboard(secondDashboardId);
 
     // then the variable filter for the deleted report is removed from the dashboard filters of both dashboards
     assertThat(firstDashboard.getAvailableFilters())
@@ -122,7 +129,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final String reportToKeep = createAndSaveReportForDeployedInstance(deployedInstance).getId();
     final String reportToDelete = reportClient.createEmptySingleProcessReport();
     final List<DashboardFilterDto> dashboardFilters = Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER);
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilters,
         Arrays.asList(reportToKeep, reportToDelete)
@@ -131,7 +138,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when
     reportClient.deleteReport(reportToDelete, true);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filters for the dashboard containing the deleted report are unaffected
     assertThat(dashboard.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
@@ -149,7 +156,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
       BOOL_VAR_DASHBOARD_FILTER,
       DATE_VAR_DASHBOARD_FILTER
     );
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilterDtos,
         Arrays.asList(firstReportId, secondReportId)
@@ -158,7 +165,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when
     reportClient.deleteReport(firstReportId, true);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filters all remain as the filter exists in other reports that are still in dashboard
     assertThat(dashboard.getAvailableFilters())
@@ -172,7 +179,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
     final List<DashboardFilterDto> dashboardFilters = Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER);
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilters,
         Collections.singletonList(reportId)
@@ -187,7 +194,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
     final Response response = reportClient.deleteReport(reportId, true);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -208,7 +215,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -218,10 +225,10 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // when
     final ProcessInstanceEngineDto secondDefinitionInstance =
       engineIntegrationExtension.deployAndStartProcess(simpleProcessModel("someOtherId"));
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(secondDefinitionInstance.getProcessDefinitionKey());
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter has been removed as it is not available for updated report definition
     assertThat(dashboard.getAvailableFilters())
@@ -235,7 +242,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -243,9 +250,9 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when
-    final SingleProcessReportDefinitionDto updatedDefinition = createReportDefinitionForKey(null);
+    final SingleProcessReportDefinitionRequestDto updatedDefinition = createReportDefinitionForKey(null);
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter has been removed as it is not available for updated report definition
     assertThat(dashboard.getAvailableFilters())
@@ -259,7 +266,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -268,11 +275,11 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when next version deployed and instance has no variables
     final ProcessInstanceEngineDto secondInstance = deployInstanceWithVariables(Collections.emptyMap());
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(deployedInstance.getProcessDefinitionKey());
     updatedDefinition.getData().setProcessDefinitionVersion(secondInstance.getProcessDefinitionVersion());
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter has been removed as it is not available for updated report version
     assertThat(dashboard.getAvailableFilters())
@@ -286,7 +293,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -299,11 +306,11 @@ public class DashboardFilterHandlingIT extends AbstractIT {
       Collections.emptyMap(),
       tenant
     );
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(deployedInstance.getProcessDefinitionKey());
     updatedDefinition.getData().setTenantIds(Collections.singletonList(secondInstance.getTenantId()));
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter has been removed as it is not available for updated report tenants
     assertThat(dashboard.getAvailableFilters())
@@ -321,7 +328,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
       STATE_DASHBOARD_FILTER,
       DATE_VAR_DASHBOARD_FILTER
     );
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardVariables,
         Collections.singletonList(reportId)
@@ -330,12 +337,12 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
     // when
     final ProcessInstanceEngineDto secondInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(secondInstance.getProcessDefinitionKey());
     updatedDefinition.getData().setTenantIds(Collections.singletonList(secondInstance.getTenantId()));
     updatedDefinition.getData().setProcessDefinitionVersion(secondInstance.getProcessDefinitionVersion());
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the variable filter remains as the new version of the report has the same variables
     assertThat(dashboard.getAvailableFilters())
@@ -357,7 +364,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
       DATE_VAR_DASHBOARD_FILTER,
       BOOL_VAR_DASHBOARD_FILTER
     );
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardVariables,
         Arrays.asList(firstReportId, secondReportId)
@@ -365,12 +372,12 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when the first report changes to use the version from second instance
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(secondInstance.getProcessDefinitionKey());
     updatedDefinition.getData().setTenantIds(Collections.singletonList(secondInstance.getTenantId()));
     updatedDefinition.getData().setProcessDefinitionVersion(secondInstance.getProcessDefinitionVersion());
     reportClient.updateSingleProcessReport(firstReportId, updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then only the variable filter that is not available in the new version is removed
     assertThat(dashboard.getAvailableFilters())
@@ -383,14 +390,14 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
     final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
-    final DashboardDefinitionDto firstDashboardDefinitionDto =
+    final DashboardDefinitionRestDto firstDashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
       );
     final String firstDashboardId = dashboardClient.createDashboard(firstDashboardDefinitionDto);
 
-    final DashboardDefinitionDto secondDashboardDefinitionDto =
+    final DashboardDefinitionRestDto secondDashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Arrays.asList(STATE_DASHBOARD_FILTER, BOOL_VAR_DASHBOARD_FILTER),
         Collections.singletonList(reportId)
@@ -400,12 +407,12 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // when
     final ProcessInstanceEngineDto secondDefinitionInstance =
       engineIntegrationExtension.deployAndStartProcess(simpleProcessModel("someOtherId"));
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(secondDefinitionInstance.getProcessDefinitionKey());
     reportClient.updateSingleProcessReport(reportId, updatedDefinition);
 
-    final DashboardDefinitionDto firstDashboard = dashboardClient.getDashboard(firstDashboardId);
-    final DashboardDefinitionDto secondDashboard = dashboardClient.getDashboard(secondDashboardId);
+    final DashboardDefinitionRestDto firstDashboard = dashboardClient.getDashboard(firstDashboardId);
+    final DashboardDefinitionRestDto secondDashboard = dashboardClient.getDashboard(secondDashboardId);
 
     // then the variable filters have been removed from both dashboards as it is not available for updated report
     // definition
@@ -423,13 +430,13 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   public void reportIsNotUpdatedIfVariableFiltersFailToBeRemovedFromDashboard() {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
-    final SingleProcessReportDefinitionDto originalDefinition =
+    final SingleProcessReportDefinitionRequestDto originalDefinition =
       createAndSaveReportForDeployedInstance(deployedInstance);
     final List<DashboardFilterDto> dashboardFilters = Arrays.asList(
       STATE_DASHBOARD_FILTER,
       DATE_VAR_DASHBOARD_FILTER
     );
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilters,
         Collections.singletonList(originalDefinition.getId())
@@ -437,7 +444,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when
-    final SingleProcessReportDefinitionDto updatedDefinition =
+    final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(deployedInstance.getProcessDefinitionKey());
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
@@ -446,7 +453,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
     final Response response = reportClient.updateSingleProcessReport(originalDefinition.getId(), updatedDefinition);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the request fails
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -456,7 +463,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     assertThat(dashboard.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
 
     // then the report has not been updated
-    final SingleProcessReportDefinitionDto storedReportDefinition =
+    final SingleProcessReportDefinitionRequestDto storedReportDefinition =
       reportClient.getSingleProcessReportDefinitionDto(originalDefinition.getId());
     assertThat(storedReportDefinition).isEqualTo(originalDefinition);
   }
@@ -464,25 +471,25 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   @Test
   public void dashboardAreUnaffectedOnDecisionReportUpdate() {
     // given
-    final SingleDecisionReportDefinitionDto decisionDef =
+    final SingleDecisionReportDefinitionRequestDto decisionDef =
       reportClient.createSingleDecisionReportDefinitionDto("someKey");
     final String decisionReportId = reportClient.createSingleDecisionReport(decisionDef);
     final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(STATE_DASHBOARD_FILTER);
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilters,
         Collections.singletonList(decisionReportId)
       );
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
-    final DashboardDefinitionDto storedDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
-    final SingleDecisionReportDefinitionDto updatedDef =
+    final SingleDecisionReportDefinitionRequestDto updatedDef =
       reportClient.createSingleDecisionReportDefinitionDto("someKey");
     reportClient.updateDecisionReport(decisionReportId, updatedDef);
 
     // then the dashboard is not updated
-    final DashboardDefinitionDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
     assertThat(storedDashboard).isEqualTo(dashboardAfterUpdate);
   }
 
@@ -492,43 +499,44 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     String combinedReportId = reportClient.createEmptyCombinedReport(null);
 
     final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(STATE_DASHBOARD_FILTER);
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         dashboardFilters,
         Collections.singletonList(combinedReportId)
       );
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
-    final DashboardDefinitionDto storedDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
-    final CombinedReportDefinitionDto updatedDef = reportClient.getCombinedProcessReportDefinitionDto(combinedReportId);
+    final CombinedReportDefinitionRequestDto updatedDef = reportClient.getCombinedProcessReportDefinitionDto(
+      combinedReportId);
     updatedDef.setName("I changed the name");
     reportClient.updateDecisionReport(combinedReportId, updatedDef);
 
     // then the dashboard is not updated
-    final DashboardDefinitionDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
     assertThat(storedDashboard).isEqualTo(dashboardAfterUpdate);
   }
 
   @Test
   public void dashboardFiltersAreUnaffectedOnDecisionReportDelete() {
     // given
-    final SingleDecisionReportDefinitionDto decisionDef =
+    final SingleDecisionReportDefinitionRequestDto decisionDef =
       reportClient.createSingleDecisionReportDefinitionDto("someKey");
     final String decisionReportId = reportClient.createSingleDecisionReport(decisionDef);
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Collections.singletonList(STATE_DASHBOARD_FILTER),
         Collections.singletonList(decisionReportId)
       );
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
-    final DashboardDefinitionDto storedDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
     reportClient.deleteReport(decisionReportId, true);
 
     // then the dashboard filters remain
-    final DashboardDefinitionDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
     assertThat(storedDashboard.getAvailableFilters()).isEqualTo(dashboardAfterUpdate.getAvailableFilters());
   }
 
@@ -537,24 +545,102 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     // given
     String combinedReportId = reportClient.createEmptyCombinedReport(null);
 
-    final DashboardDefinitionDto dashboardDefinitionDto =
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardDefinitionWithFiltersAndReports(
         Collections.singletonList(STATE_DASHBOARD_FILTER),
         Collections.singletonList(combinedReportId)
       );
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
-    final DashboardDefinitionDto storedDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
     reportClient.deleteReport(combinedReportId, true);
 
     // then the dashboard filters remain
-    final DashboardDefinitionDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboardAfterUpdate = dashboardClient.getDashboard(dashboardId);
     assertThat(storedDashboard.getAvailableFilters()).isEqualTo(dashboardAfterUpdate.getAvailableFilters());
   }
 
-  private SingleProcessReportDefinitionDto createAndSaveReportForDeployedInstance(final ProcessInstanceEngineDto deployedInstanceWithAllVariables) {
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+  @Test
+  public void dashboardFiltersAreCopiedOnPrivateDashboardCopy() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportId)
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // when
+    IdResponseDto copyId = dashboardClient.copyDashboard(dashboardId);
+    final DashboardDefinitionRestDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isNull();
+    assertThat(originalDashboard.getCollectionId()).isNull();
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
+  @Test
+  public void dashboardFiltersAreCopiedOnDashboardCopyInsideCollection() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(deployedInstance);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+    final String reportInCollectionId = reportClient.copyReportToCollection(reportId, collectionId)
+      .readEntity(IdResponseDto.class).getId();
+
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportInCollectionId),
+        collectionId
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // when
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    final DashboardDefinitionRestDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isEqualTo(originalDashboard.getCollectionId());
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
+  @Test
+  public void dashboardFiltersAreCopiedOnDashboardCopyIntoCollection() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportId)
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(deployedInstance);
+
+    // when
+    IdResponseDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    final DashboardDefinitionRestDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isEqualTo(collectionId);
+    assertThat(originalDashboard.getCollectionId()).isNull();
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
+  private SingleProcessReportDefinitionRequestDto createAndSaveReportForDeployedInstance(final ProcessInstanceEngineDto deployedInstanceWithAllVariables) {
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       reportClient.createSingleProcessReportDefinitionDto(
         null,
         deployedInstanceWithAllVariables.getProcessDefinitionKey(),
@@ -566,17 +652,24 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     return reportClient.getSingleProcessReportDefinitionDto(reportId);
   }
 
-  private SingleProcessReportDefinitionDto createReportDefinitionForKey(final String definitionKey) {
+  private SingleProcessReportDefinitionRequestDto createReportDefinitionForKey(final String definitionKey) {
     return reportClient.createSingleProcessReportDefinitionDto(null, definitionKey, Collections.emptyList());
   }
 
-  private DashboardDefinitionDto createDashboardDefinitionWithFiltersAndReports(final List<DashboardFilterDto> dashboardFilterDtos,
-                                                                                final List<String> reportIds) {
-    final DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+  private DashboardDefinitionRestDto createDashboardDefinitionWithFiltersAndReports(final List<DashboardFilterDto> dashboardFilterDtos,
+                                                                                    final List<String> reportIds) {
+    return createDashboardDefinitionWithFiltersAndReports(dashboardFilterDtos, reportIds, null);
+  }
+
+  private DashboardDefinitionRestDto createDashboardDefinitionWithFiltersAndReports(final List<DashboardFilterDto> dashboardFilterDtos,
+                                                                                    final List<String> reportIds,
+                                                                                    final String collectionId) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setReports(reportIds.stream()
                                         .map(id -> ReportLocationDto.builder().id(id).build())
                                         .collect(Collectors.toList()));
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);
     return dashboardDefinitionDto;
   }
 

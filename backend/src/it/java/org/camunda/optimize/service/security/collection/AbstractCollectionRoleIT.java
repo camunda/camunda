@@ -12,7 +12,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 
 import java.util.Arrays;
@@ -123,16 +123,16 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   }
 
   protected void addKermitGroupRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    collectionClient.addRoleToCollection(
+    collectionClient.addRolesToCollection(
       collectionId,
-      new CollectionRoleDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
+      new CollectionRoleRequestDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
     );
   }
 
   protected void addRoleToCollectionAsDefaultUser(final RoleType roleType,
                                                   final IdentityDto identityDto,
                                                   final String collectionId) {
-    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(identityDto, roleType));
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(identityDto, roleType));
   }
 
   @Data

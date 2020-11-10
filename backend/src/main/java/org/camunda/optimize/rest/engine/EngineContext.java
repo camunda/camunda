@@ -18,7 +18,9 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -35,33 +37,33 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher.UTF8;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.DECISION_DEFINITION_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.GROUP_BY_ID_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.GROUP_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.INDEX_OF_FIRST_RESULT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.MEMBER;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.MEMBER_OF_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.PROCESS_DEFINITION_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_BY;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_ORDER;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_ORDER_ASC;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.USER_BY_ID_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.USER_COUNT_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.USER_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.GROUP_BY_ID_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.GROUP_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.INDEX_OF_FIRST_RESULT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MEMBER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MEMBER_OF_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_DEFINITION_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_BY;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER_ASC;
+import static org.camunda.optimize.service.util.importing.EngineConstants.USER_BY_ID_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.USER_COUNT_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.USER_ENDPOINT;
 
 @Slf4j
 public class EngineContext {
@@ -162,11 +164,11 @@ public class EngineContext {
   public DecisionDefinitionOptimizeDto fetchDecisionDefinition(final String decisionDefinitionId) {
     final Response response =
       engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
-      .resolveTemplate("id", decisionDefinitionId)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get();
+        .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", decisionDefinitionId)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get();
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
@@ -177,8 +179,9 @@ public class EngineContext {
         "Wasn't able to retrieve decision definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
           "remnants of historic decision instances for that definition left! Response from the engine: \n%s",
-        decisionDefinitionId, response.readEntity(String.class));
-      throw new OptimizeDecisionDefinitionFetchException(message);
+        decisionDefinitionId, response.readEntity(String.class)
+      );
+      throw new OptimizeDecisionDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve decision definition with id [%s] from the engine. Maybe the Optimize user utilized " +
@@ -192,15 +195,15 @@ public class EngineContext {
   }
 
   private DecisionDefinitionOptimizeDto mapToOptimizeDecisionDefinition(final DecisionDefinitionEngineDto engineDto) {
-    return new DecisionDefinitionOptimizeDto(
-      engineDto.getId(),
-      engineDto.getKey(),
-      engineDto.getVersionAsString(),
-      engineDto.getVersionTag(),
-      engineDto.getName(),
-      this.getEngineAlias(),
-      engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
-    );
+    return DecisionDefinitionOptimizeDto.builder()
+      .id(engineDto.getId())
+      .key(engineDto.getKey())
+      .version(engineDto.getVersionAsString())
+      .versionTag(engineDto.getVersionTag())
+      .name(engineDto.getName())
+      .engine(this.getEngineAlias())
+      .tenantId(engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null)))
+      .build();
   }
 
   public ProcessDefinitionOptimizeDto fetchProcessDefinition(final String processDefinitionId) {
@@ -221,8 +224,9 @@ public class EngineContext {
         "Wasn't able to retrieve process definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
           "remnants of historic process instances for that definition left! Response from the engine: \n%s",
-        processDefinitionId, response.readEntity(String.class));
-      throw new OptimizeProcessDefinitionFetchException(message);
+        processDefinitionId, response.readEntity(String.class)
+      );
+      throw new OptimizeProcessDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve process definition with id [%s] from the engine. Maybe the Optimize user utilized " +
@@ -294,7 +298,7 @@ public class EngineContext {
 
     } else {
       final String message = String.format(
-        "Failed querying users from engine with alias [%s], response status: [%s].", response.getStatus(), engineAlias
+        "Failed querying users from engine with alias [%s], response status: [%s].", engineAlias, response.getStatus()
       );
       response.close();
       log.error(message);
@@ -365,6 +369,28 @@ public class EngineContext {
     return Optional.empty();
   }
 
+  public Optional<String> getInstallationId() {
+//    try {
+//      Response response = getEngineClient()
+//        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+//        .path("/installationId") // TODO: adjust the path once CAM-12294 is implemented
+//        .request(MediaType.APPLICATION_JSON)
+//        .get();
+//      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+//        return Optional.of(response.readEntity(String.class));
+//      }
+//      response.close();
+//    } catch (Exception e) {
+//      String message = String.format(
+//        "Could not get installation id from engine with alias [%s]",
+//        engineAlias
+//      );
+//      log.warn(message, e);
+//      return Optional.empty();
+//    }
+    return Optional.empty();
+  }
+
   public List<GroupDto> fetchPageOfGroups(final int pageStartIndex, final int pageLimit) {
     Response response = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -427,8 +453,7 @@ public class EngineContext {
       return getAuthorizationsForType(RESOURCE_TYPE_APPLICATION);
     } catch (Exception e) {
       String message = String.format(
-        "Could not fetch application authorizations from the Engine with alias [%s] to check the access " +
-          "permissions.",
+        "Could not fetch application authorizations from the Engine with alias [%s] to check the access permissions.",
         engineAlias
       );
       log.error(message, e);

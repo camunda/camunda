@@ -32,11 +32,13 @@ public class DecisionDefinitionReader {
   }
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
-                                                                    final boolean withXml) {
+                                                                    final boolean withXml,
+                                                                    final boolean includeDeleted) {
     return definitionReader.getDefinitions(
       DefinitionType.DECISION,
       fullyImported,
-      withXml
+      withXml,
+      includeDeleted
     );
   }
 

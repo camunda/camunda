@@ -2,18 +2,6 @@
 
 exports[`should create preview of nodes 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
-  >
-    Executed Flow Node
-  </span>
-  <span
-    className="previewItemOperator"
-  >
-     
-    is
-     
-  </span>
   <ul
     className="previewList"
   >
@@ -28,27 +16,26 @@ exports[`should create preview of nodes 1`] = `
         >
           foo
         </span>
-         
       </span>
     </li>
   </ul>
+  <span
+    className="previewItemOperator"
+  >
+     
+    was
+     
+  </span>
+  <span
+    className="parameterName"
+  >
+    Executed
+  </span>
 </Fragment>
 `;
 
 exports[`should create preview of selected nodes linked by nor 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
-  >
-    Executed Flow Node
-  </span>
-  <span
-    className="previewItemOperator"
-  >
-     
-    is neither
-     
-  </span>
   <ul
     className="previewList"
   >
@@ -63,12 +50,11 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
         >
           foo
         </span>
-         
         <span
           className="previewItemOperator"
         >
            
-          nor
+          and
            
         </span>
       </span>
@@ -84,27 +70,27 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
         >
           foo
         </span>
-         
       </span>
     </li>
   </ul>
+  <span
+    className="previewItemOperator"
+  >
+     
+    were
+     
+  </span>
+  <span
+    className="parameterName"
+  >
+    Not 
+    Executed
+  </span>
 </Fragment>
 `;
 
 exports[`should create preview of selected nodes linked by or 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
-  >
-    Executed Flow Node
-  </span>
-  <span
-    className="previewItemOperator"
-  >
-     
-    is
-     
-  </span>
   <ul
     className="previewList"
   >
@@ -119,7 +105,6 @@ exports[`should create preview of selected nodes linked by or 1`] = `
         >
           foo
         </span>
-         
         <span
           className="previewItemOperator"
         >
@@ -140,9 +125,20 @@ exports[`should create preview of selected nodes linked by or 1`] = `
         >
           foo
         </span>
-         
       </span>
     </li>
   </ul>
+  <span
+    className="previewItemOperator"
+  >
+     
+    was
+     
+  </span>
+  <span
+    className="parameterName"
+  >
+    Executed
+  </span>
 </Fragment>
 `;

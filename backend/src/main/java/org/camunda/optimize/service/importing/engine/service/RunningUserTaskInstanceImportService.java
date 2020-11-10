@@ -12,7 +12,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningUserTaskElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,7 +72,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   }
 
   private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
-    final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
+    return new UserTaskInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
       engineContext.getEngineAlias(),
@@ -84,7 +84,6 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
       engineEntity.getDeleteReason(),
       null
     );
-    return userTaskInstanceDto;
   }
 
 }

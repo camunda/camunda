@@ -7,26 +7,31 @@
 import React from 'react';
 
 import {ColorPicker} from 'components';
+import {formatters} from 'services';
 
 import CombinedReportRenderer from './CombinedReportRenderer';
+
+const {formatReportResult} = formatters;
 
 export default function HyperReportRenderer({report, ...rest}) {
   const convertedReport = {
     ...report,
   };
 
-  const colors = ColorPicker.getColors(report.result.data[0].value.length);
+  const firstEntryResult = report.result.data[0].value.filter(isVisible(report));
+
+  const colors = ColorPicker.getColors(firstEntryResult.length);
 
   convertedReport.combined = true;
   convertedReport.data = {
     configuration: report.data.configuration,
-    reports: report.result.data[0].value.map(({key}, i) => ({id: key, color: colors[i]})),
+    reports: firstEntryResult.map(({key}, i) => ({id: key, color: colors[i]})),
     visualization: getVisualization(report.data.visualization),
   };
 
   const newResultData = {};
 
-  report.result.data[0].value.forEach(({key, label}) => {
+  formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
     newResultData[key] = {
       combined: false,
       id: key,
@@ -58,4 +63,47 @@ function getVisualization(visualization) {
     return visualization;
   }
   return 'bar';
+}
+
+function formatResult(data, result) {
+  const {
+    distributedBy,
+    configuration: {distributeByDateVariableUnit},
+  } = data;
+
+  const distributedByDateVar =
+    distributedBy.type === 'variable' && distributedBy.value.type === 'Date';
+  const distributedByDate = ['startDate', 'endDate'].includes(distributedBy.type);
+
+  if (distributedByDate || distributedByDateVar) {
+    return formatReportResult(
+      {
+        ...data,
+        groupBy: distributedBy,
+        configuration: {
+          ...data.configuration,
+          groupByDateVariableUnit: distributeByDateVariableUnit,
+        },
+      },
+      result
+    );
+  }
+
+  return result;
+}
+
+function isVisible(report) {
+  const {hiddenNodes} = report.data.configuration;
+
+  return ({key}) => {
+    if (
+      ['flowNode', 'userTask'].includes(report.data.distributedBy.type) &&
+      hiddenNodes.active &&
+      hiddenNodes.keys.includes(key)
+    ) {
+      return false;
+    }
+
+    return true;
+  };
 }

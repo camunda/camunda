@@ -9,7 +9,7 @@ import com.opencsv.CSVWriter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
@@ -59,7 +59,7 @@ public class CSVUtils {
     return bytes;
   }
 
-  public static <T extends IdDto> List<String[]> mapIdList(final List<T> ids) {
+  public static <T extends IdResponseDto> List<String[]> mapIdList(final List<T> ids) {
     final List<String[]> result = new ArrayList<>();
 
     result.add(new String[]{"processInstanceId"});
@@ -125,7 +125,7 @@ public class CSVUtils {
     final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
     // header line
-    result.add(allIncludedKeysInOrder.toArray(new String[allIncludedKeysInOrder.size()]));
+    result.add(allIncludedKeysInOrder.toArray(new String[0]));
 
     int currentPosition = 0;
     for (RawDataDecisionInstanceDto instanceDto : rawData) {
@@ -161,7 +161,7 @@ public class CSVUtils {
       boolean offsetPassed = isOffsetPassed(offset, currentPosition);
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
         String[] line = new String[2];
-        line[0] = value.getKey();
+        line[0] = value.getLabel();
         line[1] = Optional.ofNullable(value.getValue()).map(Object::toString).orElse("");
         result.add(line);
       }
@@ -236,7 +236,7 @@ public class CSVUtils {
                                                        final String fieldKey) {
     try {
       return Optional.of(new PropertyDescriptor(fieldKey, instanceClass))
-        .map((descriptor) -> {
+        .map(descriptor -> {
           Optional<Object> value = Optional.empty();
           try {
             value = Optional.ofNullable(descriptor.getReadMethod().invoke(instanceDto));

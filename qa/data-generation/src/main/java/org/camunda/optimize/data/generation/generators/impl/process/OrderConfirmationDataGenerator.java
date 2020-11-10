@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class OrderConfirmationDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/order-confirmation.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/order-confirmation.bpmn";
 
   public OrderConfirmationDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

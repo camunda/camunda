@@ -18,6 +18,6 @@ import java.util.List;
 @FieldNameConstants(asEnum = true)
 public class CollectionDataDto {
   protected Object configuration = new HashMap<>();
-  private List<CollectionRoleDto> roles = new ArrayList<>();
+  private List<CollectionRoleRequestDto> roles = new ArrayList<>();
   private List<CollectionScopeEntryDto> scope = new ArrayList<>();
 }

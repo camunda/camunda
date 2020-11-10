@@ -7,13 +7,13 @@ package org.camunda.optimize.test.query.performance;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -24,19 +24,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.eventName;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.group;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.eventName;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.group;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.source;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
@@ -66,18 +62,13 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
           .build()))
       .build();
 
-    // when
-    final Instant start = Instant.now();
-    final List<EventCountDto> eventCounts = embeddedOptimizeExtension.getRequestExecutor()
-      .buildPostEventCountRequest(eventCountSorter, searchTerm, countRequest)
-      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
-
-    // then
-    assertThat(eventCounts).hasSize(numberOfDifferentEvents);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when & then
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(
+      numberOfDifferentEvents,
+      () -> embeddedOptimizeExtension.getRequestExecutor()
+        .buildPostEventCountRequest(eventCountSorter, searchTerm, countRequest)
+        .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode())
+    );
   }
 
   private void addEventSequenceCountsToOptimize(final int numberOfDifferentEvents) {
@@ -93,10 +84,10 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
         .count(RandomUtils.nextLong(0, 1000))
         .build())
       .collect(Collectors.toMap(EventSequenceCountDto::getId, seq -> seq));
-    addToElasticsearch(
-      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
-      sequencesById
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(), sequencesById
     );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private static Stream<Arguments> eventCountSorterAndSearchTerm() {

@@ -36,12 +36,18 @@ export default function ProcessRenderer({
     isRemoveEvent = true;
   }
 
+  async function onSelectionChange(change) {
+    // ensure that the new xml is loaded before changing the selected node
+    await onChangeWithViewer();
+    onSelectNode(change);
+  }
+
   useEffect(() => {
     const eventBus = viewer.get('eventBus');
 
     eventBus.on('commandStack.changed', onChangeWithViewer);
     eventBus.on('shape.remove', onElementRemove);
-    eventBus.on('selection.changed', onSelectNode);
+    eventBus.on('selection.changed', onSelectionChange);
 
     const overlays = viewer.get('overlays');
     const elementRegistry = viewer.get('elementRegistry');

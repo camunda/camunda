@@ -20,15 +20,14 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,9 +48,9 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.collection.CollectionScopeService.SCOPE_NOT_AUTHORIZED_MESSAGE;
 import static org.camunda.optimize.service.collection.CollectionScopeService.UNAUTHORIZED_TENANT_MASK;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -93,21 +92,21 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit("KEY_1", definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactly("KEY_1");
   }
 
@@ -125,23 +124,23 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     createScopeForCollection(collectionId, key2, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactlyInAnyOrder(key1, key2);
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getTenants)
+      .extracting(CollectionScopeEntryResponseDto::getTenants)
       .containsOnly(Lists.newArrayList(TENANT_NOT_DEFINED));
   }
 
@@ -162,23 +161,23 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     addRoleToCollectionAsDefaultUser(
-      new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
+      new CollectionRoleRequestDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
       collectionId
     );
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactly(key1);
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getTenants)
+      .extracting(CollectionScopeEntryResponseDto::getTenants)
       .containsOnly(Lists.newArrayList(TENANT_NOT_DEFINED));
   }
 
@@ -194,21 +193,21 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(typePair.get(0));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactly("KEY_1");
   }
 
@@ -228,16 +227,16 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantSingleResourceAuthorizationsForGroup(GROUP_ID, "KEY_1", RESOURCE_TYPE_PROCESS_DEFINITION);
     addRoleToCollectionAsDefaultUser(
-      new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
+      new CollectionRoleRequestDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
       collectionId
     );
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactly("KEY_1");
   }
 
@@ -279,17 +278,17 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     );
     createScopeWithTenants(collectionId, "KEY_5", asList(unauthorizedTenant1), definitionType);
     createScopeWithTenants(collectionId, "KEY_6", asList(authorizedTenant), definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
       .containsExactlyInAnyOrder("KEY_1", "KEY_3", "KEY_4", "KEY_6");
   }
 
@@ -318,18 +317,18 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
       definitionType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
       .hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .containsExactlyInAnyOrder(
         TENANT_NOT_DEFINED,
         new TenantDto(authorizedTenant, authorizedTenant, DEFAULT_ENGINE_ALIAS),
@@ -363,16 +362,16 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
       definitionType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
 
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .contains(UNAUTHORIZED_TENANT_MASK);
-    final CollectionScopeEntryRestDto scopeEntry = scopeEntries.get(0);
+    final CollectionScopeEntryResponseDto scopeEntry = scopeEntries.get(0);
     List<String> oneTenantRemoved = scopeEntry
       .getTenants()
       .stream()
@@ -387,7 +386,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     // then
     assertThat(scopeEntries)
       .hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactlyInAnyOrder(null, unauthorizedTenant1, unauthorizedTenant2);
   }
@@ -416,17 +415,17 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, DEFAULT_TENANT, unauthorizedTenant1, unauthorizedTenant2),
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
     reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", newArrayList(authorizedTenant, DEFAULT_TENANT));
 
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .contains(UNAUTHORIZED_TENANT_MASK);
-    final CollectionScopeEntryRestDto scopeEntry = scopeEntries.get(0);
+    final CollectionScopeEntryResponseDto scopeEntry = scopeEntries.get(0);
     List<String> oneTenantRemoved = scopeEntry
       .getTenants()
       .stream()
@@ -449,11 +448,11 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     // then
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .hasSize(1)
       .first()
-      .extracting(r -> (SingleProcessReportDefinitionDto) r)
-      .extracting(SingleProcessReportDefinitionDto::getData)
+      .extracting(r -> (SingleProcessReportDefinitionRequestDto) r)
+      .extracting(SingleProcessReportDefinitionRequestDto::getData)
       .extracting(ProcessReportDataDto::getTenantIds)
       .asList()
       .contains(DEFAULT_TENANT);
@@ -484,16 +483,16 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       asList(unauthorizedTenant1, null, unauthorizedTenant2),
       definitionResourceType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
 
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .contains(UNAUTHORIZED_TENANT_MASK);
-    final CollectionScopeEntryRestDto scopeEntry = scopeEntries.get(0);
+    final CollectionScopeEntryResponseDto scopeEntry = scopeEntries.get(0);
     List<String> oneTenantAdded = scopeEntry
       .getTenants()
       .stream()
@@ -508,7 +507,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     // then
     assertThat(scopeEntries)
       .hasSize(1)
-      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactlyInAnyOrder(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2);
   }
@@ -520,7 +519,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionResourceType, "KEY", DEFAULT_TENANT);
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
@@ -548,7 +547,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("KEY", (IdentityDto) null);
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
@@ -581,7 +580,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit("KEY", definitionResourceType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
@@ -619,7 +618,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     entries.add(collectionClient.createSimpleScopeEntry(key2, PROCESS));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
@@ -644,7 +643,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     entries.add(collectionClient.createSimpleScopeEntry(key, PROCESS));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
@@ -698,12 +697,12 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     );
   }
 
-  private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
+  private void addRoleToCollectionAsDefaultUser(final CollectionRoleRequestDto roleDto,
                                                 final String collectionId) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .buildAddRolesToCollectionRequest(collectionId, roleDto)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Data

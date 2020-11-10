@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.sql.SQLException;
 import java.util.Properties;
@@ -23,14 +22,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-@ContextConfiguration(locations = {"/import-applicationContext.xml"})
 public abstract class AbstractImportTest {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -38,8 +35,8 @@ public abstract class AbstractImportTest {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension();
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -100,7 +97,7 @@ public abstract class AbstractImportTest {
 
   protected ScheduledExecutorService reportImportProgress() {
     final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
+      new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
     );
     exec.scheduleAtFixedRate(
       () -> logger.info("Progress of engine import: {}%", computeImportProgress()),
@@ -127,38 +124,17 @@ public abstract class AbstractImportTest {
   }
 
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
-    assertThat(
-      "processDefinitionsCount",
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(
-        PROCESS_DEFINITION_INDEX_NAME
-      ),
-      is(engineDatabaseExtension.countProcessDefinitions())
-    );
-    assertThat(
-      "processInstanceTypeCount",
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
-      is(engineDatabaseExtension.countHistoricProcessInstances())
-    );
-    assertThat(
-      "variableInstanceCount",
-      elasticSearchIntegrationTestExtension.getVariableInstanceCount(),
-      is(engineDatabaseExtension.countHistoricVariableInstances())
-    );
-    assertThat(
-      "historicActivityInstanceCount",
-      elasticSearchIntegrationTestExtension.getActivityCount(),
-      is(engineDatabaseExtension.countHistoricActivityInstances())
-    );
-
-    assertThat(
-      "decisionDefinitionsCount",
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
-      is(engineDatabaseExtension.countDecisionDefinitions())
-    );
-    assertThat(
-      "decisionInstancesCount",
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
-      is(engineDatabaseExtension.countHistoricDecisionInstances())
-    );
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
+      .as("processDefinitionsCount").isEqualTo(engineDatabaseExtension.countProcessDefinitions());
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME))
+      .as("processInstanceTypeCount").isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
+    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount())
+      .as("variableInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
+    assertThat(elasticSearchIntegrationTestExtension.getActivityCount())
+      .as("historicActivityInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
+      .as("decisionDefinitionsCount").isEqualTo(engineDatabaseExtension.countDecisionDefinitions());
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME))
+      .as("decisionInstancesCount").isEqualTo(engineDatabaseExtension.countHistoricDecisionInstances());
   }
 }

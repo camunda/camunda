@@ -7,16 +7,13 @@ package org.camunda.optimize.service.importing.event;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
@@ -24,11 +21,6 @@ import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.map
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public abstract class AbstractEventTraceStateImportIT extends AbstractIT {
-
-  @RegisterExtension
-  @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void init() {
@@ -40,7 +32,7 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractIT {
     return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
   }
 
-  protected List<EventDto> getAllStoredExternalEvents() {
+  protected List<EventResponseDto> getAllStoredExternalEvents() {
     return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
   }
 

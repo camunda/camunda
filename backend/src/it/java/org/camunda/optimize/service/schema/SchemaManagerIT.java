@@ -19,7 +19,6 @@ import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
@@ -47,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static javax.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
@@ -79,6 +79,7 @@ public class SchemaManagerIT extends AbstractIT {
     initializeSchema();
 
     // then throws no errors
+    assertThatNoException();
   }
 
   @Test
@@ -87,25 +88,20 @@ public class SchemaManagerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(getSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
-      .isTrue();
+    assertThat(getSchemaManager().schemaExists(prefixAwareRestHighLevelClient)).isTrue();
   }
 
   @Test
-  public void doNotFailIfSomeIndexesAlreadyExist() throws IOException {
+  public void doNotFailIfSomeIndexesAlreadyExist() {
     // given
     initializeSchema();
-    embeddedOptimizeExtension.getOptimizeElasticClient().getHighLevelClient().indices().delete(
-      new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new DecisionInstanceIndex())),
-      RequestOptions.DEFAULT
-    );
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
 
     //when
     initializeSchema();
 
     // then
-    assertThat(getSchemaManager()
-                 .schemaExists(prefixAwareRestHighLevelClient)).isTrue();
+    assertThat(getSchemaManager().schemaExists(prefixAwareRestHighLevelClient)).isTrue();
   }
 
   @Test
@@ -198,7 +194,7 @@ public class SchemaManagerIT extends AbstractIT {
     final GetSettingsResponse getSettingsResponse =
       getIndexSettingsFor(Collections.singletonList(new ProcessDefinitionIndex()));
     final String indexName =
-      indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new ProcessDefinitionIndex());
+      indexNameService.getOptimizeIndexNameWithVersion(new ProcessDefinitionIndex());
     final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
     assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
     assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
@@ -221,10 +217,7 @@ public class SchemaManagerIT extends AbstractIT {
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
-    embeddedOptimizeExtension.getOptimizeElasticClient().getHighLevelClient().indices().delete(
-      new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new DecisionInstanceIndex())),
-      RequestOptions.DEFAULT
-    );
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
 
     // when
     initializeSchema();
@@ -242,8 +235,8 @@ public class SchemaManagerIT extends AbstractIT {
 
     // then an exception is thrown when I add a document to an unknown type
     assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      "myAwesomeNewIndex", "12312412", new ProcessInstanceDto()))
-      .isInstanceOf(ElasticsearchStatusException.class);
+      "myAwesomeNewIndex", "12312412", ProcessInstanceDto.builder().build())
+    ).isInstanceOf(ElasticsearchStatusException.class);
   }
 
   @Test
@@ -272,7 +265,7 @@ public class SchemaManagerIT extends AbstractIT {
       dynamicSettings.names().forEach(
         settingName -> {
           final String setting = getSettingsResponse.getSetting(
-            indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
+            indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
           assertThat(setting).isEqualTo(dynamicSettings.get(settingName));
@@ -282,7 +275,7 @@ public class SchemaManagerIT extends AbstractIT {
       staticSettings.keySet().forEach(
         settingName -> {
           final String setting = getSettingsResponse.getSetting(
-            indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
+            indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
           assertThat(setting).isEqualTo(staticSettings.get(settingName));
@@ -304,7 +297,7 @@ public class SchemaManagerIT extends AbstractIT {
 
   private void modifyDynamicIndexSetting(final List<IndexMappingCreator> mappings) throws IOException {
     for (IndexMappingCreator mapping : mappings) {
-      final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
+      final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
       updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "10").build());
       prefixAwareRestHighLevelClient.getHighLevelClient()
@@ -314,7 +307,7 @@ public class SchemaManagerIT extends AbstractIT {
 
   private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator> mappings) throws IOException {
     final String indices = mappings.stream()
-      .map(indexNameService::getVersionedOptimizeIndexNameForIndexMapping)
+      .map(indexNameService::getOptimizeIndexNameWithVersion)
       .collect(Collectors.joining(","));
 
     Response response = prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(
@@ -332,7 +325,7 @@ public class SchemaManagerIT extends AbstractIT {
     GetIndexRequest request = new GetIndexRequest(indexName);
     final boolean indexExists = esClient.exists(request, RequestOptions.DEFAULT);
 
-    assertThat(indexExists).isEqualTo(true);
+    assertThat(indexExists).isTrue();
   }
 
   private void assertThatNewFieldExists() throws IOException {
@@ -347,7 +340,7 @@ public class SchemaManagerIT extends AbstractIT {
     final MyUpdatedEventIndex updatedEventType = new MyUpdatedEventIndex();
     final FieldMappingMetaData fieldEntry =
       response.fieldMappings(
-        indexNameService.getVersionedOptimizeIndexNameForIndexMapping(updatedEventType),
+        indexNameService.getOptimizeIndexNameWithVersion(updatedEventType),
         MyUpdatedEventIndex.MY_NEW_FIELD
       );
 

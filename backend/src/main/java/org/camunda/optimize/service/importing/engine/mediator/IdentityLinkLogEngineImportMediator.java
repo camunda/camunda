@@ -57,4 +57,10 @@ public class IdentityLinkLogEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportIdentityLinkLogsMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
 }

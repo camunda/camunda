@@ -57,4 +57,10 @@ public class RunningUserTaskInstanceEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportUserTaskInstanceMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
 }

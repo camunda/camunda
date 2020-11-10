@@ -48,8 +48,9 @@
   "telemetry": {
     "updated": "Telemetrie-Einstellungen aktualisiert.",
     "header": "Telemetrie-Einstellungen",
-    "text": "Erlauben Sie Camunda Optimize Telemetriedaten mit Camunda zu teilen, um Stabilität und Kundenservice zu verbessern.",
-    "enable": "Telemetrie aktivieren",
+    "text": "Um die Benutzererfahrung zu verbessern, kann Camunda Optimize mit der Camunda Services GmbH kommunizieren, was externe Netzwerkanfragen erfordert. Bitte wählen Sie aus der untenstehenden Einstellung.",
+    "enable": "Meta- & Nutzungsstatistiken aktivieren",
+    "info": "Erlauben Sie Camunda Optimize, anonyme Nutzungsstatistiken zu senden. Wir verwenden diese Informationen, um Ihnen eine stabile und verbesserte Produkterfahrung in der von Ihnen verwendeten Umgebung zu bieten. Auf diese Weise kann Camunda Informationen über die Produktversion und die technische Umgebung, die Sie verwenden, und darüber, wie Sie diese verwenden, sammeln.",
     "personalData": "Keine persönlichen Informationen oder gespeicherten Daten werden übermittelt.",
     "learnMore": "Weitere Informationen: ",
     "privacyPolicy": "Camunda Datenschutzerklärung"
@@ -102,8 +103,7 @@
       "editor-description": "Erstellen, bearbeiten und löschen von Dashboards, Berichten und Alarmen",
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
-      "existing-user-error": "Ein Benutzer mit dieser ID existiert schon",
-      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon",
+      "existing-identity": "Ein Benutzer oder eine Gruppe mit dieser ID existiert schon",
       "inCollection": "in dieser Sammlung",
       "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",
       "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."
@@ -220,7 +220,7 @@
     "create": "Bericht Erstellen",
     "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
-    "addName": "Berichtname hinzufügen",
+    "addName": "Berichtname",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
     "templates": {
@@ -232,14 +232,14 @@
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",
+      "reportFiltersHeading": "Berichtsfilter",
+      "additionalFiltersHeading": "Dashboardfilter",
       "label": "Zeigt Daten von {count} Instanz.",
       "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
       "label-plural": "Zeigt Daten von {count} Instanzen.",
       "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen.",
-      "reportFilters": "Berichtsfilter zeigen Daten von {count} Instanz.",
-      "reportFilters-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanz.",
-      "reportFilters-plural": "Berichtsfilter zeigen Daten von {count} Instanzen.",
-      "reportFilters-plural-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanzen.",
+      "reportFilters": "Zeigt Daten von {count} aus {totalCount} Instanz",
+      "reportFilters-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen",
       "process": {
         "label": "{count} Instanz im aktuellen Filter",
         "label-plural": "{count} Instanzen im aktuellen Filter"
@@ -253,6 +253,8 @@
       "label": "Ansicht",
       "rawData": "Rohdaten",
       "pi": "Prozessinstanz",
+      "in": "Zwischenfall",
+      "resolutionDuration": "Auflösung Dauer",
       "fn": "Prozessknoten",
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
@@ -384,7 +386,10 @@
         "endDate": "Enddatum",
         "duration": "Dauer",
         "engineName": "Engine Name",
-        "tenantId": "Mandanten Id"
+        "tenantId": "Mandanten Id",
+        "variable": "Var",
+        "inputVariable": "EingabeVar",
+        "outputVariable": "AusgabeVar"
       }
     },
     "progressBar": {
@@ -425,7 +430,9 @@
       "nodeStatus": {
         "legend": "Prozessknoten-Status",
         "running": "In Ausführung",
-        "completed": "Abgeschlossen"
+        "completed": "Abgeschlossen",
+        "canceled": "Abgebrochen oder unterbrochen",
+        "all": "Alle Zustände"
       },
       "visibleNodes": {
         "legend": "Anzuzeigende Prozessknoten anpassen",
@@ -489,11 +496,35 @@
     "label": "Dashboard",
     "label-plural": "Dashboards",
     "new": "Neues Dashboard",
+    "createNew": "Neues Dashboard Erstellen",
+    "addName": "Dashboard Name",
+    "create": "Dashboard Erstellen",
     "cannotShare": "Teilen verboten. Fehlende Berechtigung für enthaltenen Report.",
     "toggleTheme": "Design wechseln",
     "enterFullscreen": "Vollbildmodus aktivieren",
     "leaveFullscreen": "Vollbildmodus verlassen",
     "autoRefresh": "Aktualisierunsrate",
+    "saveModal": {
+      "unsaved": "Ungespeichertes Dashboard",
+      "text": "Zum Fortfahren muss das Dashboard gespeichert werden.\nDabei werden auch alle Berichte gespeichert."
+    },
+    "templates": {
+      "blank": "Leeres Dashboard",
+      "processPerformance": "Prozessleistungsübersicht",
+      "processPerformance_subTitle": "Prozessentwicklungen und -Dauern",
+      "humanPerformance": "Benutzeraufgabenübersicht",
+      "humanPerformance_subTitle": "Benutzeraufgabenanzahlen und -Dauern",
+      "totalInstances": "Alle Instanzen",
+      "avgDuration": "Durchschnittliche Instanzdauer",
+      "instanceTrends": "Instanzentwicklungen",
+      "durationTrends": "Instanzdauerentwicklungen",
+      "flownodeFrequency": "Prozessknotenfrequenz",
+      "flownodeDuration": "Prozessknotendauer",
+      "idleTime": "Wartezeit",
+      "workTime": "Arbeitszeit",
+      "tasksStarted": "Gestartete Aufgaben pro Monat",
+      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat"
+    },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
       "selectReport": "Report auswählen",
@@ -506,20 +537,21 @@
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
-      "varAbbreviation": "Var",
-      "label": "Berichtsfilter",
+      "viewButtonText": "Berichtsfilter",
+      "label": "Berichtsfilter hinzufügen",
       "viewLabel": "Berichtsdaten filtern",
-      "info": "Wählen Sie Filtertypen zur Verwendung im Dashboard aus",
-      "notice": "Hinzugefügte Optionen werden im gespeicherten Dashboard zur Auswahl verfügbar sein.",
+      "disabledVariable": "Variablenfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
       "resetAll": "Alle zurücksetzen",
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
+      "selectValue": "Variablenwert auswählen",
       "modal": {
         "pretext": {
           "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",
           "Boolean": "Wahr und Falsch Werte werden im resultierenden Filter verfügbar sein.",
           "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein."
-        }
+        },
+        "allowCustomValues": "Betrachter können Filterwerte hinzufügen"
       },
       "types": {
         "state": "Instanzstatus",
@@ -642,6 +674,7 @@
     "remove": "Entfernen",
     "removeEntity": "{entity} entfernen",
     "save": "Speichern",
+    "saveContinue": "Speichern und Fortfahren",
     "update": "Aktualisieren",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
@@ -682,6 +715,7 @@
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
     "timeAt": "um",
+    "value": "Wert",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -699,6 +733,7 @@
       "label-plural": "Prozessknoten"
     },
     "multiSelect": {
+      "selectAll": "Alles in Ansicht auswählen",
       "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
       "search": "Nach Elementen suchen",
@@ -754,20 +789,11 @@
       "buttonTitle": "Teilen",
       "disabled": "Teilen ist per Konfiguration deaktiviert",
       "popoverTitle": "Teilen aktivieren",
-      "link": {
-        "title": "Link",
-        "description": {
-          "report": "Verwenden Sie die folgende URL, um den Bericht für Personen freizugeben, die kein Camunda Optimize-Konto haben:",
-          "dashboard": "Verwenden Sie die folgende URL, um das Dashboard für Personen freizugeben, die kein Camunda Optimize-Konto haben:"
-        }
-      },
-      "embed": {
-        "title": "Einbetten",
-        "description": {
-          "report": "Verwenden Sie den folgenden HTML-Code, um den Bericht in Blogs und Webseiten einzubetten:",
-          "dashboard": "Verwenden Sie den folgenden HTML-Code, um das Dashboard in Blogs und Webseiten einzubetten:"
-        }
-      },
+      "notification": "Link in die Zwischenablage kopiert",
+      "inputPlaceholder": "Aktivieren Sie Teilen, um den Link zu erzeugen",
+      "filtersLabel": "Mit aktuellen Filtern teilen",
+      "copyLabel": "Link kopieren",
+      "embedLabel": "Link einbetten",
       "openInOptimize": "In Optimize Öffnen"
     },
     "filter": {
@@ -802,16 +828,21 @@
           "less": "ist weniger als",
           "greater": "ist größer als",
           "is": "ist",
+          "was": "wurde",
+          "were": "wurden",
           "not": "ist nicht",
           "neither": "ist weder",
           "nor": "noch",
           "or": "oder",
+          "and": "und",
           "occurs": "ist",
           "contains": "enthält",
           "notContains": "enthält nicht"
         },
-        "executedFlowNode": "Ausgeführter Prozessknoten",
-        "executingFlowNode": "Prozessknoten in Ausführung"
+        "not": "Nicht ",
+        "executedFlowNodes": "Ausgeführt",
+        "canceledFlowNodes": "Abgebrochen oder unterbrochen",
+        "executingFlowNodes": "in Ausführung"
       },
       "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",
@@ -862,11 +893,12 @@
           "false": "ist falsch",
           "isNullOrUndefined": "ist null oder nicht definiert"
         },
-        "enterValue": "Wert eingeben",
+        "enterValue": "Einen einzigen Wert eingeben",
+        "enterMultipleValues": "Mehrere Werte durch Trennen mit einem Tabulator eingeben",
         "addValue": "Wert hinzufügen",
+        "invalidInput": "Eingabe muss eine Zahl sein",
         "multiSelect": {
-          "available": "Verfügbare Werte",
-          "selected": "Ausgewählte Werte",
+          "header": "Variable Werte",
           "search": "Suche nach Werten",
           "empty": "Keine Werte gefunden"
         },
@@ -880,10 +912,12 @@
         "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {
+        "note": "Sowohl Ausgeführte als auch Ausführende Prozessknoten werden im Ergebnis zurückgegeben.",
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
+        "canceled": "wurde abgebrochen oder unterbrochen",
         "executing": "wartend oder in Ausführung",
-        "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
+        "previewLabel": "Zeige Prozessinstanzen bei denen gilt: "
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",
@@ -893,11 +927,7 @@
           "candidateGroup": "Potenzielle Gruppe"
         },
         "unassigned": "Nicht zugewiesen",
-        "selectValue": "Filter für ID",
-        "info": {
-          "included": "Die folgenden Auswahlen werden eingeschlossen sein:",
-          "excluded": "Die folgenden Auswahlen werden ausgeschlossen sein:"
-        }
+        "selectValue": "Filter für ID"
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },

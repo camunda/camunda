@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.service.UIConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,7 @@ public class UIConfigurationRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public UIConfigurationDto getUIConfiguration() {
+  public UIConfigurationResponseDto getUIConfiguration() {
     return uiConfigurationService.getUIConfiguration();
   }
 

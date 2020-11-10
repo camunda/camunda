@@ -2,12 +2,25 @@
 
 .dark {
   .DropdownOption {
-    background-color: black;
-    color: #ddd;
+    background-color: $grey-darken-33;
+    color: #fff;
 
     &.is-active {
       color: #eee;
       background-color: #333;
+
+      &:hover {
+        background-color: $blue;
+      }
+    }
+
+    &[disabled],
+    &[disabled='disabled'] {
+      &:hover {
+        color: #fff;
+        background-color: $grey-darken-33;
+        border: none;
+      }
     }
   }
 }

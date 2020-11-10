@@ -13,6 +13,7 @@ import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'comp
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+
 import {loadEvents, isNonTimerEvent} from './service';
 import EventsSources from './EventsSources';
 
@@ -33,6 +34,10 @@ export default withErrorHandling(
       events: null,
       searchQuery: '',
       showSuggested: true,
+      sorting: {
+        by: 'group',
+        order: 'asc',
+      },
     };
 
     async componentDidMount() {
@@ -59,7 +64,7 @@ export default withErrorHandling(
       }
 
       this.props.mightFail(
-        loadEvents(payload, searchQuery),
+        loadEvents(payload, searchQuery, this.state.sorting),
         (events) => this.setState({events}),
         showError
       );
@@ -108,7 +113,10 @@ export default withErrorHandling(
         this.scrollToSelectedElement();
       }
 
-      if (prevProps.eventSources !== this.props.eventSources) {
+      if (
+        prevProps.eventSources !== this.props.eventSources ||
+        prevState.sorting !== this.state.sorting
+      ) {
         this.loadEvents(this.state.searchQuery);
       }
     }
@@ -160,7 +168,7 @@ export default withErrorHandling(
       this.props.eventSources.filter((src) => src.type !== 'external').length > 0;
 
     render() {
-      const {events, searchQuery, showSuggested, collapsed} = this.state;
+      const {events, searchQuery, showSuggested, collapsed, sorting} = this.state;
       const {selection, onMappingChange, mappings, eventSources} = this.props;
 
       const {start, end} = (selection && mappings[selection.id]) || {};
@@ -205,12 +213,12 @@ export default withErrorHandling(
           <Table
             className={classnames({collapsed})}
             head={[
-              'checked',
-              t('events.table.mapping'),
-              t('events.table.name'),
-              t('events.table.group'),
-              t('events.table.source'),
-              t('events.table.count'),
+              {label: 'checked', id: 'checked', sortable: false},
+              {label: t('events.table.mapping'), id: 'mapping', sortable: false},
+              {label: t('events.table.name'), id: 'eventName'},
+              {label: t('events.table.group'), id: 'group'},
+              {label: t('events.table.source'), id: 'source'},
+              {label: t('events.table.count'), id: 'count'},
             ]}
             body={
               events
@@ -261,7 +269,7 @@ export default withErrorHandling(
                         eventLabel || eventName,
                         group,
                         source,
-                        count,
+                        count ?? '--',
                       ],
                       props: {
                         className: classnames(eventName, {
@@ -298,6 +306,8 @@ export default withErrorHandling(
               </>
             }
             noHighlight
+            sorting={sorting}
+            updateSorting={(by, order) => this.setState({sorting: {by, order}})}
           />
         </div>
       );

@@ -1,5 +1,52 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark .FiltersView {
+  border-color: #555;
+
+  > .Button {
+    color: $silver-darken-87;
+
+    &:hover {
+      border: none;
+      background: none;
+    }
+  }
+
+  > * > .title {
+    color: #ddd;
+  }
+
+  hr {
+    opacity: 0.2;
+  }
+
+  .Popover {
+    .dialogContainer {
+      background-color: $grey-darken-33;
+
+      color: #ffffff;
+
+      .ButtonGroup .Button {
+        background-color: $grey-base-40;
+        border-color: $grey-darken-33;
+
+        &:hover {
+          background-color: $grey-lighten-50;
+        }
+
+        &.active {
+          background-color: $blue;
+        }
+      }
+    }
+  }
+
+  .reset-button {
+    border: none;
+    background: none;
+  }
+}
+
 .FiltersView {
   border-top: 1px solid $silver-darken-80;
   border-bottom: 1px solid $silver-darken-80;
@@ -54,7 +101,7 @@
   }
 
   .reset-button {
-    margin: 0 10px 0.5em;
+    margin: 0 10px 5px;
     font-size: 14px;
     border: none;
     background: none;
@@ -71,14 +118,19 @@
   hr {
     border: none;
     border-bottom: 1px solid $silver-darken-87;
+    margin: 5px 0;
   }
 
   .Popover {
-    .Popover__dialog {
-      box-shadow: none;
-      border-radius: 0;
+    .dialogContainer {
+      box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
       margin-top: 4px;
-      padding: 0;
+      border: none;
+
+      .Popover__dialog {
+        padding: 0;
+      }
     }
 
     .Popover__dialog-arrow-border,
@@ -88,7 +140,12 @@
 
     .Form {
       > fieldset {
-        padding: 10px 20px;
+        padding: 5px 20px 0 20px;
+
+        .Switch {
+          margin-top: 6px;
+          padding-bottom: 6px;
+        }
       }
     }
   }

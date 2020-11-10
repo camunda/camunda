@@ -42,9 +42,9 @@ import org.apache.lucene.util.BytesRef;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.io.IOException;
@@ -88,7 +88,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentity(@NonNull final IdentityWithMetadataDto identity) throws MaxEntryLimitHitException {
+  public void addIdentity(@NonNull final IdentityWithMetadataResponseDto identity) throws MaxEntryLimitHitException {
     doWithWriteLock(() -> {
       enforceMaxEntryLimit(1);
       try (final IndexWriter indexWriter =
@@ -101,7 +101,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataDto> identities) throws
+  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataResponseDto> identities) throws
                                                                                                MaxEntryLimitHitException {
     if (identities.isEmpty()) {
       return;
@@ -129,29 +129,29 @@ public class SearchableIdentityCache implements AutoCloseable {
     return getTypedIdentityDtoById(id, IdentityType.GROUP, SearchableIdentityCache::mapDocumentToGroupDto);
   }
 
-  public IdentitySearchResultDto searchIdentities(final String terms) {
+  public IdentitySearchResultResponseDto searchIdentities(final String terms) {
     return searchIdentities(terms, 10);
   }
 
-  public IdentitySearchResultDto searchIdentities(final String terms, final int resultLimit) {
+  public IdentitySearchResultResponseDto searchIdentities(final String terms, final int resultLimit) {
     return searchIdentitiesAfter(terms, resultLimit, null);
   }
 
-  public IdentitySearchResultDto searchIdentities(final String terms,
-                                                  final int resultLimit,
-                                                  final IdentitySearchResultDto searchAfter) {
+  public IdentitySearchResultResponseDto searchIdentities(final String terms,
+                                                          final int resultLimit,
+                                                          final IdentitySearchResultResponseDto searchAfter) {
     return searchIdentitiesAfter(terms, resultLimit, searchAfter.getScoreDoc());
   }
 
-  private IdentitySearchResultDto searchIdentitiesAfter(final String terms,
-                                                        final int resultLimit,
-                                                        final ScoreDoc searchAfter) {
-    final IdentitySearchResultDto result = new IdentitySearchResultDto();
+  private IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
+                                                                final int resultLimit,
+                                                                final ScoreDoc searchAfter) {
+    final IdentitySearchResultResponseDto result = new IdentitySearchResultResponseDto();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);
 
-        final SortField nameSort = new SortField(IdentityWithMetadataDto.Fields.name, SortField.Type.STRING, false);
+        final SortField nameSort = new SortField(IdentityWithMetadataResponseDto.Fields.name, SortField.Type.STRING, false);
         nameSort.setMissingValue(STRING_LAST);
         final Sort scoreThenNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
         final TopDocs topDocs = searcher.searchAfter(
@@ -164,7 +164,7 @@ public class SearchableIdentityCache implements AutoCloseable {
         result.setTotal(topDocs.totalHits.value);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
           final Document document = searcher.doc(scoreDoc.doc);
-          final IdentityWithMetadataDto identityRestDto = mapDocumentToIdentityDto(document);
+          final IdentityWithMetadataResponseDto identityRestDto = mapDocumentToIdentityDto(document);
           result.getResult().add(identityRestDto);
           result.setScoreDoc(scoreDoc);
         }
@@ -224,9 +224,9 @@ public class SearchableIdentityCache implements AutoCloseable {
     }
   }
 
-  private <T extends IdentityWithMetadataDto> Optional<T> getTypedIdentityDtoById(final String id,
-                                                                                  final IdentityType identityType,
-                                                                                  final Function<Document, T> mapperFunction) {
+  private <T extends IdentityWithMetadataResponseDto> Optional<T> getTypedIdentityDtoById(final String id,
+                                                                                          final IdentityType identityType,
+                                                                                          final Function<Document, T> mapperFunction) {
     AtomicReference<T> result = new AtomicReference<>();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
@@ -251,7 +251,7 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   @SneakyThrows
-  private long writeIdentityDto(final IndexWriter indexWriter, final IdentityWithMetadataDto identity) {
+  private long writeIdentityDto(final IndexWriter indexWriter, final IdentityWithMetadataResponseDto identity) {
     return indexWriter.updateDocument(
       new Term(IdentityDto.Fields.id, identity.getId()), mapIdentityDtoToDocument(identity)
     );
@@ -284,7 +284,7 @@ public class SearchableIdentityCache implements AutoCloseable {
       // do phrase query on name as it may consist of multiple terms and phrase matches are to be preferred
       // boost it by 3 as it is more important than a prefix email and prefix id match
       searchBuilder.add(
-        new BoostQuery(new PhraseQuery(getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name), termsArray), 3),
+        new BoostQuery(new PhraseQuery(getNgramFieldForDtoField(IdentityWithMetadataResponseDto.Fields.name), termsArray), 3),
         BooleanClause.Occur.SHOULD
       );
 
@@ -330,7 +330,7 @@ public class SearchableIdentityCache implements AutoCloseable {
       .build();
   }
 
-  private static Document mapIdentityDtoToDocument(final IdentityWithMetadataDto identity) {
+  private static Document mapIdentityDtoToDocument(final IdentityWithMetadataResponseDto identity) {
     final Document document = new Document();
 
     document.add(new StringField(IdentityDto.Fields.id, identity.getId(), Field.Store.YES));
@@ -341,11 +341,11 @@ public class SearchableIdentityCache implements AutoCloseable {
     document.add(new StringField(IdentityDto.Fields.type, identity.getType().name(), Field.Store.YES));
     Optional.ofNullable(identity.getName()).ifPresent(name -> {
       // as we want to use custom sorting based on name we need to store the name value as sorted doc field
-      document.add(new SortedDocValuesField(IdentityWithMetadataDto.Fields.name, new BytesRef(name.toLowerCase())));
-      document.add(new StringField(IdentityWithMetadataDto.Fields.name, name, Field.Store.YES));
+      document.add(new SortedDocValuesField(IdentityWithMetadataResponseDto.Fields.name, new BytesRef(name.toLowerCase())));
+      document.add(new StringField(IdentityWithMetadataResponseDto.Fields.name, name, Field.Store.YES));
       document.add(
         new TextField(
-          getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name),
+          getNgramFieldForDtoField(IdentityWithMetadataResponseDto.Fields.name),
           name.toLowerCase(),
           Field.Store.YES
         )
@@ -384,7 +384,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     return fieldName + ".ngram";
   }
 
-  private static IdentityWithMetadataDto mapDocumentToIdentityDto(final Document document) {
+  private static IdentityWithMetadataResponseDto mapDocumentToIdentityDto(final Document document) {
     final IdentityType identityType = IdentityType.valueOf(document.get(IdentityDto.Fields.type));
     switch (identityType) {
       case USER:
@@ -399,7 +399,7 @@ public class SearchableIdentityCache implements AutoCloseable {
   private static GroupDto mapDocumentToGroupDto(final Document document) {
     return new GroupDto(
       document.get(IdentityDto.Fields.id),
-      document.get(IdentityWithMetadataDto.Fields.name),
+      document.get(IdentityWithMetadataResponseDto.Fields.name),
       Optional.ofNullable(document.get(GroupDto.Fields.memberCount)).map(Long::valueOf).orElse(null)
     );
   }

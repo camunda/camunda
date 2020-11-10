@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -105,7 +105,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData =
-      createReportData(processDefinition1.getKey(), ALL_VERSIONS, GroupByDateUnit.DAY);
+      createReportData(processDefinition1.getKey(), ALL_VERSIONS, AggregateByDateUnit.DAY);
     final Map<AggregationType, ReportMapResultDto> results = evaluateMapReportForAllAggTypes(reportData);
 
     // then
@@ -366,7 +366,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -407,7 +407,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -424,24 +424,24 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(processDefinitionKey, ImmutableList.of(version), groupByDateUnit);
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey,
                                                   final List<String> versions,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),

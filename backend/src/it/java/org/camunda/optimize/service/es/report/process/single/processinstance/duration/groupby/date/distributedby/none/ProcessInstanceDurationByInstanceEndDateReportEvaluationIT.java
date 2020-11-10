@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -44,21 +44,6 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     return ProcessGroupByType.END_DATE;
   }
 
-  @Override
-  protected void adjustProcessInstanceDates(String processInstanceId,
-                                            OffsetDateTime refDate,
-                                            long daysToShift,
-                                            Long durationInSec) {
-    OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
-    if (durationInSec != null) {
-      engineDatabaseExtension.changeProcessInstanceStartDate(
-        processInstanceId,
-        shiftedEndDate.minusSeconds(durationInSec)
-      );
-    }
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
-  }
-
   @Test
   public void processInstancesEndedAtSameIntervalAreGroupedTogether() {
     // given
@@ -87,7 +72,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
       processDefinitionKey,
       processDefinitionVersion,
       getTestReportDataType(),
-      GroupByDateUnit.DAY
+      AggregateByDateUnit.DAY
     );
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -132,7 +117,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
       processDefinitionKey,
       processDefinitionVersion,
       getTestReportDataType(),
-      GroupByDateUnit.DAY
+      AggregateByDateUnit.DAY
     );
     reportData.setFilter(Lists.newArrayList(endDateFilterDto));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -178,7 +163,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -203,7 +188,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
       .setReportDataType(getTestReportDataType())

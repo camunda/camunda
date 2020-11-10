@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.IdentityLinkLogWriter;
+import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 
 import java.util.List;
 

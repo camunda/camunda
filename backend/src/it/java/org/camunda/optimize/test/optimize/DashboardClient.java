@@ -7,11 +7,11 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -24,18 +24,18 @@ public class DashboardClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public DashboardDefinitionDto getDashboard(final String dashboardId) {
+  public DashboardDefinitionRestDto getDashboard(final String dashboardId) {
     return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public AuthorizedDashboardDefinitionDto getDashboardAsUser(final String dashboardId, String username,
-                                                             String password) {
+  public AuthorizedDashboardDefinitionResponseDto getDashboardAsUser(final String dashboardId, String username,
+                                                                     String password) {
     return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .withUserAuthentication(username, password)
-      .execute(AuthorizedDashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(AuthorizedDashboardDefinitionResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public String createEmptyDashboard(final String collectionId) {
@@ -54,19 +54,19 @@ public class DashboardClient {
       .execute();
   }
 
-  public String createDashboardAsUser(final DashboardDefinitionDto dashboardDefinitionDto, String username,
+  public String createDashboardAsUser(final DashboardDefinitionRestDto dashboardDefinitionDto, String username,
                                       String password) {
     return getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .withUserAuthentication(username, password)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
-  public String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
+  public String createDashboard(final DashboardDefinitionRestDto dashboardDefinitionDto) {
     return getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -79,18 +79,18 @@ public class DashboardClient {
         return reportLocationDto;
       })
       .collect(Collectors.toList());
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setReports(reports);
     return updateDashboard(dashboardId, dashboard);
   }
 
-  public Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
+  public Response updateDashboard(String id, DashboardDefinitionRestDto updatedDashboard) {
     return getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public Response updateDashboardAsUser(String id, DashboardDefinitionDto updatedDashboard, String username,
+  public Response updateDashboardAsUser(String id, DashboardDefinitionRestDto updatedDashboard, String username,
                                         String password) {
     return getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
@@ -98,14 +98,14 @@ public class DashboardClient {
       .execute();
   }
 
-  public IdDto copyDashboard(final String dashboardId) {
+  public IdResponseDto copyDashboard(final String dashboardId) {
     return copyDashboardToCollection(dashboardId, null);
   }
 
-  public IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
+  public IdResponseDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
     return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response copyDashboardToCollectionAsUserAndGetRawResponse(final String dashboardId,
@@ -136,16 +136,16 @@ public class DashboardClient {
   }
 
   public String createDashboardShareForDashboard(final String dashboardId) {
-    DashboardShareDto sharingDto = new DashboardShareDto();
+    DashboardShareRestDto sharingDto = new DashboardShareRestDto();
     sharingDto.setDashboardId(dashboardId);
     return getRequestExecutor()
       .buildShareDashboardRequest(sharingDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
 
-  private DashboardDefinitionDto createSimpleDashboardDefinition(String collectionId, List<String> reportIds) {
-    DashboardDefinitionDto definitionDto = new DashboardDefinitionDto();
+  private DashboardDefinitionRestDto createSimpleDashboardDefinition(String collectionId, List<String> reportIds) {
+    DashboardDefinitionRestDto definitionDto = new DashboardDefinitionRestDto();
     definitionDto.setName("MyAwesomeDashboard");
     definitionDto.setCollectionId(collectionId);
     definitionDto.setReports(

@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, TypeaheadMultipleSelection} from 'components';
+import {Button} from 'components';
 
 import StringInput from './StringInput';
 
@@ -28,10 +28,10 @@ beforeEach(() => {
   props.setValid.mockClear();
 });
 
-it('should show a typeahead', () => {
+it('should show a checklist', () => {
   const node = shallow(<StringInput {...props} />);
 
-  expect(node.find('TypeaheadMultipleSelection')).toExist();
+  expect(node.find('Checklist')).toExist();
 });
 
 it('should load 10 values initially', () => {
@@ -43,11 +43,9 @@ it('should load 10 values initially', () => {
 it('should pass available values to the typeahead', () => {
   const availableValues = ['value1', 'value2', 'value3'];
   const node = shallow(<StringInput {...props} />);
-  node.setState({
-    availableValues,
-  });
+  node.setState({availableValues});
 
-  expect(node.find('TypeaheadMultipleSelection').props().availableValues).toEqual(availableValues);
+  expect(node.find('Checklist').props().allItems).toEqual(availableValues);
 });
 
 it('should load 10 more values if the user wants more', () => {
@@ -59,7 +57,7 @@ it('should load 10 more values if the user wants more', () => {
     loading: false,
   });
 
-  node.find('.StringInput__load-more-button').simulate('click', {preventDefault: jest.fn()});
+  node.find('[link]').simulate('click', {preventDefault: jest.fn()});
 
   expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '');
 });
@@ -76,7 +74,7 @@ it('should disable add filter button if no value is selected', () => {
     />
   );
 
-  node.instance().toggleValue('A', false);
+  node.find('Checklist').prop('onChange')([]);
 
   expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
   expect(validSpy).toHaveBeenCalledWith(false);
@@ -91,7 +89,7 @@ it('should reset values when switching between operators types', () => {
     .at(2)
     .simulate('click', {preventDefault: () => {}});
 
-  const newFilter = {operator: 'contains', values: ['']};
+  const newFilter = {operator: 'contains', values: []};
   expect(props.changeFilter).toHaveBeenCalledWith(newFilter);
 
   node.setProps({filter: newFilter});
@@ -107,12 +105,12 @@ it('should reset values when switching between operators types', () => {
 it('should render input fields depending on the selected operator', () => {
   const node = shallow(<StringInput {...props} />);
 
-  expect(node.find(TypeaheadMultipleSelection)).toExist();
+  expect(node.find('Checklist')).toExist();
   expect(node.find('ValueListInput')).not.toExist();
 
   node.setProps({filter: {operator: 'contains', values: ['']}});
 
-  expect(node.find(TypeaheadMultipleSelection)).not.toExist();
+  expect(node.find('Checklist')).not.toExist();
   expect(node.find('ValueListInput')).toExist();
 });
 

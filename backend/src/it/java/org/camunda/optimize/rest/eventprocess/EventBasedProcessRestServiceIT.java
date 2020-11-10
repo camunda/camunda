@@ -15,26 +15,27 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,6 +74,7 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
@@ -109,7 +111,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       Arguments.of(
         PUT,
         "/eventBasedProcess/someId/role",
-        Collections.singleton(new EventProcessRoleRestDto(new UserDto("someId")))
+        Collections.singleton(new EventProcessRoleResponseDto(new UserDto("someId")))
       ),
       Arguments.of(POST, "/eventBasedProcess/_mappingCleanup", EventMappingCleanupRequestDto.builder()
         .xml("<xml></xml>")
@@ -140,6 +142,74 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithUserNotAuthorizedButInAuthorizedGroup() {
+    // given only group authorization exists containing user
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+
+    final String authorizedGroup = "senate";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList(authorizedGroup));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isTrue();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithNoAuthorizedUsersOrGroups() {
+    // given
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+    eventBasedProcessConfiguration.getAuthorizedGroupIds().clear();
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithUserInGroupNotAuthorized() {
+    // given user exists in group not authorized for access
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+
+    final String authorizedGroup = "humans";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList("zombies"));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithAuthorizedUserAndInAuthorizedGroup() {
+    // given user is authorized and is in authorized group
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+
+    final String authorizedGroup = "humans";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList(authorizedGroup));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isTrue();
   }
 
   @ParameterizedTest

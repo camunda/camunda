@@ -14,29 +14,21 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-
-import static java.util.Objects.nonNull;
 
 @AllArgsConstructor
 @Builder
 @Data
 @FieldNameConstants(asEnum = true)
 @NoArgsConstructor
-public class SingleReportConfigurationDto implements Combinable {
+public class SingleReportConfigurationDto {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
@@ -82,48 +74,23 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   @Builder.Default
-  private ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
+  @NonNull
+  private AggregateByDateUnit groupByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
   @Builder.Default
   @NonNull
-  private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
+  private AggregateByDateUnit distributeByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
   @Builder.Default
   private CustomBucketDto customBucket = CustomBucketDto.builder().build();
+  @Builder.Default
+  private CustomBucketDto distributeByCustomBucket = CustomBucketDto.builder().build();
   @Builder.Default
   private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;
 
   @JsonIgnore
-  public String createCommandKey(ProcessViewDto viewDto) {
-    final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isModelElementCommand(viewDto) || isInstanceCommand(viewDto)) {
-      configsToConsiderForCommand.add(this.distributedBy.getType().getId());
-    }
-    getProcessPart().ifPresent(processPartDto -> configsToConsiderForCommand.add(processPartDto.createCommandKey()));
-    return String.join("-", configsToConsiderForCommand);
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof SingleReportConfigurationDto)) {
-      return false;
-    }
-    SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
-    return distributedBy.isCombinable(that.distributedBy);
-  }
-
-  private boolean isModelElementCommand(ProcessViewDto viewDto) {
-    return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
-      (ProcessViewEntity.USER_TASK.equals(viewDto.getEntity()) || ProcessViewEntity.FLOW_NODE.equals(viewDto.getEntity()));
-  }
-
-  private boolean isInstanceCommand(ProcessViewDto viewDto) {
-    return nonNull(viewDto)
-      && nonNull(viewDto.getEntity())
-      && ProcessViewEntity.PROCESS_INSTANCE.equals(viewDto.getEntity());
+  public String createCommandKey() {
+    return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
   }
 
   public Optional<ReportSortingDto> getSorting() {
@@ -132,12 +99,6 @@ public class SingleReportConfigurationDto implements Combinable {
 
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
-  }
-
-  public Optional<Double> getGroupByBaseline() {
-    return customBucket.isActive()
-      ? Optional.ofNullable(customBucket.getBaseline())
-      : Optional.empty();
   }
 
 }

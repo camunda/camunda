@@ -124,9 +124,9 @@ export default class Submenu extends React.Component {
       const body = document.body;
 
       if (parentMenu.right + submenu.clientWidth > body.clientWidth) {
-        styles.right = this.props.offset - 1 + 'px';
+        styles.right = this.props.offset + 'px';
       } else {
-        styles.left = this.props.offset - 1 + 'px';
+        styles.left = this.props.offset + 'px';
       }
 
       const margin = 10;
@@ -175,6 +175,7 @@ export default class Submenu extends React.Component {
             className={classnames('childrenContainer', {scrollable: this.state.scrollable})}
             style={this.state.styles}
           >
+            <div className="hoverGuard" />
             {this.props.children}
           </div>
         )}

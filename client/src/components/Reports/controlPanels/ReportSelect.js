@@ -92,9 +92,7 @@ export default React.memo(ReportSelect, (prevProps, nextProps) => {
 });
 
 function excludeConfig(data) {
-  return update(data, {
-    configuration: {$set: {distributedBy: data.configuration.distributedBy}},
-  });
+  return update(data, {$unset: ['configuration']});
 }
 
 function addVariables(options, variables, payloadFormatter, filter = () => true) {

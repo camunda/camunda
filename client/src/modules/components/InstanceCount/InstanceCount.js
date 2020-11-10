@@ -5,6 +5,8 @@
  */
 
 import React, {useState} from 'react';
+import equals from 'deep-equal';
+import update from 'immutability-helper';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
@@ -15,7 +17,7 @@ import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, useIcon, mightFail}) {
+export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
@@ -51,6 +53,30 @@ export function InstanceCount({report, noInfo, useIcon, mightFail}) {
     }
   }
 
+  // for dashboards, we need to separate report level and dashboard level (additional) filters
+  const reportFilters = [];
+  const additionalFilters = [];
+
+  if (hasFilter) {
+    const unappliedAdditionalFilters = [...(additionalFilter ?? [])];
+
+    data.filter.forEach((filter) => {
+      const additionalFilterIdx = unappliedAdditionalFilters.findIndex((additionalFilter) =>
+        equals(additionalFilter, sanitize(filter))
+      );
+      if (additionalFilterIdx !== -1) {
+        additionalFilters.push(filter);
+
+        // Since the same filter can be applied twice (once as report level and once as dashboard level filter),
+        // we keep track of which additional filters we already used. If a filter is twice in the data.filter array,
+        // but only once in the additionalFilter array, we sort one copy to the reportFilters and one to the additionalFilters
+        unappliedAdditionalFilters.splice(additionalFilterIdx, 1);
+      } else {
+        reportFilters.push(filter);
+      }
+    });
+  }
+
   return (
     <div className="InstanceCount">
       {hasFilter && (
@@ -71,17 +97,35 @@ export function InstanceCount({report, noInfo, useIcon, mightFail}) {
           >
             <div className="countString">
               {typeof instanceCount === 'number' &&
-                t(
-                  `report.instanceCount.reportFilters${totalCount !== 1 ? '-plural' : ''}${
-                    hasFilter ? '-withFilter' : ''
-                  }`,
-                  {
-                    count: instanceCount,
-                    totalCount,
-                  }
-                )}
+                t(`report.instanceCount.reportFilters${totalCount !== 1 ? '-plural' : ''}`, {
+                  count: instanceCount,
+                  totalCount,
+                })}
             </div>
-            <FilterList data={data.filter} flowNodeNames={flowNodeNames} variables={variables} />
+            {reportFilters.length > 0 && (
+              <>
+                <div className="filterListHeading">
+                  {t('report.instanceCount.reportFiltersHeading')}
+                </div>
+                <FilterList
+                  data={reportFilters}
+                  flowNodeNames={flowNodeNames}
+                  variables={variables}
+                />
+              </>
+            )}
+            {additionalFilters.length > 0 && (
+              <>
+                <div className="filterListHeading">
+                  {t('report.instanceCount.additionalFiltersHeading')}
+                </div>
+                <FilterList
+                  data={additionalFilters}
+                  flowNodeNames={flowNodeNames}
+                  variables={variables}
+                />
+              </>
+            )}
           </Popover>
         </span>
       )}{' '}
@@ -99,6 +143,21 @@ export function InstanceCount({report, noInfo, useIcon, mightFail}) {
       </span>
     </div>
   );
+}
+
+// dashboard filters don't have the concept of include/exclude undefined, however this field is returned
+// from the backend when the filter is applied. In order to compare the set dashboard filters with what
+// is returned, we remove the includeUndefined and excludeUndefined fields from the filter
+function sanitize(filter) {
+  if (filter.data?.data) {
+    // date variables have two nested data fields
+    return update(filter, {data: {data: {$unset: ['includeUndefined', 'excludeUndefined']}}});
+  }
+  if (filter.data) {
+    // normal date filters have one level of data
+    return update(filter, {data: {$unset: ['includeUndefined', 'excludeUndefined']}});
+  }
+  return filter;
 }
 
 export default withErrorHandling(InstanceCount);

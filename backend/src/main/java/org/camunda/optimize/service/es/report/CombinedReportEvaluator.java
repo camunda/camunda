@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,25 +39,22 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 public class CombinedReportEvaluator {
 
   private final SingleReportEvaluator singleReportEvaluatorInjected;
-  private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
 
   public CombinedReportEvaluator(final SingleReportEvaluator singleReportEvaluator,
-                                 final DateTimeFormatter dateTimeFormatter,
                                  final OptimizeElasticsearchClient esClient) {
     this.singleReportEvaluatorInjected = singleReportEvaluator;
-    this.dateTimeFormatter = dateTimeFormatter;
     this.esClient = esClient;
   }
 
-  public List<ReportEvaluationResult> evaluate(final List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+  public List<ReportEvaluationResult> evaluate(final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
                                                final ZoneId timezone) {
     final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
       new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
 
     addIntervalsToReportEvaluator(singleReportDefinitions, singleReportEvaluator, timezone);
     List<ReportEvaluationResult> resultList = new ArrayList<>();
-    for (SingleProcessReportDefinitionDto report : singleReportDefinitions) {
+    for (SingleProcessReportDefinitionRequestDto report : singleReportDefinitions) {
       Optional<ReportEvaluationResult> singleReportResult =
         evaluateWithoutThrowingError(report, singleReportEvaluator, timezone);
       singleReportResult.ifPresent(resultList::add);
@@ -66,7 +62,7 @@ public class CombinedReportEvaluator {
     return resultList;
   }
 
-  public long evaluateCombinedReportInstanceCount(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
+  public long evaluateCombinedReportInstanceCount(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
     if (CollectionUtils.isEmpty(singleReportDefinitions)) {
       return 0L;
     }
@@ -95,7 +91,7 @@ public class CombinedReportEvaluator {
     return new CountRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
   }
 
-  private List<BoolQueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+  private List<BoolQueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
                                                    SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     return singleReportDefinitions
       .stream()
@@ -103,7 +99,7 @@ public class CombinedReportEvaluator {
       .map(
         reportDefinition -> {
           ProcessCmd<?> command = (ProcessCmd) singleReportEvaluator.extractCommand(reportDefinition);
-          CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+          CommandContext<SingleProcessReportDefinitionRequestDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
           return command.getBaseQuery(commandContext);
         }
@@ -111,7 +107,7 @@ public class CombinedReportEvaluator {
       .collect(toList());
   }
 
-  private void addIntervalsToReportEvaluator(final List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+  private void addIntervalsToReportEvaluator(final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
                                              final SingleReportEvaluatorForCombinedReports singleReportEvaluator,
                                              final ZoneId timezone) {
     final CombinedIntervalSelectionCalculator combinedIntervalCalculator = new CombinedIntervalSelectionCalculator();
@@ -119,9 +115,9 @@ public class CombinedReportEvaluator {
     singleReportDefinitions
       .forEach(
         reportDefinition -> {
-          final Command<SingleProcessReportDefinitionDto> command =
+          final Command<SingleProcessReportDefinitionRequestDto> command =
             singleReportEvaluator.extractCommand(reportDefinition);
-          final CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+          final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
           commandContext.setTimezone(timezone);
 
@@ -132,12 +128,12 @@ public class CombinedReportEvaluator {
     combinedIntervalCalculator.getGlobalMinMaxStats().ifPresent(singleReportEvaluator::setCombinedRangeMinMaxStats);
   }
 
-  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(final SingleProcessReportDefinitionDto reportDefinition,
+  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(final SingleProcessReportDefinitionRequestDto reportDefinition,
                                                                         final SingleReportEvaluatorForCombinedReports singleReportEvaluator,
                                                                         final ZoneId timezone) {
     Optional<ReportEvaluationResult> result = Optional.empty();
     try {
-      CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+      CommandContext<SingleProcessReportDefinitionRequestDto> commandContext = new CommandContext<>();
       commandContext.setReportDefinition(reportDefinition);
       commandContext.setTimezone(timezone);
       ReportEvaluationResult singleResult = singleReportEvaluator.evaluate(commandContext);
@@ -159,7 +155,12 @@ public class CombinedReportEvaluator {
     private MinMaxStatDto combinedRangeMinMaxStats;
 
     private SingleReportEvaluatorForCombinedReports(final SingleReportEvaluator evaluator) {
-      super(evaluator.notSupportedCommand, evaluator.applicationContext, evaluator.commandSuppliers.values());
+      super(
+        evaluator.configurationService,
+        evaluator.notSupportedCommand,
+        evaluator.applicationContext,
+        evaluator.commandSuppliers.values()
+      );
     }
 
     @Override

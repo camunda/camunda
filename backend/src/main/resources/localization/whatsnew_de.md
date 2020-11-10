@@ -1,3 +1,3 @@
-## Neuer String Variablen Filter Operator: Enthält
+## Verbesserungen des Dashboard-Filters
 
-Für Berichte ist es jetzt möglich, nur jene Prozessinstanzen und Entscheidungsausführungen zu berücksichtigen, bei denen eine String Variable einen bestimmten Teilstring enthält.
+Dashboard-Viewer können jetzt benutzerdefinierte Variablenwerte zu Dashboard-Variablenfiltern hinzufügen.

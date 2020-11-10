@@ -5,22 +5,17 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.assignee.distributed_by.user_task;
 
-import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
-import java.sql.SQLException;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskIdleDurationByAssigneeByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluationIT {
@@ -53,24 +48,10 @@ public class UserTaskIdleDurationByAssigneeByUserTaskReportEvaluationIT
       .build();
   }
 
-  private void changeUserClaimTimestamp(final long millis,
-                                        final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
-    try {
-      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-        historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-  }
-
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get(),
-      is(expectedValues.getExpectedIdleDurationValues())
-    );
+    assertThat(result.getDataEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .isEqualTo(expectedValues.getExpectedIdleDurationValues());
   }
 }

@@ -10,20 +10,19 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,6 +64,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_ENGINE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
@@ -74,7 +74,6 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
@@ -122,24 +121,32 @@ public class DefinitionReader {
     }
 
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
-      .must(termQuery(DEFINITION_KEY, key));
+      .must(termQuery(DEFINITION_KEY, key))
+      .must(termQuery(DEFINITION_DELETED, false));
 
     return getDefinitionWithTenantIdsDtos(query, resolveIndexNameForType(type)).stream().findFirst();
   }
 
-  public <T extends DefinitionOptimizeDto> List<T> getDefinitions(final DefinitionType type,
-                                                                  final boolean fullyImported,
-                                                                  final boolean withXml) {
-    return fetchDefinitions(type, fullyImported, withXml, matchAllQuery());
+  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
+                                                                          final boolean fullyImported,
+                                                                          final boolean withXml) {
+    return getDefinitions(type, fullyImported, withXml, false);
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
+                                                                          final boolean fullyImported,
+                                                                          final boolean withXml,
+                                                                          final boolean includeDeleted) {
+    return fetchDefinitions(type, fullyImported, withXml, matchAllQuery(), includeDeleted);
   }
 
   public List<DefinitionWithTenantIdsDto> getFullyImportedDefinitions(final DefinitionType type,
                                                                       final Set<String> keys,
                                                                       final Set<String> tenantIds) {
     final BoolQueryBuilder filterQuery = boolQuery();
-
     filterQuery.filter(
       boolQuery().minimumShouldMatch(1)
+        .must(termQuery(DEFINITION_DELETED, false))
         .should(existsQuery(PROCESS_DEFINITION_XML))
         .should(existsQuery(DECISION_DEFINITION_XML))
     );
@@ -153,15 +160,15 @@ public class DefinitionReader {
     return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type));
   }
 
-  public <T extends DefinitionOptimizeDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
-                                                                               final boolean withXml) {
+  public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
+                                                                                       final boolean withXml) {
     return getDefinitions(type, true, withXml);
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getFirstDefinitionFromTenantsIfAvailable(final DefinitionType type,
-                                                                                                final String definitionKey,
-                                                                                                final List<String> definitionVersions,
-                                                                                                final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getFirstDefinitionFromTenantsIfAvailable(final DefinitionType type,
+                                                                                                        final String definitionKey,
+                                                                                                        final List<String> definitionVersions,
+                                                                                                        final List<String> tenantIds) {
 
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
@@ -193,12 +200,16 @@ public class DefinitionReader {
         .field(DEFINITION_ENGINE)
         .size(LIST_FETCH_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
-      .size(LIST_FETCH_LIMIT)
+      .query(boolQuery()
+               .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
+               .must(termQuery(DEFINITION_DELETED, false)))
+      // no search results needed, we only need the aggregation
+      .size(0)
       .aggregation(enginesAggregation);
 
-    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(
+      DefinitionType.PROCESS.equals(type) ? PROCESS_DEFINITION_INDEX_NAME : DECISION_DEFINITION_INDEX_NAME
+    ).source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
     try {
@@ -216,7 +227,7 @@ public class DefinitionReader {
       .collect(Collectors.toSet());
   }
 
-  private <T extends DefinitionOptimizeDto> Optional<T> getFullyImportedDefinition(
+  private <T extends DefinitionOptimizeResponseDto> Optional<T> getFullyImportedDefinition(
     final DefinitionType type,
     final String definitionKey,
     final String definitionVersion,
@@ -231,6 +242,7 @@ public class DefinitionReader {
     final BoolQueryBuilder query = boolQuery()
       .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
       .must(termQuery(resolveVersionFieldFromType(type), validVersion))
+      .must(termQuery(DEFINITION_DELETED, false))
       .must(existsQuery(resolveXmlFieldFromType(type)));
 
     if (tenantId != null) {
@@ -310,7 +322,7 @@ public class DefinitionReader {
         .subAggregation(enginesAggregation);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
+      .query(termQuery(DEFINITION_DELETED, false))
       .aggregation(keyAndTypeAndTenantAggregation)
       .size(0);
 
@@ -341,8 +353,6 @@ public class DefinitionReader {
       List<SimpleDefinitionDto> simpleDefinitionDtos = value.stream().map(parsedBucket -> {
         final String indexAliasName = (String) (parsedBucket.getKey().get(DEFINITION_TYPE_AGGREGATION));
         final String definitionKey = (String) (parsedBucket.getKey().get(DEFINITION_KEY_AGGREGATION));
-        final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);
-        final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(indexAliasName);
         final String definitionName = ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
           .getBuckets()
           .stream()
@@ -353,8 +363,8 @@ public class DefinitionReader {
         return new SimpleDefinitionDto(
           definitionKey,
           definitionName,
-          definitionType,
-          isEventProcess,
+          resolveDefinitionTypeFromIndexAlias(indexAliasName),
+          resolveIsEventProcessFromIndexAlias(indexAliasName),
           enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
         );
       })
@@ -365,47 +375,6 @@ public class DefinitionReader {
     return resultMap;
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionByKeyAndEngineOmitXml(
-    final DefinitionType type,
-    final String definitionKey,
-    final String engineAlias) {
-
-    if (definitionKey == null) {
-      return Optional.empty();
-    }
-
-    final BoolQueryBuilder query = QueryBuilders.boolQuery()
-      .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
-      .must(termQuery(ENGINE, engineAlias));
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(1)
-      .fetchSource(null, resolveXmlFieldFromType(type));
-    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch %s definition with key [%s], engine [%s]", type, definitionKey, engineAlias
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (searchResponse.getHits().getTotalHits().value == 0L) {
-      return Optional.empty();
-    }
-
-    final SearchHit firstHit = searchResponse.getHits().getAt(0);
-    final Function<SearchHit, T> mappingFunctionForDefinitionType =
-      createMappingFunctionForDefinitionType(resolveDefinitionClassFromType(type));
-    return Optional.ofNullable(mappingFunctionForDefinitionType.apply(firstHit));
-  }
-
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
     log.debug("Fetching latest [{}] definition for key [{}]", type, key);
 
@@ -413,7 +382,9 @@ public class DefinitionReader {
       "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)"
     );
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(resolveDefinitionKeyFieldFromType(type), key))
+      .query(boolQuery()
+               .must(termQuery(resolveDefinitionKeyFieldFromType(type), key))
+               .must(termQuery(DEFINITION_DELETED, false)))
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
@@ -442,13 +413,11 @@ public class DefinitionReader {
     throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
-                                                          final String key,
-                                                          final Set<String> tenantIds) {
-    final BoolQueryBuilder filterQuery = boolQuery();
-
-    filterQuery.filter(termQuery(DEFINITION_KEY, key));
-
+  public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
+                                                                  final String key,
+                                                                  final Set<String> tenantIds) {
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termQuery(DEFINITION_KEY, key)).filter(termQuery(DEFINITION_DELETED, false));
     addTenantIdFilter(tenantIds, filterQuery);
 
     final TermsAggregationBuilder versionTagAggregation = terms(VERSION_TAG_AGGREGATION)
@@ -486,9 +455,9 @@ public class DefinitionReader {
           .findFirst()
           .map(MultiBucketsAggregation.Bucket::getKeyAsString)
           .orElse(null);
-        return new DefinitionVersionDto(version, versionTag);
+        return new DefinitionVersionResponseDto(version, versionTag);
       })
-      .sorted(Comparator.comparing(DefinitionVersionDto::getVersion).reversed())
+      .sorted(Comparator.comparing(DefinitionVersionResponseDto::getVersion).reversed())
       .collect(Collectors.toList());
   }
 
@@ -496,9 +465,9 @@ public class DefinitionReader {
                                              final String key,
                                              final List<String> versions,
                                              final Supplier<String> latestVersionSupplier) {
-    final BoolQueryBuilder filterQuery = boolQuery();
-
-    filterQuery.filter(termQuery(DEFINITION_KEY, key));
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termQuery(DEFINITION_KEY, key))
+      .filter(termQuery(DEFINITION_DELETED, false));
 
     if (versions != null
       // if all is among the versions, no filtering needed
@@ -559,18 +528,22 @@ public class DefinitionReader {
     }
   }
 
-  private <T extends DefinitionOptimizeDto> List<T> fetchDefinitions(final DefinitionType type,
-                                                                     final boolean fullyImported,
-                                                                     final boolean withXml,
-                                                                     final QueryBuilder query) {
+  private <T extends DefinitionOptimizeResponseDto> List<T> fetchDefinitions(final DefinitionType type,
+                                                                             final boolean fullyImported,
+                                                                             final boolean withXml,
+                                                                             final QueryBuilder query,
+                                                                             final boolean includeDeleted) {
     final String xmlField = resolveXmlFieldFromType(type);
     final BoolQueryBuilder rootQuery = boolQuery().must(
       fullyImported ? existsQuery(xmlField) : matchAllQuery()
     );
-    rootQuery.must(query);
+    final BoolQueryBuilder filteredQuery = rootQuery.must(query);
+    if (!includeDeleted) {
+      filteredQuery.must(termQuery(DEFINITION_DELETED, false));
+    }
     final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(rootQuery)
+      .query(filteredQuery)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
@@ -636,8 +609,6 @@ public class DefinitionReader {
       .map(keyAndTypeAgg -> {
         final String indexAliasName = (String) (keyAndTypeAgg.getKey()).get(DEFINITION_TYPE_AGGREGATION);
         final String definitionKey = (String) (keyAndTypeAgg.getKey()).get(DEFINITION_KEY_AGGREGATION);
-        final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);
-        final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(indexAliasName);
         final Terms tenantResult = keyAndTypeAgg.getAggregations().get(TENANT_AGGREGATION);
         final Terms nameResult = keyAndTypeAgg.getAggregations().get(NAME_AGGREGATION);
         final Terms enginesResult = keyAndTypeAgg.getAggregations().get(ENGINE_AGGREGATION);
@@ -648,8 +619,8 @@ public class DefinitionReader {
             .findFirst()
             .map(Terms.Bucket::getKeyAsString)
             .orElse(null),
-          definitionType,
-          isEventProcess,
+          resolveDefinitionTypeFromIndexAlias(indexAliasName),
+          resolveIsEventProcessFromIndexAlias(indexAliasName),
           tenantResult.getBuckets().stream()
             .map(Terms.Bucket::getKeyAsString)
             // convert null bucket back to a `null` id
@@ -678,7 +649,7 @@ public class DefinitionReader {
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       ParsedComposite keyAndTypeAggregationResult = searchResponse.getAggregations()
         .get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
-      while (keyAndTypeAggregationResult.getBuckets().size() > 0) {
+      while (!keyAndTypeAggregationResult.getBuckets().isEmpty()) {
         keyAndTypeAggBuckets.addAll(keyAndTypeAggregationResult.getBuckets());
 
         keyAggregation = keyAggregation.aggregateAfter(keyAndTypeAggregationResult.afterKey());
@@ -701,7 +672,7 @@ public class DefinitionReader {
     return keyAndTypeAggBuckets;
   }
 
-  private <T extends DefinitionOptimizeDto> Function<SearchHit, T> createMappingFunctionForDefinitionType(
+  private <T extends DefinitionOptimizeResponseDto> Function<SearchHit, T> createMappingFunctionForDefinitionType(
     final Class<T> type) {
     return hit -> {
       final String sourceAsString = hit.getSourceAsString();
@@ -736,12 +707,12 @@ public class DefinitionReader {
     }
   }
 
-  private Boolean resolveIsEventProcessFromIndexAlias(String indexName) {
+  private boolean resolveIsEventProcessFromIndexAlias(String indexName) {
     return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()));
   }
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
-    return esClient.getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(index);
+    return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(index);
   }
 
   private String[] resolveIndexNameForType(final DefinitionType type) {
@@ -793,7 +764,7 @@ public class DefinitionReader {
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends DefinitionOptimizeDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
+  private <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
     switch (type) {
       case PROCESS:
         return (Class<T>) ProcessDefinitionOptimizeDto.class;

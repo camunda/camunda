@@ -12,13 +12,13 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -51,12 +51,12 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(expectedId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(expectedId);
 
     // then
     assertThat(roles)
       .hasSize(1)
-      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(DEFAULT_USERNAME);
   }
@@ -73,11 +73,11 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(expectedId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(expectedId);
 
     // then
     MatcherAssert.assertThat(roles.size(), is(1));
-    final IdentityWithMetadataDto identityRestDto = roles.get(0).getIdentity();
+    final IdentityWithMetadataResponseDto identityRestDto = roles.get(0).getIdentity();
     MatcherAssert.assertThat(identityRestDto, is(instanceOf(UserDto.class)));
     final UserDto userDto = (UserDto) identityRestDto;
     MatcherAssert.assertThat(userDto.getFirstName(), is(expectedUserDtoWithData.getFirstName()));
@@ -107,13 +107,13 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.updateEventProcessMappingRoles(
       expectedId,
-      Arrays.asList(new EventProcessRoleDto<>(userIdentity1), new EventProcessRoleDto<>(userIdentity2))
+      Arrays.asList(new EventProcessRoleRequestDto<>(userIdentity1), new EventProcessRoleRequestDto<>(userIdentity2))
     );
 
     // when
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.createGetEventProcessMappingRolesRequest(expectedId)
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.createGetEventProcessMappingRolesRequest(expectedId)
       .withUserAuthentication(USER_KERMIT, USER_KERMIT)
-      .execute(new TypeReference<List<EventProcessRoleRestDto>>() {
+      .execute(new TypeReference<List<EventProcessRoleResponseDto>>() {
       });
 
     // then
@@ -133,14 +133,14 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     // when
     eventProcessClient.updateEventProcessMappingRoles(
       eventProcessMappingId,
-      Collections.singletonList(new EventProcessRoleDto<>(new UserDto(USER_KERMIT)))
+      Collections.singletonList(new EventProcessRoleRequestDto<>(new UserDto(USER_KERMIT)))
     );
 
     // then
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .hasSize(1)
-      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(USER_KERMIT);
   }
@@ -162,7 +162,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     // when
     final Response response = eventProcessClient.createUpdateEventProcessMappingRolesRequest(
       eventProcessMappingId,
-      Arrays.asList(new EventProcessRoleDto<>(userIdentity1), new EventProcessRoleDto<>(userIdentity2))
+      Arrays.asList(new EventProcessRoleRequestDto<>(userIdentity1), new EventProcessRoleRequestDto<>(userIdentity2))
     ).withUserAuthentication(USER_KERMIT, USER_KERMIT)
       .execute();
 
@@ -181,17 +181,17 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     engineIntegrationExtension.createGroup(TEST_GROUP);
     engineIntegrationExtension.grantGroupOptimizeAccess(TEST_GROUP);
 
-    final ImmutableList<EventProcessRoleDto<IdentityDto>> roleEntries = ImmutableList.of(
-      new EventProcessRoleDto<>(new UserDto(USER_KERMIT)),
-      new EventProcessRoleDto<>(new GroupDto(TEST_GROUP))
+    final ImmutableList<EventProcessRoleRequestDto<IdentityDto>> roleEntries = ImmutableList.of(
+      new EventProcessRoleRequestDto<>(new UserDto(USER_KERMIT)),
+      new EventProcessRoleRequestDto<>(new GroupDto(TEST_GROUP))
     );
     // when
     eventProcessClient.updateEventProcessMappingRoles(eventProcessMappingId, roleEntries);
 
     // then
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
-      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId, IdentityDto::getType)
       .containsExactly(
         Tuple.tuple(USER_KERMIT, IdentityType.USER),
@@ -210,17 +210,17 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     engineIntegrationExtension.createGroup(TEST_GROUP);
     engineIntegrationExtension.grantGroupOptimizeAccess(TEST_GROUP);
 
-    final ImmutableList<EventProcessRoleDto<IdentityDto>> roleEntries = ImmutableList.of(
-      new EventProcessRoleDto<>(new IdentityDto(USER_KERMIT, null)),
-      new EventProcessRoleDto<>(new IdentityDto(TEST_GROUP, null))
+    final ImmutableList<EventProcessRoleRequestDto<IdentityDto>> roleEntries = ImmutableList.of(
+      new EventProcessRoleRequestDto<>(new IdentityDto(USER_KERMIT, null)),
+      new EventProcessRoleRequestDto<>(new IdentityDto(TEST_GROUP, null))
     );
     // when
     eventProcessClient.updateEventProcessMappingRoles(eventProcessMappingId, roleEntries);
 
     // then
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
-      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId, IdentityDto::getType)
       .containsExactly(
         Tuple.tuple(USER_KERMIT, IdentityType.USER),
@@ -253,7 +253,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final ErrorResponseDto updateResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateEventProcessRolesRequest(
         eventProcessMappingId,
-        Collections.singletonList(new EventProcessRoleDto<>(new UserDto("invalid")))
+        Collections.singletonList(new EventProcessRoleRequestDto<>(new UserDto("invalid")))
       )
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -272,8 +272,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
       .createUpdateEventProcessMappingRolesRequest(
         eventProcessMappingId,
         ImmutableList.of(
-          new EventProcessRoleDto<>(new UserDto("invalid")),
-          new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))
+          new EventProcessRoleRequestDto<>(new UserDto("invalid")),
+          new EventProcessRoleRequestDto<>(new UserDto(DEFAULT_USERNAME))
         )
       )
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
@@ -305,14 +305,14 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
     eventProcessClient.updateEventProcessMappingRoles(
       eventProcessMappingId,
-      Collections.singletonList(new EventProcessRoleDto<>(new UserDto(USER_KERMIT)))
+      Collections.singletonList(new EventProcessRoleRequestDto<>(new UserDto(USER_KERMIT)))
     );
 
     // then
-    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .hasSize(1)
-      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(USER_KERMIT);
     final EventProcessMappingResponseDto updatedMapping = eventProcessClient.getEventProcessMapping(

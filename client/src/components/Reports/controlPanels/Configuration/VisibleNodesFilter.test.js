@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
+
+import {Button} from 'components';
 
 import VisibleNodesFilter from './VisibleNodesFilter';
-import {shallow} from 'enzyme';
-import {Button} from 'components';
 
 const report = {
   result: {
@@ -18,7 +19,12 @@ const report = {
     ],
   },
   data: {
-    configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: ['foo']}},
+    distributedBy: {},
+    configuration: {
+      color: 'testColor',
+      xml: 'fooXml',
+      hiddenNodes: {active: false, keys: ['foo']},
+    },
     visualization: 'line',
     groupBy: {
       type: 'flowNodes',
@@ -30,7 +36,7 @@ const report = {
   combined: false,
 };
 
-it('should render nothing if report is not grouped by flowNodes', () => {
+it('should render nothing if report is not grouped/distributed by flowNodes', () => {
   const node = shallow(
     <VisibleNodesFilter
       report={{...report, data: {...report.data, groupBy: {type: 'something else'}}}}
@@ -39,10 +45,28 @@ it('should render nothing if report is not grouped by flowNodes', () => {
 
   expect(node).toMatchSnapshot();
 });
+
 it('should render component', () => {
   const node = shallow(<VisibleNodesFilter report={report} />);
 
   expect(node).toMatchSnapshot();
+});
+
+it('should display component if distributed by flowNode', () => {
+  const node = shallow(
+    <VisibleNodesFilter
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          distributedBy: {type: 'flowNode'},
+          groupBy: {type: 'startDate'},
+        },
+      }}
+    />
+  );
+
+  expect(node.find('.VisibleNodesFilter')).toExist();
 });
 
 it('should open NodeSelectionModal on show Flow Nodes button click', () => {

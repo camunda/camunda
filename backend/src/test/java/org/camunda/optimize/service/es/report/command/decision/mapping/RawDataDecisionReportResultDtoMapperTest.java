@@ -8,9 +8,16 @@ package org.camunda.optimize.service.es.report.command.decision.mapping;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,8 +25,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class RawDataDecisionReportResultDtoMapperTest {
+
+  @Mock
+  private ExecutionContext<DecisionReportDataDto> executionContext;
 
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
@@ -29,19 +41,24 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final Long unfilteredInstanceCount = 4L;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationDto expectedPagination = PaginationDto.fromPaginationRequest(paginationDto);
+    when(executionContext.getUnfilteredInstanceCount())
+      .thenReturn(unfilteredInstanceCount);
+    when(executionContext.getPagination()).thenReturn(expectedPagination);
 
     // when
     final RawDataDecisionReportResultDto result = mapper.mapFrom(
       decisionInstanceDtos,
       actualInstanceCount,
-      unfilteredInstanceCount
+      executionContext
     );
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
+    assertThat(result.getPagination()).isEqualTo(expectedPagination);
   }
 
   @Test
@@ -52,19 +69,54 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final Long unfilteredInstanceCount = 4L;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationDto expectedPagination = PaginationDto.fromPaginationRequest(paginationDto);
+    when(executionContext.getUnfilteredInstanceCount())
+      .thenReturn(unfilteredInstanceCount);
+    when(executionContext.getPagination()).thenReturn(expectedPagination);
 
     // when
     final RawDataDecisionReportResultDto result = mapper.mapFrom(
       decisionInstanceDtos,
       actualInstanceCount,
-      unfilteredInstanceCount
+      executionContext
     );
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
+    assertThat(result.getPagination()).isEqualTo(expectedPagination);
+  }
+
+  @Test
+  public void testMapFromSearchResponse_paginationParamsReturned() {
+    // given
+    final Integer rawDataLimit = 2;
+    final Long actualInstanceCount = 3L;
+    final Long unfilteredInstanceCount = 4L;
+    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
+    final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationDto expectedPagination = PaginationDto.fromPaginationRequest(paginationDto);
+    paginationDto.setLimit(5);
+    paginationDto.setOffset(10);
+    when(executionContext.getUnfilteredInstanceCount())
+      .thenReturn(unfilteredInstanceCount);
+    when(executionContext.getPagination()).thenReturn(expectedPagination);
+
+    // when
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(
+      decisionInstanceDtos,
+      actualInstanceCount,
+      executionContext
+    );
+
+    // then
+    assertThat(result.getData()).hasSize(rawDataLimit);
+    assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
+    assertThat(result.getPagination()).isEqualTo(expectedPagination);
   }
 
   @Test
@@ -73,6 +125,11 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final Integer rawDataLimit = 2;
     final Long actualInstanceCount = 3L;
     final Long unfilteredInstanceCount = 4L;
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationDto expectedPagination = PaginationDto.fromPaginationRequest(paginationDto);
+    when(executionContext.getUnfilteredInstanceCount())
+      .thenReturn(unfilteredInstanceCount);
+    when(executionContext.getPagination()).thenReturn(expectedPagination);
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
 
     final List<DecisionInstanceDto> decisionInstances = IntStream.rangeClosed(1, rawDataLimit)
@@ -98,13 +155,14 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final RawDataDecisionReportResultDto result = mapper.mapFrom(
       decisionInstances,
       actualInstanceCount,
-      unfilteredInstanceCount
+      executionContext
     );
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
+    assertThat(result.getPagination()).isEqualTo(expectedPagination);
     IntStream.range(0, rawDataLimit)
       .forEach(i -> {
         assertThat(result.getData().get(i).getInputVariables()).hasSize(rawDataLimit);

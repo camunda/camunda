@@ -11,13 +11,11 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -25,8 +23,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
@@ -36,11 +34,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class SyncedIdentityCacheServiceIT extends AbstractIT {
-
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
-    engineIntegrationExtension.getEngineName()
-  );
 
   public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
@@ -316,30 +309,30 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       final String collectionId1 = collectionClient.createNewCollection();
       final String collectionId2 = collectionClient.createNewCollection();
 
-      CollectionRoleDto testGroupRole = new CollectionRoleDto(
+      CollectionRoleRequestDto testGroupRole = new CollectionRoleRequestDto(
         new IdentityDto(TEST_GROUP, IdentityType.GROUP),
         RoleType.EDITOR
       );
-      CollectionRoleDto testGroupBRole = new CollectionRoleDto(
+      CollectionRoleRequestDto testGroupBRole = new CollectionRoleRequestDto(
         new IdentityDto(TEST_GROUP_B, IdentityType.GROUP),
         RoleType.EDITOR
       );
-      CollectionRoleDto userKermitRole = new CollectionRoleDto(
+      CollectionRoleRequestDto userKermitRole = new CollectionRoleRequestDto(
         new IdentityDto(USER_KERMIT, IdentityType.USER),
         RoleType.EDITOR
       );
-      CollectionRoleDto userDemoRole = new CollectionRoleDto(
+      CollectionRoleRequestDto userDemoRole = new CollectionRoleRequestDto(
         new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
         RoleType.MANAGER
       );
 
-      collectionClient.addRoleToCollection(collectionId1, testGroupRole);
-      final IdDto testGroupBIdDto = collectionClient.addRoleToCollection(collectionId1, testGroupBRole);
-      collectionClient.addRoleToCollection(collectionId1, userKermitRole);
+      collectionClient.addRolesToCollection(collectionId1, testGroupRole);
+      collectionClient.addRolesToCollection(collectionId1, testGroupBRole);
+      collectionClient.addRolesToCollection(collectionId1, userKermitRole);
 
-      collectionClient.addRoleToCollection(collectionId2, testGroupRole);
-      collectionClient.addRoleToCollection(collectionId2, testGroupBRole);
-      collectionClient.addRoleToCollection(collectionId2, userKermitRole);
+      collectionClient.addRolesToCollection(collectionId2, testGroupRole);
+      collectionClient.addRolesToCollection(collectionId2, testGroupBRole);
+      collectionClient.addRolesToCollection(collectionId2, userKermitRole);
 
       // when users/groups are removed from identityCache
       authorizationClient.revokeSingleResourceAuthorizationsForGroup(
@@ -356,10 +349,13 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
-      List<IdDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
-      List<IdDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
+      List<IdResponseDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
+      List<IdResponseDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
       assertThat(roleIds1).containsExactlyInAnyOrderElementsOf(roleIds2);
-      assertThat(roleIds1).containsExactlyInAnyOrder(testGroupBIdDto, new IdDto(userDemoRole.getId()));
+      assertThat(roleIds1).containsExactlyInAnyOrder(
+        new IdResponseDto(testGroupBRole.getId()),
+        new IdResponseDto(userDemoRole.getId())
+      );
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
     }
@@ -390,7 +386,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then
-      List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+      List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
       assertThat(roles).isEmpty();
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();

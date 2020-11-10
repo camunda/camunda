@@ -8,15 +8,12 @@ package org.camunda.optimize.service.cleanup;
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -28,12 +25,6 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 
 public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT {
   private static final String VARIABLE_NAME = "var";
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
-    engineIntegrationExtension.getEngineName()
-  );
 
   @Test
   public void republishAfterEngineDataCleanupModeAll() {

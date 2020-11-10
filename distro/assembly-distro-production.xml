@@ -17,12 +17,12 @@
 
   <fileSets>
     <fileSet>
-      <directory>src/environment/</directory>
+      <directory>src/config/</directory>
       <excludes>
-        <exclude>${exclude.from.environment}</exclude>
+        <exclude>${exclude.from.config}</exclude>
         <exclude>environment-logback-demo.xml</exclude>
       </excludes>
-      <outputDirectory>environment/</outputDirectory>
+      <outputDirectory>config/</outputDirectory>
     </fileSet>
   </fileSets>
 

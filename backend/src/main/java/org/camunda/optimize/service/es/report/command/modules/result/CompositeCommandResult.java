@@ -39,7 +39,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 @Accessors(chain = true)
 public class CompositeCommandResult {
 
-
   private ReportSortingDto sorting = new ReportSortingDto(null, null);
   private boolean keyIsOfNumericType = false;
 
@@ -159,8 +158,7 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
-        // as distribution key is never numeric yet, always false
-        .sorted(getSortingComparator(sorting, false))
+        .sorted(getSortingComparator(sorting, keyIsOfNumericType))
         .collect(Collectors.toList());
       resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }

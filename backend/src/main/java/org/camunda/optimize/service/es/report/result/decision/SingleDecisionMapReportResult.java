@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
@@ -15,10 +15,10 @@ import java.time.ZoneId;
 import java.util.List;
 
 public class SingleDecisionMapReportResult
-  extends ReportEvaluationResult<ReportMapResultDto, SingleDecisionReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportMapResultDto, SingleDecisionReportDefinitionRequestDto> {
 
   public SingleDecisionMapReportResult(@NotNull final ReportMapResultDto reportResult,
-                                       @NotNull final SingleDecisionReportDefinitionDto reportDefinition) {
+                                       @NotNull final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 

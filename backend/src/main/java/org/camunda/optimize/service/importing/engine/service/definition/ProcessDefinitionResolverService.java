@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class ProcessDefinitionResolverService extends AbstractDefinitionResolverService<ProcessDefinitionOptimizeDto>{
+public class ProcessDefinitionResolverService extends AbstractDefinitionResolverService<ProcessDefinitionOptimizeDto> {
 
   private final ProcessDefinitionReader processDefinitionReader;
 
@@ -27,7 +27,7 @@ public class ProcessDefinitionResolverService extends AbstractDefinitionResolver
 
   @Override
   protected void syncCache() {
-    processDefinitionReader.getProcessDefinitions(false, false)
+    processDefinitionReader.getProcessDefinitions(false, false, true)
       .forEach(this::addToCacheIfNotNull);
   }
 

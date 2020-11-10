@@ -7,9 +7,11 @@
 import React from 'react';
 
 import {Button, Switch} from 'components';
-import NodeSelectionModal from './NodeSelectionModal';
-import './VisibleNodesFilter.scss';
 import {t} from 'translation';
+
+import NodeSelectionModal from './NodeSelectionModal';
+
+import './VisibleNodesFilter.scss';
 
 export default class VisibleNodesFilter extends React.Component {
   state = {
@@ -27,12 +29,16 @@ export default class VisibleNodesFilter extends React.Component {
     const {
       combined,
       data: {
+        distributedBy,
         configuration: {hiddenNodes},
         groupBy,
       },
     } = this.props.report;
 
-    if (!combined && ['flowNodes', 'userTasks'].includes(groupBy.type)) {
+    const groupByFlowNode = ['flowNodes', 'userTasks'].includes(groupBy?.type);
+    const distributedByFlowNode = ['flowNode', 'userTask'].includes(distributedBy?.type);
+
+    if (!combined && (groupByFlowNode || distributedByFlowNode)) {
       return (
         <div className="VisibleNodesFilter">
           <fieldset>

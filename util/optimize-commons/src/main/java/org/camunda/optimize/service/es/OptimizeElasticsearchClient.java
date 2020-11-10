@@ -6,15 +6,23 @@
 package org.camunda.optimize.service.es;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.FailsafeException;
+import net.jodah.failsafe.FailsafeExecutor;
+import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
 import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -48,9 +56,11 @@ import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.rest.RestStatus;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 
 /**
@@ -65,11 +75,15 @@ import java.util.Arrays;
  */
 @Slf4j
 public class OptimizeElasticsearchClient implements ConfigurationReloadable {
+  private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   @Getter
   private RestHighLevelClient highLevelClient;
   @Getter
   private OptimizeIndexNameService indexNameService;
+
+  @Setter
+  private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
                                      final OptimizeIndexNameService indexNameService) {
@@ -124,14 +138,21 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest, final RequestOptions options)
     throws IOException {
-    getAliasesRequest.indices(convertToPrefixedIndexNames(getAliasesRequest.indices()));
-    getAliasesRequest.aliases(convertToPrefixedIndexNames(getAliasesRequest.aliases()));
+    getAliasesRequest.indices(convertToPrefixedAliasNames(getAliasesRequest.indices()));
+    getAliasesRequest.aliases(convertToPrefixedAliasNames(getAliasesRequest.aliases()));
     return highLevelClient.indices().getAlias(getAliasesRequest, options);
   }
 
   public final boolean exists(final GetIndexRequest getRequest, final RequestOptions options) throws IOException {
-    final GetIndexRequest prefixedGetRequest = new GetIndexRequest(convertToPrefixedIndexNames(getRequest.indices()));
+    final GetIndexRequest prefixedGetRequest = new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices()));
     return highLevelClient.indices().exists(prefixedGetRequest, options);
+  }
+
+  public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
+    return highLevelClient.indices().exists(
+      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)),
+      RequestOptions.DEFAULT
+    );
   }
 
   public final GetResponse get(final GetRequest getRequest, final RequestOptions options) throws IOException {
@@ -149,7 +170,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest,
                                               final RequestOptions options) throws IOException {
     getMappingsRequest.indices(
-      convertToPrefixedIndexNames(getMappingsRequest.indices())
+      convertToPrefixedAliasNames(getMappingsRequest.indices())
     );
     return highLevelClient.indices().getMapping(getMappingsRequest, options);
   }
@@ -199,6 +220,62 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     return highLevelClient.indices().rollover(rolloverRequest, RequestOptions.DEFAULT);
   }
 
+  public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
+    String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator);
+    deleteIndexByRawIndexNames(indexName);
+  }
+
+  /**
+   * Deletes an index and retries in recoverable situations (e.g. snapshot in progress).
+   * This expects the plain index name to be provided, no automatic prefixing or other modifications will be applied.
+   *
+   * @param indexNames plain index names to delete
+   */
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
+    try {
+      esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexNames), RequestOptions.DEFAULT));
+    } catch (FailsafeException failsafeException) {
+      final Throwable cause = failsafeException.getCause();
+      if (cause instanceof ElasticsearchStatusException) {
+        throw (ElasticsearchStatusException) cause;
+      } else {
+        String errorMessage = String.format("Could not delete index [%s]!", indexNamesString);
+        throw new OptimizeRuntimeException(errorMessage, cause);
+      }
+    }
+    log.debug("Successfully deleted index [{}].", indexNamesString);
+  }
+
+  private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
+    return Failsafe.with(createSnapshotRetryPolicy(operation, this.snapshotInProgressRetryDelaySeconds));
+  }
+
+  private RetryPolicy<Object> createSnapshotRetryPolicy(final String operation, final int delay) {
+    return new RetryPolicy<>()
+      .handleIf(failure -> {
+        if (failure instanceof ElasticsearchStatusException) {
+          final ElasticsearchStatusException statusException = (ElasticsearchStatusException) failure;
+          return statusException.status() == RestStatus.BAD_REQUEST
+            && statusException.getMessage().contains("snapshot_in_progress_exception");
+        } else {
+          return false;
+        }
+      })
+      .withDelay(Duration.ofSeconds(delay))
+      // no retry limit
+      .withMaxRetries(-1)
+      .onFailedAttempt(e -> {
+        log.warn(
+          "Execution of {} failed due to a pending snapshot operation, details: {}",
+          operation, e.getLastFailure().getMessage()
+        );
+        log.info("Will retry the operation in {} seconds...", delay);
+      });
+  }
+
   private void applyIndexPrefix(final DocWriteRequest<?> request) {
     request.index(indexNameService.getOptimizeIndexAliasForIndex(request.index()));
   }
@@ -206,11 +283,11 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   private void applyIndexPrefixes(final IndicesRequest.Replaceable request) {
     final String[] indices = request.indices();
     request.indices(
-      convertToPrefixedIndexNames(indices)
+      convertToPrefixedAliasNames(indices)
     );
   }
 
-  private String[] convertToPrefixedIndexNames(final String[] indices) {
+  private String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)
       .map(index -> {
         final boolean hasExcludePrefix = '-' == index.charAt(0);
@@ -224,7 +301,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {
     RolloverRequest requestWithPrefix = new RolloverRequest(
       indexNameService.getOptimizeIndexAliasForIndex(request.getAlias()), null);
-    for (Condition condition : request.getConditions().values()) {
+    for (Condition<?> condition : request.getConditions().values()) {
       if (condition instanceof MaxSizeCondition) {
         requestWithPrefix.addMaxIndexSizeCondition(((MaxSizeCondition) condition).value());
       } else {

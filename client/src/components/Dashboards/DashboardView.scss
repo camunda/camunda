@@ -16,6 +16,8 @@
 
 .DashboardView {
   height: inherit;
+  display: flex;
+  flex-direction: column;
 
   > .content {
     height: calc(100% - 75px);
@@ -28,10 +30,15 @@
   }
 
   .share-button .Popover__dialog {
-    padding: 20px 40px;
+    padding: 30px;
+    padding-bottom: 10px;
   }
 
   &.fullscreen {
     padding: 20px;
+
+    .ReportDetails .modalsButtons {
+      display: none;
+    }
   }
 }

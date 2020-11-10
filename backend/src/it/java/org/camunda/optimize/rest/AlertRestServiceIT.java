@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,11 +47,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCreateAlertRequest(new AlertCreationDto())
+      .buildCreateAlertRequest(new AlertCreationRequestDto())
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
@@ -60,7 +60,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String id = alertClient.createAlert(alert);
     alert.setReportId(TEST);
 
@@ -71,7 +71,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
@@ -79,7 +79,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   public void cantCreateAlertForPrivateReports(final DefinitionType definitionType) {
     //given
     String reportId = createNumberReportForCollection(null, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -97,7 +97,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     String id = embeddedOptimizeExtension
@@ -114,7 +114,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     alert.setEmails(new ArrayList<>());
@@ -158,7 +158,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     alert.setThreshold(Double.MAX_VALUE);
 
     // when
@@ -177,7 +177,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildUpdateAlertRequest("1", new AlertCreationDto())
+      .buildUpdateAlertRequest("1", new AlertCreationRequestDto())
       .execute();
 
     // then the status code is not authorized
@@ -207,7 +207,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String id = alertClient.createAlert(alert);
     alert.setEmails(Collections.singletonList("new@camunda.com"));
 
@@ -227,7 +227,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String alertId = alertClient.createAlert(alert);
 
     // when
@@ -272,7 +272,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String id = alertClient.createAlert(alert);
 
     // when
@@ -302,7 +302,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String id = alertClient.createAlert(alert);
 
     // when

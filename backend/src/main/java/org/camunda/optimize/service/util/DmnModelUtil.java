@@ -15,7 +15,7 @@ import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
 import org.camunda.bpm.model.dmn.instance.Input;
 import org.camunda.bpm.model.dmn.instance.Output;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
@@ -55,20 +55,20 @@ public class DmnModelUtil {
     }
   }
 
-  public static List<DecisionVariableNameDto> extractInputVariables(final DmnModelInstance model,
-                                                                    @NonNull final String decisionKey) {
+  public static List<DecisionVariableNameResponseDto> extractInputVariables(final DmnModelInstance model,
+                                                                            @NonNull final String decisionKey) {
     return extractVariables(model, decisionKey, DmnModelUtil::extractInputVariablesFromDecision);
   }
 
-  public static List<DecisionVariableNameDto> extractOutputVariables(final DmnModelInstance model,
-                                                                     @NonNull final String decisionKey) {
+  public static List<DecisionVariableNameResponseDto> extractOutputVariables(final DmnModelInstance model,
+                                                                             @NonNull final String decisionKey) {
     return extractVariables(model, decisionKey, DmnModelUtil::extractOutputVariablesFromDecision);
   }
 
-  private static List<DecisionVariableNameDto> extractVariables(final DmnModelInstance model,
-                                                                @NonNull final String decisionKey,
-                                                                final Function<DecisionTable,
-                                                                  List<DecisionVariableNameDto>> extractVariables) {
+  private static List<DecisionVariableNameResponseDto> extractVariables(final DmnModelInstance model,
+                                                                        @NonNull final String decisionKey,
+                                                                        final Function<DecisionTable,
+                                                                  List<DecisionVariableNameResponseDto>> extractVariables) {
     return model.getModelElementsByType(Decision.class)
       .stream()
       .filter(decision -> Objects.equals(decision.getId(), decisionKey))
@@ -77,10 +77,10 @@ public class DmnModelUtil {
         Collection<DecisionTable> decisionTables = decision.getChildElementsByType(DecisionTable.class);
         if (decisionTables.size() < 1) {
           log.warn("Found decision without tables, which is not supported!");
-          return new ArrayList<DecisionVariableNameDto>();
+          return new ArrayList<DecisionVariableNameResponseDto>();
         } else if (decisionTables.size() > 1) {
           log.warn("Found decision with multiple tables. Supported is only one!");
-          return new ArrayList<DecisionVariableNameDto>();
+          return new ArrayList<DecisionVariableNameResponseDto>();
         }
         DecisionTable firstDecisionTable = decisionTables.iterator().next();
         return extractVariables.apply(firstDecisionTable);
@@ -88,10 +88,10 @@ public class DmnModelUtil {
       .orElse(new ArrayList<>());
   }
 
-  private static List<DecisionVariableNameDto> extractInputVariablesFromDecision(final DecisionTable decision) {
-    final List<DecisionVariableNameDto> inputVariableList = new ArrayList<>();
+  private static List<DecisionVariableNameResponseDto> extractInputVariablesFromDecision(final DecisionTable decision) {
+    final List<DecisionVariableNameResponseDto> inputVariableList = new ArrayList<>();
     for (Input node : decision.getChildElementsByType(Input.class)) {
-      DecisionVariableNameDto variableNameDto = new DecisionVariableNameDto();
+      DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
       variableNameDto.setType(VariableType.getTypeForId(node.getInputExpression().getTypeRef()));
@@ -100,10 +100,10 @@ public class DmnModelUtil {
     return inputVariableList;
   }
 
-  private static List<DecisionVariableNameDto> extractOutputVariablesFromDecision(final DecisionTable decision) {
-    final List<DecisionVariableNameDto> outputVariableList = new ArrayList<>();
+  private static List<DecisionVariableNameResponseDto> extractOutputVariablesFromDecision(final DecisionTable decision) {
+    final List<DecisionVariableNameResponseDto> outputVariableList = new ArrayList<>();
     for (Output node : decision.getChildElementsByType(Output.class)) {
-      DecisionVariableNameDto variableNameDto = new DecisionVariableNameDto();
+      DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
       variableNameDto.setType(VariableType.getTypeForId(node.getTypeRef()));

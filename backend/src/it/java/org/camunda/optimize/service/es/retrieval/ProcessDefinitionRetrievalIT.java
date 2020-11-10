@@ -16,12 +16,9 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessDefinitionRetrievalIT extends AbstractIT {
 
@@ -40,7 +37,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     // when
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
-    assertThat(definitions.size(), is(11));
+    assertThat(definitions).hasSize(11);
   }
 
   @Test
@@ -60,12 +57,12 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(processDefinitionId));
-    assertThat(definitions.get(0).getKey(), is(processId));
-    assertThat(definitions.get(0).getBpmn20Xml(), nullValue());
-    assertThat(definitions.get(0).getVersion(), is("1"));
-    assertThat(definitions.get(0).getVersionTag(), is(VERSION_TAG));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionId);
+    assertThat(definitions.get(0).getKey()).isEqualTo(processId);
+    assertThat(definitions.get(0).getBpmn20Xml()).isNull();
+    assertThat(definitions.get(0).getVersion()).isEqualTo("1");
+    assertThat(definitions.get(0).getVersionTag()).isEqualTo(VERSION_TAG);
   }
 
   @Test
@@ -85,10 +82,10 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(processDefinitionId));
-    assertThat(definitions.get(0).getKey(), is(processId));
-    assertThat(definitions.get(0).getBpmn20Xml(), is(Bpmn.convertToString(modelInstance)));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionId);
+    assertThat(definitions.get(0).getKey()).isEqualTo(processId);
+    assertThat(definitions.get(0).getBpmn20Xml()).isEqualTo(Bpmn.convertToString(modelInstance));
   }
 
   @Test
@@ -110,8 +107,8 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(processDefinitionId));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionId);
   }
 
   @Test
@@ -127,9 +124,9 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(processDefinitionId));
-    assertThat(definitions.get(0).getKey(), is(processId));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionId);
+    assertThat(definitions.get(0).getKey()).isEqualTo(processId);
   }
 
   @Test
@@ -151,7 +148,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     );
 
     // then
-    assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
+    assertThat(actualXml).isEqualTo(Bpmn.convertToString(modelInstance));
   }
 
 
@@ -179,7 +176,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     String actualXml = definitionClient.getProcessDefinitionXml(processDefinition.getKey(), ALL_VERSIONS, null);
 
     // then
-    assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
+    assertThat(actualXml).isEqualTo(Bpmn.convertToString(modelInstance));
   }
 
   @Test
@@ -208,7 +205,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     String actualXml = definitionClient.getProcessDefinitionXml(definitionKey, ALL_VERSIONS, null);
 
     // then: we get the latest version xml
-    assertThat(actualXml, is(Bpmn.convertToString(latestModelInstance)));
+    assertThat(actualXml).isEqualTo(Bpmn.convertToString(latestModelInstance));
   }
 
   private String deploySimpleServiceTaskProcessDefinition(String processId) {

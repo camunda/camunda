@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -30,16 +30,16 @@ public class SettingsReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public Optional<SettingsDto> getSettings() {
+  public Optional<SettingsResponseDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
     final GetRequest getRequest = new GetRequest(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
 
-    SettingsDto result = null;
+    SettingsResponseDto result = null;
     try {
       final GetResponse getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
       if (getResponse.isExists()) {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsDto.class);
+        result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsResponseDto.class);
       }
     } catch (IOException e) {
       final String errorMessage = "There was an error while reading settings.";

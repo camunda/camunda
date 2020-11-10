@@ -32,13 +32,19 @@ public class UpgradeUtil {
     return createUpgradeDependenciesWithAdditionalConfigLocation((String[]) null);
   }
 
-  public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(String... configLocations) {
+  public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(
+    final String... configLocations) {
     ConfigurationService configurationService;
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     } else {
       configurationService = ConfigurationServiceBuilder.createConfigurationFromLocations(configLocations);
     }
+    return createUpgradeDependenciesWithAConfigurationService(configurationService);
+  }
+
+  public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
+    final ConfigurationService configurationService) {
     ObjectMapper objectMapper = new ObjectMapperFactory(
       new OptimizeDateTimeFormatterFactory().getObject(),
       ConfigurationServiceBuilder.createDefaultConfiguration()
@@ -59,9 +65,8 @@ public class UpgradeUtil {
   }
 
   public static String readClasspathFileAsString(String filePath) {
-    InputStream inputStream = UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath);
     String data = null;
-    try {
+    try (InputStream inputStream = UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath)) {
       data = readFromInputStream(inputStream);
     } catch (IOException e) {
       log.error("can't read [{}] from classpath", filePath, e);

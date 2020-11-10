@@ -12,11 +12,11 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
@@ -63,12 +63,12 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities)
       .hasSize(3)
-      .extracting(EntityDto::getReportType, EntityDto::getCombined)
+      .extracting(EntityResponseDto::getReportType, EntityResponseDto::getCombined)
       .containsExactlyInAnyOrder(
         Tuple.tuple(ReportType.PROCESS, true),
         Tuple.tuple(ReportType.PROCESS, false),
@@ -85,15 +85,15 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = embeddedOptimizeExtension
+    final List<EntityResponseDto> privateEntities = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(privateEntities).isNotNull().hasSize(1);
-    EntityDto entityDto = privateEntities.get(0);
+    EntityResponseDto entityDto = privateEntities.get(0);
     assertThat(entityDto.getCreated()).isEqualTo(now);
     assertThat(entityDto.getLastModified()).isEqualTo(now);
     assertThat(getOffsetDiffInHours(entityDto.getCreated(), now)).isEqualTo(1.);
@@ -112,21 +112,21 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
       .hasSize(2)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactlyInAnyOrder("A Report", "D Combined");
 
     // when
-    final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(kermitUserEntities)
       .hasSize(1)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactly("B Report");
   }
 
@@ -136,19 +136,19 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // see https://jira.camunda.com/browse/OPT-3496
 
     // given
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName("empty");
     // an empty string definition key caused trouble
     singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("");
     reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
       .hasSize(1)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactly(singleProcessReportDefinitionDto.getName());
   }
 
@@ -161,7 +161,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities).hasSize(2);
@@ -178,21 +178,21 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
       .hasSize(1)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactly("A Dashboard");
 
     // when
-    final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(kermitUserEntities)
       .hasSize(1)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactly("B Dashboard");
   }
 
@@ -205,7 +205,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities).hasSize(2);
@@ -224,12 +224,12 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
       .hasSize(3)
-      .extracting(EntityDto::getName)
+      .extracting(EntityResponseDto::getName)
       .containsExactlyInAnyOrder("A Report", "D Combined", DEFAULT_COLLECTION_NAME);
   }
 
@@ -246,12 +246,12 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> entities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
 
     // then
     assertThat(entities)
       .hasSize(6)
-      .extracting(EntityDto::getName, EntityDto::getEntityType)
+      .extracting(EntityResponseDto::getName, EntityResponseDto::getEntityType)
       .containsExactly(
         Tuple.tuple("A Collection", EntityType.COLLECTION),
         Tuple.tuple("B Collection", EntityType.COLLECTION),
@@ -270,7 +270,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
@@ -297,7 +297,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
@@ -319,7 +319,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
@@ -353,7 +353,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
@@ -374,17 +374,17 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     final String reportId2 = addSingleReportToOptimize("B Report", ReportType.PROCESS);
     final String combinedReportId = addCombinedReport("D Combined");
 
-    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto combinedReportUpdate = new CombinedReportDefinitionRequestDto();
     combinedReportUpdate.setData(createCombinedReportData(reportId1, reportId2));
     reportClient.updateCombinedReport(combinedReportId, Lists.newArrayList(reportId1, reportId2));
 
     // when
-    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities)
       .hasSize(3)
-      .filteredOn(EntityDto::getCombined)
+      .filteredOn(EntityResponseDto::getCombined)
       .hasSize(1)
       .allSatisfy(entry -> assertThat(entry.getData().getSubEntityCounts())
         .hasSize(1)
@@ -397,7 +397,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @ParameterizedTest(name = "sortBy={0}, sortOrder={1}")
   @MethodSource("sortParamsAndExpectedComparator")
   public void getEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
-                                                                        Comparator<EntityDto> expectedComparator) {
+                                                                        Comparator<EntityResponseDto> expectedComparator) {
     //given
     addCollection("B Collection");
     addCollection("A Collection");
@@ -410,7 +410,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     EntitySorter sorter = entitySorter(sortBy, sortOrder);
 
     // when
-    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
+    final List<EntityResponseDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
     assertThat(allEntities)
@@ -430,12 +430,12 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitySorter sorter = entitySorter(name, SortOrder.ASC);
-    final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName)
-      .thenComparing(EntityDto::getEntityType)
-      .thenComparing(Comparator.comparing(EntityDto::getLastModified).reversed());
+    final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName)
+      .thenComparing(EntityResponseDto::getEntityType)
+      .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
     // when
-    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
+    final List<EntityResponseDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
     assertThat(allEntities)
@@ -455,10 +455,10 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitySorter sorter = entitySorter(name, null);
-    final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName);
+    final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName);
 
     // when
-    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
+    final List<EntityResponseDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
     assertThat(allEntities)
@@ -469,7 +469,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_invalidSortByParameterPassed() {
     // given a sortBy field which is not supported
-    EntitySorter sorter = entitySorter(EntityDto.Fields.currentUserRole, SortOrder.ASC);
+    EntitySorter sorter = entitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -498,13 +498,13 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
                                    final String identityId,
                                    final IdentityType identityType) {
 
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
+    final CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(
       identityType.equals(IdentityType.USER)
         ? new IdentityDto(identityId, IdentityType.USER)
         : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
-    collectionClient.addRoleToCollection(collectionId, roleDto);
+    collectionClient.addRolesToCollection(collectionId, roleDto);
   }
 
 }

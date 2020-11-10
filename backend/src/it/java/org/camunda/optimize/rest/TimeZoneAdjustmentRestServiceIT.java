@@ -13,16 +13,17 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
@@ -73,7 +74,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
@@ -136,7 +136,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
+      .setDistributeByDateInterval(AggregateByDateUnit.HOUR)
       .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)
@@ -177,7 +178,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       // truncation of the date is in winter time
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
+      .setDistributeByDateInterval(AggregateByDateUnit.YEAR)
       .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)
@@ -209,7 +211,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE)
@@ -239,7 +241,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
       .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
   }
-
+  
   @ParameterizedTest
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
@@ -266,7 +268,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)
@@ -303,7 +306,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(result).isNotNull();
     if (result instanceof ReportHyperMapResultDto) {
       ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
-      return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
+      if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
+        return hyperMapResultDto.getData().stream()
+          .flatMap(hyperEntry -> hyperEntry.getValue().stream())
+          .map(MapResultEntryDto::getKey)
+          .collect(Collectors.toList());
+      } else {
+        return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
+      }
     } else if (result instanceof ReportMapResultDto) {
       ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
       return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
@@ -322,8 +332,9 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setGroupByDateVariableUnit(GroupByDateUnit.HOUR)
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateVariableUnit(AggregateByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
+      .setDistributeByDateInterval(AggregateByDateUnit.HOUR)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)
@@ -359,7 +370,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC)
+      .setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
@@ -395,7 +406,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setDateInterval(AggregateByDateUnit.HOUR)
       .setDecisionDefinitionKey(decisionDefinition.getKey())
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
@@ -433,7 +444,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     final String singleProcessReportId1 = reportClient.createSingleProcessReport(groupByDate);
@@ -444,7 +455,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
@@ -480,7 +491,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(instance1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(instance1.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     final String singleProcessReportId1 = reportClient.createSingleProcessReport(groupByDate);
@@ -491,7 +502,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
@@ -535,7 +546,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     final String singleProcessReportId = reportClient.createSingleProcessReport(groupByDate);
@@ -572,7 +583,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     final String reportId = reportClient.createSingleProcessReport(groupByDate);
@@ -610,7 +621,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     final String reportId = reportClient.createSingleProcessReport(groupByDate);
@@ -713,7 +724,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
 
@@ -780,7 +791,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(instanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -822,7 +833,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.MONTH)
+      .setGroupByDateInterval(AggregateByDateUnit.MONTH)
       .setProcessDefinitionKey(instanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion())
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -861,7 +872,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -909,12 +920,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), instanceStartDate);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto branchAnalysisRequestDto = analysisClient.createAnalysisDto(
       gatewayDefinition.getKey(),
       Lists.newArrayList(String.valueOf(gatewayDefinition.getVersion())),
       Collections.singletonList(null),
       SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
+      END_EVENT
     );
 
     List<ProcessFilterDto<?>> relativeStartDateFilter =
@@ -924,14 +935,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
         .start(0L, DateFilterUnit.YEARS)
         .add()
         .buildList();
-    branchAnalysisQueryDto.setFilter(relativeStartDateFilter);
+    branchAnalysisRequestDto.setFilter(relativeStartDateFilter);
 
     // when
-    final BranchAnalysisDto result = embeddedOptimizeExtension
+    final BranchAnalysisResponseDto result = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
-      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-      .execute(BranchAnalysisDto.class, Response.Status.OK.getStatusCode());
+      .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
+      .execute(BranchAnalysisResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     // if the timezone of the request was not respected then the result would be not be empty

@@ -19,10 +19,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByNone extends ProcessDistributedByPart {
+
+  @Override
+  public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
+    return Optional.empty();
+  }
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
@@ -39,6 +45,6 @@ public class ProcessDistributedByNone extends ProcessDistributedByPart {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new NoneDistributedByDto());
+    dataForCommandKey.setDistributedBy(new NoneDistributedByDto());
   }
 }

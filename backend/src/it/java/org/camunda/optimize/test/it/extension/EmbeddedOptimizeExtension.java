@@ -6,13 +6,13 @@
 package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -27,19 +27,21 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
@@ -65,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -78,20 +81,30 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
  * Helper to start embedded jetty with Camunda Optimize on board.
  */
 @Slf4j
-@NoArgsConstructor
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
+  private final String context;
+  private final boolean beforeAllMode;
+
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
-
-  private String context = null;
-  private boolean beforeAllMode = false;
   private boolean resetImportOnStart = true;
 
-  @Builder(builderMethodName = "customPropertiesBuilder")
+  public EmbeddedOptimizeExtension() {
+    this(false);
+  }
+
+  public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
+    this(null, beforeAllMode);
+  }
+
+  public EmbeddedOptimizeExtension(final String context) {
+    this(context, false);
+  }
+
   public EmbeddedOptimizeExtension(final String context,
                                    final boolean beforeAllMode) {
     this.context = context;
@@ -132,11 +145,8 @@ public class EmbeddedOptimizeExtension
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          DEFAULT_USERNAME,
-          DEFAULT_PASSWORD,
-          objectMapper,
-          target()
-        );
+          DEFAULT_USERNAME, DEFAULT_PASSWORD, IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint()
+        ).initAuthCookie();
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
       }
@@ -189,7 +199,7 @@ public class EmbeddedOptimizeExtension
     boolean isDoneImporting;
     do {
       isDoneImporting = true;
-      for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
         scheduler.runImportRound(false);
         isDoneImporting &= !scheduler.isImporting();
       }
@@ -206,7 +216,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public void importAllEngineEntitiesFromLastIndex() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       log.debug("scheduling import round");
       scheduleImportAndWaitUntilIsFinished(scheduler);
     }
@@ -233,6 +243,34 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
+  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionFromResolverService(final String definitionId) {
+    DecisionDefinitionResolverService resolverService =
+      getApplicationContext().getBean(DecisionDefinitionResolverService.class);
+    for (EngineContext configuredEngine : getConfiguredEngines()) {
+      final Optional<DecisionDefinitionOptimizeDto> definition =
+        resolverService.getDefinition(definitionId, configuredEngine);
+      if (definition.isPresent()) {
+        return definition;
+      }
+    }
+    return Optional.empty();
+  }
+
+  @SneakyThrows
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromResolverService(final String definitionId) {
+    ProcessDefinitionResolverService resolverService =
+      getApplicationContext().getBean(ProcessDefinitionResolverService.class);
+    for (EngineContext configuredEngine : getConfiguredEngines()) {
+      final Optional<ProcessDefinitionOptimizeDto> definition =
+        resolverService.getDefinition(definitionId, configuredEngine);
+      if (definition.isPresent()) {
+        return definition;
+      }
+    }
+    return Optional.empty();
+  }
+
+  @SneakyThrows
   private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
     scheduler.runImportRound(true).get();
     runOnlyScrollBasedMediators(scheduler);
@@ -254,7 +292,7 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
@@ -280,8 +318,8 @@ public class EmbeddedOptimizeExtension
   }
 
   public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
-    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerFactory().getImportSchedulers().size());
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerManager().getImportSchedulers().size());
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       if (scheduler.isImporting()) {
         log.info("Scheduler is still importing, waiting for it to finish.");
         final ImportObserver importObserver = new ImportObserver() {
@@ -312,8 +350,8 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public EngineImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerFactory.class);
+  public EngineImportSchedulerManagerService getImportSchedulerManager() {
+    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerManagerService.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {
@@ -342,7 +380,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public Response authenticateUserRequest(String username, String password) {
-    final CredentialsDto entity = new CredentialsDto(username, password);
+    final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
     return target("authentication")
       .request()
       .post(Entity.json(entity));
@@ -384,19 +422,20 @@ public class EmbeddedOptimizeExtension
   }
 
   public final WebTarget target(String path) {
-    return getOptimize().target(path);
+    return requestExecutor.getDefaultWebTarget().path(path);
   }
 
   public final WebTarget target() {
-    return getOptimize().target();
+    return requestExecutor.getDefaultWebTarget();
   }
 
   public final WebTarget rootTarget(String path) {
-    return getOptimize().rootTarget(path);
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint())
+      .path(path);
   }
 
   public final WebTarget securedRootTarget() {
-    return getOptimize().securedRootTarget();
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint());
   }
 
   public List<Long> getImportIndexes() {
@@ -425,10 +464,6 @@ public class EmbeddedOptimizeExtension
 
   public void reinitializeSchema() {
     getElasticSearchSchemaManager().initializeSchema(getOptimizeElasticClient());
-  }
-
-  public boolean isImporting() {
-    return this.getElasticsearchImportJobExecutor().isActive();
   }
 
   public ApplicationContext getApplicationContext() {

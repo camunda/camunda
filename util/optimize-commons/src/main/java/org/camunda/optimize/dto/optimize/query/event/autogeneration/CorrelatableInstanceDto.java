@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 
 import java.time.OffsetDateTime;
 

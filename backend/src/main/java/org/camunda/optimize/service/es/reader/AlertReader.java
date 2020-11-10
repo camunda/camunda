@@ -95,7 +95,7 @@ public class AlertReader {
     }
   }
 
-  public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
+  public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
     log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId);
@@ -116,7 +116,7 @@ public class AlertReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
-  public List<AlertDefinitionDto> findFirstAlertsForReports(List<String> reportIds) {
+  public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
     log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
     final QueryBuilder query = QueryBuilders.termsQuery(AlertIndex.REPORT_ID, reportIds);

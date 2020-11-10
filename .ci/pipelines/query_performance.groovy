@@ -6,13 +6,13 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String queryPerformanceConfig(env, esVersion, camBpmVersion) {
+static String queryPerformanceConfig(esVersion, camBpmVersion) {
   return """
 metadata:
   labels:
@@ -24,6 +24,8 @@ spec:
     - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
+  imagePullSecrets:
+    - name: registry-camunda-cloud
   securityContext:
     fsGroup: 1000
   volumes:
@@ -285,7 +287,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml queryPerformanceConfig(env, env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml queryPerformanceConfig(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
       stages {

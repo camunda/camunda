@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.IdentityService;
 import org.springframework.stereotype.Component;
 
@@ -17,11 +17,11 @@ import java.util.Optional;
 public class EntityRestMapper {
   private final IdentityService identityService;
 
-  public void prepareRestResponse(final EntityDto entityDto) {
+  public void prepareRestResponse(final EntityResponseDto entityDto) {
     resolveOwnerAndModifierNames(entityDto);
   }
 
-  private void resolveOwnerAndModifierNames(EntityDto entityDto) {
+  private void resolveOwnerAndModifierNames(EntityResponseDto entityDto) {
     Optional.ofNullable(entityDto.getOwner())
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(entityDto::setOwner);

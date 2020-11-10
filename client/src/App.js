@@ -27,6 +27,7 @@ import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
 
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
+import {Prompt} from 'prompt';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
@@ -109,6 +110,7 @@ class App extends React.Component {
             </div>
           </WithLicense>
           <SaveGuard />
+          <Prompt />
         </Router>
         <Notifications />
       </Theme>

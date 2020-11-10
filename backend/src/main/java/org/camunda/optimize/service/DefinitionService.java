@@ -12,16 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
@@ -56,12 +56,12 @@ public class DefinitionService {
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
 
-  public Optional<DefinitionWithTenantsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
-                                                                              final String key,
-                                                                              final String userId) {
+  public Optional<DefinitionWithTenantsResponseDto> getDefinitionWithAvailableTenants(final DefinitionType type,
+                                                                                      final String key,
+                                                                                      final String userId) {
     return definitionReader.getDefinitionWithAvailableTenants(type, key)
       .map(definitionWithTenantIdsDto -> {
-        final Optional<DefinitionWithTenantsDto> authorizedDefinition =
+        final Optional<DefinitionWithTenantsResponseDto> authorizedDefinition =
           filterAndMapDefinitionsWithTenantIdsByAuthorizations(
             userId,
             Collections.singleton(definitionWithTenantIdsDto)
@@ -72,19 +72,23 @@ public class DefinitionService {
       });
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
-                                                          final String key,
-                                                          final String userId) {
+  public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
+                                                                  final String key,
+                                                                  final String userId) {
     return getDefinitionVersions(type, key, userId, null);
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
-                                                          final String key,
-                                                          final String userId,
-                                                          final List<String> tenantIds) {
-    final List<DefinitionVersionDto> definitionVersions = new ArrayList<>();
+  public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
+                                                                  final String key,
+                                                                  final String userId,
+                                                                  final List<String> tenantIds) {
+    final List<DefinitionVersionResponseDto> definitionVersions = new ArrayList<>();
 
-    final Optional<DefinitionWithTenantsDto> optionalDefinition = getDefinitionWithAvailableTenants(type, key, userId);
+    final Optional<DefinitionWithTenantsResponseDto> optionalDefinition = getDefinitionWithAvailableTenants(
+      type,
+      key,
+      userId
+    );
     if (optionalDefinition.isPresent()) {
       final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
         .map(TenantDto::getId)
@@ -153,9 +157,9 @@ public class DefinitionService {
       .collect(Collectors.toList());
   }
 
-  public List<DefinitionWithTenantsDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {
+  public List<DefinitionWithTenantsResponseDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {
     final Set<String> camundaEventImportedKeys = camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    final List<DefinitionWithTenantsDto> allProcessDefs = getFullyImportedDefinitions(
+    final List<DefinitionWithTenantsResponseDto> allProcessDefs = getFullyImportedDefinitions(
       DefinitionType.PROCESS,
       userId
     );
@@ -164,19 +168,19 @@ public class DefinitionService {
       .collect(toList());
   }
 
-  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {
+  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
     return getFullyImportedDefinitions(null, null, null, userId);
   }
 
-  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                    @NonNull final String userId) {
+  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                            @NonNull final String userId) {
     return getFullyImportedDefinitions(definitionType, null, null, userId);
   }
 
-  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                    final Set<String> keys,
-                                                                    final List<String> tenantIds,
-                                                                    @NonNull final String userId) {
+  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                            final Set<String> keys,
+                                                                            final List<String> tenantIds,
+                                                                            @NonNull final String userId) {
     final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
       .getFullyImportedDefinitions(definitionType, keys, tenantsToFilterFor);
@@ -186,10 +190,10 @@ public class DefinitionService {
       .collect(toList());
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getLatestDefinition(final DefinitionType type,
-                                                                           final String definitionKey,
-                                                                           final List<String> definitionVersions,
-                                                                           final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getLatestDefinition(final DefinitionType type,
+                                                                                   final String definitionKey,
+                                                                                   final List<String> definitionVersions,
+                                                                                   final List<String> tenantIds) {
     return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
       type,
       definitionKey,
@@ -198,9 +202,9 @@ public class DefinitionService {
     );
   }
 
-  public <T extends DefinitionOptimizeDto> List<T> getFullyImportedProcessDefinitions(final DefinitionType type,
-                                                                                      final String userId,
-                                                                                      final boolean withXml) {
+  public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedProcessDefinitions(final DefinitionType type,
+                                                                                              final String userId,
+                                                                                              final boolean withXml) {
     log.debug("Fetching definitions of type " + type);
     List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
 
@@ -211,7 +215,7 @@ public class DefinitionService {
     return definitionsResult;
   }
 
-  public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(final String userId) {
+  public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(final String userId) {
 
     final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant =
       definitionReader.getDefinitionsGroupedByTenant();
@@ -238,10 +242,10 @@ public class DefinitionService {
           // sort by name case insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
           .collect(toList());
-        return new TenantWithDefinitionsDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);
+        return new TenantWithDefinitionsResponseDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);
       })
       .filter(tenantWithDefinitionsDto -> !tenantWithDefinitionsDto.getDefinitions().isEmpty())
-      .sorted(Comparator.comparing(TenantWithDefinitionsDto::getId, Comparator.nullsFirst(naturalOrder())))
+      .sorted(Comparator.comparing(TenantWithDefinitionsResponseDto::getId, Comparator.nullsFirst(naturalOrder())))
       .collect(toList());
   }
 
@@ -252,11 +256,11 @@ public class DefinitionService {
     return getDefinitionXml(type, userId, definitionKey, versions, (String) null);
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
-                                                                            final String userId,
-                                                                            final String definitionKey,
-                                                                            final String version,
-                                                                            final String tenantId) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
+                                                                                    final String userId,
+                                                                                    final String definitionKey,
+                                                                                    final String version,
+                                                                                    final String tenantId) {
     return getDefinitionWithXml(
       type,
       userId,
@@ -283,11 +287,11 @@ public class DefinitionService {
     }
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
-                                                                            final String userId,
-                                                                            final String definitionKey,
-                                                                            final List<String> definitionVersions,
-                                                                            final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
+                                                                                    final String userId,
+                                                                                    final String definitionKey,
+                                                                                    final List<String> definitionVersions,
+                                                                                    final List<String> tenantIds) {
     return getDefinitionWithXmlAsService(type, definitionKey, definitionVersions, tenantIds)
       .map(definitionOptimizeDto -> {
         if (definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, definitionOptimizeDto)) {
@@ -306,10 +310,10 @@ public class DefinitionService {
     return getDefinitionXml(type, userId, definitionKey, definitionVersions, Collections.singletonList(tenantId));
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getProcessDefinitionWithXmlAsService(final DefinitionType type,
-                                                                                            final String definitionKey,
-                                                                                            final String definitionVersion,
-                                                                                            final String tenantId) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getProcessDefinitionWithXmlAsService(final DefinitionType type,
+                                                                                                    final String definitionKey,
+                                                                                                    final String definitionVersion,
+                                                                                                    final String tenantId) {
     return getDefinitionWithXmlAsService(
       type,
       definitionKey,
@@ -320,10 +324,10 @@ public class DefinitionService {
     );
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionWithXmlAsService(final DefinitionType type,
-                                                                                     final String definitionKey,
-                                                                                     final List<String> definitionVersions,
-                                                                                     final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXmlAsService(final DefinitionType type,
+                                                                                             final String definitionKey,
+                                                                                             final List<String> definitionVersions,
+                                                                                             final List<String> tenantIds) {
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }
@@ -392,12 +396,12 @@ public class DefinitionService {
     }
   }
 
-  private Stream<DefinitionWithTenantsDto> filterAndMapDefinitionsWithTenantIdsByAuthorizations(
+  private Stream<DefinitionWithTenantsResponseDto> filterAndMapDefinitionsWithTenantIdsByAuthorizations(
     final String userId,
     final Collection<DefinitionWithTenantIdsDto> definitionsWithTenantIds) {
     return definitionsWithTenantIds
       .stream()
-      .map(definitionWithTenantIdsDto -> mapToDefinitionWithTenantsDto(
+      .map(definitionWithTenantIdsDto -> DefinitionWithTenantsResponseDto.from(
         definitionWithTenantIdsDto,
         definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
           userId,
@@ -409,18 +413,6 @@ public class DefinitionService {
       .filter(definitionWithTenantsDto -> !definitionWithTenantsDto.getTenants().isEmpty());
   }
 
-  private DefinitionWithTenantsDto mapToDefinitionWithTenantsDto(
-    final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
-    final List<TenantDto> authorizedTenants) {
-    return new DefinitionWithTenantsDto(
-      definitionWithTenantIdsDto.getKey(),
-      definitionWithTenantIdsDto.getName(),
-      definitionWithTenantIdsDto.getType(),
-      definitionWithTenantIdsDto.getIsEventProcess(),
-      authorizedTenants,
-      definitionWithTenantIdsDto.getEngines()
-    );
-  }
 
   private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {
     return tenantService.getTenantsForUser(userId).stream()
@@ -430,8 +422,8 @@ public class DefinitionService {
       ));
   }
 
-  private <T extends DefinitionOptimizeDto> List<T> filterAuthorizedDefinitions(final String userId,
-                                                                                final List<T> definitions) {
+  private <T extends DefinitionOptimizeResponseDto> List<T> filterAuthorizedDefinitions(final String userId,
+                                                                                        final List<T> definitions) {
     return definitions
       .stream()
       .filter(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, definition))

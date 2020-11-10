@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
+import fitty from 'fitty';
 
 import ProgressBar from './ProgressBar';
 import {formatters} from 'services';
@@ -14,6 +15,16 @@ import './Number.scss';
 export default function Number({report, formatter}) {
   const {data, result} = report;
   const {targetValue, precision} = data.configuration;
+  const numberText = useRef();
+
+  useEffect(() => {
+    if (numberText.current) {
+      fitty(numberText.current, {
+        minSize: 5,
+        maxSize: 64,
+      });
+    }
+  }, [targetValue]);
 
   if (targetValue && targetValue.active) {
     let min, max;
@@ -36,5 +47,9 @@ export default function Number({report, formatter}) {
     );
   }
 
-  return <span className="Number">{formatter(result.data, precision)}</span>;
+  return (
+    <span className="Number" ref={numberText}>
+      {formatter(result.data, precision)}
+    </span>
+  );
 }

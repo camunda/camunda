@@ -5,34 +5,39 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
+import {DashboardRenderer, EntityNameForm} from 'components';
 import {t} from 'translation';
-import {nowDirty, nowPristine} from 'saveGuard';
+import {nowDirty, nowPristine, isDirty} from 'saveGuard';
+import {showPrompt} from 'prompt';
 
 import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
+import EditButton from './EditButton';
 
-import {FiltersEdit} from './filters';
+import {FiltersEdit, AddFiltersButton} from './filters';
 
-export default class DashboardEdit extends React.Component {
+import './DashboardEdit.scss';
+
+export class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
     const {name, initialAvailableFilters, initialReports} = props;
     this.state = {
       reports: initialReports,
-      availableFilters: initialAvailableFilters,
+      availableFilters: initialAvailableFilters || [],
       name: name,
-      filtersShown: initialAvailableFilters?.length > 0,
     };
   }
 
   contentContainer = React.createRef();
+  waitingForDashboardSave = [];
 
   mousePosition = {x: 0, y: 0};
   mouseTracker = (evt) => {
@@ -149,8 +154,9 @@ export default class DashboardEdit extends React.Component {
     });
   };
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     if (
+      this.state.reports.every(({id, configuration}) => id || configuration?.external) &&
       deepEqual(this.state.reports, this.props.initialReports) &&
       deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
       this.state.name === this.props.name
@@ -159,18 +165,67 @@ export default class DashboardEdit extends React.Component {
     } else {
       nowDirty(t('dashboard.label'), this.save);
     }
+
+    if (prevProps.initialReports !== this.props.initialReports) {
+      // initial reports might change because of a save without leaving the edit mode
+      // This happens for example if the dashboard is saved for the variable filter
+      this.setState({reports: this.props.initialReports}, () => {
+        this.waitingForDashboardSave.forEach((resolve) => resolve());
+        this.waitingForDashboardSave.length = 0;
+      });
+      nowPristine();
+    }
   }
 
-  save = async () => {
-    const {name, reports, availableFilters} = this.state;
+  save = (stayInEditMode) => {
+    return new Promise((resolve) => {
+      const promises = [];
+      const {name, reports, availableFilters} = this.state;
 
-    nowPristine();
-    await this.props.saveChanges(name, reports, availableFilters);
+      nowPristine();
+      promises.push(this.props.saveChanges(name, reports, availableFilters, stayInEditMode));
+
+      if (stayInEditMode) {
+        promises.push(
+          new Promise((resolve) => {
+            this.waitingForDashboardSave.push(resolve);
+          })
+        );
+      }
+
+      Promise.all(promises).then(resolve);
+    });
+  };
+
+  editReport = (report) => {
+    if (isDirty()) {
+      showPrompt(
+        {
+          title: t('dashboard.saveModal.unsaved'),
+          body: t('dashboard.saveModal.text'),
+          yes: t('common.saveContinue'),
+          no: t('common.cancel'),
+        },
+        async () => {
+          // unsaved reports don't have ids yet. As their report object gets overwritten on save
+          // we keep track of their position in the reports array instead to match the old
+          // report object with the new one that has an id after the save
+          const reportIdx = this.state.reports.indexOf(report);
+          await this.save(true);
+          const reportId = this.state.reports[reportIdx].id;
+          this.props.history.push('report/' + reportId + '/edit');
+        }
+      );
+    } else {
+      this.props.history.push('report/' + report.id + '/edit');
+    }
   };
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {reports, name, filtersShown, availableFilters} = this.state;
+    const {reports, name, availableFilters} = this.state;
+
+    const optimizeReports = reports?.filter(({id, report}) => !!id || !!report);
 
     return (
       <div className="DashboardEdit">
@@ -186,20 +241,19 @@ export default class DashboardEdit extends React.Component {
             onCancel={nowPristine}
           >
             <AddButton addReport={this.addReport} />
-            <Button
-              main
-              className="tool-button"
-              active={filtersShown}
-              onClick={() => this.setState(({filtersShown}) => ({filtersShown: !filtersShown}))}
-            >
-              <Icon type="filter" />
-              {t('dashboard.filter.label')}
-            </Button>
+            <AddFiltersButton
+              reports={optimizeReports}
+              persistReports={() => this.save(true)}
+              availableFilters={availableFilters}
+              setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
+            />
+            <div className="separator" />
           </EntityNameForm>
         </div>
-        {filtersShown && (
+        {availableFilters.length > 0 && (
           <FiltersEdit
-            reports={reports?.map(({id}) => id).filter((id) => !!id)}
+            reports={optimizeReports}
+            persistReports={() => this.save(true)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
           />
@@ -212,6 +266,7 @@ export default class DashboardEdit extends React.Component {
             addons={[
               <DragOverlay key="DragOverlay" />,
               <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
+              <EditButton key="EditButton" onClick={this.editReport} />,
             ]}
             onChange={this.updateLayout}
           />
@@ -220,6 +275,8 @@ export default class DashboardEdit extends React.Component {
     );
   }
 }
+
+export default withRouter(DashboardEdit);
 
 function createEvent(type, position) {
   return new MouseEvent(type, {

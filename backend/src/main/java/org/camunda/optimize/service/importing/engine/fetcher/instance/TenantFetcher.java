@@ -16,9 +16,9 @@ import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.INDEX_OF_FIRST_RESULT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.TENANT_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.INDEX_OF_FIRST_RESULT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.importing.EngineConstants.TENANT_ENDPOINT;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

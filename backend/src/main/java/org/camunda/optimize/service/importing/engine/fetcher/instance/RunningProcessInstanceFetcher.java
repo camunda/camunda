@@ -19,10 +19,10 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RUNNING_PROCESS_INSTANCE_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.STARTED_AFTER;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.STARTED_AT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RUNNING_PROCESS_INSTANCE_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.STARTED_AFTER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.STARTED_AT;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

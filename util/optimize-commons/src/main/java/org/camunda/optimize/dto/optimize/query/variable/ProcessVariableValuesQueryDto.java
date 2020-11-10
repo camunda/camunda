@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.variable;
 import lombok.Builder;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +43,7 @@ public class ProcessVariableValuesQueryDto {
 
   public static ProcessVariableValuesQueryDto fromProcessVariableReportValuesRequest(
     final ProcessVariableReportValuesRequestDto requestDto,
-    final List<? extends SingleProcessReportDefinitionDto> reports) {
+    final List<? extends SingleProcessReportDefinitionRequestDto> reports) {
     final List<ProcessVariableSourceDto> reportSources = reports.stream()
       .map(ReportDefinitionDto::getData)
       .map(reportData -> ProcessVariableSourceDto.builder()

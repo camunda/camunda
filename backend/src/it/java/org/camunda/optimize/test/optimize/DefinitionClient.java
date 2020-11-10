@@ -8,13 +8,13 @@ package org.camunda.optimize.test.optimize;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
-import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 
 import javax.ws.rs.core.Response;
@@ -28,89 +28,89 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 public class DefinitionClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public DefinitionWithTenantsDto getDefinitionByTypeAndKey(DefinitionType definitionType,
-                                                            DefinitionOptimizeDto expectedDefinition) {
+  public DefinitionWithTenantsResponseDto getDefinitionByTypeAndKey(DefinitionType definitionType,
+                                                                    DefinitionOptimizeResponseDto expectedDefinition) {
     return getRequestExecutor()
       .buildGetDefinitionByTypeAndKeyRequest(
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+      .execute(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionWithTenantsDto> getAllDefinitions() {
+  public List<DefinitionWithTenantsResponseDto> getAllDefinitions() {
     return getAllDefinitionsAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public List<DefinitionKeyDto> getCamundaEventImportedProcessDefinitionKeys() {
+  public List<DefinitionKeyResponseDto> getCamundaEventImportedProcessDefinitionKeys() {
     return getRequestExecutor()
       .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), null, true)
-      .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionWithTenantsDto> getAllDefinitionsAsUser(String username, String password) {
+  public List<DefinitionWithTenantsResponseDto> getAllDefinitionsAsUser(String username, String password) {
     return getRequestExecutor()
       .buildGetDefinitions()
       .withUserAuthentication(username, password)
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType) {
+  public List<DefinitionKeyResponseDto> getDefinitionKeysByType(final DefinitionType definitionType) {
     return getDefinitionKeysByType(definitionType, null);
   }
 
-  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
-                                                        final String filterByCollectionScope) {
+  public List<DefinitionKeyResponseDto> getDefinitionKeysByType(final DefinitionType definitionType,
+                                                                final String filterByCollectionScope) {
     return getDefinitionKeysByTypeAsUser(
       definitionType, filterByCollectionScope, DEFAULT_USERNAME, DEFAULT_PASSWORD
     );
   }
 
-  public List<DefinitionKeyDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
-                                                              final String username,
-                                                              final String password) {
+  public List<DefinitionKeyResponseDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
+                                                                      final String username,
+                                                                      final String password) {
     return getDefinitionKeysByTypeAsUser(definitionType, null, username, password);
   }
 
-  public List<DefinitionKeyDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
-                                                              final String filterByCollectionScope,
-                                                              final String username,
-                                                              final String password) {
+  public List<DefinitionKeyResponseDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
+                                                                      final String filterByCollectionScope,
+                                                                      final String username,
+                                                                      final String password) {
     return getRequestExecutor()
       .buildGetDefinitionKeysByType(definitionType.getId(), filterByCollectionScope)
       .withUserAuthentication(username, password)
-      .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
-                                                                      final String key) {
+  public List<DefinitionVersionResponseDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
+                                                                              final String key) {
     return getDefinitionVersionsByTypeAndKey(type, key, null);
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
-                                                                      final String key,
-                                                                      final String filterByCollectionScope) {
+  public List<DefinitionVersionResponseDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
+                                                                              final String key,
+                                                                              final String filterByCollectionScope) {
     return getDefinitionVersionsByTypeAndKeyAsUser(
       type, key, filterByCollectionScope, DEFAULT_USERNAME, DEFAULT_PASSWORD
     );
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKeyAsUser(final DefinitionType type,
-                                                                            final String key,
-                                                                            final String username,
-                                                                            final String password) {
+  public List<DefinitionVersionResponseDto> getDefinitionVersionsByTypeAndKeyAsUser(final DefinitionType type,
+                                                                                    final String key,
+                                                                                    final String username,
+                                                                                    final String password) {
     return getDefinitionVersionsByTypeAndKeyAsUser(type, key, null, username, password);
   }
 
-  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKeyAsUser(final DefinitionType type,
-                                                                            final String key,
-                                                                            final String filterByCollectionScope,
-                                                                            final String username,
-                                                                            final String password) {
+  public List<DefinitionVersionResponseDto> getDefinitionVersionsByTypeAndKeyAsUser(final DefinitionType type,
+                                                                                    final String key,
+                                                                                    final String filterByCollectionScope,
+                                                                                    final String username,
+                                                                                    final String password) {
     return getRequestExecutor()
       .buildGetDefinitionVersionsByTypeAndKeyRequest(type.getId(), key, filterByCollectionScope)
       .withUserAuthentication(username, password)
-      .executeAndReturnList(DefinitionVersionDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionVersionResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersions(final DefinitionType type,
@@ -150,15 +150,15 @@ public class DefinitionClient {
       .executeAndReturnList(TenantResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant() {
+  public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant() {
     return getDefinitionsGroupedByTenantAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenantAsUser(String username, String password) {
+  public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenantAsUser(String username, String password) {
     return getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
       .withUserAuthentication(username, password)
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(TenantWithDefinitionsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {

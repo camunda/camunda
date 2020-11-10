@@ -5,25 +5,36 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
+
+import {Button} from 'components';
 
 import CopyToClipboard from './CopyToClipboard';
 
-it('should render without crashing', () => {
-  mount(<CopyToClipboard />);
+it('should allow custom labels', () => {
+  const node = shallow(<CopyToClipboard>Custom Label</CopyToClipboard>);
+
+  expect(node).toIncludeText('Custom Label');
 });
 
-it('should set a value to its Input as provided as a prop', () => {
-  const val = '123';
-  const node = mount(<CopyToClipboard value={val} />);
+it('should allow being disabled', () => {
+  const node = shallow(<CopyToClipboard disabled />);
 
-  expect(node.find('input').at(0)).toHaveValue(val);
+  expect(node.find(Button)).toBeDisabled();
 });
 
-// re-enable this test once https://github.com/airbnb/enzyme/issues/1604 is fixed
-// it('should copy the value of the input field to the clipboard on clicking the "Copy" button', () => {
-//   const node = mount(<CopyToClipboard />);
+it('should copy specified value', () => {
+  const node = shallow(<CopyToClipboard />);
 
-//   node.find('button').simulate('click');
-//   expect(document.execCommand).toHaveBeenCalledWith('Copy');
-// });
+  node.find(Button).simulate('click', {preventDefault: () => {}});
+  expect(document.execCommand).toHaveBeenCalledWith('Copy');
+});
+
+it('should call a provided onCopy function', () => {
+  const spy = jest.fn();
+  const node = shallow(<CopyToClipboard onCopy={spy} />);
+
+  node.find(Button).simulate('click', {preventDefault: () => {}});
+
+  expect(spy).toHaveBeenCalledTimes(1);
+});

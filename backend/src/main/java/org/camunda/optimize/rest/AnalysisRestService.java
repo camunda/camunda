@@ -6,17 +6,17 @@
 package org.camunda.optimize.rest;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierParametersRestDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierVariableParametersRestDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRestDto;
+import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierParametersRequestDto;
+import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierVariableParametersRequestDto;
+import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.BranchAnalysisService;
 import org.camunda.optimize.service.OutlierAnalysisService;
-import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -44,7 +44,7 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 @Path("/analysis")
 public class AnalysisRestService {
 
-  private final BranchAnalysisReader branchAnalysisReader;
+  private final BranchAnalysisService branchAnalysisService;
   private final OutlierAnalysisService outlierAnalysisService;
   private final SessionService sessionService;
 
@@ -57,19 +57,19 @@ public class AnalysisRestService {
   @Path("/correlation")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public BranchAnalysisDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
-                                             BranchAnalysisQueryDto branchAnalysisDto) {
+  public BranchAnalysisResponseDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
+                                                     BranchAnalysisRequestDto branchAnalysisDto) {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
-    return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto, timezone);
+    return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
   @GET
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
   public Map<String, FindingsDto> getFlowNodeOutlierMap(@Context ContainerRequestContext requestContext,
-                                                        @BeanParam ProcessDefinitionParametersRestDto parameters) {
+                                                        @BeanParam ProcessDefinitionParametersRequestDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return outlierAnalysisService.getFlowNodeOutlierMap(parameters, userId);
   }
@@ -78,7 +78,7 @@ public class AnalysisRestService {
   @Path("/durationChart")
   @Produces(MediaType.APPLICATION_JSON)
   public List<DurationChartEntryDto> getCountByDurationChart(@Context ContainerRequestContext requestContext,
-                                                             @BeanParam FlowNodeOutlierParametersRestDto parameters) {
+                                                             @BeanParam FlowNodeOutlierParametersRequestDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return outlierAnalysisService.getCountByDurationChart(parameters, userId);
   }
@@ -87,7 +87,7 @@ public class AnalysisRestService {
   @Path("/significantOutlierVariableTerms")
   @Produces(MediaType.APPLICATION_JSON)
   public List<VariableTermDto> getSignificantOutlierVariableTerms(@Context ContainerRequestContext requestContext,
-                                                                  @BeanParam FlowNodeOutlierParametersRestDto parameters) {
+                                                                  @BeanParam FlowNodeOutlierParametersRequestDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return outlierAnalysisService.getSignificantOutlierVariableTerms(parameters, userId);
   }
@@ -98,7 +98,7 @@ public class AnalysisRestService {
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   public Response getSignificantOutlierVariableTermsInstanceIds(@Context ContainerRequestContext requestContext,
                                                                 @PathParam("fileName") String fileName,
-                                                                @BeanParam FlowNodeOutlierVariableParametersRestDto parameters) {
+                                                                @BeanParam FlowNodeOutlierVariableParametersRequestDto parameters) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     final List<String[]> processInstanceIdsCsv = CSVUtils.mapIdList(

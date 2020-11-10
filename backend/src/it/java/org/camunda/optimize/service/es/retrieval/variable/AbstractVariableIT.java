@@ -11,7 +11,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.test.util.decision.DmnHelper;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public abstract class AbstractVariableIT extends AbstractIT {
   }
 
   protected String createSingleReport(final ProcessDefinitionEngineDto processDefinition) {
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       reportClient.createSingleProcessReportDefinitionDto(
         null,
         processDefinition.getKey(),

@@ -7,8 +7,8 @@
   display: flex;
   align-items: center;
 
-  &:first-child {
-    min-width: 80px;
+  &.active {
+    min-width: 0;
   }
 
   &:last-child {

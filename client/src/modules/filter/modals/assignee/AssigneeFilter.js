@@ -5,7 +5,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Modal, Button, ButtonGroup, Labeled, Typeahead, LabeledInput, Form} from 'components';
+import {Modal, Button, ButtonGroup, Labeled, Form, MultiSelect} from 'components';
 import {loadUsers} from './service';
 import {t} from 'translation';
 import update from 'immutability-helper';
@@ -25,7 +25,6 @@ export function AssigneeFilter({
   addFilter,
 }) {
   const [values, setValues] = useState([]);
-  const [selectedValue, setSelectedValue] = useState();
   const [data, setData] = useState({operator: 'in', values: []});
 
   useEffect(() => {
@@ -42,10 +41,7 @@ export function AssigneeFilter({
     );
   }, [mightFail, processDefinitionKey, processDefinitionVersions, tenantIds, filterType]);
 
-  const addValue = () => {
-    setData(update(data, {values: {$push: [selectedValue]}}));
-    setSelectedValue();
-  };
+  const addValue = (value) => setData(update(data, {values: {$push: [value]}}));
 
   const removeValue = (value) => {
     const newData = update(data, {
@@ -67,13 +63,13 @@ export function AssigneeFilter({
         <ButtonGroup>
           <Button
             active={data.operator === 'in'}
-            onClick={() => setData({operator: 'in', values: []})}
+            onClick={() => setData(update(data, {operator: {$set: 'in'}}))}
           >
             {t('common.filter.assigneeModal.includeOnly')}
           </Button>
           <Button
             active={data.operator === 'not in'}
-            onClick={() => setData({operator: 'not in', values: []})}
+            onClick={() => setData(update(data, {operator: {$set: 'not in'}}))}
           >
             {t('common.filter.assigneeModal.excludeOnly')}
           </Button>
@@ -81,41 +77,31 @@ export function AssigneeFilter({
         <Form>
           <Form.InputGroup>
             <Labeled label={t(`common.filter.assigneeModal.type.${filterType}`)}>
-              <Typeahead
-                value={selectedValue}
+              <MultiSelect
+                values={data.values.map((value) => ({
+                  value,
+                  label: value === null ? t('common.filter.assigneeModal.unassigned') : value,
+                }))}
+                onAdd={addValue}
+                onRemove={removeValue}
+                onClear={() => setData(update(data, {values: {$set: []}}))}
                 placeholder={t('common.filter.assigneeModal.selectValue')}
-                onChange={setSelectedValue}
               >
-                <Typeahead.Option disabled={data.values.includes(null)} key={null} value={null}>
-                  {t('common.filter.assigneeModal.unassigned')}
-                </Typeahead.Option>
-                {values?.map((val) => (
-                  <Typeahead.Option disabled={data.values.includes(val)} key={val} value={val}>
-                    {val}
-                  </Typeahead.Option>
-                ))}
-              </Typeahead>
+                {!data.values.includes(null) && (
+                  <MultiSelect.Option key={null} value={null}>
+                    {t('common.filter.assigneeModal.unassigned')}
+                  </MultiSelect.Option>
+                )}
+                {values
+                  ?.filter((val) => !data.values.includes(val))
+                  .map((val) => (
+                    <MultiSelect.Option key={val} value={val}>
+                      {val}
+                    </MultiSelect.Option>
+                  ))}
+              </MultiSelect>
             </Labeled>
-            <Button disabled={typeof selectedValue === 'undefined'} onClick={addValue}>
-              {t('common.add')}
-            </Button>
           </Form.InputGroup>
-          <p className="info">
-            {data.operator === 'in'
-              ? t('common.filter.assigneeModal.info.included')
-              : t('common.filter.assigneeModal.info.excluded')}
-          </p>
-          <Form.Group noSpacing className="addedValues">
-            {data.values.map((val) => (
-              <LabeledInput
-                key={val}
-                type="checkbox"
-                label={val === null ? t('common.filter.assigneeModal.unassigned') : val}
-                onChange={() => removeValue(val)}
-                checked
-              />
-            ))}
-          </Form.Group>
         </Form>
       </Modal.Content>
       <Modal.Actions>

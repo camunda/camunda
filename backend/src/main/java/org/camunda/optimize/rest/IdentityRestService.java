@@ -7,8 +7,8 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.IdentityService;
@@ -45,9 +45,9 @@ public class IdentityRestService {
   @GET
   @Path(IDENTITY_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public IdentitySearchResultDto searchIdentity(@QueryParam("terms") final String searchTerms,
-                                                @QueryParam("limit") @DefaultValue("25") final int limit,
-                                                @Context ContainerRequestContext requestContext) {
+  public IdentitySearchResultResponseDto searchIdentity(@QueryParam("terms") final String searchTerms,
+                                                        @QueryParam("limit") @DefaultValue("25") final int limit,
+                                                        @Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService.searchForIdentitiesAsUser(userId, Optional.ofNullable(searchTerms).orElse(""), limit);
   }
@@ -55,8 +55,8 @@ public class IdentityRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdentityWithMetadataDto getIdentityById(@PathParam("id") final String identityId,
-                                                 @Context ContainerRequestContext requestContext) {
+  public IdentityWithMetadataResponseDto getIdentityById(@PathParam("id") final String identityId,
+                                                         @Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService.getIdentityWithMetadataForIdAsUser(userId, identityId)
       .orElseThrow(() -> new NotFoundException(

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
@@ -15,13 +14,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -139,34 +134,6 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
       tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1)
     );
-  }
-
-  private void deployStartAndImportDefinitionsWithSameKeyOnAllEngines(final int definitionResourceType) {
-    deployStartAndImportDefinitionsWithSameKeyOnAllEngines(definitionResourceType, null);
-  }
-
-  private void deployStartAndImportDefinitionsWithSameKeyOnAllEngines(final int definitionResourceType,
-                                                                      final String tenantId) {
-    switch (definitionResourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deployAndStartProcessOnDefaultEngine(PROCESS_KEY_1, tenantId);
-        deployAndStartProcessOnSecondEngine(PROCESS_KEY_1, tenantId);
-        break;
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
-        secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(
-          createSimpleDmnModel(DECISION_KEY_1),
-          tenantId
-        );
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
-    }
-    importAllEngineEntitiesFromScratch();
-  }
-
-  private static final Stream<Integer> definitionType() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
 }

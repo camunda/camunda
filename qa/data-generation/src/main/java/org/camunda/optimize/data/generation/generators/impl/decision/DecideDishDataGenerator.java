@@ -21,7 +21,7 @@ import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_SEASON;
 
 public class DecideDishDataGenerator extends DecisionDataGenerator {
 
-  private static final String DMN_DIAGRAM = "diagrams/decision/decide-dish.dmn";
+  private static final String DMN_DIAGRAM = "/diagrams/decision/decide-dish.dmn";
 
   private Triple<String, String, String> inputVarNames =
     Triple.of(INPUT_VARIABLE_NUMBER_OF_GUESTS, INPUT_VARIABLE_SEASON, INPUT_VARIABLE_GUEST_WITH_CHILDREN);

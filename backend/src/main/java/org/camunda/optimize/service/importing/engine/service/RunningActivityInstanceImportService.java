@@ -12,7 +12,7 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +25,8 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaEventImportService camundaEventService;
+  private final RunningActivityInstanceWriter runningActivityInstanceWriter;
+  private final CamundaEventImportService camundaEventService;
 
   public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
                                               CamundaEventImportService camundaEventService,
@@ -90,6 +90,8 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
       .engineAlias(engineContext.getEngineAlias())
       .tenantId(engineEntity.getTenantId())
       .orderCounter(engineEntity.getSequenceCounter())
+      .canceled(engineEntity.getCanceled())
+      .taskId(engineEntity.getTaskId())
       .build();
   }
 

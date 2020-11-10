@@ -5,3 +5,4 @@
  */
 
 export {default as Typeahead} from './Typeahead';
+export {default as MultiSelect} from './MultiSelect';

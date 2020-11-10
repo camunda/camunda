@@ -25,7 +25,6 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtil {
 

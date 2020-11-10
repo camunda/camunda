@@ -10,12 +10,6 @@ import {shallow} from 'enzyme';
 import ColumnRearrangement from './ColumnRearrangement';
 jest.mock('./processRawData', () => jest.fn());
 
-jest.mock('services', () => {
-  return {
-    flatten: jest.fn(),
-  };
-});
-
 it('should render child node', () => {
   const node = shallow(
     <ColumnRearrangement report={{result: {data: {}}, data: {view: {}}}}>

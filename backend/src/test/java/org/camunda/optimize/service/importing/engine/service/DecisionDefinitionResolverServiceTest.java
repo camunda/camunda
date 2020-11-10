@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,7 +62,7 @@ public class DecisionDefinitionResolverServiceTest {
       .get()
       .extracting(DecisionDefinitionOptimizeDto::getVersion)
       .isEqualTo(version);
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
   }
 
   @Test
@@ -83,7 +83,7 @@ public class DecisionDefinitionResolverServiceTest {
     assertThat(secondDecisionDefinitionTry).isPresent();
     assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
 
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
   }
 
   @Test
@@ -107,7 +107,7 @@ public class DecisionDefinitionResolverServiceTest {
         DecisionDefinitionOptimizeDto::getVersion
       )
       .containsExactly(id, TEST_KEY, "1");
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
   }
 
@@ -124,13 +124,13 @@ public class DecisionDefinitionResolverServiceTest {
 
     //then
     assertThat(firstDecisionDefinitionTry).isPresent();
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
 
     // when
     final Optional<DecisionDefinitionOptimizeDto> secondDecisionDefinitionTry =
       underTest.getDefinition(id, engineContext);
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
     assertThat(secondDecisionDefinitionTry).isPresent();
     assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
@@ -149,20 +149,38 @@ public class DecisionDefinitionResolverServiceTest {
 
     //then
     assertThat(definition).isNotPresent();
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
   }
 
   private void mockDecisionDefinitionsOnReaderLevel(final String id, final String version) {
     List<DecisionDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null)
+      DecisionDefinitionOptimizeDto.builder()
+        .id(id)
+        .key(TEST_KEY)
+        .version(version)
+        .versionTag("aVersionTag")
+        .name("name")
+        .engine("engine")
+        .deleted(false)
+        .dmn10Xml("")
+        .build()
     );
-    when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(mockedDefinitions);
+    when(decisionDefinitionReader.getDecisionDefinitions(false, false, true)).thenReturn(mockedDefinitions);
   }
 
   private void mockDecisionDefinitionForEngineContext(final String id, final String version) {
     DecisionDefinitionOptimizeDto mockedDefinition =
-      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null);
+      DecisionDefinitionOptimizeDto.builder()
+        .id(id)
+        .key(TEST_KEY)
+        .version(version)
+        .versionTag("aVersionTag")
+        .name("name")
+        .deleted(false)
+        .engine("engine")
+        .dmn10Xml("")
+        .build();
     when(engineContext.fetchDecisionDefinition(any())).thenReturn(mockedDefinition);
   }
 

@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import ItemsList from './ItemsList';
-import {Typeahead, LoadingIndicator, Form, Labeled} from 'components';
-import {t} from 'translation';
 import equal from 'deep-equal';
+
+import {t} from 'translation';
+import {Typeahead, LoadingIndicator, Form, Labeled, Checklist} from 'components';
+
 import {formatDefintionName, formatTenants} from './service';
 
 export default class DefinitionSource extends React.Component {
@@ -76,7 +77,7 @@ export default class DefinitionSource extends React.Component {
         {selectedDefinition && selectedDefinition.tenants.length !== 1 && (
           <Form.Group>
             <Labeled label={t('common.tenant.label-plural')}>
-              <ItemsList
+              <Checklist
                 selectedItems={selectedTenants}
                 allItems={selectedDefinition.tenants}
                 onChange={(selectedTenants) => this.setState({selectedTenants})}

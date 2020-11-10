@@ -22,7 +22,7 @@ pipelineJob('upgrade-performance-large-static-dataset') {
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('PREV_ES_VERSION', '', 'Previous Elasticsearch version that was used in the old Optimize prior to the migration, defaults to reading it from pom.xml.')
-    stringParam('UPGRADE_TIMEOUT_MINUTES', '60', 'Timeout for the upgrade stage to complete in minutes.')
+    stringParam('UPGRADE_TIMEOUT_MINUTES', '180', 'Timeout for the upgrade stage to complete in minutes.')
   }
 
   properties {

@@ -308,6 +308,7 @@ it('should reset definition specific configurations on definition change', async
   expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
+  expect(spy.mock.calls[0][0].configuration.processPart).toBeDefined();
 });
 
 it('should show the number of process instances in the current Filter', () => {

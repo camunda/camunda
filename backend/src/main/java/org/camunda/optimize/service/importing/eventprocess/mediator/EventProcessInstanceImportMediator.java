@@ -7,12 +7,13 @@ package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -34,12 +35,12 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
 
   @Getter
   private final String publishedProcessStateId;
-  private final EventFetcherService eventFetcherService;
+  private final EventFetcherService<T> eventFetcherService;
   private final ConfigurationService configurationService;
 
   public EventProcessInstanceImportMediator(final String publishedProcessStateId,
                                             final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,
-                                            final EventFetcherService eventFetcherService,
+                                            final EventFetcherService<T> eventFetcherService,
                                             final ImportService<T> eventProcessEventImportService,
                                             final ConfigurationService configurationService,
                                             final BackoffCalculator idleBackoffCalculator) {
@@ -53,9 +54,9 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
 
   @Override
   protected OffsetDateTime getTimestamp(final T eventProcessEventDto) {
-    if (eventProcessEventDto instanceof EventDto) {
+    if (eventProcessEventDto instanceof EventResponseDto) {
       return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
+        Instant.ofEpochMilli(((EventResponseDto) eventProcessEventDto).getIngestionTimestamp()),
         ZoneId.systemDefault()
       );
     } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {
@@ -84,4 +85,10 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   public int getMaxPageSize() {
     return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
+  }
+
 }

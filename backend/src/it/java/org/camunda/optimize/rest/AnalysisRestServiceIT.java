@@ -8,9 +8,9 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -47,7 +47,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
+      .buildProcessDefinitionCorrelation(new BranchAnalysisRequestDto())
       .withoutAuthentication()
       .execute();
 
@@ -61,18 +61,18 @@ public class AnalysisRestServiceIT extends AbstractIT {
     setupFullInstanceFlow();
 
     // when
-    BranchAnalysisQueryDto branchAnalysisQueryDto = new BranchAnalysisQueryDto();
-    branchAnalysisQueryDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    branchAnalysisQueryDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
-    branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
-    branchAnalysisQueryDto.setEnd(END_ACTIVITY);
+    BranchAnalysisRequestDto branchAnalysisRequestDto = new BranchAnalysisRequestDto();
+    branchAnalysisRequestDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    branchAnalysisRequestDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
+    branchAnalysisRequestDto.setGateway(GATEWAY_ACTIVITY);
+    branchAnalysisRequestDto.setEnd(END_ACTIVITY);
 
-    BranchAnalysisDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisQueryDto);
+    BranchAnalysisResponseDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
 
     // then
     assertThat(response)
       .isNotNull()
-      .extracting(BranchAnalysisDto::getTotal)
+      .extracting(BranchAnalysisResponseDto::getTotal)
       .isEqualTo(2L);
   }
 
@@ -90,14 +90,15 @@ public class AnalysisRestServiceIT extends AbstractIT {
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessDefinitionId(PROCESS_DEFINITION_ID)
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
-      .setProcessInstanceId(PROCESS_INSTANCE_ID)
-      .setStartDate(OffsetDateTime.now())
-      .setEndDate(OffsetDateTime.now())
-      .setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processDefinitionId(PROCESS_DEFINITION_ID)
+      .processDefinitionKey(PROCESS_DEFINITION_KEY)
+      .processDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
+      .processInstanceId(PROCESS_INSTANCE_ID)
+      .startDate(OffsetDateTime.now())
+      .endDate(OffsetDateTime.now())
+      .events(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID, procInst);
 
     procInst.setEvents(

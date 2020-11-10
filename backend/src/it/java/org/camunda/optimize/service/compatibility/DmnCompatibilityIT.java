@@ -9,15 +9,14 @@ import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.camunda.optimize.test.util.annotations.RunOnlyForDmn13Engines;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +29,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunOnlyForDmn13Engines
 public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
   private static final String INPUT_CUSTOMER_STATUS_ID = "input1";
@@ -50,7 +48,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
+    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
 
     // then
     assertThat(variableResponse).hasSize(2);
@@ -72,7 +70,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
+    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
       decisionDefinitionDto);
 
     // then
@@ -213,10 +211,10 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions)

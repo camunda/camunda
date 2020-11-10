@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,9 +30,9 @@ public class IngestedEventCleanupIT extends AbstractIT {
   public void testCleanup() {
     // given
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
-    final List<CloudEventDto> eventsToCleanup =
+    final List<CloudEventRequestDto> eventsToCleanup =
       eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
-    final List<CloudEventDto> eventsToKeep =
+    final List<CloudEventRequestDto> eventsToKeep =
       eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -42,8 +42,8 @@ public class IngestedEventCleanupIT extends AbstractIT {
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
-      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventDto::getId).collect(Collectors.toSet()));
+      .extracting(EventResponseDto::getId)
+      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
   @Test
@@ -51,7 +51,7 @@ public class IngestedEventCleanupIT extends AbstractIT {
     // given
     getIngestedEventCleanupConfiguration().setEnabled(false);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
-    final List<CloudEventDto> eventsToKeep =
+    final List<CloudEventRequestDto> eventsToKeep =
       eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -61,8 +61,8 @@ public class IngestedEventCleanupIT extends AbstractIT {
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
-      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventDto::getId).collect(Collectors.toSet()));
+      .extracting(EventResponseDto::getId)
+      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
   private IngestedEventCleanupConfiguration getIngestedEventCleanupConfiguration() {

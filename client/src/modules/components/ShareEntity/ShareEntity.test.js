@@ -61,7 +61,10 @@ it('should construct special link', () => {
 
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('.shareLink')).toHaveProp('value', 'http://example.com/#/share/report/10');
+  expect(node.find('CopyToClipboard').at(0)).toHaveProp(
+    'value',
+    'http://example.com/#/share/report/10'
+  );
 });
 
 it('should construct special link for embedding', () => {
@@ -72,9 +75,28 @@ it('should construct special link for embedding', () => {
 
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('.embedLink').prop('value')).toContain(
-    '<iframe src="http://example.com/#/share/report/10'
+  const clipboardValue = node.find('CopyToClipboard').at(1).prop('value');
+
+  expect(clipboardValue).toContain('<iframe src="http://example.com/#/share/report/10');
+  expect(clipboardValue).toContain('mode=embed');
+});
+
+it('should include filters', async () => {
+  const node = shallow(
+    <ShareEntity
+      {...props}
+      type="dashboard"
+      filter={[{data: null, type: 'runningInstancesOnly'}]}
+    />
   );
+
+  await flushPromises();
+
+  node.find('.includeFilters [type="checkbox"]').simulate('change', {target: {checked: true}});
+
+  const link = node.find('CopyToClipboard').at(0).prop('value');
+  expect(link).toContain('?filter=');
+  expect(link).toContain('runningInstancesOnly');
 });
 
 it('should display a loading indicator', () => {

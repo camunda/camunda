@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -50,7 +50,7 @@ public class ExternalEventReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+  public List<EventResponseDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
     log.debug("Fetching events that where ingested after {}", ingestTimestamp);
 
     final RangeQueryBuilder timestampQuery = rangeQuery(EventIndex.INGESTION_TIMESTAMP).gt(ingestTimestamp);
@@ -58,7 +58,7 @@ public class ExternalEventReader {
     return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, limit);
   }
 
-  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+  public List<EventResponseDto> getEventsIngestedAt(final Long ingestTimestamp) {
     log.debug("Fetching events that where ingested at {}", ingestTimestamp);
 
     final RangeQueryBuilder timestampQuery = rangeQuery(EventIndex.INGESTION_TIMESTAMP)
@@ -100,7 +100,7 @@ public class ExternalEventReader {
     }
   }
 
-  private List<EventDto> getPageOfEventsSortedByIngestionTimestamp(final QueryBuilder query, final int limit) {
+  private List<EventResponseDto> getPageOfEventsSortedByIngestionTimestamp(final QueryBuilder query, final int limit) {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .sort(SortBuilders.fieldSort(EventIndex.INGESTION_TIMESTAMP).order(ASC))
@@ -111,7 +111,7 @@ public class ExternalEventReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventDto.class, objectMapper);
+      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventResponseDto.class, objectMapper);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve ingested events!", e);
     }

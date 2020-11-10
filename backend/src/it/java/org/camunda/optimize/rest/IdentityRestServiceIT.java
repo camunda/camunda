@@ -8,12 +8,12 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
@@ -22,14 +22,15 @@ import org.camunda.optimize.rest.providers.GenericExceptionMapper;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpError;
+import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -38,11 +39,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
@@ -50,7 +50,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
-
 
 public class IdentityRestServiceIT extends AbstractIT {
 
@@ -76,10 +75,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("frodo");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("frodo");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(userIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
   }
 
   @Test
@@ -90,10 +89,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("hobbit");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("hobbit");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(groupIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(groupIdentity)));
   }
 
   @Test
@@ -109,12 +108,12 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
-      .isEqualTo(new IdentitySearchResultDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
+      .isEqualTo(new IdentitySearchResultResponseDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
   }
 
   @Test
@@ -132,7 +131,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getSyncedIdentityCacheService().synchronizeIdentities();
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult.getResult())
@@ -152,13 +151,13 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("");
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("");
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins, empty user is second because name == id and is `testUser2`
       // group is last because it starts with `Th`
-      .isEqualTo(new IdentitySearchResultDto(
+      .isEqualTo(new IdentitySearchResultResponseDto(
         3L, Lists.newArrayList(userIdentity, emptyMetaDataUserIdentity, groupIdentity)
       ));
   }
@@ -175,24 +174,25 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", 1);
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("", 1);
 
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
-      .isEqualTo(new IdentitySearchResultDto(
-        1L, Lists.newArrayList(userIdentity)
+      // total count is 3 as there are two more identities (the baggins group & testUser2)
+      .isEqualTo(new IdentitySearchResultResponseDto(
+        3L, Lists.newArrayList(userIdentity)
       ));
   }
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_presentInCache(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_presentInCache(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedIdentity);
 
     // when
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
@@ -200,7 +200,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     switch (expectedIdentity.getType()) {
       case USER:
@@ -220,15 +220,16 @@ public class IdentityRestServiceIT extends AbstractIT {
     }
 
     // when
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
   }
 
   @ParameterizedTest
-  @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataDto expectedIdentity) {
+  @MethodSource("identitiesAndAuthorizationResponse")
+  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataResponseDto expectedIdentity,
+                                                                final ErrorResponseMock mockedResp) {
     // given
     final HttpRequest engineFetchRequestMatcher;
     switch (expectedIdentity.getType()) {
@@ -254,8 +255,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    engineMockServer.when(engineFetchRequestMatcher)
-      .error(HttpError.error().withDropConnection(true));
+    mockedResp.mock(engineFetchRequestMatcher, Times.unlimited(), engineMockServer);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -263,14 +263,15 @@ public class IdentityRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(Response.Status.fromStatusCode(response.getStatus()).getFamily())
+      .isNotEqualTo(Response.Status.Family.SUCCESSFUL);
     engineMockServer.verify(engineFetchRequestMatcher);
   }
 
   @ParameterizedTest
   @MethodSource("identitiesAndAuthorizationResponse")
-  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataDto expectedIdentity,
-                                                        final BiConsumer<HttpRequest, ClientAndServer> mockedAuthResp) {
+  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
+                                                        final ErrorResponseMock mockedResp) {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
 
@@ -295,28 +296,29 @@ public class IdentityRestServiceIT extends AbstractIT {
     syncedIdentityCacheService.synchronizeIdentities();
 
     String collectionId = collectionClient.createNewCollection();
-    CollectionRoleDto roleDto = new CollectionRoleDto(expectedIdentity, RoleType.EDITOR);
-    collectionClient.addRoleToCollection(collectionId, roleDto);
+    CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(expectedIdentity, RoleType.EDITOR);
+    collectionClient.addRolesToCollection(collectionId, roleDto);
 
     final HttpRequest engineAuthorizationsRequest = request()
       .withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    mockedAuthResp.accept(engineAuthorizationsRequest, engineMockServer);
+    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
 
     // when
     assertThrows(Exception.class, syncedIdentityCacheService::synchronizeIdentities);
 
     // then
-    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
 
-    assertThat(roles).extracting(CollectionRoleRestDto::getId).contains(roleDto.getId());
+    assertThat(roles).extracting(CollectionRoleResponseDto::getId).contains(roleDto.getId());
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  @Test
-  public void syncRetryBackoff() throws InterruptedException {
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void syncRetryBackoff(final ErrorResponseMock mockedResp) throws InterruptedException {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
 
@@ -332,8 +334,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    engineMockServer.when(engineAuthorizationsRequest)
-      .error(HttpError.error().withResponseBytes(new byte[10]));
+    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
 
     final ScheduledExecutorService identitySyncThread = Executors.newSingleThreadScheduledExecutor();
 
@@ -356,7 +357,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
@@ -385,7 +386,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // when
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
+    final IdentityWithMetadataResponseDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).hasNoNullFieldsOrPropertiesExcept(
@@ -397,7 +398,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_postFetchFailsIfIdentityNotAuthorizedToAccessOptimize(final IdentityWithMetadataDto expectedIdentity) {
+  public void getIdentityById_notPresentInCache_postFetchFailsIfIdentityNotAuthorizedToAccessOptimize(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
     switch (expectedIdentity.getType()) {
       case USER:
@@ -508,7 +509,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
 
-  private static Stream<IdentityWithMetadataDto> identities() {
+  private static Stream<IdentityWithMetadataResponseDto> identities() {
     return Stream.of(
       new UserDto("testUser", DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "testUser" + DEFAULT_EMAIL_DOMAIN),
       new GroupDto(KERMIT_GROUP_NAME, KERMIT_GROUP_NAME, 0L)
@@ -516,22 +517,12 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   private static Stream<Arguments> identitiesAndAuthorizationResponse() {
-    return identities()
-      .flatMap(identity -> Stream.of(
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request).error(HttpError.error().withResponseBytes(new byte[10]))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())))
-      ));
+    return identities().flatMap(identity -> MockServerUtil.engineMockedErrorResponses()
+      .map(errorResponse -> Arguments.of(identity, errorResponse)));
   }
+
+  private static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
+  }
+
 }

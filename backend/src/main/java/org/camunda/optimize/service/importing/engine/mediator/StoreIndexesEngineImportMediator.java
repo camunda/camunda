@@ -99,6 +99,11 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
     importService.shutdown();
   }
 
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.IMPORT_META_DATA;
+  }
+
   private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
     return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }

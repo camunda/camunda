@@ -6,11 +6,11 @@
 
 import React from 'react';
 
-import {Button, Modal, Form} from 'components';
+import {Button, Modal, Form, Checklist} from 'components';
 import {t} from 'translation';
-import {getDefinitionTenants, formatTenants} from './service';
 import {withErrorHandling} from 'HOC';
-import ItemsList from './ItemsList';
+
+import {getDefinitionTenants, formatTenants} from './service';
 
 export default withErrorHandling(
   class EditSourceModal extends React.Component {
@@ -67,7 +67,7 @@ export default withErrorHandling(
             <Form>
               {t('common.tenant.label-plural')}
               <Form.Group>
-                <ItemsList
+                <Checklist
                   selectedItems={selectedTenants}
                   allItems={definitionTenants}
                   onChange={this.updateSelectedTenants}

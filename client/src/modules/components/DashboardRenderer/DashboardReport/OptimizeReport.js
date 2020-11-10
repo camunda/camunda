@@ -34,7 +34,7 @@ export class OptimizeReport extends React.Component {
   }
 
   async componentDidMount() {
-    await this.loadReport();
+    await this.loadInitialReport();
   }
 
   componentDidUpdate(prevProps) {
@@ -42,30 +42,37 @@ export class OptimizeReport extends React.Component {
       !deepEqual(prevProps.report, this.props.report) ||
       !deepEqual(prevProps.filter, this.props.filter)
     ) {
-      this.loadReport();
+      this.loadInitialReport();
     }
   }
 
-  loadReport = async () => {
+  loadInitialReport = async () => {
     this.setState({loading: true});
-    await this.props.mightFail(
-      this.props.loadReport(this.props.report.id, this.props.filter),
-      (response) => {
-        this.setState({
-          loading: false,
-          data: response,
-        });
-      },
-      async (e) => {
-        const errorData = await e.json();
-        this.setState({
-          loading: false,
-          data: errorData.reportDefinition,
-          error: formatError(e, errorData),
-        });
-      }
-    );
+    await this.loadReport({});
+    this.setState({loading: false});
   };
+
+  loadReport = (params) =>
+    new Promise((resolve) => {
+      this.props.mightFail(
+        this.props.loadReport(
+          this.props.report.id ?? this.props.report.report,
+          this.props.filter,
+          params
+        ),
+        (data) => this.setState({data}, resolve),
+        async (e) => {
+          const errorData = await e.json();
+          this.setState(
+            {
+              data: errorData.reportDefinition,
+              error: formatError(e, errorData),
+            },
+            resolve
+          );
+        }
+      );
+    });
 
   getName = () => {
     if (this.state.data) {
@@ -86,7 +93,7 @@ export class OptimizeReport extends React.Component {
       return <LoadingIndicator />;
     }
 
-    const {disableNameLink, children = () => {}} = this.props;
+    const {disableNameLink, filter, children = () => {}} = this.props;
 
     const reportName = this.getName();
 
@@ -99,16 +106,16 @@ export class OptimizeReport extends React.Component {
           >
             {reportName}
           </EntityName>
-          <InstanceCount report={data} useIcon="filter" />
+          <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
         </div>
         <div className="visualization">
           {error ? (
             <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
           ) : (
-            <ReportRenderer report={data} context="dashboard" />
+            <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
           )}
         </div>
-        {children({loadReportData: this.loadReport})}
+        {children({loadReportData: this.loadInitialReport})}
       </div>
     );
   }

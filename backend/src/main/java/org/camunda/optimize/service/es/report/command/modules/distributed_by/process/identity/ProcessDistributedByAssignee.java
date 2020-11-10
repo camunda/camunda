@@ -34,6 +34,6 @@ public class ProcessDistributedByAssignee extends ProcessDistributedByIdentity {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new AssigneeDistributedByDto());
+    dataForCommandKey.setDistributedBy(new AssigneeDistributedByDto());
   }
 }

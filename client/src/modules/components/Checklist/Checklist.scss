@@ -1,0 +1,87 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Checklist {
+  width: 100%;
+  font-size: 0.875em;
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    .selectAll {
+      flex-grow: 1;
+    }
+
+    .Input[type='text'] {
+      border-radius: 15px;
+    }
+
+    .Tag {
+      margin-left: 10px;
+      height: 30px;
+      border-radius: 15px;
+      color: $grey-darken-36;
+      padding-left: 15px;
+
+      .tagText {
+        position: relative;
+        top: 2px;
+        margin-right: 5px;
+      }
+
+      button {
+        position: relative;
+        top: 7px;
+      }
+    }
+  }
+
+  .LabeledInput {
+    &.highlight {
+      background: $blue-lighten-93;
+    }
+
+    .label {
+      padding: 10px 0;
+      flex-grow: 1;
+    }
+
+    input[type='checkbox'] {
+      margin-right: 10px;
+      margin-left: 6px;
+    }
+  }
+
+  .itemsList {
+    max-height: calc(100vh - 440px);
+
+    &:not(:only-child) {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #d3d3d3;
+    }
+
+    @include scrollable;
+  }
+
+  .searchInputContainer {
+    position: relative;
+
+    .Input {
+      padding: 6px 30px 6px 15px;
+    }
+
+    .Input:valid ~ .searchIcon {
+      display: none;
+    }
+
+    .searchIcon {
+      position: absolute;
+      right: 10px;
+      top: calc(50% - 2px);
+      transform: translateY(-50%);
+      color: $silver-darken-80;
+    }
+  }
+}

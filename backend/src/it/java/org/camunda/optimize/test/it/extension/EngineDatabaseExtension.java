@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
 
 /**
  * Engine Database Extension
@@ -482,6 +482,31 @@ public class EngineDatabaseExtension implements Extension {
     }
   }
 
+  @SneakyThrows
+  public void changeIncidentCreationDate(final String processInstanceId, final OffsetDateTime creationDate) {
+    changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, null);
+  }
+
+  @SneakyThrows
+  public void changeIncidentCreationAndEndDateIfPresent(final String processInstanceId,
+                                                        final OffsetDateTime creationDate,
+                                                        final OffsetDateTime endDate) {
+    PreparedStatement statement;
+    if (creationDate != null) {
+      String sql = "UPDATE ACT_HI_INCIDENT SET CREATE_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+      statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+      prepareAndExecuteStatementForTimeFieldUpdate(statement, processInstanceId, creationDate);
+    }
+    if (endDate != null) {
+      String sql = "UPDATE ACT_HI_INCIDENT SET END_TIME_ = ? WHERE PROC_INST_ID_ = ? AND END_TIME_ is not null";
+      statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+      prepareAndExecuteStatementForTimeFieldUpdate(statement, processInstanceId, endDate);
+    }
+    if (creationDate != null || endDate != null) {
+      connection.commit();
+    }
+  }
+
   public int countHistoricActivityInstances() throws SQLException {
     String sql = "select count(*) as total from act_hi_actinst;";
     String postgresSQL = "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
@@ -602,8 +627,42 @@ public class EngineDatabaseExtension implements Extension {
     while (resultSet.next()) {
       result.add(resultSet.getString(1));
     }
-
     return result;
+  }
+
+  @SneakyThrows
+  public void changeVersionOfDecisionDefinitionWithDeploymentId(final String version,
+                                                                final String deploymentId) {
+    String sql = "UPDATE ACT_RE_DECISION_DEF " +
+      "SET VERSION_ = ? " +
+      "WHERE DEPLOYMENT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, version);
+    statement.setString(2, deploymentId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeVersionOfProcessDefinitionWithDeploymentId(final String version,
+                                                               final String deploymentId) {
+    String sql = "UPDATE ACT_RE_PROCDEF " +
+      "SET VERSION_ = ? " +
+      "WHERE DEPLOYMENT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, version);
+    statement.setString(2, deploymentId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void removeProcessInstanceIdFromAllHistoricIncidents() {
+    String sql = "UPDATE ACT_HI_INCIDENT " +
+      "SET PROC_INST_ID_ = NULL, ROOT_PROC_INST_ID_ = NULL";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.executeUpdate();
+    connection.commit();
   }
 
   public int countDecisionDefinitions() throws SQLException {

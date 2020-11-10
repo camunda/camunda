@@ -24,7 +24,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.13.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.14.0}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
@@ -49,8 +49,8 @@ services:
     ports:
       - 8090:8090
     volumes:
-      - "./src/test/resources/OptimizeLicense.txt:/optimize/environment/OptimizeLicense.txt"
-      - "./src/test/resources/optimize-import-cfg.yml:/optimize/environment/environment-config.yaml"
+      - "./src/test/resources/OptimizeLicense.txt:/optimize/config/OptimizeLicense.txt"
+      - "./src/test/resources/optimize-import-cfg.yml:/optimize/config/environment-config.yaml"
     restart: always
     cpu_count: 1
     mem_limit: 2g
@@ -63,8 +63,8 @@ services:
     ports:
       - 8190:8090
     volumes:
-      - "./src/test/resources/OptimizeLicense.txt:/optimize/environment/OptimizeLicense.txt"
-      - "./src/test/resources/optimize-no-import-cfg.yml:/optimize/environment/environment-config.yaml"
+      - "./src/test/resources/OptimizeLicense.txt:/optimize/config/OptimizeLicense.txt"
+      - "./src/test/resources/optimize-no-import-cfg.yml:/optimize/config/environment-config.yaml"
     restart: always
     cpu_count: 1
     mem_limit: 2g

@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-preempt" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
@@ -25,6 +25,8 @@ spec:
     - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
+  imagePullSecrets:
+    - name: registry-camunda-cloud
   securityContext:
     fsGroup: 1000
   volumes:
@@ -54,7 +56,6 @@ spec:
     volumeMounts:
       - name: ssd-storage
         mountPath: /data
-        subPath: data
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -186,7 +187,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
     - name: http.port
       value: $httpPort
     - name: path.repo
-      value: /var/lib/elasticsearch/snapshots
+      value: /var/tmp
     securityContext:
       privileged: true
       capabilities:
@@ -210,7 +211,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
         mountPath: /usr/share/elasticsearch/logs
         subPath: es-logs-$nameSuffix
       - name: ssd-storage
-        mountPath: /var/lib/elasticsearch/snapshots
+        mountPath: /var/tmp
         subPath: es-snapshots
   """
 }
@@ -319,7 +320,6 @@ pipeline {
             cloneGitRepo()
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh 'apt-get update && apt-get install jq netcat diffutils -y'
                 sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
               }
             }
@@ -348,7 +348,7 @@ pipeline {
           steps {
             timeout(time: params.UPGRADE_TIMEOUT_MINUTES, unit: 'MINUTES') {
               container('maven') {
-                runMaven('-Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+                runMaven('-Pupgrade-es-schema-tests -pl qa/upgrade-tests clean verify')
               }
             }
           }
@@ -362,6 +362,8 @@ pipeline {
                   chown -R 10000:1000 ./ssd-storage/
                 ''')
                 archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-upgrade.log', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-startup.log', onlyIfSuccessful: false
               }
             }
           }

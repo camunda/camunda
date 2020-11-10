@@ -4,16 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
-import {Link} from 'react-router-dom';
-import classnames from 'classnames';
-import deepEqual from 'deep-equal';
+import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, DefinitionSelection, BPMNDiagram} from 'components';
-import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+
+import TemplateModal from './TemplateModal';
 
 import heatmapImg from './images/heatmap.jpg';
 import durationImg from './images/duration.svg';
@@ -22,7 +17,7 @@ import chartImg from './images/chart.svg';
 
 import './ReportTemplateModal.scss';
 
-export function ReportTemplateModal({onClose, mightFail}) {
+export default function ReportTemplateModal({onClose}) {
   const templates = [
     {name: 'blank'},
     {
@@ -34,8 +29,8 @@ export function ReportTemplateModal({onClose, mightFail}) {
         visualization: 'heat',
         configuration: {
           xLabel: t('report.groupBy.flowNodes'),
-          yLabel: t('report.view.fn') + ' ' + t('report.view.count')
-        }
+          yLabel: t('report.view.fn') + ' ' + t('report.view.count'),
+        },
       },
     },
     {
@@ -46,8 +41,8 @@ export function ReportTemplateModal({onClose, mightFail}) {
         groupBy: {type: 'none', value: null},
         visualization: 'number',
         configuration: {
-          yLabel: t('report.view.pi') + ' ' + t('report.view.duration')
-        }
+          yLabel: t('report.view.pi') + ' ' + t('report.view.duration'),
+        },
       },
     },
     {
@@ -59,8 +54,8 @@ export function ReportTemplateModal({onClose, mightFail}) {
         visualization: 'table',
         configuration: {
           xLabel: t('report.groupBy.userTasks'),
-          yLabel: t('report.view.userTask') + ' ' + t('report.view.count')
-        }
+          yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
+        },
       },
     },
     {
@@ -72,115 +67,37 @@ export function ReportTemplateModal({onClose, mightFail}) {
         visualization: 'bar',
         configuration: {
           xLabel: t('report.groupBy.startDate'),
-          yLabel: t('report.view.pi') + ' ' + t('report.view.count')
-        }
+          yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
+        },
       },
     },
   ];
 
-  const [name, setName] = useState(t('report.new'));
-  const [definition, setDefinition] = useState({definitionKey: '', versions: [], tenants: []});
-  const [xml, setXml] = useState();
-  const [template, setTemplate] = useState();
-
-  const {definitionKey, definitionName, versions, tenants} = definition;
-
-  useEffect(() => {
-    const {definitionKey, versions, tenants} = definition;
-    if (definitionKey && versions?.length && tenants?.length) {
-      mightFail(
-        loadProcessDefinitionXml(definitionKey, versions[0], tenants[0]),
-        setXml,
-        showError
-      );
-    } else {
-      setXml();
-    }
-  }, [definition, mightFail]);
-
   return (
-    <Modal open size="max" onClose={onClose} className="ReportTemplateModal">
-      <Modal.Header>{t('report.createNew')}</Modal.Header>
-      <Modal.Content>
-        <div className="definitionSelection">
-          <div className="formArea">
-            <Form>
-              <Form.Group>
-                <LabeledInput
-                  type="text"
-                  label={t('report.addName')}
-                  value={name}
-                  onChange={({target: {value}}) => setName(value)}
-                  autoComplete="off"
-                />
-              </Form.Group>
-            </Form>
-            <DefinitionSelection
-              type="process"
-              expanded
-              definitionKey={definitionKey}
-              versions={versions}
-              tenants={tenants}
-              onChange={({key, versions, tenantIds, name}) =>
-                setDefinition({
-                  definitionKey: key,
-                  versions,
-                  tenants: tenantIds,
-                  definitionName: name,
-                })
-              }
-            />
-          </div>
-          <div className="diagramArea">
-            <BPMNDiagram xml={xml} />
-          </div>
-        </div>
-        <div className="configurationSelection">
-          <div className="templateContainer">
-            {templates.map(({name, img, config}, idx) => (
-              <Button
-                key={idx}
-                className={classnames({active: deepEqual(template, config)})}
-                onClick={() => setTemplate(config)}
-              >
-                {img ? (
-                  <img src={img} alt={t('report.templates.' + name)} />
-                ) : (
-                  <div className="imgPlaceholder" />
-                )}
-                <div className="name">{t('report.templates.' + name)}</div>
-              </Button>
-            ))}
-          </div>
-        </div>
-      </Modal.Content>
-      <Modal.Actions>
-        <Button main className="cancel" onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-        <Link
-          className="Button main primary confirm"
-          disabled={!name || !xml || !definitionKey}
-          to={{
-            pathname: 'report/new/edit',
-            state: {
-              name,
-              data: {
-                ...(template || {}),
-                configuration: {...(template?.configuration || {}), xml},
-                processDefinitionKey: definitionKey,
-                processDefinitionVersions: versions,
-                processDefinitionName: definitionName,
-                tenantIds: tenants,
-              },
-            },
-          }}
-        >
-          {t('report.create')}
-        </Link>
-      </Modal.Actions>
-    </Modal>
+    <TemplateModal
+      className="ReportTemplateModal"
+      onClose={onClose}
+      templates={templates}
+      entity="report"
+      templateToState={({
+        name,
+        template,
+        definitionKey,
+        versions,
+        definitionName,
+        tenants,
+        xml,
+      }) => ({
+        name,
+        data: {
+          ...(template || {}),
+          configuration: {...(template?.configuration || {}), xml},
+          processDefinitionKey: definitionKey,
+          processDefinitionVersions: versions,
+          processDefinitionName: definitionName,
+          tenantIds: tenants,
+        },
+      })}
+    />
   );
 }
-
-export default withErrorHandling(ReportTemplateModal);

@@ -12,19 +12,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 
 import java.io.IOException;
 
-public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOptimizeDto> {
+public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOptimizeResponseDto> {
 
   private ObjectMapper objectMapper;
 
   public CustomDefinitionDeserializer(final ObjectMapper objectMapper) {
-    this(DefinitionOptimizeDto.class);
+    this(DefinitionOptimizeResponseDto.class);
     this.objectMapper = objectMapper;
   }
 
@@ -33,13 +33,13 @@ public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOpti
   }
 
   @Override
-  public DefinitionOptimizeDto deserialize(final JsonParser jsonParser,
-                                           final DeserializationContext deserializationContext) throws IOException {
+  public DefinitionOptimizeResponseDto deserialize(final JsonParser jsonParser,
+                                                   final DeserializationContext deserializationContext) throws IOException {
     JsonNode node = jsonParser.readValueAsTree();
     return deserialize(jsonParser, node);
   }
 
-  public DefinitionOptimizeDto deserialize(final JsonParser jsonParser, final JsonNode jsonNode) throws IOException {
+  public DefinitionOptimizeResponseDto deserialize(final JsonParser jsonParser, final JsonNode jsonNode) throws IOException {
     final DefinitionType definitionType = resolveDefinitionType(jsonNode);
     switch (definitionType) {
       case PROCESS:

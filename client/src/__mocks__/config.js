@@ -15,3 +15,4 @@ export const getHeader = () => ({
   backgroundColor: '#FFFFFF',
   logo: '',
 });
+export {default as newReport} from '../modules/newReport.json';

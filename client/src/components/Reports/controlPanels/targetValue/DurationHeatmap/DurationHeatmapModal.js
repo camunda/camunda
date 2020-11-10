@@ -275,15 +275,6 @@ export default class DurationHeatmapModal extends React.Component {
               body={this.constructTableBody()}
               foot={[]}
               disablePagination
-              onScroll={() => {
-                // close unit selection dropdown when table is scrolled
-                const openDropdown = document.querySelector(
-                  '.DurationHeatmapModal .Select.is-open'
-                );
-                if (openDropdown) {
-                  openDropdown.click();
-                }
-              }}
             />
           )}
           {!this.validChanges() && !this.state.loading && <Message error>{errorMessage}</Message>}

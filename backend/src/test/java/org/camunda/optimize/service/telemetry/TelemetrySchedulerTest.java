@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.telemetry;
 
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
@@ -110,14 +110,14 @@ public class TelemetrySchedulerTest {
     );
   }
 
-  private SettingsDto getSettingsWithTelemetryEnabled() {
-    return SettingsDto.builder()
+  private SettingsResponseDto getSettingsWithTelemetryEnabled() {
+    return SettingsResponseDto.builder()
       .metadataTelemetryEnabled(true)
       .build();
   }
 
-  private SettingsDto getSettingsWithTelemetryDisabled() {
-    return SettingsDto.builder()
+  private SettingsResponseDto getSettingsWithTelemetryDisabled() {
+    return SettingsResponseDto.builder()
       .metadataTelemetryEnabled(false)
       .build();
   }

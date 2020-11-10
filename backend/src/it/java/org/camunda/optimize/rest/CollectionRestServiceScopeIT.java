@@ -16,10 +16,10 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -55,10 +55,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     //given
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
-    final List<CollectionScopeEntryRestDto> expectedCollectionScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> expectedCollectionScope = collectionClient.getCollectionScope(collectionId);
 
     // when
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
@@ -66,7 +66,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    final List<CollectionScopeEntryRestDto> collectionScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> collectionScope = collectionClient.getCollectionScope(collectionId);
     assertThat(collectionScope).isEqualTo(expectedCollectionScope);
   }
 
@@ -82,12 +82,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scopeEntries)
       .containsExactly(
-        new CollectionScopeEntryRestDto()
+        new CollectionScopeEntryResponseDto()
           .setId(PROCESS + ":" + definitionKey)
           .setDefinitionKey(definitionKey)
           .setDefinitionName(definitionKey)
@@ -116,15 +116,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
       });
 
     // then
     assertThat(scopeEntries)
       .hasSize(4)
-      .extracting(CollectionScopeEntryRestDto::getDefinitionName)
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionName)
       .containsExactly("PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST", "DECISION_KEY_LAST");
   }
 
@@ -139,12 +139,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntryToCollection(collectionId, entry);
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(1)
-      .extracting(CollectionScopeEntryRestDto::getId)
+      .extracting(CollectionScopeEntryResponseDto::getId)
       .containsExactly("process:_KEY_");
   }
 
@@ -159,12 +159,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(1)
-      .extracting(CollectionScopeEntryRestDto::getId)
+      .extracting(CollectionScopeEntryResponseDto::getId)
       .containsExactly("process:_KEY_");
   }
 
@@ -183,12 +183,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(2)
-      .extracting(CollectionScopeEntryRestDto::getId)
+      .extracting(CollectionScopeEntryResponseDto::getId)
       .containsExactlyInAnyOrder("process:_KEY_", "process:_ANOTHER_KEY_");
   }
 
@@ -206,13 +206,13 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(1)
       .have(new Condition<>(c -> c.getId().equals("process:_KEY_"), "Scope id should match process:_KEY_"))
-      .flatExtracting(CollectionScopeEntryRestDto::getTenantIds)
+      .flatExtracting(CollectionScopeEntryResponseDto::getTenantIds)
       .containsExactlyInAnyOrder(null, "newTenant");
   }
 
@@ -234,12 +234,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(2)
-      .extracting(CollectionScopeEntryRestDto::getId, CollectionScopeEntryRestDto::getTenantIds)
+      .extracting(CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
       .containsExactlyInAnyOrder(
         new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant")),
         new Tuple("process:_ANOTHER_KEY_", Lists.newArrayList((Object) null))
@@ -260,12 +260,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(1)
-      .extracting(CollectionScopeEntryRestDto::getId, CollectionScopeEntryRestDto::getTenantIds)
+      .extracting(CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
       .containsExactlyInAnyOrder(
         new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant"))
       );
@@ -283,12 +283,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(1)
-      .extracting(CollectionScopeEntryRestDto::getId)
+      .extracting(CollectionScopeEntryResponseDto::getId)
       .containsExactly("process:_KEY_");
   }
 
@@ -322,12 +322,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Lists.newArrayList(entry1, entry2));
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
       .hasSize(2)
-      .extracting(CollectionScopeEntryRestDto::getId)
+      .extracting(CollectionScopeEntryResponseDto::getId)
       .containsExactlyInAnyOrder("process:_KEY1_", "process:_KEY2_");
   }
 
@@ -350,11 +350,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly(null, tenant1)
@@ -382,11 +383,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly((String) null)
@@ -428,11 +430,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly(null, tenant1)
@@ -443,7 +446,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   public void updatingNonExistingDefinitionScopeEntryFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionScopeEntryRestDto> expectedScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> expectedScope = collectionClient.getCollectionScope(collectionId);
     final String notExistingScopeEntryId = "PROCESS:abc";
 
     // when
@@ -474,7 +477,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
-    List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope).hasSize(1);
 

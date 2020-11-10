@@ -17,6 +17,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -44,7 +45,7 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
                 termQuery(EVENTS + "." + ACTIVITY_TYPE, MI_BODY)
               ),
             flowNodeExecutionState,
-            EVENTS + "." + ACTIVITY_END_DATE
+            getExecutionStateFilterFieldForType(flowNodeExecutionState)
           )
         ).subAggregation(subAggregation)
       );
@@ -60,4 +61,12 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
     return Optional.ofNullable(response.getAggregations())
       .map(aggs -> aggs.get(FLOW_NODES_AGGREGATION));
   }
+
+  private static String getExecutionStateFilterFieldForType(final FlowNodeExecutionState flowNodeExecutionState) {
+    if (FlowNodeExecutionState.CANCELED.equals(flowNodeExecutionState)) {
+      return EVENTS + "." + ACTIVITY_CANCELED;
+    }
+    return EVENTS + "." + ACTIVITY_END_DATE;
+  }
+
 }

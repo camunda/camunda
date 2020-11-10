@@ -6,11 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.analysis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 
-public class ProcessInstanceIdDto extends IdDto {
+public class ProcessInstanceIdDto extends IdResponseDto {
   @Override
   @JsonProperty(PROCESS_INSTANCE_ID)
   public void setId(final String id) {

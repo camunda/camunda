@@ -8,6 +8,8 @@ import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a').withText('Event Based Processes');
 export const createDropdown = Selector('.Events .Dropdown');
+export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
+export const editAccess = (element) => element.find('.DropdownOption').withText('Edit Access');
 export const dropdownOption = (text) => Selector('.DropdownOption').withText(text);
 export const fileInput = Selector('input').withAttribute('type', 'file');
 export const entity = (title) => Selector('.name .entity').withText(title);
@@ -19,12 +21,14 @@ export const processName = Selector('.ProcessView .name');
 export const editButton = Selector('.edit-button');
 export const addSource = Selector('button.addProcess');
 export const modalContainer = Selector('.Modal__content-container');
-export const processTypeahead = Selector('.selectionPanel');
-export const variableTypeahead = Selector('.FormGroup');
-export const optionsButton = (typeahead) => typeahead.find('.Typeahead .optionsButton');
-export const typeaheadInput = (typeahead) => typeahead.find('.Typeahead input');
+export const processTypeahead = Selector('.selectionPanel .Typeahead');
+export const variableTypeahead = Selector('.FormGroup .Typeahead');
+export const notification = Selector('.Notification')
+export const notificationCloseButton = (element) => element.find('.close')
+export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
+export const typeaheadInput = (typeahead) => typeahead.find('input');
 export const typeaheadOption = (typeahead, text) =>
-  typeahead.find('.Typeahead .DropdownOption').withText(text);
+  typeahead.find('.DropdownOption').withText(text);
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const externalEvents = Selector('.Button').withText('External Events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
@@ -38,7 +42,7 @@ export const endEvent = Selector('.invoiceProcessed input[type=checkbox]');
 export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
-export const usersTypeahead = Selector('.UserTypeahead');
+export const usersTypeahead = Selector('.MultiUserInput');
 export const buttonWithText = (text) => Selector('.Modal__content-container button').withText(text);
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');

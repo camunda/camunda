@@ -61,12 +61,20 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "processPart": null,
         "sorting": null,
+        "groupByDateVariableUnit": "automatic",
+        "distributeByDateVariableUnit": "automatic",
         "customBucket": {
+          "active": false,
+          "bucketSize": "10",
+          "bucketSizeUnit": "minute",
+          "baseline": "0",
+          "baselineUnit": "minute"
+        },
+        "distributeByCustomBucket": {
           "active": false,
           "bucketSize": "10",
           "bucketSizeUnit": "minute",
@@ -81,7 +89,8 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null
+      "visualization": null,
+      "distributedBy": {"type": "none", "value": null}
     },
     "combined": false,
     "reportType": "process",
@@ -184,7 +193,6 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "sorting": null
@@ -196,7 +204,8 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null
+      "visualization": null,
+      "distributedBy": {"type": "none", "value": null}
     },
     "combined": false,
     "reportType": "decision",

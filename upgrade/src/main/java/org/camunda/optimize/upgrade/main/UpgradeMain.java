@@ -5,12 +5,13 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.GenericUpgradeProcedure;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom31To32;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
+@Slf4j
 public class UpgradeMain {
 
   private static final Set<String> ANSWER_OPTIONS_YES = Collections.unmodifiableSet(
@@ -30,12 +32,15 @@ public class UpgradeMain {
     new HashSet<>(Arrays.asList("n", "no"))
   );
 
-  private static Map<String, UpgradeProcedure> upgrades = new HashMap<>();
+  private static final Map<String, UpgradeProcedure> UPGRADE_PROCEDURES = new HashMap<>();
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
-    upgrades.put(Version.VERSION, new GenericUpgradeProcedure(PreviousVersion.PREVIOUS_VERSION, Version.VERSION));
-    upgrades.put(UpgradeFrom31To32.TO_VERSION, new UpgradeFrom31To32());
+    UPGRADE_PROCEDURES.put(
+      Version.VERSION,
+      new GenericUpgradeProcedure(PreviousVersion.PREVIOUS_VERSION, Version.VERSION)
+    );
+    UPGRADE_PROCEDURES.put(UpgradeFrom32To33.TO_VERSION, new UpgradeFrom32To33());
   }
 
   public static void main(String... args) {
@@ -44,7 +49,7 @@ public class UpgradeMain {
       .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
       .findFirst()
       .orElse(Version.VERSION);
-    UpgradeProcedure upgradeProcedure = upgrades.get(targetVersion);
+    UpgradeProcedure upgradeProcedure = UPGRADE_PROCEDURES.get(targetVersion);
 
     if (upgradeProcedure == null) {
       String errorMessage =
@@ -58,10 +63,14 @@ public class UpgradeMain {
       printWarning(upgradeProcedure.getInitialVersion(), upgradeProcedure.getTargetVersion());
     }
 
-    System.out.println("Execute upgrade...");
-    upgradeProcedure.performUpgrade();
-    System.out.println("Finished upgrade successfully!");
-    System.exit(0);
+    log.info("Executing upgrade...");
+    try {
+      upgradeProcedure.performUpgrade();
+      System.exit(0);
+    } catch (final Exception e) {
+      log.error(e.getMessage(), e);
+      System.exit(2);
+    }
   }
 
   private static void printWarning(String fromVersion, String toVersion) {
@@ -86,21 +95,20 @@ public class UpgradeMain {
       fromVersion,
       toVersion
     );
-    System.out.print(message);
+    log.info(message);
 
     String answer = "";
     while (!ANSWER_OPTIONS_YES.contains(answer)) {
       Scanner console = new Scanner(System.in);
       answer = console.next().trim().toLowerCase();
-      System.out.println();
       if (ANSWER_OPTIONS_NO.contains(answer)) {
-        System.out.println("The Optimize upgrade was aborted.");
+        log.info("The Optimize upgrade was aborted.");
         System.exit(1);
       } else if (!ANSWER_OPTIONS_YES.contains(answer)) {
         String text = "Your answer was '" + answer + "'. The only accepted answers are '(y)es' or '(n)o'. \n" +
           "\n" +
           "Your answer (type your answer and hit enter): ";
-        System.out.print(text);
+        log.info(text);
       }
     }
   }

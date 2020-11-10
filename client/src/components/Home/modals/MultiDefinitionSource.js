@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
-import ItemsList from './ItemsList';
-import {LoadingIndicator, Form, Labeled} from 'components';
-import {t} from 'translation';
 import equal from 'deep-equal';
+
+import {LoadingIndicator, Form, Labeled, Checklist} from 'components';
+import {t} from 'translation';
 import {formatDefinitions} from './service';
 
 export default class MultiDefinitionSource extends React.Component {
@@ -43,7 +43,7 @@ export default class MultiDefinitionSource extends React.Component {
     return (
       <Form.Group>
         <Labeled label={t('home.sources.definition.label-plural')}>
-          <ItemsList
+          <Checklist
             selectedItems={selectedDefinitions}
             allItems={definitions}
             onChange={(selectedDefinitions) => this.setState({selectedDefinitions})}

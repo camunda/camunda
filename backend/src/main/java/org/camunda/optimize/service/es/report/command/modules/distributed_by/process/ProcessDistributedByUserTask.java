@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
@@ -36,7 +35,7 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByModelEleme
   }
 
   @Override
-  protected Map<String, String> extractModelElementNames(DefinitionOptimizeDto def) {
+  protected Map<String, String> extractModelElementNames(DefinitionOptimizeResponseDto def) {
     return ((ProcessDefinitionOptimizeDto) def).getUserTaskNames();
   }
 

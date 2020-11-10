@@ -14,19 +14,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
@@ -62,14 +62,14 @@ public class EventProcessClient {
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(
-      IdDto.class,
+      IdResponseDto.class,
       Response.Status.OK.getStatusCode()
     ).getId();
   }
 
   public String createEventProcessMapping(final EventProcessMappingCreateRequestDto processMappingCreateRequestDto) {
     return createCreateEventProcessMappingRequest(processMappingCreateRequestDto).execute(
-      IdDto.class,
+      IdResponseDto.class,
       Response.Status.OK.getStatusCode()
     ).getId();
   }
@@ -173,9 +173,9 @@ public class EventProcessClient {
     return buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, name, xml);
   }
 
-  public List<EventProcessRoleRestDto> getEventProcessMappingRoles(final String eventProcessMappingId) {
+  public List<EventProcessRoleResponseDto> getEventProcessMappingRoles(final String eventProcessMappingId) {
     return createGetEventProcessMappingRolesRequest(eventProcessMappingId)
-      .execute(new TypeReference<List<EventProcessRoleRestDto>>() {
+      .execute(new TypeReference<List<EventProcessRoleResponseDto>>() {
       });
   }
 
@@ -184,13 +184,13 @@ public class EventProcessClient {
   }
 
   public void updateEventProcessMappingRoles(final String eventProcessMappingId,
-                                             final List<EventProcessRoleDto<IdentityDto>> roleRestDtos) {
+                                             final List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
     createUpdateEventProcessMappingRolesRequest(eventProcessMappingId, roleRestDtos)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createUpdateEventProcessMappingRolesRequest(final String eventProcessMappingId,
-                                                                             final List<EventProcessRoleDto<IdentityDto>> roleRestDtos) {
+                                                                             final List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
     return getRequestExecutor().buildUpdateEventProcessRolesRequest(eventProcessMappingId, roleRestDtos);
   }
 

@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
+
+import {Modal, BPMNDiagram, Button} from 'components';
 
 import NodeSelectionModal from './NodeSelectionModal';
-import {shallow} from 'enzyme';
-import {Modal, BPMNDiagram, Button} from 'components';
 
 const report = {
   result: {
@@ -18,7 +19,12 @@ const report = {
     ],
   },
   data: {
-    configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: []}},
+    distributedBy: {},
+    configuration: {
+      color: 'testColor',
+      xml: 'fooXml',
+      hiddenNodes: {active: false, keys: []},
+    },
     visualization: 'line',
     groupBy: {
       type: '',

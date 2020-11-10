@@ -22,7 +22,7 @@ const types = [
   'nonSuspendedInstancesOnly',
 ];
 
-export default function InstanceStateFilter({filter, setFilter}) {
+export default function InstanceStateFilter({filter = [], setFilter, children}) {
   const stateFilter = filter.filter(({type}) => types.includes(type));
 
   function hasFilter(type) {
@@ -45,7 +45,10 @@ export default function InstanceStateFilter({filter, setFilter}) {
 
   return (
     <div className="InstanceStateFilter">
-      <div className="title">{t('dashboard.filter.types.state')}</div>
+      <div className="title">
+        {t('dashboard.filter.types.state')}
+        {children}
+      </div>
       <Popover
         title={
           <>
@@ -79,7 +82,7 @@ export default function InstanceStateFilter({filter, setFilter}) {
             disabled={!active}
             onClick={() => setFilter(filter.filter(({type}) => !types.includes(type)))}
           >
-            {t('common.reset')}
+            {t('common.off')}
           </Button>
         </Form>
       </Popover>

@@ -1,0 +1,76 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should return correct table props for decision tables 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "foo",
+      "bar",
+      "12",
+      "",
+      "1",
+    ],
+    Array [
+      "xyz",
+      "abc",
+      "",
+      "true",
+      "8",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision Instance Id",
+      "title": "Decision Instance Id",
+    },
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision Definition Id",
+      "title": "Decision Definition Id",
+    },
+    Object {
+      "id": "inputVariable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 1
+      </React.Fragment>,
+      "title": "Var 1",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "inputVariable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 2
+      </React.Fragment>,
+      "title": "Var 2",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "outputVariable:result",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          OutputVar
+          : 
+        </span>
+        Result
+      </React.Fragment>,
+      "title": "Result",
+      "type": "outputVariables",
+    },
+  ],
+}
+`;

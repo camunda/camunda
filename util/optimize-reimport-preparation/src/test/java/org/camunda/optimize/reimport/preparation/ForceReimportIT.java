@@ -11,17 +11,17 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.Test;
@@ -77,8 +77,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final List<AuthorizedReportDefinitionDto> allReports = collectionClient.getReportsForCollection(collectionId);
-    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final List<AuthorizedReportDefinitionResponseDto> allReports = collectionClient.getReportsForCollection(collectionId);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
     final List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
     assertThat(allReports).hasSize(2);
     assertThat(allAlerts).hasSize(1);
@@ -245,7 +245,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   private List<String> getAllProcessDefinitionKeys() {
     return elasticSearchIntegrationTestExtension.getAllProcessDefinitions()
-      .stream().map(DefinitionOptimizeDto::getKey).collect(Collectors.toList());
+      .stream().map(DefinitionOptimizeResponseDto::getKey).collect(Collectors.toList());
   }
 
   private List<String> getProcessInstanceIds() {

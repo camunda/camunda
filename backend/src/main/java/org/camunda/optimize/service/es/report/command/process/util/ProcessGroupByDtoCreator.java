@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.process.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessGroupByDtoCreator {
 
-  public static StartDateGroupByDto createGroupByStartDateDto(GroupByDateUnit dateInterval) {
+  public static StartDateGroupByDto createGroupByStartDateDto(AggregateByDateUnit dateInterval) {
     StartDateGroupByDto groupByDto = new StartDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -34,11 +34,8 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static StartDateGroupByDto createGroupByStartDateDto() {
-    return createGroupByStartDateDto(null);
-  }
 
-  public static EndDateGroupByDto createGroupByEndDateDto(GroupByDateUnit dateInterval) {
+  public static EndDateGroupByDto createGroupByEndDateDto(AggregateByDateUnit dateInterval) {
     EndDateGroupByDto groupByDto = new EndDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -51,7 +48,7 @@ public class ProcessGroupByDtoCreator {
     return createGroupByEndDateDto(null);
   }
 
-  public static RunningDateGroupByDto createGroupByRunningDateDto(GroupByDateUnit dateInterval) {
+  public static RunningDateGroupByDto createGroupByRunningDateDto(AggregateByDateUnit dateInterval) {
     RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);

@@ -7,10 +7,10 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import org.assertj.core.util.Maps;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -53,7 +53,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -91,7 +92,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -129,7 +131,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           tracingVariableKeyAndValue.getValue().toString(),
@@ -178,7 +181,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),

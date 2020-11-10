@@ -7,14 +7,26 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {nowDirty} from 'saveGuard';
+import {nowDirty, isDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
+import {showPrompt} from 'prompt';
 
 import {FiltersEdit} from './filters';
 
-import DashboardEdit from './DashboardEdit';
+import {DashboardEdit} from './DashboardEdit';
 
-jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
+jest.mock('saveGuard', () => ({
+  nowDirty: jest.fn(),
+  nowPristine: jest.fn(),
+  isDirty: jest.fn().mockReturnValue(true),
+}));
+jest.mock('prompt', () => ({
+  showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
+}));
+
+beforeEach(() => {
+  showPrompt.mockClear();
+});
 
 it('should contain an AddButton', () => {
   const node = shallow(<DashboardEdit />);
@@ -22,7 +34,7 @@ it('should contain an AddButton', () => {
   expect(node.find('AddButton')).toExist();
 });
 
-it('should editing report addons', () => {
+it('should contain editing report addons', () => {
   const node = shallow(<DashboardEdit />);
 
   expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
@@ -68,18 +80,59 @@ it('should react to layout changes', () => {
   expect(node.state('reports')).toMatchSnapshot();
 });
 
-it('should have a toggleable Filters Edit section', () => {
-  const node = shallow(<DashboardEdit />);
-
-  expect(node.find(FiltersEdit)).not.toExist();
-
-  node.find(EntityNameForm).find('.tool-button').simulate('click');
+it('should show FiltersEdit section if there are filters defined', () => {
+  const node = shallow(<DashboardEdit initialAvailableFilters={[{}]} />);
 
   expect(node.find(FiltersEdit)).toExist();
 });
 
-it('should shows Filters Edit by default if there are initial filters defined', () => {
-  const node = shallow(<DashboardEdit initialAvailableFilters={[{}]} />);
+it('should save the dashboard when going to the report edit mode', async () => {
+  const report = {
+    position: {x: 0, y: 0},
+    dimensions: {height: 2, width: 2},
+    report: {id: 'new'},
+  };
+  const saveSpy = jest.fn();
+  const historySpy = jest.fn();
 
-  expect(node.find(FiltersEdit)).toExist();
+  const node = shallow(
+    <DashboardEdit initialReports={[report]} saveChanges={saveSpy} history={{push: historySpy}} />
+  );
+
+  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+
+  await flushPromises();
+
+  // Parent component takes care of saving the reports and assigning ids
+  node.setProps({
+    initialReports: [
+      {
+        position: {x: 0, y: 0},
+        dimensions: {height: 2, width: 2},
+        id: '1',
+      },
+    ],
+  });
+
+  await flushPromises();
+
+  expect(saveSpy).toHaveBeenCalled();
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
+});
+
+it('should not prompt to save the dashboard when going to the edit mode when there are no changes', () => {
+  const report = {
+    position: {x: 0, y: 0},
+    dimensions: {height: 2, width: 2},
+    id: '1',
+  };
+  const historySpy = jest.fn();
+
+  const node = shallow(<DashboardEdit initialReports={[report]} history={{push: historySpy}} />);
+
+  isDirty.mockReturnValueOnce(false);
+  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+
+  expect(showPrompt).not.toHaveBeenCalled();
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
 });

@@ -10,11 +10,11 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
@@ -62,6 +62,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       EventScopeType.START_END,
       ImmutableMap.of(varName, "varVa1")
     );
+    processEventTracesAndSequences();
     eventSource.setTracedByBusinessKey(tracedByBusinessKey);
     if (!tracedByBusinessKey) {
       eventSource.setTraceVariable(varName);
@@ -379,6 +380,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.PROCESS_INSTANCE
     );
+    processEventTracesAndSequences();
     final EventTypeDto expectedStartEvent = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto expectedEndEvent = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);

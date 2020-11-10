@@ -6,14 +6,14 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.none.ProcessGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByNoneCmd extends ProcessC
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
     final NumberResultDto evaluate = this.executionPlan.evaluate(commandContext);
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
   }

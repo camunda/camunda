@@ -7,8 +7,8 @@
 package org.camunda.optimize.service.events.autogeneration;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableExternalEventsTraceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedInstanceDto;

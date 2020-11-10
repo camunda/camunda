@@ -8,9 +8,9 @@ package org.camunda.optimize.service.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -21,15 +21,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
@@ -41,12 +43,12 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
 
-  public static void validate(BranchAnalysisQueryDto dto) {
+  public static void validate(BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
-    ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
-    ValidationHelper.ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
+    ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
+    ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
     validateProcessFilters(dto.getFilter());
   }
 
@@ -62,10 +64,10 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
+  public static void validateCombinedReportDefinition(final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
                                                       final RoleType currentUserRole) {
-    AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
-      new AuthorizedReportDefinitionDto(combinedReportDefinitionDto, currentUserRole);
+    AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+      new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
@@ -78,7 +80,6 @@ public class ValidationHelper {
   }
 
   private static void validateDefinitionData(ReportDataDto data) {
-
     if (data instanceof SingleReportDataDto) {
       SingleReportDataDto singleReportData = (SingleReportDataDto) data;
       ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
@@ -128,11 +129,15 @@ public class ValidationHelper {
           ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
           ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
           ensureNotEmpty("operator", flowNodeFilterData.getOperator());
-          ensureNotEmpty("value", flowNodeFilterData.getValues());
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof ExecutingFlowNodeFilterDto) {
           ExecutingFlowNodeFilterDto executingFlowNodeFilterDto = (ExecutingFlowNodeFilterDto) filterDto;
           ExecutingFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
-          ensureNotEmpty("value", flowNodeFilterData.getValues());
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
+        } else if (filterDto instanceof CanceledFlowNodeFilterDto) {
+          CanceledFlowNodeFilterDto executingFlowNodeFilterDto = (CanceledFlowNodeFilterDto) filterDto;
+          CanceledFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
         }
       }
     }

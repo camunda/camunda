@@ -1,0 +1,37 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Tag {
+  padding-left: 9px;
+  font-size: 0.875em;
+  white-space: nowrap;
+  border-radius: 11px;
+  color: $grey-lighten-50;
+  background-color: $silver-darken-87;
+
+  .tagText {
+    max-width: 220px;
+    vertical-align: middle;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding-top: 1px;
+  }
+
+  &.invalid {
+    background-color: $red-lighten-85;
+  }
+
+  .Button {
+    height: 20px;
+    width: 22px;
+    color: $grey-lighten-56;
+
+    .Icon {
+      margin: 0 2px 0 0;
+    }
+
+    &:hover {
+      background-color: inherit;
+    }
+  }
+}

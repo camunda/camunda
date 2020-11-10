@@ -16,8 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractConnectToElasticsearchIT {
 
@@ -47,7 +46,7 @@ public abstract class AbstractConnectToElasticsearchIT {
         .execute();
 
     // then Optimize should be able to successfully perform the underlying request to elasticsearch
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -69,9 +68,7 @@ public abstract class AbstractConnectToElasticsearchIT {
   }
 
   private EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
-    return EmbeddedOptimizeExtension.customPropertiesBuilder()
-      .context(getContextFile())
-      .build();
+    return new EmbeddedOptimizeExtension(getContextFile());
   }
 
 }

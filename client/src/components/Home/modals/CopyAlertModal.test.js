@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LabeledInput, Button} from 'components';
+import {LabeledInput} from 'components';
 
 import CopyAlertModal from './CopyAlertModal';
 

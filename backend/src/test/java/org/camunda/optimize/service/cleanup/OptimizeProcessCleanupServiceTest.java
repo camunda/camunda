@@ -41,10 +41,7 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -238,7 +235,7 @@ public class OptimizeProcessCleanupServiceTest {
       OptimizeConfigurationException.class,
       () -> doCleanup(underTest)
     );
-    assertThat(exception.getMessage(), containsString(configuredKey));
+    assertThat(exception.getMessage()).contains(configuredKey);
   }
 
   private void mockGetProcessInstanceIdsForProcessInstanceDelete(final List<String> expectedKeys) {
@@ -321,11 +318,11 @@ public class OptimizeProcessCleanupServiceTest {
     final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
       .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    assertThat(filteredInvocationArguments.size(), is(expectedDefinitionKeys.size()));
+    assertThat(filteredInvocationArguments).hasSize(expectedDefinitionKeys.size());
 
     final OffsetDateTime dateFilterValue = filteredInvocationArguments.values().toArray(new OffsetDateTime[]{})[0];
-    assertThat(dateFilterValue, lessThanOrEqualTo(OffsetDateTime.now().minus(expectedTtl)));
-    filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
+    assertThat(dateFilterValue).isBeforeOrEqualTo(OffsetDateTime.now().minus(expectedTtl));
+    filteredInvocationArguments.values().forEach(instant -> assertThat(instant).isEqualTo(dateFilterValue));
   }
 
   private Map<String, OffsetDateTime> verifyDeleteProcessInstanceExecutionReturnCapturedArguments(final List<String> expectedProcessDefinitionKeys) {
@@ -378,7 +375,7 @@ public class OptimizeProcessCleanupServiceTest {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.getProcessDefinitions(false, false))
+    when(processDefinitionReader.getProcessDefinitions(false, false, true))
       .thenReturn(processDefinitionOptimizeDtos);
     return processDefinitionIds;
   }

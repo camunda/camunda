@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class EmbeddedSubprocessRequestDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/embedded-subprocess.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/embedded-subprocess.bpmn";
 
   public EmbeddedSubprocessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

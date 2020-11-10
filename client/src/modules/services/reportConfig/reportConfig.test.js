@@ -16,7 +16,7 @@ const {
   update,
 } = reportConfig(process);
 
-const report = {data: {configuration: {distributedBy: {type: 'none', value: null}}}};
+const report = {data: {distributedBy: {type: 'none', value: null}}};
 
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
@@ -125,7 +125,7 @@ it('should allow only visualization options that make sense for the selected vie
 });
 
 it('should forbid pie charts for distributed user task reports', () => {
-  const report = {data: {configuration: {distributedBy: {type: 'userTask', value: null}}}};
+  const report = {data: {distributedBy: {type: 'userTask', value: null}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'assignee', value: null};
 
@@ -135,7 +135,7 @@ it('should forbid pie charts for distributed user task reports', () => {
 });
 
 it('should forbid pie charts and heatmap for distributed userTask reports', () => {
-  const report = {data: {configuration: {distributedBy: {type: 'assignee', value: null}}}};
+  const report = {data: {distributedBy: {type: 'assignee', value: null}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'userTasks', value: null};
 

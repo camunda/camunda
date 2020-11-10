@@ -8,49 +8,43 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.model.HttpResponse;
 
+import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractImportIT extends AbstractIT {
 
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
-  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchIndex, final Set<String> excludedFields) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
+  protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
+                                                            final Set<String> excludedFields) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
   }
 
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
+  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                     final long count) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
   }
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count,
-                                                               final Set<String> nullValueFields) {
+  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                     final long count,
+                                                                     final Set<String> nullValueFields) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
-    assertThat(idsResp.getHits().getTotalHits().value, is(count));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertAllFieldsSet(nullValueFields, searchHit);
     }
@@ -59,14 +53,14 @@ public abstract class AbstractImportIT extends AbstractIT {
   protected void assertAllFieldsSet(final Set<String> nullValueFields, final SearchHit searchHit) {
     for (Map.Entry<String, Object> searchHitField : searchHit.getSourceAsMap().entrySet()) {
       if (nullValueFields.contains(searchHitField.getKey())) {
-        assertThat(searchHitField.getValue(), is(nullValue()));
+        assertThat(searchHitField.getValue()).isNull();
       } else {
         String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
           ". Should actually have a value!";
-        assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
+        assertThat(searchHitField.getValue()).withFailMessage(errorMessage).isNotNull();
         if (searchHitField.getValue() instanceof String) {
           String value = (String) searchHitField.getValue();
-          assertThat(errorMessage, value.isEmpty(), is(false));
+          assertThat(value).withFailMessage(errorMessage).isNotEmpty();
         }
       }
     }
@@ -86,7 +80,24 @@ public abstract class AbstractImportIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
+  }
+
+  protected static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<ErrorResponseMock> engineAuthorizationErrors() {
+    return Stream.of(
+      (request, times, mockServer) -> mockServer.when(request, times)
+        .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode())),
+      (request, times, mockServer) -> mockServer.when(request, times)
+        .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))
+    );
   }
 
 }

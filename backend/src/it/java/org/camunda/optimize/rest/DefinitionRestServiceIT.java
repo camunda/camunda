@@ -9,18 +9,19 @@ import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
-import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -68,17 +69,18 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey(final DefinitionType definitionType) {
-    //given
-    final DefinitionOptimizeDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    // given
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
       definitionType, "key", "1", null, "the name"
     );
 
     // when
-    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
       definitionType,
       expectedDefinition
     );
 
+    // then
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
     assertThat(definition.getType()).isEqualTo(definitionType);
@@ -86,13 +88,38 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
   }
 
-  @Test
-  public void getEventDefinitionByTypeAndKey() {
-    //given
-    final DefinitionOptimizeDto expectedDefinition = createEventBasedDefinition("key", "the name");
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKeyReturnsNonDeletedDefinition(final DefinitionType definitionType) {
+    // given
+    final DefinitionOptimizeResponseDto nonDeletedDefinition = createDefinitionAndAddToElasticsearch(
+      definitionType, "key", "1", null, "not deleted", false
+    );
+    createDefinitionAndAddToElasticsearch(definitionType, "key", "1", null, "deleted", true);
 
     // when
-    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(PROCESS, expectedDefinition);
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      nonDeletedDefinition
+    );
+
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(nonDeletedDefinition.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(nonDeletedDefinition.getName());
+    assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
+  }
+
+  @Test
+  public void getEventDefinitionByTypeAndKey() {
+    // given
+    final DefinitionOptimizeResponseDto expectedDefinition = createEventBasedDefinition("key", "the name");
+
+    // when
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
+      PROCESS,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -128,8 +155,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionByTypeAndKey_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -144,18 +169,18 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_specificTenantDefinitions(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     // should not be in the result
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
       definitionType, "key", "1", TENANT_2.getId(), "the name"
     );
 
     // when
-    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
       definitionType,
       expectedDefinition
     );
@@ -173,16 +198,16 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_sharedDefinition(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
-    final DefinitionOptimizeDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
       definitionType, "key", "1", null, "the name"
     );
 
     // when
-    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
       definitionType,
       expectedDefinition
     );
@@ -200,18 +225,18 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_multiTenant_sharedAndSpecificDefinition(final DefinitionType definitionType) {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
-    final DefinitionOptimizeDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
       definitionType, "key", "1", null, "the name"
     );
     // having a mix should not distort the result
     createDefinitionAndAddToElasticsearch(definitionType, "key", "1", TENANT_2.getId(), "the name");
 
     // when
-    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+    final DefinitionWithTenantsResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
       definitionType,
       expectedDefinition
     );
@@ -228,88 +253,95 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions() {
-    //given
-    final DefinitionOptimizeDto processDefinition1 = createDefinitionAndAddToElasticsearch(
+    // given
+    final DefinitionOptimizeResponseDto processDefinition1 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process1", "1", null, "Process Definition1"
     );
-    final DefinitionOptimizeDto processDefinition2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process2", "1", null, "process Definition2"
     );
-    final DefinitionOptimizeDto processDefinition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition3 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process3", "1", null, "a process Definition3"
     );
-    final DefinitionOptimizeDto decisionDefinition1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision1", "1", null, "Decision Definition1"
     );
-    final DefinitionOptimizeDto decisionDefinition2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision2", "1", null, "decision Definition2"
     );
-    final DefinitionOptimizeDto decisionDefinition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition3 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision3", "1", null, "a decision Definition3"
     );
-    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event process Definition1"
     );
-    final DefinitionOptimizeDto eventProcessDefinition2 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition2 = createEventBasedDefinition(
       "eventProcess2", "event process Definition2"
     );
-    final DefinitionOptimizeDto eventProcessDefinition3 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition3 = createEventBasedDefinition(
       "eventProcess3", "an event process Definition3"
+    );
+    // deleted definitions will not be included in the result
+    createDefinitionAndAddToElasticsearch(
+      PROCESS, "process1", "1", null, "Process Definition1", true
+    );
+    createDefinitionAndAddToElasticsearch(
+      DECISION, "decision1", "1", null, "Decision Definition1", true
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
       .hasSize(9)
       .containsExactly(
         // names of definitions #3 start with an `a` and are expected first
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition3.getKey(), decisionDefinition3.getName(), DefinitionType.DECISION,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition3.getKey(), processDefinition3.getName(), DefinitionType.PROCESS,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition3.getKey(), eventProcessDefinition3.getName(), DefinitionType.PROCESS, true,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
         // then we expect the decision definition #1 as the `1` name suffix is smaller than the `2` and first letter
         // case is ignored
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition1.getKey(), decisionDefinition1.getName(), DefinitionType.DECISION,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition2.getKey(), decisionDefinition2.getName(), DefinitionType.DECISION,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
         // then the event definitions as they start with "E"
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition1.getKey(), eventProcessDefinition1.getName(), DefinitionType.PROCESS, true,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition2.getKey(), eventProcessDefinition2.getName(), DefinitionType.PROCESS, true,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
         // and last the process definitions as they start with `P`
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition1.getKey(), processDefinition1.getName(), DefinitionType.PROCESS,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
@@ -319,64 +351,64 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_specificTenantDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process1", "1", TENANT_1.getId(), "Process Definition1"
     );
-    final DefinitionOptimizeDto processDefinition1_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_2 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process1", "1", TENANT_2.getId(), "Process Definition1"
     );
-    final DefinitionOptimizeDto processDefinition2_3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2_3 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process2", "1", TENANT_3.getId(), "Process Definition2"
     );
-    final DefinitionOptimizeDto processDefinition2_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2_2 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process2", "1", TENANT_2.getId(), "Process Definition2"
     );
 
-    final DefinitionOptimizeDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision1", "2", TENANT_1.getId(), "Decision Definition1"
     );
-    final DefinitionOptimizeDto decisionDefinition1_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_2 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision1", "2", TENANT_2.getId(), "Decision Definition1"
     );
     // create tenant3 definition first, to ensure creation order does not affect result
-    final DefinitionOptimizeDto decisionDefinition2_3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2_3 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision2", "1", TENANT_3.getId(), "Decision Definition2"
     );
-    final DefinitionOptimizeDto decisionDefinition2_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2_2 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision2", "1", TENANT_2.getId(), "Decision Definition2"
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
       .hasSize(4)
       .containsExactly(
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
           // expected order is by id
           Lists.newArrayList(TENANT_1, TENANT_2),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition2_2.getKey(), decisionDefinition2_2.getName(), DefinitionType.DECISION,
           // expected order is by id
           Lists.newArrayList(TENANT_2, TENANT_3),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
           // expected order is by id
           Lists.newArrayList(TENANT_1, TENANT_2),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition2_2.getKey(), processDefinition2_2.getName(), DefinitionType.PROCESS,
           // expected order is by id
           Lists.newArrayList(TENANT_2, TENANT_3),
@@ -387,41 +419,41 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_sharedDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
       PROCESS, "process1", "1", null, "Process Definition1"
     );
-    final DefinitionOptimizeDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
       DECISION, "decision1", "1", null, "Decision Definition1"
     );
-    final DefinitionOptimizeDto eventProcessDefinition1_1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition1_1 = createEventBasedDefinition(
       "eventProcess1", "Event Process Definition1"
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
       .hasSize(3)
       .containsExactly(
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
           // for shared definition expected order is not defined first, then all tenants by id
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition1_1.getKey(), eventProcessDefinition1_1.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
           // for shared definition expected order is not defined first, then all tenants by id
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
@@ -432,7 +464,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -471,13 +503,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
 
-    final DefinitionOptimizeDto eventProcess1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcess1 = createEventBasedDefinition(
       "eventProcessKey1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
       eventProcess1.getKey(), eventProcess1.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
-    final DefinitionOptimizeDto eventProcess2 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcess2 = createEventBasedDefinition(
       "eventProcessKey2", "Event Process Definition2"
     );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
@@ -485,44 +517,44 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
       .hasSize(6)
       .containsExactly(
         // order by name
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
           // expected order is by id
           Lists.newArrayList(TENANT_2, TENANT_3),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition1.getKey(), decisionDefinition1.getName(), DefinitionType.DECISION,
           // expected order is by id
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           decisionDefinition2.getKey(), decisionDefinition2.getName(), DefinitionType.DECISION,
           // expected order is by id
           Lists.newArrayList(TENANT_2, TENANT_3),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition1.getKey(), eventProcessDefinition1.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           eventProcessDefinition2.getKey(), eventProcessDefinition2.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         ),
-        new DefinitionWithTenantsDto(
+        new DefinitionWithTenantsResponseDto(
           processDefinition1.getKey(), processDefinition1.getName(), DefinitionType.PROCESS,
           // for shared definition expected order is not defined first, then all tenants by id
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
@@ -533,8 +565,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitions_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -551,20 +581,24 @@ public class DefinitionRestServiceIT extends AbstractIT {
   public void getDefinitionKeysByType(final DefinitionType definitionType) {
     // given
     createTenant(TENANT_1);
-    final DefinitionOptimizeDto definition1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition1 = createDefinitionAndAddToElasticsearch(
       definitionType, "1", "1", null, "D1"
     );
     // another version of definition1 to ensure no duplicates are caused
     createDefinitionAndAddToElasticsearch(definitionType, "1", "2", null, "D1");
-    final DefinitionOptimizeDto definition2_tenant1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition2_tenant1 = createDefinitionAndAddToElasticsearch(
       definitionType, "2", "1", TENANT_1.getId(), "d2"
     );
     // another definition with same key but different tenant to ensure this causes no duplicate key entries
-    final DefinitionOptimizeDto definition2_tenant2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition2_tenant2 = createDefinitionAndAddToElasticsearch(
       definitionType, "2", "1", TENANT_2.getId(), "d2"
     );
-    final DefinitionOptimizeDto definition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition3 = createDefinitionAndAddToElasticsearch(
       definitionType, "3", "1", null, "a"
+    );
+    // another definition that is deleted, which should not be returned
+    final DefinitionOptimizeResponseDto deleted = createDefinitionAndAddToElasticsearch(
+      definitionType, "deletedKey", "1", null, "deleted", true
     );
     // also create a definition of another type, should not be returned
     final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
@@ -574,7 +608,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "1", null, "other");
 
     // when I get process definition keys
-    final List<DefinitionKeyDto> definitions = definitionClient.getDefinitionKeysByType(definitionType);
+    final List<DefinitionKeyResponseDto> definitions = definitionClient.getDefinitionKeysByType(definitionType);
 
     // then
     assertThat(definitions)
@@ -582,10 +616,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .hasSize(3)
       .containsSequence(
         // names of definitions #3 start with an `a` and are expected first
-        new DefinitionKeyDto(definition3.getKey(), definition3.getName()),
+        new DefinitionKeyResponseDto(definition3.getKey(), definition3.getName()),
         // and last the process definitions as they start with `D/d`
-        new DefinitionKeyDto(definition1.getKey(), definition1.getName()),
-        new DefinitionKeyDto(definition2_tenant1.getKey(), definition2_tenant1.getName())
+        new DefinitionKeyResponseDto(definition1.getKey(), definition1.getName()),
+        new DefinitionKeyResponseDto(definition2_tenant1.getKey(), definition2_tenant1.getName())
       );
   }
 
@@ -610,11 +644,11 @@ public class DefinitionRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.processEvents();
 
     // then the key is returned when requesting keys for camunda event imported definitions
-    final List<DefinitionKeyDto> keysForCamundaEventImportedDefinitions =
+    final List<DefinitionKeyResponseDto> keysForCamundaEventImportedDefinitions =
       definitionClient.getCamundaEventImportedProcessDefinitionKeys();
     assertThat(keysForCamundaEventImportedDefinitions)
       .hasSize(1)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactly(firstInstance.getProcessDefinitionKey());
 
     // when we disable imports of Camunda events
@@ -625,14 +659,14 @@ public class DefinitionRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.processEvents();
 
     // then both keys are available when fetching all keys
-    final List<DefinitionKeyDto> allDefinitionKeys = definitionClient.getDefinitionKeysByType(PROCESS);
+    final List<DefinitionKeyResponseDto> allDefinitionKeys = definitionClient.getDefinitionKeysByType(PROCESS);
     assertThat(allDefinitionKeys)
       .hasSize(2)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactlyInAnyOrder(firstInstance.getProcessDefinitionKey(), secondInstance.getProcessDefinitionKey());
     // and only the key with the instance imported with the importEnabled configuration is available when requesting
     // keys for Camunda event imported definitions only
-    final List<DefinitionKeyDto> camundaEventImportedOnlyKeys =
+    final List<DefinitionKeyResponseDto> camundaEventImportedOnlyKeys =
       definitionClient.getCamundaEventImportedProcessDefinitionKeys();
     assertThat(camundaEventImportedOnlyKeys)
       .hasSize(1)
@@ -641,8 +675,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionKeysByType_unauthenticated() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -672,15 +704,15 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "3", null, "other");
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       definitionType, definitionKey
     );
 
     // then
     assertThat(versions)
       .containsExactly(
-        new DefinitionVersionDto("2", VERSION_TAG),
-        new DefinitionVersionDto("1", VERSION_TAG)
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
       );
   }
 
@@ -702,30 +734,30 @@ public class DefinitionRestServiceIT extends AbstractIT {
     ));
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       definitionType, definitionKey
     );
 
     // then
     assertThat(versions)
-      .extracting(DefinitionVersionDto::getVersion)
+      .extracting(DefinitionVersionResponseDto::getVersion)
       .containsExactlyElementsOf(descendingVersions);
   }
 
   @Test
   public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
     // given
-    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event process Definition1"
     );
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       PROCESS, eventProcessDefinition1.getKey()
     );
 
     // then
-    assertThat(versions).containsExactly(new DefinitionVersionDto("1", null));
+    assertThat(versions).containsExactly(new DefinitionVersionResponseDto("1", null));
   }
 
   @ParameterizedTest
@@ -742,16 +774,16 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       definitionType, definitionKey
     );
 
     // then
     assertThat(versions)
       .containsExactly(
-        new DefinitionVersionDto("3", VERSION_TAG),
-        new DefinitionVersionDto("2", VERSION_TAG),
-        new DefinitionVersionDto("1", VERSION_TAG)
+        new DefinitionVersionResponseDto("3", VERSION_TAG),
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
       );
   }
 
@@ -770,17 +802,17 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", null, "the name");
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       definitionType, definitionKey
     );
 
     // then
     assertThat(versions)
       .containsExactly(
-        new DefinitionVersionDto("4", VERSION_TAG),
-        new DefinitionVersionDto("3", VERSION_TAG),
-        new DefinitionVersionDto("2", VERSION_TAG),
-        new DefinitionVersionDto("1", VERSION_TAG)
+        new DefinitionVersionResponseDto("4", VERSION_TAG),
+        new DefinitionVersionResponseDto("3", VERSION_TAG),
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
       );
   }
 
@@ -800,17 +832,39 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", TENANT_3.getId(), "the name");
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
       definitionType, definitionKey
     );
 
     // then
     assertThat(versions)
       .containsExactly(
-        new DefinitionVersionDto("4", VERSION_TAG),
-        new DefinitionVersionDto("3", VERSION_TAG),
-        new DefinitionVersionDto("2", VERSION_TAG),
-        new DefinitionVersionDto("1", VERSION_TAG)
+        new DefinitionVersionResponseDto("4", VERSION_TAG),
+        new DefinitionVersionResponseDto("3", VERSION_TAG),
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKeyExcludesDeletedDefinitions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "deleted", true);
+
+    // when
+    final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
+        new DefinitionVersionResponseDto("2", VERSION_TAG),
+        new DefinitionVersionResponseDto("1", VERSION_TAG)
       );
   }
 
@@ -1062,7 +1116,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @Test
   public void getDefinitionTenantsByTypeKeyAndVersions_eventBasedProcess() {
     // given
-    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event process Definition1"
     );
 
@@ -1098,9 +1152,35 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(tenantsForAllVersions).isEmpty();
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_excludesDeletedDefinitions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_3.getId(), "deleted", true);
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2")
+      );
+
+    // then only the non-deleted tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
+      );
+  }
+
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_specificTenantDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1137,20 +1217,23 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
+    // the deleted definition should not be included in the grouped results
+    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_3.getId(), processName1, true);
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
       .hasSize(3)
       .containsExactly(
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_1.getId(), TENANT_1.getName(),
           // definitions ordered by name
           Lists.newArrayList(decisionDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_2.getId(), TENANT_2.getName(),
           // definitions ordered by name
           Lists.newArrayList(
@@ -1158,7 +1241,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
             decisionDefinition2, processDefinition1
           )
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_3.getId(), TENANT_3.getName(),
           // definitions ordered by name
           Lists.newArrayList(processDefinition2, decisionDefinition2)
@@ -1168,7 +1251,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1187,7 +1270,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
 
-    final DefinitionOptimizeDto eventBasedDefinition1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventBasedDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
@@ -1195,29 +1278,30 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
       .hasSize(4)
       .containsExactly(
         // tenants ordered by id, null tenant first
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), SIMPLE_TENANT_NOT_DEFINED_DTO.getName(),
           // definitions ordered by name
           Lists.newArrayList(decisionDefinition1, eventProcessDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_1.getId(), TENANT_1.getName(),
           // definitions ordered by name
           Lists.newArrayList(decisionDefinition1, eventProcessDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_2.getId(), TENANT_2.getName(),
           // definitions ordered by name
           Lists.newArrayList(decisionDefinition1, eventProcessDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_3.getId(), TENANT_3.getName(),
           // definitions ordered by name
           Lists.newArrayList(decisionDefinition1, eventProcessDefinition1, processDefinition1)
@@ -1227,7 +1311,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
-    //given
+    // given
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     createTenant(TENANT_3);
@@ -1265,7 +1349,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
-    final DefinitionOptimizeDto eventBasedDefinition1 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventBasedDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
@@ -1275,7 +1359,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       true,
       DEFAULT_ENGINE_ALIAS
     );
-    final DefinitionOptimizeDto eventBasedDefinition2 = createEventBasedDefinition(
+    final DefinitionOptimizeResponseDto eventBasedDefinition2 = createEventBasedDefinition(
       "eventProcess2", "An event Process Definition2"
     );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
@@ -1287,24 +1371,25 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
+      definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
       .hasSize(4)
       .containsExactly(
         // tenants ordered by id, null tenant first
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), SIMPLE_TENANT_NOT_DEFINED_DTO.getName(),
           // definitions ordered by name
           Lists.newArrayList(eventProcessDefinition2, decisionDefinition1, eventProcessDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_1.getId(), TENANT_1.getName(),
           // definitions ordered by name
           Lists.newArrayList(eventProcessDefinition2, decisionDefinition1, eventProcessDefinition1, processDefinition1)
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_2.getId(), TENANT_2.getName(),
           // definitions ordered by name
           Lists.newArrayList(
@@ -1316,7 +1401,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
             processDefinition1
           )
         ),
-        new TenantWithDefinitionsDto(
+        new TenantWithDefinitionsResponseDto(
           TENANT_3.getId(), TENANT_3.getName(),
           // definitions ordered by name
           Lists.newArrayList(
@@ -1333,7 +1418,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_unauthenticated() {
-    //given
+    // given
 
     // when
     final Response response = embeddedOptimizeExtension
@@ -1358,7 +1443,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .range(0, definitionCount)
       .mapToObj(String::valueOf)
       .forEach(i -> {
-        final DefinitionOptimizeDto def = createProcessDefinition(
+        final DefinitionOptimizeResponseDto def = createProcessDefinition(
           "key" + i,
           "1",
           null,
@@ -1371,7 +1456,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitions();
 
     // then
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
@@ -1379,7 +1464,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
-    //given
+    // given
     final Integer bucketLimit = 1000;
     final Integer definitionCount = bucketLimit * 2;
 
@@ -1389,7 +1474,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .range(0, definitionCount)
       .mapToObj(String::valueOf)
       .forEach(i -> {
-        final DefinitionOptimizeDto def = createProcessDefinition(
+        final DefinitionOptimizeResponseDto def = createProcessDefinition(
           "key" + i,
           "1",
           null,
@@ -1402,27 +1487,36 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantWithDefinitionsDto> definitions = definitionClient.getDefinitionsGroupedByTenant();
+    final List<TenantWithDefinitionsResponseDto> definitions = definitionClient.getDefinitionsGroupedByTenant();
 
     // then
     assertThat(definitions).isNotEmpty().hasSize(1);
     assertThat(definitions.get(0).getDefinitions()).isNotEmpty().hasSize(definitionCount);
   }
 
-  private DefinitionOptimizeDto createEventBasedDefinition(final String key, final String name) {
+  private DefinitionOptimizeResponseDto createEventBasedDefinition(final String key, final String name) {
     return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key, name);
   }
 
-  private DefinitionOptimizeDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
-                                                                      final String key,
-                                                                      final String version,
-                                                                      final String tenantId,
-                                                                      final String name) {
+  private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
+                                                                              final String key,
+                                                                              final String version,
+                                                                              final String tenantId,
+                                                                              final String name) {
+    return createDefinitionAndAddToElasticsearch(definitionType, key, version, tenantId, name, false);
+  }
+
+  private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
+                                                                              final String key,
+                                                                              final String version,
+                                                                              final String tenantId,
+                                                                              final String name,
+                                                                              final boolean deleted) {
     switch (definitionType) {
       case PROCESS:
-        return addProcessDefinitionToElasticsearch(key, version, tenantId, name);
+        return addProcessDefinitionToElasticsearch(key, version, tenantId, name, deleted);
       case DECISION:
-        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name);
+        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name, deleted);
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + definitionType);
     }
@@ -1431,9 +1525,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
   private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
                                                                              final String version,
                                                                              final String tenantId,
-                                                                             final String name) {
+                                                                             final String name,
+                                                                             final boolean deleted) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
       .version(version)
       .versionTag(VERSION_TAG)
@@ -1441,6 +1536,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .engine(DEFAULT_ENGINE_ALIAS)
       .name(name)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
+      .deleted(deleted)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
@@ -1451,8 +1547,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                            final String version,
                                                                            final String tenantId,
-                                                                           final String name) {
+                                                                           final String name,
+                                                                           final boolean deleted) {
     final ProcessDefinitionOptimizeDto expectedDto = createProcessDefinition(key, version, tenantId, name);
+    expectedDto.setDeleted(deleted);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
@@ -1466,7 +1564,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
                                                                final String tenantId,
                                                                final String name) {
     return ProcessDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
       .name(name)
       .version(version)

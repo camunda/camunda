@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,7 @@ public class StatusRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public StatusWithProgressDto getImportStatus() {
+  public StatusWithProgressResponseDto getImportStatus() {
     return statusCheckingService.getConnectionStatusWithProgress();
   }
 }

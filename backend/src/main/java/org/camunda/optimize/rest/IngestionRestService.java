@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -54,14 +54,14 @@ public class IngestionRestService {
   @Consumes({CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH, MediaType.APPLICATION_JSON})
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
-                                final @NotNull @Valid @RequestBody ValidList<CloudEventDto> cloudEventDtos) {
+                                final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
     validateAccessToken(requestContext);
     eventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
-  private List<EventDto> mapToEventDto(final List<CloudEventDto> cloudEventDtos) {
+  private List<EventResponseDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
     return cloudEventDtos.stream()
-      .map(cloudEventDto -> EventDto.builder()
+      .map(cloudEventDto -> EventResponseDto.builder()
         .id(cloudEventDto.getId())
         .eventName(cloudEventDto.getType())
         .timestamp(

@@ -1,10 +1,6 @@
 @import 'shared-styles/shared-styles.scss';
 
 .AlertModal .Modal__content {
-  max-height: calc(100vh - 160px);
-  overflow: auto;
-  @include scrollable;
-
   .InputGroup button.reset {
     flex: initial;
   }

@@ -16,12 +16,17 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
-  distributedBy: {type: 'none', value: null},
 };
 
 const barReport = {
   combined: false,
-  data: {visualization: 'bar', view: {property: 'frequency'}, groupBy: {}, configuration},
+  data: {
+    visualization: 'bar',
+    view: {property: 'frequency'},
+    groupBy: {},
+    distributedBy: {type: 'none', value: null},
+    configuration,
+  },
 };
 
 it('it should display correct configuration for barchart', () => {
@@ -52,7 +57,7 @@ it('should not display color picker for hyper reports (distributed by userTask/a
         data: {
           ...barReport.data,
           groupBy: {type: 'assignee'},
-          configuration: {...configuration, distributedBy: {type: 'userTask', value: null}},
+          distributedBy: {type: 'userTask', value: null},
         },
       }}
     />

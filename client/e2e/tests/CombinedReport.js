@@ -50,18 +50,18 @@ test('combine two single number reports', async (t) => {
   await createReport(t, 'Weekly Sales');
   await createReport(t, 'Invoice Average');
 
+  await t.resizeWindow(1400, 700);
+
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
 
   await t.hover(Homepage.submenuOption('Combined Process Report'));
 
-  await t
-    .resizeWindow(1400, 700)
-    .takeElementScreenshot(
-      Homepage.entityList,
-      'process/combined-report/combined-report-create.png',
-      {crop: {left: 1000, bottom: 300}}
-    );
+  await t.takeElementScreenshot(
+    Homepage.entityList,
+    'process/combined-report/combined-report-create.png',
+    {crop: {left: 1000, bottom: 300}}
+  );
 
   await t.click(Homepage.submenuOption('Combined Process Report'));
   await t.typeText(Report.nameEditField, 'Combined Report', {replace: true});

@@ -57,4 +57,10 @@ public class DecisionInstanceEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportDecisionInstanceMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
+  }
+
 }

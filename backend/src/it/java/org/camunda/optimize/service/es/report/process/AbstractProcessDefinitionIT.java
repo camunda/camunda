@@ -6,15 +6,14 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -24,12 +23,9 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -85,11 +81,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     varNameToTypeMap.put("stringVar", VariableType.STRING);
   }
 
-  @RegisterExtension
-  @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcess(null);
   }
@@ -144,7 +135,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
                                                                             String activityId,
                                                                             String tenantId) {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, activityId);
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, activityId);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId
     );
@@ -168,8 +159,14 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, TEST_ACTIVITY);
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final String key,
+                                                                                      final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(key);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
@@ -187,6 +184,16 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 
     return processKey;
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartLoopingProcess() {
+    return deployAndStartLoopingProcess(new HashMap<>());
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartLoopingProcess(Map<String, Object> variables) {
+    final BpmnModelInstance modelInstance = BpmnModels.getLoopingProcess();
+    variables.put("anotherRound", true);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
@@ -231,7 +238,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
                                                             final String definitionVersion,
                                                             final ProcessReportDataType reportType,
-                                                            final GroupByDateUnit unit) {
+                                                            final AggregateByDateUnit unit) {
     return createReportData(
       definitionKey,
       definitionVersion,
@@ -244,20 +251,20 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessReportDataDto createReportData(final String definitionKey,
                                                   final String definitionVersion,
                                                   final ProcessReportDataType reportType,
-                                                  final GroupByDateUnit unit,
+                                                  final AggregateByDateUnit unit,
                                                   final ReportSortingDto sorting) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(definitionVersion)
       .setReportDataType(reportType)
-      .setDateInterval(unit)
+      .setGroupByDateInterval(unit)
       .build();
     reportData.getConfiguration().setSorting(sorting);
     return reportData;
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
     singleProcessReportDefinitionDto.setLastModifier("something");
     singleProcessReportDefinitionDto.setName("something");
@@ -267,25 +274,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return createNewReport(singleProcessReportDefinitionDto);
   }
 
-  protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+  protected String createNewReport(SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
-  }
-
-  private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,
-                                                                 final String activityId) {
-    // @formatter:off
-    return Bpmn.createExecutableProcess(key)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
@@ -376,8 +370,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   // this method is used for the parameterized tests
   @SuppressWarnings("unused")
-  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
+  protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
+    return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }
 
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,

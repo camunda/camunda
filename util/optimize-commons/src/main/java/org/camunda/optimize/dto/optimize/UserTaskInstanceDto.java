@@ -39,6 +39,7 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private OffsetDateTime claimDate;
 
   private String deleteReason;
+  private Boolean canceled;
 
   private String assignee;
   private List<String> candidateGroups = new ArrayList<>();
@@ -48,12 +49,6 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private Long totalDurationInMs;
   private Long idleDurationInMs;
   private Long workDurationInMs;
-
-  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine) {
-    this.id = id;
-    this.processInstanceId = processInstanceId;
-    this.engine = engine;
-  }
 
   public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
                              final String assignee, final List<String> candidateGroups,
@@ -83,4 +78,5 @@ public class UserTaskInstanceDto implements OptimizeDto {
     this.deleteReason = deleteReason;
     this.totalDurationInMs = totalDurationInMs;
   }
+
 }

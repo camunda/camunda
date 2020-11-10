@@ -19,8 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
@@ -43,7 +43,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -311,8 +310,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isNull();
-    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -331,8 +331,32 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isNull();
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -383,7 +407,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
-    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
     importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
@@ -527,7 +550,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   @Test
   public void resultContainsNonExecutedFlowNodes() {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto engineDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
     importAllEngineEntitiesFromScratch();
 

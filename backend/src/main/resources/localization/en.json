@@ -17,7 +17,7 @@
     "btn": "Log in",
     "error": "An error occurred. Could not log you in.",
     "timeout": "Your session timed out. Please log in again to complete the action.",
-    "telemetry": "By Login in, you accept our <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">T&C</a> and <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Privacy Policy</a>"
+    "telemetry": "By logging in, you accept our <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">T&C</a> and <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Privacy Policy</a>"
   },
   "footer": {
     "importing": "is importing...",
@@ -48,8 +48,9 @@
   "telemetry": {
     "updated": "Telemetry Settings updated.",
     "header": "Telemetry Settings",
-    "text": "To improve the stability and customer support, allow Camunda Optimize to share telemetry data with Camunda services.",
-    "enable": "Enable Telemetry",
+    "text": "To enhance user experience, Camunda Optimize can integrate with Camunda Services GmbH, which requires external network requests. Please choose from the setting below.",
+    "enable": "Enable Meta & Usage Statistics",
+    "info": "Allow Camunda Optimize to send anonymous usage statistics. We use this information to provide you a stable and improved product experience in the environment you are using. This allows Camunda to collect information about the product version and technical environment you are using, and how you are using it.",
     "personalData": "None of your personal information or stored data will be submitted.",
     "learnMore": "Learn more: ",
     "privacyPolicy": "Camunda Privacy Policy"
@@ -102,8 +103,7 @@
       "editor-description": "Create, edit and delete Dashboards, Reports and Alerts",
       "manager": "Manager",
       "manager-description": "Full rights editing Collection and Users",
-      "existing-user-error": "A user with this id already exists",
-      "existing-group-error": "A group with this id already exists",
+      "existing-identity": "A user or a group with this id already exists",
       "inCollection": "in this collection",
       "missingAuthorizationsWarning": "Some data may be hidden from users due to missing authorizations.",
       "deleteWarning": "The '{name}' {type} will be removed from the Collection."
@@ -220,7 +220,7 @@
     "create": "Create Report",
     "createNew": "Create new Report",
     "new": "New Report",
-    "addName": "Add Report Name",
+    "addName": "Report Name",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
     "templates": {
@@ -232,14 +232,14 @@
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",
+      "reportFiltersHeading": "Report level filters",
+      "additionalFiltersHeading": "Dashboard level filters",
       "label": "Displaying data from {count} instance.",
       "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
       "label-plural": "Displaying data from {count} instances.",
       "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances.",
-      "reportFilters": "Report filters displaying data from {count} instance.",
-      "reportFilters-withFilter": "Report filters displaying data from {count} of {totalCount} instance.",
-      "reportFilters-plural": "Report filters displaying data from {count} instances.",
-      "reportFilters-plural-withFilter": "Report filters displaying data from {count} of {totalCount} instances.",
+      "reportFilters": "Displaying {count} of {totalCount} instance",
+      "reportFilters-plural": "Displaying {count} of {totalCount} instances",
       "process": {
         "label": "{count} instance in current filter",
         "label-plural": "{count} instances in current filter"
@@ -253,6 +253,8 @@
       "label": "View",
       "rawData": "Raw Data",
       "pi": "Process Instance",
+      "in": "Incident",
+      "resolutionDuration": "Resolution Duration",
       "fn": "Flow Node",
       "userTask": "User Task",
       "count": "Count",
@@ -384,7 +386,10 @@
         "endDate": "End Date",
         "duration": "Duration",
         "engineName": "Engine Name",
-        "tenantId": "Tenant Id"
+        "tenantId": "Tenant Id",
+        "variable": "Var",
+        "inputVariable": "InputVar",
+        "outputVariable": "OutputVar"
       }
     },
     "progressBar": {
@@ -425,7 +430,9 @@
       "nodeStatus": {
         "legend": "Flow Node Status",
         "running": "Running",
-        "completed": "Completed"
+        "completed": "Completed",
+        "canceled": "Cancelled or interrupted",
+        "all": "All states"
       },
       "visibleNodes": {
         "legend": "Customize Node Display",
@@ -489,11 +496,35 @@
     "label": "Dashboard",
     "label-plural": "Dashboards",
     "new": "New Dashboard",
+    "createNew": "Create New Dashboard",
+    "addName": "Dashboard Name",
+    "create": "Create Dashboard",
     "cannotShare": "Sharing forbidden. Missing authorization for contained report.",
     "toggleTheme": "Toggle Theme",
     "enterFullscreen": "Enter Fullscreen",
     "leaveFullscreen": "Leave Fullscreen",
     "autoRefresh": "Auto Refresh",
+    "saveModal": {
+      "unsaved": "Unsaved Dashboard",
+      "text": "Save Dashboard to continue.\nSaving the Dashboard will save all the contained Reports."
+    },
+    "templates": {
+      "blank": "Blank Dashboard",
+      "processPerformance": "Process performance overview",
+      "processPerformance_subTitle": "Process Trends and durations",
+      "humanPerformance": "Human Task performance",
+      "humanPerformance_subTitle": "User task counts and durations",
+      "totalInstances": "Total Instances",
+      "avgDuration": "AVG Instance Duration",
+      "instanceTrends": "Instance Trends",
+      "durationTrends": "Instance Duration Trends",
+      "flownodeFrequency": "Flownode Frequency",
+      "flownodeDuration": "Flownode Duration",
+      "idleTime": "Idle Time",
+      "workTime": "Work Time",
+      "tasksStarted": "Tasks started per month",
+      "tasksCompleted": "Tasks completed per month"
+    },
     "addButton": {
       "addReport": "Add a Report",
       "selectReport": "Select Report",
@@ -506,20 +537,21 @@
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",
     "filter": {
-      "varAbbreviation": "Var",
-      "label": "Report Filters",
+      "viewButtonText": "Filters",
+      "label": "Add a filter",
       "viewLabel": "Filter Report data",
-      "info": "Select filter types for use in the Dashboard",
-      "notice": "Added options will be available for selection in the saved Dashboard.",
+      "disabledVariable": "Variable Filters are only available for Dashboards that contain at least one Report.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
+      "selectValue": "Select variable value",
       "modal": {
         "pretext": {
           "Date": "Date selection will be available in the resulting filter.",
           "Boolean": "True and false values will be available in the resulting filter.",
           "default": "Selected options will be available in the resulting filter."
-        }
+        },
+        "allowCustomValues": "Allow viewer to add filter values"
       },
       "types": {
         "state": "Instance State",
@@ -642,6 +674,7 @@
     "remove": "Remove",
     "removeEntity": "Remove {entity}",
     "save": "Save",
+    "saveContinue": "Save and Continue",
     "update": "Update",
     "apply": "Apply",
     "cancel": "Cancel",
@@ -682,6 +715,7 @@
     "null": "null",
     "nullOrUndefined": "Null or undefined",
     "timeAt": "at",
+    "value": "Value",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
@@ -699,6 +733,7 @@
       "label-plural": "Flow Nodes"
     },
     "multiSelect": {
+      "selectAll": "Select all in view",
       "available": "Available items",
       "selected": "Selected items",
       "search": "Search for items",
@@ -754,20 +789,11 @@
       "buttonTitle": "Share",
       "disabled": "Sharing is disabled per configuration",
       "popoverTitle": "Enable sharing",
-      "link": {
-        "title": "Link",
-        "description": {
-          "report": "Use the following URL to share the report with people who don't have a Camunda Optimize account:",
-          "dashboard": "Use the following URL to share the dashboard with people who don't have a Camunda Optimize account:"
-        }
-      },
-      "embed": {
-        "title": "Embed",
-        "description": {
-          "report": "Use the following HTML code to embed the report into blogs and web pages:",
-          "dashboard": "Use the following HTML code to embed the dashboard into blogs and web pages:"
-        }
-      },
+      "notification": "Link copied to clipboard",
+      "inputPlaceholder": "Enable sharing to create link",
+      "filtersLabel": "Share with current filters applied",
+      "copyLabel": "Copy Link",
+      "embedLabel": "Embed Link",
       "openInOptimize": "Open in Optimize"
     },
     "filter": {
@@ -802,16 +828,21 @@
           "less": "is less than",
           "greater": "is greater than",
           "is": "is",
+          "was": "was",
+          "were": "were",
           "not": "is not",
           "neither": "is neither",
           "nor": "nor",
           "or": "or",
+          "and": "and",
           "occurs": "occurs",
           "contains": "contains",
           "notContains": "does not contain"
         },
-        "executedFlowNode": "Executed Flow Node",
-        "executingFlowNode": "Executing Flow Node"
+        "not": "Not ",
+        "executedFlowNodes": "Executed",
+        "canceledFlowNodes": "Cancelled or interrupted",
+        "executingFlowNodes": "Pending or Executing"
       },
       "modalHeader": "Add {type} Filter",
       "addFilter": "Add Filter",
@@ -862,11 +893,12 @@
           "false": "is false",
           "isNullOrUndefined": "is null or undefined"
         },
-        "enterValue": "Enter value",
+        "enterValue": "Add a single value",
+        "enterMultipleValues": "Add multiple values by separating with a tab",
         "addValue": "Add Value",
+        "invalidInput": "Input must be a number",
         "multiSelect": {
-          "available": "Available values",
-          "selected": "Selected values",
+          "header": "Variable values",
           "search": "Search for values",
           "empty": "No values found"
         },
@@ -880,10 +912,12 @@
         "appliedTo": "filter is applied to"
       },
       "nodeModal": {
+        "note": "Both Executed and Executing Flow Nodes are returned in the result.",
         "executed": "was executed",
         "notExecuted": "was not executed",
+        "canceled": "was cancelled or interrupted",
         "executing": "pending or executing",
-        "previewLabel": "This is the filter you are about to create: "
+        "previewLabel": "Display process instances where: "
       },
       "assigneeModal": {
         "includeOnly": "Include only",
@@ -893,11 +927,7 @@
           "candidateGroup": "Candidate groups"
         },
         "unassigned": "unassigned",
-        "selectValue": "Filter for ID",
-        "info": {
-          "included": "The following selections will be included:",
-          "excluded": "The following selections will be excluded:"
-        }
+        "selectValue": "Filter for ID"
       },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },

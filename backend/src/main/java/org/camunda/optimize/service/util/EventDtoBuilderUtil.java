@@ -8,9 +8,9 @@ package org.camunda.optimize.service.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 
@@ -60,7 +60,7 @@ public class EventDtoBuilderUtil {
       .build();
   }
 
-  public static EventTypeDto fromEventCountDto(final EventCountDto eventCountDto) {
+  public static EventTypeDto fromEventCountDto(final EventCountResponseDto eventCountDto) {
     return EventTypeDto.builder()
       .source(eventCountDto.getSource())
       .group(eventCountDto.getGroup())

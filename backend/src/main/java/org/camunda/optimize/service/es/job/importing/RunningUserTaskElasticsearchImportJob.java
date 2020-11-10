@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.service.es.writer.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 
 import java.util.List;
 

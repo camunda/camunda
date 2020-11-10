@@ -11,6 +11,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -24,17 +25,12 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -44,7 +40,6 @@ import org.junit.jupiter.api.BeforeEach;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
@@ -60,7 +55,7 @@ public abstract class AbstractUpgradeIT {
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;
   protected ElasticsearchMetadataService metadataService;
-  private ConfigurationService configurationService;
+  protected ConfigurationService configurationService;
 
   @AfterEach
   public void after() throws Exception {
@@ -90,8 +85,13 @@ public abstract class AbstractUpgradeIT {
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }
 
-  protected void setMetadataIndexVersion(String version) {
+  protected void setMetadataVersion(String version) {
     metadataService.upsertMetadata(prefixAwareClient, version);
+  }
+
+  protected String getMetadataVersion() {
+    return metadataService.getSchemaVersion(prefixAwareClient)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain current schema version!"));
   }
 
   protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping,
@@ -119,22 +119,9 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
-  @SneakyThrows
-  protected void addAlias(final IndexMappingCreator index, final String alias, final boolean writeIndex) {
-    final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
-    final IndicesAliasesRequest.AliasActions aliasAction = new IndicesAliasesRequest.AliasActions(
-      IndicesAliasesRequest.AliasActions.Type.ADD)
-      .index(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(index))
-      .writeIndex(writeIndex)
-      .alias(alias);
-    indicesAliasesRequest.addAliasAction(aliasAction);
-    prefixAwareClient.getHighLevelClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
-  }
-
   private String getVersionedIndexName(final String indexName, final int version) {
     return OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
-      indexNameService.getOptimizeIndexAliasForIndex(indexName),
-      String.valueOf(version)
+      indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version)
     );
   }
 
@@ -146,23 +133,10 @@ public abstract class AbstractUpgradeIT {
     }
   }
 
-  private void cleanAllDataFromElasticsearch() {
-    try {
-      prefixAwareClient.getHighLevelClient().indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed cleaning elasticsearch");
-    }
+  protected void cleanAllDataFromElasticsearch() {
+    prefixAwareClient.deleteIndexByRawIndexNames("_all");
   }
 
-  @SneakyThrows
-  protected boolean indexExists(String indexName) {
-    return upgradeDependencies.getEsClient()
-      .getHighLevelClient()
-      .indices()
-      .exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
-  }
-
-  @SneakyThrows
   protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
     final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
     return Arrays
@@ -179,24 +153,13 @@ public abstract class AbstractUpgradeIT {
       .collect(toList());
   }
 
-  protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) throws IOException {
+  @SneakyThrows
+  protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) {
     final SearchResponse searchResponse = prefixAwareClient.search(
       new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT
     );
     return searchResponse.getHits().getHits();
-  }
-
-  @SneakyThrows
-  protected <T> Optional<T> getDocumentByIdAs(final String indexName, final String id, final Class<T> valueType) {
-    final GetResponse getResponse = prefixAwareClient.get(
-      new GetRequest(indexName, id), RequestOptions.DEFAULT
-    );
-    if (getResponse.isExists()) {
-      return Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
-    } else {
-      return Optional.empty();
-    }
   }
 
 }

@@ -1,0 +1,29 @@
+.MultiSelect {
+  width: 100%;
+  position: relative;
+
+  .UncontrolledMultiValueInput {
+    padding-right: 40px;
+
+    .searchClear {
+      right: 30px;
+    }
+  }
+
+  .optionsButton {
+    position: absolute;
+    right: 0px;
+    top: 0;
+    height: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    background: none;
+    border: none;
+    max-height: 32px;
+    padding: 0 12px 5px 0;
+
+    .Icon {
+      margin-right: 0px;
+    }
+  }
+}

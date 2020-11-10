@@ -83,7 +83,16 @@ export default class VariableFilter extends React.Component {
 
   render() {
     const {selectedVariable, variables, filter, valid} = this.state;
-    const {close, className, filterType, getPretext, config, filterData, forceEnabled} = this.props;
+    const {
+      close,
+      className,
+      filterType,
+      getPretext,
+      getPosttext,
+      config,
+      filterData,
+      forceEnabled,
+    } = this.props;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
@@ -117,6 +126,7 @@ export default class VariableFilter extends React.Component {
             changeFilter={this.changeFilter}
             filter={filter}
           />
+          {getPosttext?.(selectedVariable)}
         </Modal.Content>
         <Modal.Actions>
           <Button main onClick={close}>

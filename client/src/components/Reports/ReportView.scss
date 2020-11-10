@@ -5,14 +5,22 @@
     .InstanceCount {
       margin-top: 0;
 
-      .Popover .countString {
-        display: none;
+      .Popover {
+        .countString,
+        .filterListHeading {
+          display: none;
+        }
       }
     }
   }
 
   .share-button .Popover__dialog {
-    padding: 20px 40px;
+    padding: 30px;
+    padding-bottom: 10px;
+  }
+
+  .ShareEntity .includeFilters {
+    display: none;
   }
 
   .IncompleteReport {

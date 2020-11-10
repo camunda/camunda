@@ -7,10 +7,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dashboard} from './Dashboard';
-import DashboardView from './DashboardView';
 import {loadEntity, createEntity} from 'services';
 import {showError} from 'notifications';
+
+import DashboardView from './DashboardView';
+import DashboardEdit from './DashboardEdit';
+
+import {Dashboard} from './Dashboard';
 
 jest.mock('notifications', () => ({showError: jest.fn()}));
 
@@ -34,11 +37,31 @@ const props = {
   match: {params: {id: '1'}},
   location: {},
   mightFail: (promise, cb) => cb(promise),
-  getUser: () => ({id: 'demo'}),
+  getUser: () => ({id: 'demo', name: 'Demo Demo'}),
+};
+
+const templateState = {
+  name: 'My Dashboard',
+  definitionKey: 'aKey',
+  versions: ['1'],
+  tenants: [null],
+  definitionName: 'A Process Definition',
+  xml: 'xml string',
+  data: [
+    {
+      position: {x: 0, y: 0},
+      dimensions: {height: 2, width: 4},
+      report: {
+        name: 'A Report Name',
+        data: {view: {entity: 'processInstance', property: 'frequency'}},
+      },
+    },
+  ],
 };
 
 beforeEach(() => {
   props.match.params.viewMode = 'view';
+  createEntity.mockClear();
 });
 
 it("should show an error page if dashboard doesn't exist", () => {
@@ -87,7 +110,7 @@ it('should not load data when it is a new dashboard', async () => {
 it('should create a new dashboard when saving a new one', async () => {
   const node = await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
 
-  node.instance().saveChanges('testname', [{id: 'reportID'}], [{type: 'state'}]);
+  await node.instance().saveChanges('testname', [{id: 'reportID'}], [{type: 'state'}]);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: null,
@@ -106,7 +129,7 @@ it('should create a new dashboard in a collection', async () => {
     />
   );
 
-  node.instance().saveChanges('testname', [], []);
+  await node.instance().saveChanges('testname', [], []);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: '123',
@@ -129,4 +152,48 @@ it('should redirect to the Overview page on dashboard deletion', async () => {
   await node.find(DashboardView).prop('onDelete')();
 
   expect(node.find('Redirect')).toExist();
+});
+
+it('should initialize reports based on location state', async () => {
+  const node = shallow(
+    <Dashboard
+      {...props}
+      match={{params: {id: 'new'}}}
+      location={{
+        state: templateState,
+      }}
+    />
+  );
+
+  await flushPromises();
+
+  const reports = node.find(DashboardView).prop('reports');
+
+  expect(reports.length).toBe(1);
+  expect(reports[0].report.name).toBe('A Report Name');
+  expect(reports[0].report.data.view.entity).toBe('processInstance');
+});
+
+it('should save unsaved reports when saving dashboard', async () => {
+  const node = shallow(
+    <Dashboard
+      {...props}
+      match={{params: {id: 'new', viewMode: 'edit'}}}
+      location={{
+        state: templateState,
+      }}
+    />
+  );
+
+  await flushPromises();
+
+  node.find(DashboardEdit).prop('saveChanges')(
+    'new Dashboard Name',
+    node.find(DashboardEdit).prop('initialReports'),
+    []
+  );
+
+  const firstSave = createEntity.mock.calls[0];
+  expect(firstSave[0]).toBe('report/process/single');
+  expect(firstSave[1].data).toEqual(node.find(DashboardEdit).prop('initialReports')[0].report.data);
 });

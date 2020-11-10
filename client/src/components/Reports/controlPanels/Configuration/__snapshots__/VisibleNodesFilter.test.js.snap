@@ -22,4 +22,4 @@ exports[`should render component 1`] = `
 </div>
 `;
 
-exports[`should render nothing if report is not grouped by flowNodes 1`] = `""`;
+exports[`should render nothing if report is not grouped/distributed by flowNodes 1`] = `""`;

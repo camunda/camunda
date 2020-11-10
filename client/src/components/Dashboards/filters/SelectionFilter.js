@@ -4,35 +4,65 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useCallback} from 'react';
 import classnames from 'classnames';
+import debounce from 'debounce';
 
-import {Popover, Form, Switch, Button, Icon} from 'components';
+import {Popover, Form, Switch, Button, Icon, Typeahead} from 'components';
 import {VariablePreview} from 'filter';
 import {t} from 'translation';
+import {numberParser} from 'services';
+
+import {getVariableValues} from './service';
 
 import './SelectionFilter.scss';
 
-export default function SelectionFilter({filter, type, config, setFilter}) {
+export default function SelectionFilter({filter, type, config, setFilter, reports}) {
+  const [customValues, setCustomValues] = useState([]);
+  const [loadingVariableValues, setLoadingVariableValues] = useState(false);
+  const [variableValues, setVariableValues] = useState(['']);
+
+  const loadValues = useCallback(
+    debounce(async (value) => {
+      const reportIds = reports.map(({id}) => id).filter((id) => !!id);
+      setVariableValues(await getVariableValues(reportIds, config.name, config.type, 10, value));
+      setLoadingVariableValues(false);
+    }, 300),
+    [reports]
+  );
+
+  function isValidValue(value) {
+    if (config.type !== 'String') {
+      // check that its a numeric value for non string variables
+      return numberParser.isFloatNumber(value);
+    }
+    return true;
+  }
+
   function hasValue(value) {
     return !!filter?.values.includes(value);
   }
 
-  function addValue(value) {
-    setFilter({...config, values: [...(filter?.values || []), value]});
+  function addValue(value, scopedFilter = filter) {
+    const newFilter = {
+      operator: config.data.operator,
+      values: [...(scopedFilter?.values || []), value],
+    };
+    setFilter(newFilter);
+
+    return newFilter;
   }
 
-  function removeValue(value) {
-    const values = filter.values.filter((existingValue) => existingValue !== value);
+  function removeValue(value, scopedFilter = filter) {
+    const values = scopedFilter.values.filter((existingValue) => existingValue !== value);
 
-    if (values.length) {
-      setFilter({...config, values});
-    } else {
-      setFilter();
-    }
+    const newFilter = values.length ? {operator: config.data.operator, values} : null;
+    setFilter(newFilter);
+
+    return newFilter;
   }
 
-  const {operator, values} = config;
+  const {operator, values, allowCustomValues} = config.data;
 
   let hintText = '';
   if (operator === 'in' || operator === 'contains') {
@@ -96,10 +126,84 @@ export default function SelectionFilter({filter, type, config, setFilter}) {
                 }}
               />
             ))}
+            {allowCustomValues && (
+              <>
+                {customValues.map((value, idx) => (
+                  <div className="customValue" key={idx}>
+                    <Switch
+                      checked={hasValue(value)}
+                      disabled={!isValidValue(value)}
+                      onChange={({target}) => {
+                        if (target.checked) {
+                          addValue(value);
+                        } else {
+                          removeValue(value);
+                        }
+                      }}
+                    />
+                    <Typeahead
+                      onOpen={() => {
+                        setLoadingVariableValues(true);
+                        loadValues('');
+                      }}
+                      onSearch={(value) => {
+                        setLoadingVariableValues(true);
+                        loadValues(value);
+                      }}
+                      onChange={(newValue) => {
+                        let scopedFilter = filter;
+                        if (hasValue(value)) {
+                          scopedFilter = removeValue(value);
+                        }
+                        setCustomValues(
+                          customValues.map((value, oldValueIdx) => {
+                            if (oldValueIdx !== idx) return value;
+                            return newValue;
+                          })
+                        );
+                        if (isValidValue(newValue)) {
+                          addValue(newValue, scopedFilter);
+                        }
+                      }}
+                      loading={loadingVariableValues}
+                      value={value}
+                      typedOption
+                      placeholder={t('dashboard.filter.selectValue')}
+                      className={classnames({invalid: value && !isValidValue(value)})}
+                    >
+                      {variableValues.map((value, idx) => (
+                        <Typeahead.Option key={idx} value={value}>
+                          {value}
+                        </Typeahead.Option>
+                      ))}
+                    </Typeahead>
+                    <Button
+                      icon
+                      onClick={() => {
+                        if (hasValue(value)) {
+                          removeValue(value);
+                        }
+                        setCustomValues(
+                          customValues.filter((customValue, idxToRemove) => idx !== idxToRemove)
+                        );
+                      }}
+                    >
+                      <Icon type="close-large" size="14px" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  className="customValueAddButton"
+                  onClick={() => setCustomValues([...customValues, ''])}
+                >
+                  <Icon type="plus" /> {t('common.value')}
+                </Button>
+              </>
+            )}
           </fieldset>
           <hr />
           <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
-            {t('common.reset')}
+            {t('common.off')}
           </Button>
         </Form>
       </Popover>

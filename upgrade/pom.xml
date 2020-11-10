@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.2.0</version>
+    <version>3.3.0</version>
   </parent>
 
   <artifactId>upgrade-optimize</artifactId>
@@ -24,6 +24,14 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

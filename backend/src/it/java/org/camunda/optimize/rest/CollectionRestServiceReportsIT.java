@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,7 +54,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
 
     // when
 
-    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
+    List<AuthorizedReportDefinitionResponseDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
     assertThat(reports)
@@ -73,14 +72,14 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     createReportForCollection(collectionId, DefinitionType.PROCESS);
 
     // when
-    List<AuthorizedReportDefinitionDto> allReports = embeddedOptimizeExtension
+    List<AuthorizedReportDefinitionResponseDto> allReports = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(AuthorizedReportDefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(allReports)
+    assertThat(allReports)
       .isNotNull()
       .hasSize(1);
     ReportDefinitionDto reportDefinitionDto = allReports.get(0).getDefinitionDto();
@@ -96,7 +95,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     String collectionId1 = collectionClient.createNewCollection();
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
+    List<AuthorizedReportDefinitionResponseDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
     assertThat(reports).isEmpty();
@@ -127,12 +126,12 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     // when
     collectionClient.deleteCollection(collectionId);
 
-    Response report1Response = reportClient.getSingleProcessReportRawResponse(
+    Response report1Response = reportClient.getSingleReportRawResponse(
       reportId1,
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD
     );
-    Response report2Response = reportClient.getSingleProcessReportRawResponse(
+    Response report2Response = reportClient.getSingleReportRawResponse(
       reportId2,
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD
@@ -146,7 +145,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {
     switch (definitionType) {
       case PROCESS:
-        SingleProcessReportDefinitionDto procReport = reportClient.createSingleProcessReportDefinitionDto(
+        SingleProcessReportDefinitionRequestDto procReport = reportClient.createSingleProcessReportDefinitionDto(
           collectionId,
           DEFAULT_DEFINITION_KEY,
           DEFAULT_TENANTS
@@ -154,7 +153,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
         return reportClient.createSingleProcessReport(procReport);
 
       case DECISION:
-        SingleDecisionReportDefinitionDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
+        SingleDecisionReportDefinitionRequestDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
           collectionId,
           DEFAULT_DEFINITION_KEY,
           DEFAULT_TENANTS

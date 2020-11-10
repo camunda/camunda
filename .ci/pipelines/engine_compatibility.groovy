@@ -30,7 +30,7 @@ spec:
       # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   imagePullSecrets:
-  - name: registry-camunda-cloud-secret
+  - name: registry-camunda-cloud
   initContainers:
     - name: init-sysctl
       image: busybox
@@ -219,8 +219,8 @@ pipeline {
         gitCheckoutOptimize()
         script {
           env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_7_11_VERSION = getCamBpmVersion('engine-7.11')
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
+          env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
           env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
       }
@@ -228,24 +228,6 @@ pipeline {
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.11') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_11_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            integrationTestSteps('7.11')
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT 7.12') {
           agent {
             kubernetes {
@@ -257,6 +239,24 @@ pipeline {
           }
           steps {
             integrationTestSteps('7.12')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.13') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.13_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_13_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.13')
           }
           post {
             always {

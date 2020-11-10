@@ -5,41 +5,36 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
-import {Input, Button} from 'components';
+import {Button} from 'components';
 
-import './CopyToClipboard.scss';
 import {t} from 'translation';
 
-export default class CopyToClipboard extends React.Component {
-  copyText = (event) => {
-    event.preventDefault();
-    this.inputElement.select();
-    document.execCommand('Copy');
-  };
+export default function CopyToClipboard({children, value, disabled, onCopy}) {
+  return (
+    <Button
+      className="CopyToClipboard"
+      onClick={(evt) => {
+        evt.preventDefault();
+        const input = document.createElement('input');
+        input.value = value;
+        input.style.opacity = 0;
+        input.style.position = 'absolute';
+        input.style.top = 0;
 
-  storeInputElement = (inputElement) => {
-    this.inputElement = inputElement;
-  };
+        document.body.appendChild(input);
 
-  render() {
-    return (
-      <div className={classnames('CopyToClipboard', this.props.className)}>
-        <Input
-          ref={this.storeInputElement}
-          className="CopyToClipboard__input"
-          readOnly
-          disabled={this.props.disabled}
-          value={this.props.value}
-        />
-        <Button
-          className="CopyToClipboard__button"
-          onClick={this.copyText}
-          disabled={this.props.disabled}
-        >
-          {t('common.copy')}
-        </Button>
-      </div>
-    );
-  }
+        input.select();
+        document.execCommand('Copy');
+
+        document.body.removeChild(input);
+
+        if (typeof onCopy === 'function') {
+          onCopy();
+        }
+      }}
+      disabled={disabled}
+    >
+      {children || t('common.copy')}
+    </Button>
+  );
 }

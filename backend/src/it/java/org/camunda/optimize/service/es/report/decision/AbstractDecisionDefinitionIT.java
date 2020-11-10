@@ -10,15 +10,12 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,31 +29,26 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_GUEST_WITH_CHILDREN_ID;
-import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INTEGER_INPUT;
-import static org.camunda.optimize.util.DmnModels.INTEGER_INPUT_ID;
-import static org.camunda.optimize.util.DmnModels.INTEGER_OUTPUT_ID;
-import static org.camunda.optimize.util.DmnModels.OUTPUT_VARIABLE_INTEGER_OUTPUT;
-import static org.camunda.optimize.util.DmnModels.STRING_INPUT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_NUMBER_OF_GUESTS_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_SEASON_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_AMOUNT;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_GUEST_WITH_CHILDREN;
-import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_STRING_INPUT;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INTEGER_INPUT;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INVOICE_CATEGORY;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INVOICE_DATE;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_NUMBER_OF_GUESTS;
 import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_SEASON;
-import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_STRING_INPUT;
+import static org.camunda.optimize.util.DmnModels.INTEGER_INPUT_ID;
+import static org.camunda.optimize.util.DmnModels.INTEGER_OUTPUT_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_VARIABLE_INTEGER_OUTPUT;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_VARIABLE_STRING_OUTPUT;
+import static org.camunda.optimize.util.DmnModels.STRING_INPUT_ID;
+import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private static String getInputVariableNameForId(String inputId) {
     switch (inputId) {
@@ -195,8 +187,8 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   }
 
   @SuppressWarnings("unused")
-  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(unit -> !GroupByDateUnit.AUTOMATIC.equals(unit));
+  protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
+    return Arrays.stream(AggregateByDateUnit.values()).filter(unit -> !AggregateByDateUnit.AUTOMATIC.equals(unit));
   }
 
 }

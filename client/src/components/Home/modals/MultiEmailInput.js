@@ -4,34 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useRef, useEffect} from 'react';
-import classnames from 'classnames';
+import React, {useState} from 'react';
 
-import {Input, Button, Icon} from 'components';
-
-import './MultiEmailInput.scss';
+import {MultiValueInput} from 'components';
 
 export default function MultiEmailInput({emails, onChange, placeholder}) {
   const [errors, setErrors] = useState([]);
-  const [value, setValue] = useState('');
-  const input = useRef();
-  const sizer = useRef();
 
-  function handleKeyPress(evt) {
-    if (['Enter', ' ', 'Tab', ','].includes(evt.key)) {
-      if (evt.target.value) {
-        evt.preventDefault();
-      }
-      addEmail(evt);
-    }
-    if (evt.target.value === '' && evt.key === 'Backspace' && emails.length > 0) {
-      const lastElementIndex = emails.length - 1;
-      removeEmail(emails[lastElementIndex], lastElementIndex);
-    }
-  }
-
-  function addEmail(evt) {
-    const trimmedValue = evt.target.value.trim();
+  function addEmail(value) {
+    const trimmedValue = value.trim();
 
     if (trimmedValue) {
       const isValid = isValidEmail(trimmedValue);
@@ -40,7 +21,6 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
       }
 
       onChange([...emails, trimmedValue], isValid && errors.length === 0);
-      setValue('');
     }
   }
 
@@ -52,16 +32,9 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
     onChange(newEmails, newErrors.length === 0);
   }
 
-  function triggerClear(evt) {
-    if (evt.type === 'keydown' && evt.keyCode !== 13) {
-      return;
-    }
+  function triggerClear() {
     setErrors([]);
     onChange([], true);
-    if (input.current) {
-      input.current.focus();
-    }
-    evt.preventDefault();
   }
 
   function handlePaste(evt) {
@@ -84,51 +57,17 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
     }
   }
 
-  function resize() {
-    if (input.current && sizer.current) {
-      sizer.current.textContent = input.current.value;
-      sizer.current.style.display = 'inline-block';
-      input.current.style.width = sizer.current.getBoundingClientRect().width + 'px';
-      sizer.current.style.display = 'none';
-    }
-  }
-
-  useEffect(() => {
-    resize();
-  }, [emails]);
-
   return (
-    <div className="MultiEmailInput" onClick={() => input.current?.focus()}>
-      {emails.length === 0 && value === '' && <span className="placeholder">{placeholder}</span>}
-      <Input
-        disabled={emails.length >= 20}
-        value={value}
-        ref={input}
-        onKeyDown={handleKeyPress}
-        onBlur={addEmail}
-        onPaste={handlePaste}
-        onInput={resize}
-        onChange={(evt) => setValue(evt.target.value)}
-        // https://stackoverflow.com/a/30976223/4016581
-        autoComplete="none"
-      />
-      <span className="sizer" ref={sizer} />
-      {emails.map((email, i) => (
-        <div key={i} className={classnames('tag', {error: errors.includes(email)})}>
-          <span className="tagText" title={email}>
-            {email}
-          </span>
-          <Button icon className="close" onClick={() => removeEmail(email, i)}>
-            <Icon type="close-large" size="10px" />
-          </Button>
-        </div>
-      ))}
-      {emails.length > 0 && (
-        <button className="searchClear" onKeyDown={triggerClear} onMouseDown={triggerClear}>
-          <Icon type="clear" />
-        </button>
-      )}
-    </div>
+    <MultiValueInput
+      placeholder={placeholder}
+      disabled={emails.length >= 20}
+      onClear={triggerClear}
+      onPaste={handlePaste}
+      onAdd={addEmail}
+      onRemove={removeEmail}
+      values={emails.map((email) => ({value: email, invalid: errors.includes(email)}))}
+      extraSeperators={[',', ';', ' ']}
+    />
   );
 }
 

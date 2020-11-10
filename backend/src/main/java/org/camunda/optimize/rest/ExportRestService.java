@@ -11,13 +11,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.ReportDefinitionExportDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.export.ExportService;
+import org.camunda.optimize.service.export.CsvExportService;
+import org.camunda.optimize.service.export.EntityExportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -44,8 +46,26 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInst
 @Component
 public class ExportRestService {
 
-  private final ExportService exportService;
+  private final CsvExportService csvExportService;
+  private final EntityExportService entityExportService;
   private final SessionService sessionService;
+
+  @GET
+  @Produces(value = {MediaType.APPLICATION_JSON})
+  @Path("json/{type}/{reportId}/{fileName}")
+  public Response getJsonProcessReport(@Context ContainerRequestContext requestContext,
+                                       @PathParam("reportId") String reportId,
+                                       @PathParam("type") ReportType reportType,
+                                       @PathParam("fileName") String fileName) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    final Optional<? extends ReportDefinitionExportDto> jsonReport =
+      entityExportService.getJsonReportExportDto(userId, reportType, reportId);
+
+    return jsonReport
+      .map(exportDto -> createJsonResponse(fileName, exportDto))
+      .orElse(Response.status(Response.Status.NOT_FOUND).build());
+  }
 
   @GET
   // octet stream on success, json on potential error
@@ -58,7 +78,7 @@ public class ExportRestService {
     final ZoneId timezone = extractTimezone(requestContext);
 
     final Optional<byte[]> csvForReport =
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
+      csvExportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
 
     return csvForReport
       .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
@@ -80,32 +100,33 @@ public class ExportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
 
-    final SingleProcessReportDefinitionDto reportDefinitionDto = SingleProcessReportDefinitionDto.builder()
-      .reportType(ReportType.PROCESS)
-      .combined(false)
-      .data(
-        ProcessReportDataDto.builder()
-          .processDefinitionKey(request.getProcessDefinitionKey())
-          .processDefinitionVersions(request.getProcessDefinitionVersions())
-          .tenantIds(request.getTenantIds())
-          .filter(request.getFilter())
-          .configuration(SingleReportConfigurationDto.builder()
-                           .tableColumns(TableColumnDto.builder()
-                                           .includeNewVariables(false)
-                                           .excludedColumns(getAllExcludedDtoFields(request))
-                                           .includedColumns(request.getIncludedColumns())
-                                           .build())
-                           .build())
-          .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
-          .groupBy(new NoneGroupByDto())
-          .visualization(ProcessVisualization.TABLE)
-          .build()
-      )
-      .build();
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
+      SingleProcessReportDefinitionRequestDto.builder()
+        .reportType(ReportType.PROCESS)
+        .combined(false)
+        .data(
+          ProcessReportDataDto.builder()
+            .processDefinitionKey(request.getProcessDefinitionKey())
+            .processDefinitionVersions(request.getProcessDefinitionVersions())
+            .tenantIds(request.getTenantIds())
+            .filter(request.getFilter())
+            .configuration(SingleReportConfigurationDto.builder()
+                             .tableColumns(TableColumnDto.builder()
+                                             .includeNewVariables(false)
+                                             .excludedColumns(getAllExcludedDtoFields(request))
+                                             .includedColumns(request.getIncludedColumns())
+                                             .build())
+                             .build())
+            .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
+            .groupBy(new NoneGroupByDto())
+            .visualization(ProcessVisualization.TABLE)
+            .build()
+        )
+        .build();
 
     return createOctetStreamResponse(
       fileName,
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
+      csvExportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
     );
   }
 
@@ -122,11 +143,23 @@ public class ExportRestService {
         csvBytesForEvaluatedReportResult,
         MediaType.APPLICATION_OCTET_STREAM
       )
-      .header("Content-Disposition", "attachment; filename=" + createFileName(fileName))
+      .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".csv"))
       .build();
   }
 
-  private String createFileName(final String fileName) {
-    return fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
+  private Response createJsonResponse(final String fileName,
+                                      final ReportDefinitionExportDto jsonReport) {
+    return Response
+      .ok(
+        jsonReport,
+        MediaType.APPLICATION_JSON
+      )
+      .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))
+      .build();
+  }
+
+  private String createFileName(final String fileName,
+                                final String extension) {
+    return fileName == null ? System.currentTimeMillis() + extension : fileName;
   }
 }

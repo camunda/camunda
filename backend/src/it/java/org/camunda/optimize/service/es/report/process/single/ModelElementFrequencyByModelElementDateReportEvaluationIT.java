@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -43,7 +43,7 @@ import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -80,7 +80,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     assertThat(resultReportDataDto.getGroupBy().getValue())
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
-      .isEqualTo(GroupByDateUnit.DAY);
+      .isEqualTo(AggregateByDateUnit.DAY);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -103,7 +103,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -359,7 +359,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processKey, "1", GroupByDateUnit.DAY);
+    final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -399,11 +399,11 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    reportData = createReportData(processDefinition2, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -426,11 +426,11 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    reportData = createReportData(processDefinition2, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -453,11 +453,11 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(3), now.plusDays(5));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    reportData = createReportData(processDefinition2, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -477,7 +477,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -498,7 +498,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -522,7 +522,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -534,8 +534,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
-  public void countGroupedByDateUnit(final GroupByDateUnit groupByDateUnit) {
+  @MethodSource("staticAggregateByDateUnits")
+  public void countGroupedByDateUnit(final AggregateByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);
     final int groupingCount = 5;
@@ -610,27 +610,27 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(processDefinitionKey, ImmutableList.of(version), groupByDateUnit);
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final List<String> versions,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 
   protected ProcessReportDataDto createGroupedByDayReport(final ProcessDefinitionEngineDto processDefinition) {
-    return createReportData(processDefinition, GroupByDateUnit.DAY);
+    return createReportData(processDefinition, AggregateByDateUnit.DAY);
   }
 
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),

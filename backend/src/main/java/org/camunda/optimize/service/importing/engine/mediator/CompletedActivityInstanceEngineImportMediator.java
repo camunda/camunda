@@ -58,4 +58,9 @@ public class CompletedActivityInstanceEngineImportMediator
     return configurationService.getEngineImportActivityInstanceMaxPageSize();
   }
 
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
 }

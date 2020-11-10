@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 
@@ -26,7 +26,7 @@ public class DecisionGroupByDtoCreator {
     return createGroupDecisionByEvaluationDateTime(null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(GroupByDateUnit groupByDateUnit) {
+  public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(AggregateByDateUnit groupByDateUnit) {
     DecisionGroupByEvaluationDateTimeDto groupByDto = new DecisionGroupByEvaluationDateTimeDto();
     DecisionGroupByEvaluationDateTimeValueDto valueDto = new DecisionGroupByEvaluationDateTimeValueDto();
     valueDto.setUnit(groupByDateUnit);

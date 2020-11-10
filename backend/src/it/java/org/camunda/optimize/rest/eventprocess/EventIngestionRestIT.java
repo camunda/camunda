@@ -13,8 +13,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.RequestTargetHost;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.jetty.IngestionQoSFilter;
@@ -41,11 +41,11 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.id;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.source;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.specversion;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.traceid;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.type;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.id;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.specversion;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.traceid;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.QUERY_PARAMETER_ACCESS_TOKEN;
@@ -61,7 +61,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch() {
     // given
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 10)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 10)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -79,7 +79,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatchWithPlainJsonContentType() {
     // given
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 10)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 10)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -97,7 +97,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_accessTokenAsQueryParameter() {
     // given
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 1)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 1)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -118,7 +118,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxRequests(0);
 
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 1)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 1)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -137,7 +137,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_customSecret() {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
 
     final String customSecret = "mySecret";
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
@@ -156,7 +156,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_customSecretUsingBearerScheme() {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
 
     final String customSecret = "mySecret";
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
@@ -175,7 +175,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_notAuthorized() {
     // given
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 2)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -195,7 +195,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxBatchRequestBytes(1L);
 
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 2)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
@@ -236,7 +236,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_omitOptionalProperties() {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
     eventDto.setGroup(null);
     eventDto.setData(null);
     // time will get dynamically assigned of not present
@@ -257,7 +257,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_rejectMandatoryPropertiesNull() {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
     eventDto.setSpecversion(null);
     eventDto.setId(null);
     eventDto.setType(null);
@@ -292,7 +292,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @MethodSource("invalidRFC3339EventTimes")
   public void ingestEventBatch_nonCompliantDateFormat(Object time) throws JsonProcessingException {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -308,7 +308,7 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_rejectInvalidPropertyValues() {
     // given
-    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
     eventDto.setId("  ");
     eventDto.setSpecversion("0");
     eventDto.setType("");
@@ -342,11 +342,11 @@ public class EventIngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_rejectInvalidPropertyValueOfSpecificEntry() {
     // given
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 2)
       .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
-    final CloudEventDto invalidEventDto1 = eventClient.createCloudEventDto();
+    final CloudEventRequestDto invalidEventDto1 = eventClient.createCloudEventDto();
     invalidEventDto1.setId(null);
     eventDtos.add(invalidEventDto1);
 
@@ -384,7 +384,7 @@ public class EventIngestionRestIT extends AbstractIT {
     );
   }
 
-  private String convertToJsonBodyWithTime(CloudEventDto cloudEventDto, Object time) throws JsonProcessingException {
+  private String convertToJsonBodyWithTime(CloudEventRequestDto cloudEventDto, Object time) throws JsonProcessingException {
     return "[ {\n" +
       "  \"id\" : \"" + cloudEventDto.getId() + "\",\n" +
       "  \"source\" : \"" + cloudEventDto.getSource() + "\",\n" +
@@ -395,10 +395,10 @@ public class EventIngestionRestIT extends AbstractIT {
       "} ]";
   }
 
-  private void assertEventDtosArePersisted(final List<CloudEventDto> cloudEventDtos) {
+  private void assertEventDtosArePersisted(final List<CloudEventRequestDto> cloudEventDtos) {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    final List<EventDto> expectedEventDtos = cloudEventDtos.stream()
-      .map(cloudEventDto -> EventDto.builder()
+    final List<EventResponseDto> expectedEventDtos = cloudEventDtos.stream()
+      .map(cloudEventDto -> EventResponseDto.builder()
         .id(cloudEventDto.getId())
         .eventName(cloudEventDto.getType())
         .timestamp(
@@ -414,7 +414,7 @@ public class EventIngestionRestIT extends AbstractIT {
         .build()
       )
       .collect(Collectors.toList());
-    final List<EventDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    final List<EventResponseDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
     assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 

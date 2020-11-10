@@ -11,7 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -66,13 +66,13 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
       DEFAULT_USERNAME
     );
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<EntityDto> entities = entitiesClient.getAllEntities();
+    final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
 
     // then
     assertThat(entities)
       .filteredOn(e -> e.getEntityType().equals(DASHBOARD))
       .hasSize(1)
-      .extracting(EntityDto::getId)
+      .extracting(EntityResponseDto::getId)
       .containsExactly(dashboardId);
   }
 

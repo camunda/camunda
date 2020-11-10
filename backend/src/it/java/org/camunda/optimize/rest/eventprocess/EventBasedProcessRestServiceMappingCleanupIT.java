@@ -9,10 +9,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.service.events.CamundaEventService;
@@ -473,8 +473,8 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
     assertThat(cleanedMapping).containsOnlyKeys(BPMN_START_EVENT_ID, BPMN_END_EVENT_ID);
   }
 
-  private EventDto createEventDto(final String eventName) {
-    return EventDto.builder()
+  private EventResponseDto createEventDto(final String eventName) {
+    return EventResponseDto.builder()
       .id(IdGenerator.getNextId())
       .eventName(eventName)
       .timestamp(Instant.now().toEpochMilli())

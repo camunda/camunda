@@ -1,10 +1,18 @@
-.StringInput__selection {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.StringInput .valueSelection {
   width: 100%;
-}
+  position: relative;
 
-.StringInput__load-more-button {
-  width: 35%;
+  .title {
+    position: absolute;
+    font-size: 0.875em;
+    top: 10px;
+  }
+
+  .Checklist {
+    margin-bottom: 10px;
+
+    .header .selectAll {
+      display: none;
+    }
+  }
 }

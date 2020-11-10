@@ -77,7 +77,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(getDistributedByType());
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
@@ -111,7 +111,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(getDistributedByType());
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
@@ -347,6 +347,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     );
     AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
+
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData())

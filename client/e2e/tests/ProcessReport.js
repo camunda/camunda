@@ -135,6 +135,16 @@ test('version selection', async (t) => {
   );
 });
 
+test('raw data table pagination', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+  await t.click(e.nextPageButton);
+  await t.click(e.rowsPerPageButton);
+  await t.click(e.option('100'));
+  await t.expect(e.reportTable.visible).ok();
+});
+
 test('sort table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
@@ -796,4 +806,75 @@ test('group by duration', async (t) => {
 
   await t.expect(e.reportRenderer.textContent).notContains('Invoice processed');
   await t.expect(e.reportRenderer.textContent).contains('User Task: Count');
+});
+
+test('distribute by variable', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Variable'));
+  await t.click(e.submenuOption('approved'));
+  await t.click(e.configurationButton);
+  await t
+    .resizeWindow(1650, 960)
+    .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
+    .maximizeWindow();
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Variable'));
+  await t.click(e.submenuOption('invoiceCategory'));
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Misc');
+
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.expect(e.reportRenderer.textContent).notContains('Misc');
+});
+
+test('distribute by start/end date', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Variable', 'invoiceCategory');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Start Date'));
+  await t.click(e.submenuOption('month'));
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('End Date'));
+  await t.click(e.submenuOption('automatic'));
+  await u.selectGroupby(t, 'Variable', 'boolVar');
+
+  await t.expect(e.reportChart.visible).ok();
+});
+
+test('incident reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Incident Process', 'All');
+  await u.selectView(t, 'Incident', 'Count');
+  await u.selectGroupby(t, 'None');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await u.selectView(t, 'Incident', 'Resolution Duration');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Incident: Resolution Duration');
 });

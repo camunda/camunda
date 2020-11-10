@@ -13,15 +13,15 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -71,8 +71,8 @@ public class CollectionWriter {
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
 
-  public IdDto createNewCollectionAndReturnId(@NonNull String userId,
-                                              @NonNull PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
+                                                      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     log.debug("Writing new collection to Elasticsearch");
 
     String id = IdGenerator.getNextId();
@@ -87,14 +87,14 @@ public class CollectionWriter {
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
     newCollectionDataDto.getRoles()
-      .add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
+      .add(new CollectionRoleRequestDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
     if (partialCollectionDefinitionDto.getData() != null) {
       newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
     }
     collectionDefinitionDto.setData(newCollectionDataDto);
 
     persistCollection(id, collectionDefinitionDto);
-    return new IdDto(id);
+    return new IdResponseDto(id);
   }
 
   private void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
@@ -371,23 +371,27 @@ public class CollectionWriter {
     return updateResponse;
   }
 
-  public CollectionRoleDto addRoleToCollection(String collectionId, CollectionRoleDto roleDto, String userId)
-    throws OptimizeCollectionConflictException {
-    log.debug("Adding role [{}] to collection with id [{}] in Elasticsearch.", roleDto.getId(), collectionId);
+  public void addRoleToCollection(String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId) {
+    log.debug("Adding roles {} to collection with id [{}] in Elasticsearch.", rolesToAdd, collectionId);
 
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put("roleDto", roleDto);
+      params.put("rolesToAdd", rolesToAdd);
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script addEntityScript = createDefaultScriptWithSpecificDtoParams(
         // @formatter:off
-        "boolean exists = ctx._source.data.roles.stream()" +
-          ".filter(dto -> dto.id.equals(params.roleDto.id))" +
-          ".findFirst().isPresent();" +
-        "if(!exists){ " +
-          "ctx._source.data.roles.add(params.roleDto); " +
+        "def newRoles = new ArrayList();" +
+        "for (roleToAdd in params.rolesToAdd) {" +
+          "boolean exists = ctx._source.data.roles.stream()" +
+            ".anyMatch(existingRole -> existingRole.id.equals(roleToAdd.id));" +
+          "if (!exists){ " +
+            "newRoles.add(roleToAdd); " +
+          "}" +
+        "}" +
+        "if (newRoles.size() == params.rolesToAdd.size()) {" +
+          "ctx._source.data.roles.addAll(newRoles); " +
           "ctx._source.lastModifier = params.lastModifier; " +
           "ctx._source.lastModified = params.lastModified; " +
         "} else {" +
@@ -407,12 +411,13 @@ public class CollectionWriter {
       );
 
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message = String.format("Role resource for id [%s] already exists.", roleDto.getId());
+        final String message = String.format(
+          "One of the roles %s already exists in collection [%s].",
+          rolesToAdd, collectionId
+        );
         log.warn(message);
         throw new OptimizeCollectionConflictException(message);
       }
-
-      return roleDto;
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
       log.error(errorMessage, e);
@@ -429,7 +434,7 @@ public class CollectionWriter {
 
   public void updateRoleInCollection(final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateDto roleUpdateDto,
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto,
                                      final String userId) throws OptimizeConflictException {
     log.debug("Updating the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
 

@@ -6,9 +6,11 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
@@ -34,20 +36,24 @@ import org.mockserver.integration.ClientAndServer;
 
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 
 public abstract class AbstractIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension();
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
   @RegisterExtension
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
     () -> getEmbeddedOptimizeExtension().getRequestExecutor();
@@ -87,6 +93,7 @@ public abstract class AbstractIT {
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
   protected OutlierDistributionClient outlierDistributionClient =
     new OutlierDistributionClient(engineIntegrationExtension);
+  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
 
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);

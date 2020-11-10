@@ -14,7 +14,6 @@ import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticati
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,9 +23,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -42,24 +42,15 @@ public class AbstractMultiEngineIT extends AbstractIT {
   protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
 
   @RegisterExtension
-  @Order(3)
-  public EngineIntegrationExtension secondaryEngineIntegrationExtension = new EngineIntegrationExtension(
-    "anotherEngine");
-  @RegisterExtension
-  @Order(4)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  @Order(5)
+  public EngineIntegrationExtension secondaryEngineIntegrationExtension =
+    new EngineIntegrationExtension("anotherEngine");
 
   private ConfigurationService configurationService;
 
   @BeforeEach
   public void init() {
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-  }
-
-  @AfterEach
-  public void reset() {
-    configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
-    embeddedOptimizeExtension.reloadConfiguration();
   }
 
   @Override
@@ -69,6 +60,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
 
   protected ClientAndServer useAndGetSecondaryEngineMockServer() {
     return useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
   protected void finishAllUserTasksForAllEngines() {
@@ -102,11 +98,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
   }
 
   private void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
-    deployAndStartDecisionDefinitionForAllEngines(tenantId1, tenantId2, DECISION_KEY_1, DECISION_KEY_2);
+    deployAndStartDecisionDefinitionForAllEngines(DECISION_KEY_1, DECISION_KEY_2, tenantId1, tenantId2);
   }
 
-  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2,
-                                                               final String decisionKey1, final String decisionKey2) {
+  protected void deployAndStartDecisionDefinitionForAllEngines(final String decisionKey1, final String decisionKey2,
+                                                               final String tenantId1, final String tenantId2) {
     engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey1), tenantId1);
     secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey2), tenantId2);
   }

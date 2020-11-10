@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
@@ -29,8 +29,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -41,7 +41,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
   private static final String VARIABLE_NAME = "variableName";
   private static final String VARIABLE_VALUE = "variableValue";
 
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @Test
   public void variableRequest_authorized() {
@@ -331,7 +331,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
   }
 
   private String createSingleReport(final ProcessDefinitionEngineDto processDefinition, String user) {
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       reportClient.createSingleProcessReportDefinitionDto(
         null,
         processDefinition.getKey(),

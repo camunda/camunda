@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.AuthenticationService;
@@ -47,7 +47,7 @@ public class AuthenticationRestService {
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(@Context ContainerRequestContext requestContext,
-                                   CredentialsDto credentials) {
+                                   CredentialsRequestDto credentials) {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)

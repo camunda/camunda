@@ -32,70 +32,82 @@ function convertToChangeset(config) {
 
 export default class Configuration extends React.Component {
   resetToDefaults = () => {
-    this.updateConfiguration(
-      convertToChangeset({
-        aggregationType: 'avg',
-        userTaskDurationTime: 'total',
-        flowNodeExecutionState: 'all',
+    this.props.onChange(
+      {
         distributedBy: {
-          type: 'none',
-          value: null,
-        },
-        precision: null,
-        targetValue: {
-          active: false,
-          countProgress: {
-            baseline: '0',
-            target: '100',
+          $set: {
+            type: 'none',
+            value: null,
           },
-          durationProgress: {
-            baseline: {
-              value: '0',
-              unit: 'hours',
+        },
+        configuration: convertToChangeset({
+          aggregationType: 'avg',
+          userTaskDurationTime: 'total',
+          flowNodeExecutionState: 'all',
+          precision: null,
+          targetValue: {
+            active: false,
+            countProgress: {
+              baseline: '0',
+              target: '100',
             },
-            target: {
+            durationProgress: {
+              baseline: {
+                value: '0',
+                unit: 'hours',
+              },
+              target: {
+                value: '2',
+                unit: 'hours',
+              },
+            },
+            countChart: {
+              value: '100',
+              isBelow: false,
+            },
+            durationChart: {
               value: '2',
               unit: 'hours',
+              isBelow: false,
             },
           },
-          countChart: {
-            value: '100',
-            isBelow: false,
+          hideRelativeValue: false,
+          hideAbsoluteValue: false,
+          alwaysShowAbsolute: false,
+          alwaysShowRelative: false,
+          showInstanceCount: false,
+          showGradientBars: true,
+          tableColumns: {
+            includeNewVariables: true,
+            includedColumns: [],
+            excludedColumns: [],
           },
-          durationChart: {
-            value: '2',
-            unit: 'hours',
-            isBelow: false,
+          pointMarkers: true,
+          xLabel: '',
+          yLabel: '',
+          color: ColorPicker.dark.steelBlue,
+          hiddenNodes: {
+            active: false,
+            keys: [],
           },
-        },
-        hideRelativeValue: false,
-        hideAbsoluteValue: false,
-        alwaysShowAbsolute: false,
-        alwaysShowRelative: false,
-        showInstanceCount: false,
-        showGradientBars: true,
-        tableColumns: {
-          includeNewVariables: true,
-          includedColumns: [],
-          excludedColumns: [],
-        },
-        pointMarkers: true,
-        xLabel: '',
-        yLabel: '',
-        color: ColorPicker.dark.steelBlue,
-        hiddenNodes: {
-          active: false,
-          keys: [],
-        },
-        groupByDateVariableUnit: 'automatic',
-        customBucket: {
-          active: false,
-          bucketSize: '10',
-          bucketSizeUnit: 'minute',
-          baseline: '0',
-          baselineUnit: 'minute',
-        },
-      }),
+          groupByDateVariableUnit: 'automatic',
+          distributeByDateVariableUnit: 'automatic',
+          customBucket: {
+            active: false,
+            bucketSize: '10',
+            bucketSizeUnit: 'minute',
+            baseline: '0',
+            baselineUnit: 'minute',
+          },
+          distributeByCustomBucket: {
+            active: false,
+            bucketSize: '10',
+            bucketSizeUnit: 'minute',
+            baseline: '0',
+            baselineUnit: 'minute',
+          },
+        }),
+      },
       true
     );
   };

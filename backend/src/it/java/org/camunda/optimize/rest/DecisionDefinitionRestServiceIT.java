@@ -6,13 +6,14 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -23,20 +24,41 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getDecisionDefinitions() {
-    //given
+    // given
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
 
-    // then the status code is okay
+    // then
     assertThat(definitions).isNotNull();
     assertThat(definitions.get(0).getId()).isEqualTo(expectedDecisionDefinition.getId());
   }
 
   @Test
+  public void getDecisionDefinitionsExcludesDeletedDefinitions() {
+    // given
+    final DecisionDefinitionOptimizeDto nonDeletedDefinition =
+      createDecisionDefinitionDto("someKey", "1", null, "not deleted", false);
+    // the deleted definition should not appear in the results
+    createDecisionDefinitionDto("someKey", "1", null, "deleted", true);
+
+    // when
+    List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
+
+    // then
+    assertThat(definitions)
+      .isNotNull()
+      .singleElement()
+      .satisfies(returnedDef -> {
+        assertThat(returnedDef.getKey()).isEqualTo(nonDeletedDefinition.getKey());
+        assertThat(returnedDef.isDeleted()).isFalse();
+      });
+  }
+
+  @Test
   public void getDecisionDefinitionsReturnOnlyThoseAuthorizedToSee() {
-    //given
+    // given
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey = "access";
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
@@ -72,7 +94,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getDecisionDefinitionsWithXml() {
-    //given
+    // given
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
 
     // when
@@ -91,14 +113,14 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getDecisionDefinitionXml() {
-    //given
+    // given
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto();
     addDecisionDefinitionToElasticsearch(expectedDefinitionDto);
 
     // when
     String actualXml = definitionClient.getDecisionDefinitionXml(
-        expectedDefinitionDto.getKey(),
-        expectedDefinitionDto.getVersion()
+      expectedDefinitionDto.getKey(),
+      expectedDefinitionDto.getVersion()
     );
 
     // then
@@ -107,7 +129,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getLatestDecisionDefinitionXml() {
-    //given
+    // given
     final String key = "aKey";
     DecisionDefinitionOptimizeDto expectedDto1 = createDecisionDefinitionDto(key, "1", null);
     DecisionDefinitionOptimizeDto expectedDto2 = createDecisionDefinitionDto(key, "2", null);
@@ -124,7 +146,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getDecisionDefinitionXmlByTenant() {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     final String secondTenantId = "tenant2";
     DecisionDefinitionOptimizeDto firstTenantDefinition = createDecisionDefinitionDto("key", firstTenantId);
@@ -143,7 +165,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
   @Test
   public void getSharedDecisionDefinitionXmlByNullTenant() {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     DecisionDefinitionOptimizeDto firstTenantDefinition = createDecisionDefinitionDto("key", firstTenantId);
     addDecisionDefinitionToElasticsearch(firstTenantDefinition);
@@ -151,20 +173,27 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     addDecisionDefinitionToElasticsearch(secondTenantDefinition);
 
     // when
-    String actualXml = definitionClient.getDecisionDefinitionXml(firstTenantDefinition.getKey(), firstTenantDefinition.getVersion());
+    String actualXml = definitionClient.getDecisionDefinitionXml(
+      firstTenantDefinition.getKey(),
+      firstTenantDefinition.getVersion()
+    );
     // then
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getDmn10Xml());
   }
 
   @Test
   public void getSharedDecisionDefinitionXmlByTenantWithNoSpecificDefinition() {
-    //given
+    // given
     final String firstTenantId = "tenant1";
     DecisionDefinitionOptimizeDto sharedDecisionDefinition = createDecisionDefinitionDto("key", null);
     addDecisionDefinitionToElasticsearch(sharedDecisionDefinition);
 
     // when
-    String actualXml = definitionClient.getDecisionDefinitionXml(sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId);
+    String actualXml = definitionClient.getDecisionDefinitionXml(
+      sharedDecisionDefinition.getKey(),
+      sharedDecisionDefinition.getVersion(),
+      firstTenantId
+    );
 
     // then
     assertThat(actualXml).isEqualTo(sharedDecisionDefinition.getDmn10Xml());
@@ -265,12 +294,21 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
                                                                     final String version,
                                                                     final String tenantId,
                                                                     final String name) {
+    return createDecisionDefinitionDto(key, version, tenantId, name, false);
+  }
+
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(final String key,
+                                                                    final String version,
+                                                                    final String tenantId,
+                                                                    final String name,
+                                                                    final boolean deleted) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId)
+      .id(IdGenerator.getNextId())
       .key(key)
       .version(version)
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
+      .deleted(deleted)
       .engine(DEFAULT_ENGINE_ALIAS)
       .name(name)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)

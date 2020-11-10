@@ -70,11 +70,11 @@ spec:
             memory: 5Gi
         volumeMounts:
           - name: configuration
-            mountPath: /optimize/environment/environment-config.yaml
+            mountPath: /optimize/config/environment-config.yaml
             subPath: environment-config.yaml
           - name: configuration
-            mountPath: /optimize/environment/environment-logback.xml
+            mountPath: /optimize/config/environment-logback.xml
             subPath: environment-logback.xml
           - name: configuration
-            mountPath: /optimize/environment/OptimizeLicense.txt
+            mountPath: /optimize/config/OptimizeLicense.txt
             subPath: OptimizeLicense.txt

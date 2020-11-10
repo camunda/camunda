@@ -36,7 +36,9 @@ function checkStartup {
 # make sure to kill background/ child processes as well
 trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 
-BASEDIR=$(dirname "$0")
+cd $(dirname "$0")
+BASEDIR=$(pwd)
+
 mkdir -p $BASEDIR/log
 
 # we need to set the JAVA_HOME environment variable so that ElasticSearch can
@@ -73,8 +75,9 @@ echo
 echo "Starting Camunda Optimize ${project.version}...";
 echo "(Hint: you can find the log output in the 'optimize*.log' files in the 'log' folder of your distribution.)"
 echo
+OPTIMIZE_STARTUP_LOG_FILE=$BASEDIR/log/optimize-startup.log
 SCRIPT_PATH="./optimize-startup.sh"
-bash "$SCRIPT_PATH" $@ >/dev/null 2>&1 &
+bash "$SCRIPT_PATH" "$@" </dev/null > $OPTIMIZE_STARTUP_LOG_FILE 2>&1 &
 
 # Check if Optimize has been started
 URL="http://localhost:8090"

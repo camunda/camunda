@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import processRawData from './processRawData';
+import React, {useState, useEffect, useCallback} from 'react';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -14,75 +13,77 @@ import {getWebappEndpoints} from 'config';
 import ColumnRearrangement from './ColumnRearrangement';
 import processCombinedData from './processCombinedData';
 import processDefaultData from './processDefaultData';
+import processRawData from './processRawData';
 
-export default withErrorHandling(
-  class Table extends React.Component {
-    state = {
-      camundaEndpoints: null,
-      needEndpoint: false,
-    };
+import './Table.scss';
 
-    static getDerivedStateFromProps({report: {result, combined, data}}) {
-      if (result && !combined && data.view.property === 'rawData') {
-        return {needEndpoint: true};
-      }
-      return null;
+export function Table(props) {
+  const {report, updateReport, mightFail, loadReport} = props;
+  const {reportType, combined, data, result} = report;
+  const needEndpoint = result && !combined && data.view?.property === 'rawData';
+
+  const [camundaEndpoints, setCamundaEndpoints] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (needEndpoint) {
+      mightFail(getWebappEndpoints(), setCamundaEndpoints);
+    }
+  }, [mightFail, needEndpoint]);
+
+  const updateSorting = (by, order) =>
+    updateReport({configuration: {sorting: {$set: {by, order}}}}, true);
+
+  const fetchData = useCallback(
+    async ({pageIndex, pageSize}) => {
+      const offset = pageSize * pageIndex;
+
+      setLoading(true);
+      await loadReport({offset, limit: pageSize});
+      setLoading(false);
+    },
+    [loadReport]
+  );
+
+  const formatData = () => {
+    const {configuration} = data;
+
+    // Combined Report
+    if (combined) {
+      return processCombinedData(props);
     }
 
-    componentDidMount() {
-      if (this.state.needEndpoint) {
-        this.props.mightFail(getWebappEndpoints(), (camundaEndpoints) =>
-          this.setState({camundaEndpoints})
-        );
-      }
+    let tableData;
+    // raw data
+    if (data.view.property === 'rawData') {
+      tableData = processRawData[reportType](props, camundaEndpoints);
+      tableData.fetchData = fetchData;
+      tableData.loading = loading;
+      tableData.defaultPageSize = result.pagination.limit;
+      tableData.totalEntries = result.instanceCount;
+    } else {
+      // Normal single Report
+      tableData = processDefaultData(props);
     }
 
-    render() {
-      const {report, updateReport} = this.props;
-
-      if (this.state.needEndpoint && this.state.camundaEndpoints === null) {
-        return <LoadingIndicator />;
-      }
-
-      return (
-        <ColumnRearrangement report={report} updateReport={updateReport}>
-          <TableRenderer {...this.formatData()} />
-        </ColumnRearrangement>
-      );
-    }
-
-    updateSorting = (by, order) => {
-      this.props.updateReport({configuration: {sorting: {$set: {by, order}}}}, true);
+    return {
+      ...tableData,
+      resultType: result.type,
+      sortByLabel: ['flowNodes', 'userTasks'].includes(data.groupBy.type),
+      updateSorting: updateReport && updateSorting,
+      sorting: configuration && configuration.sorting,
     };
+  };
 
-    formatData = () => {
-      const {
-        report: {reportType, combined, data, result},
-        updateReport,
-      } = this.props;
-      const {configuration} = data;
-
-      // Combined Report
-      if (combined) {
-        return processCombinedData(this.props);
-      }
-
-      let tableData;
-      // raw data
-      if (data.view.property === 'rawData') {
-        tableData = processRawData[reportType](this.props, this.state.camundaEndpoints);
-      } else {
-        // Normal single Report
-        tableData = processDefaultData(this.props);
-      }
-
-      return {
-        ...tableData,
-        resultType: result.type,
-        sortByLabel: ['flowNodes', 'userTasks'].includes(data.groupBy.type),
-        updateSorting: updateReport && this.updateSorting,
-        sorting: configuration && configuration.sorting,
-      };
-    };
+  if (needEndpoint && camundaEndpoints === null) {
+    return <LoadingIndicator />;
   }
-);
+
+  return (
+    <ColumnRearrangement report={report} updateReport={updateReport}>
+      <TableRenderer {...formatData()} />
+    </ColumnRearrangement>
+  );
+}
+
+export default withErrorHandling(Table);

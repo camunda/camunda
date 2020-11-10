@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
   @JsonSubTypes.Type(value = ExecutingFlowNodeFilterDto.class, name = "executingFlowNodes"),
+  @JsonSubTypes.Type(value = CanceledFlowNodeFilterDto.class, name = "canceledFlowNodes"),
   @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
   @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
   @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
@@ -33,6 +34,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
   @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
   @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
+  @JsonSubTypes.Type(value = WithOpenIncidentsOnlyFilterDto.class, name = "withOpenIncidentsOnly"),
+  @JsonSubTypes.Type(value = WithResolvedIncidentsOnlyFilterDto.class, name = "withResolvedIncidentsOnly"),
 })
 @Data
 @NoArgsConstructor

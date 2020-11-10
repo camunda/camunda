@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.1">
-  <bpmn:process id="Process_oyhbk8yps1" name="Invoice process" isExecutable="true">
+  <bpmn:process id="Process_oyhbk8yps1" name="Event Invoice process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Invoice recieved">
       <bpmn:outgoing>Flow_06ys8di</bpmn:outgoing>
     </bpmn:startEvent>

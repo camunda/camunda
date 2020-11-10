@@ -13,8 +13,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -51,4 +52,20 @@ public class EventProcessMappingResponseDto {
   private Double publishingProgress;
 
   private List<EventSourceEntryResponseDto> eventSources = new ArrayList<>();
+
+  public static EventProcessMappingResponseDto from(final EventProcessMappingDto dto,
+                                                    String lastModifierName,
+                                                    List<EventSourceEntryResponseDto> eventSourcesDtos) {
+    return EventProcessMappingResponseDto.builder()
+      .id(dto.getId())
+      .lastModified(dto.getLastModified())
+      .lastModifier(lastModifierName)
+      .mappings(dto.getMappings())
+      .name(dto.getName())
+      .state(dto.getState())
+      .publishingProgress(dto.getPublishingProgress())
+      .xml(dto.getXml())
+      .eventSources(eventSourcesDtos)
+      .build();
+  }
 }

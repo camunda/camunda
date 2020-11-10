@@ -11,9 +11,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -47,7 +47,7 @@ public class EventProcessPublishStateWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
+  public IdResponseDto createEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
     String id = IdGenerator.getNextId();
     eventProcessPublishStateDto.setId(id);
     log.debug("Writing event process publish state [{}] to elasticsearch", id);
@@ -75,7 +75,7 @@ public class EventProcessPublishStateWriter {
       final String errorMessage = String.format("Could not write event process publish state [%s].", id);
       throw new OptimizeRuntimeException(errorMessage);
     }
-    return new IdDto(id);
+    return new IdResponseDto(id);
   }
 
   public void updateEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {

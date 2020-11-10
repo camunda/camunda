@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.decision;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -37,7 +37,7 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
       .setVariableName(variableName)
       .build();
 
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    SingleDecisionReportDefinitionRequestDto report = new SingleDecisionReportDefinitionRequestDto();
     report.setData(expectedReportData);
 
     // when
@@ -46,7 +46,7 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(reports.size()).isEqualTo(1);
-    SingleDecisionReportDefinitionDto reportFromApi = (SingleDecisionReportDefinitionDto) reports.get(0);
+    SingleDecisionReportDefinitionRequestDto reportFromApi = (SingleDecisionReportDefinitionRequestDto) reports.get(0);
     final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
       reportFromApi.getData().getGroupBy().getValue();
     assertThat(value.getName().isPresent()).isEqualTo(true);

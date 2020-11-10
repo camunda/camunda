@@ -23,6 +23,10 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+/**
+ * The executed flow node catches any flow nodes that are completed or still running, including those that are marked
+ * as canceled
+ */
 @Slf4j
 @Component
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {

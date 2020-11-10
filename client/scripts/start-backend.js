@@ -128,7 +128,9 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       return new Promise((resolve) => {
         // this directory should be mounted by docker, on Linux this results in root bering the owner of that directory
         // we create it with the current user to ensure we have write permissions
-        fs.mkdirSync('databaseDumps');
+        if (!fs.existsSync('databaseDumps')) {
+          fs.mkdirSync('databaseDumps');
+        }
         dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color', {
           cwd: path.resolve(__dirname, '..'),
           shell: true,

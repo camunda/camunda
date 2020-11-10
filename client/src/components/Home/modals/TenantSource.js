@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import ItemsList from './ItemsList';
-import {Typeahead, LoadingIndicator, Labeled, Form} from 'components';
-import {t} from 'translation';
 import equal from 'deep-equal';
-import {formatDefinitions} from './service';
+
+import {Typeahead, LoadingIndicator, Labeled, Form, Checklist} from 'components';
 import {formatters} from 'services';
+import {t} from 'translation';
+import {formatDefinitions} from './service';
 
 const {formatTenantName} = formatters;
 
@@ -73,7 +73,7 @@ export default class TenantSource extends React.Component {
         {selectedTenant && (
           <Form.Group>
             <Labeled label={t('home.sources.definition.label-plural')}>
-              <ItemsList
+              <Checklist
                 selectedItems={selectedDefinitions}
                 allItems={selectedTenant.definitions}
                 onChange={(selectedDefinitions) => this.setState({selectedDefinitions})}

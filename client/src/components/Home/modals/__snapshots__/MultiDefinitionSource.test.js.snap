@@ -5,7 +5,7 @@ exports[`should match snapshot 1`] = `
   <Labeled
     label="Definitions"
   >
-    <ItemsList
+    <Checklist
       allItems={
         Array [
           Object {

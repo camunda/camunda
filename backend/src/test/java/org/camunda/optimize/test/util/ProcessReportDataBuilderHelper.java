@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByNone;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByStartDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByUserTasks;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByVariable;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
@@ -52,7 +54,8 @@ public class ProcessReportDataBuilderHelper {
   private ProcessGroupByType groupByType = ProcessGroupByType.NONE;
   private DistributedByType distributedByType = DistributedByType.NONE;
   private ProcessVisualization visualization = ProcessVisualization.TABLE;
-  private GroupByDateUnit dateInterval;
+  private AggregateByDateUnit groupByDateInterval;
+  private AggregateByDateUnit distributeByDateInterval;
   private String variableName;
   private VariableType variableType;
   private String processPartStart;
@@ -75,7 +78,7 @@ public class ProcessReportDataBuilderHelper {
     reportData.setView(view);
     reportData.setGroupBy(groupBy);
     reportData.getConfiguration().setProcessPart(processPart);
-    reportData.getConfiguration().setDistributedBy(distributedBy);
+    reportData.setDistributedBy(distributedBy);
     return reportData;
   }
 
@@ -86,11 +89,11 @@ public class ProcessReportDataBuilderHelper {
       case VARIABLE:
         return createGroupByVariable(variableName, variableType);
       case START_DATE:
-        return createGroupByStartDateDto(dateInterval);
+        return createGroupByStartDateDto(groupByDateInterval);
       case END_DATE:
-        return createGroupByEndDateDto(dateInterval);
+        return createGroupByEndDateDto(groupByDateInterval);
       case RUNNING_DATE:
-        return createGroupByRunningDateDto(dateInterval);
+        return createGroupByRunningDateDto(groupByDateInterval);
       case ASSIGNEE:
         return createGroupByAssignee();
       case CANDIDATE_GROUP:
@@ -102,7 +105,7 @@ public class ProcessReportDataBuilderHelper {
       case DURATION:
         return createGroupByDuration();
       default:
-        throw new OptimizeRuntimeException("Unsupported groupBy value:" + groupByType);
+        throw new OptimizeRuntimeException("Unsupported groupBy type:" + groupByType);
     }
   }
 
@@ -120,8 +123,12 @@ public class ProcessReportDataBuilderHelper {
         return createDistributedByUserTasks();
       case VARIABLE:
         return createDistributedByVariable(variableName, variableType);
+      case START_DATE:
+        return createDistributedByStartDateDto(distributeByDateInterval);
+      case END_DATE:
+        return createDistributedByEndDateDto(distributeByDateInterval);
       default:
-        throw new OptimizeRuntimeException("Unsupported distributedBy value:" + distributedByType);
+        throw new OptimizeRuntimeException("Unsupported distributedBy type:" + distributedByType);
     }
   }
 
@@ -165,8 +172,13 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper dateInterval(GroupByDateUnit dateInterval) {
-    this.dateInterval = dateInterval;
+  public ProcessReportDataBuilderHelper groupByDateInterval(AggregateByDateUnit groupByDateInterval) {
+    this.groupByDateInterval = groupByDateInterval;
+    return this;
+  }
+
+  public ProcessReportDataBuilderHelper distributeByDateInterval(AggregateByDateUnit distributeByDateInterval) {
+    this.distributeByDateInterval = distributeByDateInterval;
     return this;
   }
 

@@ -13,11 +13,11 @@
 
     <fileSet>
       <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
-      <outputDirectory>environment/localization</outputDirectory>
+      <outputDirectory>config/localization</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${project.basedir}/../backend/src/main/resources/logo/</directory>
-      <outputDirectory>environment/logo</outputDirectory>
+      <outputDirectory>config/logo</outputDirectory>
     </fileSet>
 
     <fileSet>
@@ -115,6 +115,14 @@
       <source>src/reimport/reimport.bat</source>
       <filtered>true</filtered>
       <outputDirectory>reimport</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- config directory -->
+    <file>
+      <source>src/config/environment-config.yaml</source>
+      <filtered>true</filtered>
+      <outputDirectory>config</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
   </files>

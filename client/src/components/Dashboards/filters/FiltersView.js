@@ -15,7 +15,7 @@ import VariableFilter from './VariableFilter';
 
 import './FiltersView.scss';
 
-export default function FiltersView({availableFilters, filter = [], setFilter}) {
+export default function FiltersView({availableFilters, filter = [], setFilter, reports = []}) {
   // used by the individual filter components to reset internal state
   const [resetTrigger, setResetTrigger] = useState(false);
   useEffect(() => {
@@ -38,6 +38,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
               <DateFilter
                 key={type}
                 emptyText={t('common.off')}
+                title={t('dashboard.filter.types.' + type)}
                 icon="calender"
                 resetTrigger={resetTrigger}
                 filter={dateFilter?.data}
@@ -49,9 +50,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
                     setFilter(rest);
                   }
                 }}
-              >
-                <div className="title">{t('dashboard.filter.types.' + type)}</div>
-              </DateFilter>
+              />
             );
           case 'variable':
             const variableFilter = filter.find(
@@ -65,6 +64,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
                 key={idx}
                 filter={variableFilter?.data.data}
                 config={data}
+                reports={reports}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== variableFilter);
                   if (newFilter) {

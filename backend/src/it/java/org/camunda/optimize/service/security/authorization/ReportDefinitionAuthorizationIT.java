@@ -12,13 +12,13 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -55,7 +55,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")
@@ -223,7 +223,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
-    ReportShareDto reportShareDto = new ReportShareDto();
+    ReportShareRestDto reportShareDto = new ReportShareRestDto();
     reportShareDto.setReportId(reportId);
 
     // when
@@ -310,7 +310,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.emptyList());
 
     // when
-    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto combinedReportUpdate = new CombinedReportDefinitionRequestDto();
     combinedReportUpdate.getData().getReportIds().add(unauthorizedReportId);
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -332,7 +332,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
 
     // when
-    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    final CombinedReportDefinitionRequestDto combinedReportUpdate = new CombinedReportDefinitionRequestDto();
     combinedReportUpdate.getData().setReports(Collections.emptyList());
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -386,7 +386,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
-    SingleProcessReportDefinitionDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
       null,
       PROCESS_KEY,
       Lists.emptyList()
@@ -541,7 +541,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionRequestDto definitionDto = new SingleProcessReportDefinitionRequestDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReportAsUser(singleReportId, definitionDto, user, password);
     return singleReportId;
@@ -578,7 +578,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
         processReportData.setProcessDefinitionKey("procdef");
         processReportData.setProcessDefinitionVersion("123");
         processReportData.setFilter(Collections.emptyList());
-        SingleProcessReportDefinitionDto processReport = new SingleProcessReportDefinitionDto();
+        SingleProcessReportDefinitionRequestDto processReport = new SingleProcessReportDefinitionRequestDto();
         processReport.setData(processReportData);
         processReport.setName("MyReport");
         return processReport;
@@ -587,7 +587,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
         decisionReportData.setDecisionDefinitionKey("Decisionef");
         decisionReportData.setDecisionDefinitionVersion("123");
         decisionReportData.setFilter(Collections.emptyList());
-        SingleDecisionReportDefinitionDto decisionReport = new SingleDecisionReportDefinitionDto();
+        SingleDecisionReportDefinitionRequestDto decisionReport = new SingleDecisionReportDefinitionRequestDto();
         decisionReport.setData(decisionReportData);
         decisionReport.setName("MyReport");
         return decisionReport;
@@ -620,9 +620,9 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        return reportClient.createSingleProcessReportAsUser(new SingleProcessReportDefinitionDto(), user, password);
+        return reportClient.createSingleProcessReportAsUser(new SingleProcessReportDefinitionRequestDto(), user, password);
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        return reportClient.createNewDecisionReportAsUser(new SingleDecisionReportDefinitionDto(), user, password);
+        return reportClient.createNewDecisionReportAsUser(new SingleDecisionReportDefinitionRequestDto(), user, password);
     }
   }
 
@@ -645,7 +645,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
+        SingleProcessReportDefinitionRequestDto processReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
         ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(definitionKey)
@@ -656,7 +656,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
         processReportDefinitionDto.setData(processReportDataDto);
         return processReportDefinitionDto;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionDto decisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+        SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
         DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.create()
           .setDecisionDefinitionKey(getDefinitionKey(resourceType))
           .setDecisionDefinitionVersion("1")

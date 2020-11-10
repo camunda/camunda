@@ -7,19 +7,18 @@
 import {post} from 'request';
 
 export function isDurationReport(report) {
-  // waiting for optional chaining... https://github.com/tc39/proposal-optional-chaining
-  return report && report.data && report.data.view && report.data.view.property === 'duration';
+  return report?.data?.view?.property === 'duration';
 }
 
-export async function evaluateReport(query, filter = []) {
+export async function evaluateReport(payload, filter = [], query = {}) {
   let response;
 
-  if (typeof query !== 'object') {
+  if (typeof payload !== 'object') {
     // evaluate saved report
-    response = await post(`api/report/${query}/evaluate`, {filter});
+    response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
   } else {
     // evaluate unsaved report
-    response = await post(`api/report/evaluate/`, query);
+    response = await post(`api/report/evaluate/`, payload, {query});
   }
 
   return await response.json();

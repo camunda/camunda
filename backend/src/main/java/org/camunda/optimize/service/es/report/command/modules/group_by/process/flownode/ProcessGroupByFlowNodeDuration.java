@@ -66,7 +66,7 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    compositeCommandResult.setKeyIsOfNumericType(true);
+    compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
     getExecutionStateFilteredFlowNodesAggregation(response)
       .ifPresent(filteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =

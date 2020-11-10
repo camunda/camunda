@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Input, Button} from 'components';
+import {MultiValueInput} from 'components';
 
 import MultiEmailInput from './MultiEmailInput';
 
@@ -27,18 +27,13 @@ it('should match snapshot', () => {
 it('should add an email', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  const input = node.find(Input);
-  input.simulate('keyDown', {
-    key: ',',
-    target: {value: 'test@test.com'},
-    preventDefault: jest.fn(),
-  });
+  node.find(MultiValueInput).prop('onAdd')('test@test.com');
 
   expect(props.onChange).toHaveBeenCalledWith([...props.emails, 'test@test.com'], true);
 
   props.onChange.mockClear();
 
-  input.simulate('blur', {target: {value: 'invalid'}});
+  node.find(MultiValueInput).prop('onAdd')('invalid');
 
   expect(props.onChange).toHaveBeenCalledWith([...props.emails, 'invalid'], false);
 });
@@ -46,7 +41,7 @@ it('should add an email', () => {
 it('should add multiple values on paste', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  node.find(Input).simulate('paste', {
+  node.find(MultiValueInput).simulate('paste', {
     preventDefault: jest.fn(),
     clipboardData: {getData: () => `email1@test.com;email2@test.com email3@test.com`},
   });
@@ -57,32 +52,23 @@ it('should add multiple values on paste', () => {
   );
 });
 
-it('should remove an email when clicking the x button of tag', () => {
+it('should remove an email', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  node.find('.tag').at(0).find(Button).simulate('click');
+  node.find(MultiValueInput).prop('onRemove')('email1@hotmail.com', 0);
 
   expect(props.onChange).toHaveBeenCalledWith(['email2@gmail.com'], true);
-
-  props.onChange.mockClear();
-
-  node.find(Input).simulate('keyDown', {
-    key: 'Backspace',
-    target: {value: ''},
-  });
-
-  expect(props.onChange).toHaveBeenCalledWith(['email1@hotmail.com'], true);
 });
 
-it('should clear all emails when clicking the clear button', () => {
+it('should clear all emails when MultiValueInput is cleared', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  node.find(Input).simulate('paste', {
+  node.find(MultiValueInput).simulate('paste', {
     preventDefault: jest.fn(),
     clipboardData: {getData: () => `email1@test.com;email2@test.com email3@test.com`},
   });
 
-  node.find('.searchClear').simulate('mouseDown', {type: 'mousedown', preventDefault: jest.fn()});
+  node.find(MultiValueInput).prop('onClear')();
 
   expect(props.onChange).toHaveBeenCalledWith([], true);
 });

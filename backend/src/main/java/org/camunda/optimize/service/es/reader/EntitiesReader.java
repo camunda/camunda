@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -167,7 +167,7 @@ public class EntitiesReader {
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
-  public Optional<EntityNameDto> getEntityNames(final EntityNameRequestDto requestDto) {
+  public Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto) {
     log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
     MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
 
@@ -175,7 +175,7 @@ public class EntitiesReader {
       return Optional.empty();
     }
 
-    EntityNameDto result = new EntityNameDto();
+    EntityNameResponseDto result = new EntityNameResponseDto();
     for (MultiGetItemResponse itemResponse : multiGetItemResponse) {
       GetResponse response = itemResponse.getResponse();
       if (response.isExists()) {
@@ -209,8 +209,11 @@ public class EntitiesReader {
   }
 
   private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator indexMapper) {
+    if (indexMapper.getCreateFromTemplate()) {
+      throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
+    }
     return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-      optimizeIndexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapper)))
+      optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
       .map(MultiBucketsAggregation.Bucket::getDocCount)
       .orElse(0L);
   }

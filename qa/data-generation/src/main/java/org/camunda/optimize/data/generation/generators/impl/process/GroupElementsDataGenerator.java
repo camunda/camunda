@@ -14,7 +14,7 @@ import java.util.Random;
 
 public class GroupElementsDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/group-elements.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/group-elements.bpmn";
   private Random r = new Random();
   private String[] firstGatewayOptions = new String[]{"a", "b"};
   private String[] secondGatewayOptions = new String[]{"c", "d"};

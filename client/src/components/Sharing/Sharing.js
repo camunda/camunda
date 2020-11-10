@@ -18,12 +18,13 @@ import {
   LastModifiedInfo,
   ReportDetails,
   InstanceCount,
+  DiagramScrollLock,
 } from 'components';
-import {Link} from 'react-router-dom';
+import {Link, withRouter} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
 
-export default class Sharing extends React.Component {
+export class Sharing extends React.Component {
   constructor(props) {
     super(props);
 
@@ -43,8 +44,8 @@ export default class Sharing extends React.Component {
     return this.props.match.params.type;
   };
 
-  performEvaluation = async () => {
-    const evaluationResult = await evaluateEntity(this.getId(), this.getType());
+  performEvaluation = async (params) => {
+    const evaluationResult = await evaluateEntity(this.getId(), this.getType(), params);
 
     this.setState({
       evaluationResult,
@@ -54,12 +55,23 @@ export default class Sharing extends React.Component {
 
   getSharingView = () => {
     if (this.getType() === 'report') {
-      return <ReportRenderer report={this.state.evaluationResult} context="shared" />;
+      return (
+        <ReportRenderer
+          report={this.state.evaluationResult}
+          context="shared"
+          loadReport={this.performEvaluation}
+        />
+      );
     } else {
+      const params = new URLSearchParams(this.props.location.search);
+      const filter = params.get('filter');
+
       return (
         <DashboardRenderer
           loadReport={createLoadReportCallback(this.getId())}
           reports={this.state.evaluationResult.reports}
+          filter={filter && JSON.parse(filter)}
+          addons={[<DiagramScrollLock key="diagramScrollLock" />]}
           disableNameLink
         />
       );
@@ -73,6 +85,7 @@ export default class Sharing extends React.Component {
   render() {
     const {loading, evaluationResult} = this.state;
     const type = this.getType();
+    const params = new URLSearchParams(this.props.location.search);
 
     if (loading) {
       return <LoadingIndicator />;
@@ -111,8 +124,13 @@ export default class Sharing extends React.Component {
           </div>
           {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
-        <div className="content">{SharingView}</div>
+        <div className="content">
+          {SharingView}
+          {type === 'report' && params.get('mode') === 'embed' && <DiagramScrollLock />}
+        </div>
       </div>
     );
   }
 }
+
+export default withRouter(Sharing);

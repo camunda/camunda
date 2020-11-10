@@ -7,13 +7,13 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.params.provider.Arguments;
@@ -22,10 +22,10 @@ import javax.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.entityType;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModified;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModifier;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
@@ -33,7 +33,7 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
 
   protected String addCollection(final String collectionName) {
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.updateCollection(collectionId, new PartialCollectionDefinitionDto(collectionName));
+    collectionClient.updateCollection(collectionId, new PartialCollectionDefinitionRequestDto(collectionName));
     return collectionId;
   }
 
@@ -44,12 +44,12 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   protected String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
     switch (reportType) {
       case PROCESS:
-        SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
         singleProcessReportDefinitionDto.setName(name);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
       case DECISION:
-        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
         singleDecisionReportDefinitionDto.setName(name);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
@@ -63,7 +63,7 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   }
 
   protected String addDashboardToOptimize(String name, String collectionId, String user) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setName(name);
     dashboardDefinitionDto.setCollectionId(collectionId);
     return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
@@ -74,14 +74,14 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   }
 
   protected String addCombinedReport(String name, String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
     combinedReportDefinitionDto.setName(name);
     combinedReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   protected EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
@@ -94,14 +94,14 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   @SuppressWarnings("unused")
   protected static Stream<Arguments> sortParamsAndExpectedComparator() {
     return Stream.of(
-      Arguments.of(name, SortOrder.ASC, Comparator.comparing(EntityDto::getName)),
-      Arguments.of(name, SortOrder.DESC, Comparator.comparing(EntityDto::getName).reversed()),
-      Arguments.of(entityType, SortOrder.ASC, Comparator.comparing(EntityDto::getEntityType)),
-      Arguments.of(entityType, SortOrder.DESC, Comparator.comparing(EntityDto::getEntityType).reversed()),
-      Arguments.of(lastModified, SortOrder.ASC, Comparator.comparing(EntityDto::getLastModified)),
-      Arguments.of(lastModified, SortOrder.DESC, Comparator.comparing(EntityDto::getLastModified).reversed()),
-      Arguments.of(lastModifier, SortOrder.ASC, Comparator.comparing(EntityDto::getLastModifier)),
-      Arguments.of(lastModifier, SortOrder.DESC, Comparator.comparing(EntityDto::getLastModifier).reversed())
+      Arguments.of(name, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getName)),
+      Arguments.of(name, SortOrder.DESC, Comparator.comparing(EntityResponseDto::getName).reversed()),
+      Arguments.of(entityType, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getEntityType)),
+      Arguments.of(entityType, SortOrder.DESC, Comparator.comparing(EntityResponseDto::getEntityType).reversed()),
+      Arguments.of(lastModified, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getLastModified)),
+      Arguments.of(lastModified, SortOrder.DESC, Comparator.comparing(EntityResponseDto::getLastModified).reversed()),
+      Arguments.of(lastModifier, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getLastModifier)),
+      Arguments.of(lastModifier, SortOrder.DESC, Comparator.comparing(EntityResponseDto::getLastModifier).reversed())
     );
   }
 

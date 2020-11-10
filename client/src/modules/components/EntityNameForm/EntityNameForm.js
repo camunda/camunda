@@ -44,6 +44,7 @@ export function EntityNameForm({
         {children}
         <Button
           main
+          primary
           className="tool-button save-button"
           disabled={!name || loading}
           onClick={async () => {

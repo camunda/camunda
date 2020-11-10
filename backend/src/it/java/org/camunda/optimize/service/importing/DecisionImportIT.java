@@ -5,43 +5,61 @@
  */
 package org.camunda.optimize.service.importing;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
+import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import org.mockserver.verify.VerificationTimes;
+import org.slf4j.event.Level;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
@@ -50,6 +68,15 @@ public class DecisionImportIT extends AbstractImportIT {
 
   private static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(DecisionDefinitionIndex.TENANT_ID);
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer importServiceLogCapturer =
+    LogCapturer.create().forLevel(Level.DEBUG).captureForType(DecisionInstanceImportService.class);
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer definitionFetcherLogCapturer =
+    LogCapturer.create().captureForType(DecisionDefinitionFetcher.class);
 
   @Test
   public void importOfDecisionDataCanBeDisabled() {
@@ -64,10 +91,10 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
 
   @Test
@@ -76,7 +103,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
 
     // given failed ES update requests to store new definition
     engineIntegrationExtension.deployAndStartDecisionDefinition();
@@ -95,17 +122,17 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then the definition will be stored when update next works
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
     esMockServer.verify(definitionImportMatcher);
   }
 
   @Test
-  public void importOfDecisionDInstance_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
+  public void importOfDecisionInstance_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
     // given
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
 
     // given failed ES update requests to store new instance
     engineIntegrationExtension.deployAndStartDecisionDefinition();
@@ -124,21 +151,21 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then the instance will be stored when update next works
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
     esMockServer.verify(instanceImportMatcher);
   }
 
   @Test
   public void allDecisionDefinitionFieldDataIsAvailable() {
-    //given
+    // given
     engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.deployDecisionDefinition();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
-    allEntriesInElasticsearchHaveAllDataWithCount(
+    // then
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
       DECISION_DEFINITION_INDEX_NAME,
       2L,
       DECISION_DEFINITION_NULLABLE_FIELDS
@@ -147,7 +174,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
   @Test
   public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionMaxPageSize(1);
     engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.deployDecisionDefinition();
@@ -169,67 +196,382 @@ public class DecisionImportIT extends AbstractImportIT {
 
   @Test
   public void decisionDefinitionTenantIdIsImportedIfPresent() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(tenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionDefinitionIndex.TENANT_ID, tenantId);
   }
 
   @Test
   public void decisionDefinitionDefaultEngineTenantIdIsApplied() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     engineIntegrationExtension.deployDecisionDefinition();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionDefinitionIndex.TENANT_ID, tenantId);
   }
 
   @Test
   public void decisionDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() {
-    //given
+    // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(expectedTenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(expectedTenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionDefinitionIndex.TENANT_ID, expectedTenantId);
+  }
+
+  private static Stream<String> tenants() {
+    return Stream.of("someTenant", DEFAULT_TENANT);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tenants")
+  public void decisionDefinitionMarkedAsDeletedIfNewDefinitionIdButSameKeyVersionTenant(String tenantId) {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, tenantId);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
+        assertThat(definition.isDeleted()).isFalse();
+      });
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(originalDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, tenantId);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted
+    final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(updatedDefinitions).hasSize(2)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(originalDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(tenantId);
+      })
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+  }
+
+  @Test
+  public void decisionDefinitionsMarkedAsDeletedIfMultipleNewDeployments() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto firstDeletedDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, DEFAULT_TENANT);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> firstDefinitionImported =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(firstDefinitionImported).singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
+        assertThat(definition.isDeleted()).isFalse();
+      });
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(firstDeletedDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto secondDeletedDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, DEFAULT_TENANT);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted
+    final List<DecisionDefinitionOptimizeDto> firstTwoDefinitionsImported =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(firstTwoDefinitionsImported).hasSize(2)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+      })
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(firstDeletedDefinition.getId(), true),
+        tuple(secondDeletedDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(firstDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(secondDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+
+    // when the second definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(secondDeletedDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto nonDeletedDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, DEFAULT_TENANT);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the deleted definitions are marked accordingly
+    final List<DecisionDefinitionOptimizeDto> allDefinitionsImported =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDefinitionsImported).hasSize(3)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+      })
+      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(firstDeletedDefinition.getId(), true),
+        tuple(secondDeletedDefinition.getId(), true),
+        tuple(nonDeletedDefinition.getId(), false)
+      );
+    // and the definition cache includes all definitions with correct deletion state
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(firstDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(secondDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(nonDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+  }
+
+  @Test
+  public void decisionDefinitionIsResolvedAsDeletedWhenImportingInstance() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto definitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition(definitionModel, DEFAULT_TENANT);
+    engineIntegrationExtension.deleteDeploymentById(definitionEngineDto.getDeploymentId());
+    saveDeletedDefinitionToElasticsearch(definitionEngineDto);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<DecisionInstanceDto> allDecisionInstances =
+      elasticSearchIntegrationTestExtension.getAllDecisionInstances();
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+
+    // then
+    assertThat(allDecisionDefinitions).singleElement()
+      .satisfies(def -> assertThat(def.isDeleted()).isTrue());
+    assertThat(allDecisionInstances).isNotEmpty()
+      .extracting(DecisionInstanceDto::getDecisionDefinitionKey)
+      .allMatch(key -> key.equals(definitionEngineDto.getKey()));
+  }
+
+  @Test
+  public void decisionDefinitionMarkedAsDeletedOtherVersionsNotAffected() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinitionV1 =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    final DecisionDefinitionEngineDto originalDefinitionV2 =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).hasSize(2)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinitionV1.getId(), false),
+        tuple(originalDefinitionV2.getId(), false)
+      );
+
+    // when the v2 definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(originalDefinitionV2.getDeploymentId());
+    final DecisionDefinitionEngineDto newDefinitionV1 =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original v1 definition is unaffected, the new v2 exists and the original v2 is marked as deleted
+    final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinitionV1.getId(), false),
+        tuple(originalDefinitionV2.getId(), true),
+        tuple(newDefinitionV1.getId(), false)
+      );
+    // and the definition cache includes all definitions
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionV1.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionV2.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinitionV1.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+  }
+
+  @Test
+  public void decisionDefinitionMarkedAsDeletedOtherTenantsNotAffected() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, DEFAULT_TENANT);
+    final DecisionDefinitionEngineDto originalDefinitionWithTenant =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel, "someTenant");
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).hasSize(2)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), false),
+        tuple(originalDefinitionWithTenant.getId(), false)
+      );
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(originalDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition with tenant is unaffected, the new one exists and the original is marked as deleted
+    final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(originalDefinitionWithTenant.getId(), false),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes all definitions
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionWithTenant.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+  }
+
+  @Test
+  public void decisionDefinitionMarkedAsDeletedOtherDefinitionKeyNotAffected() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    final DecisionDefinitionEngineDto originalDefinitionWithOtherKey =
+      engineIntegrationExtension.deployDecisionDefinition(createDecisionDefinitionWithDate(), "someTenant");
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).hasSize(2)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), false),
+        tuple(originalDefinitionWithOtherKey.getId(), false)
+      );
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteDeploymentById(originalDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then original definition for other key is unaffected, the new one exists and the original is marked as deleted
+    final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(originalDefinitionWithOtherKey.getId(), false),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes all definitions
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionWithOtherKey.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+  }
+
+  @Test
+  public void decisionDefinitionMarkedAsDeletedIfImportedInSameBatchAsNewerDeployment() {
+    // given
+    final DmnModelInstance definitionModel = createDefaultDmnModel();
+    final DecisionDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    final DecisionDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployDecisionDefinition(definitionModel);
+    engineDatabaseExtension.changeVersionOfDecisionDefinitionWithDeploymentId(
+      newDefinition.getVersionAsString(),
+      originalDefinition.getDeploymentId()
+    );
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    assertThat(allDecisionDefinitions).hasSize(2)
+      .extracting(DecisionDefinitionOptimizeDto::isDeleted)
+      .containsExactlyInAnyOrder(true, false);
   }
 
   @Test
   public void decisionInstanceFieldDataIsAvailable() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -240,45 +582,45 @@ public class DecisionImportIT extends AbstractImportIT {
 
   @Test
   public void decisionInstanceTenantIdIsImportedIfPresent() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     final DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinitionWithTenant(
         tenantId);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionInstanceIndex.TENANT_ID, tenantId);
   }
 
   @Test
   public void decisionInstanceDefaultEngineTenantIdIsApplied() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionInstanceIndex.TENANT_ID, tenantId);
   }
 
   @Test
   public void decisionInstanceEngineTenantIdIsPreferredOverDefaultTenantId() {
-    //given
+    // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
@@ -287,29 +629,29 @@ public class DecisionImportIT extends AbstractImportIT {
         expectedTenantId);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(expectedTenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(DecisionInstanceIndex.TENANT_ID, expectedTenantId);
   }
 
   @Test
   public void multipleDecisionInstancesAreImported() {
-    //given
+    // given
     DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
+    // then
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
   }
 
   @Test
@@ -355,20 +697,19 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
-  @Test
-  public void definitionImportWorksEvenIfDeploymentRequestFails() {
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void definitionImportWorksEvenIfDeploymentRequestFails(ErrorResponseMock mockedResp) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final HttpRequest requestMatcher = request()
       .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
       .withMethod(GET);
-    engineMockServer
-      .when(requestMatcher, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
+    mockedResp.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
     engineIntegrationExtension.deployAndStartDecisionDefinition();
@@ -378,6 +719,118 @@ public class DecisionImportIT extends AbstractImportIT {
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     List<DecisionDefinitionOptimizeDto> decisionDefinitions = definitionClient.getAllDecisionDefinitions();
     assertThat(decisionDefinitions).hasSize(1);
+  }
+
+  @Test
+  public void decisionInstanceImportIsSkippedIfDefinitionCannotBeResolved() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deleteDeploymentById(decisionDefinitionEngineDto.getDeploymentId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then no definition or instances are saved
+    assertThat(definitionClient.getAllDecisionDefinitions()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    importServiceLogCapturer.assertContains(String.format(
+      "Cannot retrieve definition for definition with ID %s.", decisionDefinitionEngineDto.getId()));
+  }
+
+  @Test
+  public void decisionInstanceImportIsSkippedIfDefinitionCannotBeResolved_otherInstancesInImportNotAffected() {
+    // given
+    final DecisionDefinitionEngineDto deletedDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deleteDeploymentById(deletedDefinition.getDeploymentId());
+    final DecisionDefinitionEngineDto otherDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then only the resolvable non-deleted definition and instances are saved
+    assertThat(definitionClient.getAllDecisionDefinitions())
+      .singleElement()
+      .satisfies(savedDefinition -> assertThat(savedDefinition.getId()).isEqualTo(otherDefinition.getId()));
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(otherDefinition.getId()));
+    importServiceLogCapturer.assertContains(String.format(
+      "Cannot retrieve definition for definition with ID %s.", deletedDefinition.getId()));
+  }
+
+  @Test
+  public void decisionInstanceImportIsNotSkippedForDefinitionAlreadyImportedButSinceDeleted() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then the original definition and instance is imported
+    final List<DecisionDefinitionOptimizeDto> savedDefinitions = definitionClient.getAllDecisionDefinitions();
+    assertThat(savedDefinitions)
+      .singleElement()
+      .satisfies(savedDefinition -> assertThat(savedDefinition.getId()).isEqualTo(decisionDefinition.getId()));
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(decisionDefinition.getId()));
+
+    // when a new instance is started and the definition is deleted
+    engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId());
+    engineIntegrationExtension.deleteDeploymentById(decisionDefinition.getDeploymentId());
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the new instance is also saved
+    assertThat(definitionClient.getAllDecisionDefinitions()).isEqualTo(savedDefinitions);
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances())
+      .hasSize(2)
+      .allSatisfy(savedInstance -> assertThat(savedInstance.getDecisionDefinitionId()).isEqualTo(decisionDefinition.getId()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("engineAuthorizationErrors")
+  public void definitionImportMissingAuthorizationLogsMessage(final ErrorResponseMock authorizationError) {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    authorizationError.mock(requestMatcher, Times.once(), engineMockServer);
+
+    // when
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    definitionFetcherLogCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure all required engine authorizations exist", DEFAULT_ENGINE_ALIAS));
+  }
+
+  @Test
+  public void definitionImportBadAuthorizationLogsMessage() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    engineMockServer.when(requestMatcher, Times.once())
+      .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
+
+    // when
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // then the second request will have succeeded
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    definitionFetcherLogCapturer.assertContains(String.format(
+      "Error during fetching of entities. Please check the connection with [%s]!" +
+        " Make sure you have configured an authorized user", DEFAULT_ENGINE_ALIAS));
   }
 
   private SearchResponse getDecisionDefinitionIndexById() throws IOException {
@@ -416,8 +869,8 @@ public class DecisionImportIT extends AbstractImportIT {
     }
   }
 
-  public void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                            final long count) {
+  public void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                  final long count) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
@@ -471,6 +924,24 @@ public class DecisionImportIT extends AbstractImportIT {
     });
     assertThat(dto.getEngine()).isNotNull();
     assertThat(dto.getTenantId()).isNull();
+  }
+
+  private void saveDeletedDefinitionToElasticsearch(final DecisionDefinitionEngineDto definitionEngineDto) {
+    final DecisionDefinitionOptimizeDto expectedDto = DecisionDefinitionOptimizeDto.builder()
+      .id(definitionEngineDto.getId())
+      .key(definitionEngineDto.getKey())
+      .name(definitionEngineDto.getName())
+      .version(definitionEngineDto.getVersionAsString())
+      .tenantId(definitionEngineDto.getTenantId().orElse(null))
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .deleted(true)
+      .dmn10Xml("someXml")
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      DECISION_DEFINITION_INDEX_NAME,
+      expectedDto.getId(),
+      expectedDto
+    );
   }
 
 }

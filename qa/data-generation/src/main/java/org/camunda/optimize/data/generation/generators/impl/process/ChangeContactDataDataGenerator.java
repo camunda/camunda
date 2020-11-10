@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class ChangeContactDataDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/change-contact-data.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/change-contact-data.bpmn";
 
   public ChangeContactDataDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

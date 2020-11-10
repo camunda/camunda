@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class DecisionReportDataBuilder {
   private String variableId;
   private String variableName;
   private VariableType variableType;
-  private GroupByDateUnit dateInterval;
+  private AggregateByDateUnit dateInterval;
 
   private List<DecisionFilterDto<?>> filter = new ArrayList<>();
 
@@ -112,7 +112,7 @@ public class DecisionReportDataBuilder {
     return this;
   }
 
-  public DecisionReportDataBuilder setDateInterval(GroupByDateUnit dateInterval) {
+  public DecisionReportDataBuilder setDateInterval(AggregateByDateUnit dateInterval) {
     this.dateInterval = dateInterval;
     return this;
   }
@@ -161,7 +161,7 @@ public class DecisionReportDataBuilder {
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByEvaluationDate(String decisionDefinitionKey,
                                                                                        List<String> decisionDefinitionVersions,
-                                                                                       GroupByDateUnit groupByDateUnit) {
+                                                                                       AggregateByDateUnit groupByDateUnit) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
     decisionReportDataDto.setDecisionDefinitionVersions(decisionDefinitionVersions);

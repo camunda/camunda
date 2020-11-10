@@ -89,13 +89,28 @@ describe('process update', () => {
         report: {
           data: {
             view: {entity: 'userTask'},
-            configuration: {distributedBy: {type: 'assignee', value: null}},
+            distributedBy: {type: 'assignee', value: null},
           },
         },
       }
     );
 
-    expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'userTask'},
+            distributedBy: {type: 'assignee', value: null},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
 
     changes = config.process.update(
       'groupBy',
@@ -104,12 +119,59 @@ describe('process update', () => {
         report: {
           data: {
             view: {entity: 'userTask'},
-            configuration: {distributedBy: {type: 'assignee', value: null}},
+            distributedBy: {type: 'assignee', value: null},
           },
         },
       }
     );
 
-    expect(changes.configuration.distributedBy).not.toBeDefined();
+    expect(changes.distributedBy).not.toBeDefined();
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'runningDate'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            distributedBy: {type: 'variable', value: {}},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            distributedBy: {type: 'startDate', value: {}},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+  });
+
+  it('should keep distributed by compatible when changing view', () => {
+    const changes = config.process.update(
+      'view',
+      {entity: 'flowNode'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            distributedBy: {type: 'variable', value: {}},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
   });
 });

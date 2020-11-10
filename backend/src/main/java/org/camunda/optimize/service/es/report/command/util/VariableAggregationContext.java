@@ -1,0 +1,44 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.report.command.util;
+
+import lombok.Builder;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+
+import java.time.ZoneId;
+import java.util.Optional;
+
+@Builder
+@Data
+public class VariableAggregationContext {
+  private final String variableName;
+  private final VariableType variableType;
+  private final String variablePath;
+  private final String nestedVariableNameField;
+  private final String nestedVariableValueFieldLabel;
+  private final ZoneId timezone;
+  private final CustomBucketDto customBucketDto;
+  private final AggregateByDateUnit dateUnit;
+  private final String indexName;
+  private final QueryBuilder baseQueryForMinMaxStats;
+  private final AggregationBuilder subAggregation;
+  private MinMaxStatDto variableRangeMinMaxStats;
+  private final MinMaxStatDto combinedRangeMinMaxStats;
+
+  public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
+    return Optional.ofNullable(combinedRangeMinMaxStats);
+  }
+
+  public double getMaxVariableValue() {
+    return getCombinedRangeMinMaxStats().orElse(variableRangeMinMaxStats).getMax();
+  }
+}

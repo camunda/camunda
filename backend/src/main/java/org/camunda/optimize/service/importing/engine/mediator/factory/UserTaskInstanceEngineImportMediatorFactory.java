@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.es.writer.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -20,6 +22,8 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
@@ -34,6 +38,14 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
+  }
+
+  @Override
+  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+    return ImmutableList.of(
+      createRunningUserTaskInstanceEngineImportMediator(engineContext),
+      createCompletedUserTaskInstanceEngineImportMediator(engineContext)
+    );
   }
 
   public RunningUserTaskInstanceEngineImportMediator createRunningUserTaskInstanceEngineImportMediator(

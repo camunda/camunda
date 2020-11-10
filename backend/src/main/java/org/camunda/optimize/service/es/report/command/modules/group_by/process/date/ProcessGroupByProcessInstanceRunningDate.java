@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.RunningDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -57,7 +57,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
                                                 final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
-      if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
           minMaxStatsService.getMinMaxDateRangeForCrossField(
             context,
@@ -83,12 +83,12 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     );
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(getGroupByDateUnit(context.getReportData()))
+      .aggregateByDateUnit(getGroupByDateUnit(context.getReportData()))
       .minMaxStats(minMaxStats)
       .dateField(ProcessInstanceDto.Fields.startDate)
       .runningDateReportEndDateField(ProcessInstanceDto.Fields.endDate)
       .timezone(context.getTimezone())
-      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .subAggregation(distributedByPart.createAggregation(context))
       .build();
 
     return dateAggregationService.createRunningDateAggregation(dateAggContext)
@@ -148,7 +148,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     dataForCommandKey.setGroupBy(new RunningDateGroupByDto());
   }
 
-  private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+  private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
 }

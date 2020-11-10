@@ -7,7 +7,7 @@ package org.camunda.optimize.rest.mapper;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
@@ -60,7 +60,7 @@ public class ReportRestMapper {
     }
   }
 
-  public void prepareRestResponse(final AuthorizedReportDefinitionDto authorizedReportDefinitionDto) {
+  public void prepareRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto) {
     resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
   }
 

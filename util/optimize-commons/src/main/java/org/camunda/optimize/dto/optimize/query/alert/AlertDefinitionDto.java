@@ -14,12 +14,12 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
-public class AlertDefinitionDto extends AlertCreationDto {
+public class AlertDefinitionDto extends AlertCreationRequestDto {
 
   /**
-   * Needed to inherit field name constants from {@link AlertCreationDto}
+   * Needed to inherit field name constants from {@link AlertCreationRequestDto}
    */
-  public static class Fields extends AlertCreationDto.Fields {}
+  public static class Fields extends AlertCreationRequestDto.Fields {}
 
   protected String id;
   protected OffsetDateTime lastModified;

@@ -9,8 +9,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -30,16 +31,23 @@ public class DateAggregationContext {
 
   @NonNull
   @Setter
-  private GroupByDateUnit groupByDateUnit;
+  private AggregateByDateUnit aggregateByDateUnit;
   @NonNull
   private final String dateField;
   private final String runningDateReportEndDateField; // used for range filter aggregation in running date reports only
+
   @NonNull
   private final MinMaxStatDto minMaxStats;
+  // extendBoundsToMinMaxStats true is used for distrBy date reports which require extended bounds even when no date
+  // filters are applied. If date filters are applied, extendedBounds may be overwritten by the filter bounds.
+  // This serves a similar purpose as <allDistributedByKeys> in the ExecutionContext for non-histogram aggregations.
+  @Builder.Default
+  private final boolean extendBoundsToMinMaxStats = false;
+
   @NonNull
   private final ZoneId timezone;
   @NonNull
-  private final AggregationBuilder distributedBySubAggregation;
+  private final AggregationBuilder subAggregation;
 
   private final String dateAggregationName;
 
@@ -47,6 +55,7 @@ public class DateAggregationContext {
   private final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
 
   private final ProcessGroupByType processGroupByType;
+  private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
 
@@ -60,6 +69,14 @@ public class DateAggregationContext {
 
   public Optional<String> getDateAggregationName() {
     return Optional.ofNullable(dateAggregationName);
+  }
+
+  public boolean isStartDateAggregation() {
+    if (processGroupByType != null) {
+      return ProcessGroupByType.START_DATE.equals(processGroupByType);
+    } else {
+      return DistributedByType.START_DATE.equals(distributedByType);
+    }
   }
 
 }

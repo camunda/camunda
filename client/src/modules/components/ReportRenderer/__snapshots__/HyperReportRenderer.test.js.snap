@@ -7,9 +7,11 @@ exports[`should convert a hypermap to a combined report 1`] = `
       "combined": true,
       "data": Object {
         "configuration": Object {
-          "distributedBy": Object {
-            "type": "userTask",
-            "value": null,
+          "hiddenNodes": Object {
+            "active": true,
+            "keys": Array [
+              "taskId3",
+            ],
           },
         },
         "reports": Array [
@@ -21,10 +23,6 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "color": "#00bcd4",
             "id": "taskId2",
           },
-          Object {
-            "color": "#00d0a3",
-            "id": "taskId3",
-          },
         ],
         "visualization": "bar",
       },
@@ -35,10 +33,16 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": Object {
-                  "type": "userTask",
-                  "value": null,
+                "hiddenNodes": Object {
+                  "active": true,
+                  "keys": Array [
+                    "taskId3",
+                  ],
                 },
+              },
+              "distributedBy": Object {
+                "type": "userTask",
+                "value": null,
               },
               "groupBy": Object {
                 "type": "assignee",
@@ -81,10 +85,16 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": Object {
-                  "type": "userTask",
-                  "value": null,
+                "hiddenNodes": Object {
+                  "active": true,
+                  "keys": Array [
+                    "taskId3",
+                  ],
                 },
+              },
+              "distributedBy": Object {
+                "type": "userTask",
+                "value": null,
               },
               "groupBy": Object {
                 "type": "assignee",
@@ -116,52 +126,6 @@ exports[`should convert a hypermap to a combined report 1`] = `
                   "key": "Chris",
                   "label": "Chris",
                   "value": 0,
-                },
-              ],
-              "instanceCount": 1234,
-              "isComplete": true,
-              "type": "map",
-            },
-          },
-          "taskId3": Object {
-            "combined": false,
-            "data": Object {
-              "configuration": Object {
-                "distributedBy": Object {
-                  "type": "userTask",
-                  "value": null,
-                },
-              },
-              "groupBy": Object {
-                "type": "assignee",
-              },
-              "processDefinitionKey": "aKey",
-              "processDefinitionVersion": "1",
-              "view": Object {
-                "entity": "userTask",
-                "property": "duration",
-              },
-              "visualization": "bar",
-            },
-            "id": "taskId3",
-            "name": "Usertask 3",
-            "reportType": "process",
-            "result": Object {
-              "data": Array [
-                Object {
-                  "key": "Anne",
-                  "label": "Anne",
-                  "value": 65,
-                },
-                Object {
-                  "key": "Bernd",
-                  "label": "Bernd",
-                  "value": 22,
-                },
-                Object {
-                  "key": "Chris",
-                  "label": "Chris",
-                  "value": 73,
                 },
               ],
               "instanceCount": 1234,

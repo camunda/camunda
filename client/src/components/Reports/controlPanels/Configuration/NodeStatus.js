@@ -22,7 +22,9 @@ export default function NodeStatus({
     groupBy?.type
   );
 
-  if (isUserTaskDateReport || isFlowNodeDurationReport || hasAllowedGroupby) {
+  const hasAllowedView = view?.entity !== 'incident';
+
+  if (isUserTaskDateReport || isFlowNodeDurationReport || (hasAllowedGroupby && hasAllowedView)) {
     return (
       <fieldset className="NodeStatus">
         <legend>{t('report.config.nodeStatus.legend')}</legend>
@@ -32,7 +34,8 @@ export default function NodeStatus({
         >
           <Select.Option value="running">{t('report.config.nodeStatus.running')}</Select.Option>
           <Select.Option value="completed">{t('report.config.nodeStatus.completed')}</Select.Option>
-          <Select.Option value="all">{t('common.all')}</Select.Option>
+          <Select.Option value="canceled">{t('report.config.nodeStatus.canceled')}</Select.Option>
+          <Select.Option value="all">{t('report.config.nodeStatus.all')}</Select.Option>
         </Select>
       </fieldset>
     );

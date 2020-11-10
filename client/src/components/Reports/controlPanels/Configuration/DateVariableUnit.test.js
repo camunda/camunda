@@ -12,22 +12,49 @@ import DateVariableUnit from './DateVariableUnit';
 const report = {
   data: {
     groupBy: {type: 'variable', value: {type: 'Date'}},
-    configuration: {groupByDateVariableUnit: 'automatic'},
+    configuration: {groupByDateVariableUnit: 'automatic', distributedBy: {}},
   },
 };
-
-it('should render nothing if the current variable is not Date', () => {
-  const node = shallow(
-    <DateVariableUnit report={{data: {groupBy: {type: 'variable', value: {type: 'Number'}}}}} />
-  );
-
-  expect(node).toMatchSnapshot();
-});
 
 it('should render a unit selection for Date variables', () => {
   const node = shallow(<DateVariableUnit report={report} />);
 
   expect(node).toMatchSnapshot();
+});
+
+it('should render nothing if the current variable is not Date', () => {
+  const node = shallow(
+    <DateVariableUnit
+      report={{
+        data: {
+          ...report.data,
+          groupBy: {type: 'variable', value: {type: 'Number'}},
+        },
+      }}
+    />
+  );
+
+  expect(node.find('.DateVariableUnit')).not.toExist();
+});
+
+it('should render a unit selection for distributed by date variable', () => {
+  const node = shallow(
+    <DateVariableUnit
+      report={{
+        data: {
+          distributedBy: {
+            type: 'variable',
+            value: {type: 'Date'},
+          },
+          configuration: {
+            groupByDateVariableUnit: 'automatic',
+          },
+        },
+      }}
+    />
+  );
+
+  expect(node.find('.DateVariableUnit')).toExist();
 });
 
 it('should reevaluate the report when changing the unit', () => {

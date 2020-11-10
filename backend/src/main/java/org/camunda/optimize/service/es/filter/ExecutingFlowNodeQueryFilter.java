@@ -43,8 +43,8 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
             boolQuery()
               .must(termQuery(nestedActivityIdFieldLabel(), flowNodeId))
               .mustNot(existsQuery(nestedEndDateFieldLabel())),
-            ScoreMode.None)
-        ));
+            ScoreMode.None
+          )));
     return boolQueryBuilder;
   }
 

@@ -11,17 +11,26 @@ import {t} from 'translation';
 
 export default function DateVariableUnit({
   report: {
-    data: {configuration, groupBy},
+    data: {configuration, groupBy, distributedBy},
   },
   onChange,
 }) {
-  if (groupBy?.type === 'variable' && groupBy.value?.type === 'Date') {
+  const isDistributedByVariable =
+    distributedBy?.type === 'variable' && ['Date'].includes(distributedBy.value.type);
+  const groupByDateVariableUnit = isDistributedByVariable
+    ? 'distributeByDateVariableUnit'
+    : 'groupByDateVariableUnit';
+
+  const isGroupedByDateVariable =
+    groupBy?.type.toLowerCase().includes('variable') && groupBy.value?.type === 'Date';
+
+  if (isGroupedByDateVariable || isDistributedByVariable) {
     return (
       <fieldset className="DateVariableUnit">
         <legend>{t('report.config.bucket.buckets')}</legend>
         <Select
-          value={configuration.groupByDateVariableUnit}
-          onChange={(value) => onChange({groupByDateVariableUnit: {$set: value}}, true)}
+          value={configuration[groupByDateVariableUnit]}
+          onChange={(value) => onChange({[groupByDateVariableUnit]: {$set: value}}, true)}
         >
           <Select.Option value="automatic">{t('common.unit.automatic')}</Select.Option>
           <Select.Option value="hour">{t('common.unit.hour.label-plural')}</Select.Option>

@@ -25,12 +25,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
@@ -117,7 +116,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     engineIntegrationExtension.addUser("kermit", "foo");
     engineIntegrationExtension.grantAllAuthorizations("kermit");
-    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto instanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
@@ -241,7 +241,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void assigneeWithoutClaimIsNull() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto engineDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
@@ -319,7 +320,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void deleteAssigneeAndDeleteCandidateGroupAsLastOperations() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto engineDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createGroup("firstGroup");
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
     engineIntegrationExtension.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
@@ -348,7 +350,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importIsNotAffectedByPagination() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 
@@ -415,11 +417,11 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // when duplicate user tasks and tasks with same ID have been stored
     final UserTaskInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
-    final UserTaskInstanceDto sameIdTaskInstanceDto = new UserTaskInstanceDto(
-      userTaskInstanceDto.getId(),
-      userTaskInstanceDto.getProcessInstanceId(),
-      userTaskInstanceDto.getEngine()
-    );
+
+    final UserTaskInstanceDto sameIdTaskInstanceDto = new UserTaskInstanceDto();
+    sameIdTaskInstanceDto.setId(userTaskInstanceDto.getId());
+    sameIdTaskInstanceDto.setProcessInstanceId(userTaskInstanceDto.getProcessInstanceId());
+    sameIdTaskInstanceDto.setEngine(userTaskInstanceDto.getEngine());
     final List<UserTaskInstanceDto> duplicateTaskList = Arrays.asList(
       userTaskInstanceDto,
       userTaskInstanceDto,

@@ -12,7 +12,8 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.CanceledUserTaskWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +26,12 @@ public class CompletedActivityInstanceImportService implements ImportService<His
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private CompletedActivityInstanceWriter completedActivityInstanceWriter;
-  private CamundaEventImportService camundaEventService;
+  private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
+  private final CamundaEventImportService camundaEventService;
+  private final CanceledUserTaskWriter canceledUserTaskWriter;
 
-  public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
+  public CompletedActivityInstanceImportService(CanceledUserTaskWriter canceledUserTaskWriter,
+                                                CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 CamundaEventImportService camundaEventService,
                                                 ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                 EngineContext engineContext) {
@@ -36,6 +39,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
+    this.canceledUserTaskWriter = canceledUserTaskWriter;
   }
 
   @Override
@@ -73,6 +77,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
       new CompletedActivityInstanceElasticsearchImportJob(
         completedActivityInstanceWriter,
         camundaEventService,
+        canceledUserTaskWriter,
         callback
       );
     activityImportJob.setEntitiesToImport(events);
@@ -95,6 +100,8 @@ public class CompletedActivityInstanceImportService implements ImportService<His
       .engineAlias(engineContext.getEngineAlias())
       .tenantId(engineEntity.getTenantId())
       .orderCounter(engineEntity.getSequenceCounter())
+      .canceled(engineEntity.getCanceled())
+      .taskId(engineEntity.getTaskId())
       .build();
   }
 

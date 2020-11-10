@@ -9,24 +9,20 @@ import React from 'react';
 import NodeListPreview from './NodeListPreview';
 import {shallow} from 'enzyme';
 
-it('should create preview of nodes', () => {
-  const props = {
-    nodes: [{id: 'bar', name: 'foo'}],
-    operator: 'in',
-  };
+const props = {
+  nodes: [{id: 'bar', name: 'foo'}],
+  operator: 'in',
+  type: 'executedFlowNodes',
+};
 
+it('should create preview of nodes', () => {
   const node = shallow(<NodeListPreview {...props} />);
 
   expect(node).toMatchSnapshot();
 });
 
 it('should show the id of the flow node if the name is null', () => {
-  const props = {
-    nodes: [{id: 'bar', name: undefined}],
-    operator: 'in',
-  };
-
-  const node = shallow(<NodeListPreview {...props} />);
+  const node = shallow(<NodeListPreview {...props} nodes={[{id: 'bar', name: undefined}]} />);
 
   expect(node.find('.previewItemValue')).toIncludeText(props.nodes[0].id);
 });
@@ -41,13 +37,7 @@ it('should create preview of selected nodes linked by or', () => {
     name: 'foo',
     id: 'bar',
   };
-
-  const props = {
-    nodes: [flowNode1, flowNode2],
-    operator: 'in',
-  };
-
-  const node = shallow(<NodeListPreview {...props} />);
+  const node = shallow(<NodeListPreview {...props} nodes={[flowNode1, flowNode2]} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -63,23 +53,20 @@ it('should create preview of selected nodes linked by nor', () => {
     id: 'bar',
   };
 
-  const props = {
+  const changedProps = {
     nodes: [flowNode1, flowNode2],
     operator: 'not in',
   };
 
-  const node = shallow(<NodeListPreview {...props} />);
+  const node = shallow(<NodeListPreview {...props} {...changedProps} />);
 
   expect(node).toMatchSnapshot();
 });
 
-it('should show executing node filter if operator is undefined', () => {
-  const props = {
-    nodes: [{id: 'bar', name: undefined}],
-    operator: undefined,
-  };
+it('should show executing node filter', () => {
+  const node = shallow(
+    <NodeListPreview {...props} operator={undefined} type="executingFlowNodes" />
+  );
 
-  const node = shallow(<NodeListPreview {...props} />);
-
-  expect(node.find('.parameterName')).toIncludeText('Executing Flow Node');
+  expect(node.find('.parameterName')).toIncludeText('Pending or Executing');
 });

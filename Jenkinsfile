@@ -53,7 +53,7 @@ spec:
   - name: es-snapshot
     emptyDir: {}
   imagePullSecrets:
-  - name: registry-camunda-cloud-secret
+  - name: registry-camunda-cloud
   initContainers:
     - name: init-sysctl
       image: busybox
@@ -151,7 +151,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         memory: ${memoryLimitInGb}Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /var/lib/elasticsearch/snapshots
+      mountPath: /var/tmp
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -168,7 +168,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /var/lib/elasticsearch/snapshots
+        value: /var/tmp
    """
 }
 
@@ -190,7 +190,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
         memory: 1Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /var/lib/elasticsearch/snapshots
+      mountPath: /var/tmp
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -207,7 +207,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /var/lib/elasticsearch/snapshots
+        value: /var/tmp
    """
 }
 
@@ -384,10 +384,9 @@ pipeline {
                 fileId: 'maven-nexus-settings-local-repo',
                 variable: 'MAVEN_SETTINGS_XML'
               )]) {
-                // SonarQube requires compiled classes of .java files before run the analysis.
-                // The module qa/upgrade-optimize-data/generator has an issue with maven-compiler-plugin,
-                // so it has been ignored for now.
-                runMaven('compile -pl !qa/upgrade-optimize-data/generator -Dskip.fe.build -T\$LIMITS_CPU')
+                // We need to at least test-compile as some modules like optimize-data-generator
+                // make use of test classes of the backend module
+                runMaven('test-compile -Dskip.fe.build -T\$LIMITS_CPU')
                 sh '''
                   apt-get update && apt-get install -qq git
                   # This step is needed to fetch repo branches so SonarQube can diff them.
@@ -419,7 +418,7 @@ pipeline {
               junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', keepLongStdio: true
             }
             failure {
-              archiveArtifacts artifacts: 'qa/upgrade-es-schema-tests/target/*.json'
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json'
             }
           }
         }
@@ -492,7 +491,10 @@ pipeline {
         }
         stage('Build Docker') {
           when {
-            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+            expression {
+              // first part of the expessrion covers pure branch builds,
+              // the second covers PR builds where BRANCH_NAME is not available
+              BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -588,22 +590,17 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq netcat diffutils""")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
-    runMaven("install -Dskip.docker -DskipTests -f upgrade")
-    runMaven("install -Dskip.docker -DskipTests -f qa")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest,it")
+    runMaven("verify -Dskip.docker -pl upgrade")
+    runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
+    runMaven("verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests")
   }
 }
 
 void dataUpgradeTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq""")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
   }
 }
 
@@ -612,7 +609,7 @@ void e2eTestSteps() {
     sh 'gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc /db_dump/dump.sqlc'
   }
   container('postgresql') {
-    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
+    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc || true'
   }
   container('maven') {
     sh 'sudo apt-get update'

@@ -8,10 +8,10 @@ package org.camunda.optimize.service.config;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.math3.analysis.function.Gaussian;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -34,10 +34,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
 public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
@@ -53,11 +53,11 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     importAllEngineEntitiesFromScratch();
 
-    final List<DefinitionWithTenantsDto> allDefinitions = definitionClient.getAllDefinitions();
+    final List<DefinitionWithTenantsResponseDto> allDefinitions = definitionClient.getAllDefinitions();
 
     // then the result should not contain the decision/process definitions from the first engine
     assertThat(allDefinitions)
-      .extracting(DefinitionWithTenantsDto::getKey)
+      .extracting(DefinitionWithTenantsResponseDto::getKey)
       .containsExactlyInAnyOrder(PROCESS_KEY_2, DECISION_KEY_2);
   }
 
@@ -115,16 +115,16 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
+    BranchAnalysisRequestDto branchAnalysisRequestDto = analysisClient.createAnalysisDto(
       PROCESS_KEY_1,
       Lists.newArrayList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS,
       SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
+      END_EVENT
     );
 
     // then the analysis should be fine even if it would include a definition from a non existing engine alias
-    final BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(branchAnalysisQueryDto);
+    final BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
     assertThat(result.getTotal()).isEqualTo(2L);
   }
 
@@ -139,7 +139,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
     // given
     outlierDistributionClient.startPIsDistributedByDuration(
-      procDefId, new Gaussian(40 / 2., 12), 40, 0L, TASK_ID_1, TASK_ID_2
+      procDefId, new Gaussian(40 / 2., 12), 40, 0L, SERVICE_TASK_ID_1, SERVICE_TASK_ID_2
     );
 
     // when
@@ -155,7 +155,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
       Collections.singletonList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS
     );
-    assertThat(outlierTest.get(TASK_ID_1).getTotalCount()).isGreaterThan(1L);
+    assertThat(outlierTest.get(SERVICE_TASK_ID_1).getTotalCount()).isGreaterThan(1L);
   }
 
   private ProcessReportDataDto createRawDataReport(final String processDefinitionKey) {

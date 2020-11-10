@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class InvoiceDataFor2TenantsAndSharedDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/invoice-2-tenants-and-shared.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/invoice-2-tenants-and-shared.bpmn";
 
   public InvoiceDataFor2TenantsAndSharedDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

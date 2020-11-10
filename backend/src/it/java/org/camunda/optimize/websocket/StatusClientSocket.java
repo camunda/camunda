@@ -8,17 +8,14 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import java.util.concurrent.CountDownLatch;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Client class to test Web Socket implementation of status
@@ -40,12 +37,12 @@ public class StatusClientSocket {
 
 
   @OnMessage
-  public void onText(String message, Session session) throws Exception {
+  public void onText(String message) throws Exception {
     log.info("Message received from server:" + message);
 
-    StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
+    StatusWithProgressResponseDto dto = objectMapper.readValue(message, StatusWithProgressResponseDto.class);
 
-    assertThat(dto.getIsImporting(), is(notNullValue()));
+    assertThat(dto.getIsImporting()).isNotNull();
     initialStatusReceivedLatch.countDown();
 
     if (dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS)) {

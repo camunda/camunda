@@ -10,7 +10,7 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
     return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
@@ -31,6 +31,8 @@ spec:
    - key: "${NODE_POOL()}"
      operator: "Exists"
      effect: "NoSchedule"
+  imagePullSecrets:
+    - name: registry-camunda-cloud
   securityContext:
     fsGroup: 1000
   volumes:
@@ -56,7 +58,6 @@ spec:
     volumeMounts:
       - name: es-storage
         mountPath: /data
-        subPath: data
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}

@@ -35,9 +35,9 @@ public class UserTaskCompleter {
   private static final int OUTLIER_DELAY = 5000;
 
   private final String processDefinitionId;
+  private final SimpleEngineClient engineClient;
   private ExecutorService taskExecutorService;
-  private SimpleEngineClient engineClient;
-  private boolean shouldShutdown = false;
+  private volatile boolean shouldShutdown = false;
   private CountDownLatch finished = new CountDownLatch(0);
   private OffsetDateTime currentCreationDateFilter = OFFSET_DATE_TIME_OF_EPOCH;
 
@@ -64,6 +64,7 @@ public class UserTaskCompleter {
               Thread.sleep(BACKOFF_SECONDS * 1000);
             } catch (InterruptedException e) {
               log.debug("[process-definition-id:{}] Was Interrupted while sleeping", processDefinitionId);
+              Thread.currentThread().interrupt();
             }
           }
 
@@ -108,12 +109,8 @@ public class UserTaskCompleter {
     this.shouldShutdown = true;
   }
 
-  public synchronized void awaitUserTaskCompletion(long timeout, TimeUnit unit) {
-    try {
-      this.finished.await(timeout, unit);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+  public synchronized boolean awaitUserTaskCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+    return this.finished.await(timeout, unit);
   }
 
   private boolean isDateFilterInBackOffWindow() {
@@ -123,7 +120,7 @@ public class UserTaskCompleter {
   private void handleTasksInParallel(final List<TaskDto> nextTasksPage) throws
                                                                         InterruptedException,
                                                                         ExecutionException {
-    final CompletableFuture[] taskFutures = nextTasksPage.stream()
+    final CompletableFuture<?>[] taskFutures = nextTasksPage.stream()
       .map(taskDto -> runAsync(() -> claimAndCompleteUserTask(taskDto), taskExecutorService))
       .toArray(CompletableFuture[]::new);
 
@@ -143,15 +140,23 @@ public class UserTaskCompleter {
             .getProcessInstanceDelayVariable(task.getProcessInstanceId())
             .orElse(false);
           if (executionDelayed) {
-            log.info("Creating an outlier instance, sleeping for " + OUTLIER_DELAY + " ms");
-            Thread.sleep(OUTLIER_DELAY);
+            waitForOutlierDelay();
           }
           engineClient.completeUserTask(task);
         }
       }
-
     } catch (Exception e) {
       log.error("Could not claim user task!", e);
+    }
+  }
+
+  private void waitForOutlierDelay() {
+    log.info("Creating an outlier instance, sleeping for " + OUTLIER_DELAY + " ms");
+    try {
+      Thread.sleep(OUTLIER_DELAY);
+    } catch (InterruptedException e) {
+      log.warn("Was Interrupted while doing outlier delay wait.");
+      Thread.currentThread().interrupt();
     }
   }
 

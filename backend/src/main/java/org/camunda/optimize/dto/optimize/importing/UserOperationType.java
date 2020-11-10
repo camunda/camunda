@@ -7,14 +7,14 @@ package org.camunda.optimize.dto.optimize.importing;
 
 import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ACTIVATE_PROCESS_DEFINITION_OPERATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ACTIVATE_PROCESS_INSTANCE_OPERATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ACTIVATE_VIA_BATCH_OPERATION_TYPE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.PROCESS_INSTANCE_ENTITY_TYPE;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SUSPEND_PROCESS_DEFINITION_OPERATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SUSPEND_PROCESS_INSTANCE_OPERATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.SUSPEND_VIA_BATCH_OPERATION_TYPE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_PROCESS_DEFINITION_OPERATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_PROCESS_INSTANCE_OPERATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_VIA_BATCH_OPERATION_TYPE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD;
+import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_INSTANCE_ENTITY_TYPE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_PROCESS_DEFINITION_OPERATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_PROCESS_INSTANCE_OPERATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_VIA_BATCH_OPERATION_TYPE;
 
 public enum UserOperationType {
   SUSPEND_INSTANCE_BY_INSTANCE_ID(true),

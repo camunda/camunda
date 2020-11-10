@@ -6,25 +6,24 @@
 package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -119,12 +118,12 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void createNewCombinedReportFromDefinition() {
     // when
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
     combinedReportDefinitionDto.setData(ProcessReportDataBuilderHelper.createCombinedReportData());
-    IdDto idDto = embeddedOptimizeExtension
+    IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode());
+      .execute(IdResponseDto.class, OK.getStatusCode());
     // then
     assertThat(idDto).isNotNull();
   }
@@ -189,12 +188,12 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
+    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
 
     // then the returned list excludes reports in collections
     assertThat(
       reports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
@@ -207,21 +206,21 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     reportClient.createEmptySingleProcessReport();
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = embeddedOptimizeExtension
+    List<AuthorizedReportDefinitionResponseDto> reports = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(AuthorizedReportDefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(reports)
+    assertThat(reports)
       .isNotNull()
       .hasSize(1);
     ReportDefinitionDto definitionDto = reports.get(0).getDefinitionDto();
-    Assertions.assertThat(definitionDto.getCreated()).isEqualTo(now);
-    Assertions.assertThat(definitionDto.getLastModified()).isEqualTo(now);
-    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getCreated(), now)).isEqualTo(1.);
-    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getLastModified(), now)).isEqualTo(1.);
+    assertThat(definitionDto.getCreated()).isEqualTo(now);
+    assertThat(definitionDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(definitionDto.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(definitionDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -246,20 +245,20 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     updateReportWithValidXml(idDecisionReport, DECISION);
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
+    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
 
     // then
     assertThat(reports).hasSize(2);
     assertThat(
       reports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(idDecisionReport, idProcessReport);
 
     assertThat(
       reports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
@@ -277,26 +276,26 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void getStoredReportsWithNoNameFromXml() {
     //given
     final String idProcessReport = reportClient.createEmptySingleProcessReport();
-    final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
+    final SingleProcessReportDefinitionRequestDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
       createProcessDefinitionXmlWithName(null)
     );
     reportClient.updateSingleProcessReport(idProcessReport, processReportDefinitionDto);
 
     final String idDecisionReport = reportClient.createEmptySingleDecisionReport();
-    final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
+    final SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
       createDecisionDefinitionWoName()
     );
 
     reportClient.updateDecisionReport(idDecisionReport, decisionReportDefinitionDto);
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
+    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
 
     // then
     assertThat(reports).hasSize(2);
     assertThat(
       reports.stream()
-        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
@@ -355,11 +354,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(report).isNotNull();
-    Assertions.assertThat(report.getCreated()).isEqualTo(now);
-    Assertions.assertThat(report.getLastModified()).isEqualTo(now);
-    Assertions.assertThat(getOffsetDiffInHours(report.getCreated(), now)).isEqualTo(1.);
-    Assertions.assertThat(getOffsetDiffInHours(report.getLastModified(), now)).isEqualTo(1.);
+    assertThat(report).isNotNull();
+    assertThat(report.getCreated()).isEqualTo(now);
+    assertThat(report.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(report.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(report.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -387,10 +386,10 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     String xmlString;
     switch (reportType) {
       case PROCESS:
-        xmlString = ((SingleProcessReportDefinitionDto) reportDefinition).getData().getConfiguration().getXml();
+        xmlString = ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().getConfiguration().getXml();
         break;
       case DECISION:
-        xmlString = ((SingleDecisionReportDefinitionDto) reportDefinition).getData().getConfiguration().getXml();
+        xmlString = ((SingleDecisionReportDefinitionRequestDto) reportDefinition).getData().getConfiguration().getXml();
         break;
       default:
         xmlString = "";
@@ -441,11 +440,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
     //given
     String reportId = addEmptyReportToOptimize(reportType);
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     final String dashboardId = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode())
+      .execute(IdResponseDto.class, OK.getStatusCode())
       .getId();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
 
@@ -467,7 +466,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(reportClient.getAllReportsAsUser())
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
   }
@@ -496,7 +495,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
 
@@ -508,7 +507,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
     //given
     String reportId = addEmptyReportToOptimize(reportType);
-    ReportShareDto sharingDto = new ReportShareDto();
+    ReportShareRestDto sharingDto = new ReportShareRestDto();
     sharingDto.setReportId(reportId);
     embeddedOptimizeExtension
       .getRequestExecutor()
@@ -533,7 +532,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(reportClient.getAllReportsAsUser())
-      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
   }
@@ -545,7 +544,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    IdDto copyId = response.readEntity(IdDto.class);
+    IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
@@ -559,7 +558,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    IdDto copyId = response.readEntity(IdDto.class);
+    IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
@@ -572,16 +571,16 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 
-    SingleProcessReportDefinitionDto single = constructProcessReportWithFakePD();
+    SingleProcessReportDefinitionRequestDto single = constructProcessReportWithFakePD();
     String id = addSingleProcessReportWithDefinition(single.getData());
 
     final String testReportCopyName = "Hello World, I am a copied report???! :-o";
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
+    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
       .addSingleQueryParam("name", testReportCopyName)
-      .execute(IdDto.class, OK.getStatusCode());
+      .execute(IdResponseDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -598,7 +597,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -619,7 +618,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -651,7 +650,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     String id = createSingleReport(reportType, collectionId);
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -672,7 +671,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     String id = reportClient.createCombinedReport(collectionId, Arrays.asList(report1, report2));
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -706,7 +705,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final String newCollectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -730,7 +729,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final String newCollectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    IdDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdDto.class);
+    IdResponseDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdResponseDto.class);
 
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
@@ -781,10 +780,10 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   private String createSingleReport(final ReportType reportType, final String collectionId) {
     switch (reportType) {
       case PROCESS:
-        SingleProcessReportDefinitionDto processDef = constructProcessReportWithFakePD();
+        SingleProcessReportDefinitionRequestDto processDef = constructProcessReportWithFakePD();
         return addSingleProcessReportWithDefinition(processDef.getData(), collectionId);
       case DECISION:
-        SingleDecisionReportDefinitionDto decisionDef = constructDecisionReportWithFakeDD();
+        SingleDecisionReportDefinitionRequestDto decisionDef = constructDecisionReportWithFakeDD();
         return addSingleDecisionReportWithDefinition(decisionDef.getData(), collectionId);
       default:
         throw new IllegalStateException("Unexpected value: " + reportType);
@@ -795,20 +794,20 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   private Response updateReportWithValidXml(final String id, final ReportType reportType) {
     final Response response;
     if (ReportType.PROCESS.equals(reportType)) {
-      SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
+      SingleProcessReportDefinitionRequestDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         createProcessDefinitionXmlWithName("Simple Process")
       );
       response = reportClient.updateSingleProcessReport(id, reportDefinitionDto);
     } else {
-      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
+      SingleDecisionReportDefinitionRequestDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
         createDefaultDmnModel());
       response = reportClient.updateDecisionReport(id, reportDefinitionDto);
     }
     return response;
   }
 
-  private SingleProcessReportDefinitionDto getProcessReportDefinitionDtoWithXml(final String xml) {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+  private SingleProcessReportDefinitionRequestDto getProcessReportDefinitionDtoWithXml(final String xml) {
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
     data.setProcessDefinitionVersion("1");
@@ -817,8 +816,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     return reportDefinitionDto;
   }
 
-  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDtoWithXml(final DmnModelInstance dmn) {
-    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+  private SingleDecisionReportDefinitionRequestDto getDecisionReportDefinitionDtoWithXml(final DmnModelInstance dmn) {
+    SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionKey(DECISION_DEFINITION_KEY);
     data.setDecisionDefinitionVersion("1");
@@ -827,8 +826,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     return reportDefinitionDto;
   }
 
-  private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+  private SingleProcessReportDefinitionRequestDto constructProcessReportWithFakePD() {
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey(DEFAULT_DEFINITION_KEY);
@@ -838,8 +837,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     return reportDefinitionDto;
   }
 
-  private SingleDecisionReportDefinitionDto constructDecisionReportWithFakeDD() {
-    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+  private SingleDecisionReportDefinitionRequestDto constructDecisionReportWithFakeDD() {
+    SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionVersion("FAKE");
     data.setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY);

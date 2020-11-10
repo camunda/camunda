@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -30,7 +30,8 @@ public class EventProcessAuthorizationService {
   private final IdentityService identityService;
 
   public boolean hasEventProcessManagementAccess(@NonNull final String userId) {
-    return configurationService.getEventBasedProcessAccessUserIds().contains(userId);
+    return configurationService.getEventBasedProcessAccessUserIds().contains(userId) ||
+      isInGroupWithEventProcessManagementAccess(userId);
   }
 
   /**
@@ -42,11 +43,11 @@ public class EventProcessAuthorizationService {
    */
   public Optional<Boolean> isAuthorizedToEventProcess(@NonNull final String userId,
                                                       @NonNull final String eventProcessMappingId) {
-    final List<EventProcessRoleDto<IdentityDto>> roles = eventProcessRoleService.getRoles(eventProcessMappingId);
+    final List<EventProcessRoleRequestDto<IdentityDto>> roles = eventProcessRoleService.getRoles(eventProcessMappingId);
     if (!roles.isEmpty()) {
       boolean isAuthorized = false;
       final Map<IdentityType, Set<String>> groupAndUserRoleIdentityIds = roles.stream()
-        .map(EventProcessRoleDto::getIdentity)
+        .map(EventProcessRoleRequestDto::getIdentity)
         .collect(Collectors.groupingBy(
           IdentityDto::getType,
           Collectors.mapping(IdentityDto::getId, Collectors.toSet())
@@ -74,6 +75,14 @@ public class EventProcessAuthorizationService {
     } else {
       return Optional.empty();
     }
+  }
+
+  private boolean isInGroupWithEventProcessManagementAccess(@NonNull final String userId) {
+    final List<String> authorizedGroupIds = configurationService.getEventBasedProcessAccessGroupIds();
+    return identityService.getAllGroupsOfUser(userId)
+      .stream()
+      .map(IdentityDto::getId)
+      .anyMatch(authorizedGroupIds::contains);
   }
 
 }

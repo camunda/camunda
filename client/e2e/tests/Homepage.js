@@ -42,6 +42,8 @@ test('navigate to report view and edit pages', async (t) => {
 
 test('navigate to dashboard view and edit pages', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.modalConfirmbutton);
+
   await save(t);
   await t.click(e.homepageLink);
 
@@ -82,19 +84,21 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.firstTypeaheadOption);
   await t.click(e.confirmButton);
 
-  await t.typeText(Report.nameEditField, 'Monthly Sales', {replace: true});
+  await t.typeText(Report.nameEditField, 'Monthly Sales From Marketing', {replace: true});
   await save(t);
   await t.click(e.homepageLink);
 
   await t.expect(e.reportItem.visible).ok();
-  await t.expect(e.reportItem.textContent).contains('Monthly Sales');
+  await t.expect(e.reportItem.textContent).contains('Monthly Sales From Marketing');
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.modalConfirmbutton);
+
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
 
-  await addReportToDashboard(t, 'Monthly Sales');
+  await addReportToDashboard(t, 'Monthly Sales From Marketing');
   await addReportToDashboard(t, 'Invoice Evaluation Count');
-  await addReportToDashboard(t, 'Monthly Sales');
+  await addReportToDashboard(t, 'Monthly Sales From Marketing');
 
   await save(t);
   await t.click(e.homepageLink);
@@ -115,7 +119,21 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
   await t.click(e.confirmButton);
+
+  await t.click(Collection.sourcesTab);
+
+  await t.click(Collection.addButton);
+  const collectionDefinitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(Collection.typeaheadInput, collectionDefinitionName, {replace: true});
+  await t.click(Collection.typeaheadOption(collectionDefinitionName));
+  await t.click(Collection.checkbox('Select All'));
+  await t.click(Collection.confirmModalButton);
+
+  await t.click(Collection.entitiesTab);
+
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.modalConfirmbutton);
+
   await save(t);
 
   await t.click(e.breadcrumb('Marketing'));
@@ -162,6 +180,9 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.breadcrumb('Sales'));
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+
+  await t.click(e.modalConfirmbutton);
+
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
   await addReportToDashboard(t, 'Incoming Leads');
   await addReportToDashboard(t, 'Sales Goal this Quarter');
@@ -193,7 +214,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.dashboardItem.visible).ok();
   await t.expect(e.reportItem.exists).notOk();
 
-  await t.typeText(e.searchField, 'm', {replace: true});
+  await t.typeText(e.searchField, 'marketing', {replace: true});
   await t.expect(e.collectionItem.visible).ok();
   await t.expect(e.dashboardItem.exists).notOk();
   await t.expect(e.reportItem.visible).ok();

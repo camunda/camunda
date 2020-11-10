@@ -9,9 +9,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -60,7 +60,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     initUserGroupCache();
   }
 
-  public void addIdentity(final IdentityWithMetadataDto identity) {
+  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
     syncedIdentityCache.addIdentity(identity);
   }
 
@@ -80,7 +80,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     return userGroupsCache.get(userId);
   }
 
-  public Optional<? extends IdentityWithMetadataDto> getIdentityWithMetadataForId(final String userOrGroupId) {
+  public Optional<? extends IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
     final Optional<UserDto> userById = getUserById(userOrGroupId);
     if (userById.isPresent()) {
       return userById;
@@ -89,9 +89,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     }
   }
 
-  public Optional<? extends IdentityWithMetadataDto> getIdentityWithMetadataForIdAsUser(final String userId,
-                                                                                        final String userOrGroupId) {
-    Optional<? extends IdentityWithMetadataDto> identityById = getUserById(userOrGroupId);
+  public Optional<? extends IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
+                                                                                                final String userOrGroupId) {
+    Optional<? extends IdentityWithMetadataResponseDto> identityById = getUserById(userOrGroupId);
     if (!identityById.isPresent()) {
       identityById = getGroupById(userOrGroupId);
     }
@@ -142,11 +142,11 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       );
   }
 
-  public IdentitySearchResultDto searchForIdentitiesAsUser(final String userId,
-                                                           final String searchString,
-                                                           final int maxResults) {
-    IdentitySearchResultDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
-    List<IdentityWithMetadataDto> filteredIdentities = new ArrayList<>();
+  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
+                                                                   final String searchString,
+                                                                   final int maxResults) {
+    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
+    List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
     while (!result.getResult().isEmpty()
       && filteredIdentities.size() < maxResults) {
       // continue searching until either the maxResult number of hits has been found or
@@ -154,12 +154,12 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
       result = syncedIdentityCache.searchIdentitiesAfter(searchString, maxResults, result);
     }
-    return new IdentitySearchResultDto(filteredIdentities.size(), filteredIdentities);
+    return new IdentitySearchResultResponseDto(result.getTotal(), filteredIdentities);
   }
 
-  private List<IdentityWithMetadataDto> filterIdentitySearchResultByUserAuthorizations(
+  private List<IdentityWithMetadataResponseDto> filterIdentitySearchResultByUserAuthorizations(
     final String userId,
-    final IdentitySearchResultDto result) {
+    final IdentitySearchResultResponseDto result) {
     return result.getResult()
       .stream()
       .filter(identity -> isUserAuthorizedToAccessIdentity(userId, identity))
@@ -190,8 +190,8 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     return resolveToIdentityWithMetadata(identity).isPresent();
   }
 
-  public Optional<? extends IdentityWithMetadataDto> resolveToIdentityWithMetadata(final IdentityDto identity) {
-    Optional<? extends IdentityWithMetadataDto> identityRestDtoOpt;
+  public Optional<? extends IdentityWithMetadataResponseDto> resolveToIdentityWithMetadata(final IdentityDto identity) {
+    Optional<? extends IdentityWithMetadataResponseDto> identityRestDtoOpt;
     switch (identity.getType()) {
       case GROUP:
         identityRestDtoOpt = getGroupById(identity.getId());
@@ -226,11 +226,8 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public Optional<String> getIdentityNameById(final String identityId) {
-    Optional<? extends IdentityWithMetadataDto> identityDto = getIdentityWithMetadataForId(identityId);
-    if (identityDto.isPresent()) {
-      return Optional.of(identityDto.get().getName());
-    }
-    return Optional.empty();
+    Optional<? extends IdentityWithMetadataResponseDto> identityDto = getIdentityWithMetadataForId(identityId);
+    return identityDto.map(IdentityWithMetadataResponseDto::getName);
   }
 
   private void initUserGroupCache() {

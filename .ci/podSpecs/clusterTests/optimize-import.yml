@@ -62,8 +62,8 @@ spec:
               memory: 2Gi
           volumeMounts:
             - name: configuration
-              mountPath: /optimize/environment/environment-config.yaml
+              mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
             - name: configuration
-              mountPath: /optimize/environment/OptimizeLicense.txt
+              mountPath: /optimize/config/OptimizeLicense.txt
               subPath: OptimizeLicense.txt

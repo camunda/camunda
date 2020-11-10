@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ReviewCaseDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/review-case.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/review-case.bpmn";
 
   public ReviewCaseDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

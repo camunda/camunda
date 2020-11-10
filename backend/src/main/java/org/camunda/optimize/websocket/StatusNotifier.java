@@ -6,7 +6,7 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.slf4j.Logger;
@@ -25,11 +25,7 @@ public class StatusNotifier implements ImportObserver {
 
   private Map<String, Boolean> importStatusMap;
 
-  public StatusNotifier(
-    StatusCheckingService statusCheckingService,
-    ObjectMapper objectMapper,
-    Session session
-  ) {
+  public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;
     this.objectMapper = objectMapper;
     this.session = session;
@@ -39,18 +35,24 @@ public class StatusNotifier implements ImportObserver {
 
   @Override
   public synchronized void importInProgress(String engineAlias) {
+    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && !importStatusMap.get(engineAlias);
     importStatusMap.put(engineAlias, true);
-    sendStatus();
+    if (sendUpdate) {
+      sendStatus();
+    }
   }
 
   @Override
   public synchronized void importIsIdle(String engineAlias) {
+    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && importStatusMap.get(engineAlias);
     importStatusMap.put(engineAlias, false);
-    sendStatus();
+    if (sendUpdate) {
+      sendStatus();
+    }
   }
 
   private void sendStatus() {
-    StatusWithProgressDto result = new StatusWithProgressDto();
+    StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
     result.setConnectionStatus(statusCheckingService.getConnectionStatus());
     result.setIsImporting(importStatusMap);
 

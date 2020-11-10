@@ -1,46 +1,41 @@
 @import 'shared-styles/shared-styles.scss';
 
 .FiltersEdit {
-  border-top: 1px solid $silver-darken-87;
-  border-bottom: 1px solid $silver-darken-87;
-  background-color: $silver-base-97;
-  padding: 15px 40px 4px 40px;
-  margin-bottom: 20px;
+  .title {
+    position: relative;
+    padding-right: 40px;
 
-  h3 {
-    display: inline-block;
-    font-size: 14px;
-    font-weight: bold;
-    margin-right: 12px;
-  }
+    .deleteButton,
+    .editButton {
+      position: absolute;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
 
-  .hint {
-    font-size: 12px;
-    color: $grey-lighten-56;
-  }
+      &:hover,
+      &:active {
+        background: none;
+      }
 
-  > ul {
-    padding: 0;
-    list-style: none;
-
-    > li {
-      display: inline-block;
-      margin-right: 12px;
-
-      .ActionItem .content {
-        display: inline-block;
-        padding: 0 11px;
-        width: 142px;
-        white-space: pre;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 32px;
-
-        .variableName {
-          font-weight: bold;
-        }
+      .Icon {
+        margin: 0;
+        vertical-align: baseline;
       }
     }
+
+    .deleteButton {
+      right: 0;
+    }
+
+    .editButton {
+      right: 21px;
+    }
+  }
+
+  .Popover,
+  .Dropdown {
+    opacity: 0.31;
+    pointer-events: none;
   }
 }
 
@@ -52,5 +47,14 @@
 
   .preText {
     margin-bottom: 22px;
+  }
+
+  .customValueCheckbox {
+    margin-top: 20px;
+    font-size: 14px;
+
+    .label {
+      padding-left: 10px;
+    }
   }
 }

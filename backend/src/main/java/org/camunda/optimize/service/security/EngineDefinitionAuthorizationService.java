@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import lombok.Value;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -16,7 +18,9 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -28,15 +32,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 @Component
 public class EngineDefinitionAuthorizationService
@@ -47,8 +52,8 @@ public class EngineDefinitionAuthorizationService
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final TenantAuthorizationService tenantAuthorizationService;
-  private final DefinitionReader definitionReader;
   private final TenantService tenantService;
+  private final LoadingCache<DefinitionTypeAndKey, Set<String>> definitionEnginesReadCache;
 
   public EngineDefinitionAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
                                               final TenantAuthorizationService tenantAuthorizationService,
@@ -59,8 +64,17 @@ public class EngineDefinitionAuthorizationService
     super(engineContextFactory, configurationService);
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.tenantAuthorizationService = tenantAuthorizationService;
-    this.definitionReader = definitionReader;
     this.tenantService = tenantService;
+
+    // this cache serves the purpose to reduce the frequency an actual read is triggered
+    // as the available engines are not changing often this reduces the latency of calls
+    // when multiple authorization checks are done in a short amount of time
+    // (mostly listing endpoints for reports and process/decision definitions)
+    final CacheConfiguration cacheConfiguration = configurationService.getCaches().getDefinitionEngines();
+    this.definitionEnginesReadCache = Caffeine.newBuilder()
+      .maximumSize(cacheConfiguration.getMaxSize())
+      .expireAfterWrite(cacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
+      .build(typeAndKey -> definitionReader.getDefinitionEngines(typeAndKey.getType(), typeAndKey.getKey()));
   }
 
   @Override
@@ -94,6 +108,12 @@ public class EngineDefinitionAuthorizationService
     return result;
   }
 
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    super.reloadConfiguration(context);
+    definitionEnginesReadCache.invalidateAll();
+  }
+
   public boolean isAuthorizedToSeeDefinition(final String identityId,
                                              final IdentityType identityType,
                                              final String definitionKey,
@@ -105,7 +125,7 @@ public class EngineDefinitionAuthorizationService
       definitionKey,
       definitionType,
       tenantIds,
-      definitionReader.getDefinitionEngines(definitionType, definitionKey)
+      getDefinitionEngines(definitionKey, definitionType)
     );
   }
 
@@ -181,9 +201,9 @@ public class EngineDefinitionAuthorizationService
   }
 
   public boolean isAuthorizedToSeeDecisionDefinition(final String identityId,
-                                                    final IdentityType identityType,
-                                                    final String definitionKey,
-                                                    final List<String> tenantIds) {
+                                                     final IdentityType identityType,
+                                                     final String definitionKey,
+                                                     final List<String> tenantIds) {
     return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.DECISION, tenantIds);
   }
 
@@ -220,6 +240,10 @@ public class EngineDefinitionAuthorizationService
 
     }
     return new ArrayList<>(authorizedTenants);
+  }
+
+  private Set<String> getDefinitionEngines(final String definitionKey, final DefinitionType definitionType) {
+    return definitionEnginesReadCache.get(new DefinitionTypeAndKey(definitionType, definitionKey));
   }
 
   private int mapToResourceType(final DefinitionType definitionType) {
@@ -299,6 +323,12 @@ public class EngineDefinitionAuthorizationService
   private static class TenantAndEnginePair {
     String tenantId;
     String engine;
+  }
+
+  @Value
+  private static class DefinitionTypeAndKey {
+    DefinitionType type;
+    String key;
   }
 
 }

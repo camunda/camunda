@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FlowNodeRestServiceIT extends AbstractIT {
 
@@ -36,7 +35,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .withoutAuthentication()
       .execute();
 
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -54,7 +53,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .withoutAuthentication()
       .execute();
 
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -72,7 +71,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
-    assertThat(response.getFlowNodeNames().size(), is(1));
+    assertThat(response.getFlowNodeNames()).hasSize(1);
   }
 
   @Test
@@ -94,7 +93,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
-    assertThat(response.getFlowNodeNames().size(), is(2));
+    assertThat(response.getFlowNodeNames()).hasSize(2);
   }
 
   @Test
@@ -114,7 +113,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
-    assertThat(response.getFlowNodeNames().size(), is(1));
+    assertThat(response.getFlowNodeNames()).hasSize(1);
   }
 
   private void createProcessDefinition(final String processDefinitionKey, final String processDefinitionVersion) {

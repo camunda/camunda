@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.filter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
@@ -27,6 +28,7 @@ import static org.camunda.optimize.service.es.report.command.util.AggregationFil
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -51,10 +53,11 @@ public class UserTaskFilterQueryUtil {
   public static BoolQueryBuilder createUserTaskAggregationFilter(final ProcessReportDataDto reportDataDto) {
     final BoolQueryBuilder filterBoolQuery = boolQuery();
 
+    final FlowNodeExecutionState flowNodeExecutionState = reportDataDto.getConfiguration().getFlowNodeExecutionState();
     addExecutionStateFilter(
       filterBoolQuery,
-      reportDataDto.getConfiguration().getFlowNodeExecutionState(),
-      USER_TASKS + "." + USER_TASK_END_DATE
+      flowNodeExecutionState,
+      getExecutionStateFilterFieldForType(flowNodeExecutionState)
     );
     addAssigneeFilter(filterBoolQuery, reportDataDto);
     addCandidateGroupFilter(filterBoolQuery, reportDataDto);
@@ -63,7 +66,7 @@ public class UserTaskFilterQueryUtil {
   }
 
   private static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                         final Set<String> userTaskIds) {
+                                          final Set<String> userTaskIds) {
     userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
 
@@ -122,6 +125,13 @@ public class UserTaskFilterQueryUtil {
     } else {
       return innerBoolQueryBuilder;
     }
+  }
+
+  private static String getExecutionStateFilterFieldForType(final FlowNodeExecutionState flowNodeExecutionState) {
+    if (FlowNodeExecutionState.CANCELED.equals(flowNodeExecutionState)) {
+      return USER_TASKS + "." + USER_TASK_CANCELED;
+    }
+    return USER_TASKS + "." + USER_TASK_END_DATE;
   }
 
 }

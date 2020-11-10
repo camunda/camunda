@@ -12,11 +12,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 
 import java.io.IOException;
 
-public class CustomAuthorizedReportDefinitionDeserializer extends StdDeserializer<AuthorizedReportDefinitionDto> {
+public class CustomAuthorizedReportDefinitionDeserializer extends StdDeserializer<AuthorizedReportDefinitionResponseDto> {
 
   private ObjectMapper objectMapper;
   private CustomReportDefinitionDeserializer reportDefinitionDeserializer;
@@ -32,11 +32,11 @@ public class CustomAuthorizedReportDefinitionDeserializer extends StdDeserialize
   }
 
   @Override
-  public AuthorizedReportDefinitionDto deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+  public AuthorizedReportDefinitionResponseDto deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
     final JsonNode node = jp.readValueAsTree();
     final ReportDefinitionDto reportDefinitionDto = reportDefinitionDeserializer.deserialize(jp, node);
     final AuthorizedEntityDto authorizedEntityDto = objectMapper.readValue(node.toString(), AuthorizedEntityDto.class);
-    return new AuthorizedReportDefinitionDto(reportDefinitionDto, authorizedEntityDto.getCurrentUserRole());
+    return new AuthorizedReportDefinitionResponseDto(reportDefinitionDto, authorizedEntityDto.getCurrentUserRole());
   }
 
 }

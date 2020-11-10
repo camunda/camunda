@@ -15,15 +15,15 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
-import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
@@ -70,8 +70,8 @@ public class CollectionScopeService {
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
 
-  public List<CollectionScopeEntryRestDto> getCollectionScope(final String userId,
-                                                              final String collectionId) {
+  public List<CollectionScopeEntryResponseDto> getCollectionScope(final String userId,
+                                                                  final String collectionId) {
     return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId)
       .getDefinitionDto()
       .getData()
@@ -86,11 +86,7 @@ public class CollectionScopeService {
         authorizedTenantDtos.addAll(
           unauthorizedTenantsIds.stream().map((t) -> UNAUTHORIZED_TENANT_MASK).collect(Collectors.toList())
         );
-        return new CollectionScopeEntryRestDto()
-          .setId(scope.getId())
-          .setDefinitionKey(scope.getDefinitionKey())
-          .setDefinitionType(scope.getDefinitionType())
-          .setTenants(authorizedTenantDtos);
+        return CollectionScopeEntryResponseDto.from(scope, authorizedTenantDtos);
       })
       // at least one authorized tenant is required for an entry to be included in the result
       .filter(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.getTenants()
@@ -102,15 +98,15 @@ public class CollectionScopeService {
         getDefinitionName(userId, collectionScopeEntryRestDto)
       ))
       .sorted(
-        Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
-          .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
+        Comparator.comparing(CollectionScopeEntryResponseDto::getDefinitionType)
+          .thenComparing(CollectionScopeEntryResponseDto::getDefinitionName)
       )
       .collect(Collectors.toList());
   }
 
-  public List<DefinitionWithTenantsDto> getCollectionDefinitions(final DefinitionType definitionType,
-                                                                 final String userId,
-                                                                 final String collectionId) {
+  public List<DefinitionWithTenantsResponseDto> getCollectionDefinitions(final DefinitionType definitionType,
+                                                                         final String userId,
+                                                                         final String collectionId) {
     final Map<String, List<String>> keysAndTenants =
       getAvailableKeysAndTenantsFromCollectionScope(userId, definitionType, collectionId);
 
@@ -126,10 +122,10 @@ public class CollectionScopeService {
     );
   }
 
-  public List<DefinitionVersionDto> getCollectionDefinitionVersionsByKeyAndType(final DefinitionType type,
-                                                                                final String key,
-                                                                                final String userId,
-                                                                                final String collectionId) {
+  public List<DefinitionVersionResponseDto> getCollectionDefinitionVersionsByKeyAndType(final DefinitionType type,
+                                                                                        final String key,
+                                                                                        final String userId,
+                                                                                        final String collectionId) {
     final Optional<CollectionScopeEntryDto> optionalScopeEntry = getCollectionScopeEntryDtoStream(userId, collectionId)
       .filter(entry -> entry.getDefinitionType().equals(type) && entry.getDefinitionKey().equals(key))
       .findFirst();
@@ -159,7 +155,7 @@ public class CollectionScopeService {
       definitionService.getDefinitionVersions(type, key, userId, optionalScopeEntry.get().getTenants())
         .stream()
         .findFirst()
-        .map(DefinitionVersionDto::getVersion)
+        .map(DefinitionVersionResponseDto::getVersion)
         .orElseThrow(() -> new OptimizeValidationException("Could not resolve latest version."));
 
     return definitionService.getDefinitionTenants(type, key, userId, versions, latestVersionAvailableInScopeSupplier)
@@ -243,7 +239,7 @@ public class CollectionScopeService {
   private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(final String collectionId,
                                                                                   final String scopeEntryId) {
     CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
-    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
@@ -300,13 +296,13 @@ public class CollectionScopeService {
       .collect(Collectors.groupingBy(SingleReportDefinitionDto::getReportType));
     byDefinitionType.getOrDefault(ReportType.DECISION, new ArrayList<>())
       .stream()
-      .filter(r -> r instanceof SingleDecisionReportDefinitionDto)
-      .map(r -> (SingleDecisionReportDefinitionDto) r)
+      .filter(r -> r instanceof SingleDecisionReportDefinitionRequestDto)
+      .map(r -> (SingleDecisionReportDefinitionRequestDto) r)
       .forEach(r -> reportService.updateSingleDecisionReport(r.getId(), r, userId, true));
     byDefinitionType.getOrDefault(ReportType.PROCESS, new ArrayList<>())
       .stream()
-      .filter(r -> r instanceof SingleProcessReportDefinitionDto)
-      .map(r -> (SingleProcessReportDefinitionDto) r)
+      .filter(r -> r instanceof SingleProcessReportDefinitionRequestDto)
+      .map(r -> (SingleProcessReportDefinitionRequestDto) r)
       .forEach(r -> reportService.updateSingleProcessReport(r.getId(), r, userId, true));
   }
 
@@ -337,7 +333,7 @@ public class CollectionScopeService {
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
                                                                              final CollectionDefinitionDto collectionDefinition) {
-    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
@@ -404,7 +400,7 @@ public class CollectionScopeService {
     try {
       return definitionService
         .getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
-        .map(DefinitionWithTenantsDto::getTenants)
+        .map(DefinitionWithTenantsResponseDto::getTenants)
         .orElseGet(ArrayList::new)
         .stream()
         .filter(tenantDto -> scope.getTenants().contains(tenantDto.getId()))
@@ -414,9 +410,13 @@ public class CollectionScopeService {
     }
   }
 
-  private String getDefinitionName(final String userId, final CollectionScopeEntryRestDto scope) {
-    return definitionService.getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
-      .map(DefinitionWithTenantsDto::getName)
+  private String getDefinitionName(final String userId, final CollectionScopeEntryResponseDto scope) {
+    return definitionService.getDefinitionWithAvailableTenants(
+      scope.getDefinitionType(),
+      scope.getDefinitionKey(),
+      userId
+    )
+      .map(DefinitionWithTenantsResponseDto::getName)
       .orElse(scope.getDefinitionKey());
   }
 

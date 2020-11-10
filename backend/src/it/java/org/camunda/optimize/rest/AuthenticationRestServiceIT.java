@@ -10,9 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AuthenticationRestServiceIT extends AbstractIT {
 
@@ -25,9 +23,9 @@ public class AuthenticationRestServiceIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("admin", "admin");
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity, is(notNullValue()));
+    assertThat(responseEntity).isNotNull();
   }
 
   @Test
@@ -44,9 +42,9 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = logoutResponse.readEntity(String.class);
-    assertThat(responseEntity, is("OK"));
+    assertThat(responseEntity).isEqualTo("OK");
   }
 
   @Test
@@ -60,7 +58,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -73,7 +71,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -85,7 +83,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   private String authenticateAdminUser() {

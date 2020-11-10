@@ -52,8 +52,15 @@ export default class Dropdown extends React.Component {
     }
   };
 
+  handleScroll = ({target}) => {
+    if (target.contains(this.container)) {
+      this.close({});
+    }
+  };
+
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
+    document.body.addEventListener('scroll', this.handleScroll, true);
   }
 
   initilizeHeaderAndFooterRefs() {
@@ -76,29 +83,29 @@ export default class Dropdown extends React.Component {
     const overlay = this.menuContainer.current;
     const buttonPosition = activeButton.getBoundingClientRect();
     this.initilizeHeaderAndFooterRefs();
-    const footerTop = this.footerRef.getBoundingClientRect().top;
-    const headerBottom = this.headerRef.getBoundingClientRect().bottom;
+    const footerTop = this.footerRef?.getBoundingClientRect().top || window.innerHeight;
+    const headerBottom = this.headerRef?.getBoundingClientRect().bottom || 0;
+
+    const offsetParent = activeButton.offsetParent.getBoundingClientRect();
+
+    if (open) {
+      menuStyle.top = buttonPosition.top - offsetParent.top + activeButton.offsetHeight;
+    }
+
+    menuStyle.left = buttonPosition.left - offsetParent.left;
 
     // check to flip menu horizentally
     if (buttonPosition.left + overlay.clientWidth > bodyWidth) {
-      menuStyle.right = 0;
-    } else {
-      menuStyle.left = 0;
+      menuStyle.left -= overlay.clientWidth - buttonPosition.width;
     }
 
     if (open && buttonPosition.bottom + overlay.clientHeight > footerTop) {
-      const oneItemHeight = overlay.querySelector('li').clientHeight;
-      const fixedListHeight = this.props.fixedOptions
-        ? this.props.fixedOptions.length * oneItemHeight
-        : 0;
-
       scrollable = true;
-      listStyles.height = footerTop - buttonPosition.bottom - fixedListHeight - margin;
+      listStyles.height = footerTop - buttonPosition.bottom - margin;
 
       // check to flip menu vertically
-      if (buttonPosition.bottom + oneItemHeight * 4 + fixedListHeight > footerTop) {
-        menuStyle.bottom = activeButton.offsetHeight;
-
+      if (buttonPosition.bottom + overlay.clientHeight > footerTop) {
+        menuStyle.top -= overlay.clientHeight + buttonPosition.height + 6; // 2 x 3px menu margin
         if (buttonPosition.top - headerBottom >= overlay.clientHeight) {
           scrollable = false;
           listStyles.height = 'auto';
@@ -175,18 +182,7 @@ export default class Dropdown extends React.Component {
 
   render() {
     const {open, scrollable, menuStyle, listStyles} = this.state;
-    const {
-      icon,
-      id,
-      active,
-      disabled,
-      label,
-      children,
-      fixedOptions,
-      className,
-      primary,
-      main,
-    } = this.props;
+    const {icon, id, active, disabled, label, children, className, primary, main} = this.props;
 
     return (
       <div
@@ -246,13 +242,6 @@ export default class Dropdown extends React.Component {
               </li>
             ))}
           </ul>
-          {fixedOptions && (
-            <ul className="fixedList">
-              {fixedOptions.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
     );
@@ -264,6 +253,7 @@ export default class Dropdown extends React.Component {
 
   componentWillUnmount() {
     document.body.removeEventListener('click', this.close, true);
+    document.body.removeEventListener('scroll', this.handleScroll, true);
   }
 }
 

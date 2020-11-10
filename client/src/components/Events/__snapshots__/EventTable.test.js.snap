@@ -106,7 +106,7 @@ exports[`should match snapshot 1`] = `
             "Order Accepted",
             "eventGroup",
             "order-service",
-            10,
+            "--",
           ],
           "props": Object {
             "className": "OrderAccepted disabled",
@@ -119,12 +119,32 @@ exports[`should match snapshot 1`] = `
     disablePagination={true}
     head={
       Array [
-        "checked",
-        "Mapped as…",
-        "Event Name",
-        "Group",
-        "Source",
-        "Count",
+        Object {
+          "id": "checked",
+          "label": "checked",
+          "sortable": false,
+        },
+        Object {
+          "id": "mapping",
+          "label": "Mapped as…",
+          "sortable": false,
+        },
+        Object {
+          "id": "eventName",
+          "label": "Event Name",
+        },
+        Object {
+          "id": "group",
+          "label": "Group",
+        },
+        Object {
+          "id": "source",
+          "label": "Source",
+        },
+        Object {
+          "id": "count",
+          "label": "Count",
+        },
       ]
     }
     noData={
@@ -134,6 +154,13 @@ exports[`should match snapshot 1`] = `
       </React.Fragment>
     }
     noHighlight={true}
+    sorting={
+      Object {
+        "by": "group",
+        "order": "asc",
+      }
+    }
+    updateSorting={[Function]}
   />
 </div>
 `;

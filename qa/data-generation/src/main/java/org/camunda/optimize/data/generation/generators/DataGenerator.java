@@ -7,10 +7,14 @@ package org.camunda.optimize.data.generation.generators;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.camunda.optimize.data.generation.generators.impl.incident.ActiveIncidentResolver;
+import org.camunda.optimize.data.generation.generators.impl.incident.IdleIncidentResolver;
+import org.camunda.optimize.data.generation.generators.impl.incident.IncidentResolver;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,11 +38,11 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   protected int nVersions;
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
-  private BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
+  private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   protected List<String> tenants = new ArrayList<>();
 
   protected SimpleEngineClient engineClient;
-  private AtomicInteger startedInstanceCount = new AtomicInteger(0);
+  private final AtomicInteger startedInstanceCount = new AtomicInteger(0);
 
   public DataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     this.nVersions = nVersions == null ? generateVersionNumber() : nVersions;
@@ -50,6 +53,10 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   protected abstract ModelType retrieveDiagram();
 
   protected abstract Map<String, Object> createVariables();
+
+  protected boolean createsIncidents() {
+    return false;
+  }
 
   public int getInstanceCountToGenerate() {
     return instanceCountToGenerate;
@@ -119,22 +126,29 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     complexVariableDto.setValueInfo(info);
 
 
-    Random random = new Random();
     Map<String, Object> variables = new HashMap<>();
     variables.put("person", complexVariableDto);
-    Integer integer = random.nextInt();
+    int integer = RandomUtils.nextInt();
     variables.put("stringVar", "aStringValue");
-    variables.put("boolVar", random.nextBoolean());
-    variables.put("integerVar", random.nextInt());
-    variables.put("shortVar", integer.shortValue());
-    variables.put("longVar", random.nextLong());
-    variables.put("doubleVar", random.nextDouble());
-    variables.put("dateVar", new Date(random.nextInt()));
+    variables.put("boolVar", RandomUtils.nextBoolean());
+    variables.put("integerVar", RandomUtils.nextInt());
+    variables.put("shortVar", (short) integer);
+    variables.put("longVar", RandomUtils.nextLong());
+    variables.put("doubleVar", RandomUtils.nextDouble());
+    variables.put("dateVar", new Date(RandomUtils.nextInt()));
     return variables;
   }
 
   private void createMessageEventCorrelater() {
     messageEventCorrelater = new MessageEventCorrelater(engineClient, getCorrelationNames());
+  }
+
+  private IncidentResolver createIncidentResolver() {
+    if (createsIncidents()) {
+      return new ActiveIncidentResolver(engineClient);
+    } else {
+      return new IdleIncidentResolver();
+    }
   }
 
   protected String[] getCorrelationNames() {
@@ -143,6 +157,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
 
   private void startInstances(final List<Integer> batchSizes,
                               final List<String> definitionIds) {
+    final IncidentResolver incidentResolver = createIncidentResolver();
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
       final String definitionId = definitionIds.get(ithBatch);
       final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(definitionId, engineClient);
@@ -157,26 +172,30 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
             Thread.sleep(5L);
           } catch (InterruptedException e) {
             logger.warn("Got interrupted while sleeping starting single instance");
+            Thread.currentThread().interrupt();
           }
           incrementStartedInstanceCount();
           if (i % 1000 == 0) {
             if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
               messageEventCorrelater.correlateMessages();
+              incidentResolver.resolveIncidents();
             }
           }
         });
 
       messageEventCorrelater.correlateMessages();
+      incidentResolver.resolveIncidents();
       logger.info("[definition-id:{}] Finished batch execution", definitionId);
 
       logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
-      userTaskCompleter.shutdown();
-      userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
-
-      if (Thread.currentThread().isInterrupted()) {
-        return;
+      try {
+        userTaskCompleter.shutdown();
+        userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        logger.warn("Got interrupted while waiting for userTask completion");
+        Thread.currentThread().interrupt();
       }
+      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
     }
   }
 
@@ -203,6 +222,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
+      Thread.currentThread().interrupt();
     }
   }
 

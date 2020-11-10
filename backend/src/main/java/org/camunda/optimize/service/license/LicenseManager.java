@@ -11,7 +11,7 @@ import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.camunda.bpm.licensecheck.LicenseType;
-import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
@@ -169,7 +169,7 @@ public class LicenseManager {
     }
   }
 
-  public LicenseInformationDto validateOptimizeLicense(String licenseAsString) {
+  public LicenseInformationResponseDto validateOptimizeLicense(String licenseAsString) {
     if (licenseAsString == null) {
       throw new OptimizeInvalidLicenseException(
         "Could not validate given license. Please try to provide another license!");
@@ -189,8 +189,8 @@ public class LicenseManager {
     }
   }
 
-  private LicenseInformationDto licenseKeyToDto(LicenseKey licenseKey) {
-    LicenseInformationDto dto = new LicenseInformationDto();
+  private LicenseInformationResponseDto licenseKeyToDto(LicenseKey licenseKey) {
+    LicenseInformationResponseDto dto = new LicenseInformationResponseDto();
     dto.setCustomerId(licenseKey.getCustomerId());
     dto.setUnlimited(licenseKey.isUnlimited());
     if (!licenseKey.isUnlimited()) {
@@ -199,7 +199,7 @@ public class LicenseManager {
     return dto;
   }
 
-  public LicenseInformationDto validateLicenseStoredInOptimize() {
+  public LicenseInformationResponseDto validateLicenseStoredInOptimize() {
     validateLicenseExists();
     return validateOptimizeLicense(optimizeLicense);
   }

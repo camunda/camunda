@@ -28,11 +28,11 @@ export default class Popover extends React.Component {
 
   componentDidMount() {
     this.mounted = true;
-    document.body.addEventListener('click', this.close);
+    document.body.addEventListener('click', this.close, {capture: true});
   }
 
   componentWillUnmount() {
-    document.body.removeEventListener('click', this.close);
+    document.body.removeEventListener('click', this.close, {capture: true});
     this.mounted = false;
   }
 
@@ -97,7 +97,7 @@ export default class Popover extends React.Component {
       const margin = 10;
 
       if (buttonLeftPosition + overlayWidth > bodyWidth) {
-        style.right = '-16px';
+        style.right = 0;
       } else {
         style.left = 0;
       }
@@ -123,13 +123,15 @@ export default class Popover extends React.Component {
       <div onClick={this.catchClick}>
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
-        <div
-          ref={this.storePopoverDialogRef}
-          onMouseDown={this.onPopoverDialogMouseDown}
-          style={this.state.dialogStyles}
-          className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
-        >
-          {this.props.children}{' '}
+        <div className="dialogContainer" style={this.state.dialogStyles}>
+          <div
+            ref={this.storePopoverDialogRef}
+            onMouseDown={this.onPopoverDialogMouseDown}
+            style={this.state.dialogStyles}
+            className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
+          >
+            {this.props.children}{' '}
+          </div>
         </div>
       </div>
     );

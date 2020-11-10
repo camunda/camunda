@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DecisionDefinitionResolverService extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto>{
+public class DecisionDefinitionResolverService extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
 
@@ -27,7 +27,7 @@ public class DecisionDefinitionResolverService extends AbstractDefinitionResolve
 
   @Override
   protected void syncCache() {
-    decisionDefinitionReader.getDecisionDefinitions(false, false)
+    decisionDefinitionReader.getDecisionDefinitions(false, false, true)
       .forEach(this::addToCacheIfNotNull);
   }
 

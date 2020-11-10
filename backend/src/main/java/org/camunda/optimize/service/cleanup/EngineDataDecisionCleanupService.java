@@ -74,7 +74,7 @@ public class EngineDataDecisionCleanupService implements CleanupService {
   }
 
   private Set<String> getAllOptimizeDecisionDefinitionKeys() {
-    return decisionDefinitionReader.getDecisionDefinitions(false, false)
+    return decisionDefinitionReader.getDecisionDefinitions(false, false, true)
       .stream()
       .map(DecisionDefinitionOptimizeDto::getKey)
       .collect(Collectors.toSet());

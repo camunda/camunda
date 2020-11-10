@@ -1,39 +1,35 @@
-.ValueListInput {
-  .undefinedOption {
-    margin-bottom: 15px;
-  }
+@import 'shared-styles/shared-styles.scss';
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    width: 50%;
-    max-width: 90%;
-    text-align: center;
+.ValueListInput {
+  margin-bottom: 20px;
+
+  .undefinedOption {
+    margin-top: 14px;
 
     input[type='checkbox'] {
-      margin-right: 0.75em;
-    }
-    input[type='text'] {
-      width: 100%;
+      margin-right: 10px;
     }
   }
 
-  .valueListItem {
-    margin-bottom: 8px;
-    display: flex;
-  }
-
-  .removeItemButton {
-    border: 1px solid transparent;
-    border-radius: 1;
-  }
-
-  .valueListButton {
-    text-align: center;
-  }
-
-  .addValueButton {
+  .singeValueInput {
     width: 100%;
+  }
+
+  .Message.error {
+    margin-top: 5px;
+  }
+
+  .MultiValueInput {
+    .Tag,
+    .Tag .Button {
+      background-color: #7fa8c5;
+      color: white;
+    }
+
+    .Tag.invalid,
+    .Tag.invalid .Button {
+      background-color: $red-lighten-85;
+      color: $grey-lighten-50;
+    }
   }
 }

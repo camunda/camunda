@@ -40,7 +40,7 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   imagePullSecrets:
-    - name: registry-camunda-cloud-secret
+    - name: registry-camunda-cloud
   volumes:
   - name: cambpm-config
     configMap:
@@ -60,7 +60,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 2
+        value: 4
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -219,7 +219,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 90, unit: 'MINUTES')
+    timeout(time: 120, unit: 'MINUTES')
   }
 
   stages {

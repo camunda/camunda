@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.engine.service.definition;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
 @Slf4j
-public abstract class AbstractDefinitionResolverService <T extends DefinitionOptimizeDto> {
+public abstract class AbstractDefinitionResolverService<T extends DefinitionOptimizeResponseDto> {
 
   // map contains not xml
   private final Map<String, T> idToDefinitionMap = new ConcurrentHashMap<>();
@@ -57,7 +57,7 @@ public abstract class AbstractDefinitionResolverService <T extends DefinitionOpt
 
   protected void addToCacheIfNotNull(final T newEntry) {
     Optional.ofNullable(newEntry)
-      .ifPresent(definition -> idToDefinitionMap.putIfAbsent(definition.getId(), definition));
+      .ifPresent(definition -> idToDefinitionMap.put(definition.getId(), definition));
   }
 
 }

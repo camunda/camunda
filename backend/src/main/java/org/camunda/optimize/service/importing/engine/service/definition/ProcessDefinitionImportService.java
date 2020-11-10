@@ -16,28 +16,43 @@ import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsea
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
 
 @AllArgsConstructor
 @Slf4j
 public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   @Override
   public void executeImport(final List<ProcessDefinitionEngineDto> pageOfEngineEntities,
                             final Runnable importCompleteCallback) {
-    log.trace("Importing entities from engine...");
+    log.trace("Importing process definitions from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities
         (pageOfEngineEntities);
+      markSavedDefinitionsAsDeleted(newOptimizeEntities);
       final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
+    }
+  }
+
+  private void markSavedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> definitionsToImport) {
+    final boolean definitionsDeleted = processDefinitionWriter.markRedeployedDefinitionsAsDeleted(definitionsToImport);
+    // We only resync the cache if at least one existing definition has been marked as deleted
+    if (definitionsDeleted) {
+      processDefinitionResolverService.syncCache();
     }
   }
 
@@ -50,8 +65,24 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionEngineDto>
-                                                                                   engineEntities) {
+  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
+    List<ProcessDefinitionEngineDto> engineEntities) {
+    // we mark new definitions as deleted if they are imported in the same batch as a newer deployment
+    final Map<String, List<ProcessDefinitionEngineDto>> groupedDefinitions = engineEntities.stream()
+      .collect(groupingBy(definition -> definition.getKey() + definition.getTenantId() + definition.getVersion()));
+    groupedDefinitions.entrySet()
+      .stream()
+      .filter(entry -> entry.getValue().size() > 1)
+      .forEach(entry -> {
+        final ProcessDefinitionEngineDto newestDefinition = entry.getValue()
+          .stream()
+          .max(Comparator.comparing(ProcessDefinitionEngineDto::getDeploymentTime))
+          .get();
+        entry.getValue()
+          .stream()
+          .filter(definition -> !definition.equals(newestDefinition))
+          .forEach(deletedDef -> deletedDef.setDeleted(true));
+      });
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
@@ -68,15 +99,16 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionEngineDto engineEntity) {
-    return new ProcessDefinitionOptimizeDto(
-      engineEntity.getId(),
-      engineEntity.getKey(),
-      String.valueOf(engineEntity.getVersion()),
-      engineEntity.getVersionTag(),
-      engineEntity.getName(),
-      engineContext.getEngineAlias(),
-      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
-    );
+    return ProcessDefinitionOptimizeDto.builder()
+      .id(engineEntity.getId())
+      .key(engineEntity.getKey())
+      .version(String.valueOf(engineEntity.getVersion()))
+      .versionTag(engineEntity.getVersionTag())
+      .name(engineEntity.getName())
+      .engine(engineContext.getEngineAlias())
+      .tenantId(engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
+      .deleted(engineEntity.isDeleted())
+      .build();
   }
 
 }

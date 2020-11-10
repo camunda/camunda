@@ -24,7 +24,7 @@ const props = {
 it('should load the report provided by id', () => {
   shallow(<OptimizeReport {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter);
+  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter, {});
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {
@@ -107,7 +107,9 @@ it('should reload the report if the filter changes', async () => {
   loadReport.mockClear();
   node.setProps({filter: [{type: 'suspendedInstancesOnly', data: null}]});
 
-  expect(loadReport).toHaveBeenCalledWith(props.report.id, [
-    {type: 'suspendedInstancesOnly', data: null},
-  ]);
+  expect(loadReport).toHaveBeenCalledWith(
+    props.report.id,
+    [{type: 'suspendedInstancesOnly', data: null}],
+    {}
+  );
 });

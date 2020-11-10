@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
+
 import java.util.concurrent.CompletableFuture;
 
 public interface EngineImportMediator {
@@ -20,5 +22,7 @@ public interface EngineImportMediator {
   boolean hasPendingImportJobs();
 
   void shutdown();
+
+  MediatorRank getRank();
 
 }

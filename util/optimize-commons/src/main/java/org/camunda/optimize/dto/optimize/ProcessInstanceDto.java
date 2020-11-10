@@ -5,24 +5,25 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import lombok.experimental.SuperBuilder;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Accessors(chain = true)
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder
 @FieldNameConstants
 public class ProcessInstanceDto implements OptimizeDto {
 
@@ -35,26 +36,17 @@ public class ProcessInstanceDto implements OptimizeDto {
   private OffsetDateTime endDate;
   private Long duration; // duration in ms
   private String state;
+  @Builder.Default
   private List<FlowNodeInstanceDto> events = new ArrayList<>();
+  @Builder.Default
   private List<UserTaskInstanceDto> userTasks = new ArrayList<>();
+  @Builder.Default
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
+  @Builder.Default
+  private List<IncidentDto> incidents = new ArrayList<>();
   private String engine;
   private String tenantId;
-
-  public ProcessInstanceDto(final String processDefinitionKey, final String processDefinitionVersion,
-                            final String processDefinitionId, final String processInstanceId,
-                            final String businessKey, final OffsetDateTime startDate, final OffsetDateTime endDate,
-                            final Long duration, final String state, final String engine, final String tenantId) {
-    this.processDefinitionKey = processDefinitionKey;
-    this.processDefinitionVersion = processDefinitionVersion;
-    this.processDefinitionId = processDefinitionId;
-    this.processInstanceId = processInstanceId;
-    this.businessKey = businessKey;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.duration = duration;
-    this.state = state;
-    this.engine = engine;
-    this.tenantId = tenantId;
-  }
 }
+
+
+

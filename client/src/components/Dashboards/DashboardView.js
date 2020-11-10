@@ -19,6 +19,7 @@ import {
   Popover,
   Deleter,
   EntityName,
+  DiagramScrollLock,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
@@ -158,6 +159,7 @@ export function DashboardView(props) {
                       shareEntity={shareDashboard}
                       revokeEntitySharing={revokeDashboardSharing}
                       getSharedEntity={getSharedDashboard}
+                      filter={filter}
                     />
                   </Popover>
                 </React.Fragment>
@@ -181,7 +183,7 @@ export function DashboardView(props) {
                     }
                   }}
                 >
-                  <Icon type="filter" /> {t('dashboard.filter.label')}
+                  <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
 
@@ -218,7 +220,12 @@ export function DashboardView(props) {
           </div>
         </div>
         {filtersShown && (
-          <FiltersView availableFilters={availableFilters} filter={filter} setFilter={setFilter} />
+          <FiltersView
+            reports={reports}
+            availableFilters={availableFilters}
+            filter={filter}
+            setFilter={setFilter}
+          />
         )}
         <Deleter
           type="dashboard"
@@ -231,11 +238,10 @@ export function DashboardView(props) {
             loadReport={evaluateReport}
             reports={reports}
             filter={filter}
-            addons={
-              autoRefreshInterval && [
-                <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
-              ]
-            }
+            addons={[
+              <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
+              <DiagramScrollLock key="diagramScrollLock" />,
+            ]}
           />
         </div>
       </div>

@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should include the selected parameters in the link state when creating a report 1`] = `
+Object {
+  "pathname": "report/new/edit",
+  "state": Object {
+    "definitionKey": "processDefinition",
+    "definitionName": "Process Definition Name",
+    "name": "Template Report Name",
+    "template": Object {
+      "view": Object {
+        "entity": "flowNode",
+        "property": "frequency",
+      },
+    },
+    "tenants": Array [
+      null,
+    ],
+    "versions": Array [
+      "1",
+    ],
+    "xml": "processXML",
+  },
+}
+`;

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
@@ -38,7 +38,7 @@ public class DashboardReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public Optional<DashboardDefinitionDto> getDashboard(String dashboardId) {
+  public Optional<DashboardDefinitionRestDto> getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(dashboardId);
 
@@ -57,7 +57,7 @@ public class DashboardReader {
 
     String responseAsString = getResponse.getSourceAsString();
     try {
-      return Optional.ofNullable(objectMapper.readValue(responseAsString, DashboardDefinitionDto.class));
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, DashboardDefinitionRestDto.class));
     } catch (IOException e) {
       String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
       log.error(
@@ -69,7 +69,7 @@ public class DashboardReader {
     }
   }
 
-  public List<DashboardDefinitionDto> findDashboardsForCollection(String collectionId) {
+  public List<DashboardDefinitionRestDto> getDashboardsForCollection(String collectionId) {
     log.debug("Fetching dashboards using collection with id {}", collectionId);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -87,10 +87,10 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
 
-  public List<DashboardDefinitionDto> findDashboardsForReport(String reportId) {
+  public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
@@ -115,7 +115,7 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
 
 }

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -80,7 +80,7 @@ public class SecurityCookiesInResponseIT extends AbstractIT {
       return embeddedOptimizeExtension.securedRootTarget()
         .path("api/authentication")
         .request()
-        .post(Entity.json(new CredentialsDto(DEFAULT_USERNAME, DEFAULT_PASSWORD)));
+        .post(Entity.json(new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD)));
     }
     return embeddedOptimizeExtension
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);

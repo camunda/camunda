@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.steps.document;
 
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 
@@ -20,8 +20,8 @@ public class InsertDataStep implements UpgradeStep {
   }
 
   @Override
-  public void execute(final ESIndexAdjuster esIndexAdjuster) {
-    esIndexAdjuster.insertDataByIndexName(index, data);
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+    schemaUpgradeClient.insertDataByIndexName(index, data);
   }
 
 }

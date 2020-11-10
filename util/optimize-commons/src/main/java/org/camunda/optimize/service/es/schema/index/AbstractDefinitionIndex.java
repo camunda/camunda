@@ -5,20 +5,21 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator {
-  public static final String DEFINITION_ID = DefinitionOptimizeDto.Fields.id;
-  public static final String DEFINITION_KEY = DefinitionOptimizeDto.Fields.key;
-  public static final String DEFINITION_VERSION = DefinitionOptimizeDto.Fields.version;
-  public static final String DEFINITION_VERSION_TAG = DefinitionOptimizeDto.Fields.versionTag;
-  public static final String DEFINITION_NAME = DefinitionOptimizeDto.Fields.name;
-  public static final String DEFINITION_ENGINE = DefinitionOptimizeDto.Fields.engine;
-  public static final String DEFINITION_TENANT_ID = DefinitionOptimizeDto.Fields.tenantId;
+  public static final String DEFINITION_ID = DefinitionOptimizeResponseDto.Fields.id;
+  public static final String DEFINITION_KEY = DefinitionOptimizeResponseDto.Fields.key;
+  public static final String DEFINITION_VERSION = DefinitionOptimizeResponseDto.Fields.version;
+  public static final String DEFINITION_VERSION_TAG = DefinitionOptimizeResponseDto.Fields.versionTag;
+  public static final String DEFINITION_NAME = DefinitionOptimizeResponseDto.Fields.name;
+  public static final String DEFINITION_ENGINE = DefinitionOptimizeResponseDto.Fields.engine;
+  public static final String DEFINITION_TENANT_ID = DefinitionOptimizeResponseDto.Fields.tenantId;
+  public static final String DEFINITION_DELETED = DefinitionOptimizeResponseDto.Fields.deleted;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
@@ -44,6 +45,9 @@ public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator
       .endObject()
       .startObject(DEFINITION_NAME)
         .field("type", "keyword")
+      .endObject()
+      .startObject(DEFINITION_DELETED)
+        .field("type", "boolean")
       .endObject();
     // @formatter:on
   }

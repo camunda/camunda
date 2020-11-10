@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class InvoiceBusinessDecisionsFor2TenantsAndSharedDataGenerator extends DecisionDataGenerator {
 
-  private static final String DMN_DIAGRAM = "diagrams/decision/invoiceBusinessDecisions-2-tenants-and-shared.dmn";
+  private static final String DMN_DIAGRAM = "/diagrams/decision/invoiceBusinessDecisions-2-tenants-and-shared.dmn";
 
   private Pair<String, String> inputVarNames = Pair.of("invoiceCategory", "amount");
   private List<Pair<String, Integer>> possibleInputCombinations = ImmutableList.of(

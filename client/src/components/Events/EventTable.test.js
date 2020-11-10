@@ -28,7 +28,7 @@ jest.mock('./service', () => ({
       source: 'order-service',
       eventName: 'OrderAccepted',
       eventLabel: 'Order Accepted',
-      count: 10,
+      count: null,
     },
   ]),
   isNonTimerEvent: jest.fn().mockReturnValue(false),
@@ -55,6 +55,8 @@ const props = {
   eventSources: [{type: 'external'}],
   onSelectEvent: jest.fn(),
 };
+
+const defaultSorting = {by: 'group', order: 'asc'};
 
 it('should match snapshot', () => {
   const node = shallow(<EventTable {...props} />);
@@ -84,7 +86,11 @@ it('should allow searching for events', () => {
 
   node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
 
-  expect(loadEvents).toHaveBeenCalledWith({eventSources: props.eventSources}, 'some String');
+  expect(loadEvents).toHaveBeenCalledWith(
+    {eventSources: props.eventSources},
+    'some String',
+    defaultSorting
+  );
 });
 
 it('should call callback when changing mapping', () => {
@@ -118,7 +124,8 @@ it('should pass payload to backend when loading events for suggestions', () => {
       mappings: props.mappings,
       eventSources: props.eventSources,
     },
-    ''
+    '',
+    defaultSorting
   );
 });
 
@@ -231,4 +238,22 @@ it('Should collapse the table on collapse button click', () => {
   node.find('.collapseButton').simulate('click');
 
   expect(node.find(Table).hasClass('collapsed')).toBe(true);
+});
+
+it('Should invoke loadEvents when updating the column sorting', () => {
+  loadEvents.mockClear();
+  const node = shallow(<EventTable {...props} />);
+
+  node.find('Table').prop('updateSorting')('eventName', 'desc');
+
+  expect(loadEvents).toHaveBeenCalledWith(
+    {
+      targetFlowNodeId: 'a',
+      xml: 'some xml',
+      mappings: props.mappings,
+      eventSources: props.eventSources,
+    },
+    '',
+    {by: 'eventName', order: 'desc'}
+  );
 });

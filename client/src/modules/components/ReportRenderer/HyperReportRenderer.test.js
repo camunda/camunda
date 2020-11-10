@@ -26,7 +26,10 @@ it('should convert a hypermap to a combined report', () => {
             type: 'assignee',
           },
           visualization: 'bar',
-          configuration: {distributedBy: {type: 'userTask', value: null}},
+          distributedBy: {type: 'userTask', value: null},
+          configuration: {
+            hiddenNodes: {active: true, keys: ['taskId3']},
+          },
         },
         result: {
           data: [
@@ -67,4 +70,61 @@ it('should convert a hypermap to a combined report', () => {
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should format single reports names for hyper reports distributed by date variable', () => {
+  const node = shallow(
+    <HyperReportRenderer
+      report={{
+        combined: false,
+        reportType: 'process',
+        data: {
+          processDefinitionKey: 'aKey',
+          processDefinitionVersion: '1',
+          view: {
+            property: 'frequency',
+            entity: 'processInstance',
+          },
+          groupBy: {
+            type: 'startDate',
+          },
+          visualization: 'bar',
+          distributedBy: {
+            type: 'variable',
+            value: {type: 'Date'},
+          },
+          configuration: {
+            distributeByDateVariableUnit: 'month',
+          },
+        },
+        result: {
+          data: [
+            {
+              key: '2020-09-01T00:00:00.000+0200',
+              label: '2020-09-01T00:00:00.000+0200',
+              value: [
+                {
+                  key: '1969-12-07T14:52:00Z',
+                  value: 1.0,
+                  label: '1969-12-07T14:52:00Z',
+                },
+                {
+                  key: '2020-03-08T14:52:00Z',
+                  value: 1.0,
+                  label: '2020-03-08T14:52:00Z',
+                },
+              ],
+            },
+          ],
+          isComplete: true,
+          instanceCount: 1234,
+          type: 'hyperMap',
+        },
+      }}
+    />
+  );
+
+  const names = Object.values(node.prop('report').result.data).map(({name}) => name);
+
+  expect(names).toEqual(['Dec 1969', 'Mar 2020']);
 });

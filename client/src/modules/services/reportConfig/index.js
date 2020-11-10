@@ -39,7 +39,7 @@ config.process.update = (type, data, props) => {
   }
 
   if (shouldResetDistributedBy(type, data, props.report.data)) {
-    changes.configuration.distributedBy = {$set: {type: 'none', value: null}};
+    changes.distributedBy = {$set: {type: 'none', value: null}};
   }
 
   return changes;
@@ -72,22 +72,48 @@ function shouldResetDistributedBy(type, data, report) {
     if (
       type === 'groupBy' &&
       data.type === 'userTasks' &&
-      report.configuration?.distributedBy.type === 'userTask'
+      report.distributedBy.type === 'userTask'
     ) {
       return true;
     }
 
-    // user task report: reset when it's distributed by assignee and we switch to group by assignee
+    // user task report: reset when it's distributed by assignee and we switch to group by assignee/duration
     if (
       type === 'groupBy' &&
-      ['assignee', 'candidateGroup'].includes(data.type) &&
-      ['assignee', 'candidateGroup'].includes(report.configuration?.distributedBy.type)
+      ['assignee', 'candidateGroup', 'duration'].includes(data.type) &&
+      ['assignee', 'candidateGroup'].includes(report.distributedBy.type)
     ) {
       return true;
     }
 
     // user task report: reset when changing view to anything else
     if (type === 'view' && data.entity !== 'userTask') {
+      return true;
+    }
+  }
+
+  if (report.view?.entity === 'processInstance') {
+    // process instance reports: reset when it's distributed by variable and we switch from start/end date to any other grouping
+    if (type === 'groupBy') {
+      if (
+        report.distributedBy.type === 'variable' &&
+        data.type !== 'startDate' &&
+        data.type !== 'endDate'
+      ) {
+        return true;
+      }
+
+      // process instance reports: reset when it's distributed by start/end date and we switch from variable to any other grouping
+      if (
+        ['startDate', 'endDate'].includes(report.distributedBy.type) &&
+        data.type !== 'variable'
+      ) {
+        return true;
+      }
+    }
+
+    // process instance reports: reset when changing view to anything else
+    if (type === 'view' && data.entity !== 'processInstance') {
       return true;
     }
   }

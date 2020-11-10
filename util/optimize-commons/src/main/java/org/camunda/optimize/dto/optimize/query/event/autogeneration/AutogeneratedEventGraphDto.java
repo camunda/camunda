@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 
 import java.util.List;
 import java.util.Map;

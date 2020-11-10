@@ -22,9 +22,14 @@ exports[`should render a status selection for flow node reports 1`] = `
       Completed
     </Option>
     <Option
+      value="canceled"
+    >
+      Cancelled or interrupted
+    </Option>
+    <Option
       value="all"
     >
-      All
+      All states
     </Option>
   </Select>
 </fieldset>
@@ -52,9 +57,14 @@ exports[`should render a status selection reports grouped by assignee 1`] = `
       Completed
     </Option>
     <Option
+      value="canceled"
+    >
+      Cancelled or interrupted
+    </Option>
+    <Option
       value="all"
     >
-      All
+      All states
     </Option>
   </Select>
 </fieldset>

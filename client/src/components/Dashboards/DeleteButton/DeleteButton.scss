@@ -4,19 +4,16 @@
   right: 0;
   border: none;
   background-color: transparent;
-  height: 32px;
-  width: 32px;
-  background-image: url(./close-x.svg);
-  background-size: 24px;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.75;
+  padding: 8px;
 
   &:hover,
   &:active {
     background-color: transparent;
     border: none;
     box-shadow: none;
-    opacity: 1;
+  }
+
+  .Icon {
+    margin: 0;
   }
 }

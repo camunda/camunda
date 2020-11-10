@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.springframework.stereotype.Component;
@@ -26,10 +27,12 @@ public class ReportEvaluationService {
   public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
                                                                                    final ZoneId timezone,
                                                                                    final String reportId,
-                                                                                   final AdditionalProcessReportEvaluationFilterDto filterDto) {
+                                                                                   final AdditionalProcessReportEvaluationFilterDto filterDto,
+                                                                                   final PaginationDto paginationDto) {
     ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportId)
       .userId(userId)
       .timezone(timezone)
+      .pagination(paginationDto)
       .additionalFilters(filterDto)
       .build();
     // auth is handled in evaluator as it also handles single reports of a combined report
@@ -38,13 +41,15 @@ public class ReportEvaluationService {
 
   public AuthorizedReportEvaluationResult evaluateUnsavedReport(final String userId,
                                                                 final ZoneId timezone,
-                                                                final ReportDefinitionDto reportDefinition) {
+                                                                final ReportDefinitionDto reportDefinition,
+                                                                final PaginationDto paginationDto) {
     // reset owner, it's not relevant for authorization given a full unsaved report definition is provided
     final String originalOwner = reportDefinition.getOwner();
     reportDefinition.setOwner(null);
     ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportDefinition)
       .userId(userId)
       .timezone(timezone)
+      .pagination(paginationDto)
       .build();
     // auth is handled in evaluator as it also handles single reports of a combined report
     final AuthorizedReportEvaluationResult authorizedReportEvaluationResult =

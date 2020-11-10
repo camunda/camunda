@@ -55,7 +55,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
     if (
       ['pie', 'heat'].includes(targetVisualization) &&
-      report.data.configuration.distributedBy.type !== 'none'
+      report.data.distributedBy.type !== 'none'
     ) {
       return false;
     }

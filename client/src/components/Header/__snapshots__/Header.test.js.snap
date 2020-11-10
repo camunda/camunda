@@ -71,16 +71,6 @@ exports[`matches the snapshot 1`] = `
     />
   </HeaderNav>
   <ChangeLogErrorHandler />
-  <Dropdown
-    className="userMenu"
-    label="Hans Wurst"
-  >
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-      title="Logout"
-    >
-      Logout
-    </ForwardRef(DropdownOption)>
-  </Dropdown>
+  <Component />
 </header>
 `;

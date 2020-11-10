@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -81,7 +81,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).hasSize(0);
+      assertThat(result.getData()).isEmpty();
     }
   }
 
@@ -139,7 +139,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month

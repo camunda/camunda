@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -110,6 +111,7 @@ public class ConfigurationService {
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Integer engineImportActivityInstanceMaxPageSize;
+  private Integer engineImportIncidentMaxPageSize;
   private Integer engineImportUserTaskInstanceMaxPageSize;
   private Integer engineImportIdentityLinkLogsMaxPageSize;
   private Integer engineImportUserOperationLogsMaxPageSize;
@@ -183,6 +185,8 @@ public class ConfigurationService {
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
   private TelemetryConfiguration telemetryConfiguration;
+
+  private GlobalCacheConfiguration caches;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -296,6 +300,11 @@ public class ConfigurationService {
       );
     }
     return elasticsearchConnectionNodes;
+  }
+
+  @JsonIgnore
+  public ElasticsearchConnectionNodeConfiguration getFirstElasticsearchConnectionNode() {
+    return getElasticsearchConnectionNodes().get(0);
   }
 
   public List<String> getDecisionOutputImportPluginBasePackages() {
@@ -495,11 +504,11 @@ public class ConfigurationService {
     return engineImportProcessDefinitionMaxPageSize;
   }
 
-  public Boolean getSharingEnabled() {
+  public boolean getSharingEnabled() {
     if (sharingEnabled == null) {
       sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED, Boolean.class);
     }
-    return sharingEnabled;
+    return Optional.ofNullable(sharingEnabled).orElse(false);
   }
 
   public int getEngineImportDecisionDefinitionXmlMaxPageSize() {
@@ -570,6 +579,16 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
     return engineImportActivityInstanceMaxPageSize;
+  }
+
+  public int getEngineImportIncidentMaxPageSize() {
+    if (engineImportIncidentMaxPageSize == null) {
+      engineImportIncidentMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_INCIDENT_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportIncidentMaxPageSize);
+    return engineImportIncidentMaxPageSize;
   }
 
   public int getEngineImportUserTaskInstanceMaxPageSize() {
@@ -819,6 +838,11 @@ public class ConfigurationService {
     return importDmnDataEnabled;
   }
 
+  @JsonIgnore
+  public boolean isImportDmnDataEnabled() {
+    return getImportDmnDataEnabled();
+  }
+
   public Boolean getImportUserTaskWorkerDataEnabled() {
     if (importUserTaskWorkerDataEnabled == null) {
       importUserTaskWorkerDataEnabled = configJsonContext.read(
@@ -827,6 +851,11 @@ public class ConfigurationService {
       );
     }
     return importUserTaskWorkerDataEnabled;
+  }
+
+  @JsonIgnore
+  public boolean isImportUserTaskWorkerDataEnabled() {
+    return getImportUserTaskWorkerDataEnabled();
   }
 
   public String getAlertEmailAddress() {
@@ -994,6 +1023,11 @@ public class ConfigurationService {
     return getEventBasedProcessConfiguration().getAuthorizedUserIds();
   }
 
+  @JsonIgnore
+  public List<String> getEventBasedProcessAccessGroupIds() {
+    return getEventBasedProcessConfiguration().getAuthorizedGroupIds();
+  }
+
   public TelemetryConfiguration getTelemetryConfiguration() {
     if (telemetryConfiguration == null) {
       telemetryConfiguration = configJsonContext.read(
@@ -1003,4 +1037,12 @@ public class ConfigurationService {
     }
     return telemetryConfiguration;
   }
+
+  public GlobalCacheConfiguration getCaches() {
+    if (caches == null) {
+      caches = configJsonContext.read(CACHES_CONFIGURATION, GlobalCacheConfiguration.class);
+    }
+    return caches;
+  }
+
 }

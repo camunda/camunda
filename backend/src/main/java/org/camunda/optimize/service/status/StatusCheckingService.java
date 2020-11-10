@@ -7,13 +7,13 @@ package org.camunda.optimize.service.status;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineConstants;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -32,16 +32,12 @@ public class StatusCheckingService {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-  private final EngineImportSchedulerFactory engineImportSchedulerFactory;
+  private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
 
-  public StatusWithProgressDto getConnectionStatusWithProgress() {
-    StatusWithProgressDto result = new StatusWithProgressDto();
+  public StatusWithProgressResponseDto getConnectionStatusWithProgress() {
+    final StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
     result.setConnectionStatus(getConnectionStatus());
-    Map<String, Boolean> importStatusMap = new HashMap<>();
-    engineImportSchedulerFactory
-      .getImportSchedulers()
-      .forEach(s -> importStatusMap.put(s.getEngineAlias(), s.isImporting()));
-    result.setIsImporting(importStatusMap);
+    result.setIsImporting(engineImportSchedulerManagerService.getImportStatusMap());
     return result;
   }
 
@@ -54,6 +50,17 @@ public class StatusCheckingService {
     }
     status.setEngineConnections(engineConnections);
     return status;
+  }
+
+  public boolean isConnectedToEsAndAtLeastOneEngine() {
+    if (isConnectedToElasticSearch()) {
+      for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+        if (isConnectedToEngine(engineContext)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private boolean isConnectedToEngine(EngineContext engineContext) {

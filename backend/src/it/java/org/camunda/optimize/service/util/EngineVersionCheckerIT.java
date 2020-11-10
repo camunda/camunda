@@ -19,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class EngineVersionCheckerIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(4)
+  @Order(5)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
-    EmbeddedOptimizeExtension.customPropertiesBuilder().context("classpath:versionCheckContext.xml").build();
+    new EmbeddedOptimizeExtension("classpath:versionCheckContext.xml");
 
   @Test
   public void engineVersionCantBeDetermined() {
@@ -47,9 +47,8 @@ public class EngineVersionCheckerIT extends AbstractIT {
   @AfterEach
   public void setContextBack() throws Exception {
     embeddedOptimizeExtension2.stopOptimize();
-    EmbeddedOptimizeExtension embeddedOptimizeExtension = EmbeddedOptimizeExtension.customPropertiesBuilder()
-      .context("classpath:embeddedOptimizeContext.xml")
-      .build();
+    EmbeddedOptimizeExtension embeddedOptimizeExtension =
+      new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext.xml");
     embeddedOptimizeExtension.startOptimize();
   }
 }

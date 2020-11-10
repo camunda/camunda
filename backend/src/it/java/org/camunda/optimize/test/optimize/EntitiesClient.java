@@ -7,8 +7,8 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 
@@ -23,30 +23,30 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 public class EntitiesClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public List<EntityDto> getAllEntities() {
+  public List<EntityResponseDto> getAllEntities() {
     return getAllEntities(null);
   }
 
-  public List<EntityDto> getAllEntities(EntitySorter sorter) {
+  public List<EntityResponseDto> getAllEntities(EntitySorter sorter) {
     return getAllEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, sorter);
   }
 
-  public List<EntityDto> getAllEntitiesAsUser(String username, String password) {
+  public List<EntityResponseDto> getAllEntitiesAsUser(String username, String password) {
     return getAllEntitiesAsUser(username, password, null);
   }
 
-  private List<EntityDto> getAllEntitiesAsUser(String username, String password, final EntitySorter sorter) {
+  private List<EntityResponseDto> getAllEntitiesAsUser(String username, String password, final EntitySorter sorter) {
     return getRequestExecutor()
       .buildGetAllEntitiesRequest(sorter)
       .withUserAuthentication(username, password)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public EntityNameDto getEntityNames(String collectionId, String dashboardId,
-                                      String reportId, String eventProcessId) {
+  public EntityNameResponseDto getEntityNames(String collectionId, String dashboardId,
+                                              String reportId, String eventProcessId) {
     return getRequestExecutor()
       .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
-      .execute(EntityNameDto.class, Response.Status.OK.getStatusCode());
+      .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
 

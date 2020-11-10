@@ -9,12 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByInputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
-import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
+import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -30,10 +28,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByInputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
-  public DecisionGroupByInputVariable(final ConfigurationService configurationService,
-                                      final DateAggregationService dateAggregationService,
-                                      final MinMaxStatsService minMaxStatsService) {
-    super(configurationService, dateAggregationService, minMaxStatsService);
+  public DecisionGroupByInputVariable(final VariableAggregationService variableAggregationService) {
+    super(variableAggregationService);
   }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {

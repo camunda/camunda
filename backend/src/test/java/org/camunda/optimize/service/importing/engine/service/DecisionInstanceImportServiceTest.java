@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -29,8 +30,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -61,10 +61,16 @@ public class DecisionInstanceImportServiceTest {
 
   @BeforeEach
   public void init() {
-    when(engineContext.getEngineAlias()).thenReturn("1");
     when(decisionDefinitionResolverService.getDefinition(any(), any()))
-      .thenReturn(Optional.of(new DecisionDefinitionOptimizeDto("123", "key", VERSION_RESULT, "", "", "", "")));
-
+      .thenReturn(Optional.of(
+        DecisionDefinitionOptimizeDto.builder()
+          .id("123").key("key")
+          .version(VERSION_RESULT)
+          .versionTag("")
+          .name("")
+          .engine("")
+          .tenantId("")
+          .build()));
     this.underTest = new DecisionInstanceImportService(
       elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,
       decisionDefinitionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
@@ -90,49 +96,35 @@ public class DecisionInstanceImportServiceTest {
 
     addAllSupportedInputVariables(historicDecisionInstanceDto);
 
-    addAllSupportedOutputVairables(historicDecisionInstanceDto);
+    addAllSupportedOutputVariables(historicDecisionInstanceDto);
+
+    when(engineContext.getEngineAlias()).thenReturn("1");
 
     // when
     final DecisionInstanceDto decisionInstanceDto = underTest.mapEngineEntityToOptimizeEntity(
-      historicDecisionInstanceDto
-    );
+      historicDecisionInstanceDto).orElseThrow(() -> new OptimizeIntegrationTestException("Could not map entity"));
 
     // then
-    assertThat(
-      decisionInstanceDto.getDecisionDefinitionId(),
-      is(historicDecisionInstanceDto.getDecisionDefinitionId())
-    );
-    assertThat(decisionInstanceDto.getDecisionInstanceId(), is(historicDecisionInstanceDto.getId()));
-    assertThat(
-      decisionInstanceDto.getDecisionDefinitionKey(),
-      is(historicDecisionInstanceDto.getDecisionDefinitionKey())
-    );
-    assertThat(decisionInstanceDto.getDecisionDefinitionVersion(), is(VERSION_RESULT));
-    assertThat(decisionInstanceDto.getProcessDefinitionId(), is(historicDecisionInstanceDto.getProcessDefinitionId()));
-    assertThat(
-      decisionInstanceDto.getProcessDefinitionKey(),
-      is(historicDecisionInstanceDto.getProcessDefinitionKey())
-    );
-    assertThat(decisionInstanceDto.getEvaluationDateTime(), is(historicDecisionInstanceDto.getEvaluationTime()));
-    assertThat(decisionInstanceDto.getProcessInstanceId(), is(historicDecisionInstanceDto.getProcessInstanceId()));
-    assertThat(
-      decisionInstanceDto.getRootProcessInstanceId(),
-      is(historicDecisionInstanceDto.getRootProcessInstanceId())
-    );
-    assertThat(decisionInstanceDto.getActivityId(), is(historicDecisionInstanceDto.getActivityId()));
-    assertThat(decisionInstanceDto.getCollectResultValue(), is(historicDecisionInstanceDto.getCollectResultValue()));
-    assertThat(
-      decisionInstanceDto.getRootDecisionInstanceId(),
-      is(historicDecisionInstanceDto.getRootDecisionInstanceId())
-    );
+    assertThat(decisionInstanceDto.getDecisionDefinitionId()).isEqualTo(historicDecisionInstanceDto.getDecisionDefinitionId());
+    assertThat(decisionInstanceDto.getDecisionInstanceId()).isEqualTo(historicDecisionInstanceDto.getId());
+    assertThat(decisionInstanceDto.getDecisionDefinitionKey()).isEqualTo(historicDecisionInstanceDto.getDecisionDefinitionKey());
+    assertThat(decisionInstanceDto.getDecisionDefinitionVersion()).isEqualTo(VERSION_RESULT);
+    assertThat(decisionInstanceDto.getProcessDefinitionId()).isEqualTo(historicDecisionInstanceDto.getProcessDefinitionId());
+    assertThat(decisionInstanceDto.getProcessDefinitionKey()).isEqualTo(historicDecisionInstanceDto.getProcessDefinitionKey());
+    assertThat(decisionInstanceDto.getEvaluationDateTime()).isEqualTo(historicDecisionInstanceDto.getEvaluationTime());
+    assertThat(decisionInstanceDto.getProcessInstanceId()).isEqualTo(historicDecisionInstanceDto.getProcessInstanceId());
+    assertThat(decisionInstanceDto.getRootProcessInstanceId()).isEqualTo(historicDecisionInstanceDto.getRootProcessInstanceId());
+    assertThat(decisionInstanceDto.getActivityId()).isEqualTo(historicDecisionInstanceDto.getActivityId());
+    assertThat(decisionInstanceDto.getCollectResultValue()).isEqualTo(historicDecisionInstanceDto.getCollectResultValue());
+    assertThat(decisionInstanceDto.getRootDecisionInstanceId()).isEqualTo(historicDecisionInstanceDto.getRootDecisionInstanceId());
 
-    assertThat(decisionInstanceDto.getInputs().size(), is(historicDecisionInstanceDto.getInputs().size()));
+    assertThat(decisionInstanceDto.getInputs()).hasSameSizeAs(historicDecisionInstanceDto.getInputs());
     assertAllInputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
 
-    assertThat(decisionInstanceDto.getOutputs().size(), is(historicDecisionInstanceDto.getOutputs().size()));
+    assertThat(decisionInstanceDto.getOutputs()).hasSameSizeAs(historicDecisionInstanceDto.getOutputs());
     assertAllOutputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
 
-    assertThat(decisionInstanceDto.getEngine(), is("1"));
+    assertThat(decisionInstanceDto.getEngine()).isEqualTo("1");
   }
 
   @Test
@@ -161,11 +153,10 @@ public class DecisionInstanceImportServiceTest {
 
     // when
     final DecisionInstanceDto decisionInstanceDto = underTest.mapEngineEntityToOptimizeEntity(
-      historicDecisionInstanceDto
-    );
+      historicDecisionInstanceDto).orElseThrow(() -> new OptimizeIntegrationTestException("Could not map entity"));
 
     // then
-    assertThat(decisionInstanceDto.getInputs().size(), is(historicDecisionInstanceDto.getInputs().size() - 2));
+    assertThat(decisionInstanceDto.getInputs()).hasSize(historicDecisionInstanceDto.getInputs().size() - 2);
     assertAllInputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
   }
 
@@ -174,7 +165,7 @@ public class DecisionInstanceImportServiceTest {
     // given
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
-    addAllSupportedOutputVairables(historicDecisionInstanceDto);
+    addAllSupportedOutputVariables(historicDecisionInstanceDto);
 
     final HistoricDecisionOutputInstanceDto nullTypeOutput = new HistoricDecisionOutputInstanceDto();
     nullTypeOutput.setId(UUID.randomUUID().toString());
@@ -201,12 +192,39 @@ public class DecisionInstanceImportServiceTest {
 
     // when
     final DecisionInstanceDto decisionInstanceDto = underTest.mapEngineEntityToOptimizeEntity(
-      historicDecisionInstanceDto
-    );
+      historicDecisionInstanceDto).orElseThrow(() -> new OptimizeIntegrationTestException("Could not map entity"));
 
     // then
-    assertThat(decisionInstanceDto.getOutputs().size(), is(historicDecisionInstanceDto.getOutputs().size() - 2));
+    assertThat(decisionInstanceDto.getOutputs()).hasSize(historicDecisionInstanceDto.getOutputs().size() - 2);
     assertAllOutputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
+  }
+
+  @Test
+  public void testInstanceDoesNotGetMappedIfDefinitionNotResolvable() {
+    // when
+    final String definitionId = "someDefinitionId";
+    HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
+    historicDecisionInstanceDto.setId(UUID.randomUUID().toString());
+    historicDecisionInstanceDto.setDecisionDefinitionId(definitionId);
+    historicDecisionInstanceDto.setDecisionDefinitionKey("decisionDefinitionKey");
+    historicDecisionInstanceDto.setDecisionDefinitionName("decisionDefinitionName");
+    historicDecisionInstanceDto.setEvaluationTime(OffsetDateTime.now());
+    historicDecisionInstanceDto.setProcessDefinitionId(UUID.randomUUID().toString());
+    historicDecisionInstanceDto.setProcessDefinitionKey("processDefinitionKey");
+    historicDecisionInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
+    historicDecisionInstanceDto.setRootProcessInstanceId(UUID.randomUUID().toString());
+    historicDecisionInstanceDto.setActivityId(UUID.randomUUID().toString());
+    historicDecisionInstanceDto.setCollectResultValue(2.0);
+    historicDecisionInstanceDto.setRootDecisionInstanceId(UUID.randomUUID().toString());
+
+    when(decisionDefinitionResolverService.getDefinition(definitionId, engineContext)).thenReturn(Optional.empty());
+
+    // when
+    final Optional<DecisionInstanceDto> instanceDto =
+      underTest.mapEngineEntityToOptimizeEntity(historicDecisionInstanceDto);
+
+    // then
+    assertThat(instanceDto).isNotPresent();
   }
 
   private void assertAllInputsWithAllFieldsAvailable(final HistoricDecisionInstanceDto historicDecisionInstanceDto,
@@ -218,10 +236,10 @@ public class DecisionInstanceImportServiceTest {
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("Couldn't find input with id: " + inputInstanceDto.getId()));
 
-      assertThat(inputInstanceDto.getClauseId(), is(historicInput.getClauseId()));
-      assertThat(inputInstanceDto.getClauseName(), is(historicInput.getClauseName()));
-      assertThat(inputInstanceDto.getType().getId(), is(historicInput.getType()));
-      assertThat(inputInstanceDto.getValue(), is(String.valueOf(historicInput.getValue())));
+      assertThat(inputInstanceDto.getClauseId()).isEqualTo(historicInput.getClauseId());
+      assertThat(inputInstanceDto.getClauseName()).isEqualTo(historicInput.getClauseName());
+      assertThat(inputInstanceDto.getType().getId()).isEqualTo(historicInput.getType());
+      assertThat(inputInstanceDto.getValue()).isEqualTo(String.valueOf(historicInput.getValue()));
     });
   }
 
@@ -234,13 +252,13 @@ public class DecisionInstanceImportServiceTest {
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("Couldn't find output with id: " + outputInstanceDto.getId()));
 
-      assertThat(outputInstanceDto.getClauseId(), is(historicOutput.getClauseId()));
-      assertThat(outputInstanceDto.getClauseName(), is(historicOutput.getClauseName()));
-      assertThat(outputInstanceDto.getRuleId(), is(historicOutput.getRuleId()));
-      assertThat(outputInstanceDto.getRuleOrder(), is(historicOutput.getRuleOrder()));
-      assertThat(outputInstanceDto.getVariableName(), is(historicOutput.getVariableName()));
-      assertThat(outputInstanceDto.getType().getId(), is(historicOutput.getType()));
-      assertThat(outputInstanceDto.getValue(), is(String.valueOf(historicOutput.getValue())));
+      assertThat(outputInstanceDto.getClauseId()).isEqualTo(historicOutput.getClauseId());
+      assertThat(outputInstanceDto.getClauseName()).isEqualTo(historicOutput.getClauseName());
+      assertThat(outputInstanceDto.getRuleId()).isEqualTo(historicOutput.getRuleId());
+      assertThat(outputInstanceDto.getRuleOrder()).isEqualTo(historicOutput.getRuleOrder());
+      assertThat(outputInstanceDto.getVariableName()).isEqualTo(historicOutput.getVariableName());
+      assertThat(outputInstanceDto.getType().getId()).isEqualTo(historicOutput.getType());
+      assertThat(outputInstanceDto.getValue()).isEqualTo(String.valueOf(historicOutput.getValue()));
     });
   }
 
@@ -256,7 +274,7 @@ public class DecisionInstanceImportServiceTest {
     }
   }
 
-  private void addAllSupportedOutputVairables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
+  private void addAllSupportedOutputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
     for (VariableType type : ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
@@ -289,7 +307,7 @@ public class DecisionInstanceImportServiceTest {
       case DATE:
         return OffsetDateTime.now();
       default:
-        throw new IllegalStateException("Unhandled type: " + type);
+        throw new OptimizeIntegrationTestException("Unhandled type: " + type);
     }
   }
 }

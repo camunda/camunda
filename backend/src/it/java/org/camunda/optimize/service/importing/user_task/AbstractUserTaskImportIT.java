@@ -7,29 +7,23 @@ package org.camunda.optimize.service.importing.user_task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected ObjectMapper objectMapper;
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void setUp() {
@@ -75,6 +69,10 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
     return engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram());
+  }
+
+  protected ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
   }
 
 }

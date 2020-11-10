@@ -39,10 +39,15 @@ export async function updateProcess(id, name, xml, mappings, eventSources) {
   return await put('api/eventBasedProcess/' + id, {name, xml, mappings, eventSources});
 }
 
-export async function loadEvents(body, searchTerm) {
+export async function loadEvents(body, searchTerm, sorting) {
   const query = {};
   if (searchTerm) {
     query.searchTerm = searchTerm;
+  }
+
+  if (sorting) {
+    query.sortBy = sorting.by;
+    query.sortOrder = sorting.order;
   }
 
   const response = await post('api/event/count', body, {query});
@@ -56,11 +61,6 @@ export async function getUsers(id) {
 
 export async function updateUsers(id, newUsers) {
   return await put(`api/eventBasedProcess/${id}/role`, newUsers);
-}
-
-export async function getUser(id) {
-  const response = await get(`api/identity/${id}`);
-  return await response.json();
 }
 
 export async function getCleanedMappings(body) {

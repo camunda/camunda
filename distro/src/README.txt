@@ -9,7 +9,7 @@ visit
 
 Contents:
 
-        environment/
+        config/
 
                     this is a local environment folder that contains configuration properties,
                     which can be used to overwrite default values of Optimize configuration. Also the logging

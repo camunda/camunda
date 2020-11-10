@@ -1,0 +1,4 @@
+{"index":{"_index":"optimize-event-process-definition","_type":"_doc","_id":"31117fd6-c93a-4ca1-9313-6eb78a6c2220"}}
+{"id":"31117fd6-c93a-4ca1-9313-6eb78a6c2220","key":"6bcf7d51-fa3e-4aed-98b1-334700f27408","version":"1","versionTag":null,"name":"myEventProcess","engine":null,"tenantId":null,"bpmn20Xml":"someXml","flowNodeNames":{"user_task_1":"user_task_1","EndEvent_1":"EndEvent_1","StartEvent_1":"StartEvent_1"},"userTaskNames":{"user_task_1":"user_task_1"}}
+{"index":{"_index":"optimize-event-process-definition","_type":"_doc","_id":"31117fd6-c93a-4ca1-9313-6eb78a6c2221"}}
+{"id":"31117fd6-c93a-4ca1-9313-6eb78a6c2221","key":"6bcf7d51-fa3e-4aed-98b1-334700f27408","version":"1","versionTag":null,"name":"anotherEventProcess","engine":null,"tenantId":null,"bpmn20Xml":"someXml","flowNodeNames":{"user_task_1":"user_task_1","EndEvent_1":"EndEvent_1","StartEvent_1":"StartEvent_1"},"userTaskNames":{"user_task_1":"user_task_1"}}

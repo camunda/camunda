@@ -1,7 +1,7 @@
 .DefinitionSelection {
   width: 100%;
 
-  > div > .Popover__dialog {
+  > div > .dialogContainer > .Popover__dialog {
     padding: 20px 40px;
   }
 
@@ -58,7 +58,7 @@
 
           &:first-child {
             margin-left: 0;
-            width: 275px;
+            width: 340px;
           }
 
           &.tenant {

@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -36,7 +36,7 @@ public class SharingWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public ReportShareDto saveReportShare(ReportShareDto createSharingDto) {
+  public ReportShareRestDto saveReportShare(ReportShareRestDto createSharingDto) {
     log.debug("Writing new report share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
@@ -64,7 +64,7 @@ public class SharingWriter {
     return createSharingDto;
   }
 
-  public DashboardShareDto saveDashboardShare(DashboardShareDto createSharingDto) {
+  public DashboardShareRestDto saveDashboardShare(DashboardShareRestDto createSharingDto) {
     log.debug("Writing new dashboard share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
@@ -96,7 +96,7 @@ public class SharingWriter {
     return createSharingDto;
   }
 
-  public void updateDashboardShare(DashboardShareDto updatedShare) {
+  public void updateDashboardShare(DashboardShareRestDto updatedShare) {
     String id = updatedShare.getId();
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)

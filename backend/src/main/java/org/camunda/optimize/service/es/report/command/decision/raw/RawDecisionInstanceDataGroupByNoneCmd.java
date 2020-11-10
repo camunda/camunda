@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.decision.raw;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionIns
 
 @Component
 public class RawDecisionInstanceDataGroupByNoneCmd
-  implements Command<SingleDecisionReportDefinitionDto> {
+  implements Command<SingleDecisionReportDefinitionRequestDto> {
 
   private final DecisionReportCmdExecutionPlan<RawDataDecisionReportResultDto> executionPlan;
 
@@ -46,7 +46,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
   }
 
   @Override
-  public SingleDecisionRawDataReportResult evaluate(final CommandContext<SingleDecisionReportDefinitionDto> commandContext) {
+  public SingleDecisionRawDataReportResult evaluate(final CommandContext<SingleDecisionReportDefinitionRequestDto> commandContext) {
     final RawDataDecisionReportResultDto evaluate = executionPlan.evaluate(commandContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(commandContext, evaluate);
     return new SingleDecisionRawDataReportResult(evaluate, commandContext.getReportDefinition());
@@ -57,7 +57,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
     return executionPlan.generateCommandKey();
   }
 
-  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleDecisionReportDefinitionDto> commandContext,
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleDecisionReportDefinitionRequestDto> commandContext,
                                                               final RawDataDecisionReportResultDto result) {
     final List<String> variableNames = result.getData()
       .stream()

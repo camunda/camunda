@@ -9,20 +9,23 @@
     display: none;
   }
 
-  .InstanceCount {
-    margin-top: 0;
-
-    .Popover .countString {
-      display: none;
-    }
-  }
-
   .header {
     flex-shrink: 0;
     margin-bottom: 40px;
 
     .title-button {
       flex-shrink: 0;
+    }
+
+    > .InstanceCount {
+      margin-top: 0;
+
+      .Popover {
+        .countString,
+        .filterListHeading {
+          display: none;
+        }
+      }
     }
   }
 
@@ -38,6 +41,7 @@
     justify-content: flex-start;
     flex-direction: column;
     flex-grow: 1;
+    min-height: 0;
 
     .Table {
       min-width: 25%;

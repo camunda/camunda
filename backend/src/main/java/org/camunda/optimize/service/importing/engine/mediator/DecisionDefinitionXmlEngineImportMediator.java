@@ -44,4 +44,9 @@ public class DecisionDefinitionXmlEngineImportMediator
     return engineEntityFetcher.fetchXmlsForDefinitions(page);
   }
 
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.DEFINITION_XML;
+  }
+
 }

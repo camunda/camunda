@@ -8,20 +8,19 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.web.socket.server.standard.SpringConfigurator;
 
-import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @ServerEndpoint(value = "/ws/status", configurator = SpringConfigurator.class)
@@ -31,20 +30,20 @@ public class StatusWebSocket {
   private final StatusCheckingService statusCheckingService;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
-  private final EngineImportSchedulerFactory engineImportSchedulerFactory;
+  private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
 
-  private Map<String, StatusNotifier> statusReportJobs = new HashMap<>();
+  private Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
   @OnOpen
   public void onOpen(Session session) {
-    if (statusReportJobs.size() <= configurationService.getMaxStatusConnections()) {
+    if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
       StatusNotifier job = new StatusNotifier(
         statusCheckingService,
         objectMapper,
         session
       );
       statusReportJobs.put(session.getId(), job);
-      engineImportSchedulerFactory.getImportSchedulers().forEach(s -> s.subscribe(job));
+      engineImportSchedulerManagerService.subscribeImportObserver(job);
       log.debug("starting to report status for session [{}]", session.getId());
     } else {
       log.debug("cannot create status report job for [{}], max connections exceeded", session.getId());
@@ -58,15 +57,15 @@ public class StatusWebSocket {
   }
 
   @OnClose
-  public void onClose(CloseReason reason, Session session) {
-    log.debug("stopping to report status for session [{}]", session.getId());
+  public void onClose(Session session) {
+    log.debug("stopping status reporting for session [{}]", session.getId());
     removeSession(session);
   }
 
   private void removeSession(Session session) {
     if (statusReportJobs.containsKey(session.getId())) {
       StatusNotifier job = statusReportJobs.remove(session.getId());
-      engineImportSchedulerFactory.getImportSchedulers().forEach(s -> s.unsubscribe(job));
+      engineImportSchedulerManagerService.unsubscribeImportObserver(job);
     }
   }
 

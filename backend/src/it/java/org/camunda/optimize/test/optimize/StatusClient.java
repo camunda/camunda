@@ -7,7 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
 
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
@@ -17,11 +17,11 @@ public class StatusClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public StatusWithProgressDto getImportStatus() {
+  public StatusWithProgressResponseDto getStatus() {
     return getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
-      .execute(StatusWithProgressDto.class, Response.Status.OK.getStatusCode());
+      .execute(StatusWithProgressResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

@@ -5,9 +5,13 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
+
 import {t} from 'translation';
 import {Dropdown, LoadingIndicator} from 'components';
+
 import {highlightText} from './service';
+
+import './OptionsList.scss';
 
 export default function OptionsList({
   loading,
@@ -32,7 +36,7 @@ export default function OptionsList({
     );
   }
 
-  if (filter && typedOption && filteredOptions.length === 0) {
+  if (filter && typedOption) {
     filteredOptions.unshift(
       <Dropdown.Option key={filter} value={filter} label={filter}>
         {filter}

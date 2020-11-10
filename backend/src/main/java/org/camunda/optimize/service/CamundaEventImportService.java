@@ -7,19 +7,18 @@ package org.camunda.optimize.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -63,8 +62,7 @@ public class CamundaEventImportService {
     return Collections.emptyList();
   }
 
-  public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(
-    List<FlowNodeEventDto> completedActivityInstances) {
+  public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(List<FlowNodeEventDto> completedActivityInstances) {
     final String engineAlias = completedActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
       return generateCamundaActivityEventsImports(
@@ -129,17 +127,34 @@ public class CamundaEventImportService {
   }
 
   private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(flowNodeEventDto.getProcessDefinitionId());
+    if (!definition.isPresent()) {
+      log.info("Cannot retrieve definition for definition with ID {}, cannot create events for running flow node {}",
+               flowNodeEventDto.getProcessDefinitionId(), flowNodeEventDto
+      );
+      return Stream.empty();
+    }
     if (SPLIT_START_END_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
-      return Stream.of(toFlowNodeActivityStartEvent(flowNodeEventDto));
+      return Stream.of(toFlowNodeActivityStartEvent(flowNodeEventDto, definition.get()));
     }
     return Stream.empty();
   }
 
   private Stream<CamundaActivityEventDto> convertCompletedActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(flowNodeEventDto.getProcessDefinitionId());
+    if (!definition.isPresent()) {
+      log.info("Cannot retrieve definition for definition with ID {}, cannot create events for completed flow node {}",
+               flowNodeEventDto.getProcessDefinitionId(), flowNodeEventDto
+      );
+      return Stream.empty();
+    }
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = definition.get();
     if (SPLIT_START_END_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
       return Stream.of(
-        toFlowNodeActivityStartEvent(flowNodeEventDto),
-        toCamundaActivityEvent(flowNodeEventDto).toBuilder()
+        toFlowNodeActivityStartEvent(flowNodeEventDto, processDefinitionOptimizeDto),
+        toCamundaActivityEvent(flowNodeEventDto, processDefinitionOptimizeDto).toBuilder()
           .activityId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityId()))
           .activityName(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityName()))
           .activityInstanceId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getId()))
@@ -150,31 +165,29 @@ public class CamundaEventImportService {
               .map(counter -> convertToOptimizeCounter(counter) + 1)
               .orElse(null)
           )
+          .canceled(flowNodeEventDto.getCanceled())
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
     } else if (SINGLE_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
-      return Stream.of(toCamundaActivityEvent(flowNodeEventDto).toBuilder()
+      return Stream.of(toCamundaActivityEvent(flowNodeEventDto, processDefinitionOptimizeDto).toBuilder()
                          .timestamp(flowNodeEventDto.getStartDate())
                          .build());
     }
     return Stream.empty();
   }
 
-  private CamundaActivityEventDto toFlowNodeActivityStartEvent(final FlowNodeEventDto flowNodeEventDto) {
-    return toCamundaActivityEvent(flowNodeEventDto).toBuilder()
+  private CamundaActivityEventDto toFlowNodeActivityStartEvent(final FlowNodeEventDto flowNodeEventDto,
+                                                               final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto) {
+    return toCamundaActivityEvent(flowNodeEventDto, processDefinitionOptimizeDto).toBuilder()
       .activityId(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getActivityId()))
       .activityName(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getActivityName()))
       .activityInstanceId(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getId()))
       .build();
   }
 
-  private CamundaActivityEventDto toCamundaActivityEvent(final FlowNodeEventDto flowNodeEventDto) {
-    final ProcessDefinitionOptimizeDto processDefinition =
-      processDefinitionResolverService.getDefinition(flowNodeEventDto.getProcessDefinitionId(), engineContext)
-        .orElseThrow(() -> new OptimizeRuntimeException(
-          "Could not resolve version for process definition id: " + flowNodeEventDto.getProcessDefinitionId() + "."
-        ));
+  private CamundaActivityEventDto toCamundaActivityEvent(final FlowNodeEventDto flowNodeEventDto,
+                                                         final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto) {
     return CamundaActivityEventDto.builder()
       .activityId(flowNodeEventDto.getActivityId())
       .activityName(flowNodeEventDto.getActivityName())
@@ -182,15 +195,25 @@ public class CamundaEventImportService {
       .activityInstanceId(flowNodeEventDto.getId())
       .processDefinitionKey(flowNodeEventDto.getProcessDefinitionKey())
       .processInstanceId(flowNodeEventDto.getProcessInstanceId())
-      .processDefinitionVersion(processDefinition.getVersion())
-      .processDefinitionName(processDefinition.getName())
+      .processDefinitionVersion(processDefinitionOptimizeDto.getVersion())
+      .processDefinitionName(processDefinitionOptimizeDto.getName())
       .engine(flowNodeEventDto.getEngineAlias())
       .tenantId(flowNodeEventDto.getTenantId())
       .timestamp(flowNodeEventDto.getStartDate())
       .orderCounter(
         Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(this::convertToOptimizeCounter).orElse(null)
       )
+      .canceled(flowNodeEventDto.getCanceled())
       .build();
+  }
+
+  private Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionForDefinitionId(final String definitionId) {
+    try {
+      return processDefinitionResolverService.getDefinition(definitionId, engineContext);
+    } catch (OptimizeProcessDefinitionNotFoundException ex) {
+      log.debug("Could not find the definition with ID {}", definitionId);
+      return Optional.empty();
+    }
   }
 
   private Long convertToOptimizeCounter(final Long counter) {
@@ -201,22 +224,32 @@ public class CamundaEventImportService {
 
   private Stream<CamundaActivityEventDto> convertRunningProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    String processDefinitionName =
-      processDefinitionResolverService.getDefinition(processInstanceDto.getProcessDefinitionId(), engineContext)
-        .map(DefinitionOptimizeDto::getName).orElse(null);
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(processInstanceDto.getProcessDefinitionId());
+    if (!definition.isPresent()) {
+      log.info("Cannot retrieve definition for definition {}, cannot create events for running process instance {}",
+               processInstanceDto.getProcessDefinitionId(), processInstanceDto
+      );
+      return Stream.empty();
+    }
     return Stream.of(toProcessInstanceStartEvent(
-      processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()
+      processInstanceDto, definition.get().getName(), processInstanceDto.getStartDate()
     ));
   }
 
   private Stream<CamundaActivityEventDto> convertCompletedProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    String processDefinitionName =
-      processDefinitionResolverService.getDefinition(processInstanceDto.getProcessDefinitionId(), engineContext)
-        .map(DefinitionOptimizeDto::getName).orElse(null);
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      getProcessDefinitionForDefinitionId(processInstanceDto.getProcessDefinitionId());
+    if (!definition.isPresent()) {
+      log.info("Cannot retrieve definition for definition {}, cannot create events for completed process instance {}",
+               processInstanceDto.getProcessDefinitionId(), processInstanceDto
+      );
+      return Stream.empty();
+    }
     return Stream.of(
-      toProcessInstanceStartEvent(processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()),
-      toProcessInstanceEndEvent(processInstanceDto, processDefinitionName, processInstanceDto.getEndDate())
+      toProcessInstanceStartEvent(processInstanceDto, definition.get().getName(), processInstanceDto.getStartDate()),
+      toProcessInstanceEndEvent(processInstanceDto, definition.get().getName(), processInstanceDto.getEndDate())
     );
   }
 

@@ -8,17 +8,22 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -34,6 +39,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.COUNT;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
@@ -57,12 +64,12 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 @Slf4j
 public class EventSequenceCountReader {
 
-  private static final String GROUP_AGG = EventCountDto.Fields.group;
-  private static final String SOURCE_AGG = EventCountDto.Fields.source;
-  private static final String EVENT_NAME_AGG = EventCountDto.Fields.eventName;
+  private static final String GROUP_AGG = EventCountResponseDto.Fields.group;
+  private static final String SOURCE_AGG = EventCountResponseDto.Fields.source;
+  private static final String EVENT_NAME_AGG = EventCountResponseDto.Fields.eventName;
   private static final String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
     "compositeEventNameSourceAndGroupAggregation";
-  private static final String COUNT_AGG = EventCountDto.Fields.count;
+  private static final String COUNT_AGG = EventCountResponseDto.Fields.count;
   private static final String KEYWORD_ANALYZER = "keyword";
 
   private final String indexKey;
@@ -94,7 +101,7 @@ public class EventSequenceCountReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
-  public List<EventCountDto> getEventCounts(final String searchTerm) {
+  public List<EventCountResponseDto> getEventCountsWithSearchTerm(final String searchTerm) {
     log.debug("Fetching event counts with searchTerm [{}}]", searchTerm);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -104,7 +111,7 @@ public class EventSequenceCountReader {
 
     final SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder);
-    List<EventCountDto> eventCountDtos = new ArrayList<>();
+    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
     CompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
@@ -112,6 +119,50 @@ public class EventSequenceCountReader {
       .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
       .scroll();
     return eventCountDtos;
+  }
+
+  public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<EventSourceEntryDto> eventSourceEntryDtos) {
+    log.debug("Fetching event counts for event sources: {}", eventSourceEntryDtos);
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(matchAllQuery());
+    searchSourceBuilder.aggregation(createAggregationBuilder());
+    searchSourceBuilder.size(0);
+
+    final String[] indicesToSearch = eventSourceEntryDtos.stream()
+      .map(source -> new EventSequenceCountIndex(source.getProcessDefinitionKey()).getIndexName())
+      .collect(Collectors.toList()).toArray(new String[eventSourceEntryDtos.size()]);
+    final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
+      .source(searchSourceBuilder);
+    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
+    CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
+      .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
+      .scroll();
+    return eventCountDtos;
+  }
+
+  public Set<String> getIndexSuffixesForCurrentSequenceCountIndices() {
+    final GetAliasesResponse aliases;
+    try {
+      aliases = esClient.getAlias(
+        new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
+      );
+    } catch (IOException e) {
+      final String errorMessage = "Could not retrieve the index keys for sequence count indices!";
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    return aliases.getAliases()
+      .values()
+      .stream()
+      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
+      .map(fullAliasName -> fullAliasName.substring(
+        fullAliasName.lastIndexOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX) + EVENT_SEQUENCE_COUNT_INDEX_PREFIX.length()
+      ))
+      .collect(Collectors.toSet());
   }
 
   public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(final EventTypeDto firstEventTypeDto,
@@ -245,14 +296,14 @@ public class EventSequenceCountReader {
       .subAggregation(eventCountAggregation);
   }
 
-  private EventCountDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
+  private EventCountResponseDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
     final String eventName = (String) (bucket.getKey()).get(EVENT_NAME_AGG);
     final String source = (String) (bucket.getKey().get(SOURCE_AGG));
     final String group = (String) (bucket.getKey().get(GROUP_AGG));
 
     final long count = (long) ((Sum) bucket.getAggregations().get(COUNT_AGG)).getValue();
 
-    return EventCountDto.builder()
+    return EventCountResponseDto.builder()
       .group(group)
       .source(source)
       .eventName(eventName)

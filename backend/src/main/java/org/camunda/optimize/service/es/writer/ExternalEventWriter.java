@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
@@ -41,12 +41,12 @@ public class ExternalEventWriter {
   private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
-  public void upsertEvents(final List<EventDto> eventDtos) {
+  public void upsertEvents(final List<EventResponseDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
 
     final BulkRequest bulkRequest = new BulkRequest();
     final Long ingestionTimestamp = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
-    for (EventDto eventDto : eventDtos) {
+    for (EventResponseDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(ingestionTimestamp);
       bulkRequest.add(createEventUpsert(eventDto));
     }
@@ -90,14 +90,14 @@ public class ExternalEventWriter {
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
         esClient.getIndexNameService()
-          .createVersionedOptimizeIndexPattern(new EventIndex())
+          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
       );
     } finally {
       progressReporter.stop();
     }
   }
 
-  private UpdateRequest createEventUpsert(final EventDto eventDto) {
+  private UpdateRequest createEventUpsert(final EventResponseDto eventDto) {
     return new UpdateRequest()
       .index(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME)
       .id(IdGenerator.getNextId())

@@ -22,15 +22,15 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
@@ -101,7 +101,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
 
   protected EventProcessMappingResponseDto autogenerateProcessAndGetMappingResponse(final EventProcessMappingCreateRequestDto createRequestDto) {
     String processId = eventProcessClient.createCreateEventProcessMappingRequest(createRequestDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
     return eventProcessClient.getEventProcessMapping(processId);
   }
 
@@ -250,9 +250,9 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  protected CloudEventDto createCloudEventOfType(final EventTypeDto eventType,
-                                                 final String traceId,
-                                                 final Instant now) {
+  protected CloudEventRequestDto createCloudEventOfType(final EventTypeDto eventType,
+                                                        final String traceId,
+                                                        final Instant now) {
     return eventClient.createCloudEventDto().toBuilder()
       .group(eventType.getGroup())
       .source(eventType.getSource())
@@ -261,7 +261,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
       .time(now).build();
   }
 
-  protected void ingestEventAndProcessTraces(List<CloudEventDto> eventsToIngest) {
+  protected void ingestEventAndProcessTraces(List<CloudEventRequestDto> eventsToIngest) {
     eventClient.ingestEventBatch(eventsToIngest);
     processEventCountAndTraces();
   }
@@ -277,10 +277,15 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   protected List<EventTypeDto> getEventCountsAsEventTypeDtos(final List<EventSourceEntryDto> eventSourceEntryDtos) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(EventCountRequestDto.builder().eventSources(eventSourceEntryDtos).build()
-      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode())
+      ).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode())
       .stream()
       .map(EventDtoBuilderUtil::fromEventCountDto)
       .collect(Collectors.toList());
+  }
+
+  protected void processEventTracesAndSequences() {
+    embeddedOptimizeExtension.processEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected String idOf(EventTypeDto eventTypeDto) {

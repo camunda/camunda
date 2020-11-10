@@ -55,3 +55,20 @@ it('should create mapping overlays', () => {
 
   expect(viewer.overlays.add).toHaveBeenCalled();
 });
+
+it('should call onChange on selection change', async () => {
+  const viewer = new Modeler();
+  const spy = jest.fn();
+  const selectionSpy = jest.fn();
+
+  shallow(<ProcessRenderer viewer={viewer} onChange={spy} onSelectNode={selectionSpy} />);
+
+  viewer.eventBus.on.mock.calls[2][1]();
+
+  expect(viewer.saveXML).toHaveBeenCalled();
+
+  await flushPromises();
+
+  expect(spy).toHaveBeenCalledWith('some xml', false);
+  expect(selectionSpy).toHaveBeenCalled();
+});

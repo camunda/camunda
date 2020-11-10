@@ -51,6 +51,10 @@ public class ReminderHandlingListener implements JobListener {
         logger.debug("Creating reminder job for [{}]", result.getAlert().getId());
         JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
+          if (context.getScheduler().checkExists(jobDetails.getKey())){
+            logger.debug("Skipping creating new job with key [{}] as it already exists", jobDetails.getKey());
+            return;
+          }
           context.getScheduler().scheduleJob(
               jobDetails,
               alertReminderJobFactory.createTrigger(result.getAlert(),jobDetails)

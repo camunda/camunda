@@ -1,73 +1,30 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should match snapshot 1`] = `
-<div
-  className="MultiEmailInput"
-  onClick={[Function]}
->
-  <ForwardRef(Input)
-    autoComplete="none"
-    disabled={false}
-    onBlur={[Function]}
-    onChange={[Function]}
-    onInput={[Function]}
-    onKeyDown={[Function]}
-    onPaste={[Function]}
-    value=""
-  />
-  <span
-    className="sizer"
-  />
-  <div
-    className="tag"
-    key="0"
-  >
-    <span
-      className="tagText"
-      title="email1@hotmail.com"
-    >
-      email1@hotmail.com
-    </span>
-    <ForwardRef(Button)
-      className="close"
-      icon={true}
-      onClick={[Function]}
-    >
-      <Icon
-        size="10px"
-        type="close-large"
-      />
-    </ForwardRef(Button)>
-  </div>
-  <div
-    className="tag"
-    key="1"
-  >
-    <span
-      className="tagText"
-      title="email2@gmail.com"
-    >
-      email2@gmail.com
-    </span>
-    <ForwardRef(Button)
-      className="close"
-      icon={true}
-      onClick={[Function]}
-    >
-      <Icon
-        size="10px"
-        type="close-large"
-      />
-    </ForwardRef(Button)>
-  </div>
-  <button
-    className="searchClear"
-    onKeyDown={[Function]}
-    onMouseDown={[Function]}
-  >
-    <Icon
-      type="clear"
-    />
-  </button>
-</div>
+<MultiValueInput
+  disabled={false}
+  extraSeperators={
+    Array [
+      ",",
+      ";",
+      " ",
+    ]
+  }
+  onAdd={[Function]}
+  onClear={[Function]}
+  onPaste={[Function]}
+  onRemove={[Function]}
+  values={
+    Array [
+      Object {
+        "invalid": false,
+        "value": "email1@hotmail.com",
+      },
+      Object {
+        "invalid": false,
+        "value": "email2@gmail.com",
+      },
+    ]
+  }
+/>
 `;

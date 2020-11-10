@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
@@ -130,11 +130,11 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
 
-    final SingleProcessReportDefinitionDto singleReport1 = createDateReport(
+    final SingleProcessReportDefinitionRequestDto singleReport1 = createDateReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE
     );
     singleReport1.getData().setProcessDefinitionKey("runningInstanceDef");
-    final SingleProcessReportDefinitionDto singleReport2 = createDateReport(
+    final SingleProcessReportDefinitionRequestDto singleReport2 = createDateReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE
     );
     singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
@@ -179,13 +179,13 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       .build();
   }
 
-  private SingleProcessReportDefinitionDto createDateReport(final ProcessReportDataType reportDataType) {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+  private SingleProcessReportDefinitionRequestDto createDateReport(final ProcessReportDataType reportDataType) {
+    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto runningReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(reportDataType)
       .build();
     reportDefinitionDto.setData(runningReportData);

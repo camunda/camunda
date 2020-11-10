@@ -9,9 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -105,7 +105,7 @@ public class EventProcessMappingReader {
     ).stream().map(IndexableEventProcessMappingDto::toEventProcessMappingDto).collect(Collectors.toList());
   }
 
-  public List<EventProcessRoleDto<IdentityDto>> getEventProcessRoles(final String eventProcessMappingId) {
+  public List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(final String eventProcessMappingId) {
     log.debug("Fetching event process roles for event process mapping id [{}].", eventProcessMappingId);
     final GetRequest getRequest = new GetRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
       .id(eventProcessMappingId)
@@ -123,7 +123,7 @@ public class EventProcessMappingReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    List<EventProcessRoleDto<IdentityDto>> result = Collections.emptyList();
+    List<EventProcessRoleRequestDto<IdentityDto>> result = Collections.emptyList();
     if (getResponse.isExists()) {
       try {
         result = objectMapper.readValue(getResponse.getSourceAsString(), IndexableEventProcessMappingDto.class)

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.client.Entity;
@@ -25,7 +25,7 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
   @Test
   public void responseContainsSecurityHeaders_https() {
     // given
-    final CredentialsDto entity = new CredentialsDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final CredentialsRequestDto entity = new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     //when
     Response authResponse = embeddedOptimizeExtension.securedRootTarget()

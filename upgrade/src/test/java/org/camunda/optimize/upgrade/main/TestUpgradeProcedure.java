@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.main;
 
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 
 public class TestUpgradeProcedure extends UpgradeProcedure {
@@ -15,8 +16,12 @@ public class TestUpgradeProcedure extends UpgradeProcedure {
   private final String toVersion;
 
   public TestUpgradeProcedure(String fromVersion, String toVersion, String customConfigLocation) {
-    super(UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation(
-      "service-config.yaml", "environment-config.yaml", customConfigLocation));
+    super(
+      UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation(
+        "service-config.yaml", "environment-config.yaml", customConfigLocation
+      ),
+      new UpgradeValidationService()
+    );
     this.fromVersion = fromVersion;
     this.toVersion = toVersion;
   }

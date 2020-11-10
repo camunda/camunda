@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.eventprocess.service;
 
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.service.EventProcessDefinitionService;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.report.ReportService;
@@ -79,6 +79,7 @@ public class EventProcessDefinitionImportService {
       .tenantId(null)
       .engine(null)
       .bpmn20Xml(eventProcessPublishStateDto.getXml())
+      .deleted(false)
       .flowNodeNames(BpmnModelUtil.extractFlowNodeNames(bpmnModelInstance))
       .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
       .build();

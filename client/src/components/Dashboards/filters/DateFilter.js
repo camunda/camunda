@@ -21,6 +21,7 @@ export default function DateFilter({
   children,
   resetTrigger,
   emptyText = t('common.select'),
+  title,
 }) {
   const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
 
@@ -75,7 +76,10 @@ export default function DateFilter({
 
   return (
     <div className={classnames('DateFilter__Dashboard', {fixed: filter?.type === 'fixed'})}>
-      {children}
+      <div className="title">
+        {title}
+        {children}
+      </div>
       {showDatePicker ? (
         <Popover
           title={
@@ -107,7 +111,7 @@ export default function DateFilter({
               setShowDatePicker(false);
             }}
           >
-            {t('common.reset')}
+            {t('common.off')}
           </Button>
         </Popover>
       ) : (
@@ -166,7 +170,7 @@ export default function DateFilter({
           </Dropdown.Submenu>
           <hr />
           <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
-            {t('common.reset')}
+            {t('common.off')}
           </Dropdown.Option>
         </Dropdown>
       )}

@@ -8,24 +8,22 @@ import React, {useState, useEffect} from 'react';
 import {Link, withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
-import {getHeader, areSettingsManuallyConfirmed} from 'config';
-import {withErrorHandling, withUser} from 'HOC';
+import {getHeader} from 'config';
+import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
 
-import {TelemetrySettings} from './TelemetrySettings';
 import HeaderNav from './HeaderNav';
 import ChangeLog from './ChangeLog';
+import UserMenu from './UserMenu';
 
 import {isEventBasedProcessEnabled} from './service';
 
 import './Header.scss';
 
-export function Header({mightFail, location, noActions, user, history}) {
+export function Header({mightFail, location, noActions}) {
   const [config, setConfig] = useState({});
   const [showEventBased, setShowEventBased] = useState(false);
-  const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
 
   useEffect(() => {
     mightFail(getHeader(), setConfig, () =>
@@ -33,14 +31,7 @@ export function Header({mightFail, location, noActions, user, history}) {
     );
 
     mightFail(isEventBasedProcessEnabled(), setShowEventBased, showError);
-
-    // automatically open the telemetry settings if settings have not been confirmed
-    mightFail(areSettingsManuallyConfirmed(), (confirmed) => {
-      if (!confirmed && user?.authorizations.includes('telemetry_administration')) {
-        setTelemetrySettingsOpen(true);
-      }
-    });
-  }, [mightFail, user]);
+  }, [mightFail]);
 
   const name = t('appName');
 
@@ -78,32 +69,11 @@ export function Header({mightFail, location, noActions, user, history}) {
             )}
           </HeaderNav>
           <ChangeLog />
-          <Dropdown className="userMenu" label={user?.name}>
-            {user?.authorizations.includes('telemetry_administration') && (
-              <>
-                <Dropdown.Option
-                  onClick={() => setTelemetrySettingsOpen(true)}
-                  title={t('navigation.telemetry')}
-                >
-                  {t('navigation.telemetry')}
-                </Dropdown.Option>
-                <hr />
-              </>
-            )}
-            <Dropdown.Option onClick={() => history.push('/logout')} title={t('navigation.logout')}>
-              {t('navigation.logout')}
-            </Dropdown.Option>
-          </Dropdown>
+          <UserMenu />
         </>
-      )}
-      {telemetrySettingsOpen && (
-        <TelemetrySettings
-          open={telemetrySettingsOpen}
-          onClose={() => setTelemetrySettingsOpen(false)}
-        />
       )}
     </header>
   );
 }
 
-export default withUser(withErrorHandling(withRouter(Header)));
+export default withErrorHandling(withRouter(Header));

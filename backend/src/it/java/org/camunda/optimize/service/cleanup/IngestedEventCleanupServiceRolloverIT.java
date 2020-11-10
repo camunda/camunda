@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,17 +32,17 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractEngineDataCle
     // given
     getIngestedEventCleanupConfiguration().setEnabled(true);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
-    final List<CloudEventDto> eventsToCleanupIngestedBeforeRollover =
+    final List<CloudEventRequestDto> eventsToCleanupIngestedBeforeRollover =
       eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
-    final List<CloudEventDto> eventsToKeepIngestedBeforeRollover =
+    final List<CloudEventRequestDto> eventsToKeepIngestedBeforeRollover =
       eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
 
     embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
 
-    final List<CloudEventDto> eventsToCleanupIngestedAfterRollover =
+    final List<CloudEventRequestDto> eventsToCleanupIngestedAfterRollover =
       eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
-    final List<CloudEventDto> eventsToKeepIngestedAfterRollover =
+    final List<CloudEventRequestDto> eventsToKeepIngestedAfterRollover =
       eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -52,10 +52,10 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractEngineDataCle
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
+      .extracting(EventResponseDto::getId)
       .containsExactlyInAnyOrderElementsOf(
         Stream.concat(eventsToKeepIngestedBeforeRollover.stream(), eventsToKeepIngestedAfterRollover.stream())
-          .map(CloudEventDto::getId).collect(Collectors.toSet())
+          .map(CloudEventRequestDto::getId).collect(Collectors.toSet())
       );
   }
 

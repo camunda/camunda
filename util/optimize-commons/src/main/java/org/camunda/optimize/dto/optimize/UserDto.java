@@ -26,7 +26,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 @FieldNameConstants
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class UserDto extends IdentityWithMetadataDto {
+public class UserDto extends IdentityWithMetadataResponseDto {
   private String firstName;
   private String lastName;
   private String email;

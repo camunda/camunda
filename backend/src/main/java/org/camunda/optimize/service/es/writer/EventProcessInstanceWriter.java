@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
@@ -48,7 +48,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 @Slf4j
 public class EventProcessInstanceWriter {
 
-  public static final Script VARIABLE_CLEAR_SCRIPT = new Script(
+  private static final Script VARIABLE_CLEAR_SCRIPT = new Script(
     MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
   );
 
@@ -209,6 +209,10 @@ public class EventProcessInstanceWriter {
         "} else {\n" +
         "  event.startDate = eventUpsert.startDate ?: event.startDate;\n" +
         "  event.endDate = eventUpsert.endDate ?: event.endDate;\n" +
+        // this check shouldn't be needed but exists as a safety net as activities can never be uncanceled
+        "  if (event.canceled == false && eventUpsert.canceled == true) { \n" +
+        "    event.canceled = eventUpsert.canceled;\n" +
+        "  }\n" +
         "}\n" +
         "calculateAndAssignEventDuration(event, dateFormatter);\n" +
       "}\n" +

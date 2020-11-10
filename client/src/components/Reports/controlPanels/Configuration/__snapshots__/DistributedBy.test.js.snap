@@ -1,5 +1,48 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should load and render variables for process instance count reports 1`] = `
+<fieldset
+  className="DistributedBy"
+>
+  <legend>
+    Distributed By
+  </legend>
+  <Select
+    key="3"
+    onChange={[Function]}
+  >
+    <Option
+      value="none"
+    >
+      Nothing
+    </Option>
+    <Submenu
+      key="variable"
+      label="Variable"
+    >
+      <Option
+        key="0"
+        value="var1"
+      >
+        var1
+      </Option>
+      <Option
+        key="1"
+        value="var2"
+      >
+        var2
+      </Option>
+      <Option
+        key="2"
+        value="var3"
+      >
+        var3
+      </Option>
+    </Submenu>
+  </Select>
+</fieldset>
+`;
+
 exports[`should match snapshot 1`] = `
 <fieldset
   className="DistributedBy"
@@ -8,6 +51,7 @@ exports[`should match snapshot 1`] = `
     Distributed By
   </legend>
   <Select
+    key="0"
     onChange={[Function]}
   >
     <Option

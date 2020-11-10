@@ -44,5 +44,3 @@ exports[`should render a unit selection for Date variables 1`] = `
   </Select>
 </fieldset>
 `;
-
-exports[`should render nothing if the current variable is not Date 1`] = `""`;

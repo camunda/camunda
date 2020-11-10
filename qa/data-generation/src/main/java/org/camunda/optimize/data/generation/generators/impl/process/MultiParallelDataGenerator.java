@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MultiParallelDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/multi-parallel.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/multi-parallel.bpmn";
 
   public MultiParallelDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

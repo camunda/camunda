@@ -78,6 +78,26 @@ public class EngineImportIndexHandlerRegistry {
     return result;
   }
 
+  public CompletedIncidentImportIndexHandler getCompletedIncidentImportIndexHandler(String engineAlias) {
+    CompletedIncidentImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
+      engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedIncidentImportIndexHandler.class);
+    }
+    return result;
+  }
+
+  public OpenIncidentImportIndexHandler getOpenIncidentImportIndexHandler(String engineAlias) {
+    OpenIncidentImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
+      engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(OpenIncidentImportIndexHandler.class);
+    }
+    return result;
+  }
+
   public UserOperationLogImportIndexHandler getUserOperationsLogImportIndexHandler(String engineAlias) {
     UserOperationLogImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(

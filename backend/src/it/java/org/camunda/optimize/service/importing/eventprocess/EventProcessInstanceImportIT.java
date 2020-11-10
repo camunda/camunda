@@ -8,9 +8,10 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
@@ -163,7 +165,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -230,6 +233,88 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void canceledFlowNodesAreCorrelatedToInstanceCorrectlyOnEventProcessInstancePublish() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
+    importEngineEntities();
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+        BPMN_END_EVENT_ID
+      )
+    );
+    importEngineEntities();
+
+    // when
+    executeImportCycle();
+
+    // then
+    assertThat(getEventProcessInstancesFromElasticsearch())
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getEvents())
+          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+          .containsExactlyInAnyOrder(
+            Tuple.tuple(BPMN_START_EVENT_ID, false),
+            Tuple.tuple(USER_TASK_ID_ONE, true)
+          );
+      });
+  }
+
+  @Test
+  public void canceledFlowNodesUpdateAlreadyPublishedInstanceFlowNodes() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+    importEngineEntities();
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+        BPMN_END_EVENT_ID
+      )
+    );
+    importEngineEntities();
+
+    // when
+    executeImportCycle();
+
+    // then all flow nodes for the process are not canceled
+    assertThat(getEventProcessInstancesFromElasticsearch())
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getEvents())
+          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+          .containsExactlyInAnyOrder(
+            Tuple.tuple(BPMN_START_EVENT_ID, false),
+            Tuple.tuple(USER_TASK_ID_ONE, false)
+          );
+      });
+
+    // when we cancel the running user task and reimport the activity
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
+    importEngineEntities();
+    executeImportCycle();
+
+    // then the user task is marked as canceled on the event process
+    assertThat(getEventProcessInstancesFromElasticsearch())
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getEvents())
+          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+          .containsExactlyInAnyOrder(
+            Tuple.tuple(BPMN_START_EVENT_ID, false),
+            Tuple.tuple(USER_TASK_ID_ONE, true)
+          );
+      });
+  }
+
+  @Test
   public void instancesAreGeneratedForExistingEventsAfterPublish_otherEventsHaveNoEffect() {
     // given
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
@@ -256,7 +341,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -323,7 +409,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -391,7 +478,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -453,7 +541,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -528,7 +617,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -587,7 +677,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -646,7 +737,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService()
-      .getVersionedOptimizeIndexNameForIndexMapping(new EventProcessInstanceIndex(eventProcessPublishStateId));
+      .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {

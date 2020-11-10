@@ -10,7 +10,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.engine.EngineListUserDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -31,7 +31,7 @@ public class CaseInsensitiveAuthenticationMockUtil {
     // a case-insensitive authentication backend (e.g. LDAP)
     final HttpRequest authenticateRequestWithUppercaseUserId = HttpRequest.request()
       .withPath(engineIntegrationExtension.getEnginePath() + "/identity/verify")
-      .withBody(embeddedOptimizeExtension.toJsonString(new CredentialsDto(allUpperCaseUserId, actualUserId)));
+      .withBody(embeddedOptimizeExtension.toJsonString(new CredentialsRequestDto(allUpperCaseUserId, actualUserId)));
     engineMockServer
       .when(authenticateRequestWithUppercaseUserId)
       .respond(

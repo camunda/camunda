@@ -1,0 +1,71 @@
+@import 'shared-styles/shared-styles.scss';
+
+.UncontrolledMultiValueInput {
+  border: 1px solid #bbb;
+  padding: 5px 10px 0px;
+  min-height: 32px;
+  border-radius: 3px;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+
+  .placeholder {
+    position: absolute;
+    font-size: 0.875em;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $grey-lighten-56;
+    pointer-events: none;
+    max-width: calc(100% - 20px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover {
+    cursor: text;
+  }
+
+  &:focus-within {
+    box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+    transition: box-shadow 0.05s ease-out 0s;
+  }
+
+  .Tag {
+    display: flex;
+    margin-right: 6px;
+    margin-bottom: 5px;
+    order: 1;
+  }
+
+  .Input {
+    border: none;
+    padding: 0;
+    margin-bottom: 5px;
+    max-width: 100%;
+    order: 2;
+
+    &:focus {
+      box-shadow: none;
+    }
+
+    &:disabled {
+      visibility: hidden;
+    }
+
+    &:not(:valid) ~ .searchClear {
+      display: block;
+    }
+  }
+
+  .searchClear {
+    right: 5px;
+    margin-top: 7px;
+  }
+
+  .sizer {
+    padding: 5px;
+    font-size: 0.875em;
+    display: none;
+  }
+}

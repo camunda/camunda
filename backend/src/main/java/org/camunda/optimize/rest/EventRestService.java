@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;
@@ -38,12 +38,12 @@ public class EventRestService {
   @POST
   @Path("/count")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventCountDto> getEventCounts(@Context final ContainerRequestContext requestContext,
-                                            @Valid @RequestBody final EventCountRequestDto eventCountRequestDto,
-                                            @BeanParam final EventCountSorter eventCountSorter,
-                                            @QueryParam("searchTerm") final String searchTerm) {
+  public List<EventCountResponseDto> getEventCounts(@Context final ContainerRequestContext requestContext,
+                                                    @Valid @RequestBody final EventCountRequestDto eventCountRequestDto,
+                                                    @BeanParam final EventCountSorter eventCountSorter,
+                                                    @QueryParam("searchTerm") final String searchTerm) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final List<EventCountDto> eventCounts = eventCountService.getEventCounts(
+    final List<EventCountResponseDto> eventCounts = eventCountService.getEventCounts(
       userId, searchTerm, eventCountRequestDto
     );
     return eventCountSorter.applySort(eventCounts);

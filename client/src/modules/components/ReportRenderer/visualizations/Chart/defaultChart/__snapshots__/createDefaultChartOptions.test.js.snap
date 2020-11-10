@@ -24,6 +24,7 @@ Object {
         "stacked": undefined,
         "ticks": Object {
           "autoSkip": undefined,
+          "callback": [Function],
           "fontColor": "#666",
         },
       },

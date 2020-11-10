@@ -36,4 +36,6 @@ export function UserProvider({children}) {
   );
 }
 
-export default (Component) => (props) => <Component {...useContext(UserContext)} {...props} />;
+export default function withUser(Component) {
+  return (props) => <Component {...useContext(UserContext)} {...props} />;
+}

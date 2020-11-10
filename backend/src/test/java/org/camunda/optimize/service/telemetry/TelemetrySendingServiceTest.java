@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.telemetry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import lombok.SneakyThrows;
 import org.apache.http.StatusLine;
@@ -14,6 +15,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
+import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -25,6 +27,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -104,8 +107,24 @@ public class TelemetrySendingServiceTest {
 
   private TelemetryDataDto getTestTelemetryData() {
     final DatabaseDto databaseDto = DatabaseDto.builder().version("7.0.0").build();
-    final InternalsDto internalsDto = InternalsDto.builder().database(databaseDto).build();
-    final ProductDto productDto = ProductDto.builder().internals(internalsDto).build();
+    final LicenseKeyDto licenseKeyDto = LicenseKeyDto.builder()
+      .customer("testCustomer")
+      .type("OPTIMIZE")
+      .validUntil("2020-01-01")
+      .unlimited(false)
+      .features(ImmutableMap.of(
+        "optimize", "true",
+        "camundaBPM", "false",
+        "cawemo", "false"
+      ))
+      .raw("customer = testCustomer; expiryDate = 2020-01-01; optimize = true;")
+      .build();
+    final InternalsDto internalsDto = InternalsDto.builder()
+      .database(databaseDto)
+      .licenseKey(licenseKeyDto)
+      .engineInstallationIds(Arrays.asList("Id1", "Id2"))
+      .build();
+    final ProductDto productDto = ProductDto.builder().version("3.2.0").internals(internalsDto).build();
 
     return TelemetryDataDto.builder()
       .installation("1234-5678")
@@ -115,8 +134,33 @@ public class TelemetrySendingServiceTest {
 
   @SneakyThrows
   private String getExpectedRequestEntityJson() {
-    ObjectMapper objectMapper = new ObjectMapper();
-    return objectMapper.writeValueAsString(getTestTelemetryData());
+    // @formatter:off
+    return
+      "{\"installation\":\"1234-5678\"," +
+        "\"product\":{" +
+            "\"name\":\"Camunda Optimize\"," +
+            "\"version\":\"3.2.0\"," +
+            "\"edition\":\"enterprise\"," +
+            "\"internals\":{" +
+              "\"database\":{" +
+              "\"vendor\":\"elasticsearch\"," +
+              "\"version\":\"7.0.0\"}," +
+              "\"engine-installation-ids\":[\"Id1\",\"Id2\"]," +
+              "\"license-key\":{" +
+                "\"customer\":\"testCustomer\"," +
+                "\"type\":\"OPTIMIZE\"," +
+                "\"unlimited\":false," +
+                "\"features\":{" +
+                  "\"optimize\":\"true\"," +
+                  "\"camundaBPM\":\"false\"," +
+                  "\"cawemo\":\"false\"}," +
+                "\"raw\":\"customer = testCustomer; expiryDate = 2020-01-01; optimize = true;\"," +
+                "\"valid-until\":\"2020-01-01\"" +
+              "}" +
+            "}" +
+          "}" +
+        "}";
+    // @formatter:on
   }
 
   @SneakyThrows

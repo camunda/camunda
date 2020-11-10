@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
@@ -43,8 +43,6 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionKeysByType_invalidCollectionId(final DefinitionType type) {
-    // given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -77,12 +75,41 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
     assertThat(definitionKeys)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactlyInAnyOrder(definitionKey1, definitionKey2);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionKeysByType_deletedNotIncludedInResponse(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name", false);
+    // deleted definition type will be excluded
+    final String definitionKey2 = "definitionKey2";
+    createDefinition(type, definitionKey2, "2", null, "the name", true);
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
+    );
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+
+    // then
+    assertThat(definitionKeys)
+      .extracting(DefinitionKeyResponseDto::getKey)
+      .containsExactlyInAnyOrder(definitionKey1);
   }
 
   @ParameterizedTest
@@ -105,16 +132,16 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when we get definition keys for the scope of the collection
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then the definition key is still returned although the definition only exists for the not defined tenant
     assertThat(definitionKeys)
-      .extracting(DefinitionKeyDto::getKey)
+      .extracting(DefinitionKeyResponseDto::getKey)
       .containsExactlyInAnyOrder(definitionKey);
   }
 
   @Test
-  public void getDefinitionKeys_camundaEventImportedOnlyNotAllowedInCollectionContext() {
+  public void getDefinitionKeysByType_camundaEventImportedOnlyNotAllowedInCollectionContext() {
     // given
     final String collectionId = collectionClient.createNewCollection();
 
@@ -138,7 +165,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
     assertThat(definitionKeys).isEmpty();
@@ -165,7 +192,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when definition keys of the other type are requested
-    final List<DefinitionKeyDto> definitionKeys = definitionClient
+    final List<DefinitionKeyResponseDto> definitionKeys = definitionClient
       .getDefinitionKeysByType(otherDefinitionType, collectionId);
 
     // then none are returned
@@ -216,11 +243,34 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("2", "1");
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_deletedDefinitionsExcludedFromResult(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name", true);
+    createDefinition(type, definitionKey1, "2", null, "the name", false);
+
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionResponseDto> versions = definitionClient
+      .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("2");
   }
 
   @ParameterizedTest
@@ -243,11 +293,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("2", "1");
   }
 
   @ParameterizedTest
@@ -270,11 +320,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("4", "3", "2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("4", "3", "2", "1");
   }
 
   @ParameterizedTest
@@ -301,11 +351,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionDto> versions = definitionClient
+    final List<DefinitionVersionResponseDto> versions = definitionClient
       .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
 
     // then
-    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("3", "2", "1");
+    assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("3", "2", "1");
   }
 
   @ParameterizedTest
@@ -685,17 +735,56 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     assertThat(responseForWrongVersion.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantsExcludedForDeletedDefinitions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name", false);
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name", false);
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_3, "deleted", true);
+
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2, TENANT_ID_3);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then only the tenants for the non deleted definitions are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1, TENANT_ID_2);
+  }
+
   private void createDefinition(final DefinitionType definitionType,
                                 final String key,
                                 final String version,
                                 final String tenantId,
                                 final String name) {
+    createDefinition(definitionType, key, version, tenantId, name, false);
+  }
+
+  private void createDefinition(final DefinitionType definitionType,
+                                final String key,
+                                final String version,
+                                final String tenantId,
+                                final String name,
+                                final boolean deleted) {
     switch (definitionType) {
       case PROCESS:
-        addProcessDefinitionToElasticsearch(key, version, tenantId, name);
+        addProcessDefinitionToElasticsearch(key, version, tenantId, name, deleted);
         return;
       case DECISION:
-        addDecisionDefinitionToElasticsearch(key, version, tenantId, name);
+        addDecisionDefinitionToElasticsearch(key, version, tenantId, name, deleted);
         return;
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + definitionType);
@@ -705,7 +794,8 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   private void addDecisionDefinitionToElasticsearch(final String key,
                                                     final String version,
                                                     final String tenantId,
-                                                    final String name) {
+                                                    final String name,
+                                                    final boolean deleted) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
       .id(key + "-" + version + "-" + tenantId)
       .key(key)
@@ -713,6 +803,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .tenantId(tenantId)
       .engine(DEFAULT_ENGINE_ALIAS)
       .name(name)
+      .deleted(deleted)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
@@ -723,7 +814,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   private void addProcessDefinitionToElasticsearch(final String key,
                                                    final String version,
                                                    final String tenantId,
-                                                   final String name) {
+                                                   final String name, final boolean deleted) {
     final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
       .id(key + "-" + version + "-" + tenantId)
       .key(key)
@@ -731,6 +822,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .version(version)
       .tenantId(tenantId)
       .engine(DEFAULT_ENGINE_ALIAS)
+      .deleted(deleted)
       .bpmn20Xml(key + version + tenantId)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(

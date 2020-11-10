@@ -27,10 +27,9 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -66,46 +65,51 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     return elasticsearchImportJobExecutor;
   }
 
-  public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
-    return new DecisionInstanceDto(
+  public Optional<DecisionInstanceDto> mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
+    final Optional<DecisionDefinitionOptimizeDto> definition = resolveDecisionDefinition(engineEntity);
+    if (!definition.isPresent()) {
+      log.info("Cannot retrieve definition for definition with ID {}. Skipping import of decision instance with ID {}",
+               engineEntity.getDecisionDefinitionId(), engineEntity.getId()
+      );
+      return Optional.empty();
+    }
+    final DecisionDefinitionOptimizeDto resolvedDefinition = definition.get();
+    return Optional.of(new DecisionInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessDefinitionId(),
       engineEntity.getProcessDefinitionKey(),
       engineEntity.getDecisionDefinitionId(),
       engineEntity.getDecisionDefinitionKey(),
-      resolveDecisionDefinitionVersion(engineEntity),
+      resolvedDefinition.getVersion(),
       engineEntity.getEvaluationTime(),
       engineEntity.getProcessInstanceId(),
       engineEntity.getRootProcessInstanceId(),
       engineEntity.getActivityId(),
       engineEntity.getCollectResultValue(),
       engineEntity.getRootDecisionInstanceId(),
-      mapDecisionInputs(engineEntity),
-      mapDecisionOutputs(engineEntity),
+      mapDecisionInputs(engineEntity, resolvedDefinition),
+      mapDecisionOutputs(engineEntity, resolvedDefinition),
       engineEntity.getOutputs().stream()
         .map(HistoricDecisionOutputInstanceDto::getRuleId)
         .collect(Collectors.toSet()),
       engineContext.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
-    );
+    ));
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto>
-                                                                          engineEntities) {
-    List<DecisionInstanceDto> list = new ArrayList<>();
-    for (HistoricDecisionInstanceDto engineEntity : engineEntities) {
-      DecisionInstanceDto decisionInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
-      list.add(decisionInstanceDto);
-    }
-    return list;
+  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto> engineEntities) {
+    return engineEntities.stream()
+      .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto>
-                                                                                     decisionInstanceDtos,
+  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto> decisionInstanceDtos,
                                                                                    Runnable callback) {
     final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
       decisionInstanceWriter,
@@ -115,10 +119,11 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     return importJob;
   }
 
-  private List<OutputInstanceDto> mapDecisionOutputs(HistoricDecisionInstanceDto engineEntity) {
+  private List<OutputInstanceDto> mapDecisionOutputs(HistoricDecisionInstanceDto engineEntity,
+                                                     final DecisionDefinitionOptimizeDto resolvedDefinition) {
     List<PluginDecisionOutputDto> outputInstanceDtoList = engineEntity.getOutputs()
       .stream()
-      .map(o -> mapEngineOutputDtoToPluginOutputDto(engineEntity, o))
+      .map(o -> mapEngineOutputDtoToPluginOutputDto(engineEntity, o, resolvedDefinition))
       .collect(Collectors.toList());
 
     for (DecisionOutputImportAdapter dmnInputImportAdapter : decisionOutputImportAdapterProvider.getPlugins()) {
@@ -131,10 +136,11 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       .collect(Collectors.toList());
   }
 
-  private List<InputInstanceDto> mapDecisionInputs(HistoricDecisionInstanceDto engineEntity) {
+  private List<InputInstanceDto> mapDecisionInputs(HistoricDecisionInstanceDto engineEntity,
+                                                   final DecisionDefinitionOptimizeDto resolvedDefinition) {
     List<PluginDecisionInputDto> inputInstanceDtoList = engineEntity.getInputs()
       .stream()
-      .map(i -> mapEngineInputDtoToPluginInputDto(engineEntity, i))
+      .map(i -> mapEngineInputDtoToPluginInputDto(engineEntity, i, resolvedDefinition))
       .collect(Collectors.toList());
 
 
@@ -171,20 +177,10 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     );
   }
 
-  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity) {
-    return decisionDefinitionResolverService
-      .getDefinition(engineEntity.getDecisionDefinitionId(), engineContext)
-      .map(DecisionDefinitionOptimizeDto::getVersion)
-      .orElseThrow(() -> {
-        final String message =
-          "Required Decision Definition couldn't be obtained, skipping current decision instance import cycle.";
-        return new OptimizeDecisionDefinitionFetchException(message);
-      });
-  }
-
   @SneakyThrows
   private PluginDecisionInputDto mapEngineInputDtoToPluginInputDto(final HistoricDecisionInstanceDto decisionInstanceDto,
-                                                                   final HistoricDecisionInputInstanceDto engineInputDto) {
+                                                                   final HistoricDecisionInputInstanceDto engineInputDto,
+                                                                   final DecisionDefinitionOptimizeDto resolvedDefinition) {
     return new PluginDecisionInputDto(
       engineInputDto.getId(),
       engineInputDto.getClauseId(),
@@ -192,7 +188,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineInputDto.getType(),
       Optional.ofNullable(engineInputDto.getValue()).map(String::valueOf).orElse(null),
       decisionInstanceDto.getDecisionDefinitionKey(),
-      resolveDecisionDefinitionVersion(decisionInstanceDto),
+      resolvedDefinition.getVersion(),
       decisionInstanceDto.getDecisionDefinitionId(),
       decisionInstanceDto.getId(),
       engineContext.getEngineAlias(),
@@ -202,7 +198,8 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   @SneakyThrows
   private PluginDecisionOutputDto mapEngineOutputDtoToPluginOutputDto(final HistoricDecisionInstanceDto decisionInstanceDto,
-                                                                      final HistoricDecisionOutputInstanceDto engineOutputDto) {
+                                                                      final HistoricDecisionOutputInstanceDto engineOutputDto,
+                                                                      final DecisionDefinitionOptimizeDto resolvedDefinition) {
     return new PluginDecisionOutputDto(
       engineOutputDto.getId(),
       engineOutputDto.getClauseId(),
@@ -213,7 +210,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineOutputDto.getType(),
       Optional.ofNullable(engineOutputDto.getValue()).map(String::valueOf).orElse(null),
       decisionInstanceDto.getDecisionDefinitionKey(),
-      resolveDecisionDefinitionVersion(decisionInstanceDto),
+      resolvedDefinition.getVersion(),
       decisionInstanceDto.getDecisionDefinitionId(),
       decisionInstanceDto.getId(),
       engineContext.getEngineAlias(),
@@ -253,4 +250,14 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     }
     return true;
   }
+
+  private Optional<DecisionDefinitionOptimizeDto> resolveDecisionDefinition(final HistoricDecisionInstanceDto engineEntity) {
+    try {
+      return decisionDefinitionResolverService.getDefinition(engineEntity.getDecisionDefinitionId(), engineContext);
+    } catch (OptimizeDecisionDefinitionNotFoundException ex) {
+      log.debug("Could not find the definition with ID {}", engineEntity.getDecisionDefinitionId());
+      return Optional.empty();
+    }
+  }
+
 }

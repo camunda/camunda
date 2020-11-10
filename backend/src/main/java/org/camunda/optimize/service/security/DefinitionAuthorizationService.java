@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -83,7 +83,7 @@ public class DefinitionAuthorizationService {
       case PROCESS:
         return eventProcessAuthorizationService.isAuthorizedToEventProcess(
           userId, definitionKey
-        ).orElse(engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+        ).orElseGet(() -> engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
           userId, IdentityType.USER, definitionKey, tenantIds
         ));
       case DECISION:
@@ -107,8 +107,8 @@ public class DefinitionAuthorizationService {
     }
   }
 
-  public <T extends DefinitionOptimizeDto> boolean isAuthorizedToAccessDefinition(final String userId,
-                                                                                  final T definition) {
+  public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(final String userId,
+                                                                                          final T definition) {
     switch (definition.getType()) {
       case PROCESS:
         return isAuthorizedToAccessProcessDefinition(userId, (ProcessDefinitionOptimizeDto) definition);
@@ -122,7 +122,8 @@ public class DefinitionAuthorizationService {
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
     if (processDefinition.isEventBased()) {
-      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey())
+        .orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
         userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()

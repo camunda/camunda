@@ -1,0 +1,30 @@
+<configuration>
+
+  <appender name="UPGRADE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="RUNTIME" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Change the log level for the Optimize runtime here. If provided, the environment variable will take precedence -->
+  <logger name="org.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
+
+  <!-- Change the log level for the upgrade here. If provided, the environment variable will take precedence -->
+  <logger name="org.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
+    <appender-ref ref="UPGRADE"
+    />
+  </logger>
+
+  <!-- Change the log level for the communication to Elasticsearch here. If provided, the environment variable will take precedence -->
+  <logger name="org.elasticsearch" level="${ES_LOG_LEVEL:-warn}"/>
+
+  <root level="warn">
+    <appender-ref ref="RUNTIME"/>
+  </root>
+</configuration>

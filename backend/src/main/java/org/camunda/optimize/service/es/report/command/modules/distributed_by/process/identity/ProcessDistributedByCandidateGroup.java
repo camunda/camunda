@@ -34,6 +34,6 @@ public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIden
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new CandidateGroupDistributedByDto());
+    dataForCommandKey.setDistributedBy(new CandidateGroupDistributedByDto());
   }
 }

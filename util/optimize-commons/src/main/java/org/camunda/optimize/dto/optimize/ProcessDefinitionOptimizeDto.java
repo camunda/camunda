@@ -19,7 +19,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
-public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
+public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
   private String bpmn20Xml;
   private Map<String, String> flowNodeNames = new HashMap<>();
   private Map<String, String> userTaskNames = new HashMap<>();
@@ -37,7 +37,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String name,
                                       final String engine,
                                       final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.PROCESS);
   }
 
   public ProcessDefinitionOptimizeDto(final String id,
@@ -60,9 +60,10 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String engine,
                                       final String tenantId,
                                       final String bpmn20Xml,
+                                      final boolean deleted,
                                       final Map<String, String> flowNodeNames,
                                       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, engine, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
     this.userTaskNames = userTaskNames;

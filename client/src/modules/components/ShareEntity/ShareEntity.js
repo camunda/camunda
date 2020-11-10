@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import {CopyToClipboard, Switch, Icon, LoadingIndicator, Form} from 'components';
+import {CopyToClipboard, Switch, Input, LabeledInput, LoadingIndicator, Form} from 'components';
 
 import './ShareEntity.scss';
 import {t} from 'translation';
+import {addNotification} from 'notifications';
 
 export default class ShareEntity extends React.Component {
   constructor(props) {
@@ -17,6 +18,7 @@ export default class ShareEntity extends React.Component {
     this.state = {
       loaded: false,
       isShared: false,
+      includeFilters: false,
       id: '',
     };
   }
@@ -44,20 +46,31 @@ export default class ShareEntity extends React.Component {
     }
   };
 
-  buildShareLink = () => {
-    if (this.state.id) {
-      const currentUrl = window.location.href;
-      return `${currentUrl.substring(0, currentUrl.indexOf('#'))}#/share/${this.props.type}/${
-        this.state.id
-      }`;
-    } else {
+  buildShareLink = (params = {}) => {
+    if (!this.state.id) {
       return '';
     }
+
+    const currentUrl = window.location.href;
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      query.set(key, value);
+    }
+    if (this.state.includeFilters) {
+      query.set('filter', JSON.stringify(this.props.filter));
+    }
+    const queryString = query.toString();
+
+    return `${currentUrl.substring(0, currentUrl.indexOf('#'))}#/share/${this.props.type}/${
+      this.state.id
+    }${queryString && '?' + queryString}`;
   };
 
   buildShareLinkForEmbedding = () => {
     if (this.state.id) {
-      return `<iframe src="${this.buildShareLink()}" frameborder="0" style="width: 1000px; height: 700px; allowtransparency; overflow: scroll"></iframe>`;
+      return `<iframe src="${this.buildShareLink({
+        mode: 'embed',
+      })}" frameborder="0" style="width: 1000px; height: 700px; allowtransparency; overflow: scroll"></iframe>`;
     } else {
       return '';
     }
@@ -67,8 +80,14 @@ export default class ShareEntity extends React.Component {
     return !this.state.isShared;
   };
 
+  showCopyMessage = () => {
+    addNotification(t('common.sharing.notification'));
+  };
+
   render() {
-    if (!this.state.loaded) {
+    const {loaded, isShared, includeFilters} = this.state;
+
+    if (!loaded) {
       return (
         <div className="ShareEntity">
           <LoadingIndicator />
@@ -78,35 +97,43 @@ export default class ShareEntity extends React.Component {
 
     return (
       <Form className="ShareEntity">
-        <div className="enable">
-          <div className="enableText">{t('common.sharing.popoverTitle')} </div>
-          <Switch checked={this.state.isShared} onChange={this.toggleValue} />
+        <Switch
+          checked={isShared}
+          onChange={this.toggleValue}
+          label={t('common.sharing.popoverTitle')}
+        />
+        <Input
+          className="linkText"
+          readOnly
+          disabled={!isShared}
+          value={this.buildShareLink()}
+          placeholder={t('common.sharing.inputPlaceholder')}
+        />
+        <div className="includeFilters">
+          <LabeledInput
+            type="checkbox"
+            checked={includeFilters}
+            onChange={(evt) => {
+              this.setState({includeFilters: evt.target.checked});
+            }}
+            label={t('common.sharing.filtersLabel')}
+          />
         </div>
-        <div className={'linkArea' + (this.disabled() ? 'Disabled' : '')}>
-          <div className="clipboard">
-            <Icon type="link" renderedIn="span" />
-            <span className="label">{t('common.sharing.link.title')}</span>
-            <span className="labelDescription">
-              {t(`common.sharing.link.description.${this.props.type}`)}
-            </span>
-            <CopyToClipboard
-              className="shareLink"
-              disabled={this.disabled()}
-              value={this.buildShareLink()}
-            />
-          </div>
-          <div className="clipboard">
-            <Icon type="embed" renderedIn="span" />
-            <span className="label">{t('common.sharing.embed.title')}</span>
-            <span className="labelDescription">
-              {t(`common.sharing.embed.description.${this.props.type}`)}
-            </span>
-            <CopyToClipboard
-              className="embedLink"
-              disabled={this.disabled()}
-              value={this.buildShareLinkForEmbedding()}
-            />
-          </div>
+        <div className="clipboardButtons">
+          <CopyToClipboard
+            disabled={!isShared}
+            value={this.buildShareLink()}
+            onCopy={this.showCopyMessage}
+          >
+            {t('common.sharing.copyLabel')}
+          </CopyToClipboard>
+          <CopyToClipboard
+            disabled={!isShared}
+            value={this.buildShareLinkForEmbedding()}
+            onCopy={this.showCopyMessage}
+          >
+            {t('common.sharing.embedLabel')}
+          </CopyToClipboard>
         </div>
       </Form>
     );

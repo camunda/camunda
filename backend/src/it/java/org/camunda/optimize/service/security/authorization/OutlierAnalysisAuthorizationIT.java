@@ -23,11 +23,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OutlierAnalysisAuthorizationIT extends AbstractIT {
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";
@@ -71,7 +70,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -96,7 +95,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -123,7 +122,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -148,7 +147,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -178,7 +177,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -207,7 +206,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -241,7 +240,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private Response executeRequest(final ProcessDefinitionEngineDto processDefinition,

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -64,9 +64,9 @@ public class DecisionVariableReader {
   private final OptimizeElasticsearchClient esClient;
   private final DecisionDefinitionReader decisionDefinitionReader;
 
-  public List<DecisionVariableNameDto> getInputVariableNames(final String decisionDefinitionKey,
-                                                             final List<String> decisionDefinitionVersions,
-                                                             final List<String> tenantIds) {
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(final String decisionDefinitionKey,
+                                                                     final List<String> decisionDefinitionVersions,
+                                                                     final List<String> tenantIds) {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       log.debug("Cannot fetch output variable values for decision definition with missing versions.");
       return Collections.emptyList();
@@ -81,9 +81,9 @@ public class DecisionVariableReader {
       "Could not extract input variables. Requested decision definition not found!")).getInputVariableNames();
   }
 
-  public List<DecisionVariableNameDto> getOutputVariableNames(final String decisionDefinitionKey,
-                                                              final List<String> decisionDefinitionVersions,
-                                                              final List<String> tenantIds) {
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
+                                                                      final List<String> decisionDefinitionVersions,
+                                                                      final List<String> tenantIds) {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Collections.emptyList();
     } else {

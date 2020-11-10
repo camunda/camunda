@@ -11,8 +11,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,4 +39,18 @@ public class EventSourceEntryResponseDto {
   private List<String> tenants = new ArrayList<>();
   private boolean tracedByBusinessKey;
   private String traceVariable;
+
+  public static EventSourceEntryResponseDto from(EventSourceEntryDto eventSource, String definitionName){
+   return EventSourceEntryResponseDto.builder()
+            .id(eventSource.getId())
+            .type(eventSource.getType())
+            .eventScope(eventSource.getEventScope())
+            .processDefinitionKey(eventSource.getProcessDefinitionKey())
+            .processDefinitionName(definitionName)
+            .tracedByBusinessKey(eventSource.isTracedByBusinessKey())
+            .traceVariable(eventSource.getTraceVariable())
+            .versions(eventSource.getVersions())
+            .tenants(eventSource.getTenants())
+            .build();
+  }
 }

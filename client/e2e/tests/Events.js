@@ -9,6 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Events.elements.js';
+import * as Homepage from "./Homepage.elements";
 
 fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
 
@@ -29,10 +30,10 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
   await t.setFilesToUpload(e.fileInput, './resources/eventsProcess.bpmn');
-  await t.click(e.entity('Invoice process'));
+  await t.click(e.entity('Event Invoice process'));
   await t.click(e.editButton);
 
-  await t.typeText(e.nameEditField, 'Invoice Process', {replace: true});
+  await t.typeText(e.nameEditField, 'Event Invoice process', {replace: true});
 
   await t.takeScreenshot('event-based-processes/editMode.png');
 
@@ -86,14 +87,27 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.permissionButton);
 
   await t.click(e.optionsButton(e.usersTypeahead));
-  await t.typeText(e.typeaheadInput(e.usersTypeahead), 'John', {replace: true});
-  await t.click(e.typeaheadOption(e.usersTypeahead, 'John'));
-  await t.click(e.buttonWithText('Add'));
+  // Using exact userId in the search to eliminate potential race condition on the identity being available in
+  // the search cache. Id usage will always work regardless of the search cache state.
+  await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
+  await t.click(e.typeaheadOption(e.usersTypeahead, 'john'));
 
   await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
+  await t.expect(e.notification.exists).ok({ timeout: 5000 });
+  await t.click(e.notificationCloseButton(e.notification));
+
+  // Listing
+  await t.click(e.navItem);
+  await t.hover(e.entity('Event Invoice process'));
+  await t.click(Homepage.contextMenu(e.invoiceEventProcess));
+  await t.takeScreenshot('event-based-processes/processList.png');
+
+  // Edit Access
+  await t.click(e.editAccess(e.invoiceEventProcess));
+  await t.takeElementScreenshot(e.modalContainer.nth(0), 'event-based-processes/editAccess.png');
 });
 
 test('auto generate a process', async (t) => {

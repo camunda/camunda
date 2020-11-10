@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -25,10 +25,10 @@ import java.util.stream.IntStream;
 
 @Slf4j
 public class SingleProcessHyperMapReportResult
-  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionRequestDto> {
 
   public SingleProcessHyperMapReportResult(@NonNull final ReportHyperMapResultDto reportResult,
-                                           @NonNull final SingleProcessReportDefinitionDto reportDefinition) {
+                                           @NonNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
 
@@ -57,8 +57,7 @@ public class SingleProcessHyperMapReportResult
   private void addHeaderLine(List<String[]> mergedCsvReports) {
     ProcessReportDataDto data = reportDefinition.getData();
     final String[] reportNameHeader =
-      new String[]{data.getConfiguration().createCommandKey(data.getView()), data.getGroupBy().createCommandKey(),
-        data.getGroupBy().createCommandKey()};
+      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey(), data.getGroupBy().createCommandKey()};
     mergedCsvReports.add(0, reportNameHeader);
   }
 

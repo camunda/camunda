@@ -18,16 +18,17 @@ import org.camunda.bpm.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.bpmn.instance.IntermediateCatchEvent;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCorrelationStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventToFlowNodeMapping;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceUpdateDto;
-import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
+import org.camunda.optimize.dto.optimize.query.event.process.CancelableEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventCorrelationStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventToFlowNodeMapping;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpdateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -58,7 +59,7 @@ import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
 @AllArgsConstructor
 @Slf4j
-public class EventProcessInstanceImportService implements ImportService<EventDto> {
+public class EventProcessInstanceImportService implements ImportService<EventResponseDto> {
 
   private static final int MAX_TRAVERSAL_DISTANCE = 10;
 
@@ -88,7 +89,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   }
 
   @Override
-  public void executeImport(final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
+  public void executeImport(final List<EventResponseDto> pageOfEvents, final Runnable importCompleteCallback) {
     log.trace("Importing entities for event process mapping [{}].", eventProcessPublishStateDto.getProcessMappingId());
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
@@ -107,13 +108,16 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     return elasticsearchImportJobExecutor;
   }
 
-  private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> ingestedEvents) {
-    final Map<String, List<EventDto>> eventsGroupedByTraceId = ingestedEvents.stream()
+  private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventResponseDto> importedEvents) {
+    final Map<String, List<EventResponseDto>> eventsGroupedByTraceId = importedEvents.stream()
       .filter(eventDto -> eventMappingIdToEventMapping.containsKey(getMappingIdentifier(eventDto)))
-      // for the same event id we want the last ingested event to win to allow updates
-      .sorted(Comparator.comparing(EventDto::getIngestionTimestamp).reversed())
+      // For the same event id we want the last ingested event to win to allow updates.
+      // Canceled flow nodes have the same timestamp, so we take the canceled node as they can never be uncanceled
+      .sorted(Comparator.comparing(EventResponseDto::getIngestionTimestamp)
+                .thenComparing(event -> getCanceledState(event).orElse(false))
+                .reversed())
       .distinct()
-      .collect(groupingBy(EventDto::getTraceId));
+      .collect(groupingBy(EventResponseDto::getTraceId));
 
     return eventsGroupedByTraceId
       .entrySet()
@@ -122,7 +126,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       .collect(Collectors.toList());
   }
 
-  private EventProcessInstanceDto mapToProcessInstanceDto(final Map.Entry<String, List<EventDto>> eventTraceGroup) {
+  private EventProcessInstanceDto mapToProcessInstanceDto(final Map.Entry<String, List<EventResponseDto>> eventTraceGroup) {
     final String processInstanceId = eventTraceGroup.getKey();
 
     final EventProcessInstanceDto processInstanceDto = EventProcessInstanceDto.eventProcessInstanceBuilder()
@@ -132,14 +136,14 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       .processDefinitionVersion("1")
       .build();
 
-    addFlowNodeInstances(eventTraceGroup, processInstanceDto);
+    addFlowNodeInstances(eventTraceGroup.getValue(), processInstanceDto);
 
     addVariables(eventTraceGroup, processInstanceDto);
 
     return processInstanceDto;
   }
 
-  private void addVariables(final Map.Entry<String, List<EventDto>> eventTraceGroup,
+  private void addVariables(final Map.Entry<String, List<EventResponseDto>> eventTraceGroup,
                             final EventProcessInstanceDto processInstanceDto) {
     processInstanceDto.setVariables(
       eventTraceGroup.getValue()
@@ -151,9 +155,9 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     );
   }
 
-  private void addFlowNodeInstances(final Map.Entry<String, List<EventDto>> eventTraceGroup,
+  private void addFlowNodeInstances(final List<EventResponseDto> eventTraceGroup,
                                     final EventProcessInstanceDto processInstanceDto) {
-    eventTraceGroup.getValue()
+    eventTraceGroup
       .forEach(eventDto -> {
         final String eventId = eventDto.getId();
         final EventToFlowNodeMapping eventToFlowNodeMapping =
@@ -170,6 +174,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .activityId(eventToFlowNodeMapping.getFlowNodeId())
           .activityType(eventToFlowNodeMapping.getFlowNodeType())
           .processInstanceId(processInstanceDto.getProcessInstanceId())
+          .canceled(getCanceledState(eventDto).orElse(null))
           .build();
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
@@ -203,6 +208,14 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           );
         }
       });
+  }
+
+  private Optional<Boolean> getCanceledState(final EventResponseDto eventDto) {
+    if (eventDto instanceof CancelableEventDto) {
+      final CancelableEventDto cancelableEvent = (CancelableEventDto) eventDto;
+      return Optional.of(cancelableEvent.isCanceled());
+    }
+    return Optional.empty();
   }
 
   private void updateInstanceForSingleMappedFlowNodeEvent(final EventProcessInstanceDto processInstanceDto,
@@ -372,7 +385,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     return bpmnModelInstance.getModelElementById(nextFlowNodeId).getElementType().getTypeName();
   }
 
-  private List<SimpleProcessVariableDto> extractSimpleVariables(final EventDto eventDto) {
+  private List<SimpleProcessVariableDto> extractSimpleVariables(final EventResponseDto eventDto) {
     final List<SimpleProcessVariableDto> result = new ArrayList<>();
     if (eventDto.getData() != null) {
       if (eventDto.getData() instanceof Map) {
@@ -492,7 +505,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     return String.join(":", eventTypeDto.getGroup(), eventTypeDto.getSource(), eventTypeDto.getEventName());
   }
 
-  private String getMappingIdentifier(final EventDto eventDto) {
+  private String getMappingIdentifier(final EventResponseDto eventDto) {
     return String.join(":", eventDto.getGroup(), eventDto.getSource(), eventDto.getEventName());
   }
 

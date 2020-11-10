@@ -7,7 +7,7 @@
 import React from 'react';
 import debounce from 'debounce';
 
-import {ButtonGroup, Button, TypeaheadMultipleSelection} from 'components';
+import {ButtonGroup, Button, Checklist} from 'components';
 import {t} from 'translation';
 
 import ValueListInput from '../ValueListInput';
@@ -30,6 +30,7 @@ export default class StringInput extends React.Component {
 
   reset() {
     this.props.setValid(this.props.filter.values.length > 0);
+    this.setState({loading: true});
     this.loadAvailableValues();
   }
 
@@ -43,40 +44,33 @@ export default class StringInput extends React.Component {
     }
   }
 
-  loadAvailableValues = debounce((more) => {
-    this.setState(
-      {
-        loading: true,
-      },
-      async () => {
-        const values = await this.props.config.getValues(
-          this.props.variable.id || this.props.variable.name,
-          this.props.variable.type,
-          this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
-          this.state.valueFilter
-        );
-
-        const numberOfUnselectedValuesToDisplay =
-          this.state.numberOfUnselectedValuesToDisplay + (more ? valuesToLoad : 0);
-
-        const availableValues = values.slice(
-          0,
-          numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length
-        );
-
-        const valuesAreComplete =
-          values.length <
-          this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
-
-        this.setState({
-          availableValues: [null, ...availableValues],
-          valuesLoaded: availableValues.length,
-          numberOfUnselectedValuesToDisplay,
-          valuesAreComplete,
-          loading: false,
-        });
-      }
+  loadAvailableValues = debounce(async (more) => {
+    const values = await this.props.config.getValues(
+      this.props.variable.id || this.props.variable.name,
+      this.props.variable.type,
+      this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
+      this.state.valueFilter
     );
+
+    const numberOfUnselectedValuesToDisplay =
+      this.state.numberOfUnselectedValuesToDisplay + (more ? valuesToLoad : 0);
+
+    const availableValues = values.slice(
+      0,
+      numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length
+    );
+
+    const valuesAreComplete =
+      values.length <
+      this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
+
+    this.setState({
+      availableValues: [null, ...availableValues],
+      valuesLoaded: availableValues.length,
+      numberOfUnselectedValuesToDisplay,
+      valuesAreComplete,
+      loading: false,
+    });
   }, 300);
 
   selectedAvailableValues = (availableValues) => {
@@ -91,14 +85,14 @@ export default class StringInput extends React.Component {
     evt.preventDefault();
     const {filter, changeFilter, setValid} = this.props;
 
+    const containToEquality =
+      filter.operator.includes('contains') && !operator.includes('contains');
+    const equalityToContain =
+      !filter.operator.includes('contains') && operator.includes('contains');
+
     let newValues = filter.values;
-    if (filter.operator.includes('contains') && !operator.includes('contains')) {
-      // if we switch from contains to is
+    if (containToEquality || equalityToContain) {
       newValues = [];
-      setValid(false);
-    } else if (!filter.operator.includes('contains') && operator.includes('contains')) {
-      // if we switch from is to contains
-      newValues = ['']; // make sure we start with an empty input field
       setValid(false);
     }
 
@@ -107,6 +101,7 @@ export default class StringInput extends React.Component {
 
   loadMore = (evt) => {
     evt.preventDefault();
+    this.setState({loading: true});
     this.loadAvailableValues(true);
   };
 
@@ -117,18 +112,13 @@ export default class StringInput extends React.Component {
         valueFilter,
         valuesLoaded: queryIncluded ? this.props.filter.values.length : 0,
         numberOfUnselectedValuesToDisplay: valuesToLoad,
+        loading: true,
       },
       this.loadAvailableValues
     );
   };
 
-  toggleValue = (value, checked) => {
-    let newValues;
-    if (checked) {
-      newValues = this.props.filter.values.concat(value);
-    } else {
-      newValues = this.props.filter.values.filter((existingValue) => existingValue !== value);
-    }
+  updateSelected = (newValues) => {
     this.props.changeFilter({
       operator: this.props.filter.operator,
       values: newValues,
@@ -143,7 +133,7 @@ export default class StringInput extends React.Component {
     const notNullValues = values.filter((val) => val !== null);
 
     return (
-      <React.Fragment>
+      <div className="StringInput">
         <div className="buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
@@ -162,51 +152,51 @@ export default class StringInput extends React.Component {
         </div>
         {operator.includes('contains') ? (
           <ValueListInput
-            className="valueFields"
             filter={{
               operator,
-              values: notNullValues.length ? notNullValues : [''],
+              values: notNullValues.length ? notNullValues : [],
               includeUndefined: values.includes(null),
             }}
             onChange={({operator, values, includeUndefined}) => {
               changeFilter({operator, values: includeUndefined ? [...values, null] : values});
-
-              const nonEmptyValues = values.filter((val) => val !== '');
-              setValid(includeUndefined || nonEmptyValues.length === values.length);
+              setValid(includeUndefined || values.length > 0);
             }}
             allowUndefined
             allowMultiple
           />
         ) : (
-          <div className="valueFields">
-            <div className="StringInput__selection">
-              <TypeaheadMultipleSelection
-                availableValues={this.state.availableValues}
-                selectedValues={values}
-                setFilter={this.setValueFilter}
-                toggleValue={this.toggleValue}
-                format={(val) => (val === null ? t('common.nullOrUndefined') : val)}
-                loading={this.state.loading ? 1 : 0}
-                labels={{
-                  available: t('common.filter.variableModal.multiSelect.available'),
-                  selected: t('common.filter.variableModal.multiSelect.selected'),
-                  search: t('common.filter.variableModal.multiSelect.search'),
-                  empty: t('common.filter.variableModal.multiSelect.empty'),
-                }}
-              />
-              {!this.state.valuesAreComplete && !this.state.loading && (
-                <Button
-                  className="StringInput__load-more-button"
-                  onClick={this.loadMore}
-                  disabled={this.state.loading && this.props.disabled}
-                >
-                  {t('common.filter.variableModal.loadMore')}
-                </Button>
-              )}
-            </div>
+          <div className="valueSelection">
+            <span className="title">{t('common.filter.variableModal.multiSelect.header')}</span>
+            <Checklist
+              selectedItems={values}
+              allItems={this.state.availableValues}
+              onSearch={this.setValueFilter}
+              onChange={this.updateSelected}
+              loading={this.state.loading}
+              formatter={(values, selectedValues) =>
+                values.map((value) => ({
+                  id: value,
+                  label: formatValue(value),
+                  checked: selectedValues.includes(value),
+                }))
+              }
+              labels={{
+                search: t('common.filter.variableModal.multiSelect.search'),
+                empty: t('common.filter.variableModal.multiSelect.empty'),
+              }}
+            />
+            {!this.state.valuesAreComplete && !this.state.loading && (
+              <Button
+                onClick={this.loadMore}
+                disabled={this.state.loading && this.props.disabled}
+                link
+              >
+                {t('common.filter.variableModal.loadMore')}
+              </Button>
+            )}
           </div>
         )}
-      </React.Fragment>
+      </div>
     );
   }
 
@@ -223,4 +213,8 @@ export default class StringInput extends React.Component {
       },
     });
   };
+}
+
+function formatValue(val) {
+  return val === null ? t('common.nullOrUndefined') : val;
 }

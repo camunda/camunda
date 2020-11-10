@@ -91,13 +91,6 @@ export default function NodesTable({focus, updateFocus, values, nodeNames, onCha
       })}
       foot={[]}
       disablePagination
-      onScroll={() => {
-        // close unit selection dropdown when table is scrolled
-        const openDropdown = document.querySelector('.NodesTable .Select.is-open');
-        if (openDropdown) {
-          openDropdown.click();
-        }
-      }}
     />
   );
 }

@@ -32,7 +32,7 @@ public abstract class DecisionDataGenerator extends DataGenerator<DmnModelInstan
   }
 
   protected DmnModelInstance readDecisionDiagram(String dmnPath) {
-    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(dmnPath);
+    InputStream inputStream = getClass().getResourceAsStream(dmnPath);
     return Dmn.readModelFromStream(inputStream);
   }
 }

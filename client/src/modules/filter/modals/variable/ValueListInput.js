@@ -8,7 +8,7 @@ import React from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
 
-import {Button, Input, LabeledInput} from 'components';
+import {MultiValueInput, Input, LabeledInput, Message, Labeled} from 'components';
 import {t} from 'translation';
 
 import './ValueListInput.scss';
@@ -19,66 +19,59 @@ export default function ValueListInput({
   allowMultiple,
   onChange,
   className,
+  isValid = () => true,
+  errorMessage,
 }) {
   const {includeUndefined, values} = filter;
 
+  function updateValues(values) {
+    onChange({...filter, values});
+  }
+
+  function paste(evt) {
+    const paste = (evt.clipboardData || window.clipboardData).getData('text');
+    evt.preventDefault();
+    const newValues = paste.match(/[^\s]+/g);
+    if (values) {
+      updateValues([...values, ...newValues]);
+    }
+  }
+
   return (
     <div className={classnames('ValueListInput', className)}>
-      <ul>
-        {allowUndefined && (
-          <LabeledInput
-            className="undefinedOption"
-            type="checkbox"
-            checked={includeUndefined}
-            label={t('common.nullOrUndefined')}
-            onChange={({target: {checked}}) =>
-              onChange(update(filter, {includeUndefined: {$set: checked}}))
-            }
+      <Labeled label={t('common.value')}>
+        {!allowMultiple && (
+          <Input
+            type="text"
+            className="singeValueInput"
+            value={values[0] || ''}
+            onChange={({target}) => updateValues(target.value ? [target.value] : [])}
+            placeholder={t('common.filter.variableModal.enterValue')}
           />
         )}
-        {(values || []).map((value, idx) => {
-          return (
-            <li key={idx} className="valueListItem">
-              <Input
-                type="text"
-                value={value}
-                data-idx={idx}
-                onChange={({target}) => {
-                  const newValues = [...values];
-                  newValues[target.getAttribute('data-idx')] = target.value;
-
-                  onChange({...filter, values: newValues});
-                }}
-                placeholder={t('common.filter.variableModal.enterValue')}
-              />
-              {values.length > 1 && (
-                <Button
-                  onClick={(evt) => {
-                    evt.preventDefault();
-                    onChange({
-                      ...filter,
-                      values: values.filter((_, index) => idx !== index),
-                    });
-                  }}
-                  className="removeItemButton"
-                >
-                  ×
-                </Button>
-              )}
-            </li>
-          );
-        })}
         {allowMultiple && (
-          <li className="valueListButton">
-            <Button
-              onClick={() => onChange(update(filter, {values: {$push: ['']}}))}
-              className="addValueButton"
-            >
-              {t('common.filter.variableModal.addValue')}
-            </Button>
-          </li>
+          <MultiValueInput
+            placeholder={t('common.filter.variableModal.enterMultipleValues')}
+            values={values.map((value) => ({value, invalid: !isValid(value)}))}
+            onAdd={(value) => value.trim() && updateValues([...values, value])}
+            onRemove={(_, idx) => updateValues(values.filter((_, index) => idx !== index))}
+            onClear={() => updateValues([])}
+            onPaste={paste}
+          />
         )}
-      </ul>
+      </Labeled>
+      {errorMessage && <Message error>{errorMessage}</Message>}
+      {allowUndefined && (
+        <LabeledInput
+          className="undefinedOption"
+          type="checkbox"
+          checked={includeUndefined}
+          label={t('common.nullOrUndefined')}
+          onChange={({target: {checked}}) =>
+            onChange(update(filter, {includeUndefined: {$set: checked}}))
+          }
+        />
+      )}
     </div>
   );
 }

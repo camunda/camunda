@@ -41,6 +41,7 @@ public class ConfigurationServiceConstants {
   public static final String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
   public static final String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
   public static final String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
+  public static final String ENGINE_IMPORT_INCIDENT_MAX_PAGE_SIZE = "$.import.data.incident.maxPageSize";
   public static final String ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE = "$.import.data.user-task-instance.maxPageSize";
   public static final String ENGINE_IMPORT_IDENTITY_LING_LOG_MAX_PAGE_SIZE = "$.import.data.identity-link-log.maxPageSize";
   public static final String ENGINE_IMPORT_USER_OPERATION_LOG_MAX_PAGE_SIZE = "$.import.data.user-operation-log.maxPageSize";
@@ -114,4 +115,6 @@ public class ConfigurationServiceConstants {
   public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
 
   public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
+
+  public static final String CACHES_CONFIGURATION = "$.caches";
 }
