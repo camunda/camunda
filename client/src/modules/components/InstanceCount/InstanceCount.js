@@ -17,7 +17,7 @@ import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter = []}) {
+export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
@@ -58,7 +58,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
   const additionalFilters = [];
 
   if (hasFilter) {
-    const unappliedAdditionalFilters = [...additionalFilter];
+    const unappliedAdditionalFilters = [...(additionalFilter ?? [])];
 
     data.filter.forEach((filter) => {
       const additionalFilterIdx = unappliedAdditionalFilters.findIndex((additionalFilter) =>
