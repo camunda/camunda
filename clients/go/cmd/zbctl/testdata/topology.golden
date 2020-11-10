@@ -5,4 +5,4 @@ Gateway version: 3.45.1-alpha2
 Brokers:
   Broker 0 - 0.0.0.0:26501
     Version: 3.41.1-alpha1
-    Partition 1 : Leader
+    Partition 1 : Leader, Healthy

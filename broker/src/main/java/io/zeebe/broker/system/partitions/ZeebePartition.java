@@ -291,7 +291,15 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListeners.add(failureListener));
+    actor.run(
+        () -> {
+          this.failureListeners.add(failureListener);
+          if (this.getHealthStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered();
+          } else {
+            failureListener.onFailure();
+          }
+        });
   }
 
   @Override

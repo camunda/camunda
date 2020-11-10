@@ -257,9 +257,9 @@ public final class TopologyManagerImpl extends Actor
     actor.run(
         () -> {
           if (status == HealthStatus.HEALTHY) {
-            localBroker.setPartitionUnhealthy(partitionId);
-          } else if (status == HealthStatus.UNHEALTHY) {
             localBroker.setPartitionHealthy(partitionId);
+          } else if (status == HealthStatus.UNHEALTHY) {
+            localBroker.setPartitionUnhealthy(partitionId);
           }
           publishTopologyChanges();
         });

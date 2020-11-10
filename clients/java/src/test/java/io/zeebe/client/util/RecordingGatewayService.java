@@ -37,6 +37,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -92,8 +93,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
         ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
   }
 
-  public static Partition partition(final int partitionId, final PartitionBrokerRole role) {
-    return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
+  public static Partition partition(
+      final int partitionId, final PartitionBrokerRole role, final PartitionBrokerHealth health) {
+    return Partition.newBuilder()
+        .setPartitionId(partitionId)
+        .setRole(role)
+        .setHealth(health)
+        .build();
   }
 
   public static BrokerInfo broker(

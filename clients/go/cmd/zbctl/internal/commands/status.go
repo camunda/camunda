@@ -80,7 +80,12 @@ func printStatus(resp *pb.TopologyResponse) {
 
 		sort.Sort(ByPartitionID(broker.Partitions))
 		for _, partition := range broker.Partitions {
-			fmt.Printf("    Partition %d : %s\n", partition.PartitionId, roleToString(partition.Role))
+			fmt.Printf(
+				"    Partition %d : %s, %s\n",
+				partition.PartitionId,
+				roleToString(partition.Role),
+				healthToString(partition.Health),
+			)
 		}
 	}
 }
@@ -89,6 +94,8 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 }
 
+const unknownState = "Unknown"
+
 func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
 	case pb.Partition_LEADER:
@@ -96,6 +103,17 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	case pb.Partition_FOLLOWER:
 		return "Follower"
 	default:
-		return "Unknown"
+		return unknownState
+	}
+}
+
+func healthToString(health pb.Partition_PartitionBrokerHealth) string {
+	switch health {
+	case pb.Partition_HEALTHY:
+		return "Healthy"
+	case pb.Partition_UNHEALTHY:
+		return "Unhealthy"
+	default:
+		return unknownState
 	}
 }
