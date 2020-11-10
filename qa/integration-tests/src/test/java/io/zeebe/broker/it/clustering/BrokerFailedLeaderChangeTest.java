@@ -109,5 +109,10 @@ public class BrokerFailedLeaderChangeTest {
         final int partitionId, final long term, final LogStream logStream) {
       return new CompletableActorFuture<>();
     }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+      return CompletableActorFuture.completed(null);
+    }
   }
 }

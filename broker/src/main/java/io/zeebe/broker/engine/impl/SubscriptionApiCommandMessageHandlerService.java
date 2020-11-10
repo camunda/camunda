@@ -84,6 +84,15 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
+  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    return actor.call(
+        () -> {
+          leaderPartitions.remove(partitionId);
+          return null;
+        });
+  }
+
+  @Override
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {

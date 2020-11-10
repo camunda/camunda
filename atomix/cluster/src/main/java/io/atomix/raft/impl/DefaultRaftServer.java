@@ -143,6 +143,18 @@ public class DefaultRaftServer implements RaftServer {
     return future;
   }
 
+  @Override
+  public CompletableFuture<Void> goInactive() {
+    final CompletableFuture<Void> future = new AtomixFuture<>();
+    context
+        .getThreadContext()
+        .execute(
+            () -> {
+              context.transition(Role.INACTIVE);
+              future.complete(null);
+            });
+    return future;
+  }
   /**
    * Leaves the Raft cluster.
    *

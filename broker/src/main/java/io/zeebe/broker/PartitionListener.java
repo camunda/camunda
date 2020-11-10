@@ -38,4 +38,14 @@ public interface PartitionListener {
    * @return future that should be completed by the listener
    */
   ActorFuture<Void> onBecomingLeader(int partitionId, long term, LogStream logStream);
+
+  /**
+   * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming inactive
+   * after a Raft role change or a failed transition.
+   *
+   * @param partitionId the corresponding partition id
+   * @param term the current term
+   * @return future that should be completed by the listener
+   */
+  ActorFuture<Void> onBecomingInactive(int partitionId, long term);
 }

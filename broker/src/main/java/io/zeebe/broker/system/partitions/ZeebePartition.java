@@ -122,13 +122,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure();
+                    onInstallFailure(newTerm);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure();
+            onInstallFailure(newTerm);
           }
         });
     return leaderTransitionFuture;
@@ -148,13 +148,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure();
+                    onInstallFailure(newTerm);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure();
+            onInstallFailure(newTerm);
           }
         });
     return followerTransitionFuture;
@@ -251,7 +251,7 @@ public final class ZeebePartition extends Actor
     LOG.warn("Uncaught exception in {}.", actorName, failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
-    onInstallFailure();
+    onInstallFailure(term);
   }
 
   @Override
@@ -272,11 +272,19 @@ public final class ZeebePartition extends Actor
         });
   }
 
-  private void onInstallFailure() {
+  private void onInstallFailure(final long term) {
     zeebePartitionHealth.setServicesInstalled(false);
+    context
+        .getPartitionListeners()
+        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
+
     if (context.getRaftPartition().getRole() == Role.LEADER) {
       LOG.info("Unexpected failures occurred when installing leader services, stepping down");
       context.getRaftPartition().stepDown();
+    } else {
+      LOG.info(
+          "Unexpected failures occurred when installing follower services, transitioning to inactive");
+      context.getRaftPartition().goInactive();
     }
   }
 

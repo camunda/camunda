@@ -763,5 +763,10 @@ public final class ClusteringRule extends ExternalResource {
       partitionLeader.put(partitionId, new Leader(nodeId, term, logStream));
       return CompletableActorFuture.completed(null);
     }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+      return CompletableActorFuture.completed(null);
+    }
   }
 }

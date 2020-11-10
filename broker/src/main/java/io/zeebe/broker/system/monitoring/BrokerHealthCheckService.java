@@ -22,6 +22,7 @@ import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -129,6 +130,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   public ActorFuture<Void> onBecomingLeader(
       final int partitionId, final long term, final LogStream logStream) {
     return updateBrokerReadyStatus(partitionId);
+  }
+
+  @Override
+  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    return CompletableActorFuture.completed(null);
   }
 
   private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {

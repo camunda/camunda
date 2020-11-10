@@ -59,11 +59,7 @@ public final class CommandApiService extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return actor.call(
-        () -> {
-          requestHandler.removePartition(partitionId);
-          cleanLeadingPartition(partitionId);
-        });
+    return removeLeaderHandlersAsync(partitionId);
   }
 
   @Override
@@ -95,6 +91,19 @@ public final class CommandApiService extends Actor
                   });
         });
     return future;
+  }
+
+  @Override
+  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    return removeLeaderHandlersAsync(partitionId);
+  }
+
+  private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
+    return actor.call(
+        () -> {
+          requestHandler.removePartition(partitionId);
+          cleanLeadingPartition(partitionId);
+        });
   }
 
   private void cleanLeadingPartition(final int partitionId) {
