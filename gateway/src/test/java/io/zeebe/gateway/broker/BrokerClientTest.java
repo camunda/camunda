@@ -240,7 +240,7 @@ public final class BrokerClientTest {
 
     // then
     final String expected =
-        "Expected to execute command, but this command refers to an element that doesn't exist.";
+        "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
     assertThatThrownBy(async::join)
         .hasCauseInstanceOf(PartitionNotFoundException.class)
         .hasMessageContaining(expected);
