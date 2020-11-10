@@ -228,6 +228,10 @@ public class RaftPartition implements Partition {
     return server.stepDown();
   }
 
+  public CompletableFuture<Void> goInactive() {
+    return server.goInactive();
+  }
+
   private void onFailure() {
     CompletableFuture.allOf(
             raftFailureListeners.stream()

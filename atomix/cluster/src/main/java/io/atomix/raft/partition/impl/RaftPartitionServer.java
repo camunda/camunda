@@ -190,6 +190,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     return server.leave();
   }
 
+  public CompletableFuture<Void> goInactive() {
+    return server.goInactive();
+  }
+
   /**
    * Takes a snapshot of the partition server.
    *
