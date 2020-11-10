@@ -573,7 +573,6 @@
         <version>${version.testcontainers}</version>
       </dependency>
 
-
       <dependency>
         <groupId>com.netflix.concurrency-limits</groupId>
         <artifactId>concurrency-limits-core</artifactId>
