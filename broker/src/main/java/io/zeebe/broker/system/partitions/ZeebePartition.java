@@ -22,6 +22,7 @@ import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,6 @@ public final class ZeebePartition extends Actor
     implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-
   private Role raftRole;
 
   private final String actorName;
@@ -213,6 +213,19 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  protected void onActorClosing() {
+    transitionToInactive()
+        .onComplete(
+            (nothing, err) -> {
+              context.getRaftPartition().removeRoleChangeListener(this);
+
+              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
+              raftPartitionHealth.close();
+              closeFuture.complete(null);
+            });
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     if (closeFuture != null) {
       return closeFuture;
@@ -231,19 +244,6 @@ public final class ZeebePartition extends Actor
                 }));
 
     return closeFuture;
-  }
-
-  @Override
-  protected void onActorClosing() {
-    transitionToInactive()
-        .onComplete(
-            (nothing, err) -> {
-              context.getRaftPartition().removeRoleChangeListener(this);
-
-              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
-              raftPartitionHealth.close();
-              closeFuture.complete(null);
-            });
   }
 
   @Override
@@ -293,8 +293,8 @@ public final class ZeebePartition extends Actor
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(
         () -> {
-          this.failureListeners.add(failureListener);
-          if (this.getHealthStatus() == HealthStatus.HEALTHY) {
+          failureListeners.add(failureListener);
+          if (getHealthStatus() == HealthStatus.HEALTHY) {
             failureListener.onRecovered();
           } else {
             failureListener.onFailure();
@@ -332,11 +332,17 @@ public final class ZeebePartition extends Actor
     final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
     actor.call(
         () -> {
-          context.setProcessingPaused(true);
-          if (context.getStreamProcessor() != null) {
-            context.getStreamProcessor().pauseProcessing().onComplete(completed);
-          } else {
-            completed.complete(null);
+          try {
+            context.pauseProcessing();
+
+            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
+              context.getStreamProcessor().pauseProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause processing state", e);
+            completed.completeExceptionally(e);
           }
         });
     return completed;
@@ -345,9 +351,13 @@ public final class ZeebePartition extends Actor
   public void resumeProcessing() {
     actor.call(
         () -> {
-          context.setProcessingPaused(false);
-          if (context.getStreamProcessor() != null && context.shouldProcess()) {
-            context.getStreamProcessor().resumeProcessing();
+          try {
+            context.resumeProcessing();
+            if (context.getStreamProcessor() != null && context.shouldProcess()) {
+              context.getStreamProcessor().resumeProcessing();
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not resume processing", e);
           }
         });
   }

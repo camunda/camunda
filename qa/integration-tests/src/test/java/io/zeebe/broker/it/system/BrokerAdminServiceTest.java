@@ -9,7 +9,6 @@ package io.zeebe.broker.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.RaftServer.Role;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
@@ -25,13 +24,7 @@ import org.junit.rules.Timeout;
 public class BrokerAdminServiceTest {
   private final Timeout testTimeout = Timeout.seconds(60);
   private final ClusteringRule clusteringRule =
-      new ClusteringRule(
-          1,
-          3,
-          3,
-          cfg -> {
-            cfg.getData().setLogIndexDensity(1);
-          });
+      new ClusteringRule(1, 1, 1, cfg -> cfg.getData().setLogIndexDensity(1));
   private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -45,38 +38,6 @@ public class BrokerAdminServiceTest {
   public void before() {
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
     leaderAdminService = leader.getBrokerAdminService();
-  }
-
-  @Test
-  public void shouldReportPartitionStatus() {
-    // given
-    final var followers =
-        clusteringRule.getOtherBrokerObjects(clusteringRule.getLeaderForPartition(1).getNodeId());
-
-    // when
-    final var followerStatus =
-        followers.stream()
-            .map(Broker::getBrokerAdminService)
-            .map(BrokerAdminService::getPartitionStatus)
-            .map(status -> status.get(1));
-
-    final var leaderStatus = leaderAdminService.getPartitionStatus().get(1);
-
-    // then
-    followerStatus.forEach(
-        partitionStatus -> {
-          assertThat(partitionStatus.getRole()).isEqualTo(Role.FOLLOWER);
-          assertThat(partitionStatus.getProcessedPosition()).isNull();
-          assertThat(partitionStatus.getSnapshotId()).isNull();
-          assertThat(partitionStatus.getProcessedPositionInSnapshot()).isNull();
-          assertThat(partitionStatus.getStreamProcessorPhase()).isNull();
-        });
-
-    assertThat(leaderStatus.getRole()).isEqualTo(Role.LEADER);
-    assertThat(leaderStatus.getProcessedPosition()).isEqualTo(-1);
-    assertThat(leaderStatus.getSnapshotId()).isNull();
-    assertThat(leaderStatus.getProcessedPositionInSnapshot()).isNull();
-    assertThat(leaderStatus.getStreamProcessorPhase()).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -130,6 +91,38 @@ public class BrokerAdminServiceTest {
 
     assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
     assertProcessedPositionIsInSnapshot(leaderAdminService);
+  }
+
+  @Test
+  public void shouldPauseStreamProcessorAfterRestart() {
+    // given
+    leaderAdminService.pauseStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+  }
+
+  @Test
+  public void shouldResumeStreamProcessorAfterRestart() {
+    // given
+    leaderAdminService.pauseStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    leaderAdminService.resumeStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
   }
 
   private void assertStreamProcessorPhase(

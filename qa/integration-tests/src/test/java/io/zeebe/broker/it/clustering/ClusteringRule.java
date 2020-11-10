@@ -78,6 +78,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -477,6 +478,23 @@ public final class ClusteringRule extends ExternalResource {
         broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
+  }
+
+  public void restartCluster() {
+    final var brokers =
+        getBrokers().stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .collect(Collectors.toList());
+    brokers.forEach(this::stopBroker);
+    brokers.forEach(this::getBroker);
+    try {
+      waitUntilBrokersStarted();
+      waitForPartitionReplicationFactor();
+      waitUntilBrokersInTopology();
+    } catch (final Exception e) {
+      LOG.error("Failed to restart cluster", e);
+      Assert.fail("Failed to restart cluster");
+    }
   }
 
   private void waitUntilBrokerIsAddedToTopology(final InetSocketAddress socketAddress) {
