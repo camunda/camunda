@@ -2384,14 +2384,7 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.2", "@babel/runtime@^7.10.3", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.0", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5", "@babel/runtime@^7.5.4", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.2", "@babel/runtime@^7.7.4", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
-  version "7.12.1"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.12.1.tgz#b4116a6b6711d010b2dad3b7b6e43bf1b9954740"
-  integrity sha512-J5AIf3vPj3UwXaAzb5j1xM4WAQDX3EMgemF8rjCP3SoW09LfRKAXQKt6CoVYl230P6iWdRcBbnLDDdnqWxZSCA==
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
-"@babel/runtime@^7.10.0":
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.0", "@babel/runtime@^7.10.2", "@babel/runtime@^7.10.3", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.0", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5", "@babel/runtime@^7.5.4", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.2", "@babel/runtime@^7.7.4", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
   version "7.12.1"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.12.1.tgz#b4116a6b6711d010b2dad3b7b6e43bf1b9954740"
   integrity sha512-J5AIf3vPj3UwXaAzb5j1xM4WAQDX3EMgemF8rjCP3SoW09LfRKAXQKt6CoVYl230P6iWdRcBbnLDDdnqWxZSCA==
@@ -2533,17 +2526,17 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@camunda-cloud/common-ui-react@^0.0.13-3":
-  version "0.0.13-3"
-  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui-react/0.0.13-3/1c699a21b3aecaf35710fafe7c81de0189cb3e1c7a16e5447559dcdce2392734#2a0405affa21d9d41cfaf5ecab908bde758ab661"
-  integrity sha512-MQQgEAYr7/0fHFRI/HPPAu+LbDZi4jmuyD6qeXHPHan+hdWrrrPZT7E4Wfq+77pIiXgaUGm0K7Fqd74LdEJB3w==
+"@camunda-cloud/common-ui-react@^0.0.13":
+  version "0.0.13"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui-react/0.0.13/3ebeb9de83d727e437a39656bcddaeaf84e8ab6f385e488f2338244c1c0728b5#c0d423730873edd27c58c9378e42db056dd69a34"
+  integrity sha512-bN/BD0H9RQsfV7Tzv5qx6fMjwIwFTWZqxL6WBL+KbXctAEBB61u/5sEmB0IGPMKoUJVHw+muTLrbyK3InVb3tg==
   dependencies:
-    "@camunda-cloud/common-ui" "0.0.13-3"
+    "@camunda-cloud/common-ui" "0.0.13"
 
-"@camunda-cloud/common-ui@0.0.13-3", "@camunda-cloud/common-ui@^0.0.13-3":
-  version "0.0.13-3"
-  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui/0.0.13-3/cda2aa739bb35601eecf14adbe405f7ec5485acf5a4756bb85920140f4126ccf#c482bb27d3d536a882ebb2d2abdf9067c9b92211"
-  integrity sha512-o9XZKKBNDniLmO+U7jdhndsBd+PhqDrdzXqE7vENqU+62o2jNQPswT3+TnGJJBNDSTaXYiL1NO1sNRU7h+3jPA==
+"@camunda-cloud/common-ui@0.0.13", "@camunda-cloud/common-ui@^0.0.13":
+  version "0.0.13"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui/0.0.13/aebe3ad63c64ed9c9c32964744ad5e5e06ccf7b4c5318f41379f2617d4fe069f#38e65ba15dede016ebe661803d426c34b07ba0f6"
+  integrity sha512-KLdKwUvpavWHHKEbpI9Zw3n8vNH/IvOKcAd+WkmSBM91BahgiBI6epj0DXsb+ZqAqOSuG57t003xbSKRvCjHXA==
 
 "@cnakazawa/watch@^1.0.3":
   version "1.0.3"
