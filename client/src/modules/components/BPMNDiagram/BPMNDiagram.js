@@ -161,7 +161,7 @@ export default themed(
       componentDidMount() {
         this.importXML(this.props.xml);
 
-        const dashboardObject = this.container.closest('.grid-entry');
+        const dashboardObject = this.container.closest('.grid-entry.react-draggable');
         if (dashboardObject) {
           // if the diagram is on a dashboard, react to changes of the dashboard objects size
           new MutationObserver(this.fitDiagram).observe(dashboardObject, {attributes: true});

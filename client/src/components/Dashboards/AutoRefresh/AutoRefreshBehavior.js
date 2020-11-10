@@ -22,10 +22,7 @@ export default class AutoRefreshBehavior extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (
-      prevProps.interval !== this.props.interval ||
-      prevProps.loadReportData !== this.props.loadReportData
-    ) {
+    if (prevProps.interval !== this.props.interval) {
       clearInterval(this.timer);
       if (this.props.interval) {
         this.timer = setInterval(this.props.loadReportData, this.props.interval);

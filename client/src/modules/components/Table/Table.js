@@ -61,6 +61,7 @@ export default function Table({
       manualSortBy: true,
       disableMultiSort: true,
       disableSortRemove: true,
+      autoResetPage: false,
       initialState: {
         pageIndex: 0,
         sortBy: initialSorting,
