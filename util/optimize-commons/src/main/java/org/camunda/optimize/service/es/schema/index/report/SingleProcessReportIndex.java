@@ -10,6 +10,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
 public class SingleProcessReportIndex extends AbstractReportIndex {
@@ -35,16 +36,16 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
         .field("dynamic", true)
         .startObject("properties")
           .startObject(ProcessReportDataDto.Fields.view)
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(ProcessReportDataDto.Fields.groupBy)
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(ProcessReportDataDto.Fields.distributedBy)
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(ProcessReportDataDto.Fields.filter)
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(CONFIGURATION)
             .field("type", "object")

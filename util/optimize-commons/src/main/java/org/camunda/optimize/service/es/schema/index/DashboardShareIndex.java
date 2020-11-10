@@ -11,6 +11,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+
 public class DashboardShareIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
@@ -84,7 +86,7 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
         .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field("enabled", false)
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject();
     // @formatter:on
     return newBuilder;

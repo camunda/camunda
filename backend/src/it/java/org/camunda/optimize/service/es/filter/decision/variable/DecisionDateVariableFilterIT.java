@@ -138,7 +138,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     // when
     final DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDateInputVariableFilter(inputClauseId, dateFilterSupplier.get())));
-    final RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    final RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -169,7 +169,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, null
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -204,7 +204,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, null, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -244,7 +244,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -281,12 +281,12 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
     )));
-    RawDataDecisionReportResultDto result1 = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result1 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 3L, DateFilterUnit.DAYS
     )));
-    RawDataDecisionReportResultDto result2 = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result2 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result1.getInstanceCount()).isEqualTo(1L);
@@ -312,16 +312,16 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 0L, DateFilterUnit.DAYS
     )));
-    RawDataDecisionReportResultDto result1 = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result1 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // now move the day
     LocalDateUtil.setCurrentTime(now.plusDays(1L));
-    final RawDataDecisionReportResultDto result2 = reportClient.evaluateRawReport(reportData).getResult();
+    final RawDataDecisionReportResultDto result2 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
     )));
-    RawDataDecisionReportResultDto result3 = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result3 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result1.getInstanceCount()).isEqualTo(1L);

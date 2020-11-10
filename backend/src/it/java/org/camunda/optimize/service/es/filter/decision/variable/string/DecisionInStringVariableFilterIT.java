@@ -54,7 +54,7 @@ public class DecisionInStringVariableFilterIT extends AbstractDecisionDefinition
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, IN, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -93,7 +93,7 @@ public class DecisionInStringVariableFilterIT extends AbstractDecisionDefinition
       inputVariableIdToFilterOn, IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -153,7 +153,7 @@ public class DecisionInStringVariableFilterIT extends AbstractDecisionDefinition
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputClauseId, operator, filterValues
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);
@@ -183,7 +183,7 @@ public class DecisionInStringVariableFilterIT extends AbstractDecisionDefinition
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, NOT_IN, categoryInputValueToExclude
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);

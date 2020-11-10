@@ -10,6 +10,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+
 public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
 
   public static final int VERSION = 3;
@@ -40,10 +42,10 @@ public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
     // @formatter:off
     return super.addProperties(xContentBuilder)
       .startObject(INPUT_VARIABLE_NAMES)
-        .field("enabled", "false")
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(OUTPUT_VARIABLE_NAMES)
-        .field("enabled", "false")
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(DECISION_DEFINITION_XML)
         .field("type", "text")

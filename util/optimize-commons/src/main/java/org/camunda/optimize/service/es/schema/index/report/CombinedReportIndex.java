@@ -10,6 +10,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
 public class CombinedReportIndex extends AbstractReportIndex {
 
@@ -40,7 +41,7 @@ public class CombinedReportIndex extends AbstractReportIndex {
         .field("type", "nested")
         .startObject("properties")
           .startObject(CONFIGURATION)
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(VISUALIZATION)
             .field("type", "keyword")

@@ -11,6 +11,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+
 public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
 
   public static final int VERSION = 3;
@@ -42,11 +44,11 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
     return super.addProperties(xContentBuilder)
       .startObject(FLOW_NODE_NAMES)
         .field("type", "object")
-        .field("enabled", "false")
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(USER_TASK_NAMES)
         .field("type", "object")
-        .field("enabled", "false")
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(PROCESS_DEFINITION_XML)
         .field("type", "text")

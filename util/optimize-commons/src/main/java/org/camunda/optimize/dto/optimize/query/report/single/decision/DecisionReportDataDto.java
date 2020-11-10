@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -28,6 +29,7 @@ import java.util.Objects;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
+@FieldNameConstants
 public class DecisionReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String decisionDefinitionKey;

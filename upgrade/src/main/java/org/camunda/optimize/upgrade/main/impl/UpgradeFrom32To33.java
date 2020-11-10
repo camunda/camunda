@@ -18,6 +18,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 
 import java.util.Arrays;
@@ -54,10 +55,10 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
-      .addUpgradeStep(new UpdateMappingIndexStep(new SingleDecisionReportIndex()))
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
-      .addUpgradeStep(migrateDistributedByField(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateDistributedByField(SINGLE_PROCESS_REPORT_INDEX_NAME))
+      .addUpgradeStep(new UpdateIndexStep(new SingleDecisionReportIndex(), null))
+      .addUpgradeStep(migrateDistributedByField(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateDashboardAvailableFilters())
       .build();
   }

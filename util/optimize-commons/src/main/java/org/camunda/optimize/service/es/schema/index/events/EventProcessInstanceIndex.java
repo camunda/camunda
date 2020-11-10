@@ -13,6 +13,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class EventProcessInstanceIndex extends ProcessInstanceIndex {
@@ -43,7 +44,7 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
       .endObject()
       .startObject(CORRELATED_EVENTS_BY_EVENT_ID)
         .field("type", "object")
-        .field("enabled", "false")
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject();
     return newBuilder;
     // @formatter:on

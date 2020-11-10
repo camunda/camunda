@@ -110,9 +110,9 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       null
     )));
 
-    RawDataDecisionReportResultDto resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
+    RawDataDecisionReportResultDto resultWithFilter = reportClient.evaluateDecisionRawReport(reportWithFilter).getResult();
     RawDataDecisionReportResultDto resultWithoutFilter =
-      reportClient.evaluateRawReport(reportWithoutFilter).getResult();
+      reportClient.evaluateDecisionRawReport(reportWithoutFilter).getResult();
 
     // then
     assertThat(resultWithFilter.getInstanceCount()).isEqualTo(0L);

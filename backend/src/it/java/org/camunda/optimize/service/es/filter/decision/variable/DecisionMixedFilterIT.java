@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
@@ -33,20 +34,15 @@ import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
 
   @Test
-  public void resultWithAllFilterTypesApplied() {
+  public void createAndEvaluateReportWithAllFilterTypes() {
     // given
     final OffsetDateTime dateTimeInputFilterStart = OffsetDateTime.parse("2019-01-01T00:00:00+00:00");
     final double expectedAmountValue = 200.0;
     final String expectedCategory = "Misc";
-    final Boolean expectedAuditOutput = false;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
       createDecisionDefinitionWithDate()
@@ -63,7 +59,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.RAW_DATA)
@@ -82,7 +78,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       INPUT_CATEGORY_ID, FilterOperator.IN, expectedCategory
     );
     final OutputVariableFilterDto booleanOutputVariableFilter = createBooleanOutputVariableFilter(
-      OUTPUT_AUDIT_ID, Collections.singletonList(expectedAuditOutput)
+      OUTPUT_AUDIT_ID, Collections.singletonList(false)
     );
     final EvaluationDateFilterDto rollingEvaluationDateFilter = createRollingEvaluationDateFilter(
       1L, DateFilterUnit.DAYS
@@ -95,17 +91,14 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       booleanOutputVariableFilter,
       rollingEvaluationDateFilter
     ));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    final String reportId = reportClient.createSingleDecisionReport(reportData);
+    final RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReportById(reportId).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-
-    assertThat(
-      (String) result.getData().get(0).getInputVariables().get(INPUT_INVOICE_DATE_ID).getValue(),
-      startsWith("2019-06-06T00:00:00")
-    );
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getData()).hasSize(1);
+    assertThat((String) result.getData().get(0).getInputVariables().get(INPUT_INVOICE_DATE_ID).getValue())
+      .startsWith("2019-06-06T00:00:00");
   }
 
 }

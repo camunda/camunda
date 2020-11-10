@@ -13,6 +13,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
@@ -76,7 +77,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(DATA)
-        .field("enabled", false)
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject()
       ;
     // @formatter:on

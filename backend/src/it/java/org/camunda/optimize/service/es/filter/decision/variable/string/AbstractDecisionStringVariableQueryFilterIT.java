@@ -29,7 +29,7 @@ public abstract class AbstractDecisionStringVariableQueryFilterIT extends Abstra
                                                                   final List<DecisionFilterDto<?>> containsFilter) {
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(containsFilter);
-    return reportClient.evaluateRawReport(reportData).getResult();
+    return reportClient.evaluateDecisionRawReport(reportData).getResult();
   }
 
   protected Map<String, InputVariableEntry> createInputs(final String stringMatch) {

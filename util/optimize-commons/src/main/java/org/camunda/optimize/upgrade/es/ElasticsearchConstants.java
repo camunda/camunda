@@ -30,6 +30,7 @@ public class ElasticsearchConstants {
   public static final String SORT_SETTING = "sort";
   public static final String SORT_FIELD_SETTING = "field";
   public static final String SORT_ORDER_SETTING = "order";
+  public static final String MAPPING_ENABLED_SETTING = "enabled";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";

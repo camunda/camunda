@@ -54,7 +54,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
       outputVariableIdToFilterOn, Collections.singletonList(outputAuditValueToFilterFor)
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -117,7 +117,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanInputVariableFilter(
       inputClauseId, filterValues
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);
