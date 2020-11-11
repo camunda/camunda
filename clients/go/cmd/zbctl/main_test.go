@@ -189,6 +189,8 @@ func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]
 func buildZbctl() ([]byte, error) {
 	if runtime.GOOS == "linux" {
 		zbctl = "zbctl"
+	} else if runtime.GOOS == "darwin" {
+		zbctl = "zbctl.darwin"
 	} else {
 		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
