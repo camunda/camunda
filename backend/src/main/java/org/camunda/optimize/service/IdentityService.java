@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import static java.util.stream.Collectors.toList;
 @Component
 public class IdentityService implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
+  private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS = Arrays.asList(AuthorizationType.values());
 
   private LoadingCache<String, List<GroupDto>> userGroupsCache;
 
@@ -71,7 +73,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   public List<AuthorizationType> getUserAuthorizations(final String userId) {
     List<AuthorizationType> authorizations = new ArrayList<>();
     if (isSuperUserIdentity(userId)) {
-      authorizations.add(AuthorizationType.TELEMETRY);
+      authorizations.addAll(SUPERUSER_AUTHORIZATIONS);
     }
     return authorizations;
   }

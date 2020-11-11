@@ -34,6 +34,7 @@ import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -504,7 +505,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), Lists.newArrayList(AuthorizationType.TELEMETRY));
+      ), Arrays.asList(AuthorizationType.TELEMETRY, AuthorizationType.IMPORT_EXPORT));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
