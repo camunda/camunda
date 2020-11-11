@@ -25,7 +25,7 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
 
-    <version.netty>4.1.53.Final</version.netty>
+    <version.netty>4.1.54.Final</version.netty>
 
     <version.java>11</version.java>
     <plugin.version.javadoc>3.2.0</plugin.version.javadoc>
