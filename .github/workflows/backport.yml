@@ -1,0 +1,17 @@
+name: Backport labeled PRs after merge
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  build:
+    name: Create backport PRs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Create backport PRs
+        uses: zeebe-io/backport-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_workspace: ${{ github.workspace }}
