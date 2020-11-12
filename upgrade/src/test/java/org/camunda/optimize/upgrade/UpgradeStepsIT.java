@@ -382,7 +382,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void executeDeleteByQueryDataStep() throws Exception {
+  public void executeDeleteDataStep() throws Exception {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()

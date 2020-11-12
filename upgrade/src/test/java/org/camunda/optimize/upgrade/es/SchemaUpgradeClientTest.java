@@ -8,9 +8,7 @@ package org.camunda.optimize.upgrade.es;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
-import org.apache.http.ProtocolVersion;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.message.BasicStatusLine;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -171,11 +169,7 @@ public class SchemaUpgradeClientTest {
   }
 
   private Response createEsResponse(TaskResponse taskResponse) throws IOException {
-    final ProtocolVersion protocolVersion = new ProtocolVersion("http", 1, 1);
-
     final Response mockedReindexResponse = mock(Response.class);
-    when(mockedReindexResponse.getStatusLine())
-      .thenReturn(new BasicStatusLine(protocolVersion, javax.ws.rs.core.Response.Status.OK.getStatusCode(), "OK"));
 
     final HttpEntity httpEntity = mock(HttpEntity.class);
     when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream(OBJECT_MAPPER.writeValueAsBytes(taskResponse)));
