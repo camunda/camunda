@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"testing"
 	"time"
 )
@@ -28,7 +29,7 @@ const testDuration = 12 * time.Minute
 const testDurationMs = int64(testDuration / time.Millisecond)
 
 func TestJobWorkerBuilder_JobType(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.JobType("foo")
 	assert.Equal(t, "foo", builder.request.Type)
 }
@@ -40,13 +41,13 @@ func TestJobWorkerBuilder_Handler(t *testing.T) {
 }
 
 func TestJobWorkerBuilder_Name(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.Name("foo")
 	assert.Equal(t, "foo", builder.request.Worker)
 }
 
 func TestJobWorkerBuilder_Timeout(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.Timeout(testDuration)
 	assert.Equal(t, testDurationMs, builder.request.Timeout)
 }
@@ -90,7 +91,7 @@ func TestJobWorkerBuilder_PollThreshold(t *testing.T) {
 func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
 	fetchVariables := []string{"foo", "bar", "baz"}
 
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.FetchVariables(fetchVariables...)
 	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
 }

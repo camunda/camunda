@@ -100,7 +100,7 @@ func (cmd *ActivateJobsCommand) Send(ctx context.Context) ([]entities.Job, error
 			return activatedJobs, err
 		}
 		for _, activatedJob := range response.Jobs {
-			activatedJobs = append(activatedJobs, entities.Job{ActivatedJob: *activatedJob})
+			activatedJobs = append(activatedJobs, entities.Job{ActivatedJob: activatedJob})
 		}
 	}
 
