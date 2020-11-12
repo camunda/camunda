@@ -72,7 +72,7 @@ test('sharing', async (t) => {
   await u.selectVisualization(t, 'Heatmap');
   await u.save(t);
 
-  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+  await t.expect(e.shareButton.hasClass('disabled')).notOk();
 
   await t.click(e.shareButton);
   await t.click(e.shareSwitch);
@@ -234,19 +234,19 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Start Date').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Variable').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).ok();
+  await t.expect(e.option('None').hasClass('disabled')).notOk();
+  await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
+  await t.expect(e.option('Variable').hasClass('disabled')).notOk();
+  await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
 
   await t.click(e.option('None'));
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Table').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Number').hasClass('disabled')).notOk();
+  await t.expect(e.option('Table').hasClass('disabled')).ok();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).ok();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -298,12 +298,12 @@ test('select process instance count grouped by end date', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Number').hasClass('disabled')).ok();
+  await t.expect(e.option('Table').hasClass('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
@@ -320,12 +320,12 @@ test('select process instance count grouped by variable', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Number').hasClass('disabled')).ok();
+  await t.expect(e.option('Table').hasClass('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
@@ -357,10 +357,10 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Number').hasClass('disabled')).ok();
+  await t.expect(e.option('Table').hasClass('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
 });
 
 test('select which flow nodes to show from the configuration', async (t) => {
@@ -634,27 +634,27 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).ok();
-  await t.expect(e.option('User Task').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Assignee').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Candidate Group').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Start Date').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('None').hasClass('disabled')).ok();
+  await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
+  await t.expect(e.option('User Task').hasClass('disabled')).notOk();
+  await t.expect(e.option('Assignee').hasClass('disabled')).notOk();
+  await t.expect(e.option('Candidate Group').hasClass('disabled')).notOk();
+  await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
 
   await t.click(e.option('User Tasks'));
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Number').hasClass('disabled')).ok();
+  await t.expect(e.option('Table').hasClass('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
 
   await u.selectGroupby(t, 'Assignee');
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
 
   await t.click(e.option('Table'));
 
@@ -683,11 +683,11 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Table').hasClass('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(e.option('Number').hasClass('disabled')).ok();
+  await t.expect(e.option('Pie Chart').hasClass('disabled')).ok();
 
   await t.click(e.option('Table'));
   await t.expect(e.reportTable.visible).ok();

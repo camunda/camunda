@@ -7,7 +7,7 @@
 import React, {useRef, useEffect, useImperativeHandle} from 'react';
 import classnames from 'classnames';
 
-import {Input, Icon, Tag, Tooltip} from 'components';
+import {Input, Icon, Tag} from 'components';
 
 import './UncontrolledMultiValueInput.scss';
 
@@ -63,11 +63,9 @@ export default React.forwardRef(function UncontrolledMultiValueInput(
       />
       <span className="sizer" ref={sizer} />
       {values.map(({value, label, invalid}, i) => (
-        <Tooltip key={i} content={label || value} overflowOnly>
-          <Tag invalid={invalid} onRemove={() => onRemove(value, i)}>
-            {label || value}
-          </Tag>
-        </Tooltip>
+        <Tag key={i} invalid={invalid} onRemove={() => onRemove(value, i)}>
+          {label || value}
+        </Tag>
       ))}
       {!empty && (
         <button className="searchClear" onKeyDown={tiggerClear} onMouseDown={tiggerClear}>

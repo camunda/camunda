@@ -112,3 +112,23 @@ it('should open the tooltip after a delay', () => {
   jest.advanceTimersByTime(500);
   expect(node.find('.Tooltip')).toExist();
 });
+
+it('should call onMouseEnter and onMouseLeave functions if specified', () => {
+  const enter = jest.fn();
+  const leave = jest.fn();
+
+  const node = shallow(
+    <Tooltip content="tooltip content">
+      <p onMouseEnter={enter} onMouseLeave={leave}>
+        child content
+      </p>
+    </Tooltip>
+  );
+
+  const evt = {currentTarget: element};
+  node.find('p').simulate('mouseEnter', evt);
+  expect(enter).toHaveBeenCalledWith(evt);
+
+  node.find('p').simulate('mouseLeave', evt);
+  expect(leave).toHaveBeenCalledWith(evt);
+});

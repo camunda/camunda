@@ -11,30 +11,20 @@ exports[`should match snapshot 1`] = `
   <span
     className="sizer"
   />
-  <Tooltip
-    content="1234 label"
+  <Tag
+    invalid={false}
     key="0"
-    overflowOnly={true}
+    onRemove={[Function]}
   >
-    <Tag
-      invalid={false}
-      onRemove={[Function]}
-    >
-      1234 label
-    </Tag>
-  </Tooltip>
-  <Tooltip
-    content="errorValue"
+    1234 label
+  </Tag>
+  <Tag
+    invalid={true}
     key="1"
-    overflowOnly={true}
+    onRemove={[Function]}
   >
-    <Tag
-      invalid={true}
-      onRemove={[Function]}
-    >
-      errorValue
-    </Tag>
-  </Tooltip>
+    errorValue
+  </Tag>
   <button
     className="searchClear"
     onKeyDown={[Function]}

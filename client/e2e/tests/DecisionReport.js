@@ -208,9 +208,9 @@ test('show raw data and decision table', async (t) => {
 });
 
 async function checkVisualizations(t) {
-  await t.expect(Report.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(Report.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Line Chart').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Pie Chart').hasAttribute('disabled')).notOk();
+  await t.expect(Report.option('Number').hasClass('disabled')).ok();
+  await t.expect(Report.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Pie Chart').hasClass('disabled')).notOk();
 }

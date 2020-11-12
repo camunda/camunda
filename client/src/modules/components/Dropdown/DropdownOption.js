@@ -11,11 +11,11 @@ import {Icon, Tooltip} from 'components';
 import './DropdownOption.scss';
 import classnames from 'classnames';
 
-export default React.forwardRef(function DropdownOption({active, link, ...props}, ref) {
+export default React.forwardRef(function DropdownOption({active, link, disabled, ...props}, ref) {
   const commonProps = {
     ...props,
-    className: classnames('DropdownOption', props.className, {'is-active': active}),
-    tabIndex: props.disabled ? '-1' : '0',
+    className: classnames('DropdownOption', props.className, {'is-active': active, disabled}),
+    tabIndex: disabled ? '-1' : '0',
     ref,
   };
 
@@ -37,10 +37,7 @@ export default React.forwardRef(function DropdownOption({active, link, ...props}
   }
   return (
     <Tooltip content={content} overflowOnly>
-      <div
-        {...commonProps}
-        onClick={(evt) => !props.disabled && props.onClick && props.onClick(evt)}
-      >
+      <div {...commonProps} onClick={(evt) => !disabled && props.onClick && props.onClick(evt)}>
         {content}
       </div>
     </Tooltip>

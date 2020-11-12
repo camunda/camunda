@@ -148,6 +148,7 @@
     color: $grey-lighten-56;
     border-color: $silver-darken-87;
     background-color: $silver-base-97;
+    pointer-events: none; // fix to make mouseleave events fire: https://github.com/facebook/react/issues/4251#issuecomment-267004045
   }
 
   &.primary {

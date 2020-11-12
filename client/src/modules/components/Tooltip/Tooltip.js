@@ -43,15 +43,18 @@ export default function Tooltip({
     <>
       {React.Children.map(children, (child) =>
         React.cloneElement(child, {
-          onMouseEnter: ({currentTarget}) => {
+          onMouseEnter: (evt) => {
+            const {currentTarget} = evt;
             if (!overflowOnly || currentTarget.scrollWidth > currentTarget.clientWidth) {
               calculatePosition(currentTarget);
               setTimeout(window.setTimeout(() => setHovering(true), delay));
             }
+            child.props.onMouseEnter && child.props.onMouseEnter(evt);
           },
-          onMouseLeave: () => {
+          onMouseLeave: (evt) => {
             setHovering(false);
             window.clearTimeout(timeout);
+            child.props.onMouseLeave && child.props.onMouseLeave(evt);
           },
         })
       )}

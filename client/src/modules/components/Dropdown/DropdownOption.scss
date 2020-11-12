@@ -14,8 +14,7 @@
       }
     }
 
-    &[disabled],
-    &[disabled='disabled'] {
+    &.disabled {
       &:hover {
         color: #fff;
         background-color: $grey-darken-33;
@@ -74,8 +73,7 @@
     box-shadow: none;
   }
 
-  &[disabled],
-  &[disabled='disabled'] {
+  &.disabled {
     cursor: not-allowed;
     opacity: 0.65;
 

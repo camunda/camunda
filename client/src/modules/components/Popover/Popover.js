@@ -171,19 +171,21 @@ export default class Popover extends React.Component {
         className={classnames('Popover', className)}
       >
         <Tooltip content={tooltip}>
-          <Button
-            icon={icon && !title}
-            active={active}
-            main={main}
-            onClick={this.toggleOpen}
-            ref={this.storeButtonRef}
-            className="Popover__button"
-            disabled={disabled}
-          >
-            {icon ? <Icon type={icon} /> : ''}
-            {title}
-            <Icon type="down" className="downIcon" />
-          </Button>
+          <div>
+            <Button
+              icon={icon && !title}
+              active={active}
+              main={main}
+              onClick={this.toggleOpen}
+              ref={this.storeButtonRef}
+              className="Popover__button"
+              disabled={disabled}
+            >
+              {icon ? <Icon type={icon} /> : ''}
+              {title}
+              <Icon type="down" className="downIcon" />
+            </Button>
+          </div>
         </Tooltip>
         {active && this.createOverlay()}
       </div>
