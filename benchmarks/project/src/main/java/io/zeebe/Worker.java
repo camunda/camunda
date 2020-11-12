@@ -93,7 +93,7 @@ public class Worker extends App {
     final WorkerCfg workerCfg = appCfg.getWorker();
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
-            .brokerContactPoint(appCfg.getBrokerUrl())
+            .gatewayAddress(appCfg.getBrokerUrl())
             .numJobWorkerExecutionThreads(workerCfg.getThreads())
             .defaultJobWorkerName(workerCfg.getWorkerName())
             .defaultJobTimeout(workerCfg.getCompletionDelay().multipliedBy(6))

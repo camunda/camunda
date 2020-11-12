@@ -39,7 +39,7 @@ public class ZeebeTestRule extends ExternalResource {
             () -> {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
-                  ClientProperties.BROKER_CONTACTPOINT,
+                  ClientProperties.GATEWAY_ADDRESS,
                   SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
               properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "true");
 
