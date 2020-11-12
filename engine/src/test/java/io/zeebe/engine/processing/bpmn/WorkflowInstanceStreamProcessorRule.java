@@ -123,7 +123,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new DueDateTimerChecker(workflowState));
 
           JobEventProcessors.addJobProcessors(
-              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+              typedRecordProcessors, actor, zeebeState, type -> {}, Integer.MAX_VALUE);
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

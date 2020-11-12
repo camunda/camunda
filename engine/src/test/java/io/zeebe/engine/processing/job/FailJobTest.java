@@ -28,6 +28,7 @@ import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -233,5 +234,92 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason()).contains("is in state 'ERROR_THROWN'");
+  }
+
+  @Test
+  //  @Ignore
+  public void shouldFailJobAndRetryBackOff() throws InterruptedException {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final Record<JobRecordValue> activatedRecord =
+        jobRecords(ACTIVATED).withRecordKey(jobKey).getFirst();
+
+    // when
+    final int backOff = 100;
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getWorkflowInstanceKey())
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    TimeUnit.MILLISECONDS.sleep(backOff * 2);
+    ENGINE.jobs().withType(jobType).activate();
+
+    // and the job is published again
+    final Record republishedEvent =
+        jobRecords().skipUntil(j -> j.getIntent() == FAILED).withIntent(ACTIVATED).getFirst();
+
+    assertThat(republishedEvent.getKey()).isEqualTo(activatedRecord.getKey());
+    assertThat(republishedEvent.getPosition()).isNotEqualTo(activatedRecord.getPosition());
+
+    // and the job lifecycle is correct
+    final List<Record> jobEvents = jobRecords().limit(6).collect(Collectors.toList());
+    assertThat(jobEvents)
+        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
+        .containsExactly(
+            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
+            tuple(RecordType.COMMAND, ValueType.JOB, FAIL),
+            tuple(RecordType.EVENT, ValueType.JOB, FAILED),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
+
+    final List<Record<JobBatchRecordValue>> jobActivateCommands =
+        RecordingExporter.jobBatchRecords().limit(4).collect(Collectors.toList());
+
+    assertThat(jobActivateCommands)
+        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
+        .containsExactly(
+            tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
+            tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED),
+            tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
+            tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED));
+  }
+
+  @Test
+  public void shouldNotAbleToActivateJobWhileItIsBackOff() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final int backOff = 100;
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getWorkflowInstanceKey())
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    ENGINE.jobs().withType(jobType).activate();
+
+    assertThat(jobRecords().skipUntil(j -> j.getIntent() == FAILED).withIntent(ACTIVATED).exists())
+        .isFalse();
   }
 }

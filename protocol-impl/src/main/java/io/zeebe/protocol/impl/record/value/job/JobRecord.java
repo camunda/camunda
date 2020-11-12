@@ -39,6 +39,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
+  private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
 
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
@@ -60,6 +61,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     declareProperty(deadlineProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
+        .declareProperty(retryBackoffProp)
         .declareProperty(typeProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
@@ -77,6 +79,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     deadlineProp.setValue(record.getDeadline());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
+    retryBackoffProp.setValue(record.getRetryBackOff());
     typeProp.setValue(record.getTypeBuffer());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
     customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
@@ -129,6 +132,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public int getRetries() {
     return retriesProp.getValue();
+  }
+
+  @Override
+  public long getRetryBackOff() {
+    return retryBackoffProp.getValue();
   }
 
   @Override
@@ -226,6 +234,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
+    return this;
+  }
+
+  public JobRecord setRetryBackOff(final long retryBackOff) {
+    retryBackoffProp.setValue(retryBackOff);
     return this;
   }
 

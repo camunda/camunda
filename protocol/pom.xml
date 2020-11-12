@@ -123,6 +123,12 @@
               <method>*</method>
               <differenceType>7012</differenceType>
             </ignored>
+            <ignored>
+              <!-- ignore new methods in the JobRecordValue interface -->
+              <className>io/zeebe/protocol/record/value/JobRecordValue</className>
+              <method>*</method>
+              <differenceType>7012</differenceType>
+            </ignored>
           </ignored>
         </configuration>
       </plugin>

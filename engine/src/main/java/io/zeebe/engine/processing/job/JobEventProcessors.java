@@ -14,12 +14,14 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
 
 public final class JobEventProcessors {
 
   public static JobErrorThrownProcessor addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
+      final ActorControl actorControl,
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
       final int maxRecordSize) {
@@ -36,7 +38,7 @@ public final class JobEventProcessors {
         .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(workflowState))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState, actorControl))
         .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.ERROR_THROWN, jobErrorThrownProcessor)

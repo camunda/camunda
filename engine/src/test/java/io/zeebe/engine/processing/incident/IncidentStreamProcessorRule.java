@@ -97,7 +97,11 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
 
           final var jobErrorThrownProcessor =
               JobEventProcessors.addJobProcessors(
-                  typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+                  typedRecordProcessors,
+                  processingContext.getActor(),
+                  zeebeState,
+                  type -> {},
+                  Integer.MAX_VALUE);
 
           IncidentEventProcessors.addProcessors(
               typedRecordProcessors, zeebeState, stepProcessor, jobErrorThrownProcessor);

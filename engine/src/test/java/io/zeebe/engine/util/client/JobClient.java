@@ -87,6 +87,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withBackOff(final long backOff) {
+    jobRecord.setRetryBackOff(backOff);
+    return this;
+  }
+
   public JobClient withErrorMessage(final String errorMessage) {
     jobRecord.setErrorMessage(errorMessage);
     return this;

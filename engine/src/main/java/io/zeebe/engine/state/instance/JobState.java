@@ -117,6 +117,11 @@ public final class JobState {
     metrics.jobActivated(record.getType());
   }
 
+  public void activable(final long key, final JobRecord updatedValue) {
+    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+    updateJob(key, updatedValue, newState);
+  }
+
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
@@ -170,6 +175,11 @@ public final class JobState {
     final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
     updateJob(key, updatedValue, newState);
 
+    metrics.jobFailed(updatedValue.getType());
+  }
+
+  public void failForBackoff(final long key, final JobRecord updatedValue) {
+    updateJob(key, updatedValue, State.FAILED);
     metrics.jobFailed(updatedValue.getType());
   }
 

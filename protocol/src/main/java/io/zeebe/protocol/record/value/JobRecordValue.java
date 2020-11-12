@@ -39,6 +39,12 @@ public interface JobRecordValue extends RecordValueWithVariables, WorkflowInstan
   int getRetries();
 
   /**
+   * @return the time of backoff in milliseconds. If backoff is disabled this method returns 0
+   *     (default value).
+   */
+  long getRetryBackOff();
+
+  /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
    *     is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the job
    *     is handed to another worker and the work is performed twice. If this property is not set it

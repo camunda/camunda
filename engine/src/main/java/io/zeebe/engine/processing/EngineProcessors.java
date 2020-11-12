@@ -84,7 +84,7 @@ public final class EngineProcessors {
 
     final JobErrorThrownProcessor jobErrorThrownProcessor =
         addJobProcessors(
-            zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
+            zeebeState, actor, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
 
     addIncidentProcessors(
         zeebeState, bpmnStreamProcessor, typedRecordProcessors, jobErrorThrownProcessor);
@@ -156,11 +156,12 @@ public final class EngineProcessors {
 
   private static JobErrorThrownProcessor addJobProcessors(
       final ZeebeState zeebeState,
+      final ActorControl actorControl,
       final TypedRecordProcessors typedRecordProcessors,
       final Consumer<String> onJobsAvailableCallback,
       final int maxFragmentSize) {
     return JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
+        typedRecordProcessors, actorControl, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
 
   private static void addMessageProcessors(
