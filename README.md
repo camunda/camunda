@@ -40,8 +40,8 @@ To learn more about what we're currently working on, please visit the [roadmap](
 * [Getting Started Tutorial](https://docs.zeebe.io/getting-started/index.html)
 * [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/index.html)
 * [Configuration](https://docs.zeebe.io/operations/configuration.html)
-* [Java Client](https://docs.zeebe.io/java-client/index.html)
-* [Go Client](https://docs.zeebe.io/go-client/index.html)
+* [Java Client](https://docs.zeebe.io/clients/java-client/index.html)
+* [Go Client](https://docs.zeebe.io/clients/go-client/index.html)
 
 
 ## Contributing
