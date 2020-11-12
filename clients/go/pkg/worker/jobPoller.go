@@ -29,7 +29,7 @@ import (
 
 type jobPoller struct {
 	client         pb.GatewayClient
-	request        pb.ActivateJobsRequest
+	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 	maxJobsActive  int
 	pollInterval   time.Duration
@@ -77,7 +77,7 @@ func (poller *jobPoller) activateJobs() {
 	defer cancel()
 
 	poller.request.MaxJobsToActivate = int32(poller.maxJobsActive - poller.remaining)
-	stream, err := poller.client.ActivateJobs(ctx, &poller.request)
+	stream, err := poller.client.ActivateJobs(ctx, poller.request)
 	if err != nil {
 		log.Println("Failed to request jobs for worker", poller.request.Worker, err)
 		return
@@ -96,7 +96,7 @@ func (poller *jobPoller) activateJobs() {
 		poller.remaining += len(response.Jobs)
 		poller.setJobsRemainingCountMetric(poller.remaining)
 		for _, job := range response.Jobs {
-			poller.jobQueue <- entities.Job{ActivatedJob: *job}
+			poller.jobQueue <- entities.Job{ActivatedJob: job}
 		}
 	}
 }

@@ -37,12 +37,12 @@ type JobPollerSuite struct {
 	waitGroup sync.WaitGroup
 }
 
-func (suite *JobPollerSuite) BeforeTest(suiteName, testName string) {
+func (suite *JobPollerSuite) BeforeTest(_, _ string) {
 	suite.ctrl = gomock.NewController(suite.T())
 	suite.client = mock_pb.NewMockGatewayClient(suite.ctrl)
 	suite.poller = jobPoller{
 		client:         suite.client,
-		request:        pb.ActivateJobsRequest{},
+		request:        &pb.ActivateJobsRequest{},
 		requestTimeout: utils.DefaultTestTimeout,
 		maxJobsActive:  DefaultJobWorkerMaxJobActive,
 		pollInterval:   DefaultJobWorkerPollInterval,
@@ -55,7 +55,7 @@ func (suite *JobPollerSuite) BeforeTest(suiteName, testName string) {
 	suite.waitGroup.Add(1)
 }
 
-func (suite *JobPollerSuite) AfterTest(suiteName, testName string) {
+func (suite *JobPollerSuite) AfterTest(_, _ string) {
 	defer suite.ctrl.Finish()
 
 	close(suite.poller.closeSignal)

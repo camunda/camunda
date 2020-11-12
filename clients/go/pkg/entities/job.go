@@ -25,7 +25,7 @@ import (
 // See https://docs.zeebe.io/basics/job-workers.html#what-is-a-job for details
 // on jobs.
 type Job struct {
-	pb.ActivatedJob
+	*pb.ActivatedJob
 }
 
 // GetVariablesAsMap returns a map of a workflow instance's variables.

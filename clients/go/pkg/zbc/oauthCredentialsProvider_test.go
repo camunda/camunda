@@ -275,7 +275,7 @@ func TestInvalidOAuthProviderConfigurations(t *testing.T) {
 			// when
 			_, err := NewOAuthCredentialsProvider(test.config)
 
-			//then
+			// then
 			require.Error(t, err)
 		})
 	}

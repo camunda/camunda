@@ -37,7 +37,7 @@ const (
 type JobWorkerBuilder struct {
 	gatewayClient  pb.GatewayClient
 	jobClient      JobClient
-	request        pb.ActivateJobsRequest
+	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 
 	handler       JobHandler
@@ -198,7 +198,7 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) Jo
 		concurrency:   DefaultJobWorkerConcurrency,
 		pollInterval:  DefaultJobWorkerPollInterval,
 		pollThreshold: DefaultJobWorkerPollThreshold,
-		request: pb.ActivateJobsRequest{
+		request: &pb.ActivateJobsRequest{
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
