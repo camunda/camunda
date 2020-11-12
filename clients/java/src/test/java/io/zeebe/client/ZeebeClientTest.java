@@ -22,6 +22,7 @@ import static io.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_V
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.client.api.command.GatewayConnectionException;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.client.util.Environment;
@@ -186,5 +187,12 @@ public final class ZeebeClientTest extends ClientTest {
           .isEqualTo(configuration.getBrokerContactPoint())
           .isEqualTo(gatewayAddress);
     }
+  }
+
+  @Test
+  public void shouldFailNicelyIfBrokerIsNotAvailable() {
+    assertThatThrownBy(() -> ZeebeClient.newClient().newTopologyRequest().send().join())
+        .isInstanceOf(GatewayConnectionException.class)
+        .hasMessageContaining("Connection refused: /0.0.0.0:26500");
   }
 }

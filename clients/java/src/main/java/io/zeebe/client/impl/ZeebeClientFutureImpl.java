@@ -17,11 +17,13 @@
 package io.zeebe.client.impl;
 
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.ClientStatusException;
+import io.zeebe.client.api.command.GatewayConnectionException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +92,16 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
 
     if (cause instanceof StatusRuntimeException) {
       final Status status = ((StatusRuntimeException) cause).getStatus();
-      throw new ClientStatusException(status, e);
+      if (status.getCode() == Code.UNAVAILABLE) {
+        final Throwable statusCause = status.getCause();
+        if (statusCause == null) {
+          throw new GatewayConnectionException(cause);
+        } else {
+          throw new GatewayConnectionException(statusCause);
+        }
+      } else {
+        throw new ClientStatusException(status, e);
+      }
     } else {
       throw new ClientException(e);
     }
