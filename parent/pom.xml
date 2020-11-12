@@ -88,9 +88,7 @@
     <version.zeebe-test-container>1.0.0</version.zeebe-test-container>
     <version.feel-scala>1.12.2</version.feel-scala>
     <version.restassert>4.3.2</version.restassert>
-    <version.spring-framework>5.2.9.RELEASE</version.spring-framework>
     <version.spring-boot>2.3.5.RELEASE</version.spring-boot>
-    <version.tomcat>9.0.39</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>4.0.2</version.kryo>
@@ -139,6 +137,15 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Spring and Spring Boot -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-broker</artifactId>
@@ -183,22 +190,6 @@
         <version>${version.jackson}</version>
         <scope>import</scope>
         <type>pom</type>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${version.jackson}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${version.jackson}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-        <artifactId>jackson-datatype-jsr310</artifactId>
-        <version>${version.jackson}</version>
       </dependency>
 
       <dependency>
@@ -599,8 +590,6 @@
         <version>${version.jna}</version>
       </dependency>
 
-
-
       <dependency>
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik</artifactId>
@@ -631,59 +620,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-context</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-core</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-beans</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-webmvc</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-web</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-test</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-autoconfigure</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-actuator</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-      <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
         <version>${version.spring-boot}</version>
@@ -699,16 +635,6 @@
           </exclusion>
         </exclusions>
       </dependency>
-      <dependency>
-        <groupId>org.apache.tomcat.embed</groupId>
-        <artifactId>tomcat-embed-core</artifactId>
-        <version>${version.tomcat}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.tomcat.embed</groupId>
-        <artifactId>tomcat-embed-websocket</artifactId>
-        <version>${version.tomcat}</version>
-      </dependency>
 
       <dependency>
         <artifactId>guava-testlib</artifactId>
@@ -716,17 +642,20 @@
         <scope>test</scope>
         <version>${version.guava}</version>
       </dependency>
+
       <dependency>
         <artifactId>concurrentunit</artifactId>
         <groupId>net.jodah</groupId>
         <scope>test</scope>
         <version>${version.concurrentunit}</version>
       </dependency>
+
       <dependency>
         <artifactId>kryo</artifactId>
         <groupId>com.esotericsoftware</groupId>
         <version>${version.kryo}</version>
       </dependency>
+
       <dependency>
         <artifactId>config</artifactId>
         <groupId>com.typesafe</groupId>
