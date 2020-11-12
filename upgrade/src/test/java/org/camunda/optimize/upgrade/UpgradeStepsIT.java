@@ -42,7 +42,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -276,7 +276,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       .extractingByKey(versionedIndexName)
       .satisfies(aliasMetaData -> assertThat(aliasMetaData)
         .hasSize(1)
-        .extracting(AliasMetaData::writeIndex)
+        .extracting(AliasMetadata::writeIndex)
         .containsExactly(false)
       );
   }
@@ -312,10 +312,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     final String expectedSuffixAfterRollover = "-000002";
     final String indexAlias =
       indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING.getIndexName());
-    final Map<String, Set<AliasMetaData>> aliasMap = getAliasMap(indexAlias);
+    final Map<String, Set<AliasMetadata>> aliasMap = getAliasMap(indexAlias);
     final List<String> indicesWithWriteAlias = aliasMap.entrySet()
       .stream()
-      .filter(e -> e.getValue().removeIf(AliasMetaData::writeIndex))
+      .filter(e -> e.getValue().removeIf(AliasMetadata::writeIndex))
       .map(Map.Entry::getKey)
       .collect(toList());
     final Map<String, Object> mappingFields = getMappingFields();
@@ -491,8 +491,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     prefixAwareClient.index(indexRequest, RequestOptions.DEFAULT);
 
-    RefreshRequest refreshRequest = new RefreshRequest("*");
-    prefixAwareClient.getHighLevelClient().indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+    prefixAwareClient.refresh(new RefreshRequest("*"));
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -542,7 +541,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       .extractingByKey(versionedIndexName)
       .satisfies(aliasMetaData -> assertThat(aliasMetaData)
         .hasSize(1)
-        .extracting(AliasMetaData::writeIndex)
+        .extracting(AliasMetadata::writeIndex)
         .containsExactly(true)
       );
   }
@@ -610,7 +609,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     return new DeleteIndexIfExistsStep(indexMapping);
   }
 
-  private Map<String, Set<AliasMetaData>> getAliasMap(final String aliasName) {
+  private Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
     try {
       return prefixAwareClient

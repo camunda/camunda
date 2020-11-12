@@ -20,7 +20,7 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
+import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.springframework.stereotype.Component;
@@ -189,10 +189,8 @@ public class DateAggregationService {
       && context.getMinMaxStats().isMaxValid()
       && context.getMinMaxStats().isMinValid()) {
       dateHistogramAggregationBuilder.extendedBounds(
-        new ExtendedBounds(
-          Math.round(context.getMinMaxStats().getMin()),
-          Math.round(context.getMinMaxStats().getMax())
-        ));
+        new LongBounds(Math.round(context.getMinMaxStats().getMin()), Math.round(context.getMinMaxStats().getMax()))
+      );
     }
 
     return dateHistogramAggregationBuilder;

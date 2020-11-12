@@ -80,7 +80,7 @@ public abstract class AbstractUpgradeIT {
 
   protected void initSchema(List<IndexMappingCreator> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      metadataService, createDefaultConfiguration(), indexNameService, mappingCreators, objectMapper
+      metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }
@@ -116,7 +116,7 @@ public abstract class AbstractUpgradeIT {
     );
     request.setEntity(entity);
     prefixAwareClient.getLowLevelClient().performRequest(request);
-    prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+    prefixAwareClient.refresh(new RefreshRequest("*"));
   }
 
   private String getVersionedIndexName(final String indexName, final int version) {

@@ -131,8 +131,7 @@ public class ReimportPreparation {
       new ElasticsearchMetadataService(objectMapper),
       CONFIGURATION_SERVICE,
       prefixAwareClient.getIndexNameService(),
-      STATIC_INDICES_TO_DELETE,
-      objectMapper
+      STATIC_INDICES_TO_DELETE
     );
 
     schemaManager.createOptimizeIndices(prefixAwareClient);

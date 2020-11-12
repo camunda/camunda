@@ -7,7 +7,6 @@
 import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest
-import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest
 import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest
@@ -16,7 +15,9 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest
 import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.client.Request
 import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.client.Response
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestClientBuilder
 import org.elasticsearch.client.RestHighLevelClient
@@ -115,12 +116,16 @@ class ElasticClient {
 
   def createSnapshot(Boolean waitForCompletion = true) {
     println "Creating snapshot on ${name} Elasticsearch..."
-    client.snapshot().create(
-      new CreateSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME)
-        .includeGlobalState(true)
-        .waitForCompletion(waitForCompletion),
-      RequestOptions.DEFAULT
-    )
+    // using low level client for compatibility here, see https://github.com/elastic/elasticsearch/pull/57661
+    final Request createSnapshotRequest = new Request(
+      "PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME
+    );
+    createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(waitForCompletion));
+    createSnapshotRequest.setJsonEntity("{\"include_global_state\":true}");
+    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
+    if (!HttpURLConnection.HTTP_OK.equals(response.getStatusLine().getStatusCode())) {
+      throw new RuntimeException("Failed Creating Snapshot, statusCode: ${response.getStatusLine().getStatusCode()}")
+    }
     if (waitForCompletion) {
       println "Done creating snapshot on ${name} Elasticsearch!"
     } else {

@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.es.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
@@ -42,11 +40,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -63,7 +60,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
@@ -82,31 +78,26 @@ public class ElasticSearchSchemaManager {
   private final OptimizeIndexNameService indexNameService;
 
   private final List<IndexMappingCreator> mappings;
-  private final ObjectMapper objectMapper;
 
   @Autowired
   public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
                                     final ConfigurationService configurationService,
-                                    final OptimizeIndexNameService indexNameService,
-                                    final ObjectMapper objectMapper) {
+                                    final OptimizeIndexNameService indexNameService) {
     this.metadataService = metadataService;
     this.configurationService = configurationService;
     this.indexNameService = indexNameService;
     this.mappings = new ArrayList<>();
     mappings.addAll(getAllNonDynamicMappings());
-    this.objectMapper = objectMapper;
   }
 
   public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
                                     final ConfigurationService configurationService,
                                     final OptimizeIndexNameService indexNameService,
-                                    final List<IndexMappingCreator> mappings,
-                                    final ObjectMapper objectMapper) {
+                                    final List<IndexMappingCreator> mappings) {
     this.metadataService = metadataService;
     this.configurationService = configurationService;
     this.indexNameService = indexNameService;
     this.mappings = mappings;
-    this.objectMapper = objectMapper;
   }
 
   public void validateExistingSchemaVersion(final OptimizeElasticsearchClient esClient) {
@@ -114,7 +105,7 @@ public class ElasticSearchSchemaManager {
   }
 
   public void initializeSchema(final OptimizeElasticsearchClient esClient) {
-    unblockIndices(esClient.getHighLevelClient());
+    unblockIndices(esClient);
     if (!schemaExists(esClient)) {
       log.info("Initializing Optimize schema...");
       createOptimizeIndices(esClient);
@@ -180,13 +171,6 @@ public class ElasticSearchSchemaManager {
   public void createOptimizeIndices(OptimizeElasticsearchClient esClient) {
     for (IndexMappingCreator mapping : mappings) {
       createOptimizeIndex(esClient, mapping);
-    }
-
-    RefreshRequest refreshAllIndexesRequest = new RefreshRequest();
-    try {
-      esClient.getHighLevelClient().indices().refresh(refreshAllIndexesRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not refresh Optimize indices!", e);
     }
   }
 
@@ -324,40 +308,27 @@ public class ElasticSearchSchemaManager {
     log.info("Finished updating Optimize schema.");
   }
 
-  private void unblockIndices(RestHighLevelClient esClient) {
-    Map<String, Map> responseBodyAsMap;
+  private void unblockIndices(final OptimizeElasticsearchClient esClient) {
+    final boolean indexBlocked;
     try {
-      // we need to perform this request manually since Elasticsearch 6.5 automatically
-      // adds "master_timeout" parameter to the get settings request which is not
-      // recognized prior to 6.4 and throws an error. As soon as we don't support 6.3 or
-      // older those lines can be replaced with the high rest client equivalent.
-      Request request = new Request("GET", "/_all/_settings");
-      Response response = esClient.getLowLevelClient().performRequest(request);
-      String responseBody = EntityUtils.toString(response.getEntity());
-      responseBodyAsMap = objectMapper.readValue(responseBody, new TypeReference<Map<String, Map>>() {
-      });
-    } catch (Exception e) {
+      final GetSettingsResponse settingsResponse = esClient.getHighLevelClient().indices().getSettings(
+        new GetSettingsRequest().indices(esClient.getIndexNameService().getIndexPrefix() + "*"), RequestOptions.DEFAULT
+      );
+      indexBlocked = Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
+        .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
+    } catch (IOException e) {
       log.error("Could not retrieve index settings!", e);
       throw new OptimizeRuntimeException("Could not retrieve index settings!", e);
-    }
-    boolean indexBlocked = false;
-    for (Map.Entry<String, Map> entry : responseBodyAsMap.entrySet()) {
-      Map<String, Map> settingsMap = (Map) entry.getValue().get("settings");
-      Map<String, String> indexSettingsMap = settingsMap.get("index");
-      if (Boolean.parseBoolean(indexSettingsMap.get(INDEX_READ_ONLY_SETTING))
-        && entry.getKey().contains(indexNameService.getIndexPrefix())) {
-        indexBlocked = true;
-        log.info("Found blocked Optimize Elasticsearch indices");
-        break;
-      }
     }
 
     if (indexBlocked) {
       log.info("Unblocking Elasticsearch indices...");
-      UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexNameService.getIndexPrefix() + "*");
+      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(
+        indexNameService.getIndexPrefix() + "*"
+      );
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
-        esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+        esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }

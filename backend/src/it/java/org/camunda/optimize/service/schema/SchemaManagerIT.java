@@ -26,7 +26,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.indices.GetFieldMappingsRequest;
 import org.elasticsearch.client.indices.GetFieldMappingsResponse;
-import org.elasticsearch.client.indices.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -338,7 +337,7 @@ public class SchemaManagerIT extends AbstractIT {
       prefixAwareRestHighLevelClient.getHighLevelClient().indices().getFieldMapping(request, RequestOptions.DEFAULT);
 
     final MyUpdatedEventIndex updatedEventType = new MyUpdatedEventIndex();
-    final FieldMappingMetaData fieldEntry =
+    final GetFieldMappingsResponse.FieldMappingMetadata fieldEntry =
       response.fieldMappings(
         indexNameService.getOptimizeIndexNameWithVersion(updatedEventType),
         MyUpdatedEventIndex.MY_NEW_FIELD

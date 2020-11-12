@@ -3,6 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 import com.fasterxml.jackson.databind.JsonNode
 import lombok.SneakyThrows
 import org.camunda.optimize.OptimizeRequestExecutor
@@ -24,7 +25,6 @@ import org.camunda.optimize.test.util.ProcessReportDataType
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
-import org.elasticsearch.client.RequestOptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
@@ -168,7 +168,7 @@ class PostMigrationTest {
 
   @SneakyThrows
   private static void refreshAllElasticsearchIndices() {
-    elasticsearchClient.getHighLevelClient().indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    elasticsearchClient.refresh(new RefreshRequest("*"));
   }
 
   private static void assertEventProcessesArePublished(final List<EventProcessMappingDto> allEventProcessMappings) {

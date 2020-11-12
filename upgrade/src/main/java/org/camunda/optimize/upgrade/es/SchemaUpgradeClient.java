@@ -36,7 +36,7 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutMappingRequest;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -70,8 +70,7 @@ public class SchemaUpgradeClient {
         upgradeDependencies.getMetadataService(),
         upgradeDependencies.getConfigurationService(),
         upgradeDependencies.getIndexNameService(),
-        getAllMappings(upgradeDependencies.getEsClient()),
-        upgradeDependencies.getObjectMapper()
+        getAllMappings(upgradeDependencies.getEsClient())
       ),
       upgradeDependencies.getMetadataService(),
       upgradeDependencies.getEsClient(),
@@ -201,10 +200,10 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetaData> aliases) {
+  public void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetadata> aliases) {
     log.debug("Setting all aliases pointing to {} to readonly.", indexName);
 
-    final String[] aliasNames = aliases.stream().map(AliasMetaData::alias).toArray(String[]::new);
+    final String[] aliasNames = aliases.stream().map(AliasMetadata::alias).toArray(String[]::new);
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions removeAllAliasesAction = new AliasActions(AliasActions.Type.REMOVE)
@@ -241,7 +240,7 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public Map<String, Set<AliasMetaData>> getAliasMap(final String aliasName) {
+  public Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
     try {
       return getPlainRestClient()
@@ -338,7 +337,7 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public Set<AliasMetaData> getAllAliasesForIndex(final String indexName) {
+  public Set<AliasMetadata> getAllAliasesForIndex(final String indexName) {
     GetAliasesRequest getAliasesRequest = new GetAliasesRequest().indices(indexName);
     try {
       return new HashSet<>(

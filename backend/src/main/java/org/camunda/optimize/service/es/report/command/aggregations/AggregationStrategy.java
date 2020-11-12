@@ -12,7 +12,7 @@ import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuil
 public interface AggregationStrategy {
   Double getValue(Aggregations aggs);
 
-  ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder();
+  ValuesSourceAggregationBuilder<?> getAggregationBuilder();
 
   AggregationType getAggregationType();
 }

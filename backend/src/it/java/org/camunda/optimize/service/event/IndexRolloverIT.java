@@ -18,7 +18,7 @@ import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.util.configuration.EventIndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -355,7 +355,7 @@ public class IndexRolloverIT extends AbstractIT {
       .getOptimizeIndexAliasForIndex(indexName);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetaData>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
+    Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
       .getHighLevelClient()
       .indices()
       .getAlias(aliasesRequest, RequestOptions.DEFAULT)
@@ -363,7 +363,7 @@ public class IndexRolloverIT extends AbstractIT {
 
     return aliasMap.keySet()
       .stream()
-      .filter(index -> aliasMap.get(index).removeIf(AliasMetaData::writeIndex))
+      .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
       .collect(toList());
   }
 

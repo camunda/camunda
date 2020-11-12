@@ -11,7 +11,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
 
 
@@ -25,7 +24,7 @@ public class MedianAggregation implements AggregationStrategy {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
     return percentiles(MEDIAN_AGGREGATION)
       .percentiles(50);
   }

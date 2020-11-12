@@ -23,6 +23,7 @@ import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
 import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -223,6 +224,16 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
     String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator);
     deleteIndexByRawIndexNames(indexName);
+  }
+
+  public void refresh(final RefreshRequest refreshRequest) {
+    applyIndexPrefixes(refreshRequest);
+    try {
+      getHighLevelClient().indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      log.error("Could not refresh Optimize indexes!", e);
+      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
+    }
   }
 
   /**

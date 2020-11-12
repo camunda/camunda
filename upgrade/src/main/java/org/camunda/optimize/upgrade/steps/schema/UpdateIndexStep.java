@@ -9,7 +9,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 
 import java.util.Collections;
 import java.util.Map;
@@ -58,7 +58,7 @@ public class UpdateIndexStep implements UpgradeStep {
     if (index.getCreateFromTemplate()) {
       // create new template & indices and reindex data to it
       schemaUpgradeClient.createOrUpdateTemplateWithoutAliases(index, indexAlias);
-      final Map<String, Set<AliasMetaData>> indexAliasMap = schemaUpgradeClient.getAliasMap(indexAlias);
+      final Map<String, Set<AliasMetadata>> indexAliasMap = schemaUpgradeClient.getAliasMap(indexAlias);
       for (String sourceIndex : indexAliasMap.keySet()) {
         String suffix;
         String sourceIndexNameWithSuffix;
@@ -75,7 +75,7 @@ public class UpdateIndexStep implements UpgradeStep {
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;
 
-        final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexNameWithSuffix);
+        final Set<AliasMetadata> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexNameWithSuffix);
         schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
         schemaUpgradeClient.createIndexFromTemplate(targetIndexNameWithSuffix);
         schemaUpgradeClient.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
@@ -84,7 +84,7 @@ public class UpdateIndexStep implements UpgradeStep {
       }
     } else {
       // create new index and reindex data to it
-      final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexName);
+      final Set<AliasMetadata> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexName);
       schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
       schemaUpgradeClient.createIndex(index);
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
@@ -95,8 +95,8 @@ public class UpdateIndexStep implements UpgradeStep {
 
   private void applyAliasesToIndex(final SchemaUpgradeClient schemaUpgradeClient,
                                    final String indexName,
-                                   final Set<AliasMetaData> aliases) {
-    for (AliasMetaData alias : aliases) {
+                                   final Set<AliasMetadata> aliases) {
+    for (AliasMetadata alias : aliases) {
       schemaUpgradeClient.addAlias(
         alias.getAlias(),
         indexName,

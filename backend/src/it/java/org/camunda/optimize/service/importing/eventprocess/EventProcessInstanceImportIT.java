@@ -18,7 +18,7 @@ import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,14 +49,14 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final String eventProcessPublishStateId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
 
-    final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
+    final Map<String, List<AliasMetadata>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
     assertThat(eventProcessInstanceIndicesAndAliases)
       .hasSize(1)
       .hasEntrySatisfying(
         getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId),
         aliases -> assertThat(aliases)
-          .extracting(AliasMetaData::alias, AliasMetaData::writeIndex)
+          .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
           .containsExactlyInAnyOrder(
             Tuple.tuple(
               getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndex(eventProcessPublishStateId).getIndexName()),

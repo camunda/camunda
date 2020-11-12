@@ -23,7 +23,7 @@ public class MaxAggregation implements AggregationStrategy {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
     return max(MAX_AGGREGATION);
   }
 

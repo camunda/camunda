@@ -23,7 +23,7 @@ public class SumAggregation implements AggregationStrategy {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
     return sum(SUM_AGGREGATION);
   }
 

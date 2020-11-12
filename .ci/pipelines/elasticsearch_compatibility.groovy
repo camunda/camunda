@@ -184,9 +184,9 @@ void runMaven(String cmd) {
 
 void gitCheckoutOptimize() {
   git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
+    branch: "${params.BRANCH}",
+    credentialsId: 'camunda-jenkins-github-ssh',
+    poll: false
 }
 
 void integrationTestSteps() {
@@ -360,9 +360,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -380,9 +378,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -400,9 +396,43 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
+          }
+        }
+        stage("Elasticsearch 7.9.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.9.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.9.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.10.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.10.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.10.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
           }
           post {
             always {

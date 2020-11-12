@@ -52,7 +52,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.RequestOptions;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -271,7 +270,7 @@ public class Generator {
 
   @SneakyThrows
   private void refreshElasticSearch() {
-    elasticsearchClient.getHighLevelClient().indices().refresh(new RefreshRequest("_all"), RequestOptions.DEFAULT);
+    elasticsearchClient.refresh(new RefreshRequest("*"));
   }
 
   private String createAndPublishExternalEventProcess() {
