@@ -403,18 +403,6 @@ public class ReportClient {
     return response.readEntity(SingleProcessReportDefinitionRequestDto.class);
   }
 
-  public SingleDecisionReportDefinitionRequestDto getSingleDecisionReportDefinitionDto(String reportId) {
-    return getSingleDecisionReportDefinitionDto(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private SingleDecisionReportDefinitionRequestDto getSingleDecisionReportDefinitionDto(String reportId,
-                                                                                        String username,
-                                                                                        String password) {
-    Response response = getSingleReportRawResponse(reportId, username, password);
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    return response.readEntity(SingleDecisionReportDefinitionRequestDto.class);
-  }
-
   public Response getSingleReportRawResponse(String reportId, String username,
                                              String password) {
     return getRequestExecutor()

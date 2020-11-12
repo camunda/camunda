@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ReportDefinitionExportDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.CsvExportService;
-import org.camunda.optimize.service.export.EntityExportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -52,11 +52,11 @@ public class ExportRestService {
 
   @GET
   @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("json/{type}/{reportId}/{fileName}")
-  public Response getJsonProcessReport(@Context ContainerRequestContext requestContext,
-                                       @PathParam("reportId") String reportId,
-                                       @PathParam("type") ReportType reportType,
-                                       @PathParam("fileName") String fileName) {
+  @Path("report/json/{type}/{reportId}/{fileName}")
+  public Response getJsonReport(@Context ContainerRequestContext requestContext,
+                                @PathParam("reportId") String reportId,
+                                @PathParam("type") ReportType reportType,
+                                @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final Optional<? extends ReportDefinitionExportDto> jsonReport =

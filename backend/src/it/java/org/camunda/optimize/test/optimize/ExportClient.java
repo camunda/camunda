@@ -24,7 +24,7 @@ public class ExportClient {
 
   public Response exportReportAsJson(final ReportType reportType, final String reportId, final String fileName) {
     return getRequestExecutor()
-      .buildJsonExportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportType, reportId, fileName)
       .execute();
   }
 
@@ -35,7 +35,7 @@ public class ExportClient {
                                            final String fileName) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
-      .buildJsonExportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportType, reportId, fileName)
       .execute();
   }
 

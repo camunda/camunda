@@ -169,7 +169,6 @@ public class DefinitionReader {
                                                                                                         final String definitionKey,
                                                                                                         final List<String> definitionVersions,
                                                                                                         final List<String> tenantIds) {
-
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }

@@ -188,8 +188,23 @@ public class ReportService implements CollectionReferencingService {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
 
+    final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
+
     return copyAndMoveReport(
-      originalReportDefinition, userId, newReportName, newCollectionId, existingReportCopies, keepSubReportNames
+      originalReportDefinition, userId, newName, newCollectionId, existingReportCopies, keepSubReportNames
+    );
+  }
+
+  public IdResponseDto importReport(final String userId,
+                                    final ReportDefinitionDto<?> reportDefinitionDto,
+                                    final String newCollectionId) {
+    return copyAndMoveReport(
+      reportDefinitionDto,
+      userId,
+      reportDefinitionDto.getName(),
+      newCollectionId,
+      new HashMap<>(),
+      true
     );
   }
 
@@ -209,7 +224,8 @@ public class ReportService implements CollectionReferencingService {
     List<ReportDefinitionDto> reports = reportReader.getAllPrivateReportsOmitXml();
     return filterAuthorizedReports(userId, reports)
       .stream()
-      .sorted(Comparator.comparing(o -> ((AuthorizedReportDefinitionResponseDto) o).getDefinitionDto().getLastModified())
+      .sorted(Comparator.comparing(o -> ((AuthorizedReportDefinitionResponseDto) o).getDefinitionDto()
+        .getLastModified())
                 .reversed())
       .collect(toList());
   }
@@ -431,7 +447,6 @@ public class ReportService implements CollectionReferencingService {
                                           final String newCollectionId,
                                           final Map<String, String> existingReportCopies,
                                           final boolean keepSubReportNames) {
-    final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
     final String oldCollectionId = originalReportDefinition.getCollectionId();
 
     if (!originalReportDefinition.isCombined()) {
@@ -445,7 +460,7 @@ public class ReportService implements CollectionReferencingService {
             singleProcessReportDefinitionDto
           );
           return reportWriter.createNewSingleProcessReport(
-            userId, singleProcessReportDefinitionDto.getData(), newName, newCollectionId
+            userId, singleProcessReportDefinitionDto.getData(), newReportName, newCollectionId
           );
         case DECISION:
           SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
@@ -456,16 +471,17 @@ public class ReportService implements CollectionReferencingService {
             singleDecisionReportDefinitionDto
           );
           return reportWriter.createNewSingleDecisionReport(
-            userId, singleDecisionReportDefinitionDto.getData(), newName, newCollectionId
+            userId, singleDecisionReportDefinitionDto.getData(), newReportName, newCollectionId
           );
         default:
           throw new IllegalStateException("Unsupported reportType: " + originalReportDefinition.getReportType());
       }
     } else {
-      CombinedReportDefinitionRequestDto combinedReportDefinition = (CombinedReportDefinitionRequestDto) originalReportDefinition;
+      CombinedReportDefinitionRequestDto combinedReportDefinition =
+        (CombinedReportDefinitionRequestDto) originalReportDefinition;
       return copyAndMoveCombinedReport(
         userId,
-        newName,
+        newReportName,
         newCollectionId,
         oldCollectionId,
         combinedReportDefinition.getData(),
@@ -624,7 +640,7 @@ public class ReportService implements CollectionReferencingService {
 
   private void checkForUpdateConflictsOnSingleDecisionDefinition(SingleDecisionReportDefinitionRequestDto currentReportVersion,
                                                                  SingleDecisionReportDefinitionRequestDto reportUpdateDto) throws
-                                                                                                                    OptimizeConflictException {
+                                                                                                                           OptimizeConflictException {
     final Set<ConflictedItemDto> conflictedItems = reportRelationService.getConflictedItemsForUpdatedReport(
       currentReportVersion,
       reportUpdateDto
@@ -717,7 +733,10 @@ public class ReportService implements CollectionReferencingService {
     return reports.stream()
       .map(report -> Pair.of(report, reportAuthorizationService.getAuthorizedRole(userId, report)))
       .filter(reportAndRole -> reportAndRole.getValue().isPresent())
-      .map(reportAndRole -> new AuthorizedReportDefinitionResponseDto(reportAndRole.getKey(), reportAndRole.getValue().get()))
+      .map(reportAndRole -> new AuthorizedReportDefinitionResponseDto(
+        reportAndRole.getKey(),
+        reportAndRole.getValue().get()
+      ))
       .collect(toList());
   }
 

@@ -14,11 +14,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 
+import javax.validation.constraints.NotNull;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExportDto {
+  @NotNull
   private DecisionReportDataDto data;
 
   public SingleDecisionReportDefinitionExportDto(final SingleDecisionReportDefinitionRequestDto reportDefinition) {
@@ -27,7 +30,6 @@ public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExp
       ReportType.DECISION,
       reportDefinition.getId(),
       reportDefinition.getName(),
-      reportDefinition.getCreated(),
       reportDefinition.getCollectionId(),
       reportDefinition.isCombined()
     );

@@ -14,11 +14,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 
+import javax.validation.constraints.NotNull;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
+  @NotNull
   private ProcessReportDataDto data;
 
   public SingleProcessReportDefinitionExportDto(final SingleProcessReportDefinitionRequestDto reportDefinition) {
@@ -27,7 +30,6 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
       ReportType.PROCESS,
       reportDefinition.getId(),
       reportDefinition.getName(),
-      reportDefinition.getCreated(),
       reportDefinition.getCollectionId(),
       reportDefinition.isCombined()
     );

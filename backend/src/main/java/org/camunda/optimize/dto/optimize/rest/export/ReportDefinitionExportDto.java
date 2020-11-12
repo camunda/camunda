@@ -8,19 +8,23 @@ package org.camunda.optimize.dto.optimize.rest.export;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportType;
 
-import java.time.OffsetDateTime;
+import javax.validation.constraints.NotNull;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@FieldNameConstants
 public abstract class ReportDefinitionExportDto {
   private int sourceIndexVersion;
+  @NotNull
   private ReportType reportType;
+  @NotNull
   private String id;
+  @NotNull
   private String name;
-  private OffsetDateTime created;
   private String collectionId;
   private boolean combined;
 }
