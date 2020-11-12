@@ -89,7 +89,7 @@
     <version.feel-scala>1.12.2</version.feel-scala>
     <version.restassert>4.3.2</version.restassert>
     <version.spring-framework>5.2.9.RELEASE</version.spring-framework>
-    <version.spring-boot>2.3.5.RELEASE</version.spring-boot>
+    <version.spring-boot>2.4.0</version.spring-boot>
     <version.tomcat>9.0.39</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
