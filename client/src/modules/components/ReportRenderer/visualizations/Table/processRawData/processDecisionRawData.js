@@ -31,6 +31,10 @@ export default function processDecisionRawData(
   },
   endpoints = {}
 ) {
+  if (result.length === 0) {
+    return {head: [], body: []};
+  }
+
   const instanceProps = Object.keys(result[0]).filter(
     (entry) =>
       entry !== 'inputVariables' &&

@@ -118,3 +118,12 @@ it('should show no data message when all column are excluded for decision tables
     noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
   });
 });
+
+it('should not crash for empty results', () => {
+  expect(
+    processDecisionRawData({report: {data, reportType: 'decision', result: {data: []}}})
+  ).toEqual({
+    body: [],
+    head: [],
+  });
+});

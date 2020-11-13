@@ -36,6 +36,7 @@ export default class AddButton extends React.Component {
 
     // position does not matter because the report will be positioned by the user
     const payload = {
+      configuration: null,
       position: {x: 0, y: 0},
       dimensions: size,
       ...props,

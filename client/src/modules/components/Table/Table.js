@@ -130,6 +130,12 @@ export default function Table({
     }
   }, []);
 
+  useEffect(() => {
+    if (firstRowIndex >= totalRows) {
+      gotoPage(pageCount - 1);
+    }
+  });
+
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) {

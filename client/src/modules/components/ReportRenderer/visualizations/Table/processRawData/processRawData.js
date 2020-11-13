@@ -34,6 +34,10 @@ export default function processRawData(
   },
   endpoints = {}
 ) {
+  if (result.length === 0) {
+    return {head: [], body: []};
+  }
+
   const instanceProps = Object.keys(result[0]).filter(
     (entry) => entry !== 'variables' && isVisibleColumn(entry, tableColumns)
   );

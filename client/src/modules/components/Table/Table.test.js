@@ -178,3 +178,18 @@ it('should invoke fetchData when the page is change', () => {
 
   expect(spy).toHaveBeenCalledWith({pageIndex: 1, pageSize: 50});
 });
+
+it('should go to the last page if data changes in a way that current page is empty', () => {
+  const spy = jest.fn();
+  const node = shallow(<Table head={['a']} body={[]} fetchData={spy} totalEntries={100} />);
+
+  runLastEffect();
+  node.find('.last').simulate('click');
+  runLastEffect();
+
+  spy.mockClear();
+  node.setProps({totalEntries: 50});
+  runLastEffect();
+
+  expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
+});
