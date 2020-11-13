@@ -18,11 +18,13 @@ public class MockScheduledTask implements Runnable {
   private Duration delay;
   private Runnable task;
   private boolean executed;
+  private boolean canceled;
 
   MockScheduledTask(final Duration delay, final Runnable task) {
     this.delay = delay;
     this.task = task;
     executed = false;
+    canceled = false;
   }
 
   public Duration getDelay() {
@@ -43,7 +45,7 @@ public class MockScheduledTask implements Runnable {
 
   @Override
   public void run() {
-    if (!wasExecuted()) {
+    if (!wasExecuted() && !isCanceled()) {
       task.run();
       executed = true;
     }
@@ -51,5 +53,15 @@ public class MockScheduledTask implements Runnable {
 
   public boolean wasExecuted() {
     return executed;
+  }
+
+  public void cancel() {
+    if (!isCanceled()) {
+      canceled = true;
+    }
+  }
+
+  public boolean isCanceled() {
+    return canceled;
   }
 }
