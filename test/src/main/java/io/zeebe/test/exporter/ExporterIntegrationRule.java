@@ -383,7 +383,7 @@ public class ExporterIntegrationRule extends ExternalResource {
   private Properties newClientProperties() {
     final Properties properties = new Properties();
     properties.put(
-        ClientProperties.BROKER_CONTACTPOINT,
+        ClientProperties.GATEWAY_ADDRESS,
         SocketUtil.toHostAndPortString(
             getBrokerConfig().getGateway().getNetwork().toSocketAddress()));
     properties.put(ClientProperties.USE_PLAINTEXT_CONNECTION, "true");
