@@ -27,6 +27,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
@@ -535,6 +536,10 @@ public class EmbeddedOptimizeExtension
 
   public SettingsService getSettingsService() {
     return getApplicationContext().getBean(SettingsService.class);
+  }
+
+  public OptimizeIndexNameService getIndexNameService() {
+    return getApplicationContext().getBean(OptimizeIndexNameService.class);
   }
 
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {

@@ -10,6 +10,10 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
+import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.junit.jupiter.api.Test;
@@ -66,6 +70,17 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getErrorCode())
+      .isEqualTo("importIndexVersionMismatch");
+    assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getMismatchingIndices())
+      .hasSize(1)
+      .containsExactly(
+        ImportIndexMismatchDto.builder()
+          .indexName(embeddedOptimizeExtension.getIndexNameService()
+                       .getOptimizeIndexNameWithVersion(new SingleProcessReportIndex()))
+          .sourceIndexVersion(SingleProcessReportIndex.VERSION + 1)
+          .targetIndexVersion(SingleProcessReportIndex.VERSION)
+          .build());
   }
 
   @Test
@@ -77,7 +92,18 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final Response response = importClient.importProcessReport(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
+      .isEqualTo("importDefinitionDoesNotExist");
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+      .hasSize(1)
+      .containsExactly(
+        DefinitionExceptionItemDto.builder()
+          .type(DefinitionType.PROCESS)
+          .key(DEFINITION_KEY)
+          .versions(Collections.singletonList(DEFINITION_VERSION))
+          .tenantIds(Collections.singletonList(null))
+          .build());
   }
 
   @Test
@@ -91,7 +117,18 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final Response response = importClient.importProcessReport(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
+      .isEqualTo("importDefinitionDoesNotExist");
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+      .hasSize(1)
+      .containsExactly(
+        DefinitionExceptionItemDto.builder()
+          .type(DefinitionType.PROCESS)
+          .key(DEFINITION_KEY)
+          .versions(Collections.singletonList("5"))
+          .tenantIds(Collections.singletonList(null))
+          .build());
   }
 
   @Test
@@ -143,7 +180,18 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final Response response = importClient.importProcessReport(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
+      .isEqualTo("importDefinitionDoesNotExist");
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+      .hasSize(1)
+      .containsExactly(
+        DefinitionExceptionItemDto.builder()
+          .type(DefinitionType.PROCESS)
+          .key(DEFINITION_KEY)
+          .versions(Collections.singletonList(DEFINITION_VERSION))
+          .tenantIds(Collections.singletonList("tenant2"))
+          .build());
   }
 
   @Test

@@ -10,21 +10,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
+import org.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
+import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.elasticsearch.common.util.set.Sets;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static java.util.stream.Collectors.toList;
 
@@ -37,6 +42,7 @@ public class EntityImportService {
   private final ReportService reportService;
   private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final OptimizeIndexNameService optimizeIndexNameService;
 
   public IdResponseDto importProcessReportIntoCollection(final String userId,
                                                          final String collectionId,
@@ -67,29 +73,6 @@ public class EntityImportService {
     return reportDefinition;
   }
 
-  private void prepareVersionListForImportOrFailIfNoneExists(final SingleProcessReportDefinitionExportDto exportDto) {
-    final List<String> defVersions = getExistingDefinitionVersions(
-      DefinitionType.PROCESS,
-      exportDto.getData().getProcessDefinitionKey(),
-      exportDto.getData().getTenantIds()
-    );
-    exportDto.getData()
-      .getProcessDefinitionVersions()
-      .removeIf(version -> !defVersions.contains(version));
-    if (exportDto.getData().getDefinitionVersions().isEmpty()) {
-      final List<String> tenantIds = exportDto.getData().getTenantIds();
-      final String tenantString = tenantIds.isEmpty() || tenantIds.stream().allMatch(Objects::isNull)
-        ? "for shared tenant"
-        : "for tenants " + tenantIds;
-      throw new NotFoundException(
-        String.format(
-          "Could not import report because no process definition with key %s exists %s.",
-          exportDto.getData().getProcessDefinitionKey(),
-          tenantString
-        ));
-    }
-  }
-
   private List<String> getExistingDefinitionVersions(final DefinitionType definitionType,
                                                      final String definitionKey,
                                                      final List<String> tenantIds) {
@@ -102,15 +85,41 @@ public class EntityImportService {
       .collect(toList());
   }
 
+  private void prepareVersionListForImportOrFailIfNoneExists(final SingleProcessReportDefinitionExportDto exportDto) {
+    final List<String> requiredVersions = new ArrayList<>(exportDto.getData().getProcessDefinitionVersions());
+    final List<String> defVersions = getExistingDefinitionVersions(
+      DefinitionType.PROCESS,
+      exportDto.getData().getProcessDefinitionKey(),
+      exportDto.getData().getTenantIds()
+    );
+    exportDto.getData()
+      .getProcessDefinitionVersions()
+      .removeIf(version -> !defVersions.contains(version));
+    if (exportDto.getData().getDefinitionVersions().isEmpty()) {
+      throw new OptimizeImportDefinitionDoesNotExistException(
+        "Could not find the required definition for this report",
+        Sets.newHashSet(DefinitionExceptionItemDto.builder()
+                          .type(DefinitionType.PROCESS)
+                          .key(exportDto.getData().getProcessDefinitionKey())
+                          .tenantIds(exportDto.getData().getTenantIds())
+                          .versions(requiredVersions)
+                          .build())
+      );
+    }
+  }
+
   private void validateIndexVersionOrFail(final SingleProcessReportDefinitionExportDto exportDto) {
     if (SingleProcessReportIndex.VERSION != exportDto.getSourceIndexVersion()) {
-      throw new BadRequestException(
-        String.format(
-          "Could not import report because the source and target report data structure does not match. " +
-            "Source index version: %d. Target index version: %d",
-          exportDto.getSourceIndexVersion(),
-          SingleProcessReportIndex.VERSION
-        ));
+      throw new OptimizeImportIncorrectIndexVersionException(
+        "Could not import because source and target index versions do not match",
+        Sets.newHashSet(
+          ImportIndexMismatchDto.builder()
+            .indexName(optimizeIndexNameService.getOptimizeIndexNameWithVersion(new SingleProcessReportIndex()))
+            .sourceIndexVersion(exportDto.getSourceIndexVersion())
+            .targetIndexVersion(SingleProcessReportIndex.VERSION)
+            .build()
+        )
+      );
     }
   }
 
@@ -135,14 +144,16 @@ public class EntityImportService {
       definitionKey,
       tenantIds
     )) {
-      throw new ForbiddenException(
+      throw new OptimizeImportForbiddenException(
         String.format(
-          "User with ID [%s] is not authorized to access the definition with key [%s] and tenants %s the imported " +
-            "report is based on.",
-          userId,
-          definitionKey,
-          tenantIds
-        )
+          "User with ID [%s] is not authorized to access the required definition.",
+          userId
+        ),
+        Sets.newHashSet(DefinitionExceptionItemDto.builder()
+                          .type(definitionType)
+                          .key(definitionKey)
+                          .tenantIds(tenantIds)
+                          .build())
       );
     }
   }

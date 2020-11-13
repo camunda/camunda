@@ -1073,6 +1073,9 @@
     "noLicenseStoredError": "No license stored in Optimize. Please provide a valid Optimize license.",
     "invalidEventProcessState": "This operation is cannot be performed in the current state of the event based process.",
     "userOrGroupIdNotFound": "The provided user or group ID does not exist in Optimize.",
+    "importDefinitionDoesNotExist": "Could not execute the import because the imported entity requires definitions that don't exist.",
+    "importIndexVersionMismatch": "Could not execute the import because the data structure of the imported entities do not match the current data structure. You may need to migrate the data in your source Optimize before exporting.",
+    "importDefinitionForbidden": "Could not execute the import because you are not authorized to access some of the required definitions for the imported entity.",
     "tooManyBuckets": "Could not evaluate report because the result has more than 10.000 data points. Please add filters or adjust the bucket size to reduce the size of the report result.",
     "elasticsearchError": "Elasticsearch encountered an error. If this issue persists, please contact your administrator."
   }
