@@ -535,6 +535,18 @@ pipeline {
         }
       }
     }
+    stage ('Deploy to K8s') {
+      when {
+        expression {
+          CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
+      }
+      steps {
+        build job: '/deploy-optimize-branch-to-k8s',
+                parameters: [
+                        string(name: 'BRANCH', value: CHANGE_BRANCH),
+                ]
+      }
+    }
   }
 
   post {
@@ -564,7 +576,7 @@ String getGitCommitHash() {
 }
 
 String getBranchSlug() {
-  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
+  return env.CHANGE_BRANCH.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getImageTag() {
