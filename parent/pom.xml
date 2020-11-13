@@ -108,7 +108,7 @@
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
-    <plugin.version.fmt>2.9</plugin.version.fmt>
+    <plugin.version.fmt>2.10</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.proto-backwards-compatibility>1.0.5
