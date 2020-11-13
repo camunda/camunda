@@ -16,6 +16,8 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -26,6 +28,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -88,6 +91,14 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (Arrays.stream(e.getSuppressed())
+        .map(Throwable::getMessage)
+        .anyMatch(msg -> msg.contains("too_many_buckets_exception"))) {
+        throw new TooManyBucketsException(e);
+      } else {
+        throw e;
+      }
     }
 
     return retrieveQueryResult(response, executionContext);

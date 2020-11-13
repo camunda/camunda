@@ -1072,6 +1072,8 @@
     "invalidLicenseError": "Invalid license provided.",
     "noLicenseStoredError": "No license stored in Optimize. Please provide a valid Optimize license.",
     "invalidEventProcessState": "This operation is cannot be performed in the current state of the event based process.",
-    "userOrGroupIdNotFound": "The provided user or group ID does not exist in Optimize."
+    "userOrGroupIdNotFound": "The provided user or group ID does not exist in Optimize.",
+    "tooManyBuckets": "Could not evaluate report because the result has more than 10.000 data points. Please add filters or adjust the bucket size to reduce the size of the report result.",
+    "elasticsearchError": "Elasticsearch encountered an error. If this issue persists, please contact your administrator."
   }
 }
