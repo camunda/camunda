@@ -1,18 +1,26 @@
-.StringInput .valueSelection {
-  width: 100%;
-  position: relative;
+@import 'shared-styles/shared-styles.scss';
 
-  .title {
-    position: absolute;
-    font-size: 0.875em;
-    top: 10px;
+.StringInput {
+  .valueSelection {
+    width: 100%;
+    position: relative;
+
+    .title {
+      position: absolute;
+      font-size: 0.875em;
+      top: 10px;
+    }
+
+    .Checklist {
+      margin-bottom: 10px;
+
+      .header .selectAll {
+        display: none;
+      }
+    }
   }
 
-  .Checklist {
-    margin-bottom: 10px;
-
-    .header .selectAll {
-      display: none;
-    }
+  &.hasMore .Checklist {
+    border-bottom: 1px solid $silver-darken-87;
   }
 }

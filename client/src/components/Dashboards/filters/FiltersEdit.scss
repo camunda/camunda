@@ -57,4 +57,15 @@
       padding-left: 10px;
     }
   }
+
+  .NumberInput,
+  .StringInput:not(.hasMore) {
+    & + .customValueCheckbox::before {
+      content: '';
+      width: 100%;
+      transform: translateY(-10px);
+      display: block;
+      border-top: 1px solid $silver-darken-87;
+    }
+  }
 }

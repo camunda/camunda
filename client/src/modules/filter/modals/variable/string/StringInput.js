@@ -6,6 +6,7 @@
 
 import React from 'react';
 import debounce from 'debounce';
+import classnames from 'classnames';
 
 import {ButtonGroup, Button, Checklist} from 'components';
 import {t} from 'translation';
@@ -131,9 +132,10 @@ export default class StringInput extends React.Component {
     const {operator, values} = filter;
 
     const notNullValues = values.filter((val) => val !== null);
+    const hasMore = !this.state.valuesAreComplete && !this.state.loading;
 
     return (
-      <div className="StringInput">
+      <div className={classnames('StringInput', {hasMore})}>
         <div className="buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
@@ -185,8 +187,9 @@ export default class StringInput extends React.Component {
                 empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
             />
-            {!this.state.valuesAreComplete && !this.state.loading && (
+            {hasMore && (
               <Button
+                className="loadMore"
                 onClick={this.loadMore}
                 disabled={this.state.loading && this.props.disabled}
                 link
