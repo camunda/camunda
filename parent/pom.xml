@@ -1385,6 +1385,13 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
+                <id>go-offline</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>go-offline</goal>
+                </goals>
+              </execution>
+              <execution>
                 <id>analyze-dependencies</id>
                 <goals>
                   <goal>analyze-only</goal>
