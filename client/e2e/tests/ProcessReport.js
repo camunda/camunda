@@ -852,6 +852,7 @@ test('distribute by start/end date', async (t) => {
   await t.click(e.distributedBySelect);
   await t.click(e.configurationOption('End Date'));
   await t.click(e.submenuOption('automatic'));
+  await t.click(e.configurationButton);
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
   await t.expect(e.reportChart.visible).ok();

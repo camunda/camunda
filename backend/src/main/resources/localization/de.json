@@ -221,6 +221,7 @@
     "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
     "addName": "Berichtname",
+    "reportSetup": "Bericht Einrichtung",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
     "templates": {
@@ -405,7 +406,6 @@
       }
     },
     "config": {
-      "label": "Konfiguration",
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
@@ -716,6 +716,7 @@
     "nullOrUndefined": "Null oder nicht definiert",
     "timeAt": "um",
     "value": "Wert",
+    "dataSource": "Datenquelle",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"

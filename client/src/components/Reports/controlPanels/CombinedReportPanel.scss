@@ -9,6 +9,7 @@
 
   .Configuration {
     right: 10px;
+    top: 10px;
     list-style: none;
     position: absolute;
   }
@@ -20,7 +21,7 @@
   }
 
   .TypeaheadMultipleSelection {
-    padding: 35px 10px 0 10px;
+    padding: 50px 10px 0 10px;
     height: 100%;
     min-width: 200px;
     border-left: 1px solid #f2f3f4;

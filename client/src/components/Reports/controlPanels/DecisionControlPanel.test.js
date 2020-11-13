@@ -67,13 +67,12 @@ it('should call the provided updateReport property function when a setting chang
   expect(spy).toHaveBeenCalled();
 });
 
-it('should disable the groupBy and visualization Selects if view is not selected', () => {
+it('should disable the groupBy Select if view is not selected', () => {
   const node = shallow(
     <DecisionControlPanel report={{...report, data: {...report.data, view: ''}}} />
   );
 
   expect(node.find(ReportSelect).at(1)).toBeDisabled();
-  expect(node.find(ReportSelect).at(2)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {

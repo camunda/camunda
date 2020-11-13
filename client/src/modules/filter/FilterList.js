@@ -210,14 +210,6 @@ export default class FilterList extends React.Component {
           );
         }
       }
-
-      if (i < this.props.data.length - 1) {
-        list.push(
-          <li className="listItemConnector" key={'connector_' + i}>
-            {t('common.and')}
-          </li>
-        );
-      }
     }
 
     return <ul className="FilterList">{list}</ul>;

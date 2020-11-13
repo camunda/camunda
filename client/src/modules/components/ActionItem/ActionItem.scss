@@ -3,7 +3,11 @@
   border: 1px solid #ccc;
   background-color: white;
   border-radius: 3px;
-  background: #fbfbfb;
+  background: white;
+  width: 100%;
+  position: relative;
+  min-height: 32px;
+  width: max-content;
 
   &.highlighted {
     background: rgba(48, 116, 142, 0.6);
@@ -15,14 +19,21 @@
   .Button:active {
     border: 1px solid transparent;
     border-radius: 0;
-    border-right: 1px solid #ccc;
+    position: absolute;
+    background: #fff;
+    right: 0;
+    top: 0;
+    height: 30px;
   }
 
   .content {
-    padding: 0 4px;
+    padding: 0 10px;
     font-size: 0.875em;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    flex-grow: 1;
+    padding-right: 35px;
+    overflow-x: scroll;
   }
 }

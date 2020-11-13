@@ -7,11 +7,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportEdit} from './ReportEdit';
-import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm, InstanceCount} from 'components';
+
+import {ReportEdit} from './ReportEdit';
+import ReportControlPanel from './controlPanels/ReportControlPanel';
+import ReportSelect from './controlPanels/ReportSelect';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -35,7 +37,9 @@ const report = {
   reportType: 'process',
   combined: false,
   data: {
-    processDefinitionKey: null,
+    processDefinitionKey: 'aKey',
+    processDefinitionVersions: ['aVersion'],
+    tenantIds: [],
     configuration: {},
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
@@ -357,4 +361,12 @@ describe('showIncompleteResultWarning', () => {
 
     expect(node.instance().showIncompleteResultWarning()).toBe(false);
   });
+});
+
+it('should disable the visualization Select if view or groupBy is not selected', () => {
+  const node = shallow(
+    <ReportEdit {...props} report={{...report, data: {...report.data, groupBy: null}}} />
+  );
+
+  expect(node.find(ReportSelect)).toBeDisabled();
 });

@@ -38,5 +38,21 @@
         line-height: 20px;
       }
     }
+
+    .Filter {
+      position: relative;
+      .FilterList {
+        display: inline;
+
+        .listItem {
+          display: inline-flex;
+          width: auto;
+          margin-right: 10px;
+          .ActionItem .content {
+            padding-right: 35px;
+          }
+        }
+      }
+    }
   }
 }

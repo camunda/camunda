@@ -221,6 +221,7 @@
     "createNew": "Create new Report",
     "new": "New Report",
     "addName": "Report Name",
+    "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
     "templates": {
@@ -405,7 +406,6 @@
       }
     },
     "config": {
-      "label": "Configuration",
       "buttonTooltip": "Configuration Options",
       "reset": "Reset to Defaults",
       "showCount": {
@@ -716,6 +716,7 @@
     "nullOrUndefined": "Null or undefined",
     "timeAt": "at",
     "value": "Value",
+    "dataSource": "Data Source",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"

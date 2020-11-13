@@ -24,6 +24,7 @@ import {
   createEntity,
   evaluateReport,
   getCollection,
+  reportConfig,
 } from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -33,6 +34,10 @@ import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import ConflictModal from './ConflictModal';
+import {Configuration} from './controlPanels/Configuration';
+import ReportSelect from './controlPanels/ReportSelect';
+
+const {process: processConfig} = reportConfig;
 
 export class ReportEdit extends React.Component {
   state = {
@@ -213,7 +218,7 @@ export class ReportEdit extends React.Component {
     }
 
     return (
-      <div className="Report">
+      <div className="ReportEdit Report">
         <div className="Report__header">
           <EntityNameForm
             name={name}
@@ -225,34 +230,56 @@ export class ReportEdit extends React.Component {
           />
           <InstanceCount noInfo report={report} />
         </div>
-
-        {!combined && reportType === 'process' && (
-          <ReportControlPanel report={report} updateReport={this.updateReport} />
-        )}
-
-        {!combined && reportType === 'decision' && (
-          <DecisionControlPanel report={report} updateReport={this.updateReport} />
-        )}
-
-        {this.showIncompleteResultWarning() && (
-          <MessageBox type="warning">
-            {t('report.incomplete', {
-              count: report.result.data.length || Object.keys(report.result.data).length,
-            })}
-          </MessageBox>
-        )}
-
-        {data?.filter && incompatibleFilters(data.filter) && (
-          <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
-        )}
-
-        {data?.groupBy?.type === 'endDate' &&
-          data.configuration.flowNodeExecutionState === 'running' && (
-            <MessageBox type="warning">{t('report.runningEndedUserTaskWarning')}</MessageBox>
-          )}
-
         <div className="Report__view">
           <div className="Report__content">
+            {!combined && (
+              <div className="visualization">
+                <div className="select">
+                  <span className="label">{t(`report.visualization.label`)}</span>
+                  <ReportSelect
+                    type={report.reportType}
+                    field="visualization"
+                    value={data.visualization}
+                    report={report}
+                    previous={[data.view, data.groupBy]}
+                    disabled={
+                      (!data.processDefinitionKey && !data.decisionDefinitionKey) ||
+                      !data.view ||
+                      !data.groupBy
+                    }
+                    onChange={(newValue) =>
+                      this.updateReport(
+                        processConfig.update('visualization', newValue, this.props),
+                        true
+                      )
+                    }
+                  />
+                </div>
+                <Configuration
+                  type={data.visualization}
+                  onChange={this.updateReport}
+                  report={report}
+                />
+              </div>
+            )}
+
+            {this.showIncompleteResultWarning() && (
+              <MessageBox type="warning">
+                {t('report.incomplete', {
+                  count: report.result.data.length || Object.keys(report.result.data).length,
+                })}
+              </MessageBox>
+            )}
+
+            {data?.filter && incompatibleFilters(data.filter) && (
+              <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+            )}
+
+            {data?.groupBy?.type === 'endDate' &&
+              data.configuration.flowNodeExecutionState === 'running' && (
+                <MessageBox type="warning">{t('report.runningEndedUserTaskWarning')}</MessageBox>
+              )}
+
             {loadingReportData ? (
               <LoadingIndicator />
             ) : (
@@ -263,6 +290,12 @@ export class ReportEdit extends React.Component {
               />
             )}
           </div>
+          {!combined && reportType === 'process' && (
+            <ReportControlPanel report={report} updateReport={this.updateReport} />
+          )}
+          {!combined && reportType === 'decision' && (
+            <DecisionControlPanel report={report} updateReport={this.updateReport} />
+          )}
           {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
         </div>
         <ConflictModal

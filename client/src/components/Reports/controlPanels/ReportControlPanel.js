@@ -17,7 +17,6 @@ import {showError} from 'notifications';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
-import {Configuration} from './Configuration';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
@@ -160,91 +159,87 @@ export default withErrorHandling(
 
       return (
         <div className="ReportControlPanel">
-          <ul>
-            <li className="select">
-              <span className="label">{t('report.definition.process')}</span>
-              <DefinitionSelection
-                type="process"
-                definitionKey={data.processDefinitionKey}
-                versions={data.processDefinitionVersions}
-                tenants={data.tenantIds}
-                xml={data.configuration.xml}
-                onChange={this.changeDefinition}
-                renderDiagram
-              />
-            </li>
-            {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
-              const previous = fields
-                .filter((prev, prevIdx) => prevIdx < idx)
-                .map((prev) => data[prev]);
+          <div className="select source">
+            <h3 className="sectionTitle">{t('common.dataSource')}</h3>
+            <DefinitionSelection
+              type="process"
+              definitionKey={data.processDefinitionKey}
+              versions={data.processDefinitionVersions}
+              tenants={data.tenantIds}
+              xml={data.configuration.xml}
+              onChange={this.changeDefinition}
+              renderDiagram
+            />
+          </div>
+          <div className="reportSetup">
+            <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
+            <ul>
+              {['view', 'groupBy'].map((field, idx, fields) => {
+                const previous = fields
+                  .filter((prev, prevIdx) => prevIdx < idx)
+                  .map((prev) => data[prev]);
 
-              return (
-                <li className="select" key={field}>
-                  <span className="label">{t(`report.${field}.label`)}</span>
-                  <ReportSelect
-                    type="process"
-                    field={field}
-                    value={data[field]}
+                return (
+                  <li className="select" key={field}>
+                    <span className="label">{t(`report.${field}.label`)}</span>
+                    <ReportSelect
+                      type="process"
+                      field={field}
+                      value={data[field]}
+                      report={this.props.report}
+                      variables={{variable: this.state.variables}}
+                      previous={previous}
+                      disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
+                      onChange={(newValue) => this.updateReport(field, newValue)}
+                    />
+                  </li>
+                );
+              })}
+              {isDurationHeatmap(data) && (
+                <li>
+                  <TargetValueComparison
                     report={this.props.report}
-                    variables={{variable: this.state.variables}}
-                    previous={previous}
-                    disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
-                    onChange={(newValue) => this.updateReport(field, newValue)}
+                    onChange={this.props.updateReport}
                   />
                 </li>
-              );
-            })}
-            <li className="filter">
-              <Filter
-                flowNodeNames={this.state.flowNodeNames}
-                data={data.filter}
-                onChange={this.props.updateReport}
-                processDefinitionKey={data.processDefinitionKey}
-                processDefinitionVersions={data.processDefinitionVersions}
-                tenantIds={data.tenantIds}
-                xml={data.configuration.xml}
-              />
-            </li>
-            {result && typeof result.instanceCount !== 'undefined' && (
-              <li>
-                {t(
-                  `report.instanceCount.process.label${
-                    result.instanceCount !== 1 ? '-plural' : ''
-                  }`,
-                  {count: result.instanceCount}
-                )}
-              </li>
-            )}
-            <Configuration
-              type={data.visualization}
+              )}
+              {isProcessInstanceDuration(data) && (
+                <li>
+                  <ProcessPart
+                    flowNodeNames={this.state.flowNodeNames}
+                    xml={data.configuration.xml}
+                    processPart={data.configuration.processPart}
+                    update={(newPart) => {
+                      const change = {configuration: {processPart: {$set: newPart}}};
+                      if (data.configuration.aggregationType === 'median') {
+                        change.configuration.aggregationType = {$set: 'avg'};
+                      }
+                      this.props.updateReport(change, true);
+                    }}
+                  />
+                </li>
+              )}
+            </ul>
+          </div>
+          <div className="filter">
+            <Filter
+              flowNodeNames={this.state.flowNodeNames}
+              data={data.filter}
               onChange={this.props.updateReport}
-              report={this.props.report}
+              processDefinitionKey={data.processDefinitionKey}
+              processDefinitionVersions={data.processDefinitionVersions}
+              tenantIds={data.tenantIds}
+              xml={data.configuration.xml}
             />
-            {isDurationHeatmap(data) && (
-              <li>
-                <TargetValueComparison
-                  report={this.props.report}
-                  onChange={this.props.updateReport}
-                />
-              </li>
-            )}
-            {isProcessInstanceDuration(data) && (
-              <li>
-                <ProcessPart
-                  flowNodeNames={this.state.flowNodeNames}
-                  xml={data.configuration.xml}
-                  processPart={data.configuration.processPart}
-                  update={(newPart) => {
-                    const change = {configuration: {processPart: {$set: newPart}}};
-                    if (data.configuration.aggregationType === 'median') {
-                      change.configuration.aggregationType = {$set: 'avg'};
-                    }
-                    this.props.updateReport(change, true);
-                  }}
-                />
-              </li>
-            )}
-          </ul>
+          </div>
+          {result && typeof result.instanceCount !== 'undefined' && (
+            <div className="instanceCount">
+              {t(
+                `report.instanceCount.process.label${result.instanceCount !== 1 ? '-plural' : ''}`,
+                {count: result.instanceCount}
+              )}
+            </div>
+          )}
         </div>
       );
     }

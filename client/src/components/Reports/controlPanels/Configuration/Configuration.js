@@ -130,14 +130,10 @@ export default class Configuration extends React.Component {
       (!Component.isDisabled || !Component.isDisabled(report));
 
     return (
-      <li className="Configuration">
+      <div className="Configuration">
         <Popover
           tooltip={t('report.config.buttonTooltip')}
-          title={
-            <>
-              <Icon type="settings" /> {t('report.config.label')}
-            </>
-          }
+          title={<Icon type="settings" />}
           disabled={!enablePopover}
         >
           <Form className="content" compact>
@@ -161,7 +157,7 @@ export default class Configuration extends React.Component {
             {t('report.config.reset')}
           </Button>
         </Popover>
-      </li>
+      </div>
     );
   }
 }

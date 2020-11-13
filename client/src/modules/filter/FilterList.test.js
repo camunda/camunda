@@ -44,14 +44,6 @@ it('should display date preview if the filter is a date filter', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should display "and" between filter entries', () => {
-  const data = [{type: 'completedInstancesOnly'}, {type: 'canceledInstancesOnly'}];
-
-  const node = shallow(<FilterList data={data} />);
-
-  expect(node).toIncludeText('and');
-});
-
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
