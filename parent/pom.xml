@@ -251,7 +251,7 @@
 
       <dependency>
         <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured</artifactId>
+        <artifactId>rest-assured-all</artifactId>
         <version>${version.restassert}</version>
       </dependency>
 
