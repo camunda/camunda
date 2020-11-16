@@ -12,8 +12,26 @@ package io.zeebe.gateway.cmd;
  * can happen when the element instance key does not refer to a known partition.
  */
 public class PartitionNotFoundException extends ClientException {
+  private static final String DEFAULT_ERROR_MESSAGE =
+      "Expected to execute command on partition %d, but either it does not exist, or the gateway is not yet aware of it";
+  private final int partitionId;
 
-  public PartitionNotFoundException() {
-    super("Expected to execute command, but this command refers to an element that doesn't exist.");
+  public PartitionNotFoundException(final int partitionId) {
+    this(String.format(DEFAULT_ERROR_MESSAGE, partitionId), partitionId);
+  }
+
+  public PartitionNotFoundException(final String message, final int partitionId) {
+    super(message);
+    this.partitionId = partitionId;
+  }
+
+  public PartitionNotFoundException(
+      final String message, final Throwable cause, final int partitionId) {
+    super(message, cause);
+    this.partitionId = partitionId;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 }
