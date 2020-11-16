@@ -6,7 +6,7 @@ volumes:
 
 services:
   prometheus:
-    image: prom/prometheus:v2.22.1
+    image: prom/prometheus:v2.22.2
     volumes:
       - ./prometheus/:/etc/prometheus/
       - prometheus:/prometheus
