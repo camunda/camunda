@@ -110,7 +110,7 @@ public class RollingUpdateTest {
     containers.get(index).shutdownGracefully(Duration.ofSeconds(30));
 
     // when
-    final var zeebeBrokerContainer = upgradeBroker(index);
+    final var zeebeBrokerContainer = updateBroker(index);
 
     // then
     try (final var client = newZeebeClient(containers.get(1))) {
@@ -124,7 +124,7 @@ public class RollingUpdateTest {
       Awaitility.await()
           .atMost(Duration.ofSeconds(5))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyContainsUpgradedBroker(client, index));
+          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, index));
     }
   }
 
@@ -176,19 +176,19 @@ public class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(500))
           .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(0));
 
-      container = upgradeBroker(brokerId);
+      container = updateBroker(brokerId);
       container.start();
-      Awaitility.await("upgraded broker is added to topology")
+      Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(10))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyContainsUpgradedBroker(client, brokerId));
+          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
     }
 
     assertBrokerHasAtLeastOneSnapshot(1);
   }
 
   @Test
-  public void shouldPerformRollingUpgrade() {
+  public void shouldPerformRollingUpdate() {
     // given
     Startables.deepStart(containers).join();
 
@@ -222,12 +222,12 @@ public class RollingUpdateTest {
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
-        container = upgradeBroker(i);
+        container = updateBroker(i);
         container.start();
-        Awaitility.await("upgraded broker is added to topology")
+        Awaitility.await("updated broker is added to topology")
             .atMost(Duration.ofSeconds(10))
             .pollInterval(Duration.ofMillis(100))
-            .untilAsserted(() -> assertTopologyContainsUpgradedBroker(client, brokerId));
+            .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
 
         availableBroker = container;
       }
@@ -284,7 +284,7 @@ public class RollingUpdateTest {
         .join(10, TimeUnit.SECONDS);
   }
 
-  private void assertTopologyContainsUpgradedBroker(
+  private void assertTopologyContainsUpdatedBroker(
       final ZeebeClient zeebeClient, final int brokerId) {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
@@ -310,7 +310,7 @@ public class RollingUpdateTest {
         .build();
   }
 
-  private ZeebeContainer upgradeBroker(final int index) {
+  private ZeebeContainer updateBroker(final int index) {
     final var broker = new ZeebeContainer(CURRENT_IMAGE_NAME);
     containers.set(index, broker);
     return configureBrokerContainer(index, containers);

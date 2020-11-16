@@ -43,7 +43,7 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>zb-db</module>
-    <module>upgrade-tests</module>
+    <module>update-tests</module>
     <module>expression-language</module>
     <module>snapshot</module>
     <module>benchmarks/project</module>
