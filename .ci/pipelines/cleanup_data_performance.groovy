@@ -15,7 +15,7 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: services
+    cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
   imagePullSecrets:
     - name: registry-camunda-cloud
   serviceAccountName: ci-optimize-camunda-cloud
