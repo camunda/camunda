@@ -89,15 +89,6 @@ describe('<Login />', () => {
     expect(historyMock.location.search).toBe('?filter=unclaimed');
   });
 
-  it('should redirect to the initial page if the user is already logged in', async () => {
-    const historyMock = createMemoryHistory({initialEntries: ['/login']});
-    render(<Login />, {
-      wrapper: createWrapper(historyMock),
-    });
-
-    expect(historyMock.location.pathname).toBe('/');
-  });
-
   it('should show an error on failure', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 404}));
     login.disableSession();

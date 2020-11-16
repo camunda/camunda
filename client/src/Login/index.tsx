@@ -5,10 +5,9 @@
  */
 
 import * as React from 'react';
-import {useHistory, Redirect} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
-import {observer} from 'mobx-react-lite';
 
 import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
@@ -30,17 +29,22 @@ interface FormValues {
   password: string;
 }
 
-const Login: React.FC = observer(() => {
+const Login: React.FC = () => {
   const history = useHistory();
-  const {handleLogin, isLoggedIn} = login;
-  const referrer = history.location.state?.referrer;
+  const {handleLogin} = login;
 
   return (
     <Container>
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
           try {
-            return await handleLogin(username, password);
+            const referrer = history.location.state?.referrer;
+
+            await handleLogin(username, password);
+
+            return history.push(
+              referrer?.pathname === undefined ? Pages.Initial() : referrer,
+            );
           } catch {
             return {[FORM_ERROR]: 'Username and Password do not match.'};
           }
@@ -48,20 +52,6 @@ const Login: React.FC = observer(() => {
       >
         {({handleSubmit, form, submitError}) => {
           const {submitting} = form.getState();
-
-          if (isLoggedIn) {
-            return (
-              <Redirect
-                to={
-                  referrer?.pathname === undefined
-                    ? {
-                        pathname: Pages.Initial(),
-                      }
-                    : referrer
-                }
-              />
-            );
-          }
 
           return (
             <form onSubmit={handleSubmit}>
@@ -103,6 +93,6 @@ const Login: React.FC = observer(() => {
       <CopyrightNotice>{getCurrentCopyrightNoticeText()}</CopyrightNotice>
     </Container>
   );
-});
+};
 
 export {Login};
