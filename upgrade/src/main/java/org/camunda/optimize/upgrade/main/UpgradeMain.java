@@ -95,20 +95,20 @@ public class UpgradeMain {
       fromVersion,
       toVersion
     );
-    log.info(message);
+    System.out.println(message);
 
     String answer = "";
     while (!ANSWER_OPTIONS_YES.contains(answer)) {
       Scanner console = new Scanner(System.in);
       answer = console.next().trim().toLowerCase();
       if (ANSWER_OPTIONS_NO.contains(answer)) {
-        log.info("The Optimize upgrade was aborted.");
+        System.out.println("The Optimize upgrade was aborted.");
         System.exit(1);
       } else if (!ANSWER_OPTIONS_YES.contains(answer)) {
         String text = "Your answer was '" + answer + "'. The only accepted answers are '(y)es' or '(n)o'. \n" +
           "\n" +
           "Your answer (type your answer and hit enter): ";
-        log.info(text);
+        System.out.println(text);
       }
     }
   }
