@@ -75,7 +75,14 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     final DirectBuffer bufferView = new UnsafeBuffer();
     bufferView.wrap(buffer, 0, deploymentEvent.getLength());
 
-    distributeDeployment(key, position, bufferView, streamWriter);
+    // don't distribute the deployment on reprocessing because it may be already distributed (#3124)
+    // and it would lead to false-positives in the reprocessing issue detection (#5688)
+    // instead, distribute the pending deployments after the reprocessing
+    sideEffect.accept(
+        () -> {
+          distributeDeployment(key, position, bufferView, streamWriter);
+          return true;
+        });
   }
 
   private void distributeDeployment(
