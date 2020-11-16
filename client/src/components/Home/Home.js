@@ -89,6 +89,8 @@ export class Home extends React.Component {
       isLoading,
     } = this.state;
 
+    const {user} = this.props;
+
     if (redirect) {
       return <Redirect to={redirect} />;
     }
@@ -96,7 +98,7 @@ export class Home extends React.Component {
     return (
       <div className="Home">
         <div className="welcomeMessage">
-          {t('home.welcome')}, {this.props.user?.name}
+          {t('home.welcome')}, {user?.name}
         </div>
         <div className="content">
           <EntityList
@@ -134,17 +136,10 @@ export class Home extends React.Component {
                   combined,
                 } = entity;
 
-                return {
-                  link: formatLink(id, entityType),
-                  icon: entityType,
-                  type: formatType(entityType, reportType, combined),
-                  name,
-                  meta: [
-                    formatSubEntities(data.subEntityCounts),
-                    lastModifier,
-                    format(parseISO(lastModified), 'PP'),
-                  ],
-                  actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
+                const actions = [];
+
+                if (entityType !== 'collection' || currentUserRole === 'manager') {
+                  actions.push(
                     {
                       icon: 'edit',
                       text: t('common.edit'),
@@ -159,8 +154,37 @@ export class Home extends React.Component {
                       icon: 'delete',
                       text: t('common.delete'),
                       action: () => this.setState({deleting: entity}),
+                    }
+                  );
+                }
+
+                if (
+                  user?.authorizations.includes('import_export') &&
+                  entityType === 'report' &&
+                  !combined
+                ) {
+                  actions.push({
+                    icon: 'save',
+                    text: t('common.export'),
+                    action: () => {
+                      window.location.href = `api/export/report/json/${entity.reportType}/${
+                        entity.id
+                      }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
                     },
+                  });
+                }
+
+                return {
+                  link: formatLink(id, entityType),
+                  icon: entityType,
+                  type: formatType(entityType, reportType, combined),
+                  name,
+                  meta: [
+                    formatSubEntities(data.subEntityCounts),
+                    lastModifier,
+                    format(parseISO(lastModified), 'PP'),
                   ],
+                  actions,
                 };
               })
             }

@@ -682,6 +682,7 @@
     "close": "Close",
     "add": "Add",
     "copy": "Copy",
+    "export": "Export",
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",

@@ -683,6 +683,7 @@
     "add": "Hinzufügen",
     "copy": "Kopieren",
     "change": "Ändern",
+    "export": "Exportieren",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
     "condition": "Bedingung",
