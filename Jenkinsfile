@@ -39,6 +39,7 @@ pipeline {
   environment {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
+    GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials("github-camunda-cloud-packages-token")
   }
 
   options {
@@ -52,7 +53,9 @@ pipeline {
       steps {
         container('node') {
           sh '''
+            apk add --no-cache git
             cd ./client
+            mv .npmrc.ci .npmrc
             yarn install --frozen-lockfile
             yarn lint
             yarn build
@@ -74,7 +77,7 @@ pipeline {
         }
       }
     }
-    stage('Unit tests') {
+    stage('Tests') {
       parallel {
         stage('Backend - Tests') {
           steps {
@@ -123,6 +126,21 @@ pipeline {
                   '''
                   sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
               }
+            }
+          }
+        }
+
+        stage('Chromatic') {
+          environment {
+            NODE_ENV = "production"
+            CHROMATIC_PROJECT_TOKEN = credentials('chromatic-token')
+          }
+          steps {
+            container('node') {
+              sh '''
+                cd ./client
+                yarn chromatic
+              '''
             }
           }
         }
