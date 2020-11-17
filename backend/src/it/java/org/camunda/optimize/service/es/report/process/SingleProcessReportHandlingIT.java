@@ -385,23 +385,15 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void reportEvaluationWithOver10kBuckets_throwsTooManyBucketsException() {
-    // given a distributed by report with that exceeds the ES bucket limit of 10k buckets
-    final Map<String, Object> variables = Collections.singletonMap(
-      "doubleVar",
-      1.0
-    );
+  public void reportEvaluationWithTooManyBuckets_throwsTooManyBucketsException() {
+    // given a distributed by report with that exceeds the ES bucket limit
+    final Map<String, Object> variables = Collections.singletonMap("doubleVar", 1.0);
     final ProcessInstanceEngineDto procInst1 = deployAndStartSimpleProcess(variables);
     final ProcessInstanceEngineDto procInst2 = engineIntegrationExtension.startProcessInstance(
-      procInst1.getDefinitionId(),
-      variables
+      procInst1.getDefinitionId(), variables
     );
     final ProcessInstanceEngineDto procInst3 = engineIntegrationExtension.startProcessInstance(
-      procInst1.getDefinitionId(),
-      Collections.singletonMap(
-        "doubleVar",
-        200.0
-      )
+      procInst1.getDefinitionId(), Collections.singletonMap("doubleVar", 1000.0)
     );
 
     final OffsetDateTime startOfToday = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
@@ -411,7 +403,9 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    // when
+    // when grouped by variable with bucket size of 1.0 (value ranges of 1-1k makes 1k group by buckets)
+    // and distributed by start date (automatic=80 buckets) we get 80k buckets exceeding the elastic limit of 65k
+    // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
       .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
