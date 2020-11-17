@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "^3.2.5",
+    "@camunda-cloud/common-ui": "^0.0.13",
+    "@camunda-cloud/common-ui-react": "^0.0.13",
     "@testing-library/jest-dom": "^5.11.6",
     "@testing-library/react": "^11.1.2",
     "@testing-library/testcafe": "^4.2.3",

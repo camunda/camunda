@@ -10,6 +10,7 @@ import * as React from 'react';
 import {BrowserRouter, Switch, Route} from 'react-router-dom';
 import {ThemeProvider} from 'styled-components';
 import {ApolloProvider} from '@apollo/client';
+import {NotificationProvider} from 'modules/contexts/NotificationContext';
 
 import {PrivateRoute} from './PrivateRoute';
 import {Tasklist} from './Tasklist';
@@ -23,17 +24,19 @@ const App: React.FC = () => {
   return (
     <ApolloProvider client={client}>
       <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <BrowserRouter>
-          <Switch>
-            <Route path={Pages.Login} component={Login} />
-            <PrivateRoute
-              redirectPath={Pages.Login}
-              path={Pages.Initial({useIdParam: true})}
-              component={Tasklist}
-            />
-          </Switch>
-        </BrowserRouter>
+        <NotificationProvider>
+          <GlobalStyle />
+          <BrowserRouter>
+            <Switch>
+              <Route path={Pages.Login} component={Login} />
+              <PrivateRoute
+                redirectPath={Pages.Login}
+                path={Pages.Initial({useIdParam: true})}
+                component={Tasklist}
+              />
+            </Switch>
+          </BrowserRouter>
+        </NotificationProvider>
       </ThemeProvider>
     </ApolloProvider>
   );
