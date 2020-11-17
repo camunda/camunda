@@ -33,14 +33,6 @@
         font-weight: bold;
       }
 
-      .previewItemValue {
-        @include highlighted;
-        max-width: 200px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        vertical-align: middle;
-      }
-
       .previewList {
         padding: 0;
         .previewItem {
@@ -58,8 +50,13 @@
   }
 }
 
-.Tooltip .filterTooltip .previewItemValue {
+.Tooltip .filterValues .previewItemValue,
+.FilterList .ActionItem .previewItemValue {
   @include highlighted;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: middle;
 }
 
 .dark .FilterList .ActionItem {

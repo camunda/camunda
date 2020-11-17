@@ -51,6 +51,7 @@
   .filter {
     overflow: auto;
     flex-grow: 1;
+    @include scrollable;
   }
 
   .instanceCount {

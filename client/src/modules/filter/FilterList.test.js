@@ -179,6 +179,28 @@ it('should display a flow node duration filter', () => {
   expect(content).toIncludeText('flow node name is less than 18 hours');
 });
 
+it('should show flow node duration filter in expanded state if specified', () => {
+  const data = [
+    {
+      type: 'flowNodeDuration',
+      data: {
+        a: {operator: '<', value: 18, unit: 'hours'},
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList
+      data={data}
+      openEditFilterModal={jest.fn()}
+      flowNodeNames={{a: 'flow node name'}}
+      expanded
+    />
+  );
+
+  expect(node.find('ActionItem').dive()).toIncludeText('flow node name is less than 18 hours');
+});
+
 it('should display a running instances only filter', () => {
   const data = [
     {

@@ -114,32 +114,13 @@
           display: none;
         }
 
-        .withTooltip {
-          background: none;
-          margin: 0;
-          padding: 0;
+        .previewItemValue {
+          max-width: unset;
+          overflow: unset;
+        }
 
-          > span {
-            display: none;
-          }
-          .Tooltip {
-            display: block;
-            position: relative;
-            top: 0;
-            left: 0;
-            padding: 0;
-            margin: 0;
-            transform: none;
-
-            border: none;
-            box-shadow: none;
-            padding: 0;
-
-            &:before,
-            &:after {
-              display: none;
-            }
-          }
+        .filterValues {
+          width: max-content;
         }
       }
 

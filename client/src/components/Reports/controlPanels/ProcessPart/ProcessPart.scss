@@ -9,8 +9,15 @@
     cursor: pointer;
     white-space: pre-wrap;
 
-    .ActionItem span.highlighted {
-      @include highlighted;
+    .ActionItem {
+      width: 100%;
+      span.highlighted {
+        @include highlighted;
+        max-width: 200px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        vertical-align: middle;
+      }
     }
   }
 }
