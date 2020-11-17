@@ -74,7 +74,7 @@ pipeline {
                         sh "kubectl get pods"
                         script {
                             findFiles(glob: 'production-m/**/*.json').each {
-                                sh 'PATH="$PATH:$(pwd)/scripts/" chaos run ' + it
+                                sh 'PATH="$PATH:$(pwd)/../scripts/" chaos run ' + it
 
                             }
                         }

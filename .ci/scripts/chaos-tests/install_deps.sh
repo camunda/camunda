@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set -ex
-apk --no-cache add bash make curl openssl diffutils
+apk --no-cache add bash make curl openssl diffutils jq
 
 pip install chaostoolkit
 chaos --version
