@@ -38,9 +38,9 @@
     <jsonpath.version>2.4.0</jsonpath.version>
     <elasticsearch.version>7.10.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>7.0.0</elasticsearch.test.version>
+    <elasticsearch.test.version>7.3.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
-    <previous.optimize.elasticsearch.version>7.0.0</previous.optimize.elasticsearch.version>
+    <previous.optimize.elasticsearch.version>7.3.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.0</elasticsearch.log4j.version>
     <guava.version>30.0-jre</guava.version>

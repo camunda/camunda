@@ -36,9 +36,6 @@ public class ESVersionChecker {
   private static List<String> supportedVersions = new ArrayList<>();
 
   static {
-    supportedVersions.add("7.0.0");
-    supportedVersions.add("7.1.0");
-    supportedVersions.add("7.2.0");
     supportedVersions.add("7.3.0");
     supportedVersions.add("7.4.0");
     supportedVersions.add("7.5.0");

@@ -59,11 +59,11 @@ fi
 export ES_JAVA_OPTS="-Xms1g -Xmx1g"
 
 echo
-echo "Starting Elasticsearch 7.0.0...";
+echo "Starting Elasticsearch ${elasticsearch.version}...";
 echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
 echo
 ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
-bash "$BASEDIR/elasticsearch/elasticsearch-7.0.0/bin/elasticsearch" </dev/null > $ELASTICSEARCH_LOG_FILE 2>&1 &
+bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" </dev/null > $ELASTICSEARCH_LOG_FILE 2>&1 &
 
 URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
 checkStartup $URL "Elasticsearch"

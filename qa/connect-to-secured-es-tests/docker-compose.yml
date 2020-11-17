@@ -58,7 +58,7 @@ services:
       - HTPASSWD=elastic:$$apr1$$rAPWdsDW$$/7taaK2oH4AwXgLTbYSpa0
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.0.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.3.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -82,7 +82,7 @@ services:
       retries: 6
 
   wait_until_ready:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.0.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.3.0}
     command: /usr/bin/true
     depends_on: {
       "elasticsearch": {"condition": "service_healthy"}
