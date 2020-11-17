@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.worker;
 
 import static io.zeebe.client.impl.command.ArgumentUtil.ensureGreaterThan;
+import static io.zeebe.client.impl.command.ArgumentUtil.ensureGreaterThanOrEqualTo;
 import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 
@@ -152,7 +153,7 @@ public final class JobWorkerBuilderImpl
     ensureGreaterThan("timeout", timeout, 0L);
     ensureNotNullNorEmpty("workerName", workerName);
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
-    ensureGreaterThan("minJobsActiveRatio", minJobsActiveRatio, 0.0f);
+    ensureGreaterThanOrEqualTo("minJobsActiveRatio", minJobsActiveRatio, 0.0f);
 
     final Builder requestBuilder =
         ActivateJobsRequest.newBuilder()

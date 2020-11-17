@@ -41,9 +41,9 @@ public final class ArgumentUtil {
     }
   }
 
-  public static void ensureGreaterThan(
+  public static void ensureGreaterThanOrEqualTo(
       final String property, final float testValue, final float comparisonValue) {
-    if (testValue <= comparisonValue) {
+    if (testValue < comparisonValue) {
       throw new IllegalArgumentException(property + " must be greater than " + comparisonValue);
     }
   }
