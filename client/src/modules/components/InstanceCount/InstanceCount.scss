@@ -71,7 +71,10 @@
       }
     }
 
-    > div {
+    > .buttonWrapper {
+      display: inline-block;
+    }
+    > .overlay {
       position: absolute;
       left: 50%;
 

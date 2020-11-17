@@ -120,7 +120,7 @@ export default class Popover extends React.Component {
 
   createOverlay = () => {
     return (
-      <div onClick={this.catchClick}>
+      <div className="overlay" onClick={this.catchClick}>
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
         <div className="dialogContainer" style={this.state.dialogStyles}>
@@ -171,7 +171,7 @@ export default class Popover extends React.Component {
         className={classnames('Popover', className)}
       >
         <Tooltip content={tooltip}>
-          <div>
+          <div className="buttonWrapper">
             <Button
               icon={icon && !title}
               active={active}
