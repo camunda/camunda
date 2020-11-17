@@ -1313,7 +1313,7 @@
       with mvn dependency:go-offline and then run the tests in offline mode. But the plugin misses
       to download the surefire-junit dependency, therefore define an explicit dependency while downloading.
 
-      Usage: mvn initialize -Pprepare-offline
+      Usage: mvn install -Pprepare-offline
     -->
     <profile>
       <id>prepare-offline</id>
