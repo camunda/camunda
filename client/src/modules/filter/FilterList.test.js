@@ -173,9 +173,10 @@ it('should display a flow node duration filter', () => {
     <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{a: 'flow node name'}} />
   );
 
-  const actionItem = node.find('ActionItem').dive();
-  expect(actionItem).toIncludeText('Duration filter is applied to 1 Flow Node');
-  expect(actionItem).toIncludeText('flow node name is less than 18 hours');
+  expect(node.find('ActionItem').dive()).toIncludeText('Duration filter is applied to');
+  expect(node.find('Tooltip').dive()).toIncludeText('1 Flow Node');
+  const content = shallow(node.find('Tooltip').prop('content'));
+  expect(content).toIncludeText('flow node name is less than 18 hours');
 });
 
 it('should display a running instances only filter', () => {

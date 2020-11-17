@@ -221,7 +221,7 @@
     "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
     "addName": "Berichtname",
-    "reportSetup": "Bericht Einrichtung",
+    "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
     "templates": {

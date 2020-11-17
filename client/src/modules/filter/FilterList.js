@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {ActionItem} from 'components';
+import {ActionItem, Tooltip} from 'components';
 import {NodeListPreview, DateFilterPreview, VariablePreview} from './modals';
 
 import './FilterList.scss';
@@ -131,37 +131,41 @@ export default class FilterList extends React.Component {
               >
                 <span className="parameterName">{t('common.filter.types.duration')}</span>
                 {this.createOperator(t('common.filter.durationModal.appliedTo'))}
-                <span className="previewItemValue withTooltip">
-                  <span>
+                <Tooltip
+                  position="bottom"
+                  content={
+                    <div className="filterTooltip">
+                      {Object.keys(filters).map((key, i) => {
+                        const {value, unit, operator} = filters[key];
+                        return (
+                          <div key={key}>
+                            <div key={key} className="flowNode">
+                              <span className="previewItemValue">{flowNodeNames[key] || key}</span>
+                              {operator === '<' &&
+                                this.createOperator(t('common.filter.list.operators.less'))}
+                              {operator === '>' &&
+                                this.createOperator(t('common.filter.list.operators.more'))}
+                              <span className="previewItemValue">
+                                {value.toString()}{' '}
+                                {t(
+                                  `common.unit.${unit.slice(0, -1)}.label${
+                                    value !== 1 ? '-plural' : ''
+                                  }`
+                                )}
+                              </span>
+                            </div>
+                            {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  }
+                >
+                  <span className="previewItemValue">
                     {filtersCount}{' '}
                     {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
                   </span>
-                  <div className="Tooltip center light bottom">
-                    {Object.keys(filters).map((key, i) => {
-                      const {value, unit, operator} = filters[key];
-                      return (
-                        <div key={key}>
-                          <div key={key} className="flowNode">
-                            <span className="previewItemValue">{flowNodeNames[key] || key}</span>
-                            {operator === '<' &&
-                              this.createOperator(t('common.filter.list.operators.less'))}
-                            {operator === '>' &&
-                              this.createOperator(t('common.filter.list.operators.more'))}
-                            <span className="previewItemValue">
-                              {value.toString()}{' '}
-                              {t(
-                                `common.unit.${unit.slice(0, -1)}.label${
-                                  value !== 1 ? '-plural' : ''
-                                }`
-                              )}
-                            </span>
-                          </div>
-                          {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </span>
+                </Tooltip>
               </ActionItem>
             </li>
           );
