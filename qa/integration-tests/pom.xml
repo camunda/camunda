@@ -199,7 +199,6 @@
       <artifactId>elasticsearch-rest-client</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
