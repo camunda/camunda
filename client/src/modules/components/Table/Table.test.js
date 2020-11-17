@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select} from 'components';
@@ -172,9 +172,9 @@ it('should invoke fetchData when the page is change', () => {
     <Table head={['a']} body={[]} fetchData={spy} totalEntries={250} defaultPageSize={50} />
   );
 
-  runLastEffect();
+  runAllEffects();
   node.find('.next').simulate('click');
-  runLastEffect();
+  runAllEffects();
 
   expect(spy).toHaveBeenCalledWith({pageIndex: 1, pageSize: 50});
 });
@@ -183,13 +183,13 @@ it('should go to the last page if data changes in a way that current page is emp
   const spy = jest.fn();
   const node = shallow(<Table head={['a']} body={[]} fetchData={spy} totalEntries={100} />);
 
-  runLastEffect();
+  runAllEffects();
   node.find('.last').simulate('click');
-  runLastEffect();
+  runAllEffects();
 
   spy.mockClear();
   node.setProps({totalEntries: 50});
-  runLastEffect();
+  runAllEffects();
 
   expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
 });

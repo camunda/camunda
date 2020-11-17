@@ -32,7 +32,8 @@ export default function Table({
   totalEntries,
   loading,
 }) {
-  const columns = React.useMemo(() => Table.formatColumns(head), [head]);
+  const columnWidths = useRef({});
+  const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
   const initialSorting = React.useMemo(() => formatSorting(sorting, resultType, columns), [
     columns,
@@ -144,6 +145,12 @@ export default function Table({
       fetchData({pageIndex, pageSize});
     }
   }, [fetchData, pageIndex, pageSize]);
+
+  useEffect(() => {
+    headerGroups.forEach((group) =>
+      group.headers.forEach(({id, width}) => (columnWidths.current[id] = width))
+    );
+  });
 
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
@@ -265,7 +272,7 @@ function formatSorting(sorting, resultType, columns) {
   return [{id, desc: order === 'desc'}];
 }
 
-Table.formatColumns = (head, ctx = '') => {
+Table.formatColumns = (head, ctx = '', columnWidths = {}) => {
   return head.map((elem) => {
     if (!elem.columns) {
       const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
@@ -276,12 +283,12 @@ Table.formatColumns = (head, ctx = '') => {
         id,
         minWidth: 100,
         disableSortBy: elem.sortable === false,
-        width: 180,
+        width: columnWidths[id] || 180,
       };
     }
     return {
       Header: elem.label,
-      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label)),
+      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths),
     };
   });
 };
