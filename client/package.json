@@ -8,7 +8,7 @@
     "@types/enzyme": "^3.10.8",
     "@types/history": "^4.7.8",
     "@types/jest": "^26.0.15",
-    "@types/lodash": "^4.14.162",
+    "@types/lodash": "^4.14.165",
     "@types/node": "^14.14.2",
     "@types/react": "^16.9.53",
     "@types/react-dom": "^16.9.9",
