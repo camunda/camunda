@@ -55,7 +55,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
     );
   }
 
-  public CompletedActivityInstanceEngineImportMediator createCompletedActivityInstanceEngineImportMediator(
+  private CompletedActivityInstanceEngineImportMediator createCompletedActivityInstanceEngineImportMediator(
     EngineContext engineContext) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
@@ -75,7 +75,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
     );
   }
 
-  public RunningActivityInstanceEngineImportMediator createRunningActivityInstanceEngineImportMediator(
+  private RunningActivityInstanceEngineImportMediator createRunningActivityInstanceEngineImportMediator(
     EngineContext engineContext) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);

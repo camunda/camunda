@@ -10,6 +10,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -60,6 +61,7 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       .addUpgradeStep(new UpdateIndexStep(new SingleDecisionReportIndex(), null))
       .addUpgradeStep(migrateDistributedByField(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateDashboardAvailableFilters())
+      .addUpgradeStep(new UpdateMappingIndexStep(new EventIndex()))
       .build();
   }
 

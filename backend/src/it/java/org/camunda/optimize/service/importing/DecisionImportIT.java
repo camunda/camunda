@@ -74,7 +74,7 @@ public class DecisionImportIT extends AbstractImportIT {
   protected final LogCapturer importServiceLogCapturer =
     LogCapturer.create().forLevel(Level.DEBUG).captureForType(DecisionInstanceImportService.class);
   @RegisterExtension
-  @Order(5)
+  @Order(6)
   protected final LogCapturer definitionFetcherLogCapturer =
     LogCapturer.create().captureForType(DecisionDefinitionFetcher.class);
 

@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
@@ -54,12 +55,13 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
+import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
-import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -281,6 +283,23 @@ public class OptimizeRequestExecutor {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  public <T> Page<T> executeAndGetPage(Class<T> classToExtractFromResponse, int responseCode) {
+    try (final Response response = execute()) {
+      assertStatusCode(response, responseCode);
+      final Page<T> page = response.readEntity(Page.class);
+
+      final String resultListAsString = objectMapper.writeValueAsString(page.getResults());
+      TypeFactory factory = objectMapper.getTypeFactory();
+      JavaType listOfT = factory.constructCollectionType(List.class, classToExtractFromResponse);
+      List<T> resultsOfT = objectMapper.readValue(resultListAsString, listOfT);
+      page.setResults(resultsOfT);
+      return page;
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
   public <T> List<T> executeAndReturnList(Class<T> classToExtractFromResponse, int responseCode) {
     try (final Response response = execute()) {
       assertStatusCode(response, responseCode);
@@ -472,7 +491,7 @@ public class OptimizeRequestExecutor {
     this.path = "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
-    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
+    Optional.ofNullable(paginationRequestDto).ifPresent(this::addPaginationParams);
     return this;
   }
 
@@ -480,7 +499,7 @@ public class OptimizeRequestExecutor {
     T entity,
     PaginationRequestDto paginationDto) {
     buildEvaluateSingleUnsavedReportRequest(entity);
-    addQueryParams(extractPagination(paginationDto));
+    Optional.ofNullable(paginationDto).ifPresent(this::addPaginationParams);
     return this;
   }
 
@@ -630,7 +649,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id, EntitySorter sorter) {
     this.path = "collection/" + id + "/entities";
     this.method = GET;
-    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
   }
 
@@ -653,7 +672,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetAllEntitiesRequest(EntitySorter sorter) {
     this.path = "entities/";
     this.method = GET;
-    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
   }
 
@@ -726,7 +745,7 @@ public class OptimizeRequestExecutor {
                                                                   PaginationRequestDto paginationRequestDto) {
     this.path = "share/report/" + shareId + "/evaluate";
     this.method = POST;
-    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
+    Optional.ofNullable(paginationRequestDto).ifPresent(this::addPaginationParams);
     return this;
   }
 
@@ -740,7 +759,7 @@ public class OptimizeRequestExecutor {
                                                                            AdditionalProcessReportEvaluationFilterDto filterDto) {
     this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
     this.method = POST;
-    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
+    Optional.ofNullable(paginationRequestDto).ifPresent(this::addPaginationParams);
     Optional.ofNullable(filterDto).ifPresent(filters -> this.body = getBody(filters));
     return this;
   }
@@ -1381,6 +1400,15 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetEventListRequest(final EventSearchRequestDto eventSearchRequestDto) {
+    this.path = "event/";
+    this.method = GET;
+    Optional.ofNullable(eventSearchRequestDto.getSearchTerm()).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventSearchRequestDto.getPaginationRequestDto()).ifPresent(this::addPaginationParams);
+    Optional.ofNullable(eventSearchRequestDto.getSortRequestDto()).ifPresent(this::addSortParams);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetSettingsRequest() {
     this.path = "settings/";
     this.method = GET;
@@ -1412,11 +1440,16 @@ public class OptimizeRequestExecutor {
     return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 
-  private Map<String, Object> extractSortParams(EntitySorter sorter) {
-    Map<String, Object> params = new HashMap<>();
-    sorter.getSortBy().ifPresent(sortBy -> params.put(Sorter.SORT_BY, sortBy));
-    sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString().toLowerCase()));
-    return params;
+  private void addPaginationParams(final PaginationRequestDto paginationRequestDto) {
+    Optional.ofNullable(paginationRequestDto.getLimit())
+      .ifPresent(limit -> addSingleQueryParam(PaginationRequestDto.LIMIT_PARAM, limit));
+    Optional.ofNullable(paginationRequestDto.getOffset())
+      .ifPresent(offset -> addSingleQueryParam(PaginationRequestDto.OFFSET_PARAM, offset));
+  }
+
+  private void addSortParams(final SortRequestDto sortRequestDto) {
+    sortRequestDto.getSortBy().ifPresent(sortBy -> addSingleQueryParam(SortRequestDto.SORT_BY, sortBy));
+    sortRequestDto.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam(SortRequestDto.SORT_ORDER, sortOrder));
   }
 
   public WebTarget createWebTarget(final String targetUrl) {
@@ -1490,14 +1523,6 @@ public class OptimizeRequestExecutor {
 
     entityStream.reset();
     return stringBuilder.toString();
-  }
-
-  private Map<String, Object> extractPagination(final PaginationRequestDto pagination) {
-    Map<String, Object> params = new HashMap<>();
-    Optional.ofNullable(pagination.getLimit()).ifPresent(limit -> params.put(PaginationRequestDto.LIMIT_PARAM, limit));
-    Optional.ofNullable(pagination.getOffset())
-      .ifPresent(offset -> params.put(PaginationRequestDto.OFFSET_PARAM, offset));
-    return params;
   }
 
   private static ObjectMapper getDefaultObjectMapper() {

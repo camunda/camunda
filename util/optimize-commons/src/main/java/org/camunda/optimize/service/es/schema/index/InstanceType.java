@@ -9,6 +9,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public interface InstanceType {
@@ -25,11 +27,11 @@ public interface InstanceType {
       // search relevant fields
       .startObject(N_GRAM_FIELD)
         .field("type", "text")
-        .field("analyzer", "lowercase_ngram")
+        .field("analyzer", LOWERCASE_NGRAM)
       .endObject()
       .startObject(LOWERCASE_FIELD)
         .field("type", "keyword")
-        .field("normalizer", "lowercase_normalizer")
+        .field("normalizer", LOWERCASE_NORMALIZER)
       .endObject()
       // multi type fields
       .startObject(MULTIVALUE_FIELD_DATE)

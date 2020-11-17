@@ -10,18 +10,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
-import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
@@ -29,7 +27,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.events.EventCountService;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,19 +38,15 @@ import org.slf4j.event.Level;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
@@ -65,52 +58,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class EventCountRestServiceIT extends AbstractIT {
-
-  private static final String CAMUNDA_START_EVENT = ActivityTypes.START_EVENT;
-  private static final String CAMUNDA_END_EVENT = ActivityTypes.END_EVENT_NONE;
-  private static final String CAMUNDA_USER_TASK = ActivityTypes.TASK_USER_TASK;
-  private static final String CAMUNDA_SERVICE_TASK = ActivityTypes.TASK_SERVICE;
-
-  private static final String START_EVENT_ID = "startEventID";
-  private static final String FIRST_TASK_ID = "taskID_1";
-  private static final String SECOND_TASK_ID = "taskID_2";
-  private static final String THIRD_TASK_ID = "taskID_3";
-  private static final String FOURTH_TASK_ID = "taskID_4";
-  private static final String END_EVENT_ID = "endEventID";
-
-  private CloudEventRequestDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
-  private CloudEventRequestDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
-  private CloudEventRequestDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
-  private CloudEventRequestDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
-  private CloudEventRequestDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
-  private CloudEventRequestDto nullGroupEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
-
-  private final List<CloudEventRequestDto> eventTraceOne = createTraceFromEventList(
-    "traceIdOne",
-    Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
-    )
-  );
-  private final List<CloudEventRequestDto> eventTraceTwo = createTraceFromEventList(
-    "traceIdTwo",
-    Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
-    )
-  );
-  private final List<CloudEventRequestDto> eventTraceThree = createTraceFromEventList(
-    "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent)
-  );
-  private final List<CloudEventRequestDto> eventTraceFour = createTraceFromEventList(
-    "traceIdFour", Collections.singletonList(backendKetchupEvent)
-  );
-
-  private final List<CloudEventRequestDto> allEventDtos =
-    Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
-      .flatMap(Collection::stream)
-      .collect(toList());
-
-  private static String simpleDiagramXml;
+public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
   @RegisterExtension
   @Order(5)
@@ -121,16 +69,6 @@ public class EventCountRestServiceIT extends AbstractIT {
   @BeforeAll
   public static void setup() {
     simpleDiagramXml = createProcessDefinitionXml();
-  }
-
-  @BeforeEach
-  public void init() {
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    embeddedOptimizeExtension.reloadConfiguration();
-    eventClient.ingestEventBatch(allEventDtos);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    processEventTracesAndSequences();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @Test
@@ -606,9 +544,7 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSortAndOrderParameters() {
     // given
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("source");
-    eventCountSorter.setSortOrder(SortOrder.DESC);
+    EventCountSorter eventCountSorter = new EventCountSorter("source", SortOrder.DESC);
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter)
@@ -636,9 +572,6 @@ public class EventCountRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("count");
-    eventCountSorter.setSortOrder(SortOrder.DESC);
     final List<EventSourceEntryDto> sources = ImmutableList.of(
       createExternalEventSourceEntry(),
       createCamundaEventSourceEntryDto(
@@ -652,7 +585,7 @@ public class EventCountRestServiceIT extends AbstractIT {
     List<EventCountResponseDto> eventCountDtos =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildPostEventCountRequest(
-          eventCountSorter,
+          new EventCountSorter("count", SortOrder.DESC),
           null,
           EventCountRequestDto.builder().eventSources(sources).build()
         )
@@ -672,7 +605,8 @@ public class EventCountRestServiceIT extends AbstractIT {
         createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
         createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
       )
-      .isSortedAccordingTo(Comparator.comparing(EventCountResponseDto::getCount, nullsFirst(naturalOrder())).reversed());
+      .isSortedAccordingTo(Comparator.comparing(EventCountResponseDto::getCount, nullsFirst(naturalOrder()))
+                             .reversed());
   }
 
   @Test
@@ -691,10 +625,6 @@ public class EventCountRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("eventName");
-    eventCountSorter.setSortOrder(SortOrder.ASC);
-
     final List<EventSourceEntryDto> sources = Collections.singletonList(
       createCamundaEventSourceEntryDto(
         definitionKey,
@@ -706,7 +636,7 @@ public class EventCountRestServiceIT extends AbstractIT {
     List<EventCountResponseDto> eventCountDtos =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildPostEventCountRequest(
-          eventCountSorter,
+          new EventCountSorter("eventName", SortOrder.ASC),
           null,
           EventCountRequestDto.builder().eventSources(sources).build()
         )
@@ -751,9 +681,7 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSortAndOrderParametersMatchingDefault() {
     // given
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("group");
-    eventCountSorter.setSortOrder(SortOrder.ASC);
+    EventCountSorter eventCountSorter = new EventCountSorter("group", SortOrder.ASC);
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null)
@@ -776,8 +704,7 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingInvalidSortAndOrderParameters() {
     // given
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("notAField");
+    EventCountSorter eventCountSorter = new EventCountSorter("notAField", null);
 
     // when
     Response response = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null).execute();
@@ -789,12 +716,13 @@ public class EventCountRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSearchTermAndSortAndOrderParameters() {
     // given
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("eventName");
-    eventCountSorter.setSortOrder(SortOrder.DESC);
+    EventCountSorter eventCountSorter = new EventCountSorter("eventName", SortOrder.DESC);
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, "etch")
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(
+      eventCountSorter,
+      "etch"
+    )
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then matching events are returned with ordering parameters respected
@@ -1007,9 +935,7 @@ public class EventCountRestServiceIT extends AbstractIT {
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
-    EventCountSorter eventCountSorter = new EventCountSorter();
-    eventCountSorter.setSortBy("source");
-    eventCountSorter.setSortOrder(SortOrder.DESC);
+    EventCountSorter eventCountSorter = new EventCountSorter("source", SortOrder.DESC);
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(
@@ -1263,8 +1189,10 @@ public class EventCountRestServiceIT extends AbstractIT {
         createProcessInstanceEndEventCount(definitionKey)
       );
     logCapturer.assertContains(
-      String.format("Cannot fetch event counts for sources with keys %s as sequence count indices do not exist",
-                    Collections.singletonList(definitionKey)));
+      String.format(
+        "Cannot fetch event counts for sources with keys %s as sequence count indices do not exist",
+        Collections.singletonList(definitionKey)
+      ));
   }
 
   @Test
@@ -1328,25 +1256,6 @@ public class EventCountRestServiceIT extends AbstractIT {
     return EventMappingDto.builder()
       .start(startEventDto)
       .end(endEventDto)
-      .build();
-  }
-
-  private List<CloudEventRequestDto> createTraceFromEventList(String traceId, List<CloudEventRequestDto> events) {
-    AtomicInteger incrementCounter = new AtomicInteger(0);
-    Instant currentTimestamp = Instant.now();
-    return events.stream()
-      .map(event -> createEventDtoWithProperties(event.getGroup().orElse(null), event.getSource(), event.getType()))
-      .peek(eventDto -> eventDto.setTraceid(traceId))
-      .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
-      .collect(toList());
-  }
-
-  private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source, final String type) {
-    return eventClient.createCloudEventDto()
-      .toBuilder()
-      .group(group)
-      .source(source)
-      .type(type)
       .build();
   }
 
@@ -1548,11 +1457,6 @@ public class EventCountRestServiceIT extends AbstractIT {
       ImmutableList.of("2"),
       ImmutableList.of("latest")
     );
-  }
-
-  private void processEventTracesAndSequences() {
-    embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

@@ -18,9 +18,12 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 
 public abstract class DefaultIndexMappingCreator implements IndexMappingCreator, PropertiesAppender {
-  protected final static String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
+  private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
+  protected static final String LOWERCASE_FIELD = "lowercase";
+  protected static final String ANALYZER = "analyzer";
+  protected static final String NORMALIZER = "normalizer";
 
   @Getter
   @Setter

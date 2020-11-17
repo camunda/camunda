@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CancelableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -52,12 +52,12 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   @Override
   public void executeImport(final List<CamundaActivityEventDto> camundaActivities,
                             final Runnable importCompleteCallback) {
-    final List<EventResponseDto> filteredEvents = filterForConfiguredTenantsAndVersions(camundaActivities)
+    final List<EventDto> filteredEvents = filterForConfiguredTenantsAndVersions(camundaActivities)
       .stream()
       .map(this::mapToEventDto)
       .collect(Collectors.toList());
 
-    final List<EventResponseDto> correlatedEvents = correlateCamundaEvents(filteredEvents);
+    final List<EventDto> correlatedEvents = correlateCamundaEvents(filteredEvents);
     eventProcessInstanceImportService.executeImport(correlatedEvents, importCompleteCallback);
   }
 
@@ -79,12 +79,12 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     return filteredActivities;
   }
 
-  private List<EventResponseDto> correlateCamundaEvents(final List<EventResponseDto> eventDtosToImport) {
+  private List<EventDto> correlateCamundaEvents(final List<EventDto> eventDtosToImport) {
     log.trace("Correlating [{}] camunda activity events for process definition key {}.",
               eventDtosToImport.size(), eventSource.getProcessDefinitionKey());
 
     Set<String> processInstanceIds = eventDtosToImport.stream()
-      .map(EventResponseDto::getTraceId)
+      .map(EventDto::getTraceId)
       .collect(Collectors.toSet());
 
     final Map<String, List<VariableUpdateInstanceDto>> processInstanceToVariableUpdates =
@@ -96,7 +96,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     eventDtosToImport.forEach(
       eventDto -> eventDto.setData(extractVariablesDataForEvent(processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
 
-    List<EventResponseDto> correlatedEvents;
+    List<EventDto> correlatedEvents;
     if (eventSource.isTracedByBusinessKey()) {
       Map<String, String> instanceIdToBusinessKeys =
         businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds)

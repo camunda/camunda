@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
@@ -604,8 +604,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
   }
 
-  public List<EventResponseDto> getAllStoredExternalEvents() {
-    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventResponseDto.class);
+  public List<EventDto> getAllStoredExternalEvents() {
+    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
   }
 
   public List<DecisionInstanceDto> getAllDecisionInstances() {

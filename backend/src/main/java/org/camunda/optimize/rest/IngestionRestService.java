@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -47,7 +47,7 @@ public class IngestionRestService {
   public static final String BEARER_PREFIX = "Bearer ";
 
   private final ConfigurationService configurationService;
-  private final ExternalEventService eventService;
+  private final ExternalEventService externalEventService;
 
   @POST
   @Path(EVENT_BATCH_SUB_PATH)
@@ -56,12 +56,12 @@ public class IngestionRestService {
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
     validateAccessToken(requestContext);
-    eventService.saveEventBatch(mapToEventDto(cloudEventDtos));
+    externalEventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
-  private List<EventResponseDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
+  private List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
     return cloudEventDtos.stream()
-      .map(cloudEventDto -> EventResponseDto.builder()
+      .map(cloudEventDto -> EventDto.builder()
         .id(cloudEventDto.getId())
         .eventName(cloudEventDto.getType())
         .timestamp(

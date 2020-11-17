@@ -12,12 +12,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
@@ -361,7 +361,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     embeddedOptimizeExtension.getEventService()
       .saveEventBatch(
         Collections.singletonList(
-          EventResponseDto.builder()
+          EventDto.builder()
             .id(eventId)
             .eventName(eventName)
             .timestamp(eventTimestamp.toInstant().toEpochMilli())

@@ -20,7 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
-  public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR = Comparator.comparing(EntityResponseDto::getName)
+  public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR =
+    Comparator.comparing(EntityResponseDto::getName)
     .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
   @Test
@@ -55,7 +56,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
                                                                                   Comparator<EntityResponseDto> expectedComparator) {
     // given
     final String collectionId = createCollectionWithMixedEntities();
-    EntitySorter sorter = entitySorter(sortBy, sortOrder);
+    EntitySorter sorter = new EntitySorter(sortBy, sortOrder);
 
     // when
     final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
@@ -70,7 +71,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
   public void getCollectionEntities_resultsAreSortedInAscendingOrderIfNoOrderSupplied() {
     // given
     final String collectionId = createCollectionWithMixedEntities();
-    EntitySorter sorter = entitySorter("name", null);
+    EntitySorter sorter = new EntitySorter("name", null);
 
     // when
     final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
@@ -85,7 +86,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
   public void getCollectionEntities_invalidSortByParameterPassed() {
     // given a sortBy field which is not supported
     final String collectionId = createCollectionWithMixedEntities();
-    EntitySorter sorter = entitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
+    EntitySorter sorter = new EntitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -100,7 +101,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
   public void getCollectionEntities_sortOrderSuppliedWithNoSortByField() {
     // given a sortBy field which is not supported
     final String collectionId = createCollectionWithMixedEntities();
-    EntitySorter sorter = entitySorter(null, SortOrder.ASC);
+    EntitySorter sorter = new EntitySorter(null, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
@@ -41,12 +41,12 @@ public class ExternalEventWriter {
   private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
-  public void upsertEvents(final List<EventResponseDto> eventDtos) {
+  public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
 
     final BulkRequest bulkRequest = new BulkRequest();
     final Long ingestionTimestamp = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
-    for (EventResponseDto eventDto : eventDtos) {
+    for (EventDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(ingestionTimestamp);
       bulkRequest.add(createEventUpsert(eventDto));
     }
@@ -97,7 +97,7 @@ public class ExternalEventWriter {
     }
   }
 
-  private UpdateRequest createEventUpsert(final EventResponseDto eventDto) {
+  private UpdateRequest createEventUpsert(final EventDto eventDto) {
     return new UpdateRequest()
       .index(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME)
       .id(IdGenerator.getNextId())

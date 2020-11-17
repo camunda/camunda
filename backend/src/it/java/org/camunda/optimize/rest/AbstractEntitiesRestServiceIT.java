@@ -44,12 +44,14 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   protected String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
     switch (reportType) {
       case PROCESS:
-        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+          new SingleProcessReportDefinitionRequestDto();
         singleProcessReportDefinitionDto.setName(name);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
       case DECISION:
-        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+          new SingleDecisionReportDefinitionRequestDto();
         singleDecisionReportDefinitionDto.setName(name);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
@@ -82,13 +84,6 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
-  }
-
-  protected EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
-    final EntitySorter sorter = new EntitySorter();
-    sorter.setSortBy(sortBy);
-    sorter.setSortOrder(sortOrder);
-    return sorter;
   }
 
   @SuppressWarnings("unused")

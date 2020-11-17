@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.Collection;

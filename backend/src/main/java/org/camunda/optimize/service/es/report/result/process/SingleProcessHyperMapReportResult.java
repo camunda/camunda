@@ -44,7 +44,6 @@ public class SingleProcessHyperMapReportResult
 
     final List<List<String[]>> allSingleReportsAsCsvList = mapHyperMapReportResultsToCsvLists(
       limit,
-      offset,
       hyperMapResult
     );
 
@@ -57,13 +56,13 @@ public class SingleProcessHyperMapReportResult
   private void addHeaderLine(List<String[]> mergedCsvReports) {
     ProcessReportDataDto data = reportDefinition.getData();
     final String[] reportNameHeader =
-      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey(), data.getGroupBy().createCommandKey()};
+      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey(),
+        data.getGroupBy().createCommandKey()};
     mergedCsvReports.add(0, reportNameHeader);
   }
 
   private List<List<String[]>> mapHyperMapReportResultsToCsvLists(
     final Integer limit,
-    final Integer offset,
     final ReportHyperMapResultDto hyperMapResult) {
 
     return Streams.mapWithIndex(
@@ -75,8 +74,8 @@ public class SingleProcessHyperMapReportResult
 
   private List<String[]> removeLabelColumn(List<String[]> column) {
     return column.stream()
-    .map(row -> row.length > 1 ? ArrayUtils.remove(row, 0) : row)
-    .collect(Collectors.toList());
+      .map(row -> row.length > 1 ? ArrayUtils.remove(row, 0) : row)
+      .collect(Collectors.toList());
   }
 
   private List<String[]> mapSingleHyperMapResultEntry(final Integer limit,

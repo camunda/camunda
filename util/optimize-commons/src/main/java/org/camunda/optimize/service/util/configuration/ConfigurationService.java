@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
@@ -18,7 +19,6 @@ import org.camunda.optimize.service.util.configuration.engine.EngineConfiguratio
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
-import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.util.ArrayList;

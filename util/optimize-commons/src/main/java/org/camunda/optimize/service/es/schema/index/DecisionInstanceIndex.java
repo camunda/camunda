@@ -9,10 +9,10 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
@@ -165,7 +165,7 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
-        .startObject("fields");
+        .startObject(FIELDS);
           addValueMultifields(builder)
         .endObject()
       .endObject();
@@ -190,7 +190,7 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
-        .startObject("fields");
+        .startObject(FIELDS);
           addValueMultifields(builder)
         .endObject()
       .endObject()

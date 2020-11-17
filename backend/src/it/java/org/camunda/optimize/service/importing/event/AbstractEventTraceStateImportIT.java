@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.event;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -32,7 +32,7 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractIT {
     return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
   }
 
-  protected List<EventResponseDto> getAllStoredExternalEvents() {
+  protected List<EventDto> getAllStoredExternalEvents() {
     return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
   }
 

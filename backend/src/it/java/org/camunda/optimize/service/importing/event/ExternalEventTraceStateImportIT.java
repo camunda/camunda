@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
@@ -539,7 +539,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
   private Long findMostRecentEventTimestamp() {
     return getAllStoredExternalEvents().stream()
-      .map(EventResponseDto::getIngestionTimestamp)
+      .map(EventDto::getIngestionTimestamp)
       .mapToLong(e -> e).max().getAsLong();
   }
 
@@ -556,8 +556,8 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       .build();
   }
 
-  private EventResponseDto mapToEventDto(final CloudEventRequestDto cloudEventDto) {
-    return EventResponseDto.builder()
+  private EventDto mapToEventDto(final CloudEventRequestDto cloudEventDto) {
+    return EventDto.builder()
       .id(cloudEventDto.getId())
       .eventName(cloudEventDto.getType())
       .timestamp(

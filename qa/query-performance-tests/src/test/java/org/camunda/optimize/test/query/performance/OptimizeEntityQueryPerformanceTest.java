@@ -224,7 +224,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
           .build();
 
-        final SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto(processReportData);
+        final SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto(
+          processReportData);
         definition.setCollectionId(collectionId);
         definition.setName(IdGenerator.getNextId());
         definition.setOwner(DEFAULT_USER);
@@ -251,7 +252,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           .setDecisionDefinitionKey(DECISION_DEFINITION_KEY + "_" + index)
           .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
           .build();
-        final SingleDecisionReportDefinitionRequestDto definition = new SingleDecisionReportDefinitionRequestDto(decisionReportData);
+        final SingleDecisionReportDefinitionRequestDto definition = new SingleDecisionReportDefinitionRequestDto(
+          decisionReportData);
         definition.setCollectionId(collectionId);
         definition.setName(IdGenerator.getNextId());
         definition.setOwner(DEFAULT_USER);
@@ -274,7 +276,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       new CombinedReportItemDto("firstReportId", "red"),
       new CombinedReportItemDto("secondReportId", "blue")
     ));
-    final CombinedReportDefinitionRequestDto definition = new CombinedReportDefinitionRequestDto(new CombinedReportDataDto());
+    final CombinedReportDefinitionRequestDto definition =
+      new CombinedReportDefinitionRequestDto(new CombinedReportDataDto());
     definition.setCollectionId(collectionId);
     definition.setName(IdGenerator.getNextId());
     definition.setOwner(DEFAULT_USER);
@@ -451,22 +454,15 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   private static Stream<EntitySorter> entitySorters() {
     return Stream.of(
       null,
-      entitySorter(name, SortOrder.ASC),
-      entitySorter(name, SortOrder.DESC),
-      entitySorter(entityType, SortOrder.ASC),
-      entitySorter(entityType, SortOrder.DESC),
-      entitySorter(lastModified, SortOrder.ASC),
-      entitySorter(lastModified, SortOrder.DESC),
-      entitySorter(lastModifier, SortOrder.ASC),
-      entitySorter(lastModifier, SortOrder.DESC)
+      new EntitySorter(name, SortOrder.ASC),
+      new EntitySorter(name, SortOrder.DESC),
+      new EntitySorter(entityType, SortOrder.ASC),
+      new EntitySorter(entityType, SortOrder.DESC),
+      new EntitySorter(lastModified, SortOrder.ASC),
+      new EntitySorter(lastModified, SortOrder.DESC),
+      new EntitySorter(lastModifier, SortOrder.ASC),
+      new EntitySorter(lastModifier, SortOrder.DESC)
     );
-  }
-
-  private static EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
-    EntitySorter sorter = new EntitySorter();
-    sorter.setSortBy(sortBy);
-    sorter.setSortOrder(sortOrder);
-    return sorter;
   }
 
 }

@@ -39,7 +39,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void getIsEventBasedProcessesEnabledWithoutAuthorization() {
+  public void getIsEventBasedProcessesEnabledWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetIsEventProcessEnabledRequest()
@@ -51,12 +51,11 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void createEventProcessMappingWithoutAuthorization() {
+  public void createEventProcessMappingWithoutAuthentication() {
     // when
     Response response = eventProcessClient
       .createCreateEventProcessMappingRequest(
-        eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
-      )
+        eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml))
       .withoutAuthentication()
       .execute();
 

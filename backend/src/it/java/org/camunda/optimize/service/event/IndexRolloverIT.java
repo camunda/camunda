@@ -7,7 +7,7 @@ package org.camunda.optimize.service.event;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -291,7 +291,7 @@ public class IndexRolloverIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration();
   }
 
-  private List<EventResponseDto> getAllStoredExternalEvents() {
+  private List<EventDto> getAllStoredExternalEvents() {
     return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
   }
 

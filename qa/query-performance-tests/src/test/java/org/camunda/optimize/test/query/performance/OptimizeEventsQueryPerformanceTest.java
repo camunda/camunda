@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
@@ -94,23 +94,16 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
     return Stream.of(
       Arguments.of(null, null),
       Arguments.of(null, "a"),
-      Arguments.of(eventCountSorter(eventName, SortOrder.ASC), "a"),
-      Arguments.of(eventCountSorter(eventName, SortOrder.ASC), null),
-      Arguments.of(eventCountSorter(eventName, SortOrder.DESC), null),
-      Arguments.of(eventCountSorter(group, SortOrder.ASC), "a"),
-      Arguments.of(eventCountSorter(group, SortOrder.ASC), null),
-      Arguments.of(eventCountSorter(group, SortOrder.DESC), null),
-      Arguments.of(eventCountSorter(source, SortOrder.ASC), "a"),
-      Arguments.of(eventCountSorter(source, SortOrder.ASC), null),
-      Arguments.of(eventCountSorter(source, SortOrder.DESC), null)
+      Arguments.of(new EventCountSorter(eventName, SortOrder.ASC), "a"),
+      Arguments.of(new EventCountSorter(eventName, SortOrder.ASC), null),
+      Arguments.of(new EventCountSorter(eventName, SortOrder.DESC), null),
+      Arguments.of(new EventCountSorter(group, SortOrder.ASC), "a"),
+      Arguments.of(new EventCountSorter(group, SortOrder.ASC), null),
+      Arguments.of(new EventCountSorter(group, SortOrder.DESC), null),
+      Arguments.of(new EventCountSorter(source, SortOrder.ASC), "a"),
+      Arguments.of(new EventCountSorter(source, SortOrder.ASC), null),
+      Arguments.of(new EventCountSorter(source, SortOrder.DESC), null)
     );
-  }
-
-  private static EventCountSorter eventCountSorter(final String sortBy, final SortOrder sortOrder) {
-    EventCountSorter sorter = new EventCountSorter();
-    sorter.setSortBy(sortBy);
-    sorter.setSortOrder(sortOrder);
-    return sorter;
   }
 
 }

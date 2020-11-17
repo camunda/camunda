@@ -30,6 +30,11 @@ public class ElasticsearchConstants {
   public static final String SORT_SETTING = "sort";
   public static final String SORT_FIELD_SETTING = "field";
   public static final String SORT_ORDER_SETTING = "order";
+  public static final String SORT_NULLS_FIRST = "_first";
+  public static final String SORT_NULLS_LAST = "_last";
+  public static final String FIELDS = "fields";
+  public static final String LOWERCASE_NGRAM = "lowercase_ngram";
+  public static final String LOWERCASE_NORMALIZER = "lowercase_normalizer";
   public static final String MAPPING_ENABLED_SETTING = "enabled";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";

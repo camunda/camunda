@@ -27,7 +27,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @FieldNameConstants()
-public class EventResponseDto implements OptimizeDto, EventProcessEventDto {
+public class EventDto implements OptimizeDto, EventProcessEventDto {
   @NotBlank
   @EqualsAndHashCode.Include
   @ToString.Include

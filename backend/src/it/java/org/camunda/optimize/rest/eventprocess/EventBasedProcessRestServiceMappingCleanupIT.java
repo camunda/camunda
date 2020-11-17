@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
@@ -473,8 +473,8 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
     assertThat(cleanedMapping).containsOnlyKeys(BPMN_START_EVENT_ID, BPMN_END_EVENT_ID);
   }
 
-  private EventResponseDto createEventDto(final String eventName) {
-    return EventResponseDto.builder()
+  private EventDto createEventDto(final String eventName) {
+    return EventDto.builder()
       .id(IdGenerator.getNextId())
       .eventName(eventName)
       .timestamp(Instant.now().toEpochMilli())

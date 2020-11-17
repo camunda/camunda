@@ -24,7 +24,7 @@ static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
 }
 
 static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
-  return itStageBasePod() + camBpmContainerSpec(camBpmVersion);
+  return itStageBasePod() + camBpmContainerSpec(camBpmVersion)
 }
 
 static String itStageBasePod() {

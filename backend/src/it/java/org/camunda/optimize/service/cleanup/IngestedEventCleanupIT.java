@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ public class IngestedEventCleanupIT extends AbstractIT {
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventResponseDto::getId)
+      .extracting(EventDto::getId)
       .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
@@ -61,7 +61,7 @@ public class IngestedEventCleanupIT extends AbstractIT {
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventResponseDto::getId)
+      .extracting(EventDto::getId)
       .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
