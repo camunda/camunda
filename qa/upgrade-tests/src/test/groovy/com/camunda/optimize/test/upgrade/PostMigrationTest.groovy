@@ -34,7 +34,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -104,7 +103,6 @@ class PostMigrationTest {
     }
   }
 
-  @Disabled
   @Test
   void evaluateAllCollectionReports() {
     final List<EntityResponseDto> collections = getCollections();
@@ -113,20 +111,32 @@ class PostMigrationTest {
       for (EntityResponseDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
         .collect(Collectors.toList())) {
-        log.info("Evaluating reportId: {}", entity.getId());
-        final Response response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId()).execute();
-        final JsonNode jsonResponse = response.readEntity(JsonNode.class);
-        if (Response.Status.OK.getStatusCode().equals(response.getStatus())) {
-          assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
-        } else if (Response.Status.BAD_REQUEST.getStatusCode().equals(response.getStatus())
-          && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText().equals(TooManyBucketsException.ERROR_CODE)) {5
-          assertThat(jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText())
-            .isEqualTo(TooManyBucketsException.ERROR_CODE);
-          log.warn("Encountered too many buckets for reportId: {}", entity.getId());
-        } else {
-          fail(
-            "Report evaluation failed with status code ${response.status} and body: ${response.readEntity(String.class)}."
-          )
+        final long startMillis = System.currentTimeMillis();
+        Response response = null;
+        try {
+          response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId()).execute();
+        } finally {
+          log.info(
+            "Evaluation of reportId: {} with commandKey: {} took: {}ms",
+            entity.getId(),
+            reportClient.getReportById(entity.getId()).getData().createCommandKey(),
+            System.currentTimeMillis() - startMillis
+          );
+        }
+        if (response != null) {
+          final JsonNode jsonResponse = response.readEntity(JsonNode.class);
+          if (Response.Status.OK.getStatusCode().equals(response.getStatus())) {
+            assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
+          } else if (Response.Status.BAD_REQUEST.getStatusCode().equals(response.getStatus())
+            && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText().equals(TooManyBucketsException.ERROR_CODE)) {
+            assertThat(jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText())
+              .isEqualTo(TooManyBucketsException.ERROR_CODE);
+            log.warn("Encountered too many buckets for reportId: {}", entity.getId());
+          } else {
+            fail(
+              "Report evaluation failed with status code ${response.status} and body: ${response.readEntity(String.class)}."
+            )
+          }
         }
       }
     }
@@ -221,4 +231,5 @@ class PostMigrationTest {
       .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
       .collect(Collectors.toList());
   }
+
 }
