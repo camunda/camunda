@@ -28,8 +28,6 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,15 +37,15 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Abstract partition. */
 public class RaftPartition implements Partition {
 
-  private static final Logger LOG = new ZbLogger(RaftPartition.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
-  private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
   private final Set<RaftFailureListener> raftFailureListeners = new CopyOnWriteArraySet<>();
@@ -58,12 +56,10 @@ public class RaftPartition implements Partition {
   public RaftPartition(
       final PartitionId partitionId,
       final RaftPartitionGroupConfig config,
-      final File dataDirectory,
-      final ThreadContextFactory threadContextFactory) {
+      final File dataDirectory) {
     this.partitionId = partitionId;
     this.config = config;
     this.dataDirectory = dataDirectory;
-    this.threadContextFactory = threadContextFactory;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -154,7 +150,6 @@ public class RaftPartition implements Partition {
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
         managementService.getMessagingService(),
-        threadContextFactory,
         journalIndexFactory);
   }
 

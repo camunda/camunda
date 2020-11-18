@@ -59,13 +59,13 @@ public class DataCfgTest {
   }
 
   @Test
-  public void shouldGetDiskAtomixStorageLevelAsDefault() {
+  public void shouldGetMappedAtomixStorageLevelAsDefault() {
     // given
     final var sutDataCfg = new DataCfg();
 
     // then
     final var actual = sutDataCfg.getAtomixStorageLevel();
-    assertThat(actual).isEqualTo(StorageLevel.DISK);
+    assertThat(actual).isEqualTo(StorageLevel.MAPPED);
   }
 
   @Test

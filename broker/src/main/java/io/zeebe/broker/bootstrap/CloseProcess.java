@@ -10,6 +10,7 @@ package io.zeebe.broker.bootstrap;
 import static io.zeebe.broker.bootstrap.StartProcess.takeDuration;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,9 +21,11 @@ public final class CloseProcess implements AutoCloseable {
 
   private final List<CloseStep> closeableSteps;
   private final String name;
+  private final BrokerStepMetrics brokerStepMetrics;
 
-  CloseProcess(final String name) {
+  CloseProcess(final String name, final BrokerStepMetrics brokerStepMetrics) {
     this.name = name;
+    this.brokerStepMetrics = brokerStepMetrics;
     closeableSteps = new ArrayList<>();
   }
 
@@ -54,6 +57,8 @@ public final class CloseProcess implements AutoCloseable {
             "Closing {} [{}/{}]: {}", name, index, closeableSteps.size(), closeableStep.getName());
         final long durationStepStarting =
             takeDuration(() -> closeableStep.getClosingFunction().close());
+        brokerStepMetrics.observeDurationForCloseStep(
+            closeableStep.getName(), durationStepStarting);
         LOG.debug(
             "Closing {} [{}/{}]: {} closed in {} ms",
             name,

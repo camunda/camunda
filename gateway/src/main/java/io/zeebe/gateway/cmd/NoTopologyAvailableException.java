@@ -8,7 +8,14 @@
 package io.zeebe.gateway.cmd;
 
 public final class NoTopologyAvailableException extends ClientException {
+  private static final String DEFAULT_MESSAGE =
+      "Expected to send the request to a partition in the topology, but gateway does not know broker topology."
+          + " Please try again later. If the error persists contact your zeebe operator.";
   private static final long serialVersionUID = 7035483927294101779L;
+
+  public NoTopologyAvailableException() {
+    this(DEFAULT_MESSAGE);
+  }
 
   public NoTopologyAvailableException(final String message) {
     super(message);

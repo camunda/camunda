@@ -152,10 +152,6 @@ public final class ConcurrentTimerEventTest {
             .workflowInstance(WorkflowInstanceIntent.ELEMENT_TERMINATING, eventActivated.getValue())
             .key(eventActivated.getKey())
             .causedBy(1),
-        RecordToWrite.event()
-            .workflowInstance(WorkflowInstanceIntent.ELEMENT_TERMINATED, eventActivated.getValue())
-            .key(eventActivated.getKey())
-            .causedBy(2),
         RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
             .key(timerCreated.getKey()));

@@ -7,10 +7,10 @@
  */
 package io.zeebe.db.impl.rocksdb;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
 
-  public static final Logger DB_LOGGER = new ZbLogger("io.zeebe.db");
+  public static final Logger DB_LOGGER = LoggerFactory.getLogger("io.zeebe.db");
 }

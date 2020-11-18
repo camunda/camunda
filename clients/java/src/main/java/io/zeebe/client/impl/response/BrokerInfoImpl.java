@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.response;
 
 import io.zeebe.client.api.response.BrokerInfo;
+import io.zeebe.client.api.response.PartitionBrokerHealth;
 import io.zeebe.client.api.response.PartitionBrokerRole;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
@@ -94,6 +95,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
     private final int partitionId;
     private final PartitionBrokerRole role;
+    private final PartitionBrokerHealth partitionBrokerHealth;
 
     PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
       partitionId = partition.getPartitionId();
@@ -107,6 +109,17 @@ public final class BrokerInfoImpl implements BrokerInfo {
             String.format(
                 "Unexpected partition broker role %s, should be one of %s",
                 partition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
+      }
+      if (partition.getHealth() == GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY) {
+        this.partitionBrokerHealth = PartitionBrokerHealth.HEALTHY;
+      } else if (partition.getHealth()
+          == GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY) {
+        this.partitionBrokerHealth = PartitionBrokerHealth.UNHEALTHY;
+      } else {
+        throw new RuntimeException(
+            String.format(
+                "Unexpected partition broker health %s, should be one of %s",
+                partition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
       }
     }
 
@@ -126,8 +139,20 @@ public final class BrokerInfoImpl implements BrokerInfo {
     }
 
     @Override
+    public PartitionBrokerHealth getHealth() {
+      return partitionBrokerHealth;
+    }
+
+    @Override
     public String toString() {
-      return "PartitionInfoImpl{" + "partitionId=" + partitionId + ", role=" + role + '}';
+      return "PartitionInfoImpl{"
+          + "partitionId="
+          + partitionId
+          + ", role="
+          + role
+          + ", health="
+          + partitionBrokerHealth
+          + '}';
     }
   }
 }

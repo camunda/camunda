@@ -71,7 +71,7 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public long getCurrentSnapshotIndex() {
     if (currentPersistedSnapshot.get() == null) {
-      return -1;
+      return 0;
     }
     return currentPersistedSnapshot.get().getIndex();
   }

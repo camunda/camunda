@@ -56,37 +56,12 @@ import java.util.Properties;
  * constructed. To load a configuration from a file, use {@link Atomix#builder(String)}.
  */
 public class AtomixBuilder extends AtomixClusterBuilder {
-  private final AtomixConfig config;
-  private final AtomixRegistry registry;
 
-  protected AtomixBuilder(final AtomixConfig config, final AtomixRegistry registry) {
-    super(config.getClusterConfig());
-    this.config = checkNotNull(config);
-    this.registry = checkNotNull(registry);
-  }
+  private final AtomixConfig atomixConfig;
 
-  /**
-   * Enables the shutdown hook.
-   *
-   * <p>When the shutdown hook is enabled, the instance will be shutdown when the JVM exits.
-   *
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withShutdownHookEnabled() {
-    return withShutdownHook(true);
-  }
-
-  /**
-   * Sets whether the shutdown hook is enabled.
-   *
-   * <p>When the shutdown hook is enabled, the instance will be shutdown when the JVM exits.
-   *
-   * @param enabled if <code>true</code> a shutdown hook will be registered
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withShutdownHook(final boolean enabled) {
-    config.setEnableShutdownHook(enabled);
-    return this;
+  AtomixBuilder(final AtomixConfig atomixConfig) {
+    super(atomixConfig.getClusterConfig());
+    this.atomixConfig = checkNotNull(atomixConfig);
   }
 
   /**
@@ -158,84 +133,7 @@ public class AtomixBuilder extends AtomixClusterBuilder {
    */
   public AtomixBuilder withPartitionGroups(
       final Collection<ManagedPartitionGroup> partitionGroups) {
-    partitionGroups.forEach(group -> config.addPartitionGroup(group.config()));
-    return this;
-  }
-
-  /**
-   * Adds a primitive partition group.
-   *
-   * <p>The provided group will be added to the list of already configured partition groups. The
-   * primitive partition groups represent partitions that are directly accessible to distributed
-   * primitives. To use partitioned primitives, at least one node must be configured with at least
-   * one data partition group.
-   *
-   * <pre>{@code
-   * Atomix atomix = Atomix.builder()
-   *   .withPartitionGroups(PrimaryBackupPartitionGroup.builder("data")
-   *     .withNumPartitions(32)
-   *     .build())
-   *   .build();
-   *
-   * }</pre>
-   *
-   * The partition group name is used to uniquely identify the group when constructing primitive
-   * instances. Partitioned primitives will reference a specific protocol and partition group within
-   * which to replicate the primitive.
-   *
-   * <p>The configured partition groups are replicated on whichever nodes define them in this
-   * configuration. That is, this node will participate in whichever partition groups are provided
-   * to this method.
-   *
-   * <p>The partition groups can also be configured in {@code atomix.conf} under the {@code
-   * partition-groups} key.
-   *
-   * @param partitionGroup the partition group to add
-   * @return the Atomix builder
-   * @throws NullPointerException if the partition group is null
-   */
-  public AtomixBuilder addPartitionGroup(final ManagedPartitionGroup partitionGroup) {
-    config.addPartitionGroup(partitionGroup.config());
-    return this;
-  }
-
-  /**
-   * Requires explicit serializable type registration for user types.
-   *
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withTypeRegistrationRequired() {
-    return withTypeRegistrationRequired(true);
-  }
-
-  /**
-   * Sets whether serializable type registration is required for user types.
-   *
-   * @param required whether serializable type registration is required for user types
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withTypeRegistrationRequired(final boolean required) {
-    config.setTypeRegistrationRequired(required);
-    return this;
-  }
-
-  /**
-   * Enables compatible serialization for user types.
-   *
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withCompatibleSerialization() {
-    return withCompatibleSerialization(true);
-  }
-
-  /**
-   * Sets whether compatible serialization is enabled for user types.
-   *
-   * @param enabled whether compatible serialization is enabled for user types
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withCompatibleSerialization(final boolean enabled) {
-    config.setCompatibleSerialization(enabled);
+    partitionGroups.forEach(group -> atomixConfig.addPartitionGroup(group.config()));
     return this;
   }
 
@@ -371,24 +269,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   }
 
   @Override
-  public AtomixBuilder withMulticastEnabled() {
-    super.withMulticastEnabled();
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastEnabled(final boolean multicastEnabled) {
-    super.withMulticastEnabled(multicastEnabled);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastAddress(final Address address) {
-    super.withMulticastAddress(address);
-    return this;
-  }
-
-  @Override
   public AtomixBuilder setBroadcastInterval(final Duration interval) {
     super.setBroadcastInterval(interval);
     return this;
@@ -439,6 +319,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
    */
   @Override
   public Atomix build() {
-    return new Atomix(config, registry);
+    return new Atomix(atomixConfig);
   }
 }

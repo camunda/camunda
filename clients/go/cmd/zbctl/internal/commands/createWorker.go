@@ -128,13 +128,13 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 	if err != nil {
 		failJob(jobClient, job, fmt.Sprint("Unable to set variables", variables, "to complete job", key, err))
 	} else {
-		log.Println("Handler completed job", job.Key, "with variables", variables)
-
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
 		_, err = request.Send(ctx)
-		if err != nil {
+		if err == nil {
+			log.Println("Handler completed job", job.Key, "with variables", variables)
+		} else {
 			log.Println("Unable to complete job", key, err)
 		}
 	}

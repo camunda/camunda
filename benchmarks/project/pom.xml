@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>zeebe-benchmark</artifactId>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.3</version>
+    <version>0.26.0-SNAPSHOT</version>
     <relativePath>../../parent</relativePath>
   </parent>
 
@@ -27,8 +25,7 @@
     <version.java>11</version.java>
 
     <!-- dependency versions -->
-    <version.zeebe>0.24.3</version.zeebe>
-    <version.config>1.4.0</version.config>
+    <version.config>1.4.1</version.config>
 
     <!-- maven plugin versions -->
     <plugin.version.exec>1.6.0</plugin.version.exec>
@@ -51,7 +48,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${version.zeebe}</version>
     </dependency>
 
     <dependency>
@@ -133,8 +129,7 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>all-in-one</finalName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>io.zeebe.AllInOne</mainClass>
                 </transformer>
               </transformers>
@@ -150,8 +145,7 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>starter</finalName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>io.zeebe.Starter</mainClass>
                 </transformer>
               </transformers>
@@ -167,8 +161,7 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>worker</finalName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>io.zeebe.Worker</mainClass>
                 </transformer>
               </transformers>

@@ -13,6 +13,7 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ public class DiskSpaceMonitoringFailOverTest {
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldNotBeHealthyAfterLeaderChangeWhenNoDiskSpaceAvailable()
+  public void shouldPauseProcessorWhenNoDiskSpaceAvailableBeforeInstall()
       throws InterruptedException {
     // given
     final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
@@ -71,10 +72,24 @@ public class DiskSpaceMonitoringFailOverTest {
     clusteringRule.stopBrokerAndAwaitNewLeader(leaderId);
     final var newLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
 
+    // Force rescan of healthcheck
+    clusteringRule.getClock().addTime(Duration.ofSeconds(60));
+
     // then
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .untilAsserted(() -> assertThat(clusteringRule.isBrokerHealthy(newLeaderId)).isFalse());
+    // should install StreamProcessor and immediately pause it
+    Awaitility.await()
+        .until(
+            () ->
+                clusteringRule
+                        .getBroker(newLeaderId)
+                        .getBrokerAdminService()
+                        .getPartitionStatus()
+                        .get(1)
+                        .getStreamProcessorPhase()
+                    == Phase.PAUSED);
   }
 
   private void waitUntilDiskSpaceNotAvailable(final Broker broker) throws InterruptedException {

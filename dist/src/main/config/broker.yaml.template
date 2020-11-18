@@ -131,6 +131,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
       # logSegmentSize: 512MB
 
+      # Configure whether data log segment file channels should be memory mapped.
+      # WARNING: This setting has been deprecated. In future versions, log segment file channels will always be memory mapped.
+      #
+      # Zeebe reads the data log segment files using file channels.
+      # Memory mapping these should generally allow for faster processing,
+      # resulting in reduced cycle times (i.e. total duration of a single process instance).
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_USEMMAP.
+      # useMmap: true
+
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
       # snapshotPeriod: 15m
@@ -165,8 +175,9 @@
         # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
         # The expected property key names and values are derived from RocksDB's C implementation,
         # and are not limited to the provided examples below. Please look in RocksDB's SCM repo
-        # for the files: `cf_options.h` and `options_helper.cc`.
-        # WARNING: This setting should not be overridden using environment variables.
+        # for the files: `cf_options.h` and `options_helper.cc`. This setting can also be overridden
+        # using the environment variable ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_{PROPERTY_KEY_NAME}
+        # For example, `write_buffer_size` can be set using `ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE`.
         # columnFamilyOptions:
           # compaction_pri: "kOldestSmallestSeqFirst"
           # write_buffer_size: 67108864

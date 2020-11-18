@@ -26,6 +26,7 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -271,6 +272,7 @@ public final class RaftRolesTest {
                   .withMembers(memberIds)
                   .withDataDirectory(
                       new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
+                  .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
                   .build();
 
           final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();

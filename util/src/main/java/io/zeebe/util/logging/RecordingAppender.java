@@ -22,9 +22,8 @@ import org.apache.logging.log4j.core.appender.NullAppender;
  * afterwards through {@link #getAppendedEvents()}, in the order in which they were appended. The
  * default underlying appender is a {@link NullAppender}.
  *
- * <p>Note, that the RecordingAppender when used to record the log events of a {@link
- * io.zeebe.util.ZbLogger}, that the appender can only record logs starting at the enabled log
- * level.
+ * <p>Note, that the RecordingAppender when used to record the log events of a logger, that the
+ * appender can only record logs starting at the enabled log level.
  */
 // todo: move this class to zeebe-test-utils
 public final class RecordingAppender implements Appender {

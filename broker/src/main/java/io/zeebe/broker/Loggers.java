@@ -7,21 +7,24 @@
  */
 package io.zeebe.broker;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
-  public static final Logger CLUSTERING_LOGGER = new ZbLogger("io.zeebe.broker.clustering");
-  public static final Logger SYSTEM_LOGGER = new ZbLogger("io.zeebe.broker.system");
-  public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.broker.transport");
+  public static final Logger CLUSTERING_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.clustering");
+  public static final Logger SYSTEM_LOGGER = LoggerFactory.getLogger("io.zeebe.broker.system");
+  public static final Logger TRANSPORT_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.transport");
   public static final Logger WORKFLOW_REPOSITORY_LOGGER =
-      new ZbLogger("io.zeebe.broker.workflow.repository");
+      LoggerFactory.getLogger("io.zeebe.broker.workflow.repository");
 
-  public static final Logger EXPORTER_LOGGER = new ZbLogger("io.zeebe.broker.exporter");
-  public static final Logger DELETION_SERVICE = new ZbLogger("io.zeebe.broker.logstreams.delete");
+  public static final Logger EXPORTER_LOGGER = LoggerFactory.getLogger("io.zeebe.broker.exporter");
+  public static final Logger DELETION_SERVICE =
+      LoggerFactory.getLogger("io.zeebe.broker.logstreams.delete");
 
   public static Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.zeebe.broker.exporter.%s", exporterId);
-    return new ZbLogger(loggerName);
+    return LoggerFactory.getLogger(loggerName);
   }
 }

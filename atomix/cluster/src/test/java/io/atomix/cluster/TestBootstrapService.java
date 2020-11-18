@@ -16,23 +16,19 @@
  */
 package io.atomix.cluster;
 
-import io.atomix.cluster.messaging.BroadcastService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 
 /** Test bootstrap service. */
 public class TestBootstrapService implements BootstrapService {
+
   private final MessagingService messagingService;
   private final UnicastService unicastService;
-  private final BroadcastService broadcastService;
 
   public TestBootstrapService(
-      final MessagingService messagingService,
-      final UnicastService unicastService,
-      final BroadcastService broadcastService) {
+      final MessagingService messagingService, final UnicastService unicastService) {
     this.messagingService = messagingService;
     this.unicastService = unicastService;
-    this.broadcastService = broadcastService;
   }
 
   @Override
@@ -43,10 +39,5 @@ public class TestBootstrapService implements BootstrapService {
   @Override
   public UnicastService getUnicastService() {
     return unicastService;
-  }
-
-  @Override
-  public BroadcastService getBroadcastService() {
-    return broadcastService;
   }
 }

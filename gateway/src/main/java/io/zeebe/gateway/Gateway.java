@@ -107,17 +107,18 @@ public final class Gateway {
     } else {
       activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     }
-    final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
 
-    final ServerBuilder serverBuilder = serverBuilderFactory.apply(gatewayCfg);
+    final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
+    final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final ServerBuilder<?> serverBuilder = serverBuilderFactory.apply(gatewayCfg);
 
     if (gatewayCfg.getMonitoring().isEnabled()) {
       final MonitoringServerInterceptor monitoringInterceptor =
           MonitoringServerInterceptor.create(Configuration.allMetrics());
       serverBuilder.addService(
-          ServerInterceptors.intercept(endpointManager, monitoringInterceptor));
+          ServerInterceptors.intercept(gatewayGrpcService, monitoringInterceptor));
     } else {
-      serverBuilder.addService(endpointManager);
+      serverBuilder.addService(gatewayGrpcService);
     }
 
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
@@ -143,7 +144,7 @@ public final class Gateway {
         .permitKeepAliveWithoutCalls(false);
   }
 
-  private void setSecurityConfig(final ServerBuilder serverBuilder, final SecurityCfg security) {
+  private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
     if (security.getCertificateChainPath() == null) {
       throw new IllegalArgumentException(
           "Expected to find a valid path to a certificate chain but none was found. "
@@ -209,7 +210,7 @@ public final class Gateway {
     }
   }
 
-  public static enum Status {
+  public enum Status {
     INITIAL,
     STARTING,
     RUNNING,

@@ -15,5 +15,5 @@ fi
 namespace=$1
 
 kubens default
-kubectl delete namespace $namespace
+kubectl delete namespace $namespace --wait=false
 rm -r $namespace

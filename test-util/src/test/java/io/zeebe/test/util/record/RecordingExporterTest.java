@@ -100,6 +100,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public String getBrokerVersion() {
+      return null;
+    }
+
+    @Override
     public ValueType getValueType() {
       return VALUE_TYPE;
     }

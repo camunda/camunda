@@ -40,31 +40,32 @@ abstract class App implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
 
-  static void createApp(Function<AppCfg, Runnable> appFactory) {
+  static void createApp(final Function<AppCfg, Runnable> appFactory) {
     final Config config = ConfigFactory.load().getConfig("app");
     LOG.info("Starting app with config: {}", config.root().render());
     final AppCfg appCfg = ConfigBeanFactory.create(config, AppCfg.class);
     startMonitoringServer(appCfg);
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> stopMonitoringServer()));
+    Runtime.getRuntime().addShutdownHook(new Thread(App::stopMonitoringServer));
     monitoringInterceptor = MonitoringClientInterceptor.create(Configuration.allMetrics());
     appFactory.apply(appCfg).run();
   }
 
-  private static void startMonitoringServer(AppCfg appCfg) {
+  private static void startMonitoringServer(final AppCfg appCfg) {
     try {
       monitoringServer = new HTTPServer(appCfg.getMonitoringPort());
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (final IOException e) {
+      LOG.error("Problem on starting monitoring server.", e);
     }
   }
 
   private static void stopMonitoringServer() {
     if (monitoringServer != null) {
       monitoringServer.stop();
+      monitoringServer = null;
     }
   }
 
-  protected void printTopology(ZeebeClient client) {
+  void printTopology(final ZeebeClient client) {
     while (true) {
       try {
         final Topology topology = client.newTopologyRequest().send().join();
@@ -77,7 +78,7 @@ abstract class App implements Runnable {
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
         break;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         // retry
       }
     }
@@ -86,24 +87,24 @@ abstract class App implements Runnable {
   protected String readVariables(final String payloadPath) {
     try {
       final var classLoader = App.class.getClassLoader();
-      try (InputStream fromResource = classLoader.getResourceAsStream(payloadPath)) {
+      try (final InputStream fromResource = classLoader.getResourceAsStream(payloadPath)) {
         if (fromResource != null) {
           return tryReadVariables(fromResource);
         }
         // unable to find from resources, try as regular file
-        try (InputStream fromFile = new FileInputStream(payloadPath)) {
+        try (final InputStream fromFile = new FileInputStream(payloadPath)) {
           return tryReadVariables(fromFile);
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedExecutionException(e);
     }
   }
 
   private String tryReadVariables(final InputStream inputStream) throws IOException {
     final StringBuilder stringBuilder = new StringBuilder();
-    try (InputStreamReader reader = new InputStreamReader(inputStream)) {
-      try (BufferedReader br = new BufferedReader(reader)) {
+    try (final InputStreamReader reader = new InputStreamReader(inputStream)) {
+      try (final BufferedReader br = new BufferedReader(reader)) {
         String line;
         while ((line = br.readLine()) != null) {
           stringBuilder.append(line).append("\n");

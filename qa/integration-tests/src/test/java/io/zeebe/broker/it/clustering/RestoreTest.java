@@ -41,13 +41,12 @@ public final class RestoreTest {
             cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
             cfg.getData().setLogIndexDensity(1);
             cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
-            cfg.getData().setUseMmap(false);
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
           config ->
               config
-                  .brokerContactPoint(
+                  .gatewayAddress(
                       SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());

@@ -14,7 +14,7 @@ _Not all items need to be done depending on the issue and the pull request._
 
 Code changes:
 * [ ] The changes are backwards compatibility with previous versions
-* [ ] If it fixes a bug then PRs are created to [backport](https://github.com/zeebe-io/zeebe/compare/stable/0.24...develop?expand=1&template=backport_template.md&title=[Backport%200.24]) the fix to the last two minor versions
+* [ ] If it fixes a bug then PRs are created to [backport](https://github.com/zeebe-io/zeebe/compare/stable/0.24...develop?expand=1&template=backport_template.md&title=[Backport%200.24]) the fix to the last two minor versions. You can trigger a backport by assigning labels (e.g. `backport stable/0.25`) to the PR, in case that fails you need to create backports manually.
 
 Testing:
 * [ ] There are unit/integration tests that verify all acceptance criterias of the issue

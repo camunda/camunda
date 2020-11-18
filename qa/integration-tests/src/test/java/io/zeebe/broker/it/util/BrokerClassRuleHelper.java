@@ -8,14 +8,14 @@
 package io.zeebe.broker.it.util;
 
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.ZbLogger;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class BrokerClassRuleHelper extends TestWatcher {
 
-  public static final Logger LOG = new ZbLogger("io.zeebe.test");
+  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
 
   private String currentTestMethod;
 

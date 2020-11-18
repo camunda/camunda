@@ -17,11 +17,10 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
 public final class WorkflowInstanceRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated, WorkflowInstanceRecordValue {
+    implements WorkflowInstanceRecordValue {
 
   public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";

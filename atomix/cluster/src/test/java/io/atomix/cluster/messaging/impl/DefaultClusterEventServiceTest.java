@@ -58,13 +58,12 @@ import org.junit.Test;
 
 /** Cluster event service test. */
 public class DefaultClusterEventServiceTest {
+
   private static final Serializer SERIALIZER = Serializer.using(Namespaces.BASIC);
 
   private final TestMessagingServiceFactory messagingServiceFactory =
       new TestMessagingServiceFactory();
   private final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-  private final TestBroadcastServiceFactory broadcastServiceFactory =
-      new TestBroadcastServiceFactory();
 
   private final Map<Integer, Managed> managedMemberShipServices = new HashMap<>();
   private final Map<Integer, Managed> managedEventService = new HashMap<>();
@@ -97,8 +96,7 @@ public class DefaultClusterEventServiceTest {
     final BootstrapService bootstrapService1 =
         new TestBootstrapService(
             messagingService,
-            unicastServiceFactory.newUnicastService(localMember.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(localMember.address()).start().join());
     final ManagedClusterMembershipService managedClusterMembershipService =
         new DefaultClusterMembershipService(
             localMember,

@@ -26,11 +26,10 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+.worktree
 work/
 public/
 tngp-data
-docs/book
-docs/mdbook
 
 hs_err*.log
 /data/

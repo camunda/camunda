@@ -136,7 +136,6 @@ public class LongPollingActivateJobsTest {
 
     // then
     final var jobs = activateJobsResponse.join().getJobs();
-
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
   }
 
@@ -145,7 +144,7 @@ public class LongPollingActivateJobsTest {
     for (int i = 0; i < count; i++) {
       final ZeebeClient client =
           ZeebeClient.newClientBuilder()
-              .brokerContactPoint(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
+              .gatewayAddress(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
               .usePlaintext()
               .build();
 

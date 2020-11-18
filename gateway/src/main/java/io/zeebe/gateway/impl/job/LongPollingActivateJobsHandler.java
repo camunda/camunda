@@ -9,17 +9,16 @@ package io.zeebe.gateway.impl.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.EndpointManager;
+import com.google.rpc.Code;
+import com.google.rpc.Status;
+import io.grpc.protobuf.StatusProto;
 import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.metrics.LongPollingMetrics;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -80,7 +79,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   @Override
   public void activateJobs(
       final ActivateJobsRequest request,
-      final StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final LongPollingActivateJobsRequest longPollingRequest =
         new LongPollingActivateJobsRequest(request, responseObserver);
     activateJobs(longPollingRequest);
@@ -134,8 +133,8 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private void onCompleted(
       final InFlightLongPollingActivateJobsRequestsState state,
       final LongPollingActivateJobsRequest request,
-      final Integer remainingAmount,
-      final Boolean containedResourceExhaustedResponse) {
+      final int remainingAmount,
+      final boolean containedResourceExhaustedResponse) {
 
     if (remainingAmount == request.getMaxJobsToActivate()) {
       if (containedResourceExhaustedResponse) {
@@ -144,12 +143,13 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
               state.removeActiveRequest(request);
               final var type = request.getType();
               final var errorMsg = String.format(ERROR_MSG_ACTIVATED_EXHAUSTED, type);
-              request
-                  .getResponseObserver()
-                  .onError(
-                      EndpointManager.convertThrowable(
-                          new BrokerErrorException(
-                              new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, errorMsg))));
+              final var status =
+                  Status.newBuilder()
+                      .setCode(Code.RESOURCE_EXHAUSTED_VALUE)
+                      .setMessage(errorMsg)
+                      .build();
+
+              request.getResponseObserver().onError(StatusProto.toStatusException(status));
             });
       } else {
         actor.submit(

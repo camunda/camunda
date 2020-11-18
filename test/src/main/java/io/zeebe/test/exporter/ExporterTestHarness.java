@@ -17,7 +17,6 @@ import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;
 import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -27,6 +26,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ExporterTestHarness provides utilities to write unit tests for concrete implementations of the
@@ -35,7 +35,7 @@ import org.slf4j.Logger;
  */
 public class ExporterTestHarness {
 
-  private final Logger logger = new ZbLogger("io.zeebe.broker.exporter");
+  private final Logger logger = LoggerFactory.getLogger("io.zeebe.broker.exporter");
   private final MockController controller = new MockController();
   private final Exporter exporter;
   private final int partitionId = 0;

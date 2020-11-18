@@ -30,7 +30,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.TestBootstrapService;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.messaging.impl.TestBroadcastServiceFactory;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
@@ -72,7 +71,6 @@ public class DefaultClusterMembershipServiceTest {
   public void testClusterService() throws Exception {
     final TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
     final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-    final TestBroadcastServiceFactory broadcastServiceFactory = new TestBroadcastServiceFactory();
 
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
 
@@ -80,8 +78,7 @@ public class DefaultClusterMembershipServiceTest {
     final BootstrapService bootstrapService1 =
         new TestBootstrapService(
             messagingServiceFactory.newMessagingService(localMember1.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember1.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(localMember1.address()).start().join());
     final ManagedClusterMembershipService clusterService1 =
         new DefaultClusterMembershipService(
             localMember1,
@@ -98,8 +95,7 @@ public class DefaultClusterMembershipServiceTest {
     final BootstrapService bootstrapService2 =
         new TestBootstrapService(
             messagingServiceFactory.newMessagingService(localMember2.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember2.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(localMember2.address()).start().join());
     final ManagedClusterMembershipService clusterService2 =
         new DefaultClusterMembershipService(
             localMember2,
@@ -116,8 +112,7 @@ public class DefaultClusterMembershipServiceTest {
     final BootstrapService bootstrapService3 =
         new TestBootstrapService(
             messagingServiceFactory.newMessagingService(localMember3.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember3.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(localMember3.address()).start().join());
     final ManagedClusterMembershipService clusterService3 =
         new DefaultClusterMembershipService(
             localMember3,
@@ -159,8 +154,7 @@ public class DefaultClusterMembershipServiceTest {
     final BootstrapService ephemeralBootstrapService =
         new TestBootstrapService(
             messagingServiceFactory.newMessagingService(anonymousMember.address()).start().join(),
-            unicastServiceFactory.newUnicastService(anonymousMember.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(anonymousMember.address()).start().join());
     final ManagedClusterMembershipService ephemeralClusterService =
         new DefaultClusterMembershipService(
             anonymousMember,
@@ -250,7 +244,8 @@ public class DefaultClusterMembershipServiceTest {
   }
 
   private class TestClusterMembershipEventListener implements ClusterMembershipEventListener {
-    private BlockingQueue<ClusterMembershipEvent> queue =
+
+    private final BlockingQueue<ClusterMembershipEvent> queue =
         new ArrayBlockingQueue<ClusterMembershipEvent>(10);
 
     @Override

@@ -77,6 +77,11 @@ public final class TypedEventImpl implements TypedRecord {
   }
 
   @Override
+  public String getBrokerVersion() {
+    return metadata.getBrokerVersion().toString();
+  }
+
+  @Override
   public ValueType getValueType() {
     return metadata.getValueType();
   }

@@ -33,14 +33,13 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.concurrent.ThreadModel;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -230,18 +229,10 @@ public interface RaftServer {
    */
   void removeRoleChangeListener(RaftRoleChangeListener listener);
 
-  /**
-   * Adds a failure listener
-   *
-   * @param failureListener
-   */
+  /** Adds a failure listener */
   void addFailureListener(Runnable failureListener);
 
-  /**
-   * Removes a failure listener
-   *
-   * @param failureListener
-   */
+  /** Removes a failure listener */
   void removeFailureListener(Runnable failureListener);
 
   /**
@@ -560,22 +551,20 @@ public interface RaftServer {
 
     private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(750);
     private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-    private static final ThreadModel DEFAULT_THREAD_MODEL = ThreadModel.SHARED_THREAD_POOL;
-    private static final int DEFAULT_THREAD_POOL_SIZE =
-        Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4);
 
     protected String name;
     protected MemberId localMemberId;
     protected ClusterMembershipService membershipService;
     protected RaftServerProtocol protocol;
     protected RaftStorage storage;
+    protected RaftThreadContextFactory threadContextFactory;
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
-    protected ThreadModel threadModel = DEFAULT_THREAD_MODEL;
-    protected int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
-    protected ThreadContextFactory threadContextFactory;
+    protected Supplier<Random> randomFactory;
     protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
+    protected int maxAppendsPerFollower = 2;
+    protected int maxAppendBatchSize = 32 * 1024;
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -617,17 +606,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the server thread model.
-     *
-     * @param threadModel the server thread model
-     * @return the server builder
-     */
-    public Builder withThreadModel(final ThreadModel threadModel) {
-      this.threadModel = checkNotNull(threadModel, "threadModel cannot be null");
-      return this;
-    }
-
-    /**
      * Sets the storage module.
      *
      * @param storage The storage module.
@@ -636,6 +614,31 @@ public interface RaftServer {
      */
     public Builder withStorage(final RaftStorage storage) {
       this.storage = checkNotNull(storage, "storage cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the threadContextFactory used to create raft threadContext
+     *
+     * @param threadContextFactory The RaftThreadContextFactory
+     * @return The Raft server builder.
+     * @throws NullPointerException if {@code threadContextFactory} is null
+     */
+    public Builder withThreadContextFactory(final RaftThreadContextFactory threadContextFactory) {
+      this.threadContextFactory =
+          checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
+     * This factory is useful in testing, when we want to control the execution.
+     *
+     * @param randomFactory
+     * @return The Raft server builder.
+     */
+    public Builder withRandomFactory(final Supplier<Random> randomFactory) {
+      this.randomFactory = checkNotNull(randomFactory, "randomFactory cannot be null");
       return this;
     }
 
@@ -680,27 +683,26 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the server thread pool size.
+     * Sets the maximum append requests which are sent per follower at once. Default is 2.
      *
-     * @param threadPoolSize The server thread pool size.
+     * @param maxAppendsPerFollower the maximum appends send per follower
      * @return The server builder.
      */
-    public Builder withThreadPoolSize(final int threadPoolSize) {
-      checkArgument(threadPoolSize > 0, "threadPoolSize must be positive");
-      this.threadPoolSize = threadPoolSize;
+    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
+      this.maxAppendsPerFollower = maxAppendsPerFollower;
       return this;
     }
 
     /**
-     * Sets the client thread context factory.
+     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
      *
-     * @param threadContextFactory the client thread context factory
-     * @return the server builder
-     * @throws NullPointerException if the factory is null
+     * @param maxAppendBatchSize the maximum batch size per append
+     * @return The server builder.
      */
-    public Builder withThreadContextFactory(final ThreadContextFactory threadContextFactory) {
-      this.threadContextFactory =
-          checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
+    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
+      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
+      this.maxAppendBatchSize = maxAppendBatchSize;
       return this;
     }
 

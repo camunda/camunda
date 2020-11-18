@@ -12,7 +12,6 @@ import static io.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVEN
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
@@ -31,7 +30,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected long sourceRecordPosition = -1;
 
   public TypedCommandWriterImpl(final LogStreamBatchWriter batchWriter) {
-    metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     this.batchWriter = batchWriter;
     typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));

@@ -15,6 +15,8 @@
  */
 package io.atomix.utils.serializer;
 
+import com.google.common.collect.ImmutableList;
+import io.atomix.utils.serializer.NamespaceImpl.RegistrationBlock;
 import java.nio.ByteBuffer;
 
 public interface Namespace {
@@ -28,15 +30,6 @@ public interface Namespace {
    * @return serialized bytes
    */
   byte[] serialize(final Object obj);
-
-  /**
-   * Serializes given object to byte array using Kryo instance in pool.
-   *
-   * @param obj Object to serialize
-   * @param bufferSize maximum size of serialized bytes
-   * @return serialized bytes
-   */
-  byte[] serialize(final Object obj, final int bufferSize);
 
   /**
    * Serializes given object to byte buffer using Kryo instance in pool.
@@ -64,12 +57,5 @@ public interface Namespace {
    */
   <T> T deserialize(final ByteBuffer buffer);
 
-  /**
-   * Creates a new {@link Namespace} builder.
-   *
-   * @return builder
-   */
-  static NamespaceImpl.Builder builder() {
-    return new NamespaceImpl.Builder();
-  }
+  ImmutableList<RegistrationBlock> getRegisteredBlocks();
 }

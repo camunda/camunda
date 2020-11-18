@@ -32,10 +32,19 @@ public interface ZeebeClientBuilder {
 
   /**
    * @param contactPoint the IP socket address of a broker that the client can initially connect to.
-   *     Must be in format <code>host:port</code>. The default value is <code>127.0.0.1:51015</code>
-   *     .
+   *     Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500</code> .
+   * @deprecated Use {@link #gatewayAddress(java.lang.String)}. It's deprecated since 0.25.0, and
+   *     will be removed in 0.26.0
    */
+  @Deprecated
   ZeebeClientBuilder brokerContactPoint(String contactPoint);
+
+  /**
+   * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
+   *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
+   *     </code> .
+   */
+  ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
    * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.

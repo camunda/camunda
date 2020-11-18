@@ -19,6 +19,14 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   private final String name;
   private FailureListener failureListener;
+  /*
+  Multiple factors determine ZeebePartition's health :
+  * - servicesInstalled: indicates if role transition was successful and all services are installed
+  * - diskSpaceAvailable
+  */
+  private boolean servicesInstalled;
+  // We assume diskspace is available until otherwise notified
+  private boolean diskSpaceAvailable = true;
 
   public ZeebePartitionHealth(final int partitionId) {
     name = "ZeebePartition-" + partitionId;
@@ -34,9 +42,14 @@ class ZeebePartitionHealth implements HealthMonitorable {
     this.failureListener = failureListener;
   }
 
-  void setHealthStatus(final HealthStatus healthStatus) {
-    final var previousStatus = this.healthStatus;
-    this.healthStatus = healthStatus;
+  private void updateHealthStatus() {
+    final boolean healthy = diskSpaceAvailable && servicesInstalled;
+    final var previousStatus = healthStatus;
+    if (healthy) {
+      healthStatus = HealthStatus.HEALTHY;
+    } else {
+      healthStatus = HealthStatus.UNHEALTHY;
+    }
 
     if (previousStatus != healthStatus && failureListener != null) {
       switch (healthStatus) {
@@ -50,6 +63,16 @@ class ZeebePartitionHealth implements HealthMonitorable {
           break;
       }
     }
+  }
+
+  void setServicesInstalled(final boolean servicesInstalled) {
+    this.servicesInstalled = servicesInstalled;
+    updateHealthStatus();
+  }
+
+  void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
+    this.diskSpaceAvailable = diskSpaceAvailable;
+    updateHealthStatus();
   }
 
   public String getName() {

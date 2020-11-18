@@ -69,20 +69,18 @@ public final class RequestRetryHandler {
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     final var topology = topologyManager.getTopology();
-    if (topology != null) {
-      sendRequestWithRetry(
-          request,
-          requestSender,
-          partitionIdIteratorForType(topology.getPartitionsCount()),
-          responseConsumer,
-          throwableConsumer,
-          new ArrayList<>());
-    } else {
-      throwableConsumer.accept(
-          new NoTopologyAvailableException(
-              "Expected to send the request to a partition in the topology, but gateway does not know broker topology."
-                  + " Please try again later. If the error persists contact your zeebe operator."));
+    if (topology == null || topology.getPartitionsCount() == 0) {
+      throwableConsumer.accept(new NoTopologyAvailableException());
+      return;
     }
+
+    sendRequestWithRetry(
+        request,
+        requestSender,
+        partitionIdIteratorForType(topology.getPartitionsCount()),
+        responseConsumer,
+        throwableConsumer,
+        new ArrayList<>());
   }
 
   private <BrokerResponseT> void sendRequestWithRetry(

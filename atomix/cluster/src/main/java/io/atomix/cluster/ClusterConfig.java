@@ -26,12 +26,12 @@ import io.atomix.utils.config.Config;
 
 /** Cluster configuration. */
 public class ClusterConfig implements Config {
+
   private static final String DEFAULT_CLUSTER_NAME = "atomix";
 
   private String clusterId = DEFAULT_CLUSTER_NAME;
   private MemberConfig nodeConfig = new MemberConfig();
   private NodeDiscoveryConfig discoveryConfig;
-  private MulticastConfig multicastConfig = new MulticastConfig();
   private GroupMembershipProtocolConfig protocolConfig = new SwimMembershipProtocolConfig();
   private MembershipConfig membershipConfig = new MembershipConfig();
   private MessagingConfig messagingConfig = new MessagingConfig();
@@ -93,26 +93,6 @@ public class ClusterConfig implements Config {
    */
   public ClusterConfig setDiscoveryConfig(final NodeDiscoveryConfig discoveryConfig) {
     this.discoveryConfig = checkNotNull(discoveryConfig);
-    return this;
-  }
-
-  /**
-   * Returns the multicast configuration.
-   *
-   * @return the multicast configuration
-   */
-  public MulticastConfig getMulticastConfig() {
-    return multicastConfig;
-  }
-
-  /**
-   * Sets the multicast configuration.
-   *
-   * @param multicastConfig the multicast configuration
-   * @return the cluster configuration
-   */
-  public ClusterConfig setMulticastConfig(final MulticastConfig multicastConfig) {
-    this.multicastConfig = checkNotNull(multicastConfig);
     return this;
   }
 

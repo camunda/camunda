@@ -19,16 +19,12 @@ package io.atomix.cluster;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.discovery.MulticastDiscoveryConfig;
-import io.atomix.cluster.discovery.MulticastDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryConfig;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.impl.DefaultClusterMembershipService;
 import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
-import io.atomix.cluster.messaging.BroadcastService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
-import io.atomix.cluster.messaging.ManagedBroadcastService;
 import io.atomix.cluster.messaging.ManagedClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.ManagedMessagingService;
@@ -37,7 +33,6 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.cluster.messaging.impl.DefaultClusterCommunicationService;
 import io.atomix.cluster.messaging.impl.DefaultClusterEventService;
-import io.atomix.cluster.messaging.impl.NettyBroadcastService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
@@ -93,17 +88,15 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Cluster membership is determined by a configurable {@link NodeDiscoveryProvider}. To configure
  * the membership provider use {@link
- * AtomixClusterBuilder#withMembershipProvider(NodeDiscoveryProvider)}. By default, the {@link
- * MulticastDiscoveryProvider} will be used if multicast is {@link
- * AtomixClusterBuilder#withMulticastEnabled() enabled}, otherwise the {@link
+ * AtomixClusterBuilder#withMembershipProvider(NodeDiscoveryProvider)}. The {@link
  * BootstrapDiscoveryProvider} will be used if no provider is explicitly provided.
  */
 public class AtomixCluster implements BootstrapService, Managed<Void> {
+
   private static final String[] DEFAULT_RESOURCES = new String[] {"cluster"};
   private static final Logger LOGGER = LoggerFactory.getLogger(AtomixCluster.class);
   protected final ManagedMessagingService messagingService;
   protected final ManagedUnicastService unicastService;
-  protected final ManagedBroadcastService broadcastService;
   protected final NodeDiscoveryProvider discoveryProvider;
   protected final GroupMembershipProtocol membershipProtocol;
   protected final ManagedClusterMembershipService membershipService;
@@ -114,38 +107,18 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   private final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
-  public AtomixCluster(final String configFile) {
-    this(
-        loadConfig(
-            new File(System.getProperty("atomix.root", System.getProperty("user.dir")), configFile),
-            Thread.currentThread().getContextClassLoader()),
-        null);
-  }
-
-  public AtomixCluster(final File configFile) {
-    this(loadConfig(configFile, Thread.currentThread().getContextClassLoader()), null);
-  }
-
   public AtomixCluster(final ClusterConfig config, final Version version) {
-    this(
-        config,
-        version,
-        buildMessagingService(config),
-        buildUnicastService(config),
-        buildBroadcastService(config));
+    this(config, version, buildMessagingService(config), buildUnicastService(config));
   }
 
   protected AtomixCluster(
       final ClusterConfig config,
       final Version version,
       final ManagedMessagingService messagingService,
-      final ManagedUnicastService unicastService,
-      final ManagedBroadcastService broadcastService) {
+      final ManagedUnicastService unicastService) {
     this.messagingService =
         messagingService != null ? messagingService : buildMessagingService(config);
     this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
-    this.broadcastService =
-        broadcastService != null ? broadcastService : buildBroadcastService(config);
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
     membershipService =
@@ -251,20 +224,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   /**
-   * Returns the cluster broadcast service.
-   *
-   * <p>The broadcast service is used to broadcast messages to all nodes in the cluster via
-   * multicast. The broadcast service is disabled by default. To enable broadcast, the cluster must
-   * be configured with {@link AtomixClusterBuilder#withMulticastEnabled() multicast enabled}.
-   *
-   * @return the cluster broadcast service
-   */
-  @Override
-  public BroadcastService getBroadcastService() {
-    return broadcastService;
-  }
-
-  /**
    * Returns the cluster membership service.
    *
    * <p>The membership service manages cluster membership information and failure detection.
@@ -278,7 +237,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   /**
    * Returns the cluster communication service.
    *
-   * <p>The cluster communication service is used for high-level unicast, multicast, broadcast, and
+   * <p>The cluster communication service is used for high-level unicast, multicast, and
    * request-reply messaging.
    *
    * @return the cluster communication service
@@ -335,7 +294,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     return messagingService
         .start()
         .thenComposeAsync(v -> unicastService.start(), threadContext)
-        .thenComposeAsync(v -> broadcastService.start(), threadContext)
         .thenComposeAsync(v -> membershipService.start(), threadContext)
         .thenComposeAsync(v -> communicationService.start(), threadContext)
         .thenComposeAsync(v -> eventService.start(), threadContext)
@@ -360,8 +318,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
         .exceptionally(e -> logServiceStopError("eventService", e))
         .thenComposeAsync(v -> membershipService.stop(), threadContext)
         .exceptionally(e -> logServiceStopError("membershipService", e))
-        .thenComposeAsync(v -> broadcastService.stop(), threadContext)
-        .exceptionally(e -> logServiceStopError("broadcastService", e))
         .thenComposeAsync(v -> unicastService.stop(), threadContext)
         .exceptionally(e -> logServiceStopError("unicastService", e))
         .thenComposeAsync(v -> messagingService.stop(), threadContext)
@@ -398,19 +354,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
         config.getNodeConfig().getAddress(), config.getMessagingConfig());
   }
 
-  /** Builds a default broadcast service. */
-  protected static ManagedBroadcastService buildBroadcastService(final ClusterConfig config) {
-    return NettyBroadcastService.builder()
-        .withLocalAddress(config.getNodeConfig().getAddress())
-        .withGroupAddress(
-            new Address(
-                config.getMulticastConfig().getGroup().getHostAddress(),
-                config.getMulticastConfig().getPort(),
-                config.getMulticastConfig().getGroup()))
-        .withEnabled(config.getMulticastConfig().isEnabled())
-        .build();
-  }
-
   /** Builds a member location provider. */
   @SuppressWarnings("unchecked")
   protected static NodeDiscoveryProvider buildLocationProvider(final ClusterConfig config) {
@@ -418,11 +361,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     if (discoveryProviderConfig != null) {
       return discoveryProviderConfig.getType().newProvider(discoveryProviderConfig);
     }
-    if (config.getMulticastConfig().isEnabled()) {
-      return new MulticastDiscoveryProvider(new MulticastDiscoveryConfig());
-    } else {
-      return new BootstrapDiscoveryProvider(Collections.emptyList());
-    }
+
+    return new BootstrapDiscoveryProvider(Collections.emptyList());
   }
 
   /** Builds the group membership protocol. */

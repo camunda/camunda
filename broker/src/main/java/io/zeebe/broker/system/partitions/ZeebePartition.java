@@ -7,61 +7,26 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import static io.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPORTER_FACTORY;
-
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
-import io.zeebe.broker.exporter.repo.ExporterLoadException;
-import io.zeebe.broker.exporter.repo.ExporterRepository;
-import io.zeebe.broker.exporter.stream.ExporterDirector;
-import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.zeebe.broker.logstreams.AtomixLogCompactor;
-import io.zeebe.broker.logstreams.LogCompactor;
-import io.zeebe.broker.logstreams.LogDeletionService;
-import io.zeebe.broker.logstreams.state.StatePositionSupplier;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
-import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
-import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
-import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.zeebe.broker.system.partitions.impl.StateReplication;
-import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthMonitor;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.AsyncClosable;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -69,86 +34,35 @@ public final class ZeebePartition extends Actor
     implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final int EXPORTER_PROCESSOR_ID = 1003;
-  private static final String EXPORTER_NAME = "Exporter-%d";
-
-  private final PartitionMessagingService messagingService;
-  private final BrokerCfg brokerCfg;
-  private final RaftPartition atomixRaftPartition;
-  private final ExporterRepository exporterRepository = new ExporterRepository();
-
-  private final ActorScheduler scheduler;
-  private final SnapshotStoreSupplier snapshotStoreSupplier;
-  private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
-  private final CommandApiService commandApiService;
-  private final List<PartitionListener> partitionListeners;
-  private final List<ClosingStep> closingSteps = new ArrayList<>();
-  private final int partitionId;
-  private final int maxFragmentSize;
-  private final BrokerInfo localBroker;
-  private ActorFuture<Void> transitionFuture;
-  private LogStream logStream;
   private Role raftRole;
-  private SnapshotReplication stateReplication;
-  private StateControllerImpl snapshotController;
-  private ZeebeDb zeebeDb;
+
   private final String actorName;
-  private FailureListener failureListener;
-  private final HealthMonitor criticalComponentsHealthMonitor;
-  private final ZeebeIndexMapping zeebeIndexMapping;
+  private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
-  private AtomixLogStorage atomixLogStorage;
-  private long deferredCommitPosition;
   private final RaftPartitionHealth raftPartitionHealth;
   private final ZeebePartitionHealth zeebePartitionHealth;
   private long term;
-  private StreamProcessor streamProcessor;
-  private boolean diskSpaceAvailable;
 
-  public ZeebePartition(
-      final BrokerInfo localBroker,
-      final RaftPartition atomixRaftPartition,
-      final List<PartitionListener> partitionListeners,
-      final PartitionMessagingService messagingService,
-      final ActorScheduler actorScheduler,
-      final BrokerCfg brokerCfg,
-      final CommandApiService commandApiService,
-      final ZeebeIndexMapping zeebeIndexMapping,
-      final SnapshotStoreSupplier snapshotStoreSupplier,
-      final TypedRecordProcessorsFactory typedRecordProcessorsFactory) {
-    this.localBroker = localBroker;
-    this.atomixRaftPartition = atomixRaftPartition;
-    this.messagingService = messagingService;
-    this.brokerCfg = brokerCfg;
-    this.snapshotStoreSupplier = snapshotStoreSupplier;
-    this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
-    this.commandApiService = commandApiService;
-    this.partitionListeners = Collections.unmodifiableList(partitionListeners);
-    partitionId = atomixRaftPartition.id().id();
-    scheduler = actorScheduler;
-    maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
-    this.zeebeIndexMapping = zeebeIndexMapping;
+  private final PartitionContext context;
+  private final PartitionTransition transition;
+  private CompletableActorFuture<Void> closeFuture;
+  private ActorFuture<Void> currentTransitionFuture;
 
-    final var exporterEntries = brokerCfg.getExporters().entrySet();
-    // load and validate exporters
-    for (final var exporterEntry : exporterEntries) {
-      final var id = exporterEntry.getKey();
-      final var exporterCfg = exporterEntry.getValue();
-      try {
-        exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExporterJarLoadException e) {
-        throw new IllegalStateException(
-            "Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
+  public ZeebePartition(final PartitionContext context, final PartitionTransition transition) {
+    this.context = context;
+    this.transition = transition;
 
-    actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
-    criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
-    raftPartitionHealth = new RaftPartitionHealth(atomixRaftPartition, actor, this::onRaftFailed);
-    zeebePartitionHealth = new ZeebePartitionHealth(partitionId);
-    healthMetrics = new HealthMetrics(partitionId);
+    context.setActor(actor);
+    context.setDiskSpaceAvailable(true);
+
+    actorName = buildActorName(context.getNodeId(), "ZeebePartition-" + context.getPartitionId());
+    context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
+    raftPartitionHealth =
+        new RaftPartitionHealth(context.getRaftPartition(), actor, this::onRaftFailed);
+    zeebePartitionHealth = new ZeebePartitionHealth(context.getPartitionId());
+    healthMetrics = new HealthMetrics(context.getPartitionId());
     healthMetrics.setUnhealthy();
-    diskSpaceAvailable = true;
+    failureListeners = new ArrayList<>();
   }
 
   /**
@@ -162,15 +76,16 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
+    ActorFuture<Void> nextTransitionFuture = null;
     term = newTerm;
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          leaderTransition(newTerm);
+          nextTransitionFuture = leaderTransition(newTerm);
         }
         break;
       case INACTIVE:
-        inactiveTransition();
+        nextTransitionFuture = transitionToInactive();
         break;
       case PASSIVE:
       case PROMOTABLE:
@@ -178,90 +93,85 @@ public final class ZeebePartition extends Actor
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          followerTransition(newTerm);
+          nextTransitionFuture = followerTransition(newTerm);
         }
         break;
     }
 
+    if (nextTransitionFuture != null) {
+      currentTransitionFuture = nextTransitionFuture;
+    }
     LOG.debug("Partition role transitioning from {} to {}", raftRole, newRole);
     raftRole = newRole;
   }
 
-  private void leaderTransition(final long newTerm) {
-    onTransitionTo(this::transitionToLeader)
-        .onComplete(
-            (success, error) -> {
-              if (error == null) {
-                final List<ActorFuture<Void>> listenerFutures =
-                    partitionListeners.stream()
-                        .map(l -> l.onBecomingLeader(partitionId, newTerm, logStream))
-                        .collect(Collectors.toList());
-                actor.runOnCompletion(
-                    listenerFutures,
-                    t -> {
-                      // Compare with the current term in case a new role transition
-                      // happened
-                      if (t != null && term == newTerm) {
-                        onInstallFailure();
-                      }
-                    });
-                onRecoveredInternal();
-              } else {
-                LOG.error("Failed to install leader partition {}", partitionId, error);
-                onInstallFailure();
-              }
-            });
+  private ActorFuture<Void> leaderTransition(final long newTerm) {
+    final var leaderTransitionFuture = transition.toLeader();
+    leaderTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final List<ActorFuture<Void>> listenerFutures =
+                context.getPartitionListeners().stream()
+                    .map(
+                        l ->
+                            l.onBecomingLeader(
+                                context.getPartitionId(), newTerm, context.getLogStream()))
+                    .collect(Collectors.toList());
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  // Compare with the current term in case a new role transition happened
+                  if (t != null && term == newTerm) {
+                    onInstallFailure();
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
+            onInstallFailure();
+          }
+        });
+    return leaderTransitionFuture;
   }
 
-  private void followerTransition(final long newTerm) {
-    onTransitionTo(this::transitionToFollower)
-        .onComplete(
-            (success, error) -> {
-              if (error == null) {
-                final List<ActorFuture<Void>> listenerFutures =
-                    partitionListeners.stream()
-                        .map(l -> l.onBecomingFollower(partitionId, newTerm))
-                        .collect(Collectors.toList());
-                actor.runOnCompletion(
-                    listenerFutures,
-                    t -> {
-                      // Compare with the current term in case a new role transition
-                      // happened
-                      if (t != null && term == newTerm) {
-                        onInstallFailure();
-                      }
-                    });
-                onRecoveredInternal();
-              } else {
-                LOG.error("Failed to install follower partition {}", partitionId, error);
-                onInstallFailure();
-              }
-            });
+  private ActorFuture<Void> followerTransition(final long newTerm) {
+    final var followerTransitionFuture = transition.toFollower();
+    followerTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final List<ActorFuture<Void>> listenerFutures =
+                context.getPartitionListeners().stream()
+                    .map(l -> l.onBecomingFollower(context.getPartitionId(), newTerm))
+                    .collect(Collectors.toList());
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  // Compare with the current term in case a new role transition happened
+                  if (t != null && term == newTerm) {
+                    onInstallFailure();
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
+            onInstallFailure();
+          }
+        });
+    return followerTransitionFuture;
   }
 
-  private ActorFuture<Void> inactiveTransition() {
-    return onTransitionTo(this::transitionToInactive);
-  }
-
-  private void transitionToInactive(final CompletableActorFuture<Void> transitionComplete) {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.UNHEALTHY);
-    closePartition()
-        .onComplete(
-            (nothing, error) -> {
-              if (error != null) {
-                LOG.error("Unexpected exception on transition to inactive role!", error);
-                transitionComplete.completeExceptionally(error);
-                return;
-              }
-              transitionComplete.complete(null);
-            });
+  private ActorFuture<Void> transitionToInactive() {
+    zeebePartitionHealth.setServicesInstalled(false);
+    final var inactiveTransitionFuture = transition.toInactive();
+    currentTransitionFuture = inactiveTransitionFuture;
+    return inactiveTransitionFuture;
   }
 
   private CompletableFuture<Void> onRaftFailed() {
     final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
     actor.run(
         () -> {
-          final ActorFuture<Void> transitionComplete = inactiveTransition();
+          final ActorFuture<Void> transitionComplete = transitionToInactive();
           transitionComplete.onComplete(
               (v, t) -> {
                 if (t != null) {
@@ -274,341 +184,6 @@ public final class ZeebePartition extends Actor
     return inactiveTransitionFuture;
   }
 
-  private ActorFuture<Void> onTransitionTo(
-      final Consumer<CompletableActorFuture<Void>> roleTransition) {
-    final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
-    if (transitionFuture != null && !transitionFuture.isDone()) {
-      // wait until previous transition is complete
-      transitionFuture.onComplete((value, error) -> roleTransition.accept(nextTransitionFuture));
-    } else {
-      roleTransition.accept(nextTransitionFuture);
-    }
-    transitionFuture = nextTransitionFuture;
-    return transitionFuture;
-  }
-
-  private void transitionToFollower(final CompletableActorFuture<Void> transitionComplete) {
-    LOG.debug("Removing leader partition services for partition {}", atomixRaftPartition.id());
-    closePartition()
-        .onComplete(
-            (nothing, error) -> {
-              if (error != null) {
-                LOG.error("Unexpected exception on removing leader partition!", error);
-                transitionComplete.completeExceptionally(error);
-                return;
-              }
-
-              installFollowerPartition().onComplete(transitionComplete);
-            });
-  }
-
-  private ActorFuture<Void> installFollowerPartition() {
-    LOG.debug("Installing follower partition service for partition {}", atomixRaftPartition.id());
-
-    final CompletableActorFuture<Void> installFuture = new CompletableActorFuture<>();
-
-    installStorageServices()
-        .onComplete(
-            (deletionService, errorOnInstallation) -> {
-              if (errorOnInstallation == null) {
-                snapshotController.consumeReplicatedSnapshots();
-                installFuture.complete(null);
-              } else {
-                LOG.error("Unexpected error on install deletion service.", errorOnInstallation);
-                installFuture.completeExceptionally(errorOnInstallation);
-              }
-            });
-    return installFuture;
-  }
-
-  private void transitionToLeader(final CompletableActorFuture<Void> transitionComplete) {
-    LOG.debug("Removing follower partition service for partition {}", atomixRaftPartition.id());
-    closePartition()
-        .onComplete(
-            (nothing, error) -> {
-              if (error != null) {
-                LOG.error("Unexpected exception on removing follower partition!", error);
-                transitionComplete.completeExceptionally(error);
-                return;
-              }
-
-              installLeaderPartition().onComplete(transitionComplete);
-            });
-  }
-
-  private ActorFuture<Void> installLeaderPartition() {
-    LOG.debug("Installing leader partition service for partition {}", atomixRaftPartition.id());
-    final var installFuture = new CompletableActorFuture<Void>();
-
-    basePartitionInstallation()
-        .onComplete(
-            (success, errorOnBaseInstallation) -> {
-              if (errorOnBaseInstallation == null) {
-                registerSnapshotListenerForReplication();
-
-                try {
-                  snapshotController.recover();
-                  zeebeDb = snapshotController.openDb();
-                } catch (final Exception e) {
-                  onInstallFailure();
-                  LOG.error("Failed to recover from snapshot", e);
-                  installFuture.completeExceptionally(
-                      new IllegalStateException(
-                          String.format(
-                              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-                              partitionId),
-                          e));
-                  return;
-                }
-
-                installProcessingPartition(installFuture);
-              } else {
-                LOG.error("Unexpected error on base installation.", errorOnBaseInstallation);
-                installFuture.completeExceptionally(errorOnBaseInstallation);
-              }
-            });
-
-    return installFuture;
-  }
-
-  private ActorFuture<Void> basePartitionInstallation() {
-    final var installFuture = new CompletableActorFuture<Void>();
-    openLogStream()
-        .onComplete(
-            (log, error) -> {
-              if (error == null) {
-                addClosingStep("log stream", this::closeLogStream);
-                logStream = log;
-                if (deferredCommitPosition > 0) {
-                  logStream.setCommitPosition(deferredCommitPosition);
-                  deferredCommitPosition = -1;
-                }
-
-                registerHealthComponent(logStream.getLogName(), logStream);
-                installStorageServices().onComplete(installFuture);
-              } else {
-                LOG.error("Failed to install log stream for partition {}", partitionId, error);
-                installFuture.completeExceptionally(error);
-                onInstallFailure();
-              }
-            });
-    return installFuture;
-  }
-
-  private ActorFuture<Void> installStorageServices() {
-    final var controller = createSnapshotController();
-    addClosingStep("snapshot controller", this::closeSnapshotController);
-    snapshotController = controller;
-
-    final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
-    final LogDeletionService deletionService =
-        new LogDeletionService(
-            localBroker.getNodeId(),
-            partitionId,
-            logCompactor,
-            snapshotStoreSupplier.getPersistedSnapshotStore(atomixRaftPartition.name()));
-    addClosingStep("deletion service", deletionService);
-
-    return scheduler.submitActor(deletionService);
-  }
-
-  private void registerSnapshotListenerForReplication() {
-    addClosingStep("snapshot listener for replication", this::removeSnapshotListenerForReplication);
-    snapshotStoreSupplier
-        .getPersistedSnapshotStore(atomixRaftPartition.name())
-        .addSnapshotListener(snapshotController);
-  }
-
-  private ActorFuture<Void> removeSnapshotListenerForReplication() {
-    snapshotStoreSupplier
-        .getPersistedSnapshotStore(atomixRaftPartition.name())
-        .removeSnapshotListener(snapshotController);
-    return CompletableActorFuture.completed(null);
-  }
-
-  private StateControllerImpl createSnapshotController() {
-    final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
-    final RaftLogReader reader = createReader();
-    addClosingStep("state replication", this::closeStateReplication);
-    stateReplication =
-        shouldReplicateSnapshots()
-            ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
-            : new NoneSnapshotReplication();
-
-    final var databaseCfg = brokerCfg.getData().getRocksdb();
-    return new StateControllerImpl(
-        partitionId,
-        DefaultZeebeDbFactory.defaultFactory(databaseCfg.getColumnFamilyOptions()),
-        snapshotStoreSupplier.getConstructableSnapshotStore(atomixRaftPartition.name()),
-        snapshotStoreSupplier.getReceivableSnapshotStore(atomixRaftPartition.name()),
-        runtimeDirectory,
-        stateReplication,
-        new AtomixRecordEntrySupplierImpl(zeebeIndexMapping, reader),
-        StatePositionSupplier::getHighestExportedPosition);
-  }
-
-  private RaftLogReader createReader() {
-    final var reader = atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS);
-    addClosingStep(
-        "raft log reader",
-        () -> {
-          reader.close();
-          return CompletableActorFuture.completed(null);
-        });
-    return reader;
-  }
-
-  private boolean shouldReplicateSnapshots() {
-    return brokerCfg.getCluster().getReplicationFactor() > 1;
-  }
-
-  private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
-    streamProcessor = createStreamProcessor(zeebeDb);
-    addClosingStep("stream processor", streamProcessor);
-    streamProcessor
-        .openAsync()
-        .onComplete(
-            (value, processorFail) -> {
-              if (processorFail == null) {
-                if (!diskSpaceAvailable) {
-                  streamProcessor.pauseProcessing();
-                }
-                registerHealthComponent(streamProcessor.getName(), streamProcessor);
-                final DataCfg dataCfg = brokerCfg.getData();
-                installSnapshotDirector(streamProcessor, dataCfg)
-                    .onComplete(
-                        (nonResult, errorOnInstallSnapshotDirector) -> {
-                          if (errorOnInstallSnapshotDirector == null) {
-                            final var metricExporter =
-                                DEFAULT_DB_METRIC_EXPORTER_FACTORY.apply(
-                                    Integer.toString(partitionId), zeebeDb);
-
-                            installRocksDBMetricExporter(metricExporter);
-                            installExporter(zeebeDb).onComplete(installFuture);
-                          } else {
-                            LOG.error(
-                                "Unexpected error on installing async snapshot director.",
-                                errorOnInstallSnapshotDirector);
-                            installFuture.completeExceptionally(errorOnInstallSnapshotDirector);
-                          }
-                        });
-              } else {
-                LOG.error("Unexpected error on stream processor installation!", processorFail);
-                installFuture.completeExceptionally(processorFail);
-              }
-            });
-  }
-
-  private void installRocksDBMetricExporter(final ZeebeRocksDBMetricExporter metricExporter) {
-    final var metricsTimer =
-        actor.runAtFixedRate(
-            Duration.ofSeconds(5),
-            () -> {
-              if (zeebeDb != null) {
-                metricExporter.exportMetrics();
-              }
-            });
-    addClosingStep(
-        "RocksDB metric timer",
-        () -> {
-          metricsTimer.cancel();
-          return CompletableActorFuture.completed(null);
-        });
-  }
-
-  private StreamProcessor createStreamProcessor(final ZeebeDb zeebeDb) {
-    return StreamProcessor.builder()
-        .logStream(logStream)
-        .actorScheduler(scheduler)
-        .zeebeDb(zeebeDb)
-        .nodeId(localBroker.getNodeId())
-        .commandResponseWriter(commandApiService.newCommandResponseWriter())
-        .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
-        .streamProcessorFactory(
-            (processingContext) -> {
-              final ActorControl actor = processingContext.getActor();
-              final ZeebeState zeebeState = processingContext.getZeebeState();
-              return typedRecordProcessorsFactory.createTypedStreamProcessor(
-                  actor, zeebeState, processingContext);
-            })
-        .build();
-  }
-
-  private ActorFuture<Void> installSnapshotDirector(
-      final StreamProcessor streamProcessor, final DataCfg dataCfg) {
-    final Duration snapshotPeriod = dataCfg.getSnapshotPeriod();
-    final var asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            localBroker.getNodeId(),
-            streamProcessor,
-            snapshotController,
-            logStream,
-            snapshotPeriod);
-    addClosingStep("snapshot director", asyncSnapshotDirector);
-    return scheduler.submitActor(asyncSnapshotDirector);
-  }
-
-  private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
-    final var exporterDescriptors = exporterRepository.getExporters().values();
-
-    final ExporterDirectorContext context =
-        new ExporterDirectorContext()
-            .id(EXPORTER_PROCESSOR_ID)
-            .name(
-                buildActorName(localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
-            .logStream(logStream)
-            .zeebeDb(zeebeDb)
-            .descriptors(exporterDescriptors);
-
-    final var exporterDirector = new ExporterDirector(context);
-    addClosingStep("exporter director", exporterDirector);
-
-    return exporterDirector.startAsync(scheduler);
-  }
-
-  private ActorFuture<Void> closeLogStream() {
-    if (logStream == null) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    final LogStream logStreamToClose = logStream;
-    logStream = null;
-    return logStreamToClose.closeAsync();
-  }
-
-  private ActorFuture<Void> closeSnapshotController() {
-    try {
-      if (snapshotController != null) {
-        snapshotController.close();
-        zeebeDb = null;
-      }
-    } catch (final Exception e) {
-      LOG.error(
-          "Unexpected error occurred while closing the state snapshot controller for partition {}.",
-          partitionId,
-          e);
-    } finally {
-      snapshotController = null;
-      zeebeDb = null;
-    }
-
-    return CompletableActorFuture.completed(null);
-  }
-
-  private ActorFuture<Void> closeStateReplication() {
-    try {
-      if (stateReplication != null) {
-        stateReplication.close();
-      }
-    } catch (final Exception e) {
-      LOG.error("Unexpected error closing state replication for partition {}", partitionId, e);
-    } finally {
-      stateReplication = null;
-    }
-
-    return CompletableActorFuture.completed(null);
-  }
-
   @Override
   public String getName() {
     return actorName;
@@ -616,34 +191,59 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    atomixLogStorage = AtomixLogStorage.ofPartition(zeebeIndexMapping, atomixRaftPartition);
-    atomixRaftPartition.addRoleChangeListener(this);
-    criticalComponentsHealthMonitor.addFailureListener(this);
-    onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
+    context.setAtomixLogStorage(
+        AtomixLogStorage.ofPartition(context.getZeebeIndexMapping(), context.getRaftPartition()));
+    context.getRaftPartition().addRoleChangeListener(this);
+    context.getComponentHealthMonitor().addFailureListener(this);
+    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
   }
 
   @Override
   protected void onActorStarted() {
-    criticalComponentsHealthMonitor.startMonitoring();
-    criticalComponentsHealthMonitor.registerComponent(
-        raftPartitionHealth.getName(), raftPartitionHealth);
+    context.getComponentHealthMonitor().startMonitoring();
+    context
+        .getComponentHealthMonitor()
+        .registerComponent(raftPartitionHealth.getName(), raftPartitionHealth);
     // Add a component that keep track of health of ZeebePartition. This way
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
-    criticalComponentsHealthMonitor.registerComponent(
-        zeebePartitionHealth.getName(), zeebePartitionHealth);
+    context
+        .getComponentHealthMonitor()
+        .registerComponent(zeebePartitionHealth.getName(), zeebePartitionHealth);
   }
 
   @Override
   protected void onActorClosing() {
-    closePartition()
+    transitionToInactive()
         .onComplete(
-            (ok, failure) -> {
-              atomixRaftPartition.removeRoleChangeListener(this);
+            (nothing, err) -> {
+              context.getRaftPartition().removeRoleChangeListener(this);
 
-              criticalComponentsHealthMonitor.removeComponent(raftPartitionHealth.getName());
+              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
               raftPartitionHealth.close();
+              closeFuture.complete(null);
             });
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (closeFuture != null) {
+      return closeFuture;
+    }
+
+    closeFuture = new CompletableActorFuture<>();
+
+    actor.call(
+        () ->
+            // allows to await current transition to avoid concurrent modifications and
+            // transitioning
+            currentTransitionFuture.onComplete(
+                (nothing, err) -> {
+                  LOG.debug("Closing Zeebe Partition {}.", context.getPartitionId());
+                  super.closeAsync();
+                }));
+
+    return closeFuture;
   }
 
   @Override
@@ -654,80 +254,12 @@ public final class ZeebePartition extends Actor
     onInstallFailure();
   }
 
-  private void addClosingStep(final String name, final AsyncClosable closable) {
-    closingSteps.add(new ClosingStep(name, closable));
-  }
-
-  private CompletableActorFuture<Void> closePartition() {
-    // caution: this method may be called concurrently on role transition due to closing the actor
-    // - first, it is called by one of the transitionTo...() methods
-    // - then it is called by onActorClosing()
-    streamProcessor = null;
-
-    final var closingStepsInReverseOrder = new ArrayList<>(closingSteps);
-    Collections.reverse(closingStepsInReverseOrder);
-
-    final var closingPartitionFuture = new CompletableActorFuture<Void>();
-    stepByStepClosing(closingPartitionFuture, closingStepsInReverseOrder);
-
-    return closingPartitionFuture;
-  }
-
-  private void stepByStepClosing(
-      final CompletableActorFuture<Void> closingFuture, final List<ClosingStep> actorsToClose) {
-    if (actorsToClose.isEmpty()) {
-      closingFuture.complete(null);
-      return;
-    }
-
-    final ClosingStep closingStep = actorsToClose.remove(0);
-    LOG.debug("Closing Zeebe-Partition-{}: {}", partitionId, closingStep.getName());
-
-    final var closeFuture = closingStep.getClosable().closeAsync();
-    closeFuture.onComplete(
-        (v, t) -> {
-          if (t == null) {
-            LOG.debug(
-                "Closing Zeebe-Partition-{}: {} closed successfully",
-                partitionId,
-                closingStep.getName());
-
-            // remove the completed step from the list in case that the closing is interrupted
-            closingSteps.remove(closingStep);
-
-            // closing the remaining steps
-            stepByStepClosing(closingFuture, actorsToClose);
-
-          } else {
-            LOG.error(
-                "Closing Zeebe-Partition-{}: {} failed to close",
-                partitionId,
-                closingStep.getName(),
-                t);
-            closingFuture.completeExceptionally(t);
-          }
-        });
-  }
-
-  private ActorFuture<LogStream> openLogStream() {
-    return LogStream.builder()
-        .withLogStorage(atomixLogStorage)
-        .withLogName("logstream-" + atomixRaftPartition.name())
-        .withNodeId(localBroker.getNodeId())
-        .withPartitionId(atomixRaftPartition.id().id())
-        .withMaxFragmentSize(maxFragmentSize)
-        .withActorScheduler(scheduler)
-        .buildAsync();
-  }
-
   @Override
   public void onFailure() {
     actor.run(
         () -> {
           healthMetrics.setUnhealthy();
-          if (failureListener != null) {
-            failureListener.onFailure();
-          }
+          failureListeners.forEach(FailureListener::onFailure);
         });
   }
 
@@ -736,42 +268,49 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          if (failureListener != null) {
-            failureListener.onRecovered();
-          }
+          failureListeners.forEach(FailureListener::onRecovered);
         });
   }
 
   private void onInstallFailure() {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.UNHEALTHY);
-    if (atomixRaftPartition.getRole() == Role.LEADER) {
+    zeebePartitionHealth.setServicesInstalled(false);
+    if (context.getRaftPartition().getRole() == Role.LEADER) {
       LOG.info("Unexpected failures occurred when installing leader services, stepping down");
-      atomixRaftPartition.stepDown();
+      context.getRaftPartition().stepDown();
     }
   }
 
   private void onRecoveredInternal() {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.HEALTHY);
+    zeebePartitionHealth.setServicesInstalled(true);
   }
 
   @Override
   public HealthStatus getHealthStatus() {
-    return criticalComponentsHealthMonitor.getHealthStatus();
+    return context.getComponentHealthMonitor().getHealthStatus();
   }
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListener = failureListener);
+    actor.run(
+        () -> {
+          failureListeners.add(failureListener);
+          if (getHealthStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered();
+          } else {
+            failureListener.onFailure();
+          }
+        });
   }
 
   @Override
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {
-          diskSpaceAvailable = false;
-          if (streamProcessor != null) {
+          context.setDiskSpaceAvailable(false);
+          zeebePartitionHealth.setDiskSpaceAvailable(false);
+          if (context.getStreamProcessor() != null) {
             LOG.warn("Disk space usage is above threshold. Pausing stream processor.");
-            streamProcessor.pauseProcessing();
+            context.getStreamProcessor().pauseProcessing();
           }
         });
   }
@@ -780,41 +319,67 @@ public final class ZeebePartition extends Actor
   public void onDiskSpaceAvailable() {
     actor.call(
         () -> {
-          diskSpaceAvailable = true;
-          if (streamProcessor != null) {
+          context.setDiskSpaceAvailable(true);
+          zeebePartitionHealth.setDiskSpaceAvailable(false);
+          if (context.getStreamProcessor() != null && context.shouldProcess()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
-            streamProcessor.resumeProcessing();
+            context.getStreamProcessor().resumeProcessing();
           }
         });
   }
 
-  private void registerHealthComponent(
-      final String name, final HealthMonitorable healthMonitorable) {
-    criticalComponentsHealthMonitor.registerComponent(name, healthMonitorable);
-
-    addClosingStep(
-        "health component registration",
+  public ActorFuture<Void> pauseProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
         () -> {
-          criticalComponentsHealthMonitor.removeComponent(name);
-          return CompletableActorFuture.completed(null);
+          try {
+            context.pauseProcessing();
+
+            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
+              context.getStreamProcessor().pauseProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause processing state", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeProcessing() {
+    actor.call(
+        () -> {
+          try {
+            context.resumeProcessing();
+            if (context.getStreamProcessor() != null && context.shouldProcess()) {
+              context.getStreamProcessor().resumeProcessing();
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not resume processing", e);
+          }
         });
   }
 
-  private static final class ClosingStep {
-    private final String name;
-    private final AsyncClosable closable;
+  public int getPartitionId() {
+    return context.getPartitionId();
+  }
 
-    private ClosingStep(final String name, final AsyncClosable closable) {
-      this.name = name;
-      this.closable = closable;
-    }
+  public PersistedSnapshotStore getSnapshotStore() {
+    return context.getRaftPartition().getServer().getPersistedSnapshotStore();
+  }
 
-    private String getName() {
-      return name;
-    }
+  public void triggerSnapshot() {
+    actor.call(
+        () -> {
+          if (context.getSnapshotDirector() != null) {
+            context.getSnapshotDirector().forceSnapshot();
+          }
+        });
+  }
 
-    private AsyncClosable getClosable() {
-      return closable;
-    }
+  public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
+    return actor.call(() -> Optional.ofNullable(context.getStreamProcessor()));
   }
 }

@@ -7,6 +7,8 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
+import static org.agrona.collections.IntArrayList.DEFAULT_NULL_VALUE;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -19,6 +21,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
   private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
+  private final Int2ObjectHashMap<IntArrayList> healthyPartitionsPerBroker;
   private final Int2ObjectHashMap<String> brokerAddresses;
   private final Int2ObjectHashMap<String> brokerVersions;
   private final IntArrayList brokers;
@@ -34,6 +37,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       partitionLeaders.putAll(topology.partitionLeaders);
       partitionLeaderTerms.putAll(topology.partitionLeaderTerms);
       partitionFollowers.putAll(topology.partitionFollowers);
+      healthyPartitionsPerBroker.putAll(topology.healthyPartitionsPerBroker);
       brokerAddresses.putAll(topology.brokerAddresses);
       brokerVersions.putAll(topology.brokerVersions);
 
@@ -50,6 +54,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
     partitionLeaderTerms = new Int2ObjectHashMap<>();
     partitionFollowers = new Int2ObjectHashMap<>();
+    healthyPartitionsPerBroker = new Int2ObjectHashMap<>();
     brokerAddresses = new Int2ObjectHashMap<>();
     brokerVersions = new Int2ObjectHashMap<>();
     brokers = new IntArrayList(5, NODE_ID_NULL);
@@ -65,6 +70,25 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       if (followers != null) {
         followers.removeIf(follower -> follower == leaderId);
       }
+    }
+  }
+
+  public void setPartitionHealthy(final int brokerId, final int partitionId) {
+    final IntArrayList brokerHealthyPartitions = healthyPartitionsPerBroker.get(brokerId);
+    if (brokerHealthyPartitions != null) {
+      if (!brokerHealthyPartitions.containsInt(partitionId)) {
+        brokerHealthyPartitions.add(partitionId);
+      }
+    } else {
+      healthyPartitionsPerBroker.put(
+          brokerId, new IntArrayList(new int[] {partitionId}, 1, DEFAULT_NULL_VALUE));
+    }
+  }
+
+  public void setPartitionUnhealthy(final int brokerId, final int partitionId) {
+    final IntArrayList brokerHealthyPartitions = healthyPartitionsPerBroker.get(brokerId);
+    if (brokerHealthyPartitions != null && brokerHealthyPartitions.containsInt(partitionId)) {
+      brokerHealthyPartitions.removeInt(partitionId);
     }
   }
 
@@ -183,6 +207,16 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   @Override
   public String getBrokerVersion(final int brokerId) {
     return brokerVersions.get(brokerId);
+  }
+
+  @Override
+  public boolean isPartitionHealthy(final int brokerId, final int partition) {
+    final IntArrayList brokerHealthyPartitions = healthyPartitionsPerBroker.get(brokerId);
+    if (brokerHealthyPartitions == null) {
+      return false;
+    } else {
+      return brokerHealthyPartitions.containsInt(partition);
+    }
   }
 
   @Override

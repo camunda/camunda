@@ -10,18 +10,18 @@ package io.zeebe.snapshots.broker.impl;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a pending snapshot, that is a snapshot in the process of being written and has not yet
  * been committed to the store.
  */
 public final class FileBasedTransientSnapshot implements TransientSnapshot {
-  private static final Logger LOGGER = new ZbLogger(FileBasedTransientSnapshot.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTransientSnapshot.class);
 
   private final Path directory;
   private final FileBasedSnapshotStore snapshotStore;

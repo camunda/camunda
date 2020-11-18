@@ -43,6 +43,10 @@
       <artifactId>kryo</artifactId>
       <groupId>com.esotericsoftware</groupId>
     </dependency>
+    <dependency>
+      <artifactId>agrona</artifactId>
+      <groupId>org.agrona</groupId>
+    </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -60,6 +64,6 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.25.0-SNAPSHOT</version>
+    <version>0.26.0-SNAPSHOT</version>
   </parent>
 </project>

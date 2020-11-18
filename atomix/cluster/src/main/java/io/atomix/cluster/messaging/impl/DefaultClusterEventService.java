@@ -32,7 +32,8 @@ import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.time.LogicalTimestamp;
@@ -63,22 +64,21 @@ public class DefaultClusterEventService
 
   private static final Serializer SERIALIZER =
       Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .register(MemberId.class)
-              .register(LogicalTimestamp.class)
-              .register(WallClockTimestamp.class)
-              .setCompatible(true)
-              .build());
+          new FallbackNamespace(
+              new Builder()
+                  .register(Namespaces.BASIC)
+                  .register(MemberId.class)
+                  .register(LogicalTimestamp.class)
+                  .register(WallClockTimestamp.class)));
 
   private static final String SUBSCRIPTION_PROPERTY_NAME = "event-service-topics-subscribed";
   private final ClusterMembershipService membershipService;
   private final MessagingService messagingService;
   private final MemberId localMemberId;
-  private ScheduledExecutorService eventServiceExecutor;
   private final Map<String, InternalTopic> topics = Maps.newConcurrentMap();
   private final Map<MemberId, Set<String>> remoteMemberSubscriptions = Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
+  private ScheduledExecutorService eventServiceExecutor;
 
   public DefaultClusterEventService(
       final ClusterMembershipService membershipService, final MessagingService messagingService) {

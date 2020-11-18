@@ -17,7 +17,7 @@ public final class TopologyViewer {
     final String broker = "127.0.0.1:26500";
 
     final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
+        ZeebeClient.newClientBuilder().gatewayAddress(broker).usePlaintext();
 
     try (final ZeebeClient client = builder.build()) {
       System.out.println("Requesting topology with initial contact point " + broker);

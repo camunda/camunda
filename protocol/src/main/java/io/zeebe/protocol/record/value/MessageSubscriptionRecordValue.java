@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
  *
  * <p>See {@link MessageSubscriptionIntent} for intents.
  */
-public interface MessageSubscriptionRecordValue extends RecordValue {
+public interface MessageSubscriptionRecordValue extends RecordValue, WorkflowInstanceRelated {
 
   /** @return the workflow instance key tied to the subscription */
   long getWorkflowInstanceKey();

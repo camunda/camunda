@@ -17,6 +17,7 @@
 package io.atomix.raft.partition;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
@@ -34,13 +35,13 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
-import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
+import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import java.io.File;
@@ -66,7 +67,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private final String name;
   private final RaftPartitionGroupConfig config;
   private final int partitionSize;
-  private final ThreadContextFactory threadContextFactory;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
   private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
   private final String snapshotSubject;
@@ -84,12 +84,9 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
-    threadContextFactory =
-        new BlockingAwareThreadPoolContextFactory(
-            "raft-partition-group-" + name + "-%d", threadPoolSize, log);
     snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
-    buildPartitions(config, threadContextFactory)
+    buildPartitions(config)
         .forEach(
             p -> {
               partitions.put(p.id(), p);
@@ -98,8 +95,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     Collections.sort(sortedPartitionIds);
   }
 
-  private static Collection<RaftPartition> buildPartitions(
-      final RaftPartitionGroupConfig config, final ThreadContextFactory threadContextFactory) {
+  private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
     final List<RaftPartition> partitions = new ArrayList<>(config.getPartitions());
@@ -108,8 +104,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
               config,
-              new File(partitionsDir, String.valueOf(i + 1)),
-              threadContextFactory));
+              new File(partitionsDir, String.valueOf(i + 1))));
     }
     return partitions;
   }
@@ -230,7 +225,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
         .thenRun(
             () -> {
-              threadContextFactory.close();
               if (communicationService != null) {
                 communicationService.unsubscribe(snapshotSubject);
               }
@@ -277,14 +271,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     @Override
     public Namespace namespace() {
-      return Namespace.builder()
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
-          .register(RaftPartitionGroupConfig.class)
-          .register(RaftStorageConfig.class)
-          .register(Void.class) // RaftCompactionConfig
-          .register(StorageLevel.class)
-          .setCompatible(true)
-          .build();
+      return new FallbackNamespace(
+          new NamespaceImpl.Builder()
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
+              .register(RaftPartitionGroupConfig.class)
+              .register(RaftStorageConfig.class)
+              .register(Void.class) // RaftCompactionConfig
+              .register(StorageLevel.class));
     }
 
     @Override
@@ -376,6 +369,30 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
+     * Sets the maximum append requests which are sent per follower at once. Default is 2.
+     *
+     * @param maxAppendsPerFollower the maximum appends send per follower
+     * @return the Raft partition group builder
+     */
+    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
+      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      return this;
+    }
+
+    /**
+     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
+     *
+     * @param maxAppendBatchSize the maximum batch size per append
+     * @return the Raft partition group builder
+     */
+    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
+      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
+      config.setMaxAppendBatchSize(maxAppendBatchSize);
+      return this;
+    }
+
+    /**
      * Sets the storage level.
      *
      * @param storageLevel the storage level
@@ -453,22 +470,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Enables flush on commit.
-     *
-     * @return the Raft partition group builder
-     */
-    public Builder withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
      * Sets whether to flush logs to disk on commit.
      *
-     * @param flushOnCommit whether to flush logs to disk on commit
+     * @param flushExplicitly whether to flush logs to disk on commit
      * @return the Raft partition group builder
      */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      config.getStorageConfig().setFlushOnCommit(flushOnCommit);
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      config.getStorageConfig().setFlushExplicitly(flushExplicitly);
       return this;
     }
 

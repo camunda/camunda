@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import java.io.ByteArrayInputStream;
@@ -33,15 +34,20 @@ public final class PublishMessageTest extends ClientTest {
 
   @Test
   public void shouldPublishMessage() {
+    // given
+    final long messageKey = 123L;
+    gatewayService.onPublishMessageRequest(messageKey);
+
     // when
-    client
-        .newPublishMessageCommand()
-        .messageName("name")
-        .correlationKey("key")
-        .timeToLive(Duration.ofDays(1))
-        .messageId("theId")
-        .send()
-        .join();
+    final PublishMessageResponse response =
+        client
+            .newPublishMessageCommand()
+            .messageName("name")
+            .correlationKey("key")
+            .timeToLive(Duration.ofDays(1))
+            .messageId("theId")
+            .send()
+            .join();
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
@@ -49,6 +55,7 @@ public final class PublishMessageTest extends ClientTest {
     assertThat(request.getCorrelationKey()).isEqualTo("key");
     assertThat(request.getMessageId()).isEqualTo("theId");
     assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
+    assertThat(response.getMessageKey()).isEqualTo(messageKey);
 
     rule.verifyDefaultRequestTimeout();
   }

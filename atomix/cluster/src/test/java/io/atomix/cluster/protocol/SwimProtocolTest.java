@@ -36,7 +36,6 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
-import io.atomix.cluster.messaging.impl.TestBroadcastServiceFactory;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
 import io.atomix.utils.Version;
@@ -68,7 +67,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private final Map<MemberId, SwimMembershipProtocol> protocols = Maps.newConcurrentMap();
   private TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
   private TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-  private TestBroadcastServiceFactory broadcastServiceFactory = new TestBroadcastServiceFactory();
   private Member member1;
   private Member member2;
   private Member member3;
@@ -93,7 +91,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   public void reset() {
     messagingServiceFactory = new TestMessagingServiceFactory();
     unicastServiceFactory = new TestUnicastServiceFactory();
-    broadcastServiceFactory = new TestBroadcastServiceFactory();
 
     member1 = member("1", "localhost", 5001, version1);
     member2 = member("2", "localhost", 5002, version1);
@@ -354,8 +351,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final BootstrapService bootstrap =
         new TestBootstrapService(
             messagingServiceFactory.newMessagingService(member.address()).start().join(),
-            unicastServiceFactory.newUnicastService(member.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
+            unicastServiceFactory.newUnicastService(member.address()).start().join());
     final NodeDiscoveryProvider provider = new BootstrapDiscoveryProvider(nodes);
     provider.join(bootstrap, member).join();
     final NodeDiscoveryService discovery =
@@ -445,6 +441,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   private class TestGroupMembershipEventListener implements GroupMembershipEventListener {
+
     private final BlockingDeque<GroupMembershipEvent> queue = new LinkedBlockingDeque<>(100);
 
     @Override

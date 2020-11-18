@@ -14,22 +14,32 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
 import io.zeebe.exporter.api.Exporter;
+import io.zeebe.exporter.api.context.Context;
+import io.zeebe.exporter.api.context.Context.RecordFilter;
 import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.record.Record;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.zeebe.protocol.record.RecordAssert;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,196 +48,275 @@ import org.springframework.util.unit.DataSize;
 public class SingleBrokerDataDeletionTest {
 
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final int SEGMENT_COUNT = 5;
+  private static final DataSize LOG_SEGMENT_SIZE = DataSize.ofKilobytes(8);
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(4);
+  // variable has to be a bit smaller than max message size otherwise it will be rejected
+  private static final int LARGE_VARIABLE_SIZE = (int) MAX_MESSAGE_SIZE.toBytes() / 2;
+  private static final String MAX_MESSAGE_SIZE_VARIABLE = "x".repeat(LARGE_VARIABLE_SIZE);
+  private static final int PARTITION_ID = 1;
 
   @Rule
-  public final ClusteringRule clusteringRule =
-      new ClusteringRule(1, 1, 1, this::configureCustomExporter);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1, this::configureBroker);
 
-  private final AtomicLong writtenRecords = new AtomicLong(0);
+  @After
+  public void cleanUp() {
+    ControllableExporter.updatePosition(true);
+    ControllableExporter.EXPORTED_RECORDS.set(0);
+    ControllableExporter.RECORD_TYPE_FILTER.set(r -> true);
+    ControllableExporter.VALUE_TYPE_FILTER.set(r -> true);
+  }
 
-  private void configureCustomExporter(final BrokerCfg brokerCfg) {
+  @Test
+  public void shouldCompactEvenIfSkippingAllRecordsInitially() {
+    // given - an exporter which does not update its own position and filters everything but
+    // deployment commands
+    final LogStream logStream = clusteringRule.getLogStream(1);
+    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    ControllableExporter.updatePosition(false);
+    ControllableExporter.RECORD_TYPE_FILTER.set(t -> t == RecordType.COMMAND);
+    ControllableExporter.VALUE_TYPE_FILTER.set(t -> t == ValueType.DEPLOYMENT);
+
+    // when - filling up the log with messages and NO deployments
+    publishEnoughMessagesForCompaction();
+    deployDummyProcess();
+    await("until at least one record is exported")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> assertThat(ControllableExporter.EXPORTED_RECORDS).hasValueGreaterThan(0));
+
+    // memorize first position pre compaction to compare later on
+    reader.seekToFirstEvent();
+    final long firstPositionPreCompaction = reader.getPosition();
+
+    // then - enforce compaction and make sure we have less records than we previously did
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(0));
+    await("until some data before the deployment command was compacted")
+        .untilAsserted(
+            () -> {
+              reader.seekToFirstEvent();
+              final long firstPositionPostCompaction = reader.getPosition();
+              assertThat(firstPositionPostCompaction).isGreaterThan(firstPositionPreCompaction);
+              assertContainsDeploymentCommand(reader);
+            });
+  }
+
+  @Test
+  public void shouldNotCompactUnacknowledgedEventsEvenIfSkipping() {
+    // given - an exporter which does not update its own position and only accepts deployment
+    // commands
+    final LogStream logStream = clusteringRule.getLogStream(PARTITION_ID);
+    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    ControllableExporter.updatePosition(false);
+    ControllableExporter.RECORD_TYPE_FILTER.set(t -> t == RecordType.COMMAND);
+    ControllableExporter.VALUE_TYPE_FILTER.set(t -> t == ValueType.DEPLOYMENT);
+
+    // when - filling up the log with messages and a single deployment
+    publishEnoughMessagesForCompaction();
+    deployDummyProcess();
+    publishEnoughMessagesForCompaction();
+    await("until at least one record is exported")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> assertThat(ControllableExporter.EXPORTED_RECORDS).hasValueGreaterThan(0));
+
+    // memorize first position pre compaction to compare later on
+    reader.seekToFirstEvent();
+    final long firstPositionPreCompaction = reader.getPosition();
+
+    // then - enforce compaction and ensure the accepted deployment is still present on the log
+    // after compaction
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(0));
+    await("until some data before the deployment command was compacted")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              reader.seekToFirstEvent();
+              final long firstPositionPostCompaction = reader.getPosition();
+              assertThat(firstPositionPostCompaction).isGreaterThan(firstPositionPreCompaction);
+              assertContainsDeploymentCommand(reader);
+            });
+  }
+
+  @Test
+  public void shouldNotCompactNotExportedEvents() {
+    // given
+    final LogStream logStream = clusteringRule.getLogStream(1);
+    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    final Broker broker = clusteringRule.getBroker(0);
+    ControllableExporter.updatePosition(true);
+
+    // when - filling the log with messages (updating the position), then a single deployment
+    // command, and more messages (all of which do not update the position)
+    publishEnoughMessagesForCompaction();
+    ControllableExporter.updatePosition(false);
+    deployDummyProcess();
+    publishEnoughMessagesForCompaction();
+
+    // then - force compaction and ensure we compacted only things before our sentinel command
+    reader.seekToFirstEvent();
+    long firstPositionPreCompaction = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    final FileBasedSnapshotMetadata firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    awaitUntilCompaction(reader, firstPositionPreCompaction);
+    assertContainsDeploymentCommand(reader);
+
+    // when - re-enabling updating the position
+    ControllableExporter.updatePosition(true);
+    publishEnoughMessagesForCompaction();
+
+    // then - ensure we can still compact
+    reader.seekToFirstEvent();
+    firstPositionPreCompaction = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
+    awaitUntilCompaction(reader, firstPositionPreCompaction);
+  }
+
+  @Test
+  public void shouldCompactWhenExporterHasBeenRemoved() {
+    // given - an exporter which updates its position and accepts all records
+    final int nodeId = 0;
+    LogStreamReader reader = clusteringRule.getLogStream(1).newLogStreamReader().join();
+    final Broker broker = clusteringRule.getBroker(nodeId);
+    ControllableExporter.updatePosition(true);
+
+    // when - filling the log with messages, and a single deployment command for which we will not
+    // update the position
+    publishEnoughMessagesForCompaction();
+    ControllableExporter.updatePosition(false);
+    deployDummyProcess();
+
+    // then - force compaction and ensure we compacted only things before our sentinel command
+    reader.seekToFirstEvent();
+    final long firstPositionPreCompaction = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    final FileBasedSnapshotMetadata firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    awaitUntilCompaction(reader, firstPositionPreCompaction);
+    assertContainsDeploymentCommand(reader);
+
+    // when - restarting without the exporter
+    final var brokerCfg = clusteringRule.getBrokerCfg(nodeId);
+    brokerCfg.setExporters(Collections.emptyMap());
+    clusteringRule.stopBroker(nodeId);
+    clusteringRule.startBroker(nodeId);
+    publishEnoughMessagesForCompaction();
+
+    // then - force compaction, and expect the deployment command to have been removed
+    reader = clusteringRule.getLogStream(1).newLogStreamReader().join();
+    final long newFirstPositionPreCompaction = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
+    assertThat(newFirstPositionPreCompaction).isGreaterThan(firstPositionPreCompaction);
+    awaitUntilCompaction(reader, newFirstPositionPreCompaction);
+    assertDoesNotContainDeploymentCommand(reader);
+  }
+
+  private void awaitUntilCompaction(
+      final LogStreamReader reader, final long firstPositionPreCompaction) {
+    await("until some data was compacted")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              reader.seekToFirstEvent();
+              final long firstPositionPostCompaction = reader.getPosition();
+              assertThat(firstPositionPostCompaction).isGreaterThan(firstPositionPreCompaction);
+            });
+  }
+
+  private void deployDummyProcess() {
+    clusteringRule
+        .getClient()
+        .newDeployCommand()
+        .addWorkflowModel(
+            Bpmn.createExecutableProcess("process").startEvent().done(), "process.bpmn")
+        .send()
+        .join();
+  }
+
+  private void configureBroker(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
-    data.setLogSegmentSize(DataSize.ofKilobytes(8));
+    data.setLogSegmentSize(LOG_SEGMENT_SIZE);
     data.setLogIndexDensity(5);
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
+    brokerCfg.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(ControllableExporter.class.getName());
     brokerCfg.setExporters(Collections.singletonMap("snapshot-test-exporter", exporterCfg));
   }
 
-  @Test
-  public void shouldNotCompactNotExportedEvents() {
-    // given
-    final Broker broker = clusteringRule.getBroker(0);
-
-    final var logstream = clusteringRule.getLogStream(1);
-    final var reader = logstream.newLogStreamReader().join();
-
-    // - write records and update the exporter position
-    ControllableExporter.updatePosition(true);
-    fillSegments(broker, SEGMENT_COUNT);
-
-    // - write more records but don't update the exporter position
-    ControllableExporter.updatePosition(false);
-
-    final var filledSegmentCount = SEGMENT_COUNT * 2;
-    fillSegments(broker, filledSegmentCount);
-
-    // - trigger a snapshot creation
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
-
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(getSegmentsCount(broker))
-                    .describedAs("Expected less segments after a snapshot is taken")
-                    .isLessThan(filledSegmentCount));
-
-    // then verify that the log still contains the records that are not exported
-    final var firstNonExportedPosition =
-        ControllableExporter.NOT_EXPORTED_RECORDS.get(0).getPosition();
-
-    assertThat(hasRecordWithPosition(reader, firstNonExportedPosition))
-        .describedAs("Expected first non-exported record to be present in the log but not found.")
-        .isTrue();
-
-    // - write more records and update the exporter position again
-    final var segmentsBeforeSnapshot = getSegmentsCount(broker);
-
-    ControllableExporter.updatePosition(true);
-    fillSegments(broker, segmentsBeforeSnapshot + 1);
-
-    // - trigger the next snapshot creation
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
-
-    // then verify that the log is now compacted after the exporter position was updated
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(getSegmentsCount(broker))
-                    .describedAs("Expected less segments after a snapshot is taken")
-                    .isLessThan(segmentsBeforeSnapshot));
+  private void publishEnoughMessagesForCompaction() {
+    final int requiredMessageCount = (int) LOG_SEGMENT_SIZE.toBytes() / LARGE_VARIABLE_SIZE;
+    IntStream.range(0, requiredMessageCount + 1).forEach(this::publishMaxMessageSizeMessage);
   }
 
-  @Test
-  public void shouldCompactWhenExporterHasBeenRemoved() {
-    // given
-    final Broker broker = clusteringRule.getBroker(0);
-    ControllableExporter.updatePosition(true);
-    fillSegments(broker, SEGMENT_COUNT);
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    // create first snapshot with exporter positions
-    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
-
-    // restart with no exporter
-    final var brokerCfg = clusteringRule.getBrokerCfg(0);
-    brokerCfg.setExporters(Map.of());
-    clusteringRule.stopBroker(0);
-    clusteringRule.startBroker(0);
-
-    final var filledSegmentCount = SEGMENT_COUNT * 2;
-    writeSegments(broker, filledSegmentCount);
-
-    // when triggering new snapshot creation
-    final var segmentsCount = getSegmentsCount(broker);
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final var secondSnapshot = clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
-
-    // then
-    assertThat(firstSnapshot).isNotEqualTo(secondSnapshot);
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(getSegmentsCount(broker))
-                    .describedAs("Expected less segments after a snapshot is taken")
-                    .isLessThan(segmentsCount));
-  }
-
-  private void fillSegments(final Broker broker, final int segmentCount) {
-    writeSegments(broker, segmentCount);
-
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(ControllableExporter.EXPORTED_RECORDS.get())
-                    .describedAs("Expected all written records to be exported")
-                    .isGreaterThanOrEqualTo(writtenRecords.get()));
-  }
-
-  private void writeSegments(final Broker broker, final int segmentCount) {
-    while (getSegmentsCount(broker) <= segmentCount) {
-      writeToLog();
-      writtenRecords.incrementAndGet();
-    }
-  }
-
-  private void writeToLog() {
-
+  private void publishMaxMessageSizeMessage(final int key) {
     clusteringRule
         .getClient()
         .newPublishMessageCommand()
         .messageName("msg")
-        .correlationKey("key")
+        .correlationKey("msg-" + key)
+        .variables(Map.of("foo", MAX_MESSAGE_SIZE_VARIABLE))
         .send()
         .join();
   }
 
-  private int getSegmentsCount(final Broker broker) {
-    return getSegments(broker).size();
+  private Stream<Record<?>> newRecordStream(final LogStreamReader reader) {
+    final Spliterator<LoggedEvent> spliterator =
+        Spliterators.spliteratorUnknownSize(reader, Spliterator.ORDERED);
+    return StreamSupport.stream(spliterator, false)
+        .map(event -> (CopiedRecord<?>) CopiedRecords.createCopiedRecord(1, event));
   }
 
-  private Collection<Path> getSegments(final Broker broker) {
-    try {
-      return Files.list(clusteringRule.getSegmentsDirectory(broker))
-          .filter(path -> path.toString().endsWith(".log"))
-          .collect(Collectors.toList());
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  private void assertDoesNotContainDeploymentCommand(final LogStreamReader reader) {
+    assertThat(newRecordStream(reader))
+        .noneSatisfy(
+            r ->
+                RecordAssert.assertThat(r)
+                    .hasRecordType(RecordType.COMMAND)
+                    .hasValueType(ValueType.DEPLOYMENT));
   }
 
-  private boolean hasRecordWithPosition(final LogStreamReader reader, final long recordPosition) {
-    await()
-        .until(
-            () -> {
-              try {
-                reader.seek(recordPosition);
-                return reader.hasNext();
-
-              } catch (final Exception ignore) {
-                // may fail if the compaction is not completed yet
-                return false;
-              }
-            });
-
-    final var readerPosition = reader.next().getPosition();
-    return readerPosition == recordPosition;
-  }
-
-  @After
-  public void cleanUp() {
-    ControllableExporter.NOT_EXPORTED_RECORDS.clear();
-    ControllableExporter.updatePosition(true);
-    ControllableExporter.EXPORTED_RECORDS.set(0);
-
-    writtenRecords.set(0);
+  private void assertContainsDeploymentCommand(final LogStreamReader reader) {
+    assertThat(newRecordStream(reader))
+        .anySatisfy(
+            r ->
+                RecordAssert.assertThat(r)
+                    .hasRecordType(RecordType.COMMAND)
+                    .hasValueType(ValueType.DEPLOYMENT));
   }
 
   public static class ControllableExporter implements Exporter {
-    static final List<Record<?>> NOT_EXPORTED_RECORDS = new CopyOnWriteArrayList<>();
     static volatile boolean shouldExport = true;
 
     static final AtomicLong EXPORTED_RECORDS = new AtomicLong(0);
+    static final AtomicReference<Predicate<RecordType>> RECORD_TYPE_FILTER =
+        new AtomicReference<>(r -> true);
+    static final AtomicReference<Predicate<ValueType>> VALUE_TYPE_FILTER =
+        new AtomicReference<>(r -> true);
 
     private Controller controller;
 
     static void updatePosition(final boolean flag) {
       shouldExport = flag;
+    }
+
+    @Override
+    public void configure(final Context context) {
+      context.setFilter(
+          new RecordFilter() {
+            @Override
+            public boolean acceptType(final RecordType recordType) {
+              return RECORD_TYPE_FILTER.get().test(recordType);
+            }
+
+            @Override
+            public boolean acceptValue(final ValueType valueType) {
+              return VALUE_TYPE_FILTER.get().test(valueType);
+            }
+          });
     }
 
     @Override
@@ -239,8 +328,6 @@ public class SingleBrokerDataDeletionTest {
     public void export(final Record<?> record) {
       if (shouldExport) {
         controller.updateLastExportedRecordPosition(record.getPosition());
-      } else {
-        NOT_EXPORTED_RECORDS.add(record);
       }
 
       EXPORTED_RECORDS.incrementAndGet();

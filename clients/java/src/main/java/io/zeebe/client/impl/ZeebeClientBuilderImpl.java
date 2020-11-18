@@ -35,13 +35,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+@SuppressWarnings({
+  "java:S4144",
+  "java:S1448",
+  "java:S1541",
+  "java:S138"
+}) // Because method getBrokerContactPoint will be removed and this issue will be fixed
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
-  private String brokerContactPoint = "0.0.0.0:26500";
+  private String gatewayAddress = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private float defaultJobWorkerMinJobsActiveRatio = 0.3f;
@@ -57,7 +63,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public String getBrokerContactPoint() {
-    return brokerContactPoint;
+    return gatewayAddress;
+  }
+
+  @Override
+  public String getGatewayAddress() {
+    return gatewayAddress;
   }
 
   @Override
@@ -127,6 +138,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
+
+    if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
+      gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
+    }
+
     if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT)) {
       brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
     }
@@ -190,7 +206,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
-    brokerContactPoint = contactPoint;
+    gatewayAddress = contactPoint;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
+    this.gatewayAddress = gatewayAddress;
     return this;
   }
 
@@ -306,7 +328,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public String toString() {
     final StringBuilder sb = new StringBuilder();
 
-    appendProperty(sb, "brokerContactPoint", brokerContactPoint);
+    appendProperty(sb, "brokerContactPoint", gatewayAddress);
+    appendProperty(sb, "gatewayAddress", gatewayAddress);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "defaultJobWorkerMinJobsActiveRatio", defaultJobWorkerMinJobsActiveRatio);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
@@ -335,9 +358,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private CredentialsProvider createDefaultCredentialsProvider() {
     final OAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newCredentialsProviderBuilder();
-    final int separatorIndex = brokerContactPoint.lastIndexOf(':');
+    final int separatorIndex = gatewayAddress.lastIndexOf(':');
     if (separatorIndex > 0) {
-      builder.audience(brokerContactPoint.substring(0, separatorIndex));
+      builder.audience(gatewayAddress.substring(0, separatorIndex));
     }
 
     return builder.build();

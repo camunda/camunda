@@ -30,4 +30,17 @@ public final class ClusterCfgTest {
 
     assertThat(actual).isEqualTo(expected);
   }
+
+  @Test
+  public void shouldGeneratePartitionIds() {
+    // given
+    final ClusterCfg clusterCfg = new ClusterCfg();
+    clusterCfg.setPartitionsCount(8);
+
+    // when
+    clusterCfg.init(new BrokerCfg(), "");
+
+    // then
+    assertThat(clusterCfg.getPartitionIds()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+  }
 }

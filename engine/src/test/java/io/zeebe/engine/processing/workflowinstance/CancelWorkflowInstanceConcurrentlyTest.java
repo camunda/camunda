@@ -106,6 +106,9 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
   public BpmnModelInstance workflow;
 
   @Parameter(2)
+  public int expectedActivatableJobs;
+
+  @Parameter(3)
   public List<String> expectedTerminatedElementIds;
 
   private long workflowInstanceKey;
@@ -115,10 +118,10 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"sequential flow", SEQUENTIAL_FLOW, Arrays.asList(PROCESS_ID)},
-      {"parallel flow", PARALLEL_FLOW, Arrays.asList("parallel-task", PROCESS_ID)},
-      {"sub-process", SUB_PROCESS, Arrays.asList("parallel-task", "sub-process", PROCESS_ID)},
-      {"multi-instance", MULTI_INSTANCE, Arrays.asList(ELEMENT_ID, ELEMENT_ID, PROCESS_ID)},
+      {"sequential flow", SEQUENTIAL_FLOW, 1, Arrays.asList(PROCESS_ID)},
+      {"parallel flow", PARALLEL_FLOW, 2, Arrays.asList("parallel-task", PROCESS_ID)},
+      {"sub-process", SUB_PROCESS, 2, Arrays.asList("parallel-task", "sub-process", PROCESS_ID)},
+      {"multi-instance", MULTI_INSTANCE, 2, Arrays.asList(ELEMENT_ID, ELEMENT_ID, PROCESS_ID)},
     };
   }
 
@@ -140,6 +143,13 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             .withIntent(ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
+
+    // wait for all jobs to appear
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(expectedActivatableJobs))
+        .hasSize(expectedActivatableJobs);
 
     createdJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)

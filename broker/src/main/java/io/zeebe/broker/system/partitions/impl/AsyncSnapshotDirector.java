@@ -101,6 +101,10 @@ public final class AsyncSnapshotDirector extends Actor {
     return getName() + "-wait-for-endPosition-committed";
   }
 
+  public void forceSnapshot() {
+    actor.call(this::prepareTakingSnapshot);
+  }
+
   private void prepareTakingSnapshot() {
     if (takingSnapshot) {
       return;

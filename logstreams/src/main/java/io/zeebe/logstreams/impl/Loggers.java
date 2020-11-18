@@ -7,14 +7,15 @@
  */
 package io.zeebe.logstreams.impl;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
 
-  public static final Logger LOGSTREAMS_LOGGER = new ZbLogger("io.zeebe.logstreams");
-  public static final Logger PROCESSOR_LOGGER = new ZbLogger("io.zeebe.processor");
-  public static final Logger SNAPSHOT_LOGGER = new ZbLogger("io.zeebe.logstreams.snapshot");
+  public static final Logger LOGSTREAMS_LOGGER = LoggerFactory.getLogger("io.zeebe.logstreams");
+  public static final Logger PROCESSOR_LOGGER = LoggerFactory.getLogger("io.zeebe.processor");
+  public static final Logger SNAPSHOT_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.logstreams.snapshot");
 
   private Loggers() {}
 }

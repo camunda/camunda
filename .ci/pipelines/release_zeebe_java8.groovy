@@ -109,11 +109,11 @@ spec:
         stage('Maven Release') {
             steps {
                 container('maven') {
-                  sshagent(['camunda-jenkins-github-ssh']) {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                      sh '.ci/scripts/release/maven-release.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/maven-release.sh'
+                        }
                     }
-                  }
                 }
             }
         }
@@ -153,8 +153,8 @@ spec:
     post {
         failure {
             slackSend(
-              channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-              message: "Release job build ${currentBuild.absoluteUrl} failed!")
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Release job build ${currentBuild.absoluteUrl} failed!")
         }
     }
 }

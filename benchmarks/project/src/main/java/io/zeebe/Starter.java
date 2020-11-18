@@ -19,12 +19,17 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.StarterCfg;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +39,7 @@ public class Starter extends App {
 
   private final AppCfg appCfg;
 
-  Starter(AppCfg appCfg) {
+  Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
   }
 
@@ -59,35 +64,24 @@ public class Starter extends App {
     LOG.info("Creating an instance every {}ms", intervalMs);
 
     final String variables = readVariables(starterCfg.getPayloadPath());
-    executorService.scheduleAtFixedRate(
-        () -> {
-          try {
-            if (starterCfg.isWithResults()) {
-              requestFutures.put(
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables(variables)
-                      .withResult()
-                      .requestTimeout(starterCfg.getWithResultsTimeout())
-                      .send());
-            } else {
-              requestFutures.put(
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables(variables)
-                      .send());
-            }
-          } catch (Exception e) {
-            LOG.error("Error on creating new workflow instance", e);
-          }
-        },
-        0,
-        intervalMs,
-        TimeUnit.MILLISECONDS);
+    final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
+
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    final ScheduledFuture scheduledTask =
+        executorService.scheduleAtFixedRate(
+            () ->
+                runStarter(
+                    starterCfg,
+                    processId,
+                    requestFutures,
+                    client,
+                    variables,
+                    shouldContinue,
+                    countDownLatch),
+            0,
+            intervalMs,
+            TimeUnit.MILLISECONDS);
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
@@ -96,21 +90,74 @@ public class Starter extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
-                  executorService.shutdown();
-                  try {
-                    executorService.awaitTermination(60, TimeUnit.SECONDS);
-                  } catch (InterruptedException e) {
-                    e.printStackTrace();
+                  if (!executorService.isShutdown()) {
+                    executorService.shutdown();
+                    try {
+                      executorService.awaitTermination(60, TimeUnit.SECONDS);
+                    } catch (final InterruptedException e) {
+                      LOG.error("Shutdown executor service was interrupted", e);
+                    }
                   }
-                  client.close();
-                  responseChecker.close();
+                  if (responseChecker.isAlive()) {
+                    responseChecker.close();
+                  }
                 }));
+
+    // wait for starter to finish
+    try {
+      countDownLatch.await();
+    } catch (final InterruptedException e) {
+      LOG.error("Awaiting of count down latch was interrupted.", e);
+    }
+
+    LOG.info("Starter finished");
+
+    scheduledTask.cancel(true);
+    executorService.shutdown();
+    responseChecker.close();
+  }
+
+  private void runStarter(
+      final StarterCfg starterCfg,
+      final String processId,
+      final BlockingQueue<Future<?>> requestFutures,
+      final ZeebeClient client,
+      final String variables,
+      final BooleanSupplier shouldContinue,
+      final CountDownLatch countDownLatch) {
+    if (shouldContinue.getAsBoolean()) {
+      try {
+        if (starterCfg.isWithResults()) {
+          requestFutures.put(
+              client
+                  .newCreateInstanceCommand()
+                  .bpmnProcessId(processId)
+                  .latestVersion()
+                  .variables(variables)
+                  .withResult()
+                  .requestTimeout(starterCfg.getWithResultsTimeout())
+                  .send());
+        } else {
+          requestFutures.put(
+              client
+                  .newCreateInstanceCommand()
+                  .bpmnProcessId(processId)
+                  .latestVersion()
+                  .variables(variables)
+                  .send());
+        }
+      } catch (final Exception e) {
+        LOG.error("Error on creating new workflow instance", e);
+      }
+    } else {
+      countDownLatch.countDown();
+    }
   }
 
   private ZeebeClient createZeebeClient() {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
-            .brokerContactPoint(appCfg.getBrokerUrl())
+            .gatewayAddress(appCfg.getBrokerUrl())
             .numJobWorkerExecutionThreads(0)
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor);
@@ -122,23 +169,37 @@ public class Starter extends App {
     return builder.build();
   }
 
-  private void deployWorkflow(ZeebeClient client, String bpmnXmlPath) {
+  private void deployWorkflow(final ZeebeClient client, final String bpmnXmlPath) {
     while (true) {
       try {
         client.newDeployCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
         break;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.warn("Failed to deploy workflow, retrying", e);
         try {
           Thread.sleep(200);
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
           // ignore
         }
       }
     }
   }
 
-  public static void main(String[] args) {
+  private BooleanSupplier createContinuationCondition(final StarterCfg starterCfg) {
+    final int durationLimit = starterCfg.getDurationLimit();
+
+    if (durationLimit > 0) {
+      // if there is a duration limit
+      final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
+      // continue until time is up
+      return () -> LocalDateTime.now().isBefore(endTime);
+    } else {
+      // otherwise continue forever
+      return () -> true;
+    }
+  }
+
+  public static void main(final String[] args) {
     createApp(Starter::new);
   }
 }

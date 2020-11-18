@@ -23,7 +23,8 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
  *
  * <p>See {@link WorkflowInstanceSubscriptionIntent} for intents.
  */
-public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWithVariables {
+public interface WorkflowInstanceSubscriptionRecordValue
+    extends RecordValueWithVariables, WorkflowInstanceRelated {
   /** @return the workflow instance key */
   long getWorkflowInstanceKey();
 

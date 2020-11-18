@@ -93,7 +93,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           // If the member state doesn't already exist, create it.
           final RaftMemberContext state =
               new RaftMemberContext(
-                  new DefaultRaftMember(member.memberId(), member.getType(), updateTime), this);
+                  new DefaultRaftMember(member.memberId(), member.getType(), updateTime),
+                  this,
+                  raft.getMaxAppendsPerFollower());
           state.resetState(raft.getLog());
           members.add(state.getMember());
           remoteMembers.add(state);
@@ -352,28 +354,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return members != null ? members : List.of();
   }
 
-  /**
-   * Returns a list of passive members.
-   *
-   * @param comparator A comparator with which to sort the members list.
-   * @return The sorted members list.
-   */
-  public List<RaftMemberContext> getPassiveMemberStates(
-      final Comparator<RaftMemberContext> comparator) {
-    final List<RaftMemberContext> passiveMembers = new ArrayList<>(getPassiveMemberStates());
-    passiveMembers.sort(comparator);
-    return passiveMembers;
-  }
-
-  /**
-   * Returns a list of passive members.
-   *
-   * @return A list of passive members.
-   */
-  public List<RaftMemberContext> getPassiveMemberStates() {
-    return getRemoteMemberStates(RaftMember.Type.PASSIVE);
-  }
-
   /** Starts the join to the cluster. */
   private synchronized CompletableFuture<Void> join() {
     joinFuture = new CompletableFuture<>();
@@ -491,18 +471,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
   }
 
-  /** Resets the join timer. */
-  private void resetJoinTimer() {
-    cancelJoinTimer();
-    joinTimeout =
-        raft.getThreadContext()
-            .schedule(
-                raft.getElectionTimeout().multipliedBy(2),
-                () -> {
-                  join(getActiveMemberStates().iterator());
-                });
-  }
-
   /** Attempts to leave the cluster. */
   private void leave(final CompletableFuture<Void> future) {
     // Set a timer to retry the attempt to leave the cluster.
@@ -601,7 +569,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         if (state == null) {
           final DefaultRaftMember defaultMember =
               new DefaultRaftMember(member.memberId(), member.getType(), time);
-          state = new RaftMemberContext(defaultMember, this);
+          state = new RaftMemberContext(defaultMember, this, raft.getMaxAppendsPerFollower());
           state.resetState(raft.getLog());
           members.add(state.getMember());
           remoteMembers.add(state);

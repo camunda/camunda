@@ -17,7 +17,6 @@ package io.atomix.core;
 
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.discovery.MulticastDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.zeebe.test.util.socket.SocketUtil;
 import java.io.File;
@@ -38,6 +37,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public final class AtomixRule extends ExternalResource {
+
   private static final int TIMEOUT_IN_S = 90;
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File dataDir;
@@ -87,17 +87,13 @@ public final class AtomixRule extends ExternalResource {
                 })
             .collect(Collectors.toList());
 
-    return Atomix.builder()
+    return Atomix.builder(new AtomixConfig())
         .withClusterId("test")
         .withMemberId(String.valueOf(id))
         .withHost("localhost")
         .withPort(getAddress(id).port())
         .withProperties(properties)
-        .withMulticastEnabled()
-        .withMembershipProvider(
-            !nodes.isEmpty()
-                ? new BootstrapDiscoveryProvider(nodes)
-                : new MulticastDiscoveryProvider());
+        .withMembershipProvider(new BootstrapDiscoveryProvider(nodes));
   }
 
   private Address getAddress(final Integer memberId) {

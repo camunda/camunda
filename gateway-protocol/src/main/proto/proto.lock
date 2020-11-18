@@ -31,6 +31,18 @@
                 "integer": 1
               }
             ]
+          },
+          {
+            "name": "Partition.PartitionBrokerHealth",
+            "enum_fields": [
+              {
+                "name": "HEALTHY"
+              },
+              {
+                "name": "UNHEALTHY",
+                "integer": 1
+              }
+            ]
           }
         ],
         "messages": [
@@ -432,7 +444,14 @@
             ]
           },
           {
-            "name": "PublishMessageResponse"
+            "name": "PublishMessageResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              }
+            ]
           },
           {
             "name": "ResolveIncidentRequest",
@@ -524,6 +543,11 @@
                 "id": 2,
                 "name": "role",
                 "type": "PartitionBrokerRole"
+              },
+              {
+                "id": 3,
+                "name": "health",
+                "type": "PartitionBrokerHealth"
               }
             ]
           },

@@ -5,7 +5,7 @@ git config --global user.email "ci@camunda.com"
 git config --global user.name "camunda-jenkins"
 
 # trust github ssh key
-mkdir ~/.ssh/
+mkdir -p ~/.ssh/
 ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 # setup maven central gpg keys

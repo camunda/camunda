@@ -52,15 +52,15 @@ func (e ErrFieldNotFound) Error() string {
 //        Value string
 //    }{"name", "demo"}
 //    err := validation.ValidateStruct(&value,
-//         validation.Field(&a.Name, validation.Required),
-//         validation.Field(&a.Value, validation.Required, validation.Length(5, 10)),
+//        validation.Field(&a.Name, validation.Required),
+//        validation.Field(&a.Value, validation.Required, validation.Length(5, 10)),
 //    )
 //    fmt.Println(err)
 //    // Value: the length must be between 5 and 10.
 //
 // An error will be returned if validation fails.
 func ValidateStruct(structPtr interface{}, fields ...*FieldRules) error {
-	return validateStruct(nil, structPtr, fields...)
+	return ValidateStructWithContext(nil, structPtr, fields...)
 }
 
 // ValidateStructWithContext validates a struct with the given context.
@@ -68,10 +68,6 @@ func ValidateStruct(structPtr interface{}, fields ...*FieldRules) error {
 // validate struct fields with the provided context.
 // Please refer to ValidateStruct for the detailed instructions on how to use this function.
 func ValidateStructWithContext(ctx context.Context, structPtr interface{}, fields ...*FieldRules) error {
-	return validateStruct(ctx, structPtr, fields...)
-}
-
-func validateStruct(ctx context.Context, structPtr interface{}, fields ...*FieldRules) error {
 	value := reflect.ValueOf(structPtr)
 	if value.Kind() != reflect.Ptr || !value.IsNil() && value.Elem().Kind() != reflect.Struct {
 		// must be a pointer to a struct

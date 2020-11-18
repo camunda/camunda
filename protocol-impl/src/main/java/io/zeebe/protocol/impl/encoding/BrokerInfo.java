@@ -17,14 +17,17 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.protocol.impl.Loggers;
 import io.zeebe.protocol.record.BrokerInfoDecoder;
 import io.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
+import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionHealthDecoder;
 import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionLeaderTermsDecoder;
 import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionRolesDecoder;
 import io.zeebe.protocol.record.BrokerInfoEncoder;
 import io.zeebe.protocol.record.BrokerInfoEncoder.AddressesEncoder;
+import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionHealthEncoder;
 import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionLeaderTermsEncoder;
 import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionRolesEncoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.zeebe.protocol.record.PartitionHealthStatus;
 import io.zeebe.protocol.record.PartitionRole;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
@@ -45,6 +48,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
+// TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
+@SuppressWarnings({"squid:S1200", "squid:S1448"})
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
@@ -64,6 +69,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private final Map<DirectBuffer, DirectBuffer> addresses = new HashMap<>();
   private final Map<Integer, PartitionRole> partitionRoles = new HashMap<>();
   private final Map<Integer, Long> partitionLeaderTerms = new HashMap<>();
+  private final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
 
   private int nodeId;
   private int partitionsCount;
@@ -96,6 +102,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public void clearPartitions() {
     partitionRoles.clear();
     partitionLeaderTerms.clear();
+    partitionHealthStatuses.clear();
   }
 
   public int getNodeId() {
@@ -176,12 +183,32 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return partitionRoles;
   }
 
+  public Map<Integer, PartitionHealthStatus> getPartitionHealthStatuses() {
+    return partitionHealthStatuses;
+  }
+
   public Map<Integer, Long> getPartitionLeaderTerms() {
     return partitionLeaderTerms;
   }
 
   public BrokerInfo addPartitionRole(final Integer partitionId, final PartitionRole role) {
     partitionRoles.put(partitionId, role);
+    return this;
+  }
+
+  public BrokerInfo addPartitionHealth(
+      final Integer partitionId, final PartitionHealthStatus status) {
+    partitionHealthStatuses.put(partitionId, status);
+    return this;
+  }
+
+  public BrokerInfo setPartitionUnhealthy(final Integer partitionId) {
+    addPartitionHealth(partitionId, PartitionHealthStatus.UNHEALTHY);
+    return this;
+  }
+
+  public BrokerInfo setPartitionHealthy(final Integer partitionId) {
+    addPartitionHealth(partitionId, PartitionHealthStatus.HEALTHY);
     return this;
   }
 
@@ -195,6 +222,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return addPartitionRole(partitionId, PartitionRole.LEADER);
   }
 
+  // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
+  @SuppressWarnings("squid:S138")
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -246,6 +275,13 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       bodyDecoder.skipVersion();
     }
 
+    final PartitionHealthDecoder partitionHealthDecoder = bodyDecoder.partitionHealth();
+    while (partitionHealthDecoder.hasNext()) {
+      partitionHealthDecoder.next();
+      partitionHealthStatuses.put(
+          partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
+    }
+
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()
@@ -262,6 +298,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + AddressesEncoder.sbeHeaderSize()
             + PartitionRolesEncoder.sbeHeaderSize()
             + PartitionLeaderTermsEncoder.sbeHeaderSize()
+            + PartitionHealthEncoder.sbeHeaderSize()
             + versionHeaderLength()
             + version.capacity();
 
@@ -276,10 +313,13 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
     length += partitionRoles.size() * PartitionRolesEncoder.sbeBlockLength();
     length += partitionLeaderTerms.size() * PartitionLeaderTermsEncoder.sbeBlockLength();
+    length += partitionHealthStatuses.size() * PartitionHealthEncoder.sbeBlockLength();
 
     return length;
   }
 
+  // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
+  @SuppressWarnings("squid:S138")
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
@@ -333,6 +373,16 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     }
 
     bodyEncoder.putVersion(version, 0, version.capacity());
+
+    final int partitionHealthCount = partitionHealthStatuses.size();
+    final PartitionHealthEncoder partitionHealthEncoder =
+        bodyEncoder.partitionHealthCount(partitionHealthCount);
+
+    if (partitionHealthCount > 0) {
+      for (final Entry<Integer, PartitionHealthStatus> entry : partitionHealthStatuses.entrySet()) {
+        partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
+      }
+    }
   }
 
   public static BrokerInfo fromProperties(final Properties properties) {
@@ -391,6 +441,27 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
+  public BrokerInfo consumePartitionsHealth(
+      final IntConsumer partitionConsumer,
+      final IntConsumer partitionHealthyConsumer,
+      final IntConsumer partitionUnhealthyConsumer) {
+    partitionHealthStatuses.forEach(
+        (partition, health) -> {
+          partitionConsumer.accept(partition);
+          switch (health) {
+            case HEALTHY:
+              partitionHealthyConsumer.accept(partition);
+              break;
+            case UNHEALTHY:
+              partitionUnhealthyConsumer.accept(partition);
+              break;
+            default:
+              LOG.warn("Failed to decode broker info, found unknown health status: {}", health);
+          }
+        });
+    return this;
+  }
+
   @Override
   public String toString() {
     return "BrokerInfo{"
@@ -406,6 +477,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionRoles
         + ", partitionLeaderTerms="
         + partitionLeaderTerms
+        + ", partitionHealthStatuses="
+        + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
         + '}';

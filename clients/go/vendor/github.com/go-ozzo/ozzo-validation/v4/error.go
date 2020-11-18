@@ -33,7 +33,7 @@ type (
 	}
 
 	// Errors represents the validation errors that are indexed by struct field names, map or slice keys.
-	// values are Error or Errors (for map,slice and array error value is Errors).
+	// values are Error or Errors (for map, slice and array error value is Errors).
 	Errors map[string]error
 
 	// InternalError represents an error that should NOT be treated as a validation error.
@@ -118,9 +118,11 @@ func (es Errors) Error() string {
 		return ""
 	}
 
-	keys := []string{}
+	keys := make([]string, len(es))
+	i := 0
 	for key := range es {
-		keys = append(keys, key)
+		keys[i] = key
+		i++
 	}
 	sort.Strings(keys)
 
@@ -130,9 +132,9 @@ func (es Errors) Error() string {
 			s.WriteString("; ")
 		}
 		if errs, ok := es[key].(Errors); ok {
-			fmt.Fprintf(&s, "%v: (%v)", key, errs)
+			_, _ = fmt.Fprintf(&s, "%v: (%v)", key, errs)
 		} else {
-			fmt.Fprintf(&s, "%v: %v", key, es[key].Error())
+			_, _ = fmt.Fprintf(&s, "%v: %v", key, es[key].Error())
 		}
 	}
 	s.WriteString(".")

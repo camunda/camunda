@@ -15,8 +15,6 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.worker.JobWorker;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -30,14 +28,10 @@ import org.junit.rules.Timeout;
 
 // FIXME: rewrite tests now that leader election is not controllable
 public final class BrokerLeaderChangeTest {
-  public static final String NULL_VARIABLES = null;
   public static final String JOB_TYPE = "testTask";
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public final Timeout testTimeout = Timeout.seconds(120);
-  public final ClusteringRule clusteringRule =
-      new ClusteringRule(1, 3, 3, cfg -> cfg.getData().setUseMmap(false));
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -64,7 +58,7 @@ public final class BrokerLeaderChangeTest {
             .filter(b -> b.getNodeId() == oldLeader)
             .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
 
-    assertThat(partitionInfo.allMatch(p -> !p.isLeader())).isTrue();
+    assertThat(partitionInfo).noneMatch(PartitionInfo::isLeader);
   }
 
   @Test

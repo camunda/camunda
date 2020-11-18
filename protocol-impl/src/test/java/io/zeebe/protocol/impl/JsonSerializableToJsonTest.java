@@ -16,6 +16,7 @@ import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.impl.record.VersionInfo;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -95,6 +96,7 @@ public final class JsonSerializableToJsonTest {
 
               final DeploymentIntent intent = DeploymentIntent.CREATE;
               final int protocolVersion = 1;
+              final VersionInfo brokerVersion = new VersionInfo(1, 2, 3);
               final ValueType valueType = ValueType.DEPLOYMENT;
 
               final RecordType recordType = RecordType.COMMAND;
@@ -106,6 +108,7 @@ public final class JsonSerializableToJsonTest {
               recordMetadata
                   .intent(intent)
                   .protocolVersion(protocolVersion)
+                  .brokerVersion(brokerVersion)
                   .valueType(valueType)
                   .recordType(recordType)
                   .rejectionReason(rejectionReason)
@@ -142,7 +145,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'partitionId':0,'recordType':'COMMAND','intent':'CREATE','valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
+        "{'partitionId':0,'recordType':'COMMAND','intent':'CREATE','valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191, 'brokerVersion':'1.2.3'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////

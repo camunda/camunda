@@ -18,6 +18,7 @@ import io.zeebe.el.impl.feel.FeelFunctionProvider;
 import io.zeebe.el.impl.feel.FeelToMessagePackTransformer;
 import io.zeebe.el.impl.feel.FeelVariableContext;
 import io.zeebe.el.impl.feel.MessagePackValueMapper;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
@@ -36,14 +37,19 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\=(.+)", Pattern.DOTALL);
 
-  private final FeelEngine feelEngine =
-      new FeelEngine.Builder()
-          .customValueMapper(new MessagePackValueMapper())
-          .functionProvider(new FeelFunctionProvider())
-          .build();
-
   private final FeelToMessagePackTransformer messagePackTransformer =
       new FeelToMessagePackTransformer();
+
+  private final FeelEngine feelEngine;
+
+  public FeelExpressionLanguage(final ActorClock clock) {
+    feelEngine =
+        new FeelEngine.Builder()
+            .customValueMapper(new MessagePackValueMapper())
+            .functionProvider(new FeelFunctionProvider())
+            .clock(new ZeebeFeelEngineClock(clock))
+            .build();
+  }
 
   @Override
   public Expression parseExpression(final String expression) {

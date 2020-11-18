@@ -25,6 +25,7 @@ import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
@@ -47,7 +48,7 @@ import java.util.zip.Checksum;
 class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
 
   private final FileChannel channel;
-  private final JournalSegment segment;
+  private final JournalSegment<E> segment;
   private final int maxEntrySize;
   private final JournalIndex index;
   private final Namespace namespace;
@@ -56,19 +57,21 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   private Indexed<E> lastEntry;
 
   FileChannelJournalSegmentWriter(
-      final FileChannel channel,
-      final JournalSegment segment,
+      final JournalSegmentFile file,
+      final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.channel = channel;
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
-    memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
-    memory.limit(0);
     this.namespace = namespace;
     firstIndex = segment.index();
+    channel =
+        file.openChannel(
+            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
+    memory.limit(0);
     reset(0);
   }
 
@@ -92,7 +95,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public <T extends E> Indexed<T> append(final T entry) {
     // Store the entry index.
     final long index = getNextIndex();
@@ -149,7 +151,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void append(final Indexed<E> entry) {
     final long nextIndex = getNextIndex();
 
@@ -245,7 +246,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void truncate(final long index) {
     // If the index is greater than or equal to the last index, skip the truncate.
     if (index >= getLastIndex()) {
@@ -291,6 +291,11 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   @Override
   public void close() {
     flush();
+    try {
+      channel.close();
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 
   /**
@@ -323,11 +328,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   public boolean isFull() {
     return size() >= segment.descriptor().maxSegmentSize()
         || getNextIndex() - firstIndex >= segment.descriptor().maxEntries();
-  }
-
-  /** Returns the first index written to the segment. */
-  public long firstIndex() {
-    return firstIndex;
   }
 
   /** Returns a zeroed out byte buffer. */

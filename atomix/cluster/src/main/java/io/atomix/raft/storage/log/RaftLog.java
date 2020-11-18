@@ -31,11 +31,14 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
 
   private final SegmentedJournal<RaftLogEntry> journal;
   private final RaftLogWriter writer;
+  private final boolean flushExplicitly;
   private volatile long commitIndex;
 
-  protected RaftLog(final SegmentedJournal<RaftLogEntry> journal) {
+  protected RaftLog(final SegmentedJournal<RaftLogEntry> journal, final boolean flushExplicitly) {
     super(journal);
     this.journal = journal;
+    this.flushExplicitly = flushExplicitly;
+
     writer = new RaftLogWriter(journal.writer());
   }
 
@@ -113,11 +116,16 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     commitIndex = index;
   }
 
+  public boolean shouldFlushExplicitly() {
+    return flushExplicitly;
+  }
+
   /** Raft log builder. */
   public static class Builder implements io.atomix.utils.Builder<RaftLog> {
 
     private final SegmentedJournal.Builder<RaftLogEntry> journalBuilder =
         SegmentedJournal.builder();
+    private boolean flushExplicitly = true;
 
     protected Builder() {}
 
@@ -251,18 +259,18 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     }
 
     /**
-     * Sets whether to flush buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
+     * Sets whether or not to flush buffered I/O explicitly at various points, returning the builder
+     * for chaining.
      *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
+     * <p>Enabling this ensures that entries are flushed on followers before acknowledging a write,
+     * and are flushed on the leader before marking an entry as committed. This guarantees the
+     * correctness of various Raft properties.
      *
-     * @param flushOnCommit Whether to flush buffers to disk when entries are committed to a
-     *     segment.
-     * @return The storage builder.
+     * @param flushExplicitly whether to flush explicitly or not
+     * @return this builder for chaining
      */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      journalBuilder.withFlushOnCommit(flushOnCommit);
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      this.flushExplicitly = flushExplicitly;
       return this;
     }
 
@@ -273,7 +281,7 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
 
     @Override
     public RaftLog build() {
-      return new RaftLog(journalBuilder.build());
+      return new RaftLog(journalBuilder.build(), flushExplicitly);
     }
   }
 }

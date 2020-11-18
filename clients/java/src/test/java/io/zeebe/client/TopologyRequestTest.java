@@ -17,6 +17,8 @@ package io.zeebe.client;
 
 import static io.zeebe.client.util.RecordingGatewayService.broker;
 import static io.zeebe.client.util.RecordingGatewayService.partition;
+import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY;
+import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY;
 import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
 import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.BrokerInfo;
+import io.zeebe.client.api.response.PartitionBrokerHealth;
 import io.zeebe.client.api.response.PartitionBrokerRole;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
@@ -44,9 +47,27 @@ public final class TopologyRequestTest extends ClientTest {
         10,
         3,
         "1.22.3-SNAPSHOT",
-        broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER), partition(1, FOLLOWER)),
-        broker(1, "host2", 212, "2.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, LEADER)),
-        broker(2, "host3", 432, "3.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, FOLLOWER)));
+        broker(
+            0,
+            "host1",
+            123,
+            "1.22.3-SNAPSHOT",
+            partition(0, LEADER, HEALTHY),
+            partition(1, FOLLOWER, UNHEALTHY)),
+        broker(
+            1,
+            "host2",
+            212,
+            "2.22.3-SNAPSHOT",
+            partition(0, FOLLOWER, HEALTHY),
+            partition(1, LEADER, HEALTHY)),
+        broker(
+            2,
+            "host3",
+            432,
+            "3.22.3-SNAPSHOT",
+            partition(0, FOLLOWER, UNHEALTHY),
+            partition(1, FOLLOWER, UNHEALTHY)));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();
@@ -67,8 +88,10 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getAddress()).isEqualTo("host1:123");
     assertThat(broker.getVersion()).isEqualTo("1.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
-        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
-        .containsOnly(tuple(0, PartitionBrokerRole.LEADER), tuple(1, PartitionBrokerRole.FOLLOWER));
+        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole, PartitionInfo::getHealth)
+        .containsOnly(
+            tuple(0, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY),
+            tuple(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY));
 
     broker = brokers.get(1);
     assertThat(broker.getNodeId()).isEqualTo(1);
@@ -77,8 +100,10 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getAddress()).isEqualTo("host2:212");
     assertThat(broker.getVersion()).isEqualTo("2.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
-        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
-        .containsOnly(tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.LEADER));
+        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole, PartitionInfo::getHealth)
+        .containsOnly(
+            tuple(0, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.HEALTHY),
+            tuple(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY));
 
     broker = brokers.get(2);
     assertThat(broker.getNodeId()).isEqualTo(2);
@@ -87,9 +112,10 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getAddress()).isEqualTo("host3:432");
     assertThat(broker.getVersion()).isEqualTo("3.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
-        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
+        .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole, PartitionInfo::getHealth)
         .containsOnly(
-            tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.FOLLOWER));
+            tuple(0, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY),
+            tuple(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY));
   }
 
   @Test

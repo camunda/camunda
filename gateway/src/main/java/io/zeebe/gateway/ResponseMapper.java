@@ -59,7 +59,7 @@ public final class ResponseMapper {
 
   public static PublishMessageResponse toPublishMessageResponse(
       final long key, final Object brokerResponse) {
-    return PublishMessageResponse.getDefaultInstance();
+    return PublishMessageResponse.newBuilder().setKey(key).build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
@@ -155,7 +155,7 @@ public final class ResponseMapper {
   }
 
   @FunctionalInterface
-  public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponse> {
-    GrpcResponse apply(long key, BrokerResponseDto responseDto);
+  public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponseT> {
+    GrpcResponseT apply(long key, BrokerResponseDto responseDto);
   }
 }

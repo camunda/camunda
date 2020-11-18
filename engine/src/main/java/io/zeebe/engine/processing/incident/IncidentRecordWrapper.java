@@ -70,6 +70,11 @@ final class IncidentRecordWrapper implements TypedRecord<WorkflowInstanceRecord>
   }
 
   @Override
+  public String getBrokerVersion() {
+    return null;
+  }
+
+  @Override
   public ValueType getValueType() {
     return null;
   }

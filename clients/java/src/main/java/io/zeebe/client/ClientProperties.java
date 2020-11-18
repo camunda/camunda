@@ -18,8 +18,15 @@ package io.zeebe.client;
 import java.time.Duration;
 
 public final class ClientProperties {
-  /** @see ZeebeClientBuilder#brokerContactPoint(String) */
-  public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
+  /**
+   * @see ZeebeClientBuilder#brokerContactPoint(String)
+   * @deprecated Use {@link #GATEWAY_ADDRESS}. It's deprecated since 0.25.0, and will be removed in
+   *     0.26.0
+   */
+  @Deprecated public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
+
+  /** @see ZeebeClientBuilder#gatewayAddress(String) */
+  public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
   public static final String JOB_WORKER_EXECUTION_THREADS = "zeebe.client.worker.threads";

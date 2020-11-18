@@ -8,6 +8,7 @@
 package io.zeebe.broker.bootstrap;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -18,11 +19,13 @@ public final class StartProcess {
   private final List<StartStep> startSteps;
   private final CloseProcess closeProcess;
   private final String name;
+  private final BrokerStepMetrics brokerStepMetrics;
 
   public StartProcess(final String name) {
     this.name = name;
     startSteps = new ArrayList<>();
-    closeProcess = new CloseProcess(name);
+    brokerStepMetrics = new BrokerStepMetrics();
+    closeProcess = new CloseProcess(name, brokerStepMetrics);
   }
 
   public void addStep(final String name, final CheckedRunnable runnable) {
@@ -60,6 +63,7 @@ public final class StartProcess {
                   final AutoCloseable closer = step.getStartFunction().start();
                   closeProcess.addCloser(step.getName(), closer);
                 });
+        brokerStepMetrics.observeDurationForStarStep(step.getName(), durationStepStarting);
         LOG.debug(
             "Bootstrap {} [{}/{}]: {} started in {} ms",
             name,

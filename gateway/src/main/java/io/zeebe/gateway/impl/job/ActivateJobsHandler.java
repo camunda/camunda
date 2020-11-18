@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.impl.job;
 
-import io.grpc.stub.StreamObserver;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 
@@ -21,5 +21,5 @@ public interface ActivateJobsHandler {
    * @param responseObserver The stream to write the responses to
    */
   void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver);
+      ActivateJobsRequest request, ServerStreamObserver<ActivateJobsResponse> responseObserver);
 }

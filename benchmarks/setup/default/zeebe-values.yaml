@@ -33,6 +33,13 @@ gateway:
       value: "true"
     - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
       value: "4"
+  resources:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 1Gi
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
@@ -71,6 +78,8 @@ env:
     value: "0.8"
   - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
     value: "0.9"
+  - name: ZEEBE_BROKER_DATA_USEMMAP
+    value: "true"
 
 # RESOURCES
 resources:

@@ -19,6 +19,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.VersionUtil;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ import java.util.Properties;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
+// TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
+@SuppressWarnings("squid:S1200")
 public final class TopologyManagerImpl extends Actor
     implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -189,9 +192,22 @@ public final class TopologyManagerImpl extends Actor
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
     if (brokerInfo != null && !isStaticConfigValid(brokerInfo)) {
       LOG.error(
-          "Static configuration of node {} differs from local node {}",
+          "Static configuration of node {} differs from local node {}: "
+              + "NodeId: 0 <= {} < {}, "
+              + "ClusterSize: {} == {}, "
+              + "PartitionsCount: {} == {}, "
+              + "ReplicationFactor: {} == {}.",
           eventSource.id(),
-          atomix.getMembershipService().getLocalMember().id());
+          atomix.getMembershipService().getLocalMember().id(),
+          brokerInfo.getNodeId(),
+          localBroker.getClusterSize(),
+          brokerInfo.getClusterSize(),
+          localBroker.getClusterSize(),
+          brokerInfo.getPartitionsCount(),
+          localBroker.getPartitionsCount(),
+          brokerInfo.getReplicationFactor(),
+          localBroker.getReplicationFactor());
+
       return null;
     }
     return brokerInfo;
@@ -235,5 +251,17 @@ public final class TopologyManagerImpl extends Actor
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
     }
+  }
+
+  public void onHealthChanged(final int partitionId, final HealthStatus status) {
+    actor.run(
+        () -> {
+          if (status == HealthStatus.HEALTHY) {
+            localBroker.setPartitionHealthy(partitionId);
+          } else if (status == HealthStatus.UNHEALTHY) {
+            localBroker.setPartitionUnhealthy(partitionId);
+          }
+          publishTopologyChanges();
+        });
   }
 }

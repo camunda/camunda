@@ -939,12 +939,17 @@ public final class MultiInstanceActivityTest {
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
 
+    // make sure message subcription is opened, before publishing
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .await();
+
     // when
     ENGINE
         .message()
         .withName(MESSAGE_NAME)
         .withCorrelationKey(MESSAGE_CORRELATION_KEY)
-        .withTimeToLive(0)
+        .withTimeToLive(0) // must be 0 because engine is re-used in tests
         .publish();
 
     // then
@@ -1029,12 +1034,17 @@ public final class MultiInstanceActivityTest {
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
 
+    // make sure message subscription is opened, before publishing
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .await();
+
     // when
     ENGINE
         .message()
         .withName(MESSAGE_NAME)
         .withCorrelationKey(MESSAGE_CORRELATION_KEY)
-        .withTimeToLive(0)
+        .withTimeToLive(0) // must be 0 because engine is re-used in tests
         .publish();
 
     // then

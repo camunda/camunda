@@ -41,7 +41,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   private int logIndexDensity = 100;
 
-  private boolean useMmap = false;
+  private boolean useMmap = true;
   private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
   private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
@@ -58,6 +58,7 @@ public final class DataCfg implements ConfigurationEntry {
       diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
       diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
     }
+    rocksdb.init(globalConfig, brokerBase);
   }
 
   public List<String> getDirectories() {

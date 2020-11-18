@@ -1,5 +1,7 @@
 package validation
 
+import "context"
+
 // When returns a validation rule that executes the given list of rules when the condition is true.
 func When(condition bool, rules ...Rule) WhenRule {
 	return WhenRule{
@@ -18,11 +20,24 @@ type WhenRule struct {
 
 // Validate checks if the condition is true and if so, it validates the value using the specified rules.
 func (r WhenRule) Validate(value interface{}) error {
+	return r.ValidateWithContext(nil, value)
+}
+
+// ValidateWithContext checks if the condition is true and if so, it validates the value using the specified rules.
+func (r WhenRule) ValidateWithContext(ctx context.Context, value interface{}) error {
 	if r.condition {
-		return Validate(value, r.rules...)
+		if ctx == nil {
+			return Validate(value, r.rules...)
+		} else {
+			return ValidateWithContext(ctx, value, r.rules...)
+		}
 	}
 
-	return Validate(value, r.elseRules...)
+	if ctx == nil {
+		return Validate(value, r.elseRules...)
+	} else {
+		return ValidateWithContext(ctx, value, r.elseRules...)
+	}
 }
 
 // Else returns a validation rule that executes the given list of rules when the condition is false.

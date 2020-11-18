@@ -19,7 +19,7 @@ public final class WorkflowInstanceCreator {
     final String bpmnProcessId = "demoProcess";
 
     final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
+        ZeebeClient.newClientBuilder().gatewayAddress(broker).usePlaintext();
 
     try (final ZeebeClient client = builder.build()) {
 

@@ -62,6 +62,9 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   /** Smallest ID free to use for user defined registrations. */
   public static final int INITIAL_ID = 16;
 
+  static final byte MAGIC_BYTE = (byte) 0xFF;
+  static final byte VERSION_BYTE = 0x01;
+  static final byte[] VERSION_HEADER = new byte[] {VERSION_BYTE, MAGIC_BYTE};
   static final String NO_NAME = "(no name)";
 
   private static final Logger LOGGER = getLogger(NamespaceImpl.class);
@@ -121,27 +124,18 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
    * @param obj Object to serialize
    * @return serialized bytes
    */
+  @Override
   public byte[] serialize(final Object obj) {
-    return serialize(obj, DEFAULT_BUFFER_SIZE);
-  }
-
-  /**
-   * Serializes given object to byte array using Kryo instance in pool.
-   *
-   * @param obj Object to serialize
-   * @param bufferSize maximum size of serialized bytes
-   * @return serialized bytes
-   */
-  public byte[] serialize(final Object obj, final int bufferSize) {
     return kryoOutputPool.run(
         output ->
             kryoPool.run(
                 kryo -> {
+                  output.write(VERSION_HEADER);
                   kryo.writeClassAndObject(output, obj);
                   output.flush();
                   return output.getByteArrayOutputStream().toByteArray();
                 }),
-        bufferSize);
+        DEFAULT_BUFFER_SIZE);
   }
 
   /**
@@ -150,9 +144,11 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
    * @param obj Object to serialize
    * @param buffer to write to
    */
+  @Override
   public void serialize(final Object obj, final ByteBuffer buffer) {
     final Kryo kryo = borrow();
     try (final ByteBufferOutput out = new ByteBufferOutput(buffer)) {
+      out.write(VERSION_HEADER);
       kryo.writeClassAndObject(out, obj);
     } finally {
       release(kryo);
@@ -166,18 +162,9 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
    * @param <T> deserialized Object type
    * @return deserialized Object
    */
+  @Override
   public <T> T deserialize(final byte[] bytes) {
-    return kryoInputPool.run(
-        input -> {
-          input.setInputStream(new ByteArrayInputStream(bytes));
-          return kryoPool.run(
-              kryo -> {
-                @SuppressWarnings("unchecked")
-                final T obj = (T) kryo.readClassAndObject(input);
-                return obj;
-              });
-        },
-        DEFAULT_BUFFER_SIZE);
+    return deserialize(bytes, 0);
   }
 
   /**
@@ -187,6 +174,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
    * @param <T> deserialized Object type
    * @return deserialized Object
    */
+  @Override
   public <T> T deserialize(final ByteBuffer buffer) {
     final Kryo kryo = borrow();
     try (final ByteBufferInput in = new ByteBufferInput(buffer)) {
@@ -196,6 +184,33 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
     } finally {
       release(kryo);
     }
+  }
+
+  @Override
+  public ImmutableList<RegistrationBlock> getRegisteredBlocks() {
+    return registeredBlocks;
+  }
+
+  /**
+   * Deserializes given byte array to Object using Kryo instance in pool.
+   *
+   * @param bytes serialized bytes
+   * @param offset offset in serialized bytes
+   * @param <T> deserialized Object type
+   * @return deserialized Object
+   */
+  public <T> T deserialize(final byte[] bytes, final int offset) {
+    return kryoInputPool.run(
+        input -> {
+          input.setInputStream(new ByteArrayInputStream(bytes, offset, bytes.length - offset));
+          return kryoPool.run(
+              kryo -> {
+                @SuppressWarnings("unchecked")
+                final T obj = (T) kryo.readClassAndObject(input);
+                return obj;
+              });
+        },
+        DEFAULT_BUFFER_SIZE);
   }
 
   private String friendlyName() {
@@ -334,28 +349,28 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
     private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     private boolean registrationRequired = true;
     private boolean compatible = false;
+    private String name = NO_NAME;
 
     /**
      * Builds a {@link Namespace} instance.
      *
      * @return KryoNamespace
      */
-    public Namespace build() {
-      return build(NO_NAME);
-    }
-
-    /**
-     * Builds a {@link Namespace} instance.
-     *
-     * @param friendlyName friendly name for the namespace
-     * @return KryoNamespace
-     */
-    public NamespaceImpl build(final String friendlyName) {
+    public NamespaceImpl build() {
       if (!types.isEmpty()) {
         blocks.add(new RegistrationBlock(blockHeadId, types));
       }
-      return new NamespaceImpl(blocks, classLoader, registrationRequired, compatible, friendlyName)
+      return new NamespaceImpl(blocks, classLoader, registrationRequired, compatible, name)
           .populate(1);
+    }
+
+    public Builder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public String getName() {
+      return name;
     }
 
     /**
@@ -436,14 +451,14 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
      * @param ns KryoNamespace
      * @return this
      */
-    public Builder register(final NamespaceImpl ns) {
-
-      if (blocks.containsAll(ns.registeredBlocks)) {
+    public Builder register(final Namespace ns) {
+      if (blocks.containsAll(ns.getRegisteredBlocks())) {
         // Everything was already registered.
         LOGGER.debug("Ignoring {}, already registered.", ns);
         return this;
       }
-      for (final RegistrationBlock block : ns.registeredBlocks) {
+
+      for (final RegistrationBlock block : ns.getRegisteredBlocks()) {
         register(block);
       }
       return this;
@@ -485,6 +500,24 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
     public Builder setRegistrationRequired(final boolean registrationRequired) {
       this.registrationRequired = registrationRequired;
       return this;
+    }
+
+    /**
+     * Creates a copy of the builder.
+     *
+     * @return copy of this builder
+     */
+    public Builder copy() {
+      final Builder copy = new Builder();
+      copy.blockHeadId = blockHeadId;
+      copy.blocks.addAll(blocks);
+      copy.classLoader = classLoader;
+      copy.compatible = compatible;
+      copy.types.addAll(types);
+      copy.registrationRequired = registrationRequired;
+      copy.name = name;
+
+      return copy;
     }
   }
 

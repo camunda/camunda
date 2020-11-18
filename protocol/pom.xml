@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Protocol</name>
   <artifactId>zeebe-protocol</artifactId>
-  <version>0.25.0-SNAPSHOT</version>
+  <version>0.26.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.25.0-SNAPSHOT</version>
+    <version>0.26.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -23,7 +23,7 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <protocol.version>1</protocol.version>
+    <protocol.version>3</protocol.version>
   </properties>
 
   <dependencies>
@@ -112,9 +112,19 @@
           </dependency>
         </dependencies>
       </plugin>
-      <plugin> 
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <ignored>
+            <ignored>
+              <!-- ignore new methods in the Record interface -->
+              <className>io/zeebe/protocol/record/Record</className>
+              <method>*</method>
+              <differenceType>7012</differenceType>
+            </ignored>
+          </ignored>
+        </configuration>
       </plugin>
     </plugins>
   </build>

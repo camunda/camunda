@@ -16,7 +16,6 @@ import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -31,13 +30,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStore
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
 
-  private static final Logger LOGGER = new ZbLogger(FileBasedSnapshotStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
 
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;

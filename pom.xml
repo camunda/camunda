@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.25.0-SNAPSHOT</version>
+    <version>0.26.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -43,9 +43,10 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>zb-db</module>
-    <module>upgrade-tests</module>
+    <module>update-tests</module>
     <module>expression-language</module>
     <module>snapshot</module>
+    <module>benchmarks/project</module>
   </modules>
 
   <scm>

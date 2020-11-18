@@ -56,11 +56,8 @@ import java.util.Properties;
  * constructed. To load a configuration from a file, use {@link AtomixCluster#builder(String)}.
  */
 public class AtomixClusterBuilder implements Builder<AtomixCluster> {
-  protected final ClusterConfig config;
 
-  protected AtomixClusterBuilder() {
-    this(new ClusterConfig());
-  }
+  protected final ClusterConfig config;
 
   protected AtomixClusterBuilder(final ClusterConfig config) {
     this.config = checkNotNull(config);
@@ -370,49 +367,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
   }
 
   /**
-   * Enables multicast communication.
-   *
-   * <p>Multicast is disabled by default. This method must be called to enable it. Enabling
-   * multicast enables the use of the {@link io.atomix.cluster.messaging.BroadcastService}.
-   *
-   * @return the cluster builder
-   * @see #withMulticastAddress(Address)
-   */
-  public AtomixClusterBuilder withMulticastEnabled() {
-    return withMulticastEnabled(true);
-  }
-
-  /**
-   * Sets whether multicast communication is enabled.
-   *
-   * <p>Multicast is disabled by default. This method must be called to enable it. Enabling
-   * multicast enables the use of the {@link io.atomix.cluster.messaging.BroadcastService}.
-   *
-   * @param multicastEnabled whether to enable multicast
-   * @return the cluster builder
-   * @see #withMulticastAddress(Address)
-   */
-  public AtomixClusterBuilder withMulticastEnabled(final boolean multicastEnabled) {
-    config.getMulticastConfig().setEnabled(multicastEnabled);
-    return this;
-  }
-
-  /**
-   * Sets the multicast address.
-   *
-   * <p>Multicast is disabled by default. To enable multicast, first use {@link
-   * #withMulticastEnabled()}.
-   *
-   * @param address the multicast address
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withMulticastAddress(final Address address) {
-    config.getMulticastConfig().setGroup(address.address());
-    config.getMulticastConfig().setPort(address.port());
-    return this;
-  }
-
-  /**
    * Sets the reachability broadcast interval.
    *
    * <p>The broadcast interval is the interval at which heartbeats are sent to peers in the cluster.
@@ -529,7 +483,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * @param locationProvider the membership provider
    * @return the cluster builder
    * @see io.atomix.cluster.discovery.BootstrapDiscoveryProvider
-   * @see io.atomix.cluster.discovery.MulticastDiscoveryProvider
    */
   public AtomixClusterBuilder withMembershipProvider(final NodeDiscoveryProvider locationProvider) {
     config.setDiscoveryConfig(locationProvider.config());

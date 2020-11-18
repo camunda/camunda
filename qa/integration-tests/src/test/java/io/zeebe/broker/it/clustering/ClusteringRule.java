@@ -19,7 +19,6 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.messaging.impl.NettyBroadcastService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
@@ -79,6 +78,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -378,7 +378,7 @@ public final class ClusteringRule extends ExternalResource {
         io.zeebe.util.SocketUtil.toHostAndPortString(
             gateway.getGatewayCfg().getNetwork().toSocketAddress());
     final ZeebeClientBuilder zeebeClientBuilder =
-        ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint);
+        ZeebeClient.newClientBuilder().gatewayAddress(contactPoint);
 
     clientConfigurator.accept(zeebeClientBuilder);
 
@@ -480,6 +480,23 @@ public final class ClusteringRule extends ExternalResource {
     waitForPartitionReplicationFactor();
   }
 
+  public void restartCluster() {
+    final var brokers =
+        getBrokers().stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .collect(Collectors.toList());
+    brokers.forEach(this::stopBroker);
+    brokers.forEach(this::getBroker);
+    try {
+      waitUntilBrokersStarted();
+      waitForPartitionReplicationFactor();
+      waitUntilBrokersInTopology();
+    } catch (final Exception e) {
+      LOG.error("Failed to restart cluster", e);
+      Assert.fail("Failed to restart cluster");
+    }
+  }
+
   private void waitUntilBrokerIsAddedToTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
@@ -553,7 +570,10 @@ public final class ClusteringRule extends ExternalResource {
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME).getPartitions()
+        atomix
+            .getPartitionService()
+            .getPartitionGroup(AtomixFactory.GROUP_NAME)
+            .getPartitions()
             .stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
@@ -569,7 +589,6 @@ public final class ClusteringRule extends ExternalResource {
 
     ((NettyUnicastService) atomix.getUnicastService()).stop().join();
     ((NettyMessagingService) atomix.getMessagingService()).stop().join();
-    ((NettyBroadcastService) atomix.getBroadcastService()).stop().join();
   }
 
   public void connect(final Broker broker) {
@@ -577,7 +596,6 @@ public final class ClusteringRule extends ExternalResource {
 
     ((NettyUnicastService) atomix.getUnicastService()).start().join();
     ((NettyMessagingService) atomix.getMessagingService()).start().join();
-    ((NettyBroadcastService) atomix.getBroadcastService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
@@ -630,7 +648,7 @@ public final class ClusteringRule extends ExternalResource {
   public void waitForTopology(final Predicate<List<BrokerInfo>> topologyPredicate) {
     Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
         .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
   }

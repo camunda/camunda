@@ -19,6 +19,7 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandMessageHand
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -58,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -71,6 +73,7 @@ import org.junit.runners.model.Statement;
 public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
+  private static final int REPROCESSING_TIMEOUT_SEC = 30;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -78,10 +81,13 @@ public final class EngineRule extends ExternalResource {
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
+  private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
   private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
       new Int2ObjectHashMap<>();
   private ExecutorService subscriptionHandlerExecutor;
+  private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
+      new Int2ObjectHashMap<>();
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, false);
@@ -127,10 +133,15 @@ public final class EngineRule extends ExternalResource {
   protected void after() {
     subscriptionHandlerExecutor.shutdown();
     subscriptionHandlers.clear();
+    partitionReprocessingCompleteListeners.clear();
   }
 
   public void start() {
     startProcessors();
+  }
+
+  public void startWithReprocessingDetection() {
+    startProcessors(true);
   }
 
   public void stop() {
@@ -142,7 +153,16 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withDeploymentDistributor(final DeploymentDistributor deploymentDistributor) {
+    this.deploymentDistributor = deploymentDistributor;
+    return this;
+  }
+
   private void startProcessors() {
+    startProcessors(false);
+  }
+
+  private void startProcessors(final boolean detectReprocessingInconsistency) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
@@ -153,6 +173,8 @@ public final class EngineRule extends ExternalResource {
 
     forEachPartition(
         partitionId -> {
+          final var reprocessingCompletedListener = new ReprocessingCompletedListener();
+          partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (processingContext) ->
@@ -161,10 +183,12 @@ public final class EngineRule extends ExternalResource {
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl(),
+                          deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback)
-                      .withListener(new ProcessingExporterTransistor()));
+                      .withListener(new ProcessingExporterTransistor())
+                      .withListener(reprocessingCompletedListener),
+              detectReprocessingInconsistency);
 
           // sequenialize the commands to avoid concurrency
           subscriptionHandlers.put(
@@ -172,6 +196,12 @@ public final class EngineRule extends ExternalResource {
               new SubscriptionCommandMessageHandler(
                   subscriptionHandlerExecutor::submit, environmentRule::getLogStreamRecordWriter));
         });
+  }
+
+  public void awaitReprocessingCompleted() {
+    partitionReprocessingCompleteListeners
+        .values()
+        .forEach(ReprocessingCompletedListener::awaitReprocessingComplete);
   }
 
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
@@ -219,6 +249,10 @@ public final class EngineRule extends ExternalResource {
 
   public ZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
+  }
+
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return environmentRule.getStreamProcessor(partitionId);
   }
 
   public DeploymentClient deployment() {
@@ -332,6 +366,19 @@ public final class EngineRule extends ExternalResource {
 
         RECORDING_EXPORTER.export(typedEvent);
       }
+    }
+  }
+
+  private final class ReprocessingCompletedListener implements StreamProcessorLifecycleAware {
+    private final ActorFuture<Void> reprocessingComplete = new CompletableActorFuture<>();
+
+    @Override
+    public void onRecovered(final ReadonlyProcessingContext context) {
+      reprocessingComplete.complete(null);
+    }
+
+    public void awaitReprocessingComplete() {
+      reprocessingComplete.join(REPROCESSING_TIMEOUT_SEC, TimeUnit.SECONDS);
     }
   }
 

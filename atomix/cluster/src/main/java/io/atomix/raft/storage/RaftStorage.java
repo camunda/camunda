@@ -68,7 +68,7 @@ public final class RaftStorage {
   private final int maxEntrySize;
   private final int maxEntriesPerSegment;
   private final long freeDiskSpace;
-  private final boolean flushOnCommit;
+  private final boolean flushExplicitly;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
   private final ReceivableSnapshotStore persistedSnapshotStore;
@@ -83,7 +83,7 @@ public final class RaftStorage {
       final int maxEntrySize,
       final int maxEntriesPerSegment,
       final long freeDiskSpace,
-      final boolean flushOnCommit,
+      final boolean flushExplicitly,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
       final ReceivableSnapshotStore persistedSnapshotStore,
@@ -96,7 +96,7 @@ public final class RaftStorage {
     this.maxEntrySize = maxEntrySize;
     this.maxEntriesPerSegment = maxEntriesPerSegment;
     this.freeDiskSpace = freeDiskSpace;
-    this.flushOnCommit = flushOnCommit;
+    this.flushExplicitly = flushExplicitly;
     this.retainStaleSnapshots = retainStaleSnapshots;
     statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
@@ -295,7 +295,7 @@ public final class RaftStorage {
         .withMaxEntrySize(maxEntrySize)
         .withFreeDiskSpace(freeDiskSpace)
         .withMaxEntriesPerSegment(maxEntriesPerSegment)
-        .withFlushOnCommit(flushOnCommit)
+        .withFlushExplicitly(flushExplicitly)
         .withJournalIndexFactory(journalIndexFactory)
         .build();
   }
@@ -334,8 +334,8 @@ public final class RaftStorage {
    *
    * @return Whether to flush buffers to disk when entries are committed.
    */
-  public boolean isFlushOnCommit() {
-    return flushOnCommit;
+  public boolean isFlushExplicitly() {
+    return flushExplicitly;
   }
 
   /**
@@ -378,7 +378,7 @@ public final class RaftStorage {
     private static final boolean DEFAULT_DYNAMIC_COMPACTION = true;
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024; // 1GB
     private static final double DEFAULT_FREE_MEMORY_BUFFER = .2;
-    private static final boolean DEFAULT_FLUSH_ON_COMMIT = true;
+    private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
 
     private String prefix = DEFAULT_PREFIX;
@@ -389,7 +389,7 @@ public final class RaftStorage {
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
-    private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
+    private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
     private ReceivableSnapshotStore persistedSnapshotStore;
@@ -541,31 +541,14 @@ public final class RaftStorage {
     }
 
     /**
-     * Enables flushing buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
+     * Sets whether to flush logs to disk to guarantee correctness. If true, followers will flush on
+     * every append, and the leader will flush on commit.
      *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @return The storage builder.
+     * @param flushExplicitly whether to flush buffers to disk
+     * @return the storage builder.
      */
-    public Builder withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
-     * Sets whether to flush buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @param flushOnCommit Whether to flush buffers to disk when entries are committed to a
-     *     segment.
-     * @return The storage builder.
-     */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      this.flushOnCommit = flushOnCommit;
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      this.flushExplicitly = flushExplicitly;
       return this;
     }
 
@@ -640,7 +623,7 @@ public final class RaftStorage {
           maxEntrySize,
           maxEntriesPerSegment,
           freeDiskSpace,
-          flushOnCommit,
+          flushExplicitly,
           retainStaleSnapshots,
           Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
           persistedSnapshotStore,

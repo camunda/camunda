@@ -55,7 +55,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
 
-  @SuppressWarnings("squid:S3077")
   private volatile Phase phase = Phase.REPROCESSING;
 
   private CompletableActorFuture<Void> openFuture;
@@ -325,7 +324,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
       return HealthStatus.UNHEALTHY;
-    } else if (phase == Phase.PAUSED || phase == Phase.FAILED) {
+    } else if (phase == Phase.FAILED) {
       return HealthStatus.UNHEALTHY;
     } else {
       return HealthStatus.HEALTHY;
@@ -341,8 +340,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     return actor.call(() -> phase);
   }
 
-  public void pauseProcessing() {
-    actor.call(
+  public ActorFuture<Void> pauseProcessing() {
+    return actor.call(
         () ->
             recoverFuture.onComplete(
                 (v, t) -> {
@@ -370,7 +369,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
                 }));
   }
 
-  protected enum Phase {
+  public enum Phase {
     REPROCESSING,
     PROCESSING,
     FAILED,

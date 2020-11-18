@@ -25,6 +25,7 @@ import io.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageComm
 import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
+import io.zeebe.client.impl.response.PublishMessageResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -96,7 +97,9 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
         future =
             new RetriableClientFutureImpl<>(
-                retryPredicate, streamObserver -> send(request, streamObserver));
+                PublishMessageResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

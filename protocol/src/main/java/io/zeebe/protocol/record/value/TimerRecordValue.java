@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.TimerIntent;
  *
  * <p>See {@link TimerIntent} for intents.
  */
-public interface TimerRecordValue extends RecordValue {
+public interface TimerRecordValue extends RecordValue, WorkflowInstanceRelated {
 
   /** @return the key of the workflow in which this timer was created */
   long getWorkflowKey();

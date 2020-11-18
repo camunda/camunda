@@ -88,7 +88,9 @@ spec:
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/compat-update.sh'
+                }
+                container('golang') {
+                    sh '.ci/scripts/release/prepare-go.sh'
                 }
             }
         }
@@ -96,7 +98,9 @@ spec:
         stage('Build') {
             steps {
                 container('golang') {
-                    sh '.ci/scripts/release/build-go.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/build-go.sh'
+                    }
                 }
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -118,6 +122,24 @@ spec:
             }
         }
 
+        stage('Update Compat Version') {
+            steps {
+                container('golang') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/compat-update-go.sh'
+                    }
+                }
+                container('maven') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/compat-update-java.sh'
+                        }
+                    }
+                }
+            }
+        }
+
+
         stage('GitHub Release') {
             when { expression { return params.PUSH_CHANGES } }
             steps {
@@ -128,7 +150,9 @@ spec:
                 }
 
                 container('golang') {
-                    sh '.ci/scripts/release/post-github.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/post-github.sh'
+                    }
                 }
             }
         }

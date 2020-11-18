@@ -16,10 +16,12 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -28,19 +30,26 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
+  private static final VersionInfo CURRENT_BROKER_VERSION =
+      VersionInfo.parse(VersionUtil.getVersion());
+
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
   private final RecordMetadataDecoder decoder = new RecordMetadataDecoder();
+
   private long requestId;
   private ValueType valueType = ValueType.NULL_VAL;
-  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
   private int requestStreamId;
-  private int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
   private RejectionType rejectionType;
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+
+  // always the current version by default
+  private int protocolVersion = Protocol.PROTOCOL_VERSION;
+  private VersionInfo brokerVersion = CURRENT_BROKER_VERSION;
 
   public RecordMetadata() {
     reset();
@@ -63,6 +72,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     valueType = decoder.valueType();
     intent = Intent.fromProtocolValue(valueType, decoder.intent());
     rejectionType = decoder.rejectionType();
+
+    brokerVersion =
+        Optional.ofNullable(decoder.brokerVersion())
+            .map(
+                versionDecoder ->
+                    new VersionInfo(
+                        versionDecoder.majorVersion(),
+                        versionDecoder.minorVersion(),
+                        versionDecoder.patchVersion()))
+            .orElse(VersionInfo.UNKNOWN);
 
     final int rejectionReasonLength = decoder.rejectionReasonLength();
 
@@ -103,6 +122,12 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .valueType(valueType)
         .intent(intentValue)
         .rejectionType(rejectionType);
+
+    encoder
+        .brokerVersion()
+        .majorVersion(brokerVersion.getMajorVersion())
+        .minorVersion(brokerVersion.getMinorVersion())
+        .patchVersion(brokerVersion.getPatchVersion());
 
     offset += RecordMetadataEncoder.BLOCK_LENGTH;
 
@@ -192,6 +217,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return BufferUtil.bufferAsString(rejectionReason);
   }
 
+  public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
+    this.brokerVersion = brokerVersion;
+    return this;
+  }
+
+  public VersionInfo getBrokerVersion() {
+    return brokerVersion;
+  }
+
   public RecordMetadata reset() {
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
@@ -202,6 +236,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
+    brokerVersion = CURRENT_BROKER_VERSION;
     return this;
   }
 
@@ -226,6 +261,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + rejectionType
         + ", rejectionReason="
         + BufferUtil.bufferAsString(rejectionReason)
+        + ", brokerVersion="
+        + brokerVersion
         + '}';
   }
 }

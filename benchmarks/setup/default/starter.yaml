@@ -23,6 +23,7 @@ spec:
             value: >-
               -Dapp.brokerUrl=default-zeebe-gateway:26500
               -Dapp.starter.rate=300
+              -Dapp.starter.durationLimit=0
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError
           - name: LOG_LEVEL

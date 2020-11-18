@@ -22,14 +22,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.concurrent.AtomixFuture;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.util.Collection;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -49,6 +50,7 @@ public class DefaultRaftServer implements RaftServer {
       new AtomicReference<>();
   private final AtomicReference<CompletableFuture<Void>> closeFutureRef = new AtomicReference<>();
   private volatile boolean started;
+  private volatile boolean stopped = false;
 
   public DefaultRaftServer(final RaftContext context) {
     this.context = checkNotNull(context, "context cannot be null");
@@ -123,9 +125,14 @@ public class DefaultRaftServer implements RaftServer {
    *
    * @return A completable future to be completed once the server has been shutdown.
    */
+  @Override
   public CompletableFuture<Void> shutdown() {
-    if (!started) {
+    if (!started && !stopped) {
       return Futures.exceptionalFuture(new IllegalStateException("Server not running"));
+    }
+
+    if (stopped) {
+      return Futures.completedFuture(null);
     }
 
     final CompletableFuture<Void> future = new AtomixFuture<>();
@@ -133,12 +140,12 @@ public class DefaultRaftServer implements RaftServer {
         .getThreadContext()
         .execute(
             () -> {
+              stopped = true;
               started = false;
               context.transition(Role.INACTIVE);
               context.close();
               future.complete(null);
             });
-
     return future;
   }
 
@@ -147,8 +154,9 @@ public class DefaultRaftServer implements RaftServer {
    *
    * @return A completable future to be completed once the server has left the cluster.
    */
+  @Override
   public CompletableFuture<Void> leave() {
-    if (!started) {
+    if (!started || stopped) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -193,8 +201,9 @@ public class DefaultRaftServer implements RaftServer {
    *
    * @return Indicates whether the server is running.
    */
+  @Override
   public boolean isRunning() {
-    return started && context.isRunning();
+    return started && !stopped && context.isRunning();
   }
 
   @Override
@@ -240,6 +249,7 @@ public class DefaultRaftServer implements RaftServer {
     }
 
     if (openFutureRef.compareAndSet(null, new AtomixFuture<>())) {
+      stopped = false;
       joiner
           .get()
           .whenComplete(
@@ -279,9 +289,6 @@ public class DefaultRaftServer implements RaftServer {
 
     @Override
     public RaftServer build() {
-      final Logger log =
-          ContextualLoggerFactory.getLogger(
-              RaftServer.class, LoggerContext.builder(RaftServer.class).addValue(name).build());
 
       // If the server name is null, set it to the member ID.
       if (name == null) {
@@ -294,18 +301,11 @@ public class DefaultRaftServer implements RaftServer {
         storage = RaftStorage.builder().build();
       }
 
-      // If a ThreadContextFactory was not provided, create one and ensure it's closed when the
-      // server is stopped.
-      final boolean closeOnStop;
-      final ThreadContextFactory threadContextFactory;
-      if (this.threadContextFactory == null) {
-        threadContextFactory =
-            threadModel.factory("raft-server-" + name + "-%d", threadPoolSize, log);
-        closeOnStop = true;
-      } else {
-        threadContextFactory = this.threadContextFactory;
-        closeOnStop = false;
-      }
+      final RaftThreadContextFactory singleThreadFactory =
+          threadContextFactory == null
+              ? new DefaultRaftSingleThreadContextFactory()
+              : threadContextFactory;
+      final Supplier<Random> randomSupplier = randomFactory == null ? Random::new : randomFactory;
 
       final RaftContext raft =
           new RaftContext(
@@ -314,8 +314,10 @@ public class DefaultRaftServer implements RaftServer {
               membershipService,
               protocol,
               storage,
-              threadContextFactory,
-              closeOnStop);
+              singleThreadFactory,
+              maxAppendBatchSize,
+              maxAppendsPerFollower,
+              randomSupplier);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
       raft.setEntryValidator(entryValidator);

@@ -33,7 +33,8 @@ import org.slf4j.Logger;
 
 /** Netty unicast service test. */
 public class NettyUnicastServiceTest extends ConcurrentTestCase {
-  private static final Logger LOGGER = getLogger(NettyBroadcastServiceTest.class);
+
+  private static final Logger LOGGER = getLogger(NettyUnicastServiceTest.class);
 
   ManagedUnicastService service1;
   ManagedUnicastService service2;

@@ -47,6 +47,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -199,13 +201,24 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, false);
+  }
+
+  public StreamProcessor startStreamProcessor(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final boolean detectReprocessingInconsistency) {
+    final SynchronousLogStream stream = getLogStream(log);
+    return buildStreamProcessor(
+        stream, zeebeDbFactory, typedRecordProcessorFactory, detectReprocessingInconsistency);
   }
 
   private StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory factory) {
+      final TypedRecordProcessorFactory factory,
+      final boolean detectReprocessingInconsistency) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -225,6 +238,7 @@ public final class TestStreams {
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
+            .detectReprocessingInconsistency(detectReprocessingInconsistency)
             .build();
     streamProcessor.openAsync().join(15, TimeUnit.SECONDS);
 
@@ -256,6 +270,13 @@ public final class TestStreams {
   public void closeProcessor(final String streamName) throws Exception {
     streamContextMap.remove(streamName).close();
     LOG.info("Closed stream {}", streamName);
+  }
+
+  public StreamProcessor getStreamProcessor(final String streamName) {
+    return Optional.ofNullable(streamContextMap.get(streamName))
+        .map(c -> c.streamProcessor)
+        .orElseThrow(
+            () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {

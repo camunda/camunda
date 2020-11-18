@@ -138,10 +138,10 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 }
 
 func (p *OAuthCredentialsProvider) getCredentials(ctx context.Context) (*oauth2.Token, error) {
-	if p.token == nil {
+	if p.token == nil || !p.token.Valid() {
 		credentials := p.getCachedToken()
 
-		if credentials != nil {
+		if credentials != nil && credentials.Valid() {
 			p.token = credentials
 			return credentials, nil
 		}

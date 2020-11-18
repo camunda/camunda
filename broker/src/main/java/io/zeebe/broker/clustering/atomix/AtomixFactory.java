@@ -34,6 +34,7 @@ import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class AtomixFactory {
+
   public static final String GROUP_NAME = "raft-partition";
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -95,6 +96,7 @@ public final class AtomixFactory {
     IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
+    final var experimentalCfg = configuration.getExperimental();
     final DataCfg dataCfg = configuration.getData();
     final NetworkCfg networkCfg = configuration.getNetwork();
 
@@ -105,9 +107,11 @@ public final class AtomixFactory {
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
             .withSnapshotStoreFactory(snapshotStoreFactory)
+            .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
+            .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
-            .withFlushOnCommit()
+            .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark());
 
     // by default, the Atomix max entry size is 1 MB
