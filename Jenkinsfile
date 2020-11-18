@@ -538,12 +538,12 @@ pipeline {
     stage ('Deploy to K8s') {
       when {
         expression {
-          CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
+          BRANCH_NAME == 'master' || CHANGE_BRANCH ==~ /(.*-deploy)/ }
       }
       steps {
         build job: '/deploy-optimize-branch-to-k8s',
                 parameters: [
-                        string(name: 'BRANCH', value: CHANGE_BRANCH),
+                        string(name: 'BRANCH', value: getBranchName()),
                 ]
       }
     }
@@ -581,6 +581,10 @@ String getBranchSlug() {
 
 String getImageTag() {
   return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+}
+
+String getBranchName() {
+  return env.BRANCH_NAME == 'master' ? 'master' : env.CHANGE_BRANCH
 }
 
 void buildNotification(String buildStatus) {
