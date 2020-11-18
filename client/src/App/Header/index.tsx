@@ -158,10 +158,10 @@ const Header = observer(
     }
 
     selectCount(type: any) {
-      const {running, withIncidents, isLoaded} = statisticsStore.state;
+      const {running, withIncidents, status} = statisticsStore.state;
       const {filteredInstancesCount} = instancesStore.state;
 
-      if (!isLoaded) {
+      if (['initial', 'first-fetch'].includes(status)) {
         return '';
       }
 

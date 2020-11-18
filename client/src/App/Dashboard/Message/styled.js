@@ -1,0 +1,33 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import styled, {css} from 'styled-components';
+import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
+import {ReactComponent as Warning} from 'modules/components/Icon/warning.svg';
+
+const CheckIcon = styled(Check)``;
+const WarningIcon = styled(Warning)``;
+
+const Container = styled.div`
+  ${({theme, $variant = 'default'}) => {
+    const colors = theme.colors.dashboard.message;
+
+    return css`
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: ${colors[$variant].color};
+
+      ${CheckIcon}, ${WarningIcon} {
+        margin-right: 15px;
+      }
+    `;
+  }}
+`;
+
+export {Container, CheckIcon, WarningIcon};

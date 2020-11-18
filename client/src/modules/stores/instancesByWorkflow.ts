@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action} from 'mobx';
 
 import {fetchInstancesByWorkflow} from 'modules/api/incidents';
 
@@ -26,44 +26,44 @@ type InstanceByWorkflow = {
 };
 type State = {
   instances: InstanceByWorkflow[];
-  isLoaded: boolean;
-  isFailed: boolean;
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   instances: [],
-  isLoaded: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class InstancesByWorkflow {
   state: State = {...DEFAULT_STATE};
 
   getInstancesByWorkflow = async () => {
-    const {data} = await fetchInstancesByWorkflow();
+    this.startFetching();
+    try {
+      const response = await fetchInstancesByWorkflow();
 
-    if (data.error) {
+      if (response.ok) {
+        this.setInstances(await response.json());
+      } else {
+        this.setError();
+      }
+    } catch {
       this.setError();
-    } else {
-      this.setInstances(data);
     }
   };
 
-  setError() {
-    this.state.isLoaded = true;
-    this.state.isFailed = true;
-  }
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
 
-  setInstances(instances: any) {
+  setError = () => {
+    this.state.status = 'error';
+  };
+
+  setInstances = (instances: InstanceByWorkflow[]) => {
     this.state.instances = instances;
-    this.state.isLoaded = true;
-    this.state.isFailed = false;
-  }
-
-  get isDataAvailable() {
-    const {instances, isLoaded, isFailed} = this.state;
-    return !isFailed && isLoaded && instances.length > 0;
-  }
+    this.state.status = 'fetched';
+  };
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
@@ -72,10 +72,10 @@ class InstancesByWorkflow {
 
 decorate(InstancesByWorkflow, {
   state: observable,
+  startFetching: action,
   setError: action,
   setInstances: action,
   reset: action,
-  isDataAvailable: computed,
 });
 
 export const instancesByWorkflowStore = new InstancesByWorkflow();

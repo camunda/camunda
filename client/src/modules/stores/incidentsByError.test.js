@@ -70,57 +70,28 @@ describe('stores/incidentsByError', () => {
 
   it('should get incidents by error', async () => {
     await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.state.isFailed).toBe(false);
-    expect(incidentsByErrorStore.state.isLoaded).toBe(true);
+    expect(incidentsByErrorStore.state.status).toBe('fetched');
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
   });
 
   it('should set failed response on error', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json({error: 'an error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
       )
     );
     await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.state.isFailed).toBe(true);
-    expect(incidentsByErrorStore.state.isLoaded).toBe(true);
+    expect(incidentsByErrorStore.state.status).toBe('error');
     expect(incidentsByErrorStore.state.incidents).toEqual([]);
   });
 
   it('should reset store', async () => {
     await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.state.isLoaded).toBe(true);
+    expect(incidentsByErrorStore.state.status).toBe('fetched');
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
 
     incidentsByErrorStore.reset();
-    expect(incidentsByErrorStore.state.isLoaded).toBe(false);
+    expect(incidentsByErrorStore.state.status).toBe('initial');
     expect(incidentsByErrorStore.state.incidents).toEqual([]);
-  });
-
-  it('should get isDataAvalibale', async () => {
-    expect(incidentsByErrorStore.isDataAvailable).toBe(false);
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json({error: 'an error occured'}))
-      )
-    );
-    await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.isDataAvailable).toBe(false);
-
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
-    await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.isDataAvailable).toBe(false);
-
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
-    await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.isDataAvailable).toBe(true);
   });
 });

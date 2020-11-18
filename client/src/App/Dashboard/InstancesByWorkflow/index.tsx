@@ -19,9 +19,9 @@ import {
   concatGroupLabel,
   concatButtonTitle,
 } from './service';
-import {INSTANCES_BY_WORKFLOW} from '../constants';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
+import {Message} from '../Message';
 
 const InstancesByWorkflow = observer(
   class InstancesByWorkflow extends React.Component {
@@ -113,55 +113,60 @@ const InstancesByWorkflow = observer(
     };
 
     render() {
-      const {
-        state: {instances, isFailed, isLoaded},
-        isDataAvailable,
-      } = instancesByWorkflowStore;
+      const {instances, status} = instancesByWorkflowStore.state;
 
-      if (!isDataAvailable) {
-        return (
-          <Skeleton
-            data={instances}
-            isFailed={isFailed}
-            isLoaded={isLoaded}
-            errorType={INSTANCES_BY_WORKFLOW}
-          />
-        );
-      } else
-        return (
-          <ul data-testid="instances-by-workflow">
-            {instances.map((item, index) => {
-              const workflowsCount = item.workflows.length;
-              const name = item.workflowName || item.bpmnProcessId;
-              const IncidentByWorkflowComponent = this.renderIncidentByWorkflow(
-                item
-              );
-              const totalInstancesCount =
-                item.instancesWithActiveIncidentsCount +
-                item.activeInstancesCount;
+      if (['initial', 'fetching'].includes(status)) {
+        return <Skeleton />;
+      }
 
-              return (
-                <Styled.Li
-                  key={item.bpmnProcessId}
-                  data-testid={`incident-byWorkflow-${index}`}
-                >
-                  {workflowsCount === 1 ? (
-                    IncidentByWorkflowComponent
-                  ) : (
-                    <Collapse
-                      content={this.renderIncidentsPerVersion(
-                        name,
-                        item.workflows
-                      )}
-                      header={IncidentByWorkflowComponent}
-                      buttonTitle={concatButtonTitle(name, totalInstancesCount)}
-                    />
-                  )}
-                </Styled.Li>
-              );
-            })}
-          </ul>
+      if (status === 'fetched' && instances.length === 0) {
+        return (
+          <Message variant="default">There are no Workflows deployed</Message>
         );
+      }
+
+      if (status === 'error') {
+        return (
+          <Message variant="error">
+            Instances by Workflow could not be fetched
+          </Message>
+        );
+      }
+
+      return (
+        <ul data-testid="instances-by-workflow">
+          {instances.map((item, index) => {
+            const workflowsCount = item.workflows.length;
+            const name = item.workflowName || item.bpmnProcessId;
+            const IncidentByWorkflowComponent = this.renderIncidentByWorkflow(
+              item
+            );
+            const totalInstancesCount =
+              item.instancesWithActiveIncidentsCount +
+              item.activeInstancesCount;
+
+            return (
+              <Styled.Li
+                key={item.bpmnProcessId}
+                data-testid={`incident-byWorkflow-${index}`}
+              >
+                {workflowsCount === 1 ? (
+                  IncidentByWorkflowComponent
+                ) : (
+                  <Collapse
+                    content={this.renderIncidentsPerVersion(
+                      name,
+                      item.workflows
+                    )}
+                    header={IncidentByWorkflowComponent}
+                    buttonTitle={concatButtonTitle(name, totalInstancesCount)}
+                  />
+                )}
+              </Styled.Li>
+            );
+          })}
+        </ul>
+      );
     }
   }
 );

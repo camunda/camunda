@@ -12,7 +12,6 @@ function logout() {
 }
 
 async function fetchUser() {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   const response = await get('/api/authentications/user');
   return response.json();
 }

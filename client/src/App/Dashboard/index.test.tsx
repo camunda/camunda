@@ -21,7 +21,7 @@ type Props = {
 const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
-      <MemoryRouter>{children} </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </ThemeProvider>
   );
 };
@@ -53,25 +53,5 @@ describe('Dashboard', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Instances by Workflow')).toBeInTheDocument();
     expect(screen.getByText('Incidents by Error Message')).toBeInTheDocument();
-  });
-
-  it('should display error', async () => {
-    mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            error: 'an error occured',
-          })
-        )
-      )
-    );
-
-    render(<Dashboard />, {wrapper: Wrapper});
-
-    await statisticsStore.fetchStatistics();
-    expect(screen.queryByText('Metric Panel')).not.toBeInTheDocument();
-    expect(
-      screen.getByText('Workflow statistics could not be fetched.')
-    ).toBeInTheDocument();
   });
 });

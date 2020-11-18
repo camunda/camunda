@@ -7,8 +7,16 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 
-import * as Styled from './styled';
+import {
+  Panel,
+  Title,
+  InstancesBar,
+  SkeletonBar,
+  LabelContainer,
+  Label,
+} from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
+import {Message} from '../Message';
 
 function getUrl({filter, hasFinishedInstances}: any) {
   if (hasFinishedInstances) {
@@ -22,49 +30,58 @@ function getUrl({filter, hasFinishedInstances}: any) {
 }
 
 const MetricPanel = observer(() => {
-  const {running, active, withIncidents, isLoaded} = statisticsStore.state;
+  const {running, active, withIncidents, status} = statisticsStore.state;
+
+  if (status === 'error') {
+    return (
+      <Message variant="error">
+        Workflow statistics could not be fetched
+      </Message>
+    );
+  }
+
   return (
-    <Styled.Panel data-testid="metric-panel">
-      <Styled.Title
+    <Panel data-testid="metric-panel">
+      <Title
         data-testid="total-instances-link"
         to={getUrl({
           filter: {active: true, incidents: true},
           hasFinishedInstances: running === 0,
         })}
       >
-        {isLoaded && `${running} `}Running Instances in total
-      </Styled.Title>
-
-      {isLoaded ? (
-        <Styled.InstancesBar
+        {status === 'fetched' && `${running} `}Running Instances in total
+      </Title>
+      {status === 'fetched' && (
+        <InstancesBar
           incidentsCount={withIncidents}
           activeCount={active}
           size="large"
           barHeight={15}
         />
-      ) : (
-        <Styled.SkeletonBar data-testid="instances-bar-skeleton" />
+      )}
+      {(status === 'initial' || status === 'first-fetch') && (
+        <SkeletonBar data-testid="instances-bar-skeleton" />
       )}
 
-      <Styled.LabelContainer>
-        <Styled.Label
+      <LabelContainer>
+        <Label
           data-testid="incident-instances-link"
           to={getUrl({
             filter: {incidents: true},
           })}
         >
           Instances with Incident
-        </Styled.Label>
-        <Styled.Label
+        </Label>
+        <Label
           data-testid="active-instances-link"
           to={getUrl({
             filter: {active: true},
           })}
         >
           Active Instances
-        </Styled.Label>
-      </Styled.LabelContainer>
-    </Styled.Panel>
+        </Label>
+      </LabelContainer>
+    </Panel>
   );
 });
 

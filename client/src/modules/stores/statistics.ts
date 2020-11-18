@@ -9,20 +9,21 @@ import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {instancesStore} from 'modules/stores/instances';
 
-type State = {
+type StatisticsType = {
   running: number;
   active: number;
   withIncidents: number;
-  isLoaded: boolean;
-  isFailed: boolean;
+};
+
+type State = StatisticsType & {
+  status: 'initial' | 'first-fetch' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  isLoaded: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class Statistics {
@@ -30,6 +31,7 @@ class Statistics {
   intervalId: null | number = null;
   pollingDisposer: null | IReactionDisposer = null;
   fetchStatisticsDisposer: null | IReactionDisposer = null;
+
   init() {
     this.fetchStatistics();
 
@@ -51,43 +53,52 @@ class Statistics {
   }
 
   fetchStatistics = async () => {
-    const {coreStatistics} = await fetchWorkflowCoreStatistics();
-    if (coreStatistics.error) {
+    if (this.state.status === 'initial') {
+      this.startFirstFetch();
+    }
+
+    try {
+      const response = await fetchWorkflowCoreStatistics();
+
+      if (response.ok) {
+        this.setStatistics(await response.json());
+      } else {
+        this.setError();
+      }
+    } catch {
       this.setError();
-    } else {
-      this.setStatistics(coreStatistics);
     }
   };
 
-  setError() {
-    this.state.isLoaded = true;
-    this.state.isFailed = true;
-  }
+  startFirstFetch = () => {
+    this.state.status = 'first-fetch';
+  };
 
-  setStatistics = ({
-    running,
-    active,
-    withIncidents,
-  }: {
-    running: number;
-    active: number;
-    withIncidents: number;
-  }) => {
+  setError = () => {
+    this.state.status = 'error';
+  };
+
+  setStatistics = ({running, active, withIncidents}: StatisticsType) => {
     this.state.running = running;
     this.state.active = active;
     this.state.withIncidents = withIncidents;
-    this.state.isLoaded = true;
-    this.state.isFailed = false;
+    this.state.status = 'fetched';
   };
 
   handlePolling = async () => {
-    const {coreStatistics} = await fetchWorkflowCoreStatistics();
+    try {
+      const response = await fetchWorkflowCoreStatistics();
 
-    if (this.intervalId !== null) {
-      if (coreStatistics.error) {
+      if (this.intervalId !== null) {
+        if (response.ok) {
+          this.setStatistics(await response.json());
+        } else {
+          this.setError();
+        }
+      }
+    } catch {
+      if (this.intervalId !== null) {
         this.setError();
-      } else {
-        this.setStatistics(coreStatistics);
       }
     }
   };
@@ -119,6 +130,7 @@ decorate(Statistics, {
   state: observable,
   setError: action,
   setStatistics: action,
+  startFirstFetch: action,
   reset: action,
 });
 

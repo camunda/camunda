@@ -40,7 +40,6 @@ class Authentication extends React.Component<Props, State> {
 
   requestUserEndpoint = () => {
     // use user endpoint to check for authentication
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
     return get('/api/authentications/user')
       .then((response) => response.status)
       .catch((error) => error.status);

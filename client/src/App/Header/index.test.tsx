@@ -14,6 +14,7 @@ import {createMemoryHistory, History} from 'history';
 import {render, within, fireEvent, screen} from '@testing-library/react';
 import {location, mockCollapsablePanelProps} from './index.setup';
 import {instancesStore} from 'modules/stores/instances';
+import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
@@ -76,7 +77,10 @@ describe('Header', () => {
         )
       )
     );
+
     currentInstanceStore.reset();
+    instancesStore.reset();
+    statisticsStore.reset();
   });
 
   it('should render all header links', async () => {

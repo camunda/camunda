@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action} from 'mobx';
 
 import {fetchIncidentsByError} from 'modules/api/incidents';
 
@@ -25,43 +25,44 @@ type IncidentByError = {
 
 type State = {
   incidents: IncidentByError[];
-  isLoaded: boolean;
-  isFailed: boolean;
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   incidents: [],
-  isLoaded: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class IncidentsByError {
   state: State = {...DEFAULT_STATE};
 
   getIncidentsByError = async () => {
-    const {data} = await fetchIncidentsByError();
+    this.startFetching();
 
-    if (data.error) {
+    try {
+      const response = await fetchIncidentsByError();
+
+      if (response.ok) {
+        this.setIncidents(await response.json());
+      } else {
+        this.setError();
+      }
+    } catch {
       this.setError();
-    } else {
-      this.setIncidents(data);
     }
   };
 
-  setError() {
-    this.state.isLoaded = true;
-    this.state.isFailed = true;
-  }
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
+
+  setError = () => {
+    this.state.status = 'error';
+  };
 
   setIncidents(incidents: IncidentByError[]) {
     this.state.incidents = incidents;
-    this.state.isLoaded = true;
-    this.state.isFailed = false;
-  }
-
-  get isDataAvailable() {
-    const {incidents, isLoaded, isFailed} = this.state;
-    return !isFailed && isLoaded && incidents.length > 0;
+    this.state.status = 'fetched';
   }
 
   reset = () => {
@@ -71,10 +72,10 @@ class IncidentsByError {
 
 decorate(IncidentsByError, {
   state: observable,
+  startFetching: action,
   setError: action,
   setIncidents: action,
   reset: action,
-  isDataAvailable: computed,
 });
 
 export const incidentsByErrorStore = new IncidentsByError();

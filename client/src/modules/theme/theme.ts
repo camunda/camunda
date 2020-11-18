@@ -117,8 +117,21 @@ const theme = Object.freeze({
         tileTitle: {
           color: SEMANTIC_COLORS.white,
         },
-        block: {
-          backgroundColor: SEMANTIC_COLORS.badge02,
+        skeleton: {
+          block: {
+            backgroundColor: SEMANTIC_COLORS.badge02,
+          },
+        },
+        message: {
+          default: {
+            color: rgba(SEMANTIC_COLORS.white, 0.8),
+          },
+          error: {
+            color: rgba(SEMANTIC_COLORS.incidentsAndErrors, 0.9),
+          },
+          success: {
+            color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
+          },
         },
       },
       header: {
@@ -893,7 +906,9 @@ const theme = Object.freeze({
       },
       dashboard: {
         tileTitle: 0.9,
-        block: 0.2,
+        skeleton: {
+          block: 0.2,
+        },
       },
       incidentsTable: {
         incidentTr: {
@@ -1114,8 +1129,21 @@ const theme = Object.freeze({
         tileTitle: {
           color: LIGHT_COLORS.ui06,
         },
-        block: {
-          backgroundColor: LIGHT_COLORS.ui06,
+        skeleton: {
+          block: {
+            backgroundColor: LIGHT_COLORS.ui06,
+          },
+        },
+        message: {
+          default: {
+            color: rgba(LIGHT_COLORS.ui06, 0.8),
+          },
+          error: {
+            color: rgba(SEMANTIC_COLORS.incidentsAndErrors, 0.9),
+          },
+          success: {
+            color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
+          },
         },
       },
       header: {
@@ -1890,7 +1918,9 @@ const theme = Object.freeze({
       },
       dashboard: {
         tileTitle: 1,
-        block: 0.09,
+        skeleton: {
+          block: 0.09,
+        },
       },
       incidentsTable: {
         incidentTr: {

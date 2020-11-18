@@ -5,12 +5,12 @@
  */
 
 import styled, {css} from 'styled-components';
-import EmptyPanel from 'modules/components/EmptyPanel';
+import {Message} from './Message';
 
 const HEADER_HEIGHT = 56;
 const METRIC_PANEL_HEIGHT = 234;
 
-const Dashboard = styled.main`
+const Container = styled.main`
   padding: 0 20px 0;
   display: flex;
   flex-direction: column;
@@ -42,6 +42,10 @@ const MetricPanelWrapper = styled.div`
       ${PanelStyles};
       color: ${colors.color};
       height: 198px;
+
+      ${Message} {
+        margin-top: 53px;
+      }
     `;
   }}
 `;
@@ -93,36 +97,10 @@ const TileContent = styled.div`
   margin-left: -4px;
   padding-top: 4px;
   margin-top: -4px;
-`;
 
-const EmptyMetricPanel = styled(EmptyPanel)`
-  padding-top: 26px;
-`;
-
-const EmptyMetricPanelWrapper = styled.div`
-  padding: 22px 24px;
-  display: flex;
-  height: 100%;
-`;
-
-const MultiRowContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const Block = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.dashboard.block;
-    const opacity = theme.opacity.dashboard.block;
-
-    return css`
-      margin: 15px 19px 19px 33px;
-      height: 21px;
-      flex-grow: 1;
-      background: ${colors.backgroundColor};
-      opacity: ${opacity};
-    `;
-  }}
+  ${Message} {
+    margin-top: 207px;
+  }
 `;
 
 const Footer = styled.div`
@@ -131,15 +109,11 @@ const Footer = styled.div`
 `;
 
 export {
-  Dashboard,
+  Container,
   TileWrapper,
   MetricPanelWrapper,
   Tile,
   TileTitle,
   TileContent,
-  EmptyMetricPanel,
-  EmptyMetricPanelWrapper,
-  MultiRowContainer,
-  Block,
   Footer,
 };

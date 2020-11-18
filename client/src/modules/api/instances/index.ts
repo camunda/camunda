@@ -11,13 +11,11 @@ import {FILTER_SELECTION} from 'modules/constants';
 const URL = '/api/workflow-instances';
 
 export async function fetchWorkflowInstance(id: any) {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   const response = await get(`${URL}/${id}`);
   return await response.json();
 }
 
 export async function fetchWorkflowInstanceIncidents(id: any) {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   const response = await get(`${URL}/${id}/incidents`);
   return await response.json();
 }
@@ -31,14 +29,12 @@ export async function fetchWorkflowInstances(options: any) {
 }
 
 export async function fetchSequenceFlows(workflowInstanceId: any) {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   const response = await get(`${URL}/${workflowInstanceId}/sequence-flows`);
   return await response.json();
 }
 
 export async function fetchGroupedWorkflows() {
   try {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
     const response = await get('/api/workflows/grouped');
     return await response.json();
   } catch (e) {
@@ -47,13 +43,7 @@ export async function fetchGroupedWorkflows() {
 }
 
 export async function fetchWorkflowCoreStatistics() {
-  try {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
-    const response = await get(`${URL}/core-statistics`);
-    return {coreStatistics: await response.json()};
-  } catch (e) {
-    return {error: e, coreStatistics: {}};
-  }
+  return get(`${URL}/core-statistics`);
 }
 
 export async function fetchWorkflowInstancesByIds(ids: any) {
@@ -121,7 +111,6 @@ export async function applyOperation(instanceId: any, payload: any) {
 
 export async function fetchVariables({instanceId, scopeId}: any) {
   // TODO: API CHANGED - tests will fail
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   const response = await get(
     `${URL}/${instanceId}/variables?scopeId=${scopeId}`
   );

@@ -12,23 +12,24 @@ import {
   fireEvent,
   screen,
 } from '@testing-library/react';
-import {createMemoryHistory, History} from 'history';
+import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
-type Props = {
-  history?: History;
-};
-const MockApp: React.FC<Props> = ({history = createMemoryHistory()}) => (
-  <ThemeProvider>
-    <Router history={history}>
-      <MetricPanel />
-    </Router>
-  </ThemeProvider>
-);
+function createWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <Router history={history}>{children}</Router>
+      </ThemeProvider>
+    );
+  };
+
+  return Wrapper;
+}
 
 describe('<MetricPanel />', () => {
   beforeEach(() => {
@@ -48,7 +49,9 @@ describe('<MetricPanel />', () => {
   });
 
   it('should first display skeleton, then the statistics', async () => {
-    render(<MockApp />);
+    render(<MetricPanel />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByTestId('instances-bar-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('total-instances-link')).toHaveTextContent(
@@ -66,7 +69,9 @@ describe('<MetricPanel />', () => {
   });
 
   it('should show active instances and instances with incidents', async () => {
-    render(<MockApp />);
+    render(<MetricPanel />, {
+      wrapper: createWrapper(),
+    });
 
     statisticsStore.fetchStatistics();
     expect(screen.getByText('Instances with Incident')).toBeInTheDocument();
@@ -81,7 +86,9 @@ describe('<MetricPanel />', () => {
 
   it('should go to the correct page when clicking on instances with incidents', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    render(<MockApp history={MOCK_HISTORY} />);
+    render(<MetricPanel />, {
+      wrapper: createWrapper(MOCK_HISTORY),
+    });
 
     fireEvent.click(screen.getByText('Instances with Incident'));
 
@@ -93,7 +100,9 @@ describe('<MetricPanel />', () => {
 
   it('should go to the correct page when clicking on active instances', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    render(<MockApp history={MOCK_HISTORY} />);
+    render(<MetricPanel />, {
+      wrapper: createWrapper(MOCK_HISTORY),
+    });
 
     fireEvent.click(screen.getByText('Active Instances'));
 
@@ -105,7 +114,9 @@ describe('<MetricPanel />', () => {
 
   it('should go to the correct page when clicking on total instances', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    render(<MockApp history={MOCK_HISTORY} />);
+    render(<MetricPanel />, {
+      wrapper: createWrapper(MOCK_HISTORY),
+    });
 
     statisticsStore.fetchStatistics();
     fireEvent.click(await screen.findByText('821 Running Instances in total'));
@@ -114,5 +125,39 @@ describe('<MetricPanel />', () => {
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
+  });
+
+  it('should handle server errors', async () => {
+    mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json({}))
+      )
+    );
+    render(<MetricPanel />, {
+      wrapper: createWrapper(),
+    });
+
+    statisticsStore.fetchStatistics();
+
+    expect(
+      await screen.findByText('Workflow statistics could not be fetched')
+    ).toBeInTheDocument();
+  });
+
+  it('should handle networks errors', async () => {
+    mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res) =>
+        res.networkError('A network error')
+      )
+    );
+    render(<MetricPanel />, {
+      wrapper: createWrapper(),
+    });
+
+    statisticsStore.fetchStatistics();
+
+    expect(
+      await screen.findByText('Workflow statistics could not be fetched')
+    ).toBeInTheDocument();
   });
 });

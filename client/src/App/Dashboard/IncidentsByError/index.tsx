@@ -17,8 +17,7 @@ import {
 
 import * as Styled from './styled';
 import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
-
-import {INCIDENTS_BY_ERROR} from '../constants';
+import {Message} from '../Message';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 
@@ -99,19 +98,25 @@ const IncidentsByError = observer(
     };
 
     render() {
-      const {
-        state: {incidents, isFailed, isLoaded},
-        isDataAvailable,
-      } = incidentsByErrorStore;
+      const {incidents, status} = incidentsByErrorStore.state;
 
-      if (!isDataAvailable) {
+      if (['initial', 'fetching'].includes(status)) {
+        return <Skeleton />;
+      }
+
+      if (status === 'fetched' && incidents.length === 0) {
         return (
-          <Skeleton
-            data={incidents}
-            isFailed={isFailed}
-            isLoaded={isLoaded}
-            errorType={INCIDENTS_BY_ERROR}
-          />
+          <Message variant="success">
+            There are no Instances with Incidents
+          </Message>
+        );
+      }
+
+      if (status === 'error') {
+        return (
+          <Message variant="error">
+            Incidents by Error Message could not be fetched
+          </Message>
         );
       }
 

@@ -6,7 +6,7 @@
 
 import {request} from './request';
 
-export function get(url: any, query: any, options = {}) {
+export function get(url: any, query?: any, options = {}) {
   return request({
     url,
     query,

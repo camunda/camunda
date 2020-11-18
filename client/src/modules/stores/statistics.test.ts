@@ -28,6 +28,7 @@ describe('stores/statistics', () => {
   });
   afterEach(() => {
     statisticsStore.reset();
+    currentInstanceStore.reset();
   });
 
   it('should reset state', async () => {
@@ -40,56 +41,57 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.running).toBe(0);
     expect(statisticsStore.state.active).toBe(0);
     expect(statisticsStore.state.withIncidents).toBe(0);
+    expect(statisticsStore.state.status).toBe('initial');
   });
 
   it('should fetch statistics with error', async () => {
     mockServer.use(
       rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
         res.once(
+          ctx.status(500),
           ctx.json({
-            error: 'an error occured',
+            error: 'an error occurred',
           })
         )
       )
     );
 
-    expect(statisticsStore.state.isLoaded).toBe(false);
-    expect(statisticsStore.state.isFailed).toEqual(false);
+    expect(statisticsStore.state.status).toBe('initial');
 
     await statisticsStore.fetchStatistics();
-    expect(statisticsStore.state.isLoaded).toBe(true);
-    expect(statisticsStore.state.isFailed).toBe(true);
+
+    expect(statisticsStore.state.status).toBe('error');
     expect(statisticsStore.state.running).toBe(0);
     expect(statisticsStore.state.active).toBe(0);
     expect(statisticsStore.state.withIncidents).toBe(0);
   });
 
   it('should fetch statistics with success', async () => {
-    expect(statisticsStore.state.isLoaded).toBe(false);
-    expect(statisticsStore.state.isFailed).toEqual(false);
+    expect(statisticsStore.state.status).toBe('initial');
 
     await statisticsStore.fetchStatistics();
-    expect(statisticsStore.state.isLoaded).toBe(true);
-    expect(statisticsStore.state.isFailed).toBe(false);
+    expect(statisticsStore.state.status).toBe('fetched');
     expect(statisticsStore.state.running).toBe(936);
     expect(statisticsStore.state.active).toBe(725);
     expect(statisticsStore.state.withIncidents).toBe(211);
   });
 
   it('should fetch statistics on init', async () => {
+    expect(statisticsStore.state.status).toBe('initial');
     statisticsStore.init();
-    expect(statisticsStore.state.isLoaded).toBe(false);
-    expect(statisticsStore.state.isFailed).toEqual(false);
 
-    await waitFor(() => expect(statisticsStore.state.isLoaded).toBe(true));
-    expect(statisticsStore.state.running).toBe(936);
+    expect(statisticsStore.state.status).toBe('first-fetch');
+    await waitFor(() => {
+      expect(statisticsStore.state.running).toBe(936);
+    });
     expect(statisticsStore.state.active).toBe(725);
     expect(statisticsStore.state.withIncidents).toBe(211);
   });
 
   it('should start polling when current instance exists', async () => {
+    jest.useFakeTimers();
     statisticsStore.init();
-    await waitFor(() => expect(statisticsStore.state.isLoaded).toBe(true));
+    await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     mockServer.use(
       // mock for when current instance is set
@@ -104,9 +106,8 @@ describe('stores/statistics', () => {
       )
     );
 
-    jest.useFakeTimers();
     // should not fetch statistics when current instance does not exist
-    jest.advanceTimersByTime(10000);
+    jest.runOnlyPendingTimers();
 
     expect(statisticsStore.state.running).toBe(936);
     expect(statisticsStore.state.active).toBe(725);
@@ -115,18 +116,17 @@ describe('stores/statistics', () => {
     // should fetch statistics when current instance exists
     currentInstanceStore.setCurrentInstance({id: '1'});
     jest.runOnlyPendingTimers();
-    await waitFor(() => {
-      expect(statisticsStore.state.running).toBe(100);
-      expect(statisticsStore.state.active).toBe(60);
-      expect(statisticsStore.state.withIncidents).toBe(40);
-    });
+
+    await waitFor(() => expect(statisticsStore.state.running).toBe(100));
+    expect(statisticsStore.state.active).toBe(60);
+    expect(statisticsStore.state.withIncidents).toBe(40);
 
     jest.useRealTimers();
   });
 
   it('should fetch statistics depending on completed operations', async () => {
     statisticsStore.init();
-    await waitFor(() => expect(statisticsStore.state.isLoaded).toBe(true));
+    await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     mockServer.use(
       // mock for when there are completed operations
@@ -150,10 +150,8 @@ describe('stores/statistics', () => {
       {id: '2', hasActiveOperations: false},
     ]);
 
-    await waitFor(() => {
-      expect(statisticsStore.state.running).toBe(100);
-      expect(statisticsStore.state.active).toBe(60);
-      expect(statisticsStore.state.withIncidents).toBe(40);
-    });
+    await waitFor(() => expect(statisticsStore.state.running).toBe(100));
+    expect(statisticsStore.state.active).toBe(60);
+    expect(statisticsStore.state.withIncidents).toBe(40);
   });
 });
