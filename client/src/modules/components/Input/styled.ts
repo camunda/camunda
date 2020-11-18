@@ -19,7 +19,7 @@ const Input = styled.input`
         font-style: italic;
       }
 
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 13px;
       height: 26px;
       width: 100%;

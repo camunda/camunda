@@ -33,7 +33,7 @@ const Wrapper = styled.div<WrapperProps>`
       display: flex;
       padding: 0;
       color: ${colors.color};
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       line-height: 1.71;
       ${FONT_STYLES[size]}
     `;

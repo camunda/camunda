@@ -40,7 +40,7 @@ const Label = styled.span<LabelProps>`
             opacity: 0.9;
           `}
 
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 16px;
       padding-top: 5px;
     `;

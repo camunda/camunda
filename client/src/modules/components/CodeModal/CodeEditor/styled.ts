@@ -44,7 +44,7 @@ const Pre = styled.pre`
         margin: 3px;
         line-height: 14px;
         color: ${colors.color};
-        font-family: IBMPlexMono;
+        font-family: IBM Plex Mono;
         font-size: 14px;
 
         &:before {

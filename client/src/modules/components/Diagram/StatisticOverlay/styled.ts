@@ -23,7 +23,7 @@ const Statistic = styled.div<StatisticProps>`
       display: flex;
       line-height: 24px;
       height: 24px;
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 13px;
       font-weight: bold;
       border-radius: 12px;

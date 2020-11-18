@@ -73,7 +73,7 @@ const TileTitle = styled.h2`
       margin: 0 0 14px;
       padding: 0;
 
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 16px;
       font-weight: 600;
       line-height: 2;

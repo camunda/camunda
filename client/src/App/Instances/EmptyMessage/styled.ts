@@ -12,7 +12,7 @@ const EmptyMessage = styled.div`
 
     return css`
       padding-top: 40px;
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 16px;
       font-weight: 500;
       text-align: center;

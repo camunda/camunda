@@ -138,7 +138,7 @@ const Button = styled.button<Props>`
     const isSmall = size === 'small';
 
     return css`
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-weight: 600;
       border-radius: ${isSmall ? 11 : 3}px;
       ${isSmall ? '' : shadow};

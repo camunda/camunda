@@ -24,7 +24,7 @@ const Page = styled.button<PageProps>`
       color: ${colors.color};
       background-color: ${colors.backgroundColor};
       border: 1px solid ${colors.borderColor};
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 13px;
       padding: ${withIcon ? 0 : '0 5px'};
       line-height: 18px;

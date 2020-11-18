@@ -15,7 +15,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   padding-top: 128px;
-  font-family: IBMPlexSans;
+  font-family: IBM Plex Sans;
   height: 100%;
 `;
 
@@ -44,7 +44,7 @@ const LoginTitle = styled.span`
     const colors = theme.colors.login.loginTitle;
 
     return css`
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 28px;
       font-weight: normal;
       color: ${colors.color};

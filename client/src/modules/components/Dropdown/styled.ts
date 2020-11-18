@@ -50,7 +50,7 @@ const Button = styled.button<ButtonProps>`
       padding-right: 0px;
       color: ${disabled ? colors.disabled.color : colors.default.color};
       background: none;
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       font-size: 15px;
       font-weight: 600;
       cursor: ${disabled ? 'default' : 'pointer'};

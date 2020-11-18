@@ -20,7 +20,7 @@ const TextareaStyles = ({theme}: any) => {
     border-radius: 3px;
     background-color: ${colors.backgroundColor};
     color: ${colors.color};
-    font-family: IBMPlexSans;
+    font-family: IBM Plex Sans;
     font-size: 13px;
 
     &::placeholder {

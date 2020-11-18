@@ -37,7 +37,7 @@ const EmptyMessage = styled.div`
       padding: 29px 44px 29px 32px;
       text-align: center;
       font-size: 13px;
-      font-family: IBMPlexSans;
+      font-family: IBM Plex Sans;
       color: ${colors.color};
       background-color: ${colors.backgroundColor};
     `;
