@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+package com.camunda.optimize.test.upgrade
+
 import com.fasterxml.jackson.databind.JsonNode
 import lombok.SneakyThrows
 import org.camunda.optimize.OptimizeRequestExecutor
@@ -15,27 +17,37 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
+import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
-import org.camunda.optimize.test.optimize.*
+import org.camunda.optimize.test.optimize.AlertClient
+import org.camunda.optimize.test.optimize.CollectionClient
+import org.camunda.optimize.test.optimize.EntitiesClient
+import org.camunda.optimize.test.optimize.EventProcessClient
+import org.camunda.optimize.test.optimize.ReportClient
 import org.camunda.optimize.test.util.ProcessReportDataType
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.ws.rs.core.Response
 import java.util.function.Function
 import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.fail
 
 class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
+  private static final Logger log = LoggerFactory.getLogger(PostMigrationTest.class);
 
   private static OptimizeRequestExecutor requestExecutor;
   private static OptimizeElasticsearchClient elasticsearchClient;
@@ -99,10 +111,21 @@ class PostMigrationTest {
       for (EntityResponseDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
         .collect(Collectors.toList())) {
-        final Response response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId())
-          .execute(Response.Status.OK.getStatusCode());
+        log.info("Evaluating reportId: {}", entity.getId());
+        final Response response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId()).execute();
         final JsonNode jsonResponse = response.readEntity(JsonNode.class);
-        assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
+        if (Response.Status.OK.getStatusCode().equals(response.getStatus())) {
+          assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
+        } else if (Response.Status.BAD_REQUEST.getStatusCode().equals(response.getStatus())
+          && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText().equals(TooManyBucketsException.ERROR_CODE)) {5
+          assertThat(jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText())
+            .isEqualTo(TooManyBucketsException.ERROR_CODE);
+          log.warn("Encountered too many buckets for reportId: {}", entity.getId());
+        } else {
+          fail(
+            "Report evaluation failed with status code ${response.status} and body: ${response.readEntity(String.class)}."
+          )
+        }
       }
     }
   }

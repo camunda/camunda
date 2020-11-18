@@ -31,11 +31,10 @@ public class DataGenerationMain {
     DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(args);
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     main.generateData();
-    System.exit(0);
   }
 
   private static DataGenerationInformation extractDataGenerationInformation(final String[] args) {
-    Map<String, String> arguments = extractArguments(args);
+    final Map<String, String> arguments = extractArguments(args);
 
     // argument is being adjusted
     long processInstanceCountToGenerate =
@@ -44,20 +43,21 @@ public class DataGenerationMain {
       Long.parseLong(arguments.get("numberOfDecisionInstances"));
     String engineRestEndpoint = arguments.get("engineRest");
     boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
-    HashMap<String, Integer> processDefinitions = parseDefinitions(arguments.get("processDefinitions"));
-    HashMap<String, Integer> decisionDefinitions = parseDefinitions(arguments.get("decisionDefinitions"));
+    Map<String, Integer> processDefinitions = parseDefinitions(arguments.get("processDefinitions"));
+    Map<String, Integer> decisionDefinitions = parseDefinitions(arguments.get("decisionDefinitions"));
 
-    return new DataGenerationInformation()
-      .setProcessInstanceCountToGenerate(processInstanceCountToGenerate)
-      .setDecisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
-      .setEngineRestEndpoint(engineRestEndpoint)
-      .setProcessDefinitions(processDefinitions)
-      .setDecisionDefinitions(decisionDefinitions)
-      .setRemoveDeployments(removeDeployments);
+    return DataGenerationInformation.builder()
+      .processInstanceCountToGenerate(processInstanceCountToGenerate)
+      .decisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
+      .engineRestEndpoint(engineRestEndpoint)
+      .processDefinitionsAndNumberOfVersions(processDefinitions)
+      .decisionDefinitionsAndNumberOfVersions(decisionDefinitions)
+      .removeDeployments(removeDeployments)
+      .build();
   }
 
-  public static HashMap<String, Integer> parseDefinitions(String definitions) {
-    HashMap<String, Integer> res = new HashMap<>();
+  public static Map<String, Integer> parseDefinitions(String definitions) {
+    final Map<String, Integer> res = new HashMap<>();
     String[] defs = definitions.split(",");
     for (String def : defs) {
       String[] strings = def.split(":");
@@ -123,7 +123,7 @@ public class DataGenerationMain {
     }
   }
 
-  private void generateData() {
+  public void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
       new DataGenerationExecutor(dataGenerationInformation);
     logger.info("Start generating data...");

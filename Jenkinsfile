@@ -334,7 +334,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: '**/surefire-reports/**/*.xml', keepLongStdio: true
+              junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -349,7 +349,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'client/jest-test-results.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -415,10 +415,10 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', keepLongStdio: true
+              junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
             failure {
-              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json'
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json', allowEmptyArchive: false
             }
           }
         }
@@ -434,6 +434,11 @@ pipeline {
           steps {
             unstash name: "optimize-stash-distro"
             dataUpgradeTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'qa/upgrade-tests/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+            }
           }
         }
         stage('IT Latest') {
@@ -451,7 +456,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }

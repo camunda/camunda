@@ -6,10 +6,11 @@
 package org.camunda.optimize.service.exceptions.evaluation;
 
 public class TooManyBucketsException extends ReportEvaluationException {
+  public static final String ERROR_CODE = "tooManyBuckets";
 
   @Override
   public String getErrorCode() {
-    return "tooManyBuckets";
+    return ERROR_CODE;
   }
 
   public TooManyBucketsException(Exception e) {

@@ -65,7 +65,8 @@
   },
   "jest-junit": {
     "suiteName": "client",
-    "output": "./jest-test-results.xml",
+    "outputDirectory": ".",
+    "outputName": "jest-test-results.xml",
     "suiteNameTemplate": "{filename}",
     "classNameTemplate": "client.{filename}",
     "titleTemplate": "{title}",

@@ -3,6 +3,8 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+package com.camunda.optimize.test.upgrade
+
 
 class OptimizeGeneratorWrapper {
   String generatorVersion

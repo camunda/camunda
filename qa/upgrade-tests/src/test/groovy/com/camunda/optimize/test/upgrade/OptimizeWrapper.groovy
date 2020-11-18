@@ -3,16 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-
+package com.camunda.optimize.test.upgrade
 
 import org.camunda.optimize.OptimizeRequestExecutor
 import org.camunda.optimize.test.optimize.StatusClient
 
 import javax.ws.rs.ProcessingException
-import java.nio.file.CopyOption
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.MINUTES
 import static java.util.concurrent.TimeUnit.SECONDS
@@ -21,13 +19,15 @@ import static org.awaitility.Awaitility.await
 class OptimizeWrapper {
   String optimizeVersion
   String optimizeDirectory
+  String configDirectory
   Process process
   OptimizeRequestExecutor requestExecutor
   int elasticPort
 
-  OptimizeWrapper(String optimizeVersion, String baseDirectory, int elasticPort = 9200) {
+  OptimizeWrapper(String optimizeVersion, String baseDirectory, int elasticPort = 9200, String configDirectory = "config") {
     this.optimizeVersion = optimizeVersion
     this.optimizeDirectory = "${baseDirectory}/${optimizeVersion}"
+    this.configDirectory = "${optimizeDirectory}/${configDirectory}"
     this.requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api")
     this.elasticPort = elasticPort
   }
@@ -35,7 +35,7 @@ class OptimizeWrapper {
   def copyLicense(String licensePath) {
     Files.copy(
       new File(licensePath).toPath(),
-      new File(optimizeDirectory + "/config/OptimizeLicense.txt").toPath(),
+      new File("${configDirectory}/OptimizeLicense.txt").toPath(),
       StandardCopyOption.REPLACE_EXISTING
     )
   }

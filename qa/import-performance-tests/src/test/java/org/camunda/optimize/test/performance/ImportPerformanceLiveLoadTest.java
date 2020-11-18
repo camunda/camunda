@@ -77,13 +77,14 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     return executor.submit(() -> {
       //given I have data in the data
       final OffsetDateTime beforeDataGeneration = OffsetDateTime.now();
-      DataGenerationInformation dataGenerationInformation = new DataGenerationInformation()
-        .setProcessInstanceCountToGenerate((long) instanceCountToGenerate)
-        .setDecisionInstanceCountToGenerate((long) instanceCountToGenerate)
-        .setProcessDefinitions(parseDefinitions(getDefaultDefinitionsOfClass(ProcessDataGenerator.class)))
-        .setDecisionDefinitions(parseDefinitions(getDefaultDefinitionsOfClass(DecisionDataGenerator.class)))
-        .setEngineRestEndpoint(configurationService.getEngineRestApiEndpointOfCustomEngine("camunda-bpm"))
-        .setRemoveDeployments(false);
+      final DataGenerationInformation dataGenerationInformation = DataGenerationInformation.builder()
+        .processInstanceCountToGenerate((long) instanceCountToGenerate)
+        .decisionInstanceCountToGenerate((long) instanceCountToGenerate)
+        .processDefinitionsAndNumberOfVersions(parseDefinitions(getDefaultDefinitionsOfClass(ProcessDataGenerator.class)))
+        .decisionDefinitionsAndNumberOfVersions(parseDefinitions(getDefaultDefinitionsOfClass(DecisionDataGenerator.class)))
+        .engineRestEndpoint(configurationService.getEngineRestApiEndpointOfCustomEngine("camunda-bpm"))
+        .removeDeployments(false)
+        .build();
       final DataGenerationExecutor dataGenerationExecutor = new DataGenerationExecutor(dataGenerationInformation);
       dataGenerationExecutor.executeDataGeneration();
       dataGenerationExecutor.awaitDataGenerationTermination();

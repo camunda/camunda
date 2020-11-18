@@ -136,7 +136,8 @@ public class SimpleEngineClient {
   private final CloseableHttpClient client;
   private final String engineRestEndpoint;
   private final ObjectMapper objectMapper;
-  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
+  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(
+    IntegrationTestConfigurationUtil.getEngineDateFormat());
 
   public SimpleEngineClient(String engineRestEndpoint) {
     this.engineRestEndpoint = engineRestEndpoint;
@@ -270,36 +271,40 @@ public class SimpleEngineClient {
 
   public void cleanUpDeployments() {
     log.info("Starting deployments clean up");
-    HttpGet get = new HttpGet(getCreateDeploymentUri());
-    String responseString;
-    List<DeploymentDto> result = null;
-    try (CloseableHttpResponse response = client.execute(get)) {
-      responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-      result = objectMapper.readValue(
+    try (final CloseableHttpResponse getDeploymentsResponse = client.execute(new HttpGet(getDeploymentUri()))) {
+      final String responseString = EntityUtils.toString(getDeploymentsResponse.getEntity(), StandardCharsets.UTF_8);
+      final List<DeploymentDto> result = objectMapper.readValue(
         responseString,
         new TypeReference<List<DeploymentDto>>() {
         }
       );
       log.info("Fetched " + result.size() + " deployments");
-    } catch (IOException e) {
-      log.error("Could fetch deployments from the Engine");
-    }
-    if (result != null) {
-      result.forEach((deployment) -> {
-        HttpDelete delete = new HttpDelete(getCreateDeploymentUri() + deployment.getId());
-        try {
-          URI uri = new URIBuilder(delete.getURI())
+
+      for (final DeploymentDto deployment : result) {
+        final HttpDelete delete = new HttpDelete(
+          new URIBuilder(getDeploymentUri() + deployment.getId())
             .addParameter("cascade", "true")
-            .build();
-          delete.setURI(uri);
-          client.execute(delete).close();
-          log.info("Deleted deployment with id " + deployment.getId());
-        } catch (IOException | URISyntaxException e) {
-          log.error("Could not delete deployment");
+            .build()
+        );
+        try (final CloseableHttpResponse deleteResponse = client.execute(delete)) {
+          final int deleteStatusCode = deleteResponse.getStatusLine().getStatusCode();
+          if (Response.Status.NO_CONTENT.getStatusCode() == deleteStatusCode) {
+            log.info("Deleted deployment with id {}.", deployment.getId());
+          } else {
+            throw new OptimizeRuntimeException(String.format(
+              "Deleting deployment with id %s failed with statusCode: %s.",
+              deployment.getId(),
+              deleteStatusCode
+            ));
+          }
         }
-      });
+      }
+      log.info("Deployment clean up finished");
+    } catch (final Exception e) {
+      log.error("Deployment clean up failed.", e);
+      throw new OptimizeRuntimeException("Deployment clean up failed.", e);
     }
-    log.info("Deployment clean up finished");
+
   }
 
   public Optional<Boolean> getProcessInstanceDelayVariable(String procInstId) {
