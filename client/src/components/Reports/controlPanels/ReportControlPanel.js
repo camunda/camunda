@@ -14,6 +14,7 @@ import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables}
 import {t} from 'translation';
 import {showError} from 'notifications';
 
+import DistributedBy from './DistributedBy';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
@@ -195,6 +196,7 @@ export default withErrorHandling(
                   </li>
                 );
               })}
+              <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
               {isDurationHeatmap(data) && (
                 <li>
                   <TargetValueComparison

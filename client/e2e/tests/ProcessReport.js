@@ -670,14 +670,11 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await u.selectVisualization(t, 'Pie Chart');
 
-  await t.click(e.configurationButton);
-
   await t.click(e.distributedBySelect);
 
-  await t.click(e.configurationOption('User Task'));
+  await t.click(e.dropdownOption('User Task'));
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
-  await t.click(e.configurationButton);
 
   await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/distributed-report.png');
 
@@ -795,9 +792,8 @@ test('group by duration', async (t) => {
 
   await t.expect(e.reportChart.visible).ok();
 
-  await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
-  await t.click(e.configurationOption('Flow Node'));
+  await t.click(e.dropdownOption('Flow Node'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Invoice\nprocessed');
@@ -815,19 +811,16 @@ test('distribute by variable', async (t) => {
   await u.selectGroupby(t, 'Start Date', 'Automatic');
   await u.selectVisualization(t, 'Bar Chart');
 
-  await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
-  await t.click(e.configurationOption('Variable'));
+  await t.click(e.dropdownOption('Variable'));
   await t.click(e.submenuOption('approved'));
-  await t.click(e.configurationButton);
   await t
     .resizeWindow(1650, 960)
     .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
     .maximizeWindow();
 
-  await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
-  await t.click(e.configurationOption('Variable'));
+  await t.click(e.dropdownOption('Variable'));
   await t.click(e.submenuOption('invoiceCategory'));
   await u.selectVisualization(t, 'Table');
 
@@ -844,15 +837,12 @@ test('distribute by start/end date', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Variable', 'invoiceCategory');
   await u.selectVisualization(t, 'Bar Chart');
-
-  await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
-  await t.click(e.configurationOption('Start Date'));
+  await t.click(e.dropdownOption('Start Date'));
   await t.click(e.submenuOption('month'));
   await t.click(e.distributedBySelect);
-  await t.click(e.configurationOption('End Date'));
+  await t.click(e.dropdownOption('End Date'));
   await t.click(e.submenuOption('automatic'));
-  await t.click(e.configurationButton);
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
   await t.expect(e.reportChart.visible).ok();

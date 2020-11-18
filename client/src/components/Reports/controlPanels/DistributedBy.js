@@ -49,9 +49,10 @@ export function DistributedBy({
 
   if (canDistributeData(view, groupBy)) {
     return (
-      <fieldset className="DistributedBy">
-        <legend>{t('report.config.userTaskDistributedBy')}</legend>
+      <li className="DistributedBy">
+        <span className="label">{t('report.config.userTaskDistributedBy')}</span>
         <Select
+          className="ReportSelect"
           key={variables.length}
           value={getValue(distributedBy)}
           onChange={(value) => {
@@ -77,7 +78,7 @@ export function DistributedBy({
           <Select.Option value="none">{t('common.nothing')}</Select.Option>
           {getOptionsFor(view.entity, groupBy.type, variables)}
         </Select>
-      </fieldset>
+      </li>
     );
   }
   return null;
@@ -200,12 +201,12 @@ function getOptionsFor(view, groupBy, variables) {
 function isInstanceDateReport(view, groupBy) {
   return (
     view?.entity === 'processInstance' &&
-    (groupBy.type === 'startDate' || groupBy.type === 'endDate')
+    (groupBy?.type === 'startDate' || groupBy?.type === 'endDate')
   );
 }
 
 function isInstanceVariableReport(view, groupBy) {
-  return view?.entity === 'processInstance' && groupBy.type === 'variable';
+  return view?.entity === 'processInstance' && groupBy?.type === 'variable';
 }
 
 export default withErrorHandling(DistributedBy);

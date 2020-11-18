@@ -1,13 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should load and render variables for process instance count reports 1`] = `
-<fieldset
+<li
   className="DistributedBy"
 >
-  <legend>
+  <span
+    className="label"
+  >
     Distributed By
-  </legend>
+  </span>
   <Select
+    className="ReportSelect"
     key="3"
     onChange={[Function]}
   >
@@ -40,17 +43,20 @@ exports[`should load and render variables for process instance count reports 1`]
       </Option>
     </Submenu>
   </Select>
-</fieldset>
+</li>
 `;
 
 exports[`should match snapshot 1`] = `
-<fieldset
+<li
   className="DistributedBy"
 >
-  <legend>
+  <span
+    className="label"
+  >
     Distributed By
-  </legend>
+  </span>
   <Select
+    className="ReportSelect"
     key="0"
     onChange={[Function]}
   >
@@ -72,5 +78,5 @@ exports[`should match snapshot 1`] = `
       Candidate Group
     </Option>
   </Select>
-</fieldset>
+</li>
 `;
