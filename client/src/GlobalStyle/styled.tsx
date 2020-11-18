@@ -16,7 +16,7 @@ const Style = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
     height: 100%;
     overflow: hidden;
-    font-family: IBMPlexSans;
+    font-family: IBM Plex Sans;
     margin: 0;
     padding: 0;
     background-color: ${({theme}) => theme.colors.ui01};
@@ -38,7 +38,7 @@ const Style = createGlobalStyle`
   }
 
   button {
-    font-family: IBMPlexSans;
+    font-family: IBM Plex Sans;
     cursor: pointer;
     border-width: 0;
     font-weight: 600;

@@ -109,7 +109,7 @@ const InputStyles = css`
   border-radius: 3px;
   background-color: ${({theme}) => theme.colors.ui04};
   color: ${({theme}) => theme.colors.ui07};
-  font-family: IBMPlexSans;
+  font-family: IBM Plex Sans;
   font-size: 14px;
   line-height: 18px;
   outline: none;

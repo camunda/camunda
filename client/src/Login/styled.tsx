@@ -78,7 +78,7 @@ const Title = styled.h1`
 `;
 
 const Input = styled.input`
-  font-family: IBMPlexSans;
+  font-family: IBM Plex Sans;
   font-size: 15px;
   width: 322px;
   height: 22px;
