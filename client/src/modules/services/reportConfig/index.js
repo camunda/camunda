@@ -18,9 +18,10 @@ const config = {
 const processUpdate = config.process.update;
 config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
+  const newReport = update(props.report, {data: changes});
 
   changes.configuration = changes.configuration || {};
-  changes.configuration.sorting = {$set: getDefaultSorting(update(props.report, {data: changes}))};
+  changes.configuration.sorting = {$set: getDefaultSorting(newReport)};
 
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
@@ -42,6 +43,19 @@ config.process.update = (type, data, props) => {
     changes.distributedBy = {$set: {type: 'none', value: null}};
   }
 
+  // automatically distribute by flownode/usertasks when view is flownode/usertask
+  if (
+    newReport.data.distributedBy?.type === 'none' &&
+    ['userTask', 'flowNode'].includes(newReport.data.view?.entity) &&
+    !['userTasks', 'flowNodes'].includes(newReport.data.groupBy?.type)
+  ) {
+    changes.distributedBy = {$set: {type: newReport.data.view.entity, value: null}};
+
+    if (!['line', 'table'].includes(props.report.data?.visualization)) {
+      changes.visualization = {$set: 'bar'};
+    }
+  }
+
   return changes;
 };
 
@@ -61,9 +75,16 @@ function shouldResetDistributedBy(type, data, report) {
       return true;
     }
 
-    // flow node reports: reset when changing view to anything else
-    if (type === 'view' && data.entity !== 'flowNode') {
-      return true;
+    if (type === 'view') {
+      // flow node reports: reset when changing view to anything else
+      if (data.entity !== 'flowNode') {
+        return true;
+      }
+
+      // flow node reports: reset when changing from count to duration view when grouped by duration
+      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+        return true;
+      }
     }
   }
 
@@ -86,9 +107,16 @@ function shouldResetDistributedBy(type, data, report) {
       return true;
     }
 
-    // user task report: reset when changing view to anything else
-    if (type === 'view' && data.entity !== 'userTask') {
-      return true;
+    if (type === 'view') {
+      // user task report: reset when changing view to anything else
+      if (data.entity !== 'userTask') {
+        return true;
+      }
+
+      // user task report: reset when changing from count to duration view when grouped by duration
+      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+        return true;
+      }
     }
   }
 

@@ -44,7 +44,6 @@ test('create and name a report', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1350, 750);
 
@@ -65,7 +64,6 @@ test('sharing', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1000, 650);
 
@@ -94,7 +92,6 @@ test('version selection', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
 
   await t.click(e.definitionSelection);
 
@@ -258,7 +255,6 @@ test('Limit the precsion in number report', async (t) => {
   await t.typeText(e.nameEditField, 'Number Report', {replace: true});
 
   await u.selectView(t, 'Process Instance', 'Duration');
-  await u.selectGroupby(t, 'None');
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
@@ -353,7 +349,6 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.click(e.visualizationDropdown);
 
@@ -367,8 +362,6 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
-  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
 
@@ -397,8 +390,6 @@ test('select to show only running or completed nodes', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
-  await u.selectVisualization(t, 'Table');
 
   await t.click(e.configurationButton);
   await t.click(e.flowNodeStatusSelect);
@@ -455,8 +446,6 @@ test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Flow Node', 'Duration');
-  await u.selectGroupby(t, 'Flow Nodes');
-  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
 
@@ -471,7 +460,6 @@ test('different visualizations', async (t) => {
   await t.expect(e.reportDiagram.visible).ok();
 
   await u.selectView(t, 'Process Instance', 'Duration');
-  await u.selectGroupby(t, 'None');
 
   await t.expect(e.reportDiagram.exists).notOk();
   await t.expect(e.reportNumber.visible).ok();
@@ -481,7 +469,6 @@ test('aggregators and reset to default', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Duration');
-  await u.selectGroupby(t, 'None');
 
   await t.click(e.filterButton);
   await t.click(e.filterOption('Instance state'));
@@ -527,7 +514,6 @@ test('progress bar', async (t) => {
   await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
 
   await t.click(e.configurationButton);
 
@@ -560,7 +546,6 @@ test('heatmap target values', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Duration');
-  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 
@@ -609,7 +594,6 @@ test('always show tooltips', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 
@@ -727,7 +711,6 @@ test('process parts', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Process Instance', 'Duration');
-  await u.selectGroupby(t, 'None');
 
   const withoutPart = await e.reportNumber.textContent;
 
@@ -852,7 +835,6 @@ test('incident reports', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Incident Process', 'All');
   await u.selectView(t, 'Incident', 'Count');
-  await u.selectGroupby(t, 'None');
 
   await t.expect(e.reportNumber.visible).ok();
 

@@ -96,7 +96,6 @@ test('create a single number report', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   await t.expect(Report.reportNumber.visible).ok();
 
@@ -193,7 +192,6 @@ test('show raw data and decision table', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   await u.save(t);
 

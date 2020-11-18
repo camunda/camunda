@@ -33,7 +33,6 @@ test('create, edit, copy and remove an alert', async (t) => {
   await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
 
   await t.typeText(Report.nameEditField, 'Number Report', {replace: true});
 

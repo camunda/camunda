@@ -22,7 +22,7 @@ describe('process update', () => {
     const changes = config.process.update(
       'view',
       {property: 'duration', entity: 'flowNode'},
-      {report: {data: {view: {entity: 'flowNode', property: 'frequency'}}}}
+      {report: {data: {view: {entity: 'flowNode', property: 'frequency'}, groupBy: {}}}}
     );
 
     expect(changes.configuration.hiddenNodes).not.toBeDefined();
@@ -159,7 +159,7 @@ describe('process update', () => {
   });
 
   it('should keep distributed by compatible when changing view', () => {
-    const changes = config.process.update(
+    let changes = config.process.update(
       'view',
       {entity: 'flowNode'},
       {
@@ -171,7 +171,39 @@ describe('process update', () => {
         },
       }
     );
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'view',
+      {entity: 'flowNode', property: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'flowNode', property: 'count'},
+            groupBy: {type: 'duration'},
+            distributedBy: {type: 'flowNode', value: null},
+          },
+        },
+      }
+    );
 
     expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+  });
+
+  it('should automatically distribute by flownode/usertask when possible', () => {
+    const changes = config.process.update(
+      'groupBy',
+      {type: 'startDate'},
+      {
+        report: {
+          data: {
+            view: {entity: 'flowNode'},
+            distributedBy: {type: 'none'},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'flowNode', value: null}});
   });
 });

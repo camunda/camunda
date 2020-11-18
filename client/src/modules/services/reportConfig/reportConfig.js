@@ -114,14 +114,12 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
     const groups = combinations[viewGroup];
 
-    if (!targetGroupBy && Object.keys(groups).length === 1) {
+    if (!targetGroupBy) {
       return getOnlyOptionFor(groupBy, Object.keys(groups)[0]);
     } else if (targetGroupBy) {
       const visualizations = groups[getGroupFor(groupBy, targetGroupBy)];
 
-      if (visualizations.length === 1) {
-        return getOnlyOptionFor(visualization, visualizations[0]);
-      }
+      return getOnlyOptionFor(visualization, visualizations[0]);
     }
   };
 
@@ -142,8 +140,9 @@ export default function reportConfig({view, groupBy, visualization, combinations
     const {groupBy: groupByData, visualization} = props.report.data;
     const changes = {view: {$set: newView}};
 
-    const newGroup = getNext(newView) || groupByData;
-    if (newGroup && !equal(newGroup, groupByData)) {
+    let newGroup = groupByData;
+    if (!isAllowed(props.report, newView, groupByData) || !groupByData) {
+      newGroup = getNext(newView);
       changes.groupBy = {$set: newGroup};
     }
 
@@ -167,22 +166,8 @@ export default function reportConfig({view, groupBy, visualization, combinations
       }
     }
 
-    if (!isAllowed(props.report, newView, newGroup)) {
-      changes.groupBy = {$set: null};
-      changes.visualization = {$set: null};
-      changes.configuration = changes.configuration || {};
-      changes.configuration.xLabel = {$set: ''};
-
-      return changes;
-    }
-
-    const newVisualization = getNext(newView, newGroup) || visualization;
-    if (newVisualization && newVisualization !== visualization) {
-      changes.visualization = {$set: newVisualization};
-    }
-
-    if (!isAllowed(props.report, newView, newGroup, newVisualization)) {
-      changes.visualization = {$set: null};
+    if (!isAllowed(props.report, newView, newGroup, visualization) || !visualization) {
+      changes.visualization = {$set: getNext(newView, newGroup)};
     }
 
     return changes;
@@ -200,14 +185,8 @@ export default function reportConfig({view, groupBy, visualization, combinations
       changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
     }
 
-    const newVisualization = getNext(view, newGroupBy);
-
-    if (newVisualization) {
-      // if we have a predetermined next visualization, we set it
-      changes.visualization = {$set: newVisualization};
-    } else if (!isAllowed(props.report, view, newGroupBy, visualization)) {
-      // if the current visualization is not valid anymore for the new group, we reset it
-      changes.visualization = {$set: null};
+    if (!isAllowed(props.report, view, newGroupBy, visualization) || !visualization) {
+      changes.visualization = {$set: getNext(view, newGroupBy)};
     }
 
     return changes;

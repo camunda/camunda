@@ -223,7 +223,7 @@
     "addName": "Berichtname",
     "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
-    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die angegebene Einstellung.",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -328,7 +328,7 @@
     },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
-    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen oben.",
+    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen.",
     "incompleteNotice": {
       "message": "Um diesen Bericht anzuzeigen,",
       "action": "Konfiguration vervollständigen ... "
@@ -344,8 +344,8 @@
       "decision": "Entscheidungsdefinition"
     },
     "noDefinitionMessage": {
-      "process": "Wählen Sie oben eine <b>Prozessdefinition</b> aus.",
-      "decision": "Wählen Sie oben eine <b>Entscheidungsdefinition</b> aus."
+      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
+      "decision": "Wählen Sie eine <b>Entscheidungsdefinition</b> aus."
     },
     "saveConflict": {
       "header": "Inkompatible Änderungen",
@@ -359,9 +359,9 @@
       }
     },
     "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus.",
-    "noViewMessage": "Wählen Sie oben eine Option für <b>Ansicht</b> aus.",
-    "noGroupByMessage": "Wählen Sie oben eine Option für <b>Gruppieren nach</b> aus.",
-    "noVisualizationMessage": "Wählen Sie oben eine Option für <b>Visualisierung</b> aus.",
+    "noViewMessage": "Wählen Sie eine Option für <b>Ansicht</b> aus.",
+    "noGroupByMessage": "Wählen Sie eine Option für <b>Gruppieren nach</b> aus.",
+    "noVisualizationMessage": "Wählen Sie eine Option für <b>Visualisierung</b> aus.",
     "variables": {
       "default": "Variablen",
       "input": "Eingabevariablen",

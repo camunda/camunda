@@ -223,7 +223,7 @@
     "addName": "Report Name",
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
-    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
+    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your report set-up.",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -328,7 +328,7 @@
     },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data to display",
-    "editSetupMessage": "To display this report, edit your set-up above.",
+    "editSetupMessage": "To display this report, edit your report set-up.",
     "incompleteNotice": {
       "message": "To display this Report,",
       "action": "complete set-up…"
@@ -344,8 +344,8 @@
       "decision": "Decision Definition"
     },
     "noDefinitionMessage": {
-      "process": "Select a <b>Process Definition</b> above.",
-      "decision": "Select a <b>Decision Definition</b> above."
+      "process": "Select a <b>Process Definition</b>.",
+      "decision": "Select a <b>Decision Definition</b>."
     },
     "saveConflict": {
       "header": "Destructive Changes",
@@ -359,8 +359,8 @@
       }
     },
     "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
-    "noViewMessage": "Select an option for <b>View</b> above.",
-    "noGroupByMessage": "Select what to <b>Group By</b> above.",
+    "noViewMessage": "Select an option for <b>View</b>.",
+    "noGroupByMessage": "Select what to <b>Group By</b>.",
     "noVisualizationMessage": "Select an option for <b>Visualization</b> above.",
     "variables": {
       "default": "Variables",
