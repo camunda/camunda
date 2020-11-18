@@ -8,6 +8,9 @@ spec:
     - key: "agents-n1-standard-32-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
+  volumes:
+    - name: shared-data
+      emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.3-jdk-11
@@ -23,42 +26,8 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
-      resources:
-        limits:
-          cpu: 8
-          memory: 8Gi
-        requests:
-          cpu: 8
-          memory: 8Gi
-      securityContext:
-        privileged: true
-    - name: maven-jdk8
-      image: maven:3.6.3-jdk-8
-      command: ["cat"]
-      tty: true
-      env:
-        - name: LIMITS_CPU
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UseContainerSupport
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
-      resources:
-        limits:
-          cpu: 2
-          memory: 4Gi
-        requests:
-          cpu: 2
-          memory: 4Gi
-      securityContext:
-        privileged: true
-    - name: golang
-      image: golang:1.13.4
-      command: ["cat"]
-      tty: true
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       resources:
         limits:
           cpu: 4
@@ -66,11 +35,12 @@ spec:
         requests:
           cpu: 4
           memory: 4Gi
-      env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
       securityContext:
         privileged: true
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: docker
       image: docker:19.03.13-dind
       args:
@@ -91,3 +61,7 @@ spec:
         requests:
           cpu: 8
           memory: 8Gi
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
