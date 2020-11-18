@@ -7,18 +7,29 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.collection.Tuple;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.ToLongFunction;
+import org.junit.jupiter.params.provider.Arguments;
 
-public final class UpgradeTestCase {
+@SuppressWarnings("java:S2187") // false positive due to ending with *TestCase
+final class UpdateTestCase implements Arguments {
   private TestCaseBuilder builder;
 
-  private UpgradeTestCase(final TestCaseBuilder builder) {
+  private UpdateTestCase(final TestCaseBuilder builder) {
     this.builder = builder;
+    Objects.requireNonNull(builder.name);
+  }
+
+  @Override
+  public Object[] get() {
+    return new Object[] {builder.name, this};
   }
 
   static TestCaseBuilder builder() {
@@ -30,22 +41,28 @@ public final class UpgradeTestCase {
     return builder.createInstance.applyAsLong(client);
   }
 
-  Long runBefore(final ContainerStateRule state) {
+  Long runBefore(final ContainerState state) {
     return builder.before.applyAsLong(state);
   }
 
-  void runAfter(final ContainerStateRule state, final long wfInstanceKey, final long key) {
+  void runAfter(final ContainerState state, final long wfInstanceKey, final long key) {
     builder.after.accept(state, wfInstanceKey, key);
   }
 
   static class TestCaseBuilder {
+    private String name;
     private Consumer<ZeebeClient> deployWorkflow = c -> {};
     private ToLongFunction<ZeebeClient> createInstance = c -> -1L;
-    private ToLongFunction<ContainerStateRule> before = r -> -1L;
-    private TriConsumer<ContainerStateRule, Long, Long> after = (r, wfKey, k) -> {};
+    private ToLongFunction<ContainerState> before = r -> -1L;
+    private TriConsumer<ContainerState, Long, Long> after = (r, wfKey, k) -> {};
+
+    TestCaseBuilder name(final String name) {
+      this.name = Objects.requireNonNull(name);
+      return this;
+    }
 
     TestCaseBuilder deployWorkflow(final BpmnModelInstance model) {
-      return deployWorkflow(new Tuple<>(model, UpgradeTest.PROCESS_ID));
+      return deployWorkflow(new Tuple<>(model, PROCESS_ID));
     }
 
     @SafeVarargs
@@ -72,7 +89,7 @@ public final class UpgradeTestCase {
           client ->
               client
                   .newCreateInstanceCommand()
-                  .bpmnProcessId(UpgradeTest.PROCESS_ID)
+                  .bpmnProcessId(PROCESS_ID)
                   .latestVersion()
                   .variables(variables)
                   .send()
@@ -87,7 +104,7 @@ public final class UpgradeTestCase {
      * execution can be continued after. Takes the container rule as input and outputs a long which
      * can be used after the upgrade to continue the execution.
      */
-    TestCaseBuilder beforeUpgrade(final ToLongFunction<ContainerStateRule> func) {
+    TestCaseBuilder beforeUpgrade(final ToLongFunction<ContainerState> func) {
       before = func;
       return this;
     }
@@ -95,13 +112,13 @@ public final class UpgradeTestCase {
      * Should continue the instance after the upgrade in a way that will complete the workflow.
      * Takes the container rule and a long (e.g., a key) as input.
      */
-    TestCaseBuilder afterUpgrade(final TriConsumer<ContainerStateRule, Long, Long> func) {
+    TestCaseBuilder afterUpgrade(final TriConsumer<ContainerState, Long, Long> func) {
       after = func;
       return this;
     }
 
-    UpgradeTestCase done() {
-      return new UpgradeTestCase(this);
+    UpdateTestCase done() {
+      return new UpdateTestCase(this);
     }
   }
 
