@@ -20,8 +20,6 @@ test('create a report from a template', async (t) => {
   await t.click(Homepage.newReportOption);
   await t.click(Homepage.submenuOption('Process Report'));
 
-  await t.typeText(e.templateModalNameField, 'Report from Template', {replace: true});
-
   await t.click(e.templateModalProcessField);
   await t.click(e.option('Invoice Receipt with alternative correlation variable'));
 
@@ -32,7 +30,7 @@ test('create a report from a template', async (t) => {
 
   await t.click(e.modalConfirmbutton);
 
-  await t.expect(e.nameEditField.value).eql('Report from Template');
+  await t.expect(e.nameEditField.value).eql('Heatmap: Flownode count');
   await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
   await t.expect(e.reportDiagram.visible).ok();
 });

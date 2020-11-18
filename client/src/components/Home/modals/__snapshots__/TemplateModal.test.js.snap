@@ -6,7 +6,7 @@ Object {
   "state": Object {
     "definitionKey": "processDefinition",
     "definitionName": "Process Definition Name",
-    "name": "Template Report Name",
+    "name": "Heatmap: Flownode count",
     "template": Object {
       "view": Object {
         "entity": "flowNode",

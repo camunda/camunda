@@ -55,6 +55,9 @@
     "learnMore": "Weitere Informationen: ",
     "privacyPolicy": "Camunda Datenschutzerklärung"
   },
+  "templates": {
+    "noProcessHint": "Dashboards und Berichte erstellen"
+  },
   "home": {
     "createBtn": {
       "default": "Neu erstellen",

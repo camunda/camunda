@@ -9,7 +9,7 @@ import {Link} from 'react-router-dom';
 import classnames from 'classnames';
 import deepEqual from 'deep-equal';
 
-import {Button, LabeledInput, Modal, Form, DefinitionSelection, BPMNDiagram} from 'components';
+import {Button, Modal, DefinitionSelection, BPMNDiagram} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -29,7 +29,6 @@ export function TemplateModal({
   const [definition, setDefinition] = useState({definitionKey: '', versions: [], tenants: []});
   const [xml, setXml] = useState();
   const [template, setTemplate] = useState();
-  const [useCustomName, setUseCustomName] = useState(false);
 
   const {definitionKey, definitionName, versions, tenants} = definition;
 
@@ -57,22 +56,32 @@ export function TemplateModal({
     >
       <Modal.Header>{t(entity + '.createNew')}</Modal.Header>
       <Modal.Content>
+        <div className="configurationSelection">
+          <div className="templateContainer">
+            {templates.map(({name, hasSubtitle, img, config}, idx) => (
+              <Button
+                key={idx}
+                className={classnames({active: deepEqual(template, config), hasSubtitle})}
+                onClick={() => {
+                  setTemplate(config);
+                  setName(t(entity + '.templates.' + name));
+                }}
+              >
+                {img ? (
+                  <img src={img} alt={t(entity + '.templates.' + name)} />
+                ) : (
+                  <div className="imgPlaceholder" />
+                )}
+                <div className="name">{t(entity + '.templates.' + name)}</div>
+                {hasSubtitle && (
+                  <div className="subTitle">{t(entity + '.templates.' + name + '_subTitle')}</div>
+                )}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="definitionSelection">
           <div className="formArea">
-            <Form>
-              <Form.Group>
-                <LabeledInput
-                  type="text"
-                  label={t(entity + '.addName')}
-                  value={name}
-                  onChange={({target: {value}}) => {
-                    setName(value);
-                    setUseCustomName(true);
-                  }}
-                  autoComplete="off"
-                />
-              </Form.Group>
-            </Form>
             <DefinitionSelection
               type="process"
               expanded
@@ -93,32 +102,7 @@ export function TemplateModal({
           <div className="diagramArea">
             <BPMNDiagram xml={xml} />
           </div>
-        </div>
-        <div className="configurationSelection">
-          <div className="templateContainer">
-            {templates.map(({name, hasSubtitle, img, config}, idx) => (
-              <Button
-                key={idx}
-                className={classnames({active: deepEqual(template, config), hasSubtitle})}
-                onClick={() => {
-                  setTemplate(config);
-                  if (!useCustomName) {
-                    setName(t(entity + '.templates.' + name));
-                  }
-                }}
-              >
-                {img ? (
-                  <img src={img} alt={t(entity + '.templates.' + name)} />
-                ) : (
-                  <div className="imgPlaceholder" />
-                )}
-                <div className="name">{t(entity + '.templates.' + name)}</div>
-                {hasSubtitle && (
-                  <div className="subTitle">{t(entity + '.templates.' + name + '_subTitle')}</div>
-                )}
-              </Button>
-            ))}
-          </div>
+          {!template && <div className="noProcessHint">{t('templates.noProcessHint')}</div>}
         </div>
       </Modal.Content>
       <Modal.Actions>

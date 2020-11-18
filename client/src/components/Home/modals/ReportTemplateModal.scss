@@ -1,8 +1,18 @@
 .ReportTemplateModal {
-  &.TemplateModal.noProcess {
-    .DefinitionSelection,
+  &.TemplateModal.noProcess .definitionSelection {
+    align-items: normal;
+    justify-content: normal;
+
+    .formArea {
+      display: block;
+    }
+
     .diagramArea {
-      visibility: visible;
+      display: flex;
+    }
+
+    .noProcessHint {
+      display: none;
     }
   }
 }

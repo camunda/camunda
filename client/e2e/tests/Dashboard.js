@@ -19,7 +19,6 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Dashboard'));
 
-  await t.typeText(e.templateModalNameField, 'Dashboard from Template', {replace: true});
   await t.click(e.templateOption('Process performance overview'));
 
   await t.click(e.templateModalProcessField);
@@ -32,7 +31,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await u.save(t);
 
-  await t.expect(e.dashboardName.textContent).eql('Dashboard from Template');
+  await t.expect(e.dashboardName.textContent).eql('Process performance overview');
   await t.expect(e.reportTile.nth(0).textContent).contains('Total Instances');
   await t.expect(e.reportTile.nth(1).textContent).contains('AVG Instance Duration');
 

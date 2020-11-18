@@ -55,6 +55,9 @@
     "learnMore": "Learn more: ",
     "privacyPolicy": "Camunda Privacy Policy"
   },
+  "templates": {
+    "noProcessHint": "Create Dashboard and Reports"
+  },
   "home": {
     "createBtn": {
       "default": "Create New",

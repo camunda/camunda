@@ -4,10 +4,18 @@
     padding: 0;
   }
 
-  &.noProcess {
-    .DefinitionSelection,
+  &.noProcess .definitionSelection {
+    align-items: center;
+    justify-content: center;
+
+    .formArea,
     .diagramArea {
-      visibility: hidden;
+      display: none;
+    }
+
+    .noProcessHint {
+      font-size: 14px;
+      color: $grey-lighten-56;
     }
   }
 
