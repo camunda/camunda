@@ -124,7 +124,6 @@
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.6</plugin.version.jacoco>
 
-
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
 
@@ -1131,6 +1130,8 @@
           <executions>
             <execution>
               <id>analyze-dependencies</id>
+              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
+              <phase>verify</phase>
               <goals>
                 <goal>analyze-only</goal>
               </goals>
@@ -1138,12 +1139,18 @@
                 <failOnWarning>true</failOnWarning>
                 <outputXML>true</outputXML>
                 <!-- dependencies not directly used in all projects during tests -->
-                <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependencies combine.children="append">
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
                   <dep>io.zeebe:zeebe-build-tools</dep>
                   <dep>io.zeebe:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
+                  <dep>org.apache.maven.surefire:surefire-junit4</dep>
+                  <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                  <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
+                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                  <dep>org.junit.vintage:junit-vintage-engine</dep>
+                  <dep>org.codehaus.plexus:plexus-utils:jar:1.1</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -1345,7 +1352,9 @@
       This profile is used to add an explicit dependency to surefire-junit. To fix the race condition
       of https://github.com/zeebe-io/zeebe/issues/2379 we download all dependencies at the beginning
       with mvn dependency:go-offline and then run the tests in offline mode. But the plugin misses
-      to download the surefire-junit dependency, therefore define an explicit dependency while downloading
+      to download the surefire-junit dependency, therefore define an explicit dependency while downloading.
+
+      Usage: mvn install -Pprepare-offline
     -->
     <profile>
       <id>prepare-offline</id>
@@ -1378,6 +1387,12 @@
           <artifactId>junit-vintage-engine</artifactId>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.codehaus.plexus</groupId>
+          <artifactId>plexus-utils</artifactId>
+          <version>1.1</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -1389,23 +1404,9 @@
                 <id>go-offline</id>
                 <phase>initialize</phase>
                 <goals>
+                  <goal>resolve-plugins</goal>
                   <goal>go-offline</goal>
                 </goals>
-              </execution>
-              <execution>
-                <id>analyze-dependencies</id>
-                <goals>
-                  <goal>analyze-only</goal>
-                </goals>
-                <configuration>
-                  <ignoredUnusedDeclaredDependencies combine.children="append">
-                    <dep>org.apache.maven.surefire:surefire-junit4</dep>
-                    <dep>org.apache.maven.surefire:surefire-junit47</dep>
-                    <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
-                    <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                    <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  </ignoredUnusedDeclaredDependencies>
-                </configuration>
               </execution>
             </executions>
           </plugin>
