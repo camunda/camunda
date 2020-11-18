@@ -10,7 +10,7 @@ import * as React from 'react';
 import {BrowserRouter, Switch, Route} from 'react-router-dom';
 import {ThemeProvider} from 'styled-components';
 import {ApolloProvider} from '@apollo/client';
-import {NotificationProvider} from 'modules/contexts/NotificationContext';
+import {NotificationProvider} from 'modules/notifications';
 
 import {PrivateRoute} from './PrivateRoute';
 import {Tasklist} from './Tasklist';

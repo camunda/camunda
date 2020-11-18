@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
 import {NotificationContainer} from 'modules/components/NotificationContainer';
 
 type Options = {
@@ -13,31 +13,36 @@ type Options = {
   isDismissable?: boolean;
 };
 
-type ContextProps = {
-  displayNotification: DisplayNotificationFn;
+type Notification = {
+  remove: () => void;
+  hasBeenShown: () => boolean;
 };
 
 type DisplayNotificationFn = (
   appearance: 'success' | 'error' | 'info',
   options: Options,
-) => void;
+) => Promise<Notification | undefined>;
+
+type NotificationContextType = {
+  displayNotification: DisplayNotificationFn;
+};
 
 type ProviderProps = {
   children: React.ReactNode;
 };
 
-const NotificationContext = React.createContext<ContextProps>({
-  displayNotification() {},
-});
+const NotificationContext = React.createContext<
+  Partial<NotificationContextType>
+>({});
 
 const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
   const notificationRef = React.createRef<HTMLCmNotificationContainerElement>();
 
-  const displayNotification: DisplayNotificationFn = (
+  const displayNotification: DisplayNotificationFn = async (
     appearance,
     {headline, description, isDismissable},
   ) => {
-    notificationRef?.current?.enqueueNotification({
+    return await notificationRef.current?.enqueueNotification({
       headline,
       description,
       appearance,
@@ -53,4 +58,9 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
   );
 };
 
-export {NotificationProvider, NotificationContext};
+function useNotifications() {
+  return useContext(NotificationContext) as NotificationContextType;
+}
+
+export type {Notification};
+export {NotificationProvider, NotificationContext, useNotifications};
