@@ -26,49 +26,10 @@ spec:
       resources:
         limits:
           cpu: 8
-          memory: 8Gi
+          memory: 16Gi
         requests:
           cpu: 8
-          memory: 8Gi
-      securityContext:
-        privileged: true
-    - name: maven-jdk8
-      image: maven:3.6.3-jdk-8
-      command: ["cat"]
-      tty: true
-      env:
-        - name: LIMITS_CPU
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UseContainerSupport
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
-      resources:
-        limits:
-          cpu: 2
-          memory: 4Gi
-        requests:
-          cpu: 2
-          memory: 4Gi
-      securityContext:
-        privileged: true
-    - name: golang
-      image: golang:1.13.4
-      command: ["cat"]
-      tty: true
-      resources:
-        limits:
-          cpu: 4
-          memory: 4Gi
-        requests:
-          cpu: 4
-          memory: 4Gi
-      env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
+          memory: 16Gi
       securityContext:
         privileged: true
     - name: docker
