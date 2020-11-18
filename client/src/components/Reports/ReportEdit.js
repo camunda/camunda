@@ -119,12 +119,32 @@ export class ReportEdit extends React.Component {
     if (id) {
       nowPristine();
       this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
-      this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
+
+      const params = new URLSearchParams(this.props.location.search);
+      const returnTo = params.get('returnTo');
+
+      let redirect = './';
+      if (returnTo) {
+        redirect = returnTo;
+      } else if (this.props.isNew) {
+        redirect = `../${id}/`;
+      }
+
+      this.setState({redirect});
     }
   };
 
-  cancel = () => {
+  cancel = (evt) => {
     nowPristine();
+
+    const params = new URLSearchParams(this.props.location.search);
+    const returnTo = params.get('returnTo');
+
+    if (returnTo) {
+      evt.preventDefault();
+      this.setState({redirect: returnTo});
+    }
+
     this.setState({
       report: this.state.originalData,
     });

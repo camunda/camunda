@@ -370,3 +370,31 @@ it('should disable the visualization Select if view or groupBy is not selected',
 
   expect(node.find(ReportSelect)).toBeDisabled();
 });
+
+it('should go back to a custom route after saving if provided as URL Search Param', async () => {
+  const node = shallow(
+    <ReportEdit
+      {...props}
+      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
+    />
+  );
+
+  await node.find(EntityNameForm).prop('onSave')();
+
+  expect(node.find('Redirect')).toExist();
+  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+});
+
+it('should go back to a custom route after canceling if provided as URL Search Param', async () => {
+  const node = shallow(
+    <ReportEdit
+      {...props}
+      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
+    />
+  );
+
+  node.find(EntityNameForm).prop('onCancel')({preventDefault: jest.fn()});
+
+  expect(node.find('Redirect')).toExist();
+  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+});

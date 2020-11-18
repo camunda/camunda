@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .DashboardRenderer {
   background-position: 6px 6px;
   background-size: calc(100% / 18 - 0.5px) 104px;
@@ -19,6 +21,7 @@
 
   .react-grid-placeholder {
     z-index: var(--z-below);
+    background-color: $blue-darken-55;
   }
 
   &.isDragging .grid-entry:not(.react-draggable-dragging):not(.resizing) {

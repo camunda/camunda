@@ -112,15 +112,18 @@ export class Report extends React.Component {
         {viewMode === 'edit' ? (
           <ReportEdit
             isNew={this.isNew()}
-            updateOverview={async (newReport) => {
-              const user = await this.props.getUser();
-              this.setState({
-                report: {
-                  ...newReport,
-                  lastModified: getFormattedNowDate(),
-                  lastModifier: user.name,
-                },
-              });
+            updateOverview={(newReport) => {
+              const {mightFail, getUser} = this.props;
+
+              mightFail(getUser(), (user) =>
+                this.setState({
+                  report: {
+                    ...newReport,
+                    lastModified: getFormattedNowDate(),
+                    lastModifier: user.name,
+                  },
+                })
+              );
             }}
             report={report}
           />

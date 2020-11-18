@@ -198,6 +198,7 @@ export class DashboardEdit extends React.Component {
   };
 
   editReport = (report) => {
+    const {history, location} = this.props;
     if (isDirty()) {
       showPrompt(
         {
@@ -213,11 +214,11 @@ export class DashboardEdit extends React.Component {
           const reportIdx = this.state.reports.indexOf(report);
           await this.save(true);
           const reportId = this.state.reports[reportIdx].id;
-          this.props.history.push('report/' + reportId + '/edit');
+          history.push('report/' + reportId + '/edit?returnTo=' + location.pathname);
         }
       );
     } else {
-      this.props.history.push('report/' + report.id + '/edit');
+      history.push('report/' + report.id + '/edit?returnTo=' + location.pathname);
     }
   };
 
