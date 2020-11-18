@@ -47,6 +47,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   public JobWorkerImpl(
       final int maxJobsActive,
+      final ScheduledExecutorService executor,
+      final Duration pollInterval,
+      final JobRunnableFactory jobRunnableFactory,
+      final JobPoller jobPoller) {
+    this(maxJobsActive, 0.3f, executor, pollInterval, jobRunnableFactory, jobPoller);
+  }
+
+  public JobWorkerImpl(
+      final int maxJobsActive,
       final float minJobsActiveRatio,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
