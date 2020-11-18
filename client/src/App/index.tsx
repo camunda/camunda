@@ -9,7 +9,7 @@ import {HashRouter as Router, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {NotificationProvider} from 'modules/contexts/NotificationContext';
+import {NotificationProvider} from 'modules/notifications';
 
 import Authentication from './Authentication';
 import Header from './Header';

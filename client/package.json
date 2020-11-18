@@ -3,8 +3,8 @@
   "version": "0.26.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@camunda-cloud/common-ui": "^0.0.13",
-    "@camunda-cloud/common-ui-react": "^0.0.13",
+    "@camunda-cloud/common-ui": "^0.0.14-beta1",
+    "@camunda-cloud/common-ui-react": "^0.0.14-beta1",
     "@types/enzyme": "^3.10.8",
     "@types/history": "^4.7.8",
     "@types/jest": "^26.0.15",
