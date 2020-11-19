@@ -1,9 +1,9 @@
 @import 'shared-styles/shared-styles.scss';
 
 .ReportControlPanel {
-  background-color: #f4f4f4;
-  border-left: 1px solid #dfdfdf;
-  border-bottom: 1px solid #dfdfdf;
+  background-color: var(--silver-base-97);
+  border-left: 1px solid var(--silver-darken-87);
+  border-bottom: 1px solid var(--silver-darken-87);
   margin-left: 20px;
   flex-shrink: 0;
   width: 300px;
@@ -15,14 +15,14 @@
     font-weight: bold;
     font-size: 0.875em;
     margin-bottom: 15px;
-    color: $grey-darken-33;
+    color: var(--grey-darken-33);
   }
 
   .source,
   .reportSetup,
   .filter {
     padding: 20px;
-    border-bottom: 1px solid $silver-darken-87;
+    border-bottom: 1px solid var(--silver-darken-87);
   }
 
   .reportSetup > ul {
@@ -40,7 +40,7 @@
       }
 
       > .label {
-        color: #626262;
+        color: var(--grey-base-40);
         font-size: 0.875em;
         margin-bottom: 5px;
         display: block;
@@ -58,6 +58,6 @@
     text-align: center;
     padding: 10px;
     font-size: 0.875em;
-    color: $grey-base-40;
+    color: var(--grey-base-40);
   }
 }

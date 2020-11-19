@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Collection {
   height: 100%;
   display: flex;
@@ -7,7 +5,7 @@
 
   > .header {
     height: 135px;
-    border-bottom: 1px solid $silver-darken-87;
+    border-bottom: 1px solid var(--silver-darken-87);
     position: relative;
     padding: 30px 63px;
 
@@ -19,7 +17,7 @@
       position: relative;
       margin-top: 8px;
       margin-right: 10px;
-      color: $grey-darken-23;
+      color: var(--grey-darken-23);
 
       svg {
         position: absolute;
@@ -33,7 +31,7 @@
     .text {
       font-size: 17px;
       line-height: 22px;
-      color: $grey-darken-33;
+      color: var(--grey-darken-33);
 
       margin-top: 9px;
       white-space: nowrap;
@@ -89,7 +87,7 @@
       li {
         display: inline-block;
         margin-right: 20px;
-        color: $grey-darken-36;
+        color: var(--grey-darken-36);
 
         a {
           padding: 4px 8px;
@@ -99,13 +97,13 @@
         }
 
         &:hover {
-          box-shadow: 0 3px 0 $silver-darken-80;
+          box-shadow: 0 3px 0 var(--silver-darken-80);
         }
 
         &.active {
           font-weight: 500;
-          color: $grey-darken-23;
-          box-shadow: 0 3px 0 $grey-darken-23;
+          color: var(--grey-darken-23);
+          box-shadow: 0 3px 0 var(--grey-darken-23);
         }
       }
     }

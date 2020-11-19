@@ -1,23 +1,21 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark {
   .DropdownOption {
-    background-color: $grey-darken-33;
-    color: #fff;
+    background-color: var(--grey-darken-33);
+    color: var(--silver-lighten-99);
 
     &.is-active {
-      color: #eee;
-      background-color: #333;
+      color: var(--silver-darken-94);
+      background-color: var(--grey-darken-13);
 
       &:hover {
-        background-color: $blue;
+        background-color: var(--blue-darken-55);
       }
     }
 
     &.disabled {
       &:hover {
-        color: #fff;
-        background-color: $grey-darken-33;
+        color: var(--silver-lighten-99);
+        background-color: var(--grey-darken-33);
         border: none;
       }
     }
@@ -26,11 +24,11 @@
 
 .DropdownOption {
   white-space: nowrap;
-  color: #333;
+  color: var(--grey-darken-13);
   text-decoration: none;
   padding: 6px 12px 6px 20px;
   font-size: 14px;
-  background-color: white;
+  background-color: var(--silver-lighten-99);
   border: none;
   display: block;
   width: 100%;
@@ -43,8 +41,8 @@
 
   &.is-active {
     border: none;
-    color: #111;
-    background-color: darken(#e6e6e6, 12);
+    color: var(--grey-darken-13);
+    background-color: var(--silver-darken-80);
     transition: none;
   }
 
@@ -53,12 +51,12 @@
   }
 
   &:visited {
-    color: #333;
+    color: var(--grey-darken-13);
   }
 
   &:hover {
-    background-color: $blue;
-    color: #fff;
+    background-color: var(--blue-darken-55);
+    color: var(--silver-lighten-99);
     border: none;
     transition: none;
     text-decoration: none;
@@ -66,7 +64,7 @@
 
   &:focus {
     background-color: rgba(216, 220, 227, 0.5);
-    color: black;
+    color: var(--grey-darken-13);
     border: none;
     transition: none;
     outline: none;
@@ -78,8 +76,8 @@
     opacity: 0.65;
 
     &:hover {
-      color: #333;
-      background-color: #fff;
+      color: var(--grey-darken-13);
+      background-color: var(--silver-lighten-99);
       border: none;
     }
   }

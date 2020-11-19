@@ -1,8 +1,8 @@
 @mixin highlighted {
-  background-color: #7fa8c5;
+  background-color: var(--blue-lighten-75);
   padding: 1px 8px 2px;
   border-radius: 10px;
-  color: #fff;
+  color: var(--silver-lighten-99);
   white-space: nowrap;
   display: inline-block;
   margin: 3px 0;

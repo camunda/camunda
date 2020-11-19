@@ -1,4 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
 .ColumnRearrangement {
   display: flex;
   flex-direction: column;
@@ -14,23 +13,23 @@
 }
 
 .Table tr .ColumnRearrangement__dropTarget--left {
-  box-shadow: -2px 0 0 $green-base-44 inset;
+  box-shadow: -2px 0 0 var(--green-base-44) inset;
 }
 
 .Table tr .ColumnRearrangement__dropTarget--right {
-  box-shadow: 2px 0 0 $green-base-44 inset;
+  box-shadow: 2px 0 0 var(--green-base-44) inset;
 }
 
 .Table tr .ColumnRearrangement__dropTarget--invalid-left {
-  box-shadow: -2px 0 0 $red-base-62 inset;
+  box-shadow: -2px 0 0 var(--red-base-62) inset;
 }
 
 .Table tr .ColumnRearrangement__dropTarget--invalid-right {
-  box-shadow: 2px 0 0 $red-base-62 inset;
+  box-shadow: 2px 0 0 var(--red-base-62) inset;
 }
 
 .ColumnRearrangement__dragPreview {
-  background-color: white;
+  background-color: var(--silver-lighten-99);
   width: 250px;
   min-width: 0 !important;
   max-height: 400px;

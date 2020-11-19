@@ -1,14 +1,12 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Checkmark {
   flex: 0 0 50px;
-  color: $red-darken-38;
+  color: var(--red-darken-38);
   position: relative;
   height: 18px;
 
   .Icon {
     margin: 0;
-    color: $blue-darken-55;
+    color: var(--blue-darken-55);
     font-size: 18px;
     vertical-align: initial;
   }

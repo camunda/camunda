@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .ValueListInput {
   margin-bottom: 20px;
 
@@ -23,14 +21,14 @@
   .MultiValueInput {
     .Tag,
     .Tag .Button {
-      background-color: #7fa8c5;
-      color: white;
+      background-color: var(--blue-lighten-75);
+      color: var(--silver-lighten-99);
     }
 
     .Tag.invalid,
     .Tag.invalid .Button {
-      background-color: $red-lighten-85;
-      color: $grey-lighten-50;
+      background-color: var(--red-lighten-85);
+      color: var(--grey-lighten-50);
     }
   }
 }

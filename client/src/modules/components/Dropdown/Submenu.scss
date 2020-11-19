@@ -2,7 +2,7 @@
 
 .dark .Submenu {
   .childrenContainer {
-    background-color: $grey-darken-33;
+    background-color: var(--grey-darken-33);
   }
 }
 
@@ -10,8 +10,8 @@
   padding-right: 26px;
 
   &.open {
-    background-color: $blue;
-    color: #fff;
+    background-color: var(--blue-darken-55);
+    color: var(--silver-lighten-99);
     border: none;
     transition: none;
   }
@@ -28,7 +28,7 @@
     top: -5px;
     margin: 0 3px;
     min-width: 130px;
-    background-color: white;
+    background-color: var(--silver-lighten-99);
     padding: 5px 0;
     border-radius: 3px;
     box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);

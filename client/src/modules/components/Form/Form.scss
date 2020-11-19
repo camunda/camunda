@@ -182,7 +182,7 @@
       padding: 0 0 20px 0;
 
       legend {
-        border-top: 1px solid #d3d3d3;
+        border-top: 1px solid var(--silver-darken-80);
         padding: 14px 0 0 0;
       }
     }
@@ -191,7 +191,7 @@
       &:not(.noSpacing) {
         padding: 5px 0 20px 0;
         &:not(:first-child) {
-          border-top: 1px solid #d3d3d3;
+          border-top: 1px solid var(--silver-darken-80);
           padding-top: 14px;
         }
       }

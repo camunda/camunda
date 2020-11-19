@@ -1,15 +1,13 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .SelectionFilter {
   .hint {
-    color: $silver-darken-80;
+    color: var(--silver-darken-80);
   }
 }
 
 .SelectionFilter {
   .hint {
     font-size: 12px;
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
     margin: 0;
     padding: 5px 0;
   }
@@ -25,7 +23,7 @@
       min-width: 200px;
 
       &.invalid .typeaheadInput {
-        border-color: $red-base-62;
+        border-color: var(--red-base-62);
       }
     }
 

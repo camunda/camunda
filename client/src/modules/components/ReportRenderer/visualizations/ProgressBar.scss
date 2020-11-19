@@ -1,8 +1,6 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark {
   .progressLabel {
-    color: #ddd;
+    color: var(--silver-darken-87);
   }
 }
 
@@ -10,16 +8,16 @@
   height: 65px;
   position: relative;
   border-radius: 4px;
-  background-color: #eee;
+  background-color: var(--silver-darken-94);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
   margin-top: 24px;
 
   .goalOverlay {
     height: 100%;
     position: absolute;
-    color: $cam-red;
+    color: var(--red-darken-38);
     border-radius: 4px;
-    background: linear-gradient(to bottom, $cam-blue 0%, darken($cam-blue, 10%) 100%);
+    background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
 
     .goalLabel {
       display: block;
@@ -43,7 +41,7 @@
         left: 0;
         right: 0;
         height: 135%;
-        border-right: 2px solid $cam-red;
+        border-right: 2px solid var(--red-darken-38);
       }
     }
   }
@@ -54,8 +52,9 @@
     text-align: center;
     line-height: 65px;
     font-size: 2.5em;
-    color: white;
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    color: var(--silver-lighten-99);
+    text-shadow: -1px -1px 0 var(--grey-darken-13), 1px -1px 0 var(--grey-darken-13),
+      -1px 1px 0 var(--grey-darken-13), 1px 1px 0 var(--grey-darken-13);
     padding: 0 0.5em;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -63,16 +62,12 @@
 
   .filledOverlay {
     height: 100%;
-    background: linear-gradient(to bottom, $cam-blue 0%, darken($cam-blue, 10%) 100%);
+    background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
     border-radius: 4px;
     min-width: 5px;
 
     &.goalExceeded {
-      background: linear-gradient(
-        to bottom,
-        darken($cam-blue, 20%) 0%,
-        darken($cam-blue, 30%) 100%
-      );
+      background: linear-gradient(to bottom, var(--blue-darken-62) 0%, var(--blue-darken-55) 100%);
     }
   }
 

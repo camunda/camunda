@@ -1,29 +1,27 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark {
   .rdrNextPrevButton {
-    background: $grey-darken-36;
+    background: var(--grey-darken-36);
   }
 
   .rdrNextPrevButton:hover {
-    background: $grey-darken-23;
+    background: var(--grey-darken-23);
   }
 
   .rdrPprevButton i {
-    border-color: transparent $silver-darken-87 transparent transparent;
+    border-color: transparent var(--silver-darken-87) transparent transparent;
   }
 
   .rdrNextButton i {
-    border-color: transparent transparent transparent $silver-darken-87;
+    border-color: transparent transparent transparent var(--silver-darken-87);
   }
 
   .rdrMonthAndYearPickers select {
-    color: $silver-darken-87;
+    color: var(--silver-darken-87);
     background: initial;
     appearance: menulist;
 
     option {
-      background-color: $grey-darken-23;
+      background-color: var(--grey-darken-23);
     }
   }
 
@@ -33,15 +31,15 @@
 
   .rdrMonthName,
   .rdrWeekDay {
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
   }
 
   .rdrDayPassive .rdrDayNumber span {
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
   }
 
   .rdrDayNumber span {
-    color: $silver-darken-87;
+    color: var(--silver-darken-87);
   }
 }
 

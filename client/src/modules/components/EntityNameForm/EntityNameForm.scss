@@ -15,12 +15,12 @@
 
     @include placeholder {
       font-weight: normal;
-      color: #bdbdbd;
+      color: var(--grey-lighten-56);
     }
   }
 
   .cancel-button {
-    color: $grey-darken-33;
+    color: var(--grey-darken-33);
     text-decoration: none;
   }
 }

@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .TelemetrySettings {
   .options {
     margin-left: 40px;
@@ -23,6 +21,6 @@
 
   p {
     font-size: 14px;
-    color: $grey-darken-36;
+    color: var(--grey-darken-36);
   }
 }

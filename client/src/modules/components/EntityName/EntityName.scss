@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .EntityName {
   position: relative;
   flex-grow: 1;
@@ -22,7 +20,7 @@
       line-height: 35px;
       font-weight: 500;
       font-size: 18px;
-      color: $grey-darken-23;
+      color: var(--grey-darken-23);
       max-width: calc(100% - 30px);
 
       white-space: nowrap;
@@ -42,12 +40,12 @@
       margin-left: 3px;
 
       &:hover {
-        background-color: $silver-darken-94;
+        background-color: var(--silver-darken-94);
       }
 
       &:active,
       &.active {
-        background-color: $silver-darken-80;
+        background-color: var(--silver-darken-80);
       }
 
       .Icon {
@@ -70,13 +68,13 @@
 
           dt {
             font-size: 12px;
-            color: $grey-lighten-56;
+            color: var(--grey-lighten-56);
           }
 
           dd {
             margin: 3px 0 10px;
             font-size: 14px;
-            color: $grey-darken-33;
+            color: var(--grey-darken-33);
           }
         }
       }
@@ -86,6 +84,6 @@
 
 .dark .EntityName {
   .name-container .name {
-    color: $silver-darken-87;
+    color: var(--silver-darken-87);
   }
 }

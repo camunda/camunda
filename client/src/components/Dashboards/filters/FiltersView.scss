@@ -1,10 +1,8 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .FiltersView {
-  border-color: #555;
+  border-color: var(--grey-darken-36);
 
   > .Button {
-    color: $silver-darken-87;
+    color: var(--silver-darken-87);
 
     &:hover {
       border: none;
@@ -13,7 +11,7 @@
   }
 
   > * > .title {
-    color: #ddd;
+    color: var(--silver-darken-87);
   }
 
   hr {
@@ -22,20 +20,20 @@
 
   .Popover {
     .dialogContainer {
-      background-color: $grey-darken-33;
+      background-color: var(--grey-darken-33);
 
-      color: #ffffff;
+      color: var(--silver-lighten-99);
 
       .ButtonGroup .Button {
-        background-color: $grey-base-40;
-        border-color: $grey-darken-33;
+        background-color: var(--grey-base-40);
+        border-color: var(--grey-darken-33);
 
         &:hover {
-          background-color: $grey-lighten-50;
+          background-color: var(--grey-lighten-50);
         }
 
         &.active {
-          background-color: $blue;
+          background-color: var(--blue);
         }
       }
     }
@@ -48,8 +46,8 @@
 }
 
 .FiltersView {
-  border-top: 1px solid $silver-darken-80;
-  border-bottom: 1px solid $silver-darken-80;
+  border-top: 1px solid var(--silver-darken-80);
+  border-bottom: 1px solid var(--silver-darken-80);
   padding: 15px 40px 20px 40px;
   margin-bottom: 20px;
 
@@ -67,7 +65,7 @@
 
     > .title {
       font-size: 14px;
-      color: $grey-base-40;
+      color: var(--grey-base-40);
       margin-bottom: 7px;
     }
   }
@@ -78,7 +76,7 @@
     width: max-content;
     font-size: 13px;
     text-decoration: underline;
-    color: $grey-darken-13;
+    color: var(--grey-darken-13);
     padding: 0;
   }
 
@@ -109,15 +107,15 @@
 
   .indicator {
     vertical-align: middle;
-    color: $silver-darken-80;
+    color: var(--silver-darken-80);
     &.active {
-      color: $blue-darken-55;
+      color: var(--blue-darken-55);
     }
   }
 
   hr {
     border: none;
-    border-bottom: 1px solid $silver-darken-87;
+    border-bottom: 1px solid var(--silver-darken-87);
     margin: 5px 0;
   }
 

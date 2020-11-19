@@ -1,9 +1,9 @@
 .ActionItem {
   display: inline-flex;
-  border: 1px solid #ccc;
-  background-color: white;
+  border: 1px solid var(--silver-darken-80);
+  background-color: var(--silver-lighten-99);
   border-radius: 3px;
-  background: white;
+  background: var(--silver-lighten-99);
   width: 100%;
   position: relative;
   min-height: 32px;
@@ -11,7 +11,7 @@
 
   &.highlighted {
     background: rgba(48, 116, 142, 0.6);
-    color: #fff;
+    color: var(--silver-lighten-99);
   }
 
   .Button,
@@ -20,7 +20,7 @@
     border: 1px solid transparent;
     border-radius: 0;
     position: absolute;
-    background: #fff;
+    background: var(--silver-lighten-99);
     right: 0;
     top: 0;
     height: 30px;

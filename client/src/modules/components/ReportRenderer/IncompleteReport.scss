@@ -2,7 +2,7 @@
   width: 100%;
   height: 100%;
   text-align: center;
-  color: #bfc3c8;
+  color: var(--grey-lighten-56);
   line-height: 1.71;
   font-size: 14px;
   font-weight: bold;
@@ -21,5 +21,5 @@
 }
 
 .Dashboard.editMode .IncompleteReport p a {
-  color: #bfc3c8;
+  color: var(--grey-lighten-56);
 }

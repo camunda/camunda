@@ -15,7 +15,7 @@
   }
 
   .placeholder {
-    background: #f4f4f4;
+    background: var(--silver-base-97);
     height: 30px;
   }
 
@@ -77,8 +77,9 @@
         top: 0px;
         font-size: 20px;
         line-height: 10px;
-        color: #707070;
-        text-shadow: 0 5px #707070, 0 10px #707070, 5px 0 #707070, 5px 5px #707070, 5px 10px #707070;
+        color: var(--grey-base-40);
+        text-shadow: 0 5px var(--grey-base-40), 0 10px var(--grey-base-40),
+          5px 0 var(--grey-base-40), 5px 5px var(--grey-base-40), 5px 10px var(--grey-base-40);
       }
     }
   }

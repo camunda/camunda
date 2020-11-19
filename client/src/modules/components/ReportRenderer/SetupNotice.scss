@@ -3,8 +3,8 @@
   height: 100%;
   padding-top: 38px;
   border-radius: 8px;
-  background-color: #f7f8f9;
-  color: #bfc3c8;
+  background-color: var(--silver-base-97);
+  color: var(--grey-lighten-56);
   text-align: center;
 
   h1 {
@@ -18,7 +18,7 @@
     margin: 0;
 
     b {
-      color: #6c737f;
+      color: var(--grey-base-40);
     }
   }
 }

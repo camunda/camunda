@@ -2,8 +2,8 @@
   display: inline-block;
   position: absolute;
   max-width: 500px;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--grey-darken-13);
+  color: var(--silver-lighten-99);
   padding: 9px 13px 9px 11px;
   margin: 7px 0;
   border-radius: 6px;
@@ -57,9 +57,9 @@
   }
 
   &.light {
-    background: #fff;
-    color: #000;
-    border: 1px solid grey;
+    background: var(--silver-lighten-99);
+    color: var(--grey-darken-13);
+    border: 1px solid var(--grey-lighten-50);
 
     &:before {
       bottom: calc(100%);
@@ -67,22 +67,22 @@
 
     &.bottom {
       &:before {
-        border-bottom-color: gray;
+        border-bottom-color: var(--grey-lighten-50);
       }
 
       &:after {
-        border-bottom-color: #fff;
+        border-bottom-color: var(--silver-lighten-99);
       }
     }
 
     &.top {
       &:before {
         bottom: -11px;
-        border-top-color: gray;
+        border-top-color: var(--grey-lighten-50);
       }
 
       &:after {
-        border-top-color: #fff;
+        border-top-color: var(--silver-lighten-99);
       }
     }
   }
@@ -90,13 +90,13 @@
   &.top {
     &:after {
       bottom: -10px;
-      border-top-color: #000;
+      border-top-color: var(--grey-darken-13);
     }
   }
 
   &.bottom:after {
     bottom: calc(100% - 1px);
-    border-bottom-color: #000;
+    border-bottom-color: var(--grey-darken-13);
   }
 }
 

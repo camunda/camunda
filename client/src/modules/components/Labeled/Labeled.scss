@@ -13,7 +13,7 @@
     }
 
     &[disabled] {
-      color: graytext;
+      color: var(--grey-lighten-50);
     }
   }
 }

@@ -18,8 +18,9 @@
 
 .DiagramBehavior__highlight .djs-outline {
   stroke-width: 2px !important;
-  stroke: #276e8c !important;
-  fill: rgba(188, 211, 220, 0.4) !important;
+  stroke: var(--blue-darken-62) !important;
+  fill: var(--silver-darken-80) !important;
+  fill-opacity: 0.4;
 }
 
 .DiagramBehavior__selected .djs-outline {
@@ -27,33 +28,35 @@
   shape-rendering: initial !important;
   stroke-dasharray: none !important;
   stroke-width: 2px !important;
-  stroke: #276e8c !important;
-  fill: rgba(48, 116, 142, 0.6) !important;
+  stroke: var(--blue-darken-62) !important;
+  fill: var(--blue-lighten-82) !important;
+  fill-opacity: 0.6;
 }
 
 .DiagramBehavior__selected.hover .djs-outline {
   stroke-width: 2px !important;
-  stroke: #1d5770 !important;
-  fill: rgba(29, 87, 112, 0.6) !important;
+  stroke: var(--blue-darken-55) !important;
+  fill: var(--blue-darken-48) !important;
+  fill-opacity: 0.6;
 }
 
 g.chart-hover path {
-  stroke: $cam-red !important;
+  stroke: var(--red-darken-38) !important;
   stroke-width: 3px !important;
 }
 
 .DiagramBehavior__overlay {
   display: inline-block;
-  background-color: white;
+  background-color: var(--silver-lighten-99);
 }
 
 .DiagramBehavior__end-event-statistics {
-  border: 1px solid gray;
+  border: 1px solid var(--grey-lighten-50);
   width: 350px;
   margin-bottom: 0;
 
   tr {
-    background-color: white;
+    background-color: var(--silver-lighten-99);
   }
 
   td {

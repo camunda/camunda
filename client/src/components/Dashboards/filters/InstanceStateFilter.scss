@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .InstanceStateFilter {
   .Popover {
     .Popover__button {
@@ -7,11 +5,11 @@
         display: inline-block;
         width: 10px;
         height: 10px;
-        background-color: $silver-darken-80;
+        background-color: var(--silver-darken-80);
         border-radius: 50%;
         margin-right: 0.7em;
         &.active {
-          background-color: $blue-darken-55;
+          background-color: var(--blue-darken-55);
         }
       }
     }

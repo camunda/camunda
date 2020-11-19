@@ -1,11 +1,9 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .Switch {
   .Switch__Slider--round {
-    background-color: #c7c7c7;
+    background-color: var(--silver-darken-80);
   }
   input:checked + .Switch__Slider--round {
-    background-color: $blue;
+    background-color: var(--blue-darken-55);
   }
 
   &.disabled {
@@ -47,7 +45,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
+  background-color: var(--silver-darken-80);
   -webkit-transition: 0.4s;
   transition: 0.4s;
 
@@ -63,17 +61,17 @@
   width: 10px;
   left: 3px;
   bottom: 2px;
-  background-color: white;
+  background-color: var(--silver-lighten-99);
   -webkit-transition: 0.4s;
   transition: 0.4s;
 }
 
 input:checked + .Switch__Slider--round {
-  background-color: $blue;
+  background-color: var(--blue-darken-55);
 }
 
 input.focus-visible + .Switch__Slider--round {
-  box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+  box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
   transition: box-shadow 0.05s ease-out 0s;
 }
 

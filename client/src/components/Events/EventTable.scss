@@ -1,20 +1,18 @@
-@import 'shared-styles/shared-styles.scss';
-
 .EventTable {
-  border: solid 1px #dfdfdf;
+  border: solid 1px var(--silver-darken-87);
   border-bottom: none;
   position: relative;
 
   > .header {
-    border-bottom: solid 1px #dfdfdf;
-    background-color: #f8f8f8;
+    border-bottom: solid 1px var(--silver-darken-87);
+    background-color: var(--silver-base-97);
     display: flex;
     align-items: flex-start;
     min-height: 43px;
 
     .Switch {
       font-size: 14px;
-      color: #787878;
+      color: var(--grey-lighten-50);
       margin-top: 12px;
       .label {
         white-space: nowrap;
@@ -23,7 +21,7 @@
 
     b {
       font-size: 14px;
-      color: #434343;
+      color: var(--grey-darken-23);
       margin: 12px 20px;
       white-space: nowrap;
     }
@@ -38,7 +36,7 @@
         top: 0;
         bottom: 0;
         margin: auto;
-        color: #6a727e;
+        color: var(--grey-base-40);
       }
 
       .searchInput {
@@ -49,7 +47,7 @@
     .collapseButton {
       margin-top: 5px;
       border: none;
-      border-left: 1px solid #ddd;
+      border-left: 1px solid var(--silver-darken-87);
       margin-left: 10px;
       border-radius: 0;
 
@@ -110,21 +108,21 @@
 
         tr {
           &.mapped:hover {
-            background-color: $silver-darken-94;
+            background-color: var(--silver-darken-94);
             cursor: pointer;
           }
 
           &:not(.disabled).mapped {
-            color: white;
-            background-color: $blue-darken-62;
+            color: var(--silver-lighten-99);
+            background-color: var(--blue-darken-62);
 
             .Button {
-              color: White;
+              color: var(--silver-lighten-99);
             }
           }
 
           &.suggested {
-            border-left: 10px solid $blue-darken-62;
+            border-left: 10px solid var(--blue-darken-62);
           }
 
           span.disabled {

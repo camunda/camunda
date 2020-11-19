@@ -1,12 +1,10 @@
-@import 'shared-styles/shared-styles.scss';
-
 .InstanceCount {
   margin-top: 3px;
   height: 16px;
 
   .countString {
     font-size: 12px;
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
   }
 
   .Popover {
@@ -14,13 +12,13 @@
 
     .countString {
       margin-bottom: 14px;
-      color: $grey-darken-33;
+      color: var(--grey-darken-33);
       font-weight: bold;
     }
 
     .filterListHeading {
       font-size: 12px;
-      color: $grey-lighten-56;
+      color: var(--grey-lighten-56);
       margin-bottom: 8px;
     }
 
@@ -41,12 +39,12 @@
         height: 20px;
 
         &:hover {
-          background-color: $silver-darken-94;
+          background-color: var(--silver-darken-94);
         }
 
         &:active,
         &.active {
-          background-color: $silver-darken-80;
+          background-color: var(--silver-darken-80);
         }
 
         .Icon {
@@ -55,7 +53,7 @@
       }
 
       &:not(.icon) {
-        color: $grey-lighten-56;
+        color: var(--grey-lighten-56);
 
         &::after {
           content: '.';

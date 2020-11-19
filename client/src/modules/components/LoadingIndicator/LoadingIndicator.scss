@@ -1,4 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
 @keyframes spinner {
   0% {
     transform: rotate(0deg);
@@ -27,7 +26,7 @@
     width: inherit;
     height: inherit;
     box-sizing: content-box;
-    border: 4px solid $grey-base-40;
+    border: 4px solid var(--grey-base-40);
     content: ' ';
     display: inline-block;
     border-radius: 50%;

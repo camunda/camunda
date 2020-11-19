@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .SearchField {
   margin-top: 2px;
   height: 32px;
@@ -37,12 +35,12 @@
     padding-left: 12px;
 
     font-size: 14px;
-    color: $grey-base-40;
+    color: var(--grey-base-40);
     transition: width 0.3s, background-color 0.3s;
 
     &.open {
       width: 180px;
-      background-color: $silver-darken-87;
+      background-color: var(--silver-darken-87);
     }
 
     &:focus {

@@ -1,8 +1,5 @@
-@import 'shared-styles/shared-styles.scss';
-@import './Header.colors.scss';
-
 .Header {
-  border-bottom: 1px solid $silver-darken-87;
+  border-bottom: 1px solid var(--silver-darken-87);
   font-size: 15px;
   font-weight: 500;
   padding: 11px 20px;
@@ -12,30 +9,30 @@
 
   &.text-light {
     .NavItem {
-      border-left: 1px solid $border-light;
+      border-left: 1px solid rgba(255, 255, 255, 0.3);
       &:last-child {
-        border-right: 1px solid $border-light;
+        border-right: 1px solid rgba(255, 255, 255, 0.3);
       }
 
       a {
-        color: $text-light;
+        color: rgba(255, 255, 255, 0.7);
       }
 
       &.active a {
-        color: $text-light-active;
+        color: rgba(255, 255, 255, 0.9);
       }
     }
 
     .appLink {
-      color: $text-light-active;
+      color: rgba(255, 255, 255, 0.9);
 
       &:visited {
-        color: $text-light-active;
+        color: rgba(255, 255, 255, 0.9);
       }
     }
 
     .Dropdown .activateButton {
-      color: $text-light;
+      color: rgba(255, 255, 255, 0.7);
     }
   }
 
@@ -45,7 +42,7 @@
   }
 
   .appLink {
-    color: $grey-base-40;
+    color: var(--grey-base-40);
     height: 100%;
     display: flex;
     align-items: center;
@@ -61,6 +58,6 @@
   }
 
   .appLink:visited {
-    color: $grey-base-40;
+    color: var(--grey-base-40);
   }
 }

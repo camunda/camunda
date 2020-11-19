@@ -7,7 +7,7 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-login);
-  background-color: white;
+  background-color: var(--silver-lighten-99);
   padding-top: 200px;
 
   .label {
@@ -20,7 +20,7 @@
   }
 
   h1 {
-    color: $grey-base-40;
+    color: var(--grey-base-40);
     font-size: 1.75em;
     font-weight: normal;
     margin-bottom: 78px;

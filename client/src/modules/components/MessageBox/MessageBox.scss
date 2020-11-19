@@ -1,35 +1,33 @@
-@import 'shared-styles/shared-styles.scss';
-
 .MessageBox {
   font-size: 0.875em;
-  background-color: #f2f2f2;
+  background-color: var(--silver-darken-94);
   padding: 8px 16px;
   margin: 0;
   border-radius: 3px;
   margin-bottom: 1em;
-  border: 1px solid #dddddd;
+  border: 1px solid var(--silver-darken-87);
 }
 
 .MessageBox--blue {
-  border: 1px solid $cam-blue;
-  background-color: lighten($cam-blue, 45);
+  border: 1px solid var(--blue-lighten-75);
+  background-color: var(--blue-lighten-82);
 }
 
 .MessageBox--yellow,
 .MessageBox--warning {
-  border: 1px solid #ffdfb9;
-  background-color: #fff2e1;
+  border: 1px solid var(--orange-base-60);
+  background-color: (--orange-base-60);
 }
 
 .MessageBox--red,
 .MessageBox--danger,
 .MessageBox--error {
-  border: 1px solid $cam-red;
-  background-color: lighten($cam-red, 50);
+  border: 1px solid var(--red-darken-38);
+  background-color: var(--red-darken-42);
 }
 
 .MessageBox--green,
 .MessageBox--success {
-  border: 1px solid $cam-green;
-  background-color: lighten($cam-green, 50);
+  border: 1px solid var(--green-base-44);
+  background-color: var(--green-base-44);
 }

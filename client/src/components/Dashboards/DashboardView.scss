@@ -1,11 +1,11 @@
 .dark {
   .fullscreen {
-    background-color: #222;
+    background-color: var(--grey-darken-13);
   }
 }
 
 .fullscreen {
-  background-color: white;
+  background-color: var(--silver-lighten-99);
   transition: background-color 0.3s;
   height: inherit;
 }
