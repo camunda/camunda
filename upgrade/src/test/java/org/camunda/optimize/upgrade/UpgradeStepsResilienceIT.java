@@ -14,8 +14,11 @@ import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
+import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
@@ -36,12 +39,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.mockserver.model.HttpRequest.request;
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
@@ -72,6 +74,9 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     this.prefixAwareClient = upgradeDependencies.getEsClient();
     this.indexNameService = upgradeDependencies.getIndexNameService();
     this.metadataService = upgradeDependencies.getMetadataService();
+    this.upgradeProcedure = new UpgradeProcedure(
+      prefixAwareClient, new UpgradeValidationService(), createSchemaUpgradeClient(upgradeDependencies), new UpgradeStepLogService()
+    );
 
     cleanAllDataFromElasticsearch();
     createEmptyEnvConfig();
@@ -103,7 +108,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
-    upgradeExecution.execute(upgradePlan::execute);
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it eventually completes
     upgradeExecution.shutdown();
@@ -129,7 +134,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(upgradePlan::execute).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     esMockServer.verify(indexDeleteRequest, exactly(1));
@@ -152,7 +157,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
-    upgradeExecution.execute(upgradePlan::execute);
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it eventually completes
     upgradeExecution.shutdown();
@@ -179,7 +184,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(upgradePlan::execute).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     esMockServer.verify(indexDeleteRequest, exactly(1));
@@ -189,13 +194,8 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
   }
 
-  private HttpRequest createIndexDeleteRequestMatcher(final String oldIndexToDeleteName) {
-    return request().withPath("/" + oldIndexToDeleteName).withMethod(DELETE);
-  }
-
   private UpgradePlan createDeleteIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
@@ -205,20 +205,11 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   private UpgradePlan createUpdateIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
       .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
       .build();
-  }
-
-  private ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
-    return MockServerUtil.createProxyMockServer(
-      elasticConfig.getHost(),
-      elasticConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
-    );
   }
 
   private HttpResponse createSnapshotInProgressResponse(final String indexName) {

@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetMappingsRequest;
@@ -43,7 +43,7 @@ public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
   @Test
   public void externalEventIndexHasSettingsUpdated() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then
     assertThat(getMappingsForEventIndex().mappings())
@@ -57,7 +57,7 @@ public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
       });
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(getMappingsForEventIndex().mappings())
@@ -74,7 +74,7 @@ public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
   @Test
   public void allRolledOverExternalEventIndicesHaveSettingsUpdated() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
     configurationService.getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     triggerEventIndexRollover();
     triggerEventIndexRollover();
@@ -91,7 +91,7 @@ public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
       });
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then all three indices have the new settings
     assertThat(getMappingsForEventIndex().mappings())

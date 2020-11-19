@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.migrate32To33;
 
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate32To33.indices.DecisionDefinitionIndexV3Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.EventIndexV3Old;
@@ -16,8 +17,6 @@ import org.camunda.optimize.upgrade.migrate32To33.indices.SingleProcessReportInd
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.Arrays;
-
-import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33.FROM_VERSION;
 
 public class AbstractUpgrade32IT extends AbstractUpgradeIT {
 
@@ -46,7 +45,7 @@ public class AbstractUpgrade32IT extends AbstractUpgradeIT {
         EVENT_INDEX
       )
     );
-    setMetadataVersion(FROM_VERSION);
+    setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
   }
 
 }

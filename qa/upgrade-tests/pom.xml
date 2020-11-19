@@ -44,6 +44,12 @@
     </dependency>
     <dependency>
       <groupId>org.camunda.optimize</groupId>
+      <artifactId>upgrade-optimize</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
       <artifactId>data-generation</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

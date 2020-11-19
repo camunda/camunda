@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 
 import java.util.Collections;
@@ -20,30 +22,35 @@ import java.util.regex.Pattern;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 
-public class UpdateIndexStep implements UpgradeStep {
-  private final IndexMappingCreator index;
+@EqualsAndHashCode(callSuper = true)
+public class UpdateIndexStep extends UpgradeStep {
   private final String mappingScript;
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
   private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
 
   public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
-    this.index = index;
-    this.mappingScript = mappingScript;
-    this.parameters = Collections.emptyMap();
+    this(index, mappingScript, Collections.emptyMap());
   }
 
-  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript,
+  public UpdateIndexStep(final IndexMappingCreator index,
+                         final String mappingScript,
                          final Map<String, Object> parameters) {
-    this.index = index;
+    super(index);
     this.mappingScript = mappingScript;
     this.parameters = parameters;
   }
 
   @Override
+  public UpgradeStepType getType() {
+    return UpgradeStepType.SCHEMA_UPDATE_INDEX;
+  }
+
+  @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    String indexName = index.getIndexName();
-    int targetVersion = index.getVersion();
+    final IndexMappingCreator index = getIndex();
+    final String indexName = index.getIndexName();
+    final int targetVersion = index.getVersion();
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     final String sourceVersionAsString = String.valueOf(targetVersion - 1);
@@ -80,7 +87,7 @@ public class UpdateIndexStep implements UpgradeStep {
         schemaUpgradeClient.createIndexFromTemplate(targetIndexNameWithSuffix);
         schemaUpgradeClient.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
         applyAliasesToIndex(schemaUpgradeClient, targetIndexNameWithSuffix, existingAliases);
-        schemaUpgradeClient.deleteIndex(sourceIndexNameWithSuffix);
+        schemaUpgradeClient.deleteIndexIfExists(sourceIndexNameWithSuffix);
       }
     } else {
       // create new index and reindex data to it
@@ -89,7 +96,7 @@ public class UpdateIndexStep implements UpgradeStep {
       schemaUpgradeClient.createIndex(index);
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
-      schemaUpgradeClient.deleteIndex(sourceIndexName);
+      schemaUpgradeClient.deleteIndexIfExists(sourceIndexName);
     }
   }
 

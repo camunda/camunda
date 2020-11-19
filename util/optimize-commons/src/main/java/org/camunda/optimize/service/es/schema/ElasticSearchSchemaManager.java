@@ -217,14 +217,24 @@ public class ElasticSearchSchemaManager {
     }
   }
 
+  public void deleteOptimizeIndex(final OptimizeElasticsearchClient esClient, final IndexMappingCreator mapping) {
+    try {
+      esClient.deleteIndex(mapping);
+    } catch (ElasticsearchStatusException e) {
+      if (e.status() == RestStatus.NOT_FOUND) {
+        log.debug("Index {} was not found.", mapping.getIndexName());
+      } else {
+        throw e;
+      }
+    }
+  }
+
   private void createOptimizeIndexFromRequest(final OptimizeElasticsearchClient esClient,
                                               final IndexMappingCreator mapping,
                                               final String indexName,
                                               final String defaultAliasName,
                                               final Set<String> additionalAliases,
-                                              final Settings indexSettings) throws
-                                                                            IOException,
-                                                                            ElasticsearchStatusException {
+                                              final Settings indexSettings) throws IOException {
     log.debug("Creating Optimize Index with name {}, default alias {} and additional aliases {}",
               indexName, defaultAliasName, additionalAliases
     );
@@ -239,6 +249,46 @@ public class ElasticSearchSchemaManager {
     request.settings(indexSettings);
     request.mapping(mapping.getSource());
     esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+  }
+
+  private void createOptimizeIndexWithWriteAliasFromTemplate(final OptimizeElasticsearchClient esClient,
+                                                             final String indexNameWithSuffix,
+                                                             final String aliasName) {
+    log.info("Creating index {} from template with write alias {}", indexNameWithSuffix, aliasName);
+    final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
+    if (aliasName != null) {
+      createIndexRequest.alias(new Alias(aliasName).writeIndex(true));
+    }
+    try {
+      esClient.getHighLevelClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
+      log.warn(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
+                                                   final IndexMappingCreator mappingCreator,
+                                                   final String templateName) {
+    final String indexNameWithoutSuffix = indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
+    final Settings indexSettings = createIndexSettings(mappingCreator);
+
+    log.debug("creating or updating template with name {}", indexNameWithoutSuffix);
+    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
+      .version(mappingCreator.getVersion())
+      .mapping(mappingCreator.getSource())
+      .settings(indexSettings)
+      .patterns(Collections.singletonList(
+        indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)
+      ));
+
+    try {
+      esClient.getHighLevelClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
+    } catch (Exception e) {
+      String message = String.format("Could not create or update template %s", templateName);
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 
   private void createOrUpdateTemplateWithAliases(final OptimizeElasticsearchClient esClient,
@@ -270,33 +320,6 @@ public class ElasticSearchSchemaManager {
       String message = String.format("Could not create or update template %s", templateName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  private void createOptimizeIndexWithWriteAliasFromTemplate(final OptimizeElasticsearchClient esClient,
-                                                             final String indexNameWithSuffix,
-                                                             final String aliasName) {
-    log.info("Creating index {} from template with write alias {}", indexNameWithSuffix, aliasName);
-    Alias writeAlias = new Alias(aliasName).writeIndex(true);
-    CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix).alias(writeAlias);
-    try {
-      esClient.getHighLevelClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
-      log.warn(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  public void deleteOptimizeIndex(final OptimizeElasticsearchClient esClient, final IndexMappingCreator mapping) {
-    try {
-      esClient.deleteIndex(mapping);
-    } catch (ElasticsearchStatusException e) {
-      if (e.status() == RestStatus.NOT_FOUND) {
-        log.debug("Index {} was not found.", mapping.getIndexName());
-      } else {
-        throw e;
-      }
     }
   }
 
@@ -335,8 +358,8 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  private void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
-                                                IndexMappingCreator indexMapping) {
+  public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
+                                               IndexMappingCreator indexMapping) {
     updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), indexMapping);
     if (indexMapping.getCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);

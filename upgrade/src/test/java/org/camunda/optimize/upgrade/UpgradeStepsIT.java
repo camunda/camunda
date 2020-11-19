@@ -69,6 +69,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     new UserTestWithTemplateUpdatedMappingIndex();
 
   private static final String FROM_VERSION = "2.6.0";
+  private static final String INTERMEDIATE_VERSION = "2.6.1";
   private static final String TO_VERSION = "2.7.0";
 
   @BeforeEach
@@ -85,14 +86,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final String versionedIndexName = indexNameService
@@ -113,14 +113,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final String versionedIndexName = indexNameService
@@ -142,7 +141,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
@@ -150,7 +148,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
@@ -165,14 +163,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
@@ -190,7 +187,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
@@ -198,7 +194,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
@@ -216,14 +212,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
@@ -255,14 +250,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
@@ -287,26 +281,24 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // given rolled over users index
     UpgradePlan buildIndexPlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
+        .toVersion(INTERMEDIATE_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
         .build();
 
-    buildIndexPlan.execute();
+    upgradeProcedure.performUpgrade(buildIndexPlan);
 
     ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE.getIndexName(), 0);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
-        .fromVersion(FROM_VERSION)
+        .fromVersion(INTERMEDIATE_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
         .build();
 
     // when update index after rollover
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then optimize-users write alias points to updated users index
     final String expectedSuffixAfterRollover = "-000002";
@@ -330,7 +322,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
@@ -338,7 +329,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
@@ -358,7 +349,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
@@ -367,7 +357,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
@@ -386,7 +376,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
@@ -395,7 +384,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
@@ -410,7 +399,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
@@ -418,7 +406,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isFalse();
@@ -429,13 +417,12 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // given rolled over users index
     UpgradePlan buildIndexPlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
+        .toVersion(INTERMEDIATE_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
         .build();
 
-    buildIndexPlan.execute();
+    upgradeProcedure.performUpgrade(buildIndexPlan);
 
     ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE.getIndexName(), 0);
 
@@ -447,14 +434,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
-        .fromVersion(FROM_VERSION)
+        .fromVersion(INTERMEDIATE_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_WITH_TEMPLATE))
         .build();
 
     // when update index after rollover
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then both the initial and rolled over index are deleted
     indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE);
@@ -466,7 +452,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
@@ -474,7 +459,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final Map<String, Object> mappingFields = getMappingFields();
@@ -495,14 +480,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING, "def foo = \"noop\";"))
         .build();
 
     // when
-    assertThrows(UpgradeRuntimeException.class, upgradePlan::execute);
+    assertThrows(UpgradeRuntimeException.class, () -> upgradeProcedure.performUpgrade(upgradePlan));
   }
 
   @Test
@@ -510,14 +494,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
         .build();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
@@ -591,17 +574,14 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   private UpdateDataStep buildUpdateDataStep() {
     return new UpdateDataStep(
-      TEST_INDEX_V2.getIndexName(),
+      TEST_INDEX_V2,
       termQuery("username", "admin"),
       "ctx._source.password = ctx._source.password + \"1\""
     );
   }
 
   private UpgradeStep buildDeleteDataStep() {
-    return new DeleteDataStep(
-      TEST_INDEX_V2.getIndexName(),
-      QueryBuilders.termQuery("username", "admin")
-    );
+    return new DeleteDataStep(TEST_INDEX_V2, QueryBuilders.termQuery("username", "admin"));
   }
 
   @SuppressWarnings("SameParameterValue")

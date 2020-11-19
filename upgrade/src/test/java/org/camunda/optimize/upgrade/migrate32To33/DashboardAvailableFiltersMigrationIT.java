@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
   public void dashboardFiltersAllowCustomVariableSetFalse() {
     // given
     executeBulk("steps/3.2/dashboards/32-dashboard-bulk");
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then
     final SearchHit[] dashboardsBeforeUpgrade = getAllDocumentsOfIndex(DASHBOARD_INDEX.getIndexName());
@@ -44,7 +44,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       .isEmpty();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchHit[] dashboardsAfterUpgrade = getAllDocumentsOfIndex(DASHBOARD_INDEX.getIndexName());

@@ -7,36 +7,29 @@ package org.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
-import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -44,15 +37,15 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.getAllMappings;
 
 @Slf4j
 public class SchemaUpgradeClient {
@@ -61,34 +54,21 @@ public class SchemaUpgradeClient {
   private final ElasticSearchSchemaManager schemaManager;
   private final ElasticsearchMetadataService metadataService;
   private final OptimizeElasticsearchClient elasticsearchClient;
+  @Getter
   private final ObjectMapper objectMapper;
-  private final ConfigurationService configurationService;
-
-  public SchemaUpgradeClient(final UpgradeExecutionDependencies upgradeDependencies) {
-    this(
-      new ElasticSearchSchemaManager(
-        upgradeDependencies.getMetadataService(),
-        upgradeDependencies.getConfigurationService(),
-        upgradeDependencies.getIndexNameService(),
-        getAllMappings(upgradeDependencies.getEsClient())
-      ),
-      upgradeDependencies.getMetadataService(),
-      upgradeDependencies.getEsClient(),
-      upgradeDependencies.getConfigurationService()
-    );
-  }
 
   public SchemaUpgradeClient(final ElasticSearchSchemaManager schemaManager,
                              final ElasticsearchMetadataService metadataService,
                              final OptimizeElasticsearchClient elasticsearchClient,
-                             final ConfigurationService configurationService) {
+                             final ObjectMapper objectMapper) {
     this.schemaManager = schemaManager;
     this.metadataService = metadataService;
-    this.configurationService = configurationService;
     this.elasticsearchClient = elasticsearchClient;
-    this.objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
-    ).createOptimizeMapper();
+    this.objectMapper = objectMapper;
+  }
+
+  public Optional<String> getSchemaVersion() {
+    return metadataService.getSchemaVersion(elasticsearchClient);
   }
 
   public void reindex(final String sourceIndex,
@@ -130,6 +110,19 @@ public class SchemaUpgradeClient {
     waitUntilTaskIsFinished(taskId, destinationIndexName);
   }
 
+  public void update(final UpdateRequest updateRequest) {
+    try {
+      elasticsearchClient.update(updateRequest, RequestOptions.DEFAULT);
+    } catch (Exception e) {
+      final String message = String.format(
+        "Could not upsert document with id %s to index %s.",
+        updateRequest.id(),
+        Arrays.toString(updateRequest.indices())
+      );
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
   public boolean indexExists(final String indexName) {
     log.debug("Checking if index exists [{}].", indexName);
     try {
@@ -140,35 +133,20 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void deleteIndex(final String indexName) {
-    try {
-      elasticsearchClient.deleteIndexByRawIndexNames(indexName);
-    } catch (Exception e) {
-      String errorMessage = String.format("Could not delete index [%s]!", indexName);
-      throw new UpgradeRuntimeException(errorMessage, e);
+  public void deleteIndexIfExists(final String indexName) {
+    if (indexExists(indexName)) {
+      try {
+        elasticsearchClient.deleteIndexByRawIndexNames(indexName);
+      } catch (Exception e) {
+        String errorMessage = String.format("Could not delete index [%s]!", indexName);
+        throw new UpgradeRuntimeException(errorMessage, e);
+      }
     }
   }
 
   public void createOrUpdateTemplateWithoutAliases(final IndexMappingCreator mappingCreator,
                                                    final String templateName) {
-    final String indexNameWithoutSuffix = getIndexNameService()
-      .getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
-    final Settings indexSettings = createIndexSettings(mappingCreator);
-
-    log.debug("creating or updating template with name {}", indexNameWithoutSuffix);
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
-      .version(mappingCreator.getVersion())
-      .mapping(mappingCreator.getSource())
-      .settings(indexSettings)
-      .patterns(Collections.singletonList(getIndexNameService()
-                                            .getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)));
-
-    try {
-      getHighLevelRestClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
-    } catch (Exception e) {
-      String message = String.format("Could not create template %s", templateName);
-      throw new OptimizeRuntimeException(message, e);
-    }
+    schemaManager.createOrUpdateTemplateWithoutAliases(elasticsearchClient, mappingCreator, templateName);
   }
 
   public void createIndex(final IndexMappingCreator indexMapping) {
@@ -248,7 +226,7 @@ public class SchemaUpgradeClient {
   }
 
   public void insertDataByIndexName(final IndexMappingCreator indexMapping, final String data) {
-    String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
+    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
     try {
       final IndexRequest indexRequest = new IndexRequest(aliasName);
@@ -261,11 +239,11 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void updateDataByIndexName(final String indexName,
+  public void updateDataByIndexName(final IndexMappingCreator indexMapping,
                                     final QueryBuilder query,
                                     final String updateScript,
                                     final Map<String, Object> parameters) {
-    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
+    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug("Updating data on [{}] using script [{}] and query [{}].", aliasName, updateScript, query);
 
     final UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
@@ -286,9 +264,9 @@ public class SchemaUpgradeClient {
     waitUntilTaskIsFinished(taskId, aliasName);
   }
 
-  public void deleteDataByIndexName(final String indexName,
+  public void deleteDataByIndexName(final IndexMappingCreator indexMapping,
                                     final QueryBuilder query) {
-    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
+    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug("Deleting data on [{}] with query [{}].", aliasName, query);
 
     final DeleteByQueryRequest request = new DeleteByQueryRequest(aliasName);
@@ -307,26 +285,7 @@ public class SchemaUpgradeClient {
   }
 
   public void updateIndexDynamicSettingsAndMappings(final IndexMappingCreator indexMapping) {
-    final String indexName = getIndexNameService().getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
-    try {
-      final Settings indexSettings = buildDynamicSettings(configurationService);
-      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
-      updateSettingsRequest.indices(indexName);
-      updateSettingsRequest.settings(indexSettings);
-      getHighLevelRestClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String message = String.format("Could not update index settings for index [%s].", indexName);
-      throw new UpgradeRuntimeException(message, e);
-    }
-
-    try {
-      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.source(indexMapping.getSource());
-      getHighLevelRestClient().indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String message = String.format("Could not update index mappings for index [%s].", indexName);
-      throw new UpgradeRuntimeException(message, e);
-    }
+    schemaManager.updateDynamicSettingsAndMappings(elasticsearchClient, indexMapping);
   }
 
   public Set<AliasMetadata> getAllAliasesForIndex(final String indexName) {
@@ -411,15 +370,6 @@ public class SchemaUpgradeClient {
         log.error("An Elasticsearch task that is part of the upgrade contained failures: {}", failures);
         throw new UpgradeRuntimeException(failures.toString());
       }
-    }
-  }
-
-  private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
-    try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
-    } catch (IOException e) {
-      log.error("Could not create settings!", e);
-      throw new UpgradeRuntimeException("Could not create index settings");
     }
   }
 

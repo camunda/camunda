@@ -267,7 +267,9 @@ public class SchemaManagerIT extends AbstractIT {
             indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
-          assertThat(setting).isEqualTo(dynamicSettings.get(settingName));
+          assertThat(setting)
+            .as("Dynamic setting %s of index %s", settingName, mapping.getIndexName())
+            .isEqualTo(dynamicSettings.get(settingName));
         });
       Settings staticSettings =
         buildStaticSettings(mapping, embeddedOptimizeExtension.getConfigurationService());
@@ -277,7 +279,9 @@ public class SchemaManagerIT extends AbstractIT {
             indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
-          assertThat(setting).isEqualTo(staticSettings.get(settingName));
+          assertThat(setting)
+            .as("Static setting %s of index %s", settingName, mapping.getIndexName())
+            .isEqualTo(staticSettings.get(settingName));
         });
     }
   }

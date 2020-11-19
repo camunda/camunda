@@ -5,23 +5,29 @@
  */
 package org.camunda.optimize.upgrade.steps.document;
 
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 
-
-public class InsertDataStep implements UpgradeStep {
+@EqualsAndHashCode(callSuper = true)
+public class InsertDataStep extends UpgradeStep {
   private final String data;
-  private final IndexMappingCreator index;
 
   public InsertDataStep(final IndexMappingCreator index, final String data) {
-    this.index = index;
+    super(index);
     this.data = data;
   }
 
   @Override
+  public UpgradeStepType getType() {
+    return UpgradeStepType.DATA_INSERT;
+  }
+
+  @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.insertDataByIndexName(index, data);
+    schemaUpgradeClient.insertDataByIndexName(getIndex(), data);
   }
 
 }

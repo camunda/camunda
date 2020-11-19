@@ -5,9 +5,9 @@
  */
 package com.camunda.optimize.test.upgrade
 
-
 import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
+import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest
 import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest
@@ -41,7 +41,9 @@ class ElasticClient {
   public static final String SNAPSHOT_REPOSITORY_NAME = "my_backup"
   public static final String SNAPSHOT_NAME = "snapshot_1"
   public static final String OPTIMIZE_INDEX_PREFIX = "optimize"
-  public static final String DEFAULT_OPTIMIZE_INDEX_PATTERN = OPTIMIZE_INDEX_PREFIX + "*"
+  // include all Optimize indices except the update log index
+  public static final String DEFAULT_OPTIMIZE_INDEX_PATTERN =
+    "${OPTIMIZE_INDEX_PREFIX}-*,-${OPTIMIZE_INDEX_PREFIX}-${UpdateLogEntryIndex.INDEX_NAME}*"
 
   String name
   RestHighLevelClient client;

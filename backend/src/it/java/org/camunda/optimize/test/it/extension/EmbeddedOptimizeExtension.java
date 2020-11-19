@@ -562,7 +562,7 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
-  private ElasticsearchMetadataService getElasticsearchMetadataService() {
+  public ElasticsearchMetadataService getElasticsearchMetadataService() {
     return getApplicationContext().getBean(ElasticsearchMetadataService.class);
   }
 

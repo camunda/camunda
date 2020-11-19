@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,10 +38,10 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   @SuppressWarnings("unchecked")
   public void migratedDistributedBy_processReports() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchHit[] processReports = getAllSingleReports(SINGLE_PROCESS_REPORT_INDEX_NAME);
@@ -68,10 +68,10 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   @SuppressWarnings("unchecked")
   public void migratedDistributedBy_decisionReports() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     Arrays.asList(getAllSingleReports(SINGLE_DECISION_REPORT_INDEX_NAME))

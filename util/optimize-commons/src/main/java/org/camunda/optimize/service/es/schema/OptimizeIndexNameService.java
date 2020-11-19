@@ -32,6 +32,10 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
+  public String getOptimizeIndexAliasForIndex(final IndexMappingCreator indexMappingCreator) {
+    return getOptimizeIndexAliasForIndexNameAndPrefix(indexMappingCreator.getIndexName(), indexPrefix);
+  }
+
   /**
    * This will suffix the indices that are created from templates with their initial suffix
    */

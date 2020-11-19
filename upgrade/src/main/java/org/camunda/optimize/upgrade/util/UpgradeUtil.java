@@ -6,7 +6,10 @@
 package org.camunda.optimize.upgrade.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -25,6 +28,7 @@ import java.io.InputStream;
  * Bunch of utility methods that might be required during upgrade
  * operation.
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class UpgradeUtil {
 
@@ -38,7 +42,9 @@ public class UpgradeUtil {
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     } else {
-      configurationService = ConfigurationServiceBuilder.createConfigurationFromLocations(configLocations);
+      configurationService = ConfigurationServiceBuilder.createConfigurationFromLocations(
+        ArrayUtils.addAll(ConfigurationServiceBuilder.DEFAULT_CONFIG_LOCATIONS.toArray(new String[]{}), configLocations)
+      );
     }
     return createUpgradeDependenciesWithAConfigurationService(configurationService);
   }

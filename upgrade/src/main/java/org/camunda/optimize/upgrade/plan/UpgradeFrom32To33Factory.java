@@ -3,20 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.main.impl;
+package org.camunda.optimize.upgrade.plan;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
-import org.camunda.optimize.upgrade.main.UpgradeProcedure;
-import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
@@ -26,46 +27,32 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
-public class UpgradeFrom32To33 extends UpgradeProcedure {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class UpgradeFrom32To33Factory {
 
-  public static final String FROM_VERSION = "3.2.0";
-  public static final String TO_VERSION = "3.3.0";
+  private static final SingleDecisionReportIndex DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
+  private static final SingleProcessReportIndex PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  private static final ProcessDefinitionIndex PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndex();
+  private static final DecisionDefinitionIndex DECISION_DEFINITION_INDEX = new DecisionDefinitionIndex();
+  private static final EventProcessDefinitionIndex EVENT_PROCESS_DEFINITION_INDEX = new EventProcessDefinitionIndex();
 
-  @Override
-  public String getInitialVersion() {
-    return FROM_VERSION;
-  }
-
-  @Override
-  public String getTargetVersion() {
-    return TO_VERSION;
-  }
-
-  @Override
-  public UpgradePlan buildUpgradePlan() {
+  public static UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .addUpgradeDependencies(upgradeDependencies)
-      .fromVersion(FROM_VERSION)
-      .toVersion(TO_VERSION)
+      .fromVersion("3.2.0")
+      .toVersion("3.3.0")
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
-      .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
-      .addUpgradeStep(migrateDistributedByField(SINGLE_PROCESS_REPORT_INDEX_NAME))
-      .addUpgradeStep(new UpdateIndexStep(new SingleDecisionReportIndex(), null))
-      .addUpgradeStep(migrateDistributedByField(SINGLE_DECISION_REPORT_INDEX_NAME))
+      .addUpgradeStep(new UpdateMappingIndexStep(PROCESS_REPORT_INDEX))
+      .addUpgradeStep(migrateDistributedByField(PROCESS_REPORT_INDEX))
+      .addUpgradeStep(new UpdateIndexStep(DECISION_REPORT_INDEX, null))
+      .addUpgradeStep(migrateDistributedByField(DECISION_REPORT_INDEX))
       .addUpgradeStep(migrateDashboardAvailableFilters())
       .addUpgradeStep(new UpdateMappingIndexStep(new EventIndex()))
       .build();
   }
 
-  private UpgradeStep migrateDashboardAvailableFilters() {
+  private static UpgradeStep migrateDashboardAvailableFilters() {
     //@formatter:off
     final String script =
       "def currentFilters = ctx._source.availableFilters;\n" +
@@ -80,25 +67,25 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
       "}\n";
     //@formatter:on
     return new UpdateDataStep(
-      DASHBOARD_INDEX_NAME,
+      new DashboardIndex(),
       matchAllQuery(),
       script
     );
   }
 
-  private List<UpgradeStep> markExistingDefinitionsAsNotDeleted() {
+  private static List<UpgradeStep> markExistingDefinitionsAsNotDeleted() {
     final String script = "ctx._source.deleted = false;";
     return Arrays.asList(
-      new UpdateMappingIndexStep(new ProcessDefinitionIndex()),
-      new UpdateMappingIndexStep(new DecisionDefinitionIndex()),
-      new UpdateMappingIndexStep(new EventProcessDefinitionIndex()),
-      new UpdateDataStep(PROCESS_DEFINITION_INDEX_NAME, matchAllQuery(), script),
-      new UpdateDataStep(DECISION_DEFINITION_INDEX_NAME, matchAllQuery(), script),
-      new UpdateDataStep(EVENT_PROCESS_DEFINITION_INDEX_NAME, matchAllQuery(), script)
+      new UpdateMappingIndexStep(PROCESS_DEFINITION_INDEX),
+      new UpdateMappingIndexStep(DECISION_DEFINITION_INDEX),
+      new UpdateMappingIndexStep(EVENT_PROCESS_DEFINITION_INDEX),
+      new UpdateDataStep(PROCESS_DEFINITION_INDEX, matchAllQuery(), script),
+      new UpdateDataStep(DECISION_DEFINITION_INDEX, matchAllQuery(), script),
+      new UpdateDataStep(EVENT_PROCESS_DEFINITION_INDEX, matchAllQuery(), script)
     );
   }
 
-  private UpgradeStep migrateDistributedByField(final String indexName) {
+  private static UpgradeStep migrateDistributedByField(final IndexMappingCreator index) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
         .put("distributeByField", "distributedBy")
@@ -122,11 +109,6 @@ public class UpgradeFrom32To33 extends UpgradeProcedure {
     );
     //@formatter:on
 
-    return new UpdateDataStep(
-      indexName,
-      matchAllQuery(),
-      script,
-      params
-    );
+    return new UpdateDataStep(index, matchAllQuery(), script, params);
   }
 }

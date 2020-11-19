@@ -6,9 +6,10 @@
 package org.camunda.optimize.test.secured.es;
 
 import org.camunda.optimize.service.metadata.PreviousVersion;
-import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.upgrade.main.TestUpgradeProcedure;
+import org.camunda.optimize.upgrade.main.UpgradeProcedure;
+import org.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
+import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,11 +18,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation;
 
 public abstract class AbstractConnectToElasticsearchIT {
 
   @RegisterExtension
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = getEmbeddedOptimizeExtension();
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(getContextFile());
 
   protected abstract String getCustomConfigFile();
 
@@ -29,8 +31,8 @@ public abstract class AbstractConnectToElasticsearchIT {
 
   @BeforeEach
   public void before() throws Exception {
-    getEmbeddedOptimizeExtension().stopOptimize();
-    getEmbeddedOptimizeExtension().startOptimize();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
   }
 
   @Test
@@ -52,23 +54,18 @@ public abstract class AbstractConnectToElasticsearchIT {
   @Test
   public void runUpgradeAgainstSecuredElasticSearch() {
     // given an upgrade procedure against ES with custom configuration
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION,
-      Version.VERSION,
-      getCustomConfigFile()
+    final UpgradeProcedure testUpgradeProcedure = UpgradeProcedureFactory
+      .create(createUpgradeDependenciesWithAdditionalConfigLocation(getCustomConfigFile()));
+    // the metadata version needs to match the stated versionFrom for the upgrade to pass validation
+    embeddedOptimizeExtension.getElasticsearchMetadataService().upsertMetadata(
+      embeddedOptimizeExtension.getOptimizeElasticClient(), PreviousVersion.PREVIOUS_VERSION
     );
 
     // when
-    getEmbeddedOptimizeExtension().stopOptimize();
-    // the metadata version needs to match the stated versionFrom for the upgrade to pass validation
-    testUpgradeProcedure.setMetadataVersionInElasticSearch(PreviousVersion.PREVIOUS_VERSION);
+    embeddedOptimizeExtension.stopOptimize();
 
     // then
-    testUpgradeProcedure.performUpgrade();
-  }
-
-  private EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
-    return new EmbeddedOptimizeExtension(getContextFile());
+    testUpgradeProcedure.performUpgrade(GenericUpgradeFactory.createUpgradePlan());
   }
 
 }

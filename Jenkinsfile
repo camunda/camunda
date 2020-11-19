@@ -611,7 +611,7 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest,it")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -pl upgrade")
     runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
     runMaven("verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests")
@@ -620,7 +620,7 @@ void migrationTestSteps() {
 
 void dataUpgradeTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
   }
 }

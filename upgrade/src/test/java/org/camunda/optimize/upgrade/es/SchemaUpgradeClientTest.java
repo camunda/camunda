@@ -36,6 +36,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,7 +76,9 @@ public class SchemaUpgradeClientTest {
     when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
     // just using the optimize data format here to satisfy the ObjectMapperFactory ctor
     when(configurationService.getEngineDateFormat()).thenReturn(ElasticsearchConstants.OPTIMIZE_DATE_FORMAT);
-    this.underTest = new SchemaUpgradeClient(schemaManager, metadataService, elasticsearchClient, configurationService);
+    this.underTest = createSchemaUpgradeClient(
+      schemaManager, metadataService, configurationService, elasticsearchClient
+    );
   }
 
   @Test

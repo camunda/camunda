@@ -22,6 +22,11 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.upgrade.main.UpgradeProcedure;
+import org.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
@@ -36,15 +41,19 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+import static javax.ws.rs.HttpMethod.DELETE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
+import static org.mockserver.model.HttpRequest.request;
 
 public abstract class AbstractUpgradeIT {
 
@@ -56,6 +65,7 @@ public abstract class AbstractUpgradeIT {
   protected UpgradeExecutionDependencies upgradeDependencies;
   protected ElasticsearchMetadataService metadataService;
   protected ConfigurationService configurationService;
+  protected UpgradeProcedure upgradeProcedure;
 
   @AfterEach
   public void after() throws Exception {
@@ -65,15 +75,15 @@ public abstract class AbstractUpgradeIT {
 
   @BeforeEach
   protected void setUp() throws Exception {
-    configurationService = createDefaultConfiguration();
+    this.configurationService = createDefaultConfiguration();
     if (upgradeDependencies == null) {
-      upgradeDependencies = UpgradeUtil.createUpgradeDependencies();
-      objectMapper = upgradeDependencies.getObjectMapper();
-      prefixAwareClient = upgradeDependencies.getEsClient();
-      indexNameService = upgradeDependencies.getIndexNameService();
-      metadataService = upgradeDependencies.getMetadataService();
+      this.upgradeDependencies = UpgradeUtil.createUpgradeDependencies();
+      this.objectMapper = upgradeDependencies.getObjectMapper();
+      this.prefixAwareClient = upgradeDependencies.getEsClient();
+      this.indexNameService = upgradeDependencies.getIndexNameService();
+      this.metadataService = upgradeDependencies.getMetadataService();
     }
-
+    this.upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
     cleanAllDataFromElasticsearch();
     createEmptyEnvConfig();
   }
@@ -138,6 +148,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
+    prefixAwareClient.refresh(new RefreshRequest(indexName));
     final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
     return Arrays
       .stream(searchHits)
@@ -160,6 +171,18 @@ public abstract class AbstractUpgradeIT {
       RequestOptions.DEFAULT
     );
     return searchResponse.getHits().getHits();
+  }
+
+  protected HttpRequest createIndexDeleteRequestMatcher(final String oldIndexToDeleteName) {
+    return request().withPath("/" + oldIndexToDeleteName).withMethod(DELETE);
+  }
+
+  protected ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
+    return MockServerUtil.createProxyMockServer(
+      elasticConfig.getHost(),
+      elasticConfig.getHttpPort(),
+      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
+    );
   }
 
 }

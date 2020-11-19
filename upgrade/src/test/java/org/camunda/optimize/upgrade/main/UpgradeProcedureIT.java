@@ -11,6 +11,8 @@ import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
+import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,6 +26,8 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @RegisterExtension
   protected final LogCapturer logCapturer = LogCapturer.create().captureForType(UpgradeProcedure.class);
 
+  private final UpgradePlan upgradePlan = GenericUpgradeFactory.createUpgradePlan();
+
   @BeforeEach
   @Override
   public void setUp() throws Exception {
@@ -36,12 +40,9 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     // given
     final String metadataIndexVersion = "2.0.0";
     setMetadataVersion(metadataIndexVersion);
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
-    );
 
     // when
-    assertThatThrownBy(testUpgradeProcedure::performUpgrade)
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
       // then
       .isInstanceOf(UpgradeRuntimeException.class)
       .hasMessage(String.format(
@@ -58,12 +59,9 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   public void upgradeSucceedsOnSchemaVersionOfPreviousVersion() {
     // given
     setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
-    );
 
     // when
-    assertThatNoException().isThrownBy(testUpgradeProcedure::performUpgrade);
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
@@ -73,12 +71,9 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   public void upgradeDoesNotFailOnSchemaVersionOfTargetVersion() {
     // given
     setMetadataVersion(Version.VERSION);
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
-    );
 
     // when
-    assertThatNoException().isThrownBy(testUpgradeProcedure::performUpgrade);
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
@@ -89,12 +84,9 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   public void upgradeDoesNotFailOnOnMissingMetadataIndex() {
     // given
     cleanAllDataFromElasticsearch();
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
-    );
 
     // when
-    assertThatNoException().isThrownBy(testUpgradeProcedure::performUpgrade);
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
 
     // then
     logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
