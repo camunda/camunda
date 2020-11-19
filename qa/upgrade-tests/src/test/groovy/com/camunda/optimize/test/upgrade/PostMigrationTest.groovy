@@ -34,6 +34,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -103,6 +104,7 @@ class PostMigrationTest {
     }
   }
 
+  @Disabled
   @Test
   void evaluateAllCollectionReports() {
     final List<EntityResponseDto> collections = getCollections();
