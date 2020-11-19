@@ -102,7 +102,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
     return option?.group;
   }
 
-  function getOnlyOptionFor(type, group) {
+  function getFirstOptionFor(type, group) {
     return type.find((entry) => entry.group === group).data;
   }
 
@@ -115,11 +115,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
     const groups = combinations[viewGroup];
 
     if (!targetGroupBy) {
-      return getOnlyOptionFor(groupBy, Object.keys(groups)[0]);
+      return getFirstOptionFor(groupBy, Object.keys(groups)[0]);
     } else if (targetGroupBy) {
       const visualizations = groups[getGroupFor(groupBy, targetGroupBy)];
 
-      return getOnlyOptionFor(visualization, visualizations[0]);
+      return getFirstOptionFor(visualization, visualizations[0]);
     }
   };
 

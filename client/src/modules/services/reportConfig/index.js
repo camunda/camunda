@@ -18,10 +18,8 @@ const config = {
 const processUpdate = config.process.update;
 config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
-  const newReport = update(props.report, {data: changes});
 
   changes.configuration = changes.configuration || {};
-  changes.configuration.sorting = {$set: getDefaultSorting(newReport)};
 
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
@@ -43,11 +41,18 @@ config.process.update = (type, data, props) => {
     changes.distributedBy = {$set: {type: 'none', value: null}};
   }
 
+  const newReport = update(props.report, {data: changes});
+  changes.configuration.sorting = {$set: getDefaultSorting(newReport)};
+
   // automatically distribute by flownode/usertasks when view is flownode/usertask
   if (
     newReport.data.distributedBy?.type === 'none' &&
-    ['userTask', 'flowNode'].includes(newReport.data.view?.entity) &&
-    !['userTasks', 'flowNodes'].includes(newReport.data.groupBy?.type)
+    isFlowNodeViewNonFlowNodeGroupBy(newReport) &&
+    // do not automatically set the distributed by if it was explicitely set to none
+    !(
+      isFlowNodeViewNonFlowNodeGroupBy(props.report) &&
+      props.report.data.distributedBy?.type === 'none'
+    )
   ) {
     changes.distributedBy = {$set: {type: newReport.data.view.entity, value: null}};
 
@@ -171,6 +176,13 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
   }
 
   return {by: 'key', order: 'desc'};
+}
+
+function isFlowNodeViewNonFlowNodeGroupBy(report) {
+  return (
+    ['userTask', 'flowNode'].includes(report.data.view?.entity) &&
+    !['userTasks', 'flowNodes'].includes(report.data.groupBy?.type)
+  );
 }
 
 export default config;
