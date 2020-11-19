@@ -44,23 +44,10 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                script {
-                    commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
-                    displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
+                setHumanReadableBuildDisplayName()
 
-                    if (displayNameFull.length() <= 45) {
-                        currentBuild.displayName = displayNameFull
-                    } else {
-                        displayStringHardTruncate = displayNameFull.take(45)
-                        currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
-                    }
-                }
-                container('maven') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
-                container('maven-jdk8') {
-                    sh '.ci/scripts/distribution/prepare.sh'
-                }
+                prepareMavenContainer()
+                prepareMavenContainer('jdk8')
                 container('golang') {
                     sh '.ci/scripts/distribution/prepare-go.sh'
                 }
@@ -73,11 +60,7 @@ pipeline {
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
             }
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh '.ci/scripts/distribution/build-java.sh'
-                    }
-                }
+                runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
                 container('maven') {
                     sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
@@ -120,16 +103,12 @@ pipeline {
                             junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
                         }
                     }
-                }
+               }
 
-                stage('Analyse (Java)') {
-                    steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/analyse-java.sh'
-                            }
-                        }
-                    }
+               stage('Analyse (Java)') {
+                      steps {
+                          runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
+                      }
                 }
 
                 stage('Unit (Java)') {
@@ -138,11 +117,7 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
                     }
 
                     post {
@@ -157,11 +132,7 @@ pipeline {
                     }
 
                     steps {
-                        container('maven-jdk8') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java8.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-java8.sh', 'jdk8')
                     }
 
                     post {
@@ -189,19 +160,13 @@ pipeline {
                     }
 
                     steps {
-                        container('maven') {
-                            sh '.ci/scripts/distribution/prepare.sh'
-                        }
+                        prepareMavenContainer()
                         unstash name: "zeebe-build"
                         unstash name: "zeebe-distro"
                         container('docker') {
                             sh '.ci/scripts/docker/build.sh'
                         }
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/it-java.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
                     }
 
                     post {
@@ -213,11 +178,7 @@ pipeline {
 
                 stage('BPMN TCK') {
                     steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-tck.sh'
-                            }
-                        }
+                        runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
                     }
 
                     post {
@@ -258,11 +219,7 @@ pipeline {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
-                    container('maven') {
-                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                            sh '.ci/scripts/distribution/upload.sh'
-                        }
-                    }
+                    runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
                 }
             }
         }
@@ -317,10 +274,7 @@ pipeline {
                     return
                 }
 
-                echo "Send slack message"
-                slackSend(
-                        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-                        message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+                sendZeebeSlackMessage()
             }
         }
         changed {
@@ -331,14 +285,55 @@ pipeline {
                 if (currentBuild.currentResult == 'FAILURE') {
                     return // already handled above
                 }
-
-                if (hasBuildResultChanged()) {
-                    echo "Send slack message"
-                    slackSend(
-                            channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-                            message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+                if (!hasBuildResultChanged()) {
+                    return
                 }
+
+                sendZeebeSlackMessage()
             }
         }
     }
+}
+
+//////////////////// Helper functions ////////////////////
+
+def getMavenContainerNameForJDK(String jdk = null) {
+    "maven${jdk ? '-'+jdk : ''}"
+}
+
+def prepareMavenContainer(String jdk = null) {
+    container(getMavenContainerNameForJDK(jdk)) {
+        sh '.ci/scripts/distribution/prepare.sh'
+    }
+}
+
+def runMavenContainerCommand(String shellCommand, String jdk = null) {
+    container(getMavenContainerNameForJDK(jdk)) {
+        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh shellCommand
+        }
+    }
+}
+
+// TODO: can be extracted to zeebe-jenkins-shared-library
+def setHumanReadableBuildDisplayName(int maximumLength = 45) {
+    script {
+        commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
+        displayNameFull = "#${env.BUILD_NUMBER}: ${commit_summary}"
+
+        if (displayNameFull.length() <= maximumLength) {
+            currentBuild.displayName = displayNameFull
+        } else {
+            displayStringHardTruncate = displayNameFull.take(maximumLength)
+            currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(' '))
+        }
+    }
+}
+
+// TODO: can be extracted to zeebe-jenkins-shared-library
+def sendZeebeSlackMessage() {
+    echo "Send slack message"
+    slackSend(
+        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+        message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
 }
