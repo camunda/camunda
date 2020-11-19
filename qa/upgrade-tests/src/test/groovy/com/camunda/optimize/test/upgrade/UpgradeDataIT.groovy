@@ -28,7 +28,7 @@ class UpgradeDataIT extends BaseUpgradeIT {
     def newOptimize = new OptimizeWrapper(currentVersion, buildDirectory, newElasticPort)
     try {
       // start old optimize and import data
-      oldOptimize.start()
+      oldOptimize.start().consumeProcessOutput()
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
 
@@ -44,8 +44,8 @@ class UpgradeDataIT extends BaseUpgradeIT {
       oldElasticClient.deleteSnapshot()
 
       // run new optimize upgrade
-      newOptimize.runUpgrade()
-      newOptimize.start()
+      newOptimize.runUpgrade().consumeProcessOutput()
+      newOptimize.start().consumeProcessOutput()
       newOptimize.waitForImportToFinish()
 
       log.info("Running com.camunda.optimize.PostMigrationTest...")
