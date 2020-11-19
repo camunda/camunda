@@ -65,15 +65,15 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitions(final DefinitionType definitionType) {
     // given
-    final int definitionCount = getNumberOfDefinitions();
+    final int definitionCountForEachEngine = (getNumberOfDefinitions() + 1) / 2;
     addTenantsToElasticsearch();
     final Map<String, Object> definitionMap = generateDefinitions(
-      definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, DEFAULT_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, definitionMap);
 
     Map<String, Object> secondEngineDefinitions = generateDefinitions(
-      definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
     // adding second engine alias as last given action to avoid a race condition between async refreshes running in
@@ -85,7 +85,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
-      definitionCount,
+      definitionCountForEachEngine * 2,
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitions()
@@ -126,16 +126,16 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitionsGroupedByTenant(final DefinitionType definitionType) {
     // given
-    final int definitionCount = getNumberOfDefinitions();
+    final int definitionCountForEachEngine = (getNumberOfDefinitions() + 1) / 2;
     addTenantsToElasticsearch();
 
     final Map<String, Object> defaultEngineDefinitions = generateDefinitions(
-      definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, DEFAULT_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, defaultEngineDefinitions);
 
     Map<String, Object> secondEngineDefinitions = generateDefinitions(
-      definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
     // adding second engine alias as last given action to avoid a race condition between async refreshes running in
@@ -152,10 +152,14 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
         .getRequestExecutor()
         .buildGetDefinitionsGroupedByTenant()
         .executeAndReturnList(TenantWithDefinitionsResponseDto.class, Response.Status.OK.getStatusCode()),
-      elements -> assertThat(elements)
-        .extracting(TenantWithDefinitionsResponseDto::getDefinitions)
-        .allSatisfy(definitions -> {
-          assertThat(definitions).hasSize(definitionCount);
+      elements -> assertThat(elements).hasSameSizeAs(TENANT_IDS)
+        .allSatisfy(element -> {
+          if (element.getId() == null) {
+            // the null tenant has definitions from both engines
+            assertThat(element.getDefinitions()).hasSize(definitionCountForEachEngine * 2);
+          } else {
+            assertThat(element.getDefinitions()).hasSize(definitionCountForEachEngine);
+          }
         }), getMaxAllowedQueryTime()
     );
   }
@@ -186,15 +190,15 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitionKeys(final DefinitionType definitionType) {
     // given
-    final int definitionCount = getNumberOfDefinitions();
+    final int definitionCountForEachEngine = (getNumberOfDefinitions() + 1) / 2;
     addTenantsToElasticsearch();
     Map<String, Object> defaultEngineDefinitions = generateDefinitions(
-      definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, DEFAULT_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, defaultEngineDefinitions);
 
     Map<String, Object> secondEngineDefinitions = generateDefinitions(
-      definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
+      definitionType, definitionCountForEachEngine, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
     // adding second engine alias as last given action to avoid a race condition between async refreshes running in
@@ -206,7 +210,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
-      definitionCount,
+      2 * definitionCountForEachEngine,
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitionKeysByType(definitionType.getId())
@@ -240,7 +244,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       .mapToObj(String::valueOf)
       .forEach(i -> {
         final DefinitionOptimizeResponseDto def = createDefinition(
-          definitionType, "key" + i, "1", tenantId, "Definition " + i, engineAlias
+          definitionType, "key" + i + engineAlias, "1", tenantId, "Definition " + i, engineAlias
         );
         definitionMap.put(def.getId(), def);
       });
