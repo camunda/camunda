@@ -73,14 +73,13 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(elementInstanceKeyProp);
   }
 
-  public void wrap(final JobRecord record) {
+  public void wrapWithoutVariables(final JobRecord record) {
     deadlineProp.setValue(record.getDeadline());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
     typeProp.setValue(record.getTypeBuffer());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
     customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
-    variableProp.setValue(record.getVariablesBuffer());
     errorMessageProp.setValue(record.getErrorMessageBuffer());
     errorCodeProp.setValue(record.getErrorCodeBuffer());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
