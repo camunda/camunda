@@ -29,7 +29,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -37,6 +39,8 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty.FREQUENCY;
@@ -161,6 +165,10 @@ public class AbstractReportExportImportIT extends AbstractIT {
     return createProcessReportDefinition(createSimpleProcessReportData());
   }
 
+  protected static SingleDecisionReportDefinitionRequestDto createSimpleDecisionReportDefinition() {
+    return createDecisionReportDefinition(createSimpleDecisionReportData());
+  }
+
   protected String createSimpleReport(final ReportType reportType) {
     switch (reportType) {
       case PROCESS:
@@ -174,13 +182,42 @@ public class AbstractReportExportImportIT extends AbstractIT {
     }
   }
 
+  protected static ReportDefinitionExportDto createSimpleExportDto(final ReportType type) {
+    return createSimpleExportDtoWithTenants(type, Collections.singletonList(null));
+  }
+
+  protected static ReportDefinitionExportDto createSimpleExportDtoWithTenants(final ReportType type,
+                                                                              final List<String> tenantIds) {
+    switch (type) {
+      case PROCESS:
+        final SingleProcessReportDefinitionExportDto processDef = createSimpleProcessExportDto();
+        processDef.getData().setTenantIds(tenantIds);
+        return processDef;
+      case DECISION:
+        final SingleDecisionReportDefinitionExportDto decisionDef = createSimpleDecisionExportDto();
+        decisionDef.getData().setTenantIds(tenantIds);
+        return decisionDef;
+      default:
+        throw new OptimizeIntegrationTestException("Unknown report type: " + type);
+    }
+  }
+
   protected static SingleProcessReportDefinitionExportDto createSimpleProcessExportDto() {
     return new SingleProcessReportDefinitionExportDto(createSimpleProcessReportDefinition());
+  }
+
+  protected static SingleDecisionReportDefinitionExportDto createSimpleDecisionExportDto() {
+    return new SingleDecisionReportDefinitionExportDto(createSimpleDecisionReportDefinition());
   }
 
   protected static SingleProcessReportDefinitionExportDto createExportDto(
     final SingleProcessReportDefinitionRequestDto reportDefToImport) {
     return new SingleProcessReportDefinitionExportDto(reportDefToImport);
+  }
+
+  protected static SingleDecisionReportDefinitionExportDto createExportDto(
+    final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
+    return new SingleDecisionReportDefinitionExportDto(reportDefToImport);
   }
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
@@ -270,6 +307,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
   private static SingleDecisionReportDefinitionRequestDto createDecisionReportDefinition(
     final DecisionReportDataDto reportData) {
     final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
+    reportDef.setId("someId");
     reportDef.setName("Test Report");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));

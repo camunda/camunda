@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.entities.report;
 
-import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -22,29 +21,33 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 
 public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
 
-  @Test
-  public void importProcessReport_asSuperuser() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importReport_asSuperuser(final ReportType reportType) {
     // given
-    createAndSaveDefinition(DefinitionType.PROCESS, null);
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    createAndSaveDefinition(reportType.toDefinitionType(), null);
 
     // when
-    final Response response = importClient.importProcessReport(exportedReportDto);
+    final Response response = importClient.importReport(createSimpleExportDto(reportType));
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  @Test
-  public void importProcessReport_asSuperuser_withoutDefinitionAuth() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReport_asSuperuser_withoutDefinitionAuth(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
-    createAndSaveDefinition(DefinitionType.PROCESS, null);
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    createAndSaveDefinition(reportType.toDefinitionType(), null);
 
     // when
-    final Response response = importClient.importProcessReportAsUser(KERMIT_USER, KERMIT_USER, exportedReportDto);
+    final Response response = importClient.importReportAsUser(
+      KERMIT_USER,
+      KERMIT_USER,
+      createSimpleExportDto(reportType)
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -55,24 +58,27 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
       .hasSize(1)
       .containsExactly(
         DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.PROCESS)
+          .type(reportType.toDefinitionType())
           .key(DEFINITION_KEY)
           .tenantIds(Collections.singletonList(null))
           .build());
   }
 
-  @Test
-  public void importProcessReport_asSuperuser_withoutTenantAuth() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReport_asSuperuser_withoutTenantAuth(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     engineIntegrationExtension.createTenant("tenant1");
-    createAndSaveDefinition(DefinitionType.PROCESS, "tenant1");
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
-    exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
+    createAndSaveDefinition(reportType.toDefinitionType(), "tenant1");
 
     // when
-    final Response response = importClient.importProcessReportAsUser(KERMIT_USER, KERMIT_USER, exportedReportDto);
+    final Response response = importClient.importReportAsUser(
+      KERMIT_USER,
+      KERMIT_USER,
+      createSimpleExportDtoWithTenants(reportType, Collections.singletonList("tenant1"))
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -82,66 +88,73 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
       .hasSize(1)
       .containsExactly(
         DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.PROCESS)
+          .type(reportType.toDefinitionType())
           .key(DEFINITION_KEY)
           .tenantIds(Collections.singletonList("tenant1"))
           .build());
   }
 
-  @Test
-  public void importProcessReport_asNonSuperuser() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReport_asNonSuperuser(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importProcessReportAsUser(KERMIT_USER, KERMIT_USER, exportedReportDto);
+    final Response response = importClient.importReportAsUser(
+      KERMIT_USER,
+      KERMIT_USER,
+      createSimpleExportDto(reportType)
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Test
-  public void importProcessReportIntoCollection_asSuperuser() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReportIntoCollection_asSuperuser(final ReportType reportType) {
     // given
-    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    createAndSaveDefinition(reportType.toDefinitionType(), null);
     final String collectionId = collectionClient.createNewCollectionWithScope(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
-      DefinitionType.PROCESS,
+      reportType.toDefinitionType(),
       DEFINITION_KEY,
       Collections.singletonList(null)
     );
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importProcessReportIntoCollection(collectionId, exportedReportDto);
+    final Response response = importClient.importReportIntoCollection(
+      collectionId,
+      createSimpleExportDto(reportType)
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  @Test
-  public void importProcessReportIntoCollection_asSuperuser_withoutDefinitionAuth() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReportIntoCollection_asSuperuser_withoutDefinitionAuth(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
-    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    createAndSaveDefinition(reportType.toDefinitionType(), null);
     final String collectionId = collectionClient.createNewCollectionWithScope(
       KERMIT_USER,
       KERMIT_USER,
-      DefinitionType.PROCESS,
+      reportType.toDefinitionType(),
       DEFINITION_KEY,
       Collections.singletonList(null)
     );
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importProcessReportIntoCollectionAsUser(
+    final Response response = importClient.importReportIntoCollectionAsUser(
       KERMIT_USER,
       KERMIT_USER,
       collectionId,
-      exportedReportDto
+      createSimpleExportDto(reportType)
     );
 
     // then
@@ -152,32 +165,32 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
       .hasSize(1)
       .containsExactly(
         DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.PROCESS)
+          .type(reportType.toDefinitionType())
           .key(DEFINITION_KEY)
           .tenantIds(Collections.singletonList(null))
           .build());
   }
 
-  @Test
-  public void importProcessReportIntoCollection_asNonSuperuser() {
+  @ParameterizedTest
+  @MethodSource("reportTypes")
+  public void importProcessReportIntoCollection_asNonSuperuser(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    createAndSaveDefinition(reportType.toDefinitionType(), null);
     final String collectionId = collectionClient.createNewCollectionWithScope(
       KERMIT_USER,
       KERMIT_USER,
-      DefinitionType.PROCESS,
+      reportType.toDefinitionType(),
       DEFINITION_KEY,
       Collections.singletonList(null)
     );
-    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importProcessReportIntoCollectionAsUser(
+    final Response response = importClient.importReportIntoCollectionAsUser(
       KERMIT_USER,
       KERMIT_USER,
       collectionId,
-      exportedReportDto
+      createSimpleExportDto(reportType)
     );
 
     // then

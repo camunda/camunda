@@ -7,8 +7,8 @@ package org.camunda.optimize.service.entities.report;
 
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.rest.export.ReportDefinitionExportDto;
-import org.camunda.optimize.dto.optimize.rest.export.SingleDecisionReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 

@@ -3,18 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.rest.export;
+package org.camunda.optimize.dto.optimize.rest.export.report;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 
 import javax.validation.constraints.NotNull;
+
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,13 +29,16 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
   public SingleProcessReportDefinitionExportDto(final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(
       SingleProcessReportIndex.VERSION,
-      ReportType.PROCESS,
       reportDefinition.getId(),
       reportDefinition.getName(),
-      reportDefinition.getCollectionId(),
-      reportDefinition.isCombined()
+      reportDefinition.getCollectionId()
     );
     this.data = reportDefinition.getData();
+  }
+
+  @Override
+  public ExportEntityType getExportEntityType() {
+    return SINGLE_PROCESS_REPORT;
   }
 }
 

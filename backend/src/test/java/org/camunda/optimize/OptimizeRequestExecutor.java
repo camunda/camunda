@@ -57,7 +57,7 @@ import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestD
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
@@ -932,9 +932,9 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildImportProcessReportRequest(final String collectionId,
-                                                                 final SingleProcessReportDefinitionExportDto exportedDto) {
-    this.path = "import/report/process/";
+  public OptimizeRequestExecutor buildImportEntityRequest(final String collectionId,
+                                                          final OptimizeEntityExportDto exportedDto) {
+    this.path = "import/";
     this.body = getBody(exportedDto);
     this.method = POST;
     Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));

@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -23,8 +23,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
-
 @AllArgsConstructor
 @Path("/import")
 @Secured
@@ -35,18 +33,12 @@ public class ImportRestService {
   private final EntityImportService entityImportService;
 
   @POST
-  @Path("report/process")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto importReport(@Context final ContainerRequestContext requestContext,
                                     @QueryParam("collectionId") String collectionId,
-                                    @Valid final SingleProcessReportDefinitionExportDto exportedDto) {
+                                    @Valid final OptimizeEntityExportDto exportedDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionId = normalizeNullStringValue(collectionId);
-    return entityImportService.importProcessReportIntoCollection(
-      userId,
-      collectionId,
-      exportedDto
-    );
+    return entityImportService.importEntity(userId, collectionId, exportedDto);
   }
 }

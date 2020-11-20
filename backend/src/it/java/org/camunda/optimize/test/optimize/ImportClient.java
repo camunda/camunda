@@ -7,7 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
@@ -19,28 +19,33 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 public class ImportClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public Response importProcessReport(final SingleProcessReportDefinitionExportDto exportedDto) {
-    return importProcessReportIntoCollectionAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, null, exportedDto);
+  public Response importReport(final ReportDefinitionExportDto exportedDto) {
+    return importReportAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, exportedDto);
   }
 
-  public Response importProcessReportAsUser(final String userId,
-                                            final String password,
-                                            final SingleProcessReportDefinitionExportDto exportedDto) {
-    return importProcessReportIntoCollectionAsUser(userId, password, null, exportedDto);
+  public Response importReportAsUser(final String userId,
+                                     final String password,
+                                     final ReportDefinitionExportDto exportedDto) {
+    return importReportIntoCollectionAsUser(userId, password, null, exportedDto);
   }
 
-  public Response importProcessReportIntoCollection(final String collectionId,
-                                                    final SingleProcessReportDefinitionExportDto exportedDto) {
-    return importProcessReportIntoCollectionAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, collectionId, exportedDto);
+  public Response importReportIntoCollection(final String collectionId,
+                                             final ReportDefinitionExportDto exportedDto) {
+    return importReportIntoCollectionAsUser(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      collectionId,
+      exportedDto
+    );
   }
 
-  public Response importProcessReportIntoCollectionAsUser(final String userId,
-                                                          final String password,
-                                                          final String collectionId,
-                                                          final SingleProcessReportDefinitionExportDto exportedDto) {
+  public Response importReportIntoCollectionAsUser(final String userId,
+                                                   final String password,
+                                                   final String collectionId,
+                                                   final ReportDefinitionExportDto exportedDto) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
-      .buildImportProcessReportRequest(collectionId, exportedDto)
+      .buildImportEntityRequest(collectionId, exportedDto)
       .execute();
   }
 

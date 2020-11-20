@@ -7,8 +7,8 @@ package org.camunda.optimize.service.entities.report;
 
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.rest.export.ReportDefinitionExportDto;
-import org.camunda.optimize.dto.optimize.rest.export.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
