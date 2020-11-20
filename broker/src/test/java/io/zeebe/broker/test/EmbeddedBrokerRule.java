@@ -303,5 +303,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       latch.countDown();
       return CompletableActorFuture.completed(null);
     }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+      return CompletableActorFuture.completed(null);
+    }
   }
 }

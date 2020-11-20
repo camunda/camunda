@@ -84,6 +84,15 @@ public final class LeaderManagementRequestHandler extends Actor
   }
 
   @Override
+  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    return actor.call(
+        () -> {
+          leaderForPartitions.remove(partitionId);
+          return null;
+        });
+  }
+
+  @Override
   public String getName() {
     return actorName;
   }

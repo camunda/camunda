@@ -55,6 +55,7 @@
     <enum name="PartitionRole" encodingType="uint8">
       <validValue name="LEADER">0</validValue>
       <validValue name="FOLLOWER">1</validValue>
+      <validValue name="INACTIVE">2</validValue>
     </enum>
 
     <enum name="PartitionHealthStatus" encodingType="uint8">

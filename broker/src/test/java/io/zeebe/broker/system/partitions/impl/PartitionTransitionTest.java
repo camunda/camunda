@@ -14,22 +14,23 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.system.partitions.PartitionContext;
-import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.mockito.InOrder;
 
 public class PartitionTransitionTest {
 
-  @Rule
-  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  private final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  private final Timeout testTimeout = Timeout.seconds(30);
+
+  @Rule public final RuleChain chain = RuleChain.outerRule(testTimeout).around(schedulerRule);
 
   private PartitionContext ctx;
 
@@ -42,25 +43,19 @@ public class PartitionTransitionTest {
   @Test
   public void shouldCloseInOppositeOrderOfOpen() {
     // given
-    final NoopPartitionStep firstComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep secondComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
+    final TestPartitionStep firstComponent = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep secondComponent = spy(TestPartitionStep.builder().build());
+    final PartitionTransitionImpl transition =
         new PartitionTransitionImpl(
-            ctx, List.of(firstComponent, secondComponent), Collections.EMPTY_LIST);
+            ctx, List.of(firstComponent, secondComponent), Collections.emptyList());
 
     // when
     final Actor actor =
         Actor.wrap(
-            actorCtrl ->
-                partitionTransition
-                    .toLeader()
-                    .onComplete(
-                        (nothing, err) -> {
-                          assertThat(err).isNull();
-                          partitionTransition
-                              .toInactive()
-                              .onComplete((nothing1, err1) -> assertThat(err1).isNull());
-                        }));
+            actorCtrl -> {
+              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
+            });
 
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
@@ -74,10 +69,10 @@ public class PartitionTransitionTest {
   }
 
   @Test
-  public void shouldTransitionFromLeaderToFollowerInSequence() {
+  public void shouldTransitionInSequence() {
     // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
+    final TestPartitionStep leaderComponent = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep followerComponent = spy(TestPartitionStep.builder().build());
     final PartitionTransitionImpl partitionTransition =
         new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
 
@@ -101,197 +96,85 @@ public class PartitionTransitionTest {
   }
 
   @Test
-  public void shouldTransitionFromFollowerToLeaderInSequence() {
+  public void shouldCloseAllEvenAfterFailure() {
     // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
+    final TestPartitionStep succeedStep = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep failStep = spy(TestPartitionStep.builder().failOnClose().build());
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(succeedStep, failStep), Collections.emptyList());
 
     // when
     final Actor actor =
         Actor.wrap(
             actorCtrl -> {
-              partitionTransition.toFollower();
-              partitionTransition.toLeader();
+              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
             });
 
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
     // then
-    final InOrder order = inOrder(leaderComponent, followerComponent);
-    order.verify(followerComponent).open(ctx);
-    order.verify(followerComponent).close(ctx);
-    order.verify(leaderComponent).open(ctx);
+    final InOrder order = inOrder(succeedStep, failStep);
+    order.verify(failStep).close(ctx);
+    order.verify(succeedStep).close(ctx);
+  }
+
+  @Test
+  public void shouldCloseOpenedEvenIfOpenWasInterrupted() {
+    // given
+    final TestPartitionStep succeedStep = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep failStep = spy(TestPartitionStep.builder().failOnOpen().build());
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(succeedStep, failStep), Collections.emptyList());
+
+    // when
+    final Actor actor =
+        Actor.wrap(
+            actorCtrl -> {
+              transition
+                  .toLeader()
+                  .onComplete((none, err) -> assertThat(err).hasMessage("expected"));
+              transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
+            });
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(succeedStep, failStep);
+    order.verify(succeedStep).open(ctx);
+    order.verify(failStep).open(ctx);
+    order.verify(succeedStep).close(ctx);
+  }
+
+  @Test
+  public void shouldTryToInstallEvenIfCloseFailed() {
+    // given
+    final TestPartitionStep leaderStep = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep failStep = spy(TestPartitionStep.builder().failOnClose().build());
+    final TestPartitionStep followerStep = spy(TestPartitionStep.builder().build());
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(leaderStep, failStep), List.of(followerStep));
+
+    // when
+    final Actor actor =
+        Actor.wrap(
+            actorCtrl -> {
+              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toFollower().onComplete((none, err) -> assertThat(err).isNull());
+            });
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(leaderStep, failStep, followerStep);
+    order.verify(leaderStep).open(ctx);
+    order.verify(failStep).open(ctx);
+    order.verify(failStep).close(ctx);
+    order.verify(leaderStep).close(ctx);
+    order.verify(followerStep).open(ctx);
     order.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void shouldTransitionFromFollowerToInactiveInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toFollower();
-              partitionTransition.toInactive();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(leaderComponent, followerComponent);
-    order.verify(followerComponent).open(ctx);
-    order.verify(followerComponent).close(ctx);
-  }
-
-  @Test
-  public void shouldTransitionFromLeaderToInactiveInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toLeader();
-              partitionTransition.toInactive();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(leaderComponent);
-    order.verify(leaderComponent).open(ctx);
-    order.verify(leaderComponent).close(ctx);
-  }
-
-  @Test
-  public void shouldTransitionFromInactiveToLeaderInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toInactive();
-              partitionTransition.toLeader();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(leaderComponent);
-    order.verify(leaderComponent).open(ctx);
-  }
-
-  @Test
-  public void shouldTransitionFromInactiveToFollowerInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toInactive();
-              partitionTransition.toFollower();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(followerComponent);
-    order.verify(followerComponent).open(ctx);
-  }
-
-  @Test
-  public void shouldTransitionFromLeaderToLeaderInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toLeader();
-              partitionTransition.toLeader();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(leaderComponent);
-    order.verify(leaderComponent).open(ctx);
-    order.verify(leaderComponent).close(ctx);
-    order.verify(leaderComponent).open(ctx);
-  }
-
-  @Test
-  public void shouldTransitionFromFollowerToFollowerInSequence() {
-    // given
-    final NoopPartitionStep leaderComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep followerComponent = spy(new NoopPartitionStep());
-    final PartitionTransitionImpl partitionTransition =
-        new PartitionTransitionImpl(ctx, List.of(leaderComponent), List.of(followerComponent));
-
-    // when
-    final Actor actor =
-        Actor.wrap(
-            actorCtrl -> {
-              partitionTransition.toFollower();
-              partitionTransition.toFollower();
-            });
-
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    final InOrder order = inOrder(followerComponent);
-    order.verify(followerComponent).open(ctx);
-    order.verify(followerComponent).close(ctx);
-    order.verify(followerComponent).open(ctx);
-  }
-
-  private static class NoopPartitionStep implements PartitionStep {
-
-    @Override
-    public ActorFuture<Void> open(final PartitionContext context) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> close(final PartitionContext context) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public String getName() {
-      return "NoopComponent";
-    }
   }
 }
