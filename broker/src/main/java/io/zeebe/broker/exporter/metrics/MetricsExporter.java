@@ -29,6 +29,8 @@ public class MetricsExporter implements Exporter {
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap workflowInstanceKeyToCreationTimeMap;
 
+  // only used to keep track of how long the entries are existing and to clean up the corresponding
+  // maps
   private final NavigableMap<Long, Long> creationTimeToJobKeyNavigableMap;
   private final NavigableMap<Long, Long> creationTimeToWorkflowInstanceKeyNavigableMap;
 
@@ -53,6 +55,8 @@ public class MetricsExporter implements Exporter {
   public void close() {
     jobKeyToCreationTimeMap.clear();
     workflowInstanceKeyToCreationTimeMap.clear();
+    creationTimeToJobKeyNavigableMap.clear();
+    creationTimeToWorkflowInstanceKeyNavigableMap.clear();
   }
 
   @Override
@@ -125,6 +129,8 @@ public class MetricsExporter implements Exporter {
         deadTime,
         creationTimeToWorkflowInstanceKeyNavigableMap,
         workflowInstanceKeyToCreationTimeMap);
+
+    controller.scheduleTask(TIME_TO_LIVE, this::cleanUp);
   }
 
   private void clearMaps(
