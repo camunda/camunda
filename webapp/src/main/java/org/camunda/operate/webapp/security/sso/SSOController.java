@@ -31,20 +31,20 @@ import com.auth0.Tokens;
 public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-  
+
   @Autowired
   protected SSOWebSecurityConfig config;
-  
+
   @Autowired
   private BeanFactory beanFactory;
-  
+
   @Autowired
   private AuthenticationController authenticationController;
-  
+
   /**
    * login the user - the user authentication will be delegated to auth0
    * @param req
-   * @return a redirect command to auth0 authorize url 
+   * @return a redirect command to auth0 authorize url
    */
   @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
   public String login(final HttpServletRequest req,final HttpServletResponse res) {
@@ -55,7 +55,7 @@ public class SSOController {
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
   }
-  
+
 
   /**
    * Logged in callback -  Is called by auth0 with results of user authentication (GET) <br/>
@@ -116,16 +116,16 @@ public class SSOController {
   }
 
   protected void logoutAndRedirectToNoPermissionPage(HttpServletRequest req, HttpServletResponse res) throws IOException {
-    logger.error("User is authenticated but there are no permissions. Show noPermission message");
+    logger.warn("User is authenticated but there are no permissions. Show noPermission message");
     cleanup(req);
     logoutFromAuth0(res, getRedirectURI(req, NO_PERMISSION));
   }
-  
+
   protected void cleanup(HttpServletRequest req) {
     req.getSession().invalidate();
     SecurityContextHolder.clearContext();
   }
-  
+
   public String getLogoutUrlFor(String returnTo) {
     return String.format("https://%s/v2/logout?client_id=%s&returnTo=%s", config.getDomain(), config.getClientId(), returnTo);
   }
