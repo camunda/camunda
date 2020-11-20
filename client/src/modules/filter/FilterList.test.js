@@ -155,8 +155,10 @@ it('should display a duration filter', () => {
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const actionItem = node.find('ActionItem').dive();
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Duration is less than 18 hours');
+  expect(actionItem).toIncludeText('Duration is less than');
+  expect(actionItem.find('PreviewItemValue').dive().dive()).toIncludeText('18 hours');
 });
 
 it('should display a flow node duration filter', () => {
@@ -173,10 +175,7 @@ it('should display a flow node duration filter', () => {
     <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{a: 'flow node name'}} />
   );
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Duration filter is applied to');
-  expect(node.find('Tooltip').dive()).toIncludeText('1 Flow Node');
-  const content = shallow(node.find('Tooltip').prop('content'));
-  expect(content).toIncludeText('flow node name is less than 18 hours');
+  expect(node).toMatchSnapshot();
 });
 
 it('should show flow node duration filter in expanded state if specified', () => {
@@ -198,7 +197,7 @@ it('should show flow node duration filter in expanded state if specified', () =>
     />
   );
 
-  expect(node.find('ActionItem').dive()).toIncludeText('flow node name is less than 18 hours');
+  expect(node.find('PreviewItemValue')).toExist();
 });
 
 it('should display a running instances only filter', () => {

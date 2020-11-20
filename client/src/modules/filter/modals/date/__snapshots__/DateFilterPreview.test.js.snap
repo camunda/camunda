@@ -12,11 +12,9 @@ exports[`should create Today/Yesterday preview 1`] = `
   </span>
   occurs
   : 
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     Today
-  </span>
+  </PreviewItemValue>
 </div>
 `;
 
@@ -34,18 +32,14 @@ exports[`should create correct fixed date preview 1`] = `
   : 
   between
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     2015-01-20
-  </span>
+  </PreviewItemValue>
    and
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     2019-05-11
-  </span>
+  </PreviewItemValue>
 </div>
 `;
 
@@ -63,11 +57,9 @@ exports[`should create correct last... with custom preview 1`] = `
   : 
   in the last
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     5 months
-  </span>
+  </PreviewItemValue>
 </div>
 `;
 
@@ -85,31 +77,25 @@ exports[`should create variable preview 1`] = `
   </span>
   in the last
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     2 days
-  </span>
+  </PreviewItemValue>
   <span>
      
     or
      
   </span>
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     null
-  </span>
+  </PreviewItemValue>
   <span>
      
     or
      
   </span>
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     undefined
-  </span>
+  </PreviewItemValue>
 </div>
 `;
 
@@ -127,17 +113,13 @@ exports[`should include time information if fixed date filter contains time info
   : 
   between
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     2015-01-20 at 14:12
-  </span>
+  </PreviewItemValue>
    and
    
-  <span
-    className="previewItemValue"
-  >
+  <PreviewItemValue>
     2019-05-11 at 19:24
-  </span>
+  </PreviewItemValue>
 </div>
 `;

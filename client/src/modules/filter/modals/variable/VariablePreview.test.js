@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
 import VariablePreview from './VariablePreview';
 
 it('should combine multiple variable values with or', () => {
-  const node = shallow(
+  const node = mount(
     <VariablePreview
       filter={{operator: 'in', values: ['varValue', 'varValue2']}}
       variableName="varName"
@@ -21,7 +21,7 @@ it('should combine multiple variable values with or', () => {
 });
 
 it('should combine multiple variable values with or', () => {
-  const node = shallow(
+  const node = mount(
     <VariablePreview
       filter={{operator: 'not in', values: [null, 'varValue', 'varValue2']}}
       variableName="varName"
@@ -32,7 +32,7 @@ it('should combine multiple variable values with or', () => {
 });
 
 it('should use less/greater for comparison operators', () => {
-  const node = shallow(
+  const node = mount(
     <VariablePreview filter={{operator: '<', values: ['varValue']}} variableName="varName" />
   );
 
@@ -40,7 +40,7 @@ it('should use less/greater for comparison operators', () => {
 });
 
 it('should use contains operators', () => {
-  const node = shallow(
+  const node = mount(
     <VariablePreview filter={{operator: 'contains', values: ['varValue']}} variableName="varName" />
   );
 
@@ -48,7 +48,7 @@ it('should use contains operators', () => {
 });
 
 it('should display correct preview even if no operator is defined', () => {
-  const node = shallow(<VariablePreview filter={{values: [true, false]}} variableName="varName" />);
+  const node = mount(<VariablePreview filter={{values: [true, false]}} variableName="varName" />);
 
   expect(node).toIncludeText('varName is true or false');
 });

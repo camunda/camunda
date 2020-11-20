@@ -11,11 +11,9 @@ exports[`should create preview of nodes 1`] = `
     >
       <span>
          
-        <span
-          className="previewItemValue"
-        >
+        <PreviewItemValue>
           foo
-        </span>
+        </PreviewItemValue>
       </span>
     </li>
   </ul>
@@ -45,11 +43,9 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
     >
       <span>
          
-        <span
-          className="previewItemValue"
-        >
+        <PreviewItemValue>
           foo
-        </span>
+        </PreviewItemValue>
         <span
           className="previewItemOperator"
         >
@@ -65,11 +61,9 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
     >
       <span>
          
-        <span
-          className="previewItemValue"
-        >
+        <PreviewItemValue>
           foo
-        </span>
+        </PreviewItemValue>
       </span>
     </li>
   </ul>
@@ -100,11 +94,9 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     >
       <span>
          
-        <span
-          className="previewItemValue"
-        >
+        <PreviewItemValue>
           foo
-        </span>
+        </PreviewItemValue>
         <span
           className="previewItemOperator"
         >
@@ -120,11 +112,9 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     >
       <span>
          
-        <span
-          className="previewItemValue"
-        >
+        <PreviewItemValue>
           foo
-        </span>
+        </PreviewItemValue>
       </span>
     </li>
   </ul>

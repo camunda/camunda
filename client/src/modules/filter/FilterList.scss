@@ -24,7 +24,7 @@
         padding: 0 35px 0 10px;
       }
 
-      * {
+      *:not(.PreviewItemValue) {
         white-space: pre-wrap;
       }
 
@@ -48,15 +48,6 @@
     display: inline-block;
     margin: 0 0.5em;
   }
-}
-
-.Tooltip .filterValues .previewItemValue,
-.FilterList .ActionItem .previewItemValue {
-  @include highlighted;
-  max-width: 200px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  vertical-align: middle;
 }
 
 .dark .FilterList .ActionItem {
