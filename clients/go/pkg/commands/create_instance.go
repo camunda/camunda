@@ -127,6 +127,7 @@ func (cmd *CreateInstanceCommand) WorkflowKey(key int64) CreateInstanceCommandSt
 	return cmd
 }
 
+//nolint:golint
 func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommandStep2 {
 	cmd.request.BpmnProcessId = id
 	return cmd
