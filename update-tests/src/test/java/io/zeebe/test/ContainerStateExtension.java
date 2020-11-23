@@ -8,39 +8,52 @@
 package io.zeebe.test;
 
 import io.zeebe.test.util.testcontainers.ManagedVolume;
+import java.util.Optional;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 
-public class ContainerStateExtension
-    implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
-  private static final Logger LOG = LoggerFactory.getLogger(ContainerStateExtension.class);
-
-  private final ContainerState state;
-
-  public ContainerStateExtension(final ContainerState state) {
-    this.state = state;
-  }
+/**
+ * This extension injects a new {@link ContainerState} at runtime into any test which adds a {@link
+ * ContainerState} parameter, and stores it in a {@link Store}. This ensures that the resource is
+ * properly closed (since {@link ContainerState} implements {@link CloseableResource}).
+ *
+ * <p>Note however that it currently only supports injecting a single state, since the stored state
+ * will get overwritten.
+ */
+final class ContainerStateExtension implements AfterTestExecutionCallback, ParameterResolver {
+  private static final Namespace NAMESPACE = Namespace.create(ContainerStateExtension.class);
 
   @Override
   public void afterTestExecution(final ExtensionContext context) {
+    final Store store = context.getStore(NAMESPACE);
     final boolean hasFailed = context.getExecutionException().isPresent();
     if (hasFailed) {
-      state.onFailure();
-    }
-
-    try {
-      state.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to close container state", e);
+      Optional.ofNullable(store.get(context.getUniqueId(), ContainerState.class))
+          .ifPresent(ContainerState::onFailure);
     }
   }
 
   @Override
-  public void beforeTestExecution(final ExtensionContext context) {
-    final ManagedVolume volume = ManagedVolume.newVolume();
-    state.withVolume(volume);
+  public boolean supportsParameter(
+      final ParameterContext parameterContext, final ExtensionContext extensionContext)
+      throws ParameterResolutionException {
+    return parameterContext.getParameter().getType() == ContainerState.class;
+  }
+
+  @Override
+  public Object resolveParameter(
+      final ParameterContext parameterContext, final ExtensionContext extensionContext)
+      throws ParameterResolutionException {
+    final Store store = extensionContext.getStore(NAMESPACE);
+    final ContainerState state = new ContainerState().withVolume(ManagedVolume.newVolume());
+    store.put(extensionContext.getUniqueId(), state);
+
+    return state;
   }
 }
