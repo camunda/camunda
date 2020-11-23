@@ -67,14 +67,14 @@ class UpdateTest {
   @Timeout(value = 5, unit = TimeUnit.MINUTES)
   @ParameterizedTest(name = "{0}")
   @ArgumentsSource(UpdateTestCaseProvider.class)
-  void upgradeWithSnapshot(final String name, final UpdateTestCase testCase) {
+  void updateWithSnapshot(final String name, final UpdateTestCase testCase) {
     updateZeebe(testCase, true);
   }
 
   @Timeout(value = 5, unit = TimeUnit.MINUTES)
   @ParameterizedTest(name = "{0}")
   @ArgumentsSource(UpdateTestCaseProvider.class)
-  void upgradeWithoutSnapshot(final String name, final UpdateTestCase testCase) {
+  void updateWithoutSnapshot(final String name, final UpdateTestCase testCase) {
     updateZeebe(testCase, false);
   }
 
