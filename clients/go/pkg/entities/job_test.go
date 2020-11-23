@@ -27,7 +27,7 @@ type testType struct {
 }
 
 var (
-	job = Job{pb.ActivatedJob{
+	job = Job{&pb.ActivatedJob{
 		CustomHeaders: `{"foo": "bar", "hello": "world"}`,
 		Variables:     `{"foo": "bar", "hello": "world"}`,
 	}}

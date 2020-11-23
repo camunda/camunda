@@ -47,7 +47,11 @@ var publishMessageCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-        response, err := request.Send(ctx)
+		response, err := request.Send(ctx)
+		if err != nil {
+			return err
+		}
+
 		return printJSON(response)
 	},
 }

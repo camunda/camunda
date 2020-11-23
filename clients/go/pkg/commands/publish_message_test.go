@@ -36,8 +36,8 @@ func TestPublishMessageCommand(t *testing.T) {
 		CorrelationKey: "bar",
 	}
 	stub := &pb.PublishMessageResponse{
-	    Key: 1,
-    }
+		Key: 1,
+	}
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 

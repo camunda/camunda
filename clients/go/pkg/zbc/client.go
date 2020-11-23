@@ -233,7 +233,7 @@ func configureConnectionSecurity(config *ClientConfig) error {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
-			creds = credentials.NewTLS(&tls.Config{})
+			creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
 			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {
