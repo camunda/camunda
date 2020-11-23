@@ -52,8 +52,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -85,9 +87,7 @@ public final class OAuthCredentialsProviderTest {
   @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
   @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
 
-  @Rule
-  public final WireMockRule wireMockRule =
-      new WireMockRule(wireMockConfig().dynamicPort().dynamicPort());
+  @Rule public final WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
   private final RecordingGatewayService gatewayService = new RecordingGatewayService();
@@ -434,6 +434,81 @@ public final class OAuthCredentialsProviderTest {
             "Expected specified credentials cache to be a file but found directory instead.");
   }
 
+  @Test
+  public void shouldThrowExceptionIfTimeout() {
+    // given
+    mockCredentials(10);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .readTimeout(Duration.ofMillis(5))
+                .build())
+        .build()
+        .close();
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
+        .hasRootCauseExactlyInstanceOf(SocketTimeoutException.class)
+        .hasRootCauseMessage("Read timed out");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfTimeoutIsZero() {
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                new ZeebeClientBuilderImpl()
+                    .usePlaintext()
+                    .credentialsProvider(
+                        new OAuthCredentialsProviderBuilder()
+                            .clientId(CLIENT_ID)
+                            .clientSecret(SECRET)
+                            .audience(AUDIENCE)
+                            .authorizationServerUrl(
+                                "http://localhost:" + wireMockRule.port() + "/oauth/token")
+                            .readTimeout(Duration.ZERO)
+                            .build())
+                    .build()
+                    .close())
+        .hasMessageContaining(
+            "ReadTimeout timeout is 0 milliseconds, "
+                + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfTimeoutTooLarge() {
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                new ZeebeClientBuilderImpl()
+                    .usePlaintext()
+                    .credentialsProvider(
+                        new OAuthCredentialsProviderBuilder()
+                            .clientId(CLIENT_ID)
+                            .clientSecret(SECRET)
+                            .audience(AUDIENCE)
+                            .authorizationServerUrl(
+                                "http://localhost:" + wireMockRule.port() + "/oauth/token")
+                            .readTimeout(Duration.ofDays(1_000_000))
+                            .build())
+                    .build()
+                    .close())
+        .hasMessageContaining(
+            "ReadTimeout timeout is 86400000000000 milliseconds, "
+                + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   /**
    * Mocks an authorization server that returns credentials with the provided access token. Returns
    * the credentials to be return by the server.
@@ -442,7 +517,20 @@ public final class OAuthCredentialsProviderTest {
     mockCredentials(accessToken, AUDIENCE);
   }
 
+  private void mockCredentials(final Integer replyDelay) {
+    mockCredentials(ACCESS_TOKEN, replyDelay);
+  }
+
+  private void mockCredentials(final String accessToken, final Integer replyDelay) {
+    mockCredentials(accessToken, AUDIENCE, replyDelay);
+  }
+
   private void mockCredentials(final String accessToken, final String audience) {
+    mockCredentials(accessToken, audience, 0);
+  }
+
+  private void mockCredentials(
+      final String accessToken, final String audience, final Integer replyDelay) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
@@ -461,17 +549,20 @@ public final class OAuthCredentialsProviderTest {
             .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
             .withRequestBody(equalTo(encodedBody))
             .willReturn(
-                WireMock.okJson(
-                    "{\"access_token\":\""
-                        + accessToken
-                        + "\",\"token_type\":\""
-                        + TOKEN_TYPE
-                        + "\",\"expires_in\":"
-                        + (EXPIRY.getLong(ChronoField.INSTANT_SECONDS)
-                            - Instant.now().getEpochSecond())
-                        + ",\"scope\": \""
-                        + audience
-                        + "\"}")));
+                WireMock.aResponse()
+                    .withBody(
+                        "{\"access_token\":\""
+                            + accessToken
+                            + "\",\"token_type\":\""
+                            + TOKEN_TYPE
+                            + "\",\"expires_in\":"
+                            + (EXPIRY.getLong(ChronoField.INSTANT_SECONDS)
+                                - Instant.now().getEpochSecond())
+                            + ",\"scope\": \""
+                            + audience
+                            + "\"}")
+                    .withFixedDelay(replyDelay)
+                    .withStatus(200)));
   }
 
   private static String encode(final String param) {
