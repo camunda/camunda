@@ -44,7 +44,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
-    <version.docker-java-api>3.2.5</version.docker-java-api>
+    <version.docker-java-api>3.2.6</version.docker-java-api>
     <version.elasticsearch>6.8.13</version.elasticsearch>
     <version.error-prone>2.4.0</version.error-prone>
     <version.grpc>1.33.1</version.grpc>
@@ -86,7 +86,7 @@
     <version.testcontainers>1.15.0</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>1.0.0</version.zeebe-test-container>
-    <version.feel-scala>1.12.2</version.feel-scala>
+    <version.feel-scala>1.12.4</version.feel-scala>
     <version.restassert>4.3.2</version.restassert>
     <version.spring-boot>2.3.5.RELEASE</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
