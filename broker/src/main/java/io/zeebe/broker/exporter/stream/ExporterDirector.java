@@ -29,6 +29,7 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -62,8 +63,10 @@ public final class ExporterDirector extends Actor {
 
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
+  private boolean isPaused;
+  private ExporterPhase exporterPhase;
 
-  public ExporterDirector(final ExporterDirectorContext context) {
+  public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
     name = context.getName();
     containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
@@ -75,6 +78,7 @@ public final class ExporterDirector extends Actor {
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
+    isPaused = shouldPauseOnStart;
   }
 
   public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
@@ -83,6 +87,32 @@ public final class ExporterDirector extends Actor {
 
   public ActorFuture<Void> stopAsync() {
     return actor.close();
+  }
+
+  public ActorFuture<Void> pauseExporting() {
+    return actor.call(
+        () -> {
+          isPaused = true;
+          exporterPhase = ExporterPhase.PAUSED;
+          return;
+        });
+  }
+
+  public ActorFuture<Void> resumeExporting() {
+    return actor.call(
+        () -> {
+          isPaused = false;
+          exporterPhase = ExporterPhase.EXPORTING;
+          actor.submit(this::readNextEvent);
+          return;
+        });
+  }
+
+  public ActorFuture<ExporterPhase> getPhase() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(ExporterPhase.CLOSED);
+    }
+    return actor.call(() -> exporterPhase);
   }
 
   @Override
@@ -146,6 +176,7 @@ public final class ExporterDirector extends Actor {
   @Override
   protected void onActorClosed() {
     LOG.debug("Closed exporter director '{}'.", getName());
+    exporterPhase = ExporterPhase.CLOSED;
   }
 
   @Override
@@ -212,7 +243,13 @@ public final class ExporterDirector extends Actor {
     clearExporterState();
 
     if (state.hasExporters()) {
-      actor.submit(this::readNextEvent);
+      if (!isPaused) {
+        exporterPhase = ExporterPhase.EXPORTING;
+        actor.submit(this::readNextEvent);
+      } else {
+        exporterPhase = ExporterPhase.PAUSED;
+      }
+
     } else {
       actor.close();
     }
@@ -235,7 +272,7 @@ public final class ExporterDirector extends Actor {
   }
 
   private void readNextEvent() {
-    if (isOpened.get() && logStreamReader.hasNext() && !inExportingPhase) {
+    if (shouldExport()) {
       final LoggedEvent currentEvent = logStreamReader.next();
       if (eventFilter == null || eventFilter.applies(currentEvent)) {
         inExportingPhase = true;
@@ -244,6 +281,10 @@ public final class ExporterDirector extends Actor {
         skipRecord(currentEvent);
       }
     }
+  }
+
+  private boolean shouldExport() {
+    return isOpened.get() && logStreamReader.hasNext() && !inExportingPhase && !isPaused;
   }
 
   private void exportEvent(final LoggedEvent event) {

@@ -32,7 +32,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
             .zeebeDb(context.getZeebeDb())
             .descriptors(exporterDescriptors);
 
-    final ExporterDirector director = new ExporterDirector(exporterCtx);
+    final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
     context.setExporterDirector(director);
     return director.startAsync(context.getScheduler());
   }

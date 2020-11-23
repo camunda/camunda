@@ -14,14 +14,17 @@ import java.nio.file.Files;
 
 public class PartitionProcessingState {
 
-  private static final String PERSISTED_PAUSE_STATE_FILENAME = ".paused";
+  private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
+  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
+  private boolean isExportingPaused;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
 
   public PartitionProcessingState(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
     initProcessingStatus();
+    initExportingState();
   }
 
   public boolean isDiskSpaceAvailable() {
@@ -37,7 +40,7 @@ public class PartitionProcessingState {
   }
 
   public void resumeProcessing() throws IOException {
-    final File persistedPauseState = getPersistedPauseState();
+    final File persistedPauseState = getPersistedPauseState(PERSISTED_PAUSE_STATE_FILENAME);
     Files.deleteIfExists(persistedPauseState.toPath());
     if (!persistedPauseState.exists()) {
       isProcessingPaused = false;
@@ -46,22 +49,55 @@ public class PartitionProcessingState {
 
   @SuppressWarnings({"squid:S899"})
   public void pauseProcessing() throws IOException {
-    final File persistedPauseState = getPersistedPauseState();
+    final File persistedPauseState = getPersistedPauseState(PERSISTED_PAUSE_STATE_FILENAME);
     persistedPauseState.createNewFile();
     if (persistedPauseState.exists()) {
       isProcessingPaused = true;
     }
   }
 
-  private File getPersistedPauseState() {
-    return raftPartition.dataDirectory().toPath().resolve(PERSISTED_PAUSE_STATE_FILENAME).toFile();
+  private File getPersistedPauseState(final String filename) {
+    return raftPartition.dataDirectory().toPath().resolve(filename).toFile();
   }
 
   private void initProcessingStatus() {
-    isProcessingPaused = getPersistedPauseState().exists();
+    isProcessingPaused = getPersistedPauseState(PERSISTED_PAUSE_STATE_FILENAME).exists();
   }
 
   public boolean shouldProcess() {
     return isDiskSpaceAvailable() && !isProcessingPaused();
+  }
+
+  public boolean isExportingPaused() {
+    return isExportingPaused;
+  }
+
+  @SuppressWarnings({"squid:S899"})
+  /** Returns true if exporting is paused */
+  public boolean pauseExporting() throws IOException {
+    final File persistedExporterPauseState =
+        getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
+    persistedExporterPauseState.createNewFile();
+    if (persistedExporterPauseState.exists()) {
+      isExportingPaused = true;
+      return true;
+    }
+    return false;
+  }
+
+  /** Returns true if exporting is resumed */
+  public boolean resumeExporting() throws IOException {
+    final File persistedExporterPauseState =
+        getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
+    Files.deleteIfExists(persistedExporterPauseState.toPath());
+    if (!persistedExporterPauseState.exists()) {
+      isExportingPaused = false;
+      return true;
+    }
+    return false;
+  }
+
+  private void initExportingState() {
+    isExportingPaused = getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists();
   }
 }

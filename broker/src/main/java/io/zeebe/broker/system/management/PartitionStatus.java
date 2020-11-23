@@ -8,47 +8,55 @@
 package io.zeebe.broker.system.management;
 
 import io.atomix.raft.RaftServer.Role;
+import io.zeebe.broker.exporter.stream.ExporterPhase;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 
 public final class PartitionStatus {
 
   private final Role role;
   private final String snapshotId;
-
   private final Long processedPosition;
-
   private final Long processedPositionInSnapshot;
-
   private final Phase streamProcessorPhase;
+  private final ExporterPhase exporterPhase;
+  private final Long exportedPosition;
 
   private PartitionStatus(
       final Role role,
       final Long processedPosition,
       final String snapshotId,
       final Long processedPositionInSnapshot,
-      final Phase streamProcessorPhase) {
+      final Phase streamProcessorPhase,
+      final ExporterPhase exporterPhase,
+      final Long exportedPosition) {
     this.role = role;
     this.processedPosition = processedPosition;
     this.snapshotId = snapshotId;
     this.processedPositionInSnapshot = processedPositionInSnapshot;
     this.streamProcessorPhase = streamProcessorPhase;
+    this.exporterPhase = exporterPhase;
+    this.exportedPosition = exportedPosition;
   }
 
   public static PartitionStatus ofLeader(
       final Long processedPosition,
       final String snapshotId,
       final Long processedPositionInSnapshot,
-      final Phase streamProcessorPhase) {
+      final Phase streamProcessorPhase,
+      final ExporterPhase exporterPhase,
+      final long exportedPosition) {
     return new PartitionStatus(
         Role.LEADER,
         processedPosition,
         snapshotId,
         processedPositionInSnapshot,
-        streamProcessorPhase);
+        streamProcessorPhase,
+        exporterPhase,
+        exportedPosition);
   }
 
   public static PartitionStatus ofFollower(final String snapshotId) {
-    return new PartitionStatus(Role.FOLLOWER, null, snapshotId, null, null);
+    return new PartitionStatus(Role.FOLLOWER, null, snapshotId, null, null, null, null);
   }
 
   public Role getRole() {
@@ -69,5 +77,13 @@ public final class PartitionStatus {
 
   public Phase getStreamProcessorPhase() {
     return streamProcessorPhase;
+  }
+
+  public ExporterPhase getExporterPhase() {
+    return exporterPhase;
+  }
+
+  public Long getExportedPosition() {
+    return exportedPosition;
   }
 }

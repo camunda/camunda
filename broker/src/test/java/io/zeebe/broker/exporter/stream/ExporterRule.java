@@ -79,7 +79,7 @@ public final class ExporterRule implements TestRule {
             .zeebeDb(capturedZeebeDb)
             .descriptors(exporterDescriptors);
 
-    director = new ExporterDirector(context);
+    director = new ExporterDirector(context, false);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
