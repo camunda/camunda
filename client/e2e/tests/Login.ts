@@ -10,6 +10,9 @@ import {config} from '../config';
 import {screen} from '@testing-library/testcafe';
 
 const getPathname = ClientFunction(() => window.location.pathname);
+const getURL = ClientFunction(
+  () => `${window.location.pathname}${window.location.search}`,
+);
 const reloadPage = ClientFunction(() => {
   window.location.reload();
 });
@@ -77,4 +80,40 @@ test('show error message on login failure', async (t) => {
   await t
     .expect(screen.getByText('Username and Password do not match.').exists)
     .ok();
+});
+
+test('redirect to the correct URL after login', async (t) => {
+  const selectedTaskURL = '/123';
+  const selectedFilterUrl = '/?filter=unclaimed';
+  const selectedTaskAndFilterURL = '/123?filter=unclaimed';
+
+  await t
+    .navigateTo(selectedTaskURL)
+    .typeText(screen.getByPlaceholderText('Username'), 'demo')
+    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .click(screen.getByRole('button', {name: 'Login'}))
+    .expect(getURL())
+    .eql(selectedTaskURL)
+    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: /logout/i}));
+
+  await t
+    .navigateTo(selectedFilterUrl)
+    .typeText(screen.getByPlaceholderText('Username'), 'demo')
+    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .click(screen.getByRole('button', {name: 'Login'}))
+    .expect(getURL())
+    .eql(selectedFilterUrl)
+    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: /logout/i}));
+
+  await t
+    .navigateTo(selectedTaskAndFilterURL)
+    .typeText(screen.getByPlaceholderText('Username'), 'demo')
+    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .click(screen.getByRole('button', {name: 'Login'}))
+    .expect(getURL())
+    .eql(selectedTaskAndFilterURL)
+    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: /logout/i}));
 });
