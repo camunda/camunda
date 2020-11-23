@@ -450,6 +450,13 @@ public interface RaftServer {
   CompletableFuture<Void> shutdown();
 
   /**
+   * Transitions the server to INACTIVE without shutting down or leaving the cluster.
+   *
+   * @return A completable future to be completed once the server is inactive.
+   */
+  CompletableFuture<Void> goInactive();
+
+  /**
    * Leaves the Raft cluster.
    *
    * @return A completable future to be completed once the server has left the cluster.

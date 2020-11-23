@@ -222,6 +222,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return addPartitionRole(partitionId, PartitionRole.LEADER);
   }
 
+  public BrokerInfo setInactiveForPartition(final int partitionId) {
+    partitionLeaderTerms.remove(partitionId);
+    return addPartitionRole(partitionId, PartitionRole.INACTIVE);
+  }
+
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
   @SuppressWarnings("squid:S138")
   @Override

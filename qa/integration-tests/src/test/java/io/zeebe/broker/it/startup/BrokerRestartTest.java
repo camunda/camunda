@@ -88,5 +88,10 @@ public class BrokerRestartTest {
       this.logStream = logStream;
       return CompletableActorFuture.completed(null);
     }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+      return CompletableActorFuture.completed(null);
+    }
   }
 }

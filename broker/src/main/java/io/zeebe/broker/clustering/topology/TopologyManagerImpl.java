@@ -70,6 +70,11 @@ public final class TopologyManagerImpl extends Actor
   }
 
   @Override
+  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    return setInactive(partitionId);
+  }
+
+  @Override
   public String getName() {
     return actorName;
   }
@@ -100,6 +105,15 @@ public final class TopologyManagerImpl extends Actor
         () -> {
           removeIfLeader(localBroker, partitionId);
           localBroker.setFollowerForPartition(partitionId);
+          publishTopologyChanges();
+        });
+  }
+
+  public ActorFuture<Void> setInactive(final int partitionId) {
+    return actor.call(
+        () -> {
+          removeIfLeader(localBroker, partitionId);
+          localBroker.setInactiveForPartition(partitionId);
           publishTopologyChanges();
         });
   }
