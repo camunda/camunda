@@ -497,7 +497,7 @@ pipeline {
         stage('Build Docker') {
           when {
             expression {
-              // first part of the expessrion covers pure branch builds,
+              // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
               BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
           }
@@ -538,7 +538,8 @@ pipeline {
     stage ('Deploy to K8s') {
       when {
         expression {
-          BRANCH_NAME == 'master' || CHANGE_BRANCH ==~ /(.*-deploy)/ }
+          getBranchName() ==~ /(.*-deploy)/
+        }
       }
       steps {
         build job: '/deploy-optimize-branch-to-k8s',
