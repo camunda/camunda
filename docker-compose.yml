@@ -53,3 +53,10 @@ services:
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
+
+  ldap-test-server:
+    container_name: ldap-test-server
+    image: rroemhild/test-openldap
+    ports:
+      - 10389:389
+    restart: always
