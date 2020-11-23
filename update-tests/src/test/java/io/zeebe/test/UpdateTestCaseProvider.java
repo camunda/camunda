@@ -13,11 +13,11 @@ import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.UpdateTestCase.TestCaseBuilder;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -72,9 +72,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .beforeUpgrade(
                 state -> {
                   publishMessage(state, -1L, -1L);
-
-                  TestUtil.waitUntil(
-                      () -> state.hasElementInState("event-subprocess", "ELEMENT_COMPLETED"));
+                  awaitElementInState(state, "event-subprocess", "ELEMENT_COMPLETED");
 
                   return activateJob(state);
                 })
@@ -84,7 +82,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .name("timer")
             .deployWorkflow(timerWorkflow())
             .beforeUpgrade(this::awaitTimerCreation)
-            .afterUpgrade(this::timerTriggered)
+            .afterUpgrade(this::awaitTimerTriggered)
             .done(),
         scenario()
             .name("incident")
@@ -110,7 +108,8 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                       .latestVersion()
                       .variables(Map.of("key", "123"))
                       .send();
-                  TestUtil.waitUntil(() -> state.hasLogContaining(MESSAGE, "CORRELATED"));
+
+                  awaitMessageCorrelation(state, MESSAGE);
                 })
             .done(),
         scenario()
@@ -121,7 +120,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .createInstance()
             .afterUpgrade(
                 (state, wfKey, key) -> {
-                  TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+                  awaitElementInState(state, JOB, "CREATED");
 
                   final var jobsResponse =
                       state
@@ -133,14 +132,14 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                           .join();
                   assertThat(jobsResponse.getJobs()).hasSize(1);
 
-                  TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
-
+                  awaitElementInState(state, JOB, "ACTIVATED");
                   state
                       .client()
                       .newCompleteCommand(jobsResponse.getJobs().get(0).getKey())
                       .send()
                       .join();
-                  TestUtil.waitUntil(() -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
+
+                  awaitChildProcessCompleted(state, CHILD_PROCESS_ID);
                 })
             .done(),
         scenario()
@@ -191,13 +190,13 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
   }
 
   private long activateJob(final ContainerState state) {
-    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+    awaitElementInState(state, JOB, "CREATED");
 
     final ActivateJobsResponse jobsResponse =
         state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
     assertThat(jobsResponse.getJobs()).hasSize(1);
 
-    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
+    awaitElementInState(state, JOB, "ACTIVATED");
     return jobsResponse.getJobs().get(0).getKey();
   }
 
@@ -214,11 +213,6 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private long awaitOpenMessageSubscription(final ContainerState state) {
-    TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_SUBSCRIPTION", "OPENED"));
-    return -1L;
-  }
-
   private void publishMessage(
       final ContainerState state, final long wfInstanceKey, final long key) {
     state
@@ -231,7 +225,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .send()
         .join();
 
-    TestUtil.waitUntil(() -> state.hasMessageInState(MESSAGE, "PUBLISHED"));
+    awaitMessageIsInState(state, MESSAGE, "PUBLISHED");
   }
 
   private BpmnModelInstance msgStartWorkflow() {
@@ -242,11 +236,6 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private long awaitStartMessageSubscription(final ContainerState state) {
-    TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
-    return -1L;
-  }
-
   private BpmnModelInstance timerWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
@@ -255,26 +244,11 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private long awaitTimerCreation(final ContainerState state) {
-    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "CREATED"));
-    return -1L;
-  }
-
-  private void timerTriggered(
-      final ContainerState state, final long wfInstanceKey, final long key) {
-    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "TRIGGERED"));
-  }
-
   private BpmnModelInstance incidentWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInputExpression("foo", "foo"))
         .done();
-  }
-
-  private long awaitIncidentCreation(final ContainerState state) {
-    TestUtil.waitUntil(() -> state.hasLogContaining("INCIDENT", "CREATED"));
-    return state.getIncidentKey();
   }
 
   private void resolveIncident(
@@ -306,6 +280,80 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .serviceTask(TASK, b -> b.zeebeJobType(TASK))
         .endEvent()
         .done();
+  }
+
+  private void awaitMessageCorrelation(final ContainerState state, final String message) {
+    Awaitility.await(String.format("until message %s is correlated", message))
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining(message, "CORRELATED"));
+  }
+
+  private void awaitMessageIsInState(
+      final ContainerState state, final String message, final String messageState) {
+    Awaitility.await(String.format("until message %s is %s", message, messageState))
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasMessageInState(message, messageState));
+  }
+
+  private long awaitOpenMessageSubscription(final ContainerState state) {
+    Awaitility.await("until a message subscription is opened")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining("MESSAGE_SUBSCRIPTION", "OPENED"));
+
+    return -1L;
+  }
+
+  private long awaitStartMessageSubscription(final ContainerState state) {
+    Awaitility.await("until a start event message subscription is opened")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
+
+    return -1L;
+  }
+
+  private long awaitTimerCreation(final ContainerState state) {
+    Awaitility.await("until a timer is created")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining("TIMER", "CREATED"));
+
+    return -1L;
+  }
+
+  private void awaitTimerTriggered(
+      final ContainerState state, final long wfInstanceKey, final long key) {
+    Awaitility.await("until a timer is created")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining("TIMER", "TRIGGERED"));
+  }
+
+  private void awaitChildProcessCompleted(final ContainerState state, final String processId) {
+    Awaitility.await("until the child process is completed")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
+  }
+
+  private long awaitIncidentCreation(final ContainerState state) {
+    Awaitility.await("until an incident is created")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasLogContaining("INCIDENT", "CREATED"));
+
+    return state.getIncidentKey();
+  }
+
+  private void awaitElementInState(
+      final ContainerState state, final String elementId, final String elementState) {
+    Awaitility.await(String.format("until element %s is in state %s", elementId, elementState))
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(200))
+        .until(() -> state.hasElementInState(elementId, elementState));
   }
 
   private TestCaseBuilder scenario() {
