@@ -78,6 +78,13 @@ var tests = []struct {
 		goldenFile: "testdata/topology.golden",
 	},
 	{
+		name: "using json flag",
+		cmd:  "status --output=json",
+		// we need to set the path so it evaluates $HOME before we overwrite it
+		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
+		goldenFile: "testdata/topology_json.golden",
+	},
+	{
 		name:       "deploy workflow",
 		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
 		goldenFile: "testdata/deploy.golden",
