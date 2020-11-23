@@ -38,7 +38,7 @@
     "typescript": "~4.0.5"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "TSC_COMPILE_ON_ERROR=true react-scripts start",
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",

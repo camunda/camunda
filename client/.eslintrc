@@ -18,10 +18,6 @@
     "testing-library/prefer-find-by": "error",
     "testing-library/prefer-presence-queries": "error",
     "testing-library/prefer-screen-queries": "error",
-    "testing-library/prefer-wait-for": "error",
-    "no-unused-vars": [
-      "error",
-      {"vars": "all", "args": "after-used", "ignoreRestSiblings": false}
-    ]
+    "testing-library/prefer-wait-for": "error"
   }
 }
