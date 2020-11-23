@@ -18,7 +18,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferUtil {
   public static final int NO_WRAP = 1;
-  public static final int DEFAULT_WRAP = 16; // bytes
+  private static final int DEFAULT_WRAP = 16; // bytes
 
   private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
 
@@ -108,33 +108,15 @@ public final class BufferUtil {
     }
   }
 
-  public static String bufferAsHexString(final BufferWriter writer) {
-    return bufferAsHexString(writer, DEFAULT_WRAP);
-  }
-
-  public static String bufferAsHexString(final BufferWriter writer, final int wrap) {
-    final byte[] bytes = new byte[writer.getLength()];
-    final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
-
-    writer.write(buffer, 0);
-
-    return bytesAsHexString(bytes, wrap);
-  }
-
   public static String bufferAsHexString(final DirectBuffer buffer) {
     return bufferAsHexString(buffer, DEFAULT_WRAP);
   }
 
-  public static String bufferAsHexString(final DirectBuffer buffer, final int wrap) {
+  private static String bufferAsHexString(final DirectBuffer buffer, final int wrap) {
     return bufferAsHexString(buffer, 0, buffer.capacity(), wrap);
   }
 
-  public static String bufferAsHexString(
-      final DirectBuffer buffer, final int offset, final int length) {
-    return bufferAsHexString(buffer, offset, length, DEFAULT_WRAP);
-  }
-
-  public static String bufferAsHexString(
+  private static String bufferAsHexString(
       final DirectBuffer buffer, final int offset, final int length, final int wrap) {
     final byte[] bytes = new byte[length];
     buffer.getBytes(offset, bytes, 0, length);
@@ -200,21 +182,6 @@ public final class BufferUtil {
     return new UnsafeBuffer(array);
   }
 
-  /** Does not care about overflows; just for convenience of writing int literals */
-  public static MutableDirectBuffer wrapBytes(final int... bytes) {
-    return new UnsafeBuffer(intArrayToByteArray(bytes));
-  }
-
-  public static int bufferContentsHash(final DirectBuffer buffer) {
-    int hashCode = 1;
-
-    for (int i = 0, length = buffer.capacity(); i < length; i++) {
-      hashCode = 31 * hashCode + buffer.getByte(i);
-    }
-
-    return hashCode;
-  }
-
   /**
    * Performs byte wise comparison of a given byte array and a prefix.
    *
@@ -244,14 +211,5 @@ public final class BufferUtil {
     }
 
     return true;
-  }
-
-  protected static byte[] intArrayToByteArray(final int[] input) {
-    final byte[] result = new byte[input.length];
-    for (int i = 0; i < input.length; i++) {
-      result[i] = (byte) input[i];
-    }
-
-    return result;
   }
 }

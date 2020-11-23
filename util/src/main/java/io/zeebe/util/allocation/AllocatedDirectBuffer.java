@@ -13,8 +13,7 @@ import java.util.function.Consumer;
 public final class AllocatedDirectBuffer extends AllocatedBuffer {
   private final Consumer<AllocatedDirectBuffer> onCloseCallback;
 
-  public AllocatedDirectBuffer(
-      final ByteBuffer buffer, final Consumer<AllocatedDirectBuffer> onClose) {
+  AllocatedDirectBuffer(final ByteBuffer buffer, final Consumer<AllocatedDirectBuffer> onClose) {
     super(buffer);
     onCloseCallback = onClose;
   }

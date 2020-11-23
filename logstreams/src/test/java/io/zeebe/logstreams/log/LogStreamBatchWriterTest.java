@@ -402,8 +402,8 @@ public final class LogStreamBatchWriterTest {
     assertThatThrownBy(
             () ->
                 writer.event().key(1).value(EVENT_VALUE_1).done().event().key(2).done().tryWrite())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("value must not be null");
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("value");
   }
 
   @Test

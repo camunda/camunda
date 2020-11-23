@@ -7,8 +7,8 @@
  */
 package io.zeebe.util.sched.future;
 
-import io.zeebe.util.LangUtil;
 import java.util.function.BiConsumer;
+import org.agrona.LangUtil;
 
 public final class FutureContinuationRunnable<T> implements Runnable {
   private final ActorFuture<T> future;

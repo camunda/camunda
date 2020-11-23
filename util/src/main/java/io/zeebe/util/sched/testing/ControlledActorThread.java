@@ -7,7 +7,6 @@
  */
 package io.zeebe.util.sched.testing;
 
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.ActorThreadGroup;
 import io.zeebe.util.sched.ActorTimerQueue;
@@ -15,6 +14,7 @@ import io.zeebe.util.sched.TaskScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import org.agrona.LangUtil;
 
 public final class ControlledActorThread extends ActorThread {
   private final CyclicBarrier barrier = new CyclicBarrier(2);
