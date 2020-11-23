@@ -14,7 +14,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.schema.indices.WorkflowIndex;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
@@ -86,7 +86,7 @@ public class BatchOperationPerformanceTest {
   private void createResolveIncidentOperations() {
     CreateBatchOperationRequestDto resolveIncidentRequest = new CreateBatchOperationRequestDto();
     resolveIncidentRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
-    ListViewRequestDto queryForResolveIncident = new ListViewRequestDto();
+    ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
     queryForResolveIncident.setRunning(true);
     queryForResolveIncident.setIncidents(true);
     queryForResolveIncident.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
@@ -98,7 +98,7 @@ public class BatchOperationPerformanceTest {
   private void createCancelOperations() {
     CreateBatchOperationRequestDto cancelRequest = new CreateBatchOperationRequestDto();
     cancelRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
-    ListViewRequestDto queryForCancel = new ListViewRequestDto();
+    ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setActive(true);
     queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 1));

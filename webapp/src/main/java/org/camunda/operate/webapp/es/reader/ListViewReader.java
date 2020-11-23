@@ -7,6 +7,7 @@ package org.camunda.operate.webapp.es.reader;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -41,6 +43,7 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -107,14 +110,124 @@ public class ListViewReader {
   /**
    * Queries workflow instances by different criteria (with pagination).
    * @param workflowInstanceRequest
+   * @return
+   */
+  public ListViewResponseDto queryWorkflowInstances(ListViewRequestDto workflowInstanceRequest) {
+    ListViewResponseDto result = new ListViewResponseDto();
+
+    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, result);
+    List<Long> workflowInstanceKeys = CollectionUtil
+        .map(workflowInstanceEntities, workflowInstanceEntity -> Long.valueOf(workflowInstanceEntity.getId()));
+    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(workflowInstanceKeys);
+
+    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(workflowInstanceKeys);
+
+    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
+    result.setWorkflowInstances(workflowInstanceDtoList);
+    return result;
+  }
+
+  public List<WorkflowInstanceForListViewEntity> queryListView(
+      ListViewRequestDto workflowInstanceRequest, ListViewResponseDto result) {
+
+    final QueryBuilder query = createRequestQuery(workflowInstanceRequest.getQuery());
+
+    logger.debug("Workflow instance search request: \n{}", query.toString());
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        .query(query);
+
+    applySorting(searchSourceBuilder, workflowInstanceRequest);
+
+    SearchRequest searchRequest = createSearchRequest(workflowInstanceRequest.getQuery())
+        .source(searchSourceBuilder);
+
+    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+
+    try {
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      result.setTotalCount(response.getHits().getTotalHits());
+
+      List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
+          (sh) -> {
+            WorkflowInstanceForListViewEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
+            entity.setSortValues(sh.getSortValues());
+            return entity;
+          });
+      if (workflowInstanceRequest.getSearchBefore() != null) {
+        Collections.reverse(workflowInstanceEntities);
+      }
+      return workflowInstanceEntities;
+    } catch (IOException e) {
+      final String message = String
+          .format("Exception occurred, while obtaining instances list: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private void applySorting(SearchSourceBuilder searchSourceBuilder, ListViewRequestDto request) {
+
+    //we sort by id as numbers, not as strings
+    if (request.getSorting() != null) {
+      String sortBy = request.getSorting().getSortBy();
+      if (sortBy.equals(ListViewTemplate.ID)) {
+        request.getSorting().setSortBy(ListViewTemplate.KEY);
+      }
+    }
+
+    final boolean directSorting = request.getSearchAfter() != null || request.getSearchBefore() == null;
+    if (request.getSorting() != null) {
+      SortBuilder sort1;
+      SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
+      if (directSorting) {
+        sort1 = SortBuilders.fieldSort(request.getSorting().getSortBy()).order(sort1DirectOrder)
+            .missing("_last");
+      } else {
+        sort1 = SortBuilders.fieldSort(request.getSorting().getSortBy())
+            .order(reverseOrder(sort1DirectOrder)).missing("_first");
+      }
+      searchSourceBuilder.sort(sort1);
+    }
+
+    SortBuilder sort2;
+    Object[] querySearchAfter;
+    if (directSorting) { //this sorting is also the default one for 1st page
+      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
+      querySearchAfter = request.getSearchAfter(); //may be null
+    } else { //searchBefore != null
+      //reverse sorting
+      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.DESC);
+      querySearchAfter = request.getSearchBefore();
+    }
+
+    searchSourceBuilder
+        .sort(sort2)
+        .size(request.getPageSize());
+    if (querySearchAfter != null) {
+      searchSourceBuilder.searchAfter(querySearchAfter);
+    }
+  }
+
+  private SortOrder reverseOrder(final SortOrder sortOrder) {
+    if (sortOrder.equals(SortOrder.ASC)) {
+      return SortOrder.DESC;
+    } else {
+      return SortOrder.ASC;
+    }
+  }
+
+  /**
+   * Queries workflow instances by different criteria (with pagination).
+   * @param workflowInstanceRequest
    * @param firstResult
    * @param maxResults
    * @return
    */
-  public ListViewResponseDto queryWorkflowInstances(ListViewRequestDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
+  public ListViewResponseDto queryWorkflowInstances_OLD(ListViewQueryDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
     ListViewResponseDto result = new ListViewResponseDto();
 
-    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, firstResult, maxResults, result);
+    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView_OLD(workflowInstanceRequest, firstResult, maxResults, result);
     List<Long> workflowInstanceKeys = CollectionUtil.map(workflowInstanceEntities,workflowInstanceEntity -> Long.valueOf(workflowInstanceEntity.getId()));
     final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(workflowInstanceKeys);
 
@@ -125,9 +238,10 @@ public class ListViewReader {
     return result;
   }
 
-  public List<WorkflowInstanceForListViewEntity> queryListView(ListViewRequestDto workflowInstanceRequest,
+  public List<WorkflowInstanceForListViewEntity> queryListView_OLD(
+      ListViewQueryDto workflowInstanceRequest,
     Integer firstResult, Integer maxResults, ListViewResponseDto result) {
-    SearchSourceBuilder searchSourceBuilder = createSearchSourceBuilder(workflowInstanceRequest);
+    SearchSourceBuilder searchSourceBuilder = createSearchSourceBuilder_OLD(workflowInstanceRequest);
     searchSourceBuilder
       .from(firstResult)
       .size(maxResults);
@@ -149,14 +263,14 @@ public class ListViewReader {
     }
   }
 
-  private SearchRequest createSearchRequest(ListViewRequestDto workflowInstanceRequest) {
+  private SearchRequest createSearchRequest(ListViewQueryDto workflowInstanceRequest) {
     if (workflowInstanceRequest.isFinished()) {
       return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
     }
     return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
   }
 
-  public SearchSourceBuilder createSearchSourceBuilder(ListViewRequestDto request) {
+  public SearchSourceBuilder createSearchSourceBuilder_OLD(ListViewQueryDto request) {
 
     final QueryBuilder query = createRequestQuery(request);
 
@@ -164,11 +278,11 @@ public class ListViewReader {
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query);
-    applySorting(searchSourceBuilder, request.getSorting());
+    applySorting_OLD(searchSourceBuilder, request.getSorting());
     return searchSourceBuilder;
   }
 
-  private void applySorting(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
+  private void applySorting_OLD(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
     FieldSortBuilder defaultSorting = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
     if (sorting == null) {
       //apply default sorting
@@ -184,7 +298,7 @@ public class ListViewReader {
     }
   }
 
-  private QueryBuilder createRequestQuery(ListViewRequestDto request) {
+  private QueryBuilder createRequestQuery(ListViewQueryDto request) {
     final QueryBuilder query = createQueryFragment(request);
 
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
@@ -193,17 +307,17 @@ public class ListViewReader {
     return constantScoreQuery(queryBuilder);
   }
 
-  public ConstantScoreQueryBuilder createWorkflowInstancesQuery(ListViewRequestDto query) {
+  public ConstantScoreQueryBuilder createWorkflowInstancesQuery(ListViewQueryDto query) {
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
     final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, createQueryFragment(query));
     return constantScoreQuery(queryBuilder);
   }
 
-  public QueryBuilder createQueryFragment(ListViewRequestDto query) {
+  public QueryBuilder createQueryFragment(ListViewQueryDto query) {
     return createQueryFragment(query, ALL);
   }
 
-  public QueryBuilder createQueryFragment(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
+  public QueryBuilder createQueryFragment(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     //archived instances can't have active incidents, error message filter will always return empty list
     if (queryType == ONLY_ARCHIVE && query.getErrorMessage() != null) {
       return ElasticsearchUtil.createMatchNoneQuery();
@@ -223,21 +337,21 @@ public class ListViewReader {
     );
   }
 
-  private QueryBuilder createBatchOperatioIdQuery(ListViewRequestDto query) {
+  private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {
     if (query.getBatchOperationId() != null) {
       return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
     }
     return null;
   }
 
-  private QueryBuilder createWorkflowKeysQuery(ListViewRequestDto query) {
+  private QueryBuilder createWorkflowKeysQuery(ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getWorkflowIds())) {
       return termsQuery(ListViewTemplate.WORKFLOW_KEY, query.getWorkflowIds());
     }
     return null;
   }
 
-  private QueryBuilder createBpmnProcessIdQuery(ListViewRequestDto query) {
+  private QueryBuilder createBpmnProcessIdQuery(ListViewQueryDto query) {
     if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
       final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
       TermQueryBuilder versionQ = null;
@@ -249,7 +363,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createVariablesQuery(ListViewRequestDto query) {
+  private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
     VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && !StringUtils.isEmpty(variablesQuery.getName())) {
       if (variablesQuery.getName() == null) {
@@ -260,14 +374,14 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createExcludeIdsQuery(ListViewRequestDto query) {
+  private QueryBuilder createExcludeIdsQuery(ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getExcludeIds())) {
       return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, query.getExcludeIds()));
     }
     return null;
   }
 
-  private QueryBuilder createEndDateQuery(ListViewRequestDto query) {
+  private QueryBuilder createEndDateQuery(ListViewQueryDto query) {
     if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.END_DATE);
       if (query.getEndDateAfter() != null) {
@@ -282,7 +396,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createStartDateQuery(ListViewRequestDto query) {
+  private QueryBuilder createStartDateQuery(ListViewQueryDto query) {
     if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.START_DATE);
       if (query.getStartDateAfter() != null) {
@@ -306,7 +420,7 @@ public class ListViewReader {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
 
-  private QueryBuilder createErrorMessageQuery(ListViewRequestDto query) {
+  private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
     String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
       if(errorMessage.contains(WILD_CARD)) {
@@ -318,7 +432,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createIdsQuery(ListViewRequestDto query) {
+  private QueryBuilder createIdsQuery(ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getIds())) {
       return termsQuery(ListViewTemplate.ID, query.getIds());
     }
@@ -343,7 +457,7 @@ public class ListViewReader {
     }
   }
 
-  private QueryBuilder createRunningFinishedQuery(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
 
     boolean active = query.isActive();
     boolean incidents = query.isIncidents();
@@ -408,7 +522,7 @@ public class ListViewReader {
 
   }
 
-  private QueryBuilder createActivityIdQuery(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createActivityIdQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }
@@ -431,28 +545,28 @@ public class ListViewReader {
     return joinWithOr(activeActivityIdQuery, incidentActivityIdQuery, completedActivityIdQuery, canceledActivityIdQuery);
   }
 
-  private QueryBuilder createCanceledQuery(ListViewRequestDto query) {
+  private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
     if (query.isCanceled()) {
       return termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createCompletedQuery(ListViewRequestDto query) {
+  private QueryBuilder createCompletedQuery(ListViewQueryDto query) {
     if (query.isCompleted()) {
       return termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createIncidentsQuery(ListViewRequestDto query) {
+  private QueryBuilder createIncidentsQuery(ListViewQueryDto query) {
     if (query.isIncidents()) {
       return hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None);
     }
     return null;
   }
 
-  private QueryBuilder createActiveQuery(ListViewRequestDto query) {
+  private QueryBuilder createActiveQuery(ListViewQueryDto query) {
     if (query.isActive()) {
       return boolQuery().mustNot(hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None));
     }

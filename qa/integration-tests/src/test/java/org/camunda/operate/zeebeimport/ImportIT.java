@@ -26,6 +26,7 @@ import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -125,15 +126,19 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   private void assertVariableExists(Long workflowInstanceKey, String name, String value) {
     ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView(
-      TestUtil.createGetAllWorkflowInstancesQuery(q -> {
+      TestUtil.createGetAllWorkflowInstancesRequest(q -> {
         q.setVariable(new VariablesQueryDto(name, value));
       }));
     assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
   }
 
   private void assertVariableDoesNotExist(Long workflowInstanceKey, String name, String value) {
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(q ->
-      q.setVariable(new VariablesQueryDto(name, value))), 0, 100);
+    final ListViewRequestDto request = TestUtil
+        .createGetAllWorkflowInstancesRequest(q ->
+            q.setVariable(new VariablesQueryDto(name, value)));
+    request.setPageSize(100);
+    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(
+        request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
   }
@@ -143,14 +148,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView(ListViewRequestDto request) {
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request, 0, 100);
+    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(1);
     return listViewResponse.getWorkflowInstances().get(0);
   }
 
   private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {
-    return getSingleWorkflowInstanceForListView(TestUtil.createGetAllWorkflowInstancesQuery());
+    return getSingleWorkflowInstanceForListView(TestUtil.createGetAllWorkflowInstancesRequest());
   }
 
   @Test

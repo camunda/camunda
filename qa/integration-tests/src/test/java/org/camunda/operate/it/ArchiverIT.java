@@ -52,6 +52,7 @@ import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -183,15 +184,16 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   protected void createOperations(List<Long> ids1) {
-    final ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery();
+    final ListViewQueryDto query = TestUtil.createGetAllWorkflowInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     CreateBatchOperationRequestDto batchOperationRequest = new CreateBatchOperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);   //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   private void assertAllInstancesInAlias(int count) {
-    final ListViewResponseDto responseDto = listViewReader
-      .queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, count + 100);
+    final ListViewRequestDto request = TestUtil.createGetAllWorkflowInstancesRequest();
+    request.setPageSize(count + 100);
+    final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(request);
     assertThat(responseDto.getTotalCount()).isEqualTo(count);
   }
 
@@ -423,7 +425,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     return ids;
   }
 
-  //OPE-671  
+  //OPE-671
   @Test
   public void testArchivedOperationsWillNotBeLocked() throws Exception {
       // given (set up) : disabled OperationExecutor
@@ -435,7 +437,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
           .startEvent()
           .endEvent()
           .done();
-      
+
       tester
         .deployWorkflow(startEndProcess, "startEndProcess.bpmn").workflowIsDeployed()
         .and()
@@ -446,8 +448,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
         .cancelWorkflowInstanceOperation().waitUntil().operationIsCompleted()
         // 2. Finish workflow instance
         .then()
-        .waitUntil().workflowInstanceIsFinished() 
-        // 3. Wait till workflow instance is archived 
+        .waitUntil().workflowInstanceIsFinished()
+        // 3. Wait till workflow instance is archived
         .archive().waitUntil().archiveIsDone()
         // 4. Enable the operation executor
         .then()

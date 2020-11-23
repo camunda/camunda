@@ -28,7 +28,7 @@ import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -61,42 +61,42 @@ public class OperateTester {
   private ZeebeClient zeebeClient;
   private MockMvcTestRule mockMvcTestRule;
   private ElasticsearchTestRule elasticsearchTestRule;
-  
+
   private Long workflowKey;
   private Long workflowInstanceKey;
-  
+
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
   private Predicate<Object[]> workflowIsDeployedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstancesAreStartedCheck")
   private Predicate<Object[]> workflowInstancesAreStartedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstancesAreFinishedCheck")
   private Predicate<Object[]> workflowInstancesAreFinishedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-  
+
   @Autowired
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
-  
+
   @Autowired
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
-  
+
   @Autowired
   @Qualifier("activityIsCompletedCheck")
   private Predicate<Object[]> activityIsCompletedCheck;
-  
+
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
-  
+
   @Autowired
   @Qualifier("variableExistsCheck")
   private Predicate<Object[]> variableExistsCheck;
@@ -106,13 +106,13 @@ public class OperateTester {
 
   @Autowired
   protected OperationExecutor operationExecutor;
-  
+
   @Autowired
   protected VariableReader variableReader;
-  
+
   @Autowired
   protected IncidentReader incidentReader;
-  
+
   private boolean operationExecutorEnabled = true;
 
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
@@ -140,12 +140,12 @@ public class OperateTester {
     workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
     return this;
   }
-  
+
   public OperateTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
     workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
-    return this; 
+    return this;
   }
-  
+
   public OperateTester workflowIsDeployed() {
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
     return this;
@@ -154,47 +154,47 @@ public class OperateTester {
   public OperateTester startWorkflowInstance(String bpmnProcessId) {
    return startWorkflowInstance(bpmnProcessId, null);
   }
-  
+
   public OperateTester startWorkflowInstance(String bpmnProcessId, String payload) {
     workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
     return this;
   }
-  
+
   public OperateTester workflowInstanceIsStarted() {
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, Arrays.asList(workflowInstanceKey));
     return this;
   }
-  
+
   public OperateTester workflowInstanceIsFinished() {
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck,Arrays.asList(workflowInstanceKey));
     return this;
   }
-  
+
   public OperateTester workflowInstanceIsCompleted() {
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     return this;
   }
-  
+
   public OperateTester failTask(String taskName, String errorMessage) {
     ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
-  
+
   public OperateTester throwError(String taskName,String errorCode,String errorMessage) {
     ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
     return this;
   }
-  
+
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
   }
-  
+
   public OperateTester activityIsActive(String activityId) {
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
     return this;
   }
-  
+
   public OperateTester activityIsCompleted(String activityId) {
     elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
     return this;
@@ -207,20 +207,20 @@ public class OperateTester {
         .send();
     return this;
   }
-  
+
   public OperateTester completeTask(String activityId) {
     return completeTask(activityId, null);
   }
-  
+
   public OperateTester completeTask(String activityId,String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), payload);
     return activityIsCompleted(activityId);
   }
-  
+
   public OperateTester and() {
     return this;
   }
-  
+
   public OperateTester waitUntil() {
     return this;
   }
@@ -249,7 +249,7 @@ public class OperateTester {
   }
 
   public OperateTester cancelWorkflowInstanceOperation() throws Exception {
-    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+    final ListViewQueryDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
         .setIds(Collections.singletonList(workflowInstanceKey.toString()));
 
     CreateBatchOperationRequestDto batchOperationDto
@@ -286,7 +286,7 @@ public class OperateTester {
       for(Future f: futures) { f.get();}
       return 0;//return futures.size()
   }
-  
+
   public int importOneType(ImportValueType importValueType) throws IOException {
     List<RecordsReader> readers = elasticsearchTestRule.getRecordsReaders(importValueType);
     int count = 0;
@@ -304,7 +304,7 @@ public class OperateTester {
     operationExecutorEnabled = false;
     return this;
   }
-  
+
   public OperateTester enableOperationExecutor() throws Exception {
     operationExecutorEnabled = true;
     return executeOperations();
@@ -339,7 +339,7 @@ public class OperateTester {
   public String getVariable(String name) {
    return getVariable(name,workflowInstanceKey);
   }
-  
+
   public String getVariable(String name,Long scopeKey) {
     List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
     List<VariableDto> variablesWithGivenName = filter(variables, variable -> variable.getName().equals(name));
@@ -353,11 +353,11 @@ public class OperateTester {
     String variableValue = getVariable(name);
     return value==null? (variableValue == null): value.equals(variableValue);
   }
-  
+
   public List<IncidentEntity> getIncidents() {
     return getIncidentsFor(workflowInstanceKey);
   }
-  
+
   public List<IncidentEntity> getIncidentsFor(Long workflowInstanceKey) {
     return incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
   }

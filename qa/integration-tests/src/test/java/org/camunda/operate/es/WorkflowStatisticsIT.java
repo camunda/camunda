@@ -23,7 +23,7 @@ import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.WorkflowInstanceCoreStatisticsDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -38,7 +38,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflow-instances/statistics";
   private static final String QUERY_WORKFLOW_CORE_STATISTICS_URL = "/api/workflow-instances/core-statistics";
-  
+
   private static final Long WORKFLOW_KEY_DEMO_PROCESS = 42L;
   private static final Long WORKFLOW_KEY_OTHER_PROCESS = 27L;
 
@@ -60,7 +60,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowKey);
 
-    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    final ListViewQueryDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
     queryRequest.setActivityId("taskA");
 
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
@@ -76,7 +76,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowKey);
 
-    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    final ListViewQueryDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
     queryRequest.setErrorMessage("error");
 
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
@@ -91,7 +91,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithNoWorkflowId() throws Exception {
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery();
+    final ListViewQueryDto query = createGetAllWorkflowInstancesQuery();
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
@@ -103,7 +103,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     String bpmnProcessId = "demoProcess";
 
-    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery();
+    final ListViewQueryDto queryRequest = createGetAllWorkflowInstancesQuery();
     queryRequest.setBpmnProcessId(bpmnProcessId);
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, queryRequest);
@@ -117,7 +117,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowKey);
 
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowKey, WORKFLOW_KEY_OTHER_PROCESS);
+    final ListViewQueryDto query = createGetAllWorkflowInstancesQuery(workflowKey, WORKFLOW_KEY_OTHER_PROCESS);
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
@@ -129,7 +129,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   public void testFailStatisticsWithWorkflowKeyAndBpmnProcessId() throws Exception {
     Long workflowKey = 1L;
     String bpmnProcessId = "demoProcess";
-    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    final ListViewQueryDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
     queryRequest
       .setBpmnProcessId(bpmnProcessId)
       .setWorkflowVersion(1);
@@ -139,15 +139,15 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
 
-  private ListViewRequestDto createGetAllWorkflowInstancesQuery(Long... workflowKeys) {
-    ListViewRequestDto q = TestUtil.createGetAllWorkflowInstancesQuery();
+  private ListViewQueryDto createGetAllWorkflowInstancesQuery(Long... workflowKeys) {
+    ListViewQueryDto q = TestUtil.createGetAllWorkflowInstancesQuery();
     if (workflowKeys != null && workflowKeys.length > 0) {
       q.setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowKeys));
     }
     return q;
   }
 
-  private void getStatisticsAndAssert(ListViewRequestDto query) throws Exception {
+  private void getStatisticsAndAssert(ListViewQueryDto query) throws Exception {
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
 
     assertThat(activityStatisticsDtos).hasSize(5);
@@ -168,7 +168,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     );
   }
 
-  private List<ActivityStatisticsDto> getActivityStatistics(ListViewRequestDto query) throws Exception {
+  private List<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) throws Exception {
     return mockMvcTestRule.listFromResponse(postRequest(QUERY_WORKFLOW_STATISTICS_URL, query), ActivityStatisticsDto.class);
   }
 
@@ -301,11 +301,11 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertEquals(coreStatistics.getActive().longValue(), 0L);
     assertEquals(coreStatistics.getRunning().longValue(), 0L);
     assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
-    
+
     // given test data
     createData(WORKFLOW_KEY_DEMO_PROCESS);
     createData(WORKFLOW_KEY_OTHER_PROCESS);
-    
+
     // when request core-statistics
     coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_WORKFLOW_CORE_STATISTICS_URL), WorkflowInstanceCoreStatisticsDto.class);
     // then return non-zero statistics

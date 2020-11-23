@@ -24,6 +24,7 @@ import org.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -53,7 +54,7 @@ import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFL
 @RestController
 @RequestMapping(value = WORKFLOW_INSTANCE_URL)
 public class WorkflowInstanceRestService {
-  
+
   public static final String WORKFLOW_INSTANCE_URL = "/api/workflow-instances";
 
   @Autowired
@@ -67,7 +68,7 @@ public class WorkflowInstanceRestService {
 
   @Autowired
   private ActivityStatisticsReader activityStatisticsReader;
-  
+
   @Autowired
   private IncidentReader incidentReader;
 
@@ -80,14 +81,28 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_WORKFLOWINSTANCES}, description = "How long does it take to retrieve the workflowinstances by query.")
-  public ListViewResponseDto queryWorkflowInstances(
-      @RequestBody ListViewRequestDto workflowInstanceRequest,
+  public ListViewResponseDto queryWorkflowInstancesOld(
+      @RequestBody ListViewQueryDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,   //required
       @RequestParam("maxResults") Integer maxResults) {   //required
     if (workflowInstanceRequest.getWorkflowVersion() != null && workflowInstanceRequest.getBpmnProcessId() == null) {
       throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
     }
-    return listViewReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
+    return listViewReader.queryWorkflowInstances_OLD(workflowInstanceRequest, firstResult, maxResults);
+  }
+
+  @ApiOperation("Query workflow instances by different parameters")
+  @PostMapping("/new")
+  @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_WORKFLOWINSTANCES}, description = "How long does it take to retrieve the workflowinstances by query.")
+  public ListViewResponseDto queryWorkflowInstances(
+      @RequestBody ListViewRequestDto workflowInstanceRequest) {
+    if (workflowInstanceRequest.getQuery() == null) {
+      throw new InvalidRequestException("Query must be provided.");
+    }
+    if (workflowInstanceRequest.getQuery().getWorkflowVersion() != null && workflowInstanceRequest.getQuery().getBpmnProcessId() == null) {
+      throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
+    }
+    return listViewReader.queryWorkflowInstances(workflowInstanceRequest);
   }
 
   @ApiOperation("Perform single operation on an instance (async)")
@@ -155,7 +170,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Get activity instance statistics")
   @PostMapping(path = "/statistics")
-  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewRequestDto query) {
+  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewQueryDto query) {
     final List<Long> workflowKeys = CollectionUtil.toSafeListOfLongs(query.getWorkflowIds());
     final String bpmnProcessId = query.getBpmnProcessId();
     final Integer workflowVersion = query.getWorkflowVersion();
@@ -165,12 +180,12 @@ public class WorkflowInstanceRestService {
     }
     return activityStatisticsReader.getActivityStatistics(query);
   }
-  
+
   @ApiOperation("Get workflow instance core statistics (aggregations)")
   @GetMapping(path = "/core-statistics")
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME,Metrics.TAG_VALUE_CORESTATISTICS},description = "How long does it take to retrieve the core statistics.")
   public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
-    return workflowInstanceReader.getCoreStatistics(); 
+    return workflowInstanceReader.getCoreStatistics();
   }
 
 }

@@ -7,14 +7,15 @@ package org.camunda.operate.webapp.rest.dto.listview;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.webapp.rest.dto.OperationDto;
 import org.camunda.operate.util.ConversionUtils;
+import org.camunda.operate.webapp.rest.dto.OperationDto;
 
 public class ListViewWorkflowInstanceDto {
 
@@ -35,84 +36,109 @@ public class ListViewWorkflowInstanceDto {
 
   private List<OperationDto> operations = new ArrayList<>();
 
+  /**
+   * Sort values, define the position of workflow instance in the list and may be used to search
+   * for previous or following page.
+   */
+  private String[] sortValues;
+
   public String getId() {
     return id;
   }
 
-  public void setId(String id) {
+  public ListViewWorkflowInstanceDto setId(String id) {
     this.id = id;
+    return this;
   }
 
   public String getWorkflowId() {
     return workflowId;
   }
 
-  public void setWorkflowId(String workflowId) {
+  public ListViewWorkflowInstanceDto setWorkflowId(String workflowId) {
     this.workflowId = workflowId;
+    return this;
   }
 
   public String getWorkflowName() {
     return workflowName;
   }
 
-  public void setWorkflowName(String workflowName) {
+  public ListViewWorkflowInstanceDto setWorkflowName(String workflowName) {
     this.workflowName = workflowName;
+    return this;
   }
 
   public Integer getWorkflowVersion() {
     return workflowVersion;
   }
 
-  public void setWorkflowVersion(Integer workflowVersion) {
+  public ListViewWorkflowInstanceDto setWorkflowVersion(Integer workflowVersion) {
     this.workflowVersion = workflowVersion;
+    return this;
   }
 
   public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public ListViewWorkflowInstanceDto setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
   }
 
   public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public ListViewWorkflowInstanceDto setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
   }
 
   public WorkflowInstanceStateDto getState() {
     return state;
   }
 
-  public void setState(WorkflowInstanceStateDto state) {
+  public ListViewWorkflowInstanceDto setState(WorkflowInstanceStateDto state) {
     this.state = state;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public ListViewWorkflowInstanceDto setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
 
-  public void setHasActiveOperation(boolean hasActiveOperation) {
+  public ListViewWorkflowInstanceDto setHasActiveOperation(boolean hasActiveOperation) {
     this.hasActiveOperation = hasActiveOperation;
+    return this;
   }
 
   public List<OperationDto> getOperations() {
     return operations;
   }
 
-  public void setOperations(List<OperationDto> operations) {
+  public ListViewWorkflowInstanceDto setOperations(List<OperationDto> operations) {
     this.operations = operations;
+    return this;
+  }
+
+  public String[] getSortValues() {
+    return sortValues;
+  }
+
+  public ListViewWorkflowInstanceDto setSortValues(String[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
   }
 
   public static ListViewWorkflowInstanceDto createFrom(WorkflowInstanceForListViewEntity workflowInstanceEntity, boolean containsIncident,
@@ -121,26 +147,32 @@ public class ListViewWorkflowInstanceDto {
       return null;
     }
     ListViewWorkflowInstanceDto workflowInstance = new ListViewWorkflowInstanceDto();
-    workflowInstance.setId(workflowInstanceEntity.getId());
-    workflowInstance.setStartDate(workflowInstanceEntity.getStartDate());
-    workflowInstance.setEndDate(workflowInstanceEntity.getEndDate());
+    workflowInstance.setId(workflowInstanceEntity.getId())
+      .setStartDate(workflowInstanceEntity.getStartDate())
+      .setEndDate(workflowInstanceEntity.getEndDate());
     if (!containsIncident) {
       workflowInstance.setState(WorkflowInstanceStateDto.getState(workflowInstanceEntity.getState()));
     } else {
       workflowInstance.setState(WorkflowInstanceStateDto.INCIDENT);
     }
 
-    workflowInstance.setWorkflowId(ConversionUtils.toStringOrNull(workflowInstanceEntity.getWorkflowKey()));
-    workflowInstance.setBpmnProcessId(workflowInstanceEntity.getBpmnProcessId());
-    workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
-    workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
-    workflowInstance.setOperations(OperationDto.createFrom(operations));
+    workflowInstance.setWorkflowId(ConversionUtils.toStringOrNull(workflowInstanceEntity.getWorkflowKey()))
+      .setBpmnProcessId(workflowInstanceEntity.getBpmnProcessId())
+      .setWorkflowName(workflowInstanceEntity.getWorkflowName())
+      .setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion())
+      .setOperations(OperationDto.createFrom(operations));
     if (operations != null) {
       workflowInstance.setHasActiveOperation(operations.stream().anyMatch(
         o ->
           o.getState().equals(OperationState.SCHEDULED)
           || o.getState().equals(OperationState.LOCKED)
           || o.getState().equals(OperationState.SENT)));
+    }
+    //convert to String[]
+    if (workflowInstanceEntity.getSortValues() != null) {
+      workflowInstance.setSortValues(Arrays.stream(workflowInstanceEntity.getSortValues())
+          .map(String::valueOf)
+          .toArray(String[]::new));
     }
     return workflowInstance;
   }
@@ -201,7 +233,7 @@ public class ListViewWorkflowInstanceDto {
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
     return result;
   }
-  
+
   @Override
   public String toString() {
     return String.format("ListViewWorkflowInstanceDto %s (%s)", workflowName, workflowId);

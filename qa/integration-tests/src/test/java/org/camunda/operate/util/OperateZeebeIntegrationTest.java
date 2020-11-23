@@ -24,7 +24,7 @@ import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -48,7 +48,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
-  
+
   protected ZeebeClient zeebeClient;
 
   @Autowired
@@ -72,16 +72,16 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   protected WorkflowCache workflowCache;
-  
+
   /// Predicate checks
   @Autowired
   @Qualifier("incidentIsResolvedCheck")
   protected Predicate<Object[]> incidentIsResolvedCheck;
-  
+
   @Autowired
   @Qualifier("variableExistsCheck")
   protected Predicate<Object[]> variableExistsCheck;
-  
+
   @Autowired
   @Qualifier("variableEqualsCheck")
   protected Predicate<Object[]> variableEqualsCheck;
@@ -93,11 +93,11 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("incidentsAreActiveCheck")
   protected Predicate<Object[]> incidentsAreActiveCheck;
-  
+
   @Autowired
   @Qualifier("incidentIsActiveCheck")
   protected Predicate<Object[]> incidentIsActiveCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstanceIsCreatedCheck")
   protected Predicate<Object[]> workflowInstanceIsCreatedCheck;
@@ -105,19 +105,19 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("workflowInstancesAreStartedCheck")
   protected Predicate<Object[]> workflowInstancesAreStartedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
   protected Predicate<Object[]> workflowInstanceIsCompletedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstancesAreFinishedCheck")
   protected Predicate<Object[]> workflowInstancesAreFinishedCheck;
-  
+
   @Autowired
   @Qualifier("workflowInstanceIsCanceledCheck")
   protected Predicate<Object[]> workflowInstanceIsCanceledCheck;
-  
+
   @Autowired
   @Qualifier("activityIsTerminatedCheck")
   protected Predicate<Object[]> activityIsTerminatedCheck;
@@ -125,15 +125,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("activityIsCompletedCheck")
   protected Predicate<Object[]> activityIsCompletedCheck;
-  
+
   @Autowired
   @Qualifier("activityIsActiveCheck")
   protected Predicate<Object[]> activityIsActiveCheck;
-  
+
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   protected Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
-  
+
   @Autowired
   protected OperateProperties operateProperties;
 
@@ -227,7 +227,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
     }
   }
-  
+
   protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
@@ -243,7 +243,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
     postOperationWithOKResponse(workflowInstanceKey, op);
   }
-  
+
   protected void executeOneBatch() {
     try {
       List<Future<?>> futures = operationExecutor.executeOneBatch();
@@ -253,7 +253,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       fail(e.getMessage(), e);
     }
   }
-  
+
   protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
     return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
   }
@@ -271,7 +271,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return mvcResult;
   }
-  
+
   protected long startDemoWorkflowInstance() {
     String processId = "demoProcess";
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(getClient(), processId, "{\"a\": \"b\"}");
@@ -280,15 +280,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return workflowInstanceKey;
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewRequestDto query, OperationType operationType) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
     return postBatchOperationWithOKResponse(query, operationType, null);
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewRequestDto query, OperationType operationType, String name) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType, String name) throws Exception {
     return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postBatchOperation(ListViewRequestDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
+  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
     CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
@@ -303,7 +303,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewRequestDto query) {
+  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
     CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);

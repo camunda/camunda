@@ -90,7 +90,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   protected void processImportTypeAndWait(ImportValueType importValueType,Predicate<Object[]> waitTill, Object... arguments) {
     elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType,waitTill, arguments);
   }
-  
+
   @Test
   public void testCreateWorkflowInstanceWithEmptyWorkflowName() {
     // given a process with empty name
@@ -102,12 +102,12 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent().done();
 
     final Long workflowKey = deployWorkflow(model,"emptyNameProcess.bpmn");
-    
+
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");    
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
-    // then it should returns the processId instead of an empty name 
+    // then it should returns the processId instead of an empty name
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
@@ -121,17 +121,17 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    
+
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
     //when
-    //1st load incident 
+    //1st load incident
     processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, workflowInstanceKey);
-    
+
     //and then workflow instance events
     processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    
+
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowKey,workflowInstanceKey);
@@ -188,7 +188,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   protected ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, 100);
+    final ListViewRequestDto request = TestUtil.createGetAllWorkflowInstancesRequest();
+    request.setPageSize(100);
+    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(1);
     return listViewResponse.getWorkflowInstances().get(0);
@@ -220,8 +222,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertListViewResponse() throws Exception {
-    ListViewRequestDto listViewRequest = TestUtil.createGetAllWorkflowInstancesQuery();
-    MockHttpServletRequestBuilder request = post(query(0, 100))
+    ListViewRequestDto listViewRequest = TestUtil.createGetAllWorkflowInstancesRequest();
+    listViewRequest.setPageSize(100);
+    MockHttpServletRequestBuilder request = post(query())
       .content(mockMvcTestRule.json(listViewRequest))
       .contentType(mockMvcTestRule.getContentType());
 
@@ -366,8 +369,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private String query(int firstResult, int maxResults) {
-    return String.format("%s?firstResult=%d&maxResults=%d", WORKFLOW_INSTANCE_URL, firstResult, maxResults);
+  private String query() {
+    return WORKFLOW_INSTANCE_URL + "/new";
   }
 
 }

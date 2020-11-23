@@ -5,47 +5,48 @@
  */
 package org.camunda.operate.es;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.util.TestUtil.createActivityInstance;
-import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
-import static org.camunda.operate.util.TestUtil.createIncident;
-import static org.camunda.operate.util.TestUtil.createVariableForListView;
-import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.schema.templates.ListViewTemplate;
-import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.OperateIntegrationTest;
-import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
+import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.ElasticsearchTestRule;
+import org.camunda.operate.util.OperateIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
+import com.fasterxml.jackson.core.type.TypeReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
+import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createVariableForListView;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 
 /**
  * Tests Elasticsearch queries for workflow instances.
  */
-public class ListViewQueryIT extends OperateIntegrationTest {
+@Deprecated
+public class ListViewQueryOldIT extends OperateIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
 
@@ -64,9 +65,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningRequest();
+    ListViewQueryDto workflowInstanceQueryDto = createGetAllRunningQuery();
 
-    MvcResult mvcResult = postRequest(query(), workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100), workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
@@ -92,7 +93,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
 
     //when
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3);
     });
@@ -101,7 +102,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1);
       q.setStartDateBefore(date3);
     });
@@ -109,7 +110,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
     });
@@ -118,7 +119,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test combination of start date and end date
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
       q.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
@@ -129,7 +130,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test inclusion for endDateAfter and exclusion for endDateBefore
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = createGetAllWorkflowInstancesQuery(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5);
     });
@@ -137,7 +138,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = createGetAllWorkflowInstancesQuery(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
     });
@@ -146,9 +147,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-  private void requestAndAssertIds(ListViewRequestDto query, String testCaseName, String... ids) throws Exception {
+  private void requestAndAssertIds(ListViewQueryDto query, String testCaseName, String... ids) throws Exception {
     //then
-    MvcResult mvcResult = postRequest(query(), query);
+    MvcResult mvcResult = postRequest(query(0, 100), query);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(ids);
@@ -170,9 +171,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(workflowInstance1, activityInstance1, workflowInstance2, activityInstance2);
 
     //given
-    ListViewRequestDto query = new ListViewRequestDto(TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage)));
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -190,11 +191,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(
-        q -> q.setVariable(new VariablesQueryDto("var1", "X")));
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
     //when
-    MvcResult mvcResult = postRequest(query(), query);
+    MvcResult mvcResult = postRequest(query(0, 100), query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -210,11 +210,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(
-        q -> q.setVariable(new VariablesQueryDto("var1", "A")));
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -231,13 +230,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto query = createWorkflowInstanceQuery(q -> {
       q.setRunning(true)
        .setActive(true)
        .setActivityId(activityId);
     });
 
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -290,13 +289,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto query = createWorkflowInstanceQuery(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActivityId(activityId);
     });
 
-    MvcResult mvcResult =postRequest(query(),query);
+    MvcResult mvcResult =postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -360,13 +359,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto query = createWorkflowInstanceQuery(q -> {
       q.setFinished(true)
        .setCanceled(true)
        .setActivityId(activityId);
     });
 
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -436,7 +435,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto query = createWorkflowInstanceQuery(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActive(true)
@@ -445,7 +444,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
        .setActivityId(activityId);
     });
 
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -488,13 +487,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       workflowInstance4, completedEndEventWithIdActivityInstance2);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto query = createWorkflowInstanceQuery(q -> {
       q.setFinished(true)
        .setCompleted(true)
        .setActivityId(activityId);
     });
 
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -514,12 +513,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q ->
       q.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()))
     );
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -534,12 +533,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given
     createData();
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q ->
       q.setBatchOperationId(batchOperationId)
     );
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
@@ -558,12 +557,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q ->
       q.setExcludeIds(Arrays.asList(workflowInstance1.getId(), workflowInstance3.getId()))
     );
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -588,10 +587,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> q.setWorkflowIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -621,13 +620,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> {
       q.setBpmnProcessId(bpmnProcessId1);
       q.setWorkflowVersion(version1);
     });
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -641,11 +640,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testQueryByWorkflowVersionFail() throws Exception {
     //when
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> {
       q.setWorkflowVersion(1);
     });
     //then
-    MvcResult mvcResult = postRequestThatShouldFail(query(),query);
+    MvcResult mvcResult = postRequestThatShouldFail(query(0, 100),query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("BpmnProcessId must be provided in request, when workflow version is not null");
 
@@ -670,10 +669,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
+    ListViewQueryDto query = createGetAllWorkflowInstancesQuery(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     //when
-    MvcResult mvcResult = postRequest(query(),query);
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -689,50 +688,32 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceRequest = TestUtil.createGetAllWorkflowInstancesRequest();
-    workflowInstanceRequest.setPageSize(5);
+    ListViewQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
     //page 1
-    MvcResult mvcResult = postRequest(query(), workflowInstanceRequest);
-    ListViewResponseDto page1Response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    MvcResult mvcResult = postRequest(query(0, 5), workflowInstanceQueryDto);
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
     });
-    assertThat(page1Response.getWorkflowInstances().size()).isEqualTo(5);
-    assertThat(page1Response.getTotalCount()).isEqualTo(8);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(8);
 
     //page 2
-    workflowInstanceRequest.setSearchAfter(
-        page1Response.getWorkflowInstances().get(page1Response.getWorkflowInstances().size() - 1)
-            .getSortValues());
-    workflowInstanceRequest.setPageSize(3);
-    mvcResult = postRequest(query(), workflowInstanceRequest);
-    ListViewResponseDto page2Response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
-    assertThat(page2Response.getWorkflowInstances().size()).isEqualTo(3);
-    assertThat(page2Response.getTotalCount()).isEqualTo(8);
-    assertThat(page2Response.getWorkflowInstances()).doesNotContainAnyElementsOf(page1Response.getWorkflowInstances());
-
-    //page 1 via searchBefore
-    workflowInstanceRequest.setSearchAfter(null);
-    workflowInstanceRequest.setSearchBefore(
-        page2Response.getWorkflowInstances().get(0)
-            .getSortValues());
-    workflowInstanceRequest.setPageSize(5);
-    mvcResult = postRequest(query(), workflowInstanceRequest);
-    ListViewResponseDto page1Response2 = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
-    assertThat(page1Response2.getWorkflowInstances().size()).isEqualTo(5);
-    assertThat(page1Response2.getTotalCount()).isEqualTo(8);
-    assertThat(page1Response.getWorkflowInstances()).containsExactlyInAnyOrderElementsOf(page1Response2.getWorkflowInstances());
+    mvcResult = postRequest(query(5, 3),workflowInstanceQueryDto);
+    response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(response.getTotalCount()).isEqualTo(8);
   }
 
   private void testSorting(SortingDto sorting, Comparator<ListViewWorkflowInstanceDto> comparator) throws Exception {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
     if(sorting!=null) {
       workflowInstanceQueryDto.setSorting(sorting);
     }
 
-    MvcResult mvcResult = postRequest(query(), workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -880,9 +861,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryAllFinished() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllFinishedRequest();
+    ListViewQueryDto workflowInstanceQueryDto = createGetAllFinishedQuery();
 
-    MvcResult mvcResult =  postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult =  postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -898,9 +879,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedAndRunning() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewQueryDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -912,12 +893,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedCompleted() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
       q.setFinished(true)
        .setCompleted(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -931,12 +912,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedCanceled() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
       q.setFinished(true)
        .setCanceled(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -950,12 +931,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryRunningWithIncidents() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
       q.setRunning(true)
        .setIncidents(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -969,12 +950,12 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryRunningWithoutIncidents() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewQueryDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
       q.setRunning(true)
        .setActive(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1026,8 +1007,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         runningInstance.getWorkflowInstanceKey().toString(),
         instanceWithoutIncident.getWorkflowInstanceKey().toString()
     );
-    ListViewRequestDto queryRequest = TestUtil.createGetAllRunningRequest();
-    queryRequest.getQuery()
+    final ListViewQueryDto request = createGetAllRunningQuery();
+    request
         .setCompleted(false).setCanceled(false)
         // part with empty strings instead of NULL
         .setErrorMessage("")
@@ -1035,7 +1016,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         .setVariable(new VariablesQueryDto("", ""))
         .setIds(workflowInstanceIds);
 
-    MvcResult mvcResult = postRequest(query(), queryRequest);
+    MvcResult mvcResult = postRequest(query(0, 100), request);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1106,9 +1087,59 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(vars.toArray(new OperateEntity[vars.size()]));
   }
 
-  private String query() {
-    return QUERY_INSTANCES_URL + "/new";
+  private String query(int firstResult, int maxResults) {
+    return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
+
+  private ListViewQueryDto createWorkflowInstanceQuery(
+      Consumer<ListViewQueryDto> filtersSupplier) {
+    ListViewQueryDto query = new ListViewQueryDto();
+    filtersSupplier.accept(query);
+    return query;
+  }
+
+  private ListViewQueryDto createGetAllWorkflowInstancesQuery() {
+    return
+        createWorkflowInstanceQuery(q -> {
+          q.setRunning(true);
+          q.setActive(true);
+          q.setIncidents(true);
+          q.setFinished(true);
+          q.setCompleted(true);
+          q.setCanceled(true);
+        });
+  }
+
+  private ListViewQueryDto createGetAllWorkflowInstancesQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewQueryDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+    filtersSupplier.accept(workflowInstanceQuery);
+    return workflowInstanceQuery;
+  }
+
+  private ListViewQueryDto createGetAllFinishedQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewQueryDto workflowInstanceQuery = createGetAllFinishedQuery();
+    filtersSupplier.accept(workflowInstanceQuery);
+    return workflowInstanceQuery;
+  }
+
+  private ListViewQueryDto createGetAllFinishedQuery() {
+    return
+        createWorkflowInstanceQuery(q -> {
+          q.setFinished(true);
+          q.setCompleted(true);
+          q.setCanceled(true);
+        });
+  }
+
+  private ListViewQueryDto createGetAllRunningQuery() {
+    return
+        createWorkflowInstanceQuery(q -> {
+          q.setRunning(true);
+          q.setActive(true);
+          q.setIncidents(true);
+        });
+  }
+
 
 }
 

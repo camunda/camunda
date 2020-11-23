@@ -16,8 +16,6 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
@@ -288,7 +286,7 @@ public class ElasticsearchChecks {
       }
     };
   }
-  
+
   /**
    * Checks whether the workflowInstance of given workflowInstanceKey (Long) is CREATED.
    * @return
@@ -338,9 +336,10 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
-      final ListViewRequestDto getFinishedQuery =
-        TestUtil.createGetAllFinishedQuery(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
-      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getFinishedQuery, 0, ids.size());
+      final ListViewRequestDto getFinishedRequest =
+        TestUtil.createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
+      getFinishedRequest.setPageSize(ids.size());
+      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getFinishedRequest);
       return responseDto.getTotalCount() == ids.size();
     };
   }
@@ -356,17 +355,18 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
-      final ListViewRequestDto getActiveQuery =
-        TestUtil.createWorkflowInstanceQuery(q -> {
+      final ListViewRequestDto getActiveRequest =
+        TestUtil.createWorkflowInstanceRequest(q -> {
           q.setIds(CollectionUtil.toSafeListOfStrings(ids));
           q.setRunning(true);
           q.setActive(true);
         });
-      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getActiveQuery, 0, ids.size());
+      getActiveRequest.setPageSize(ids.size());
+      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getActiveRequest);
       return responseDto.getTotalCount() == ids.size();
     };
   }
-  
+
   /**
    * Checks whether all operations for given workflowInstanceKey (Long) are completed
    * @return

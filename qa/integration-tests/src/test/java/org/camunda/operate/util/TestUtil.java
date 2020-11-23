@@ -30,6 +30,7 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -161,7 +162,7 @@ public abstract class TestUtil {
     workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
-  
+
   public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntityWithIds() {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     Long workflowInstanceKey = Math.abs(random.nextLong());
@@ -251,13 +252,13 @@ public abstract class TestUtil {
     return result;
   }
 
-  public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewRequestDto> filtersSupplier) {
-    ListViewRequestDto query = new ListViewRequestDto();
+  public static ListViewQueryDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
     return query;
   }
 
-  public static ListViewRequestDto createGetAllWorkflowInstancesQuery() {
+  public static ListViewQueryDto createGetAllWorkflowInstancesQuery() {
     return
       createWorkflowInstanceQuery(q -> {
         q.setRunning(true);
@@ -269,19 +270,19 @@ public abstract class TestUtil {
       });
   }
 
-  public static ListViewRequestDto createGetAllWorkflowInstancesQuery(Consumer<ListViewRequestDto> filtersSupplier) {
-    final ListViewRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+  public static ListViewQueryDto createGetAllWorkflowInstancesQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewQueryDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
     filtersSupplier.accept(workflowInstanceQuery);
     return workflowInstanceQuery;
   }
 
-  public static ListViewRequestDto createGetAllFinishedQuery(Consumer<ListViewRequestDto> filtersSupplier) {
-    final ListViewRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
+  public static ListViewQueryDto createGetAllFinishedQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewQueryDto workflowInstanceQuery = createGetAllFinishedQuery();
     filtersSupplier.accept(workflowInstanceQuery);
     return workflowInstanceQuery;
   }
 
-  public static ListViewRequestDto createGetAllFinishedQuery() {
+  public static ListViewQueryDto createGetAllFinishedQuery() {
     return
       createWorkflowInstanceQuery(q -> {
         q.setFinished(true);
@@ -290,7 +291,7 @@ public abstract class TestUtil {
       });
   }
 
-  public static ListViewRequestDto createGetAllRunningQuery() {
+  public static ListViewQueryDto createGetAllRunningQuery() {
     return
       createWorkflowInstanceQuery(q -> {
         q.setRunning(true);
@@ -298,6 +299,55 @@ public abstract class TestUtil {
         q.setIncidents(true);
       });
   }
+
+  public static ListViewRequestDto createWorkflowInstanceRequest(Consumer<ListViewQueryDto> filtersSupplier) {
+    ListViewRequestDto request = new ListViewRequestDto();
+    ListViewQueryDto query = new ListViewQueryDto();
+    filtersSupplier.accept(query);
+    request.setQuery(query);
+    return request;
+  }
+
+  public static ListViewRequestDto createGetAllWorkflowInstancesRequest() {
+    return
+        new ListViewRequestDto(createWorkflowInstanceQuery(q -> {
+          q.setRunning(true);
+          q.setActive(true);
+          q.setIncidents(true);
+          q.setFinished(true);
+          q.setCompleted(true);
+          q.setCanceled(true);
+        }));
+  }
+
+  public static ListViewRequestDto createGetAllWorkflowInstancesRequest(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewQueryDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+    filtersSupplier.accept(workflowInstanceQuery);
+    return new ListViewRequestDto(workflowInstanceQuery);
+  }
+
+  public static ListViewRequestDto createGetAllFinishedRequest(Consumer<ListViewQueryDto> filtersSupplier) {
+    return new ListViewRequestDto(createGetAllFinishedQuery(filtersSupplier));
+  }
+
+  public static ListViewRequestDto createGetAllFinishedRequest() {
+    return
+        new ListViewRequestDto(createWorkflowInstanceQuery(q -> {
+          q.setFinished(true);
+          q.setCompleted(true);
+          q.setCanceled(true);
+        }));
+  }
+
+  public static ListViewRequestDto createGetAllRunningRequest() {
+    return
+        new ListViewRequestDto(createWorkflowInstanceQuery(q -> {
+          q.setRunning(true);
+          q.setActive(true);
+          q.setIncidents(true);
+        }));
+  }
+
 
   public static VariableForListViewEntity createVariableForListView(Long workflowInstanceKey, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();

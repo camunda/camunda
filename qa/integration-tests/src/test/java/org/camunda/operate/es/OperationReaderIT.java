@@ -69,8 +69,8 @@ public class OperationReaderIT extends OperateIntegrationTest {
   public void testWorfklowInstanceQuery() throws Exception {
     when(userService.getCurrentUsername()).thenReturn(USER_1);
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningQuery();
-    MvcResult mvcResult = postRequest(queryWorkflowInstances(0, 100),workflowInstanceQueryDto);
+    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningRequest();
+    MvcResult mvcResult = postRequest(queryWorkflowInstances(), workflowInstanceQueryDto);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     List<ListViewWorkflowInstanceDto> workflowInstances = response.getWorkflowInstances();
@@ -135,8 +135,8 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
   }
 
-  private String queryWorkflowInstances(int firstResult, int maxResults) {
-    return String.format("%s?firstResult=%d&maxResults=%d", QUERY_LIST_VIEW_URL, firstResult, maxResults);
+  private String queryWorkflowInstances() {
+    return QUERY_LIST_VIEW_URL + "/new";
   }
 
   private String queryIncidentsByWorkflowInstanceId(String workflowInstanceId) {
