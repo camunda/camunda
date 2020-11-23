@@ -31,6 +31,8 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
@@ -47,6 +49,7 @@ import org.mockserver.model.HttpRequest;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -147,6 +150,16 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.deleteIndexByRawIndexNames("_all");
   }
 
+  @SneakyThrows
+  protected <T> Optional<T> getDocumentsOfIndexByIdAs(final String indexName,
+                                                      final String id,
+                                                      final Class<T> valueType) {
+    final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id), RequestOptions.DEFAULT);
+    return getResponse.isSourceEmpty()
+      ? Optional.empty()
+      : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
+  }
+
   protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
     prefixAwareClient.refresh(new RefreshRequest(indexName));
     final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
@@ -173,8 +186,8 @@ public abstract class AbstractUpgradeIT {
     return searchResponse.getHits().getHits();
   }
 
-  protected HttpRequest createIndexDeleteRequestMatcher(final String oldIndexToDeleteName) {
-    return request().withPath("/" + oldIndexToDeleteName).withMethod(DELETE);
+  protected HttpRequest createIndexDeleteRequestMatcher(final String versionedIndexName) {
+    return request().withPath("/" + versionedIndexName).withMethod(DELETE);
   }
 
   protected ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {

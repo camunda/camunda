@@ -20,6 +20,8 @@ import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -37,7 +39,6 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -110,15 +111,28 @@ public class SchemaUpgradeClient {
     waitUntilTaskIsFinished(taskId, destinationIndexName);
   }
 
-  public void update(final UpdateRequest updateRequest) {
+  public <T> void upsert(final String index, final String id, final T documentDto) {
     try {
-      elasticsearchClient.update(updateRequest, RequestOptions.DEFAULT);
-    } catch (Exception e) {
-      final String message = String.format(
-        "Could not upsert document with id %s to index %s.",
-        updateRequest.id(),
-        Arrays.toString(updateRequest.indices())
+      elasticsearchClient.update(
+        new UpdateRequest(index, id)
+          .doc(objectMapper.writeValueAsString(documentDto), XContentType.JSON)
+          .docAsUpsert(true),
+        RequestOptions.DEFAULT
       );
+    } catch (Exception e) {
+      final String message = String.format("Could not upsert document with id %s to index %s.", id, index);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public <T> Optional<T> getDocumentByIdAs(final String index, final String id, final Class<T> resultType) {
+    try {
+      final GetResponse getResponse = elasticsearchClient.get(new GetRequest(index, id), RequestOptions.DEFAULT);
+      return getResponse.isSourceEmpty()
+        ? Optional.empty()
+        : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), resultType));
+    } catch (Exception e) {
+      final String message = String.format("Could not get document with id %s from index %s.", id, index);
       throw new OptimizeRuntimeException(message, e);
     }
   }

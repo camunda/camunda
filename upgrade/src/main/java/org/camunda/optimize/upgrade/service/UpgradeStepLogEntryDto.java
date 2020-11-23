@@ -22,7 +22,7 @@ import java.time.Instant;
 @Data
 @Builder
 @FieldNameConstants
-public class UpdateStepLogEntryDto {
+public class UpgradeStepLogEntryDto {
   @NonNull
   private String indexName;
   @NonNull
@@ -35,6 +35,6 @@ public class UpdateStepLogEntryDto {
 
   @JsonIgnore
   public String getId() {
-    return String.join("_", optimizeVersion, indexName, stepType.toString(), String.format("%03d", stepNumber));
+    return String.join("_", optimizeVersion, stepType.toString(), String.format("%03d", stepNumber));
   }
 }

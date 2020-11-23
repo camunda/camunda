@@ -9,8 +9,9 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.common.xcontent.XContentType;
+
+import java.time.Instant;
+import java.util.Optional;
 
 public class UpgradeStepLogService {
 
@@ -20,12 +21,16 @@ public class UpgradeStepLogService {
 
   @SneakyThrows
   public void recordAppliedStep(final SchemaUpgradeClient schemaUpgradeClient,
-                                final UpdateStepLogEntryDto logEntryDto) {
+                                final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());
-    schemaUpgradeClient.update(
-      new UpdateRequest(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId())
-        .doc(schemaUpgradeClient.getObjectMapper().writeValueAsString(logEntryDto), XContentType.JSON)
-        .docAsUpsert(true)
-    );
+    schemaUpgradeClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
   }
+
+  public Optional<Instant> getStepAppliedDate(final SchemaUpgradeClient schemaUpgradeClient,
+                                             final UpgradeStepLogEntryDto logEntryDto) {
+    return schemaUpgradeClient.getDocumentByIdAs(
+      UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), UpgradeStepLogEntryDto.class
+    ).map(UpgradeStepLogEntryDto::getAppliedDate);
+  }
+
 }

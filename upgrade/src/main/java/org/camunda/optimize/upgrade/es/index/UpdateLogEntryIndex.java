@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.es.index;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.service.UpdateStepLogEntryDto;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -36,19 +36,19 @@ public class UpdateLogEntryIndex extends DefaultIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(UpdateStepLogEntryDto.Fields.indexName)
+      .startObject(UpgradeStepLogEntryDto.Fields.indexName)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(UpdateStepLogEntryDto.Fields.optimizeVersion)
+      .startObject(UpgradeStepLogEntryDto.Fields.optimizeVersion)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(UpdateStepLogEntryDto.Fields.stepType)
+      .startObject(UpgradeStepLogEntryDto.Fields.stepType)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(UpdateStepLogEntryDto.Fields.stepNumber)
+      .startObject(UpgradeStepLogEntryDto.Fields.stepNumber)
         .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject()
-      .startObject(UpdateStepLogEntryDto.Fields.appliedDate)
+      .startObject(UpgradeStepLogEntryDto.Fields.appliedDate)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
       .endObject()
       ;

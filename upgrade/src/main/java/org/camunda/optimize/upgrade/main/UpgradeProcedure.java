@@ -10,11 +10,12 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.service.UpdateStepLogEntryDto;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,29 +66,41 @@ public class UpgradeProcedure {
     int currentStepCount = 1;
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
     for (UpgradeStep step : upgradeSteps) {
-      log.info(
-        "Starting step {}/{}: {} on index: {}",
-        currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex()
+      final UpgradeStepLogEntryDto logEntryDto = UpgradeStepLogEntryDto.builder()
+        .indexName(step.getIndex().getIndexName())
+        .optimizeVersion(upgradePlan.getToVersion())
+        .stepType(step.getType())
+        .stepNumber(currentStepCount)
+        .build();
+      final Optional<Instant> stepAppliedDate = upgradeStepLogService.getStepAppliedDate(
+        schemaUpgradeClient, logEntryDto
       );
-      try {
-        step.execute(schemaUpgradeClient);
-        upgradeStepLogService.recordAppliedStep(
-          schemaUpgradeClient,
-          UpdateStepLogEntryDto.builder()
-            .indexName(step.getIndex().getIndexName())
-            .optimizeVersion(upgradePlan.getToVersion())
-            .stepType(step.getType())
-            .stepNumber(currentStepCount)
-            .build()
+      if (!stepAppliedDate.isPresent()) {
+        log.info(
+          "Starting step {}/{}: {} on index: {}",
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
         );
-      } catch (UpgradeRuntimeException e) {
-        log.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
-        throw e;
+        try {
+          step.execute(schemaUpgradeClient);
+          upgradeStepLogService.recordAppliedStep(schemaUpgradeClient, logEntryDto);
+        } catch (UpgradeRuntimeException e) {
+          log.error("The upgrade will be aborted. Please investigate the cause and retry it..");
+          throw e;
+        }
+        log.info(
+          "Successfully finished step {}/{}: {} on index: {}",
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
+        );
+      } else {
+        log.info(
+          "Skipping Step {}/{}: {} on index: {} as it was found to be previously completed already at: {}.",
+          currentStepCount,
+          upgradeSteps.size(),
+          step.getClass().getSimpleName(),
+          step.getIndex().getIndexName(),
+          stepAppliedDate.get()
+        );
       }
-      log.info(
-        "Successfully finished step {}/{}: {} on index: {}",
-        currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex()
-      );
       currentStepCount++;
     }
     schemaUpgradeClient.initializeSchema();
