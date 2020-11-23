@@ -7,6 +7,7 @@ package org.camunda.optimize.service;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
@@ -26,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,8 @@ import static java.util.stream.Collectors.toList;
 @Component
 public class IdentityService implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
-  private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS = Arrays.asList(AuthorizationType.values());
+  private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS =
+    ImmutableList.copyOf(AuthorizationType.values());
 
   private LoadingCache<String, List<GroupDto>> userGroupsCache;
 
@@ -71,11 +73,10 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public List<AuthorizationType> getUserAuthorizations(final String userId) {
-    List<AuthorizationType> authorizations = new ArrayList<>();
     if (isSuperUserIdentity(userId)) {
-      authorizations.addAll(SUPERUSER_AUTHORIZATIONS);
+      return SUPERUSER_AUTHORIZATIONS;
     }
-    return authorizations;
+    return Collections.emptyList();
   }
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
