@@ -11,12 +11,11 @@ import io.zeebe.test.util.testcontainers.ManagedVolume;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ContainerStateExtension
-    implements BeforeTestExecutionCallback, AfterTestExecutionCallback, TestWatcher {
+    implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateExtension.class);
 
   private final ContainerState state;
@@ -26,12 +25,12 @@ public class ContainerStateExtension
   }
 
   @Override
-  public void testFailed(final ExtensionContext context, final Throwable cause) {
-    state.onFailure();
-  }
-
-  @Override
   public void afterTestExecution(final ExtensionContext context) {
+    final boolean hasFailed = context.getExecutionException().isPresent();
+    if (hasFailed) {
+      state.onFailure();
+    }
+
     try {
       state.close();
     } catch (final Exception e) {
