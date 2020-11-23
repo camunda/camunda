@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -68,8 +67,7 @@ public final class MsgPackConverterTest {
     // then
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-    StreamUtil.copy(jsonStream, outputStream);
-
+    jsonStream.transferTo(outputStream);
     final byte[] jsonBytes = outputStream.toByteArray();
 
     assertThat(new String(jsonBytes, StandardCharsets.UTF_8)).isEqualTo(JSON);
