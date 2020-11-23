@@ -78,7 +78,7 @@
     "@storybook/preset-create-react-app": "^3.1.5",
     "@storybook/react": "^6.0.28",
     "@types/history": "^4.7.8",
-    "chromatic": "^5.3.0",
+    "chromatic": "^5.4.0",
     "eslint-plugin-camunda-licensed": "^0.4.3",
     "history": "^5.0.0",
     "http-proxy-middleware": "^1.0.6",
