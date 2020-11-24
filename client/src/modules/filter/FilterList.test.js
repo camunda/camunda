@@ -158,7 +158,7 @@ it('should display a duration filter', () => {
   const actionItem = node.find('ActionItem').dive();
 
   expect(actionItem).toIncludeText('Duration is less than');
-  expect(actionItem.find('PreviewItemValue').dive().dive()).toIncludeText('18 hours');
+  expect(actionItem.find('PreviewItemValue').prop('children').join('')).toBe('18 hours');
 });
 
 it('should display a flow node duration filter', () => {

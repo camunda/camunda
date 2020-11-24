@@ -132,3 +132,9 @@ exports[`should create preview of selected nodes linked by or 1`] = `
   </span>
 </Fragment>
 `;
+
+exports[`should show the id of the flow node if the name is null 1`] = `
+<PreviewItemValue>
+  bar
+</PreviewItemValue>
+`;

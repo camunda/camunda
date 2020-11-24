@@ -49,11 +49,13 @@ exports[`should display a flow node duration filter 1`] = `
         }
         position="bottom"
       >
-        <PreviewItemValue>
+        <span
+          className="PreviewItemValue"
+        >
           1
            
           Flow Node
-        </PreviewItemValue>
+        </span>
       </Tooltip>
     </ActionItem>
   </li>

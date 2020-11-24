@@ -24,9 +24,7 @@ it('should create preview of nodes', () => {
 it('should show the id of the flow node if the name is null', () => {
   const node = shallow(<NodeListPreview {...props} nodes={[{id: 'bar', name: undefined}]} />);
 
-  const PreviewItemValue = node.find('PreviewItemValue').dive().dive();
-
-  expect(PreviewItemValue).toIncludeText(props.nodes[0].id);
+  expect(node.find('PreviewItemValue')).toMatchSnapshot();
 });
 
 it('should create preview of selected nodes linked by or', () => {

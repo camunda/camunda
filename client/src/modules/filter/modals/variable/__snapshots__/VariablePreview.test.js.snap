@@ -1,0 +1,177 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should combine multiple variable values with or 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    varName
+  </span>
+  <span>
+     
+    is
+     
+  </span>
+  <span
+    key="0"
+  >
+    <PreviewItemValue>
+      varValue
+    </PreviewItemValue>
+    <span>
+      <span>
+         
+        or
+         
+      </span>
+    </span>
+  </span>
+  <span
+    key="1"
+  >
+    <PreviewItemValue>
+      varValue2
+    </PreviewItemValue>
+  </span>
+</Fragment>
+`;
+
+exports[`should combine multiple variable values with or 2`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    varName
+  </span>
+  <span>
+     
+    is neither
+     
+  </span>
+  <span
+    key="0"
+  >
+    <PreviewItemValue>
+      null
+    </PreviewItemValue>
+    <span>
+      <span>
+         
+        nor
+         
+      </span>
+    </span>
+    <PreviewItemValue>
+      undefined
+    </PreviewItemValue>
+    <span>
+      <span>
+         
+        nor
+         
+      </span>
+    </span>
+  </span>
+  <span
+    key="1"
+  >
+    <PreviewItemValue>
+      varValue
+    </PreviewItemValue>
+    <span>
+      <span>
+         
+        nor
+         
+      </span>
+    </span>
+  </span>
+  <span
+    key="2"
+  >
+    <PreviewItemValue>
+      varValue2
+    </PreviewItemValue>
+  </span>
+</Fragment>
+`;
+
+exports[`should display correct preview even if no operator is defined 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    varName
+  </span>
+  <span>
+     
+    is
+     
+  </span>
+  <span
+    key="0"
+  >
+    <PreviewItemValue>
+      true
+    </PreviewItemValue>
+    <span>
+      <span>
+         
+        or
+         
+      </span>
+    </span>
+  </span>
+  <span
+    key="1"
+  >
+    <PreviewItemValue>
+      false
+    </PreviewItemValue>
+  </span>
+</Fragment>
+`;
+
+exports[`should use contains operators 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    varName
+  </span>
+  <span>
+     
+    contains
+     
+  </span>
+  <span
+    key="0"
+  >
+    <PreviewItemValue>
+      varValue
+    </PreviewItemValue>
+  </span>
+</Fragment>
+`;
+
+exports[`should use less/greater for comparison operators 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    varName
+  </span>
+  <span>
+     
+    is less than
+     
+  </span>
+  <span
+    key="0"
+  >
+    <PreviewItemValue>
+      varValue
+    </PreviewItemValue>
+  </span>
+</Fragment>
+`;

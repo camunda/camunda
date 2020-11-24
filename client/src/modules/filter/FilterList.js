@@ -161,10 +161,10 @@ export default class FilterList extends React.Component {
                   filterValues
                 ) : (
                   <Tooltip position="bottom" content={filterValues}>
-                    <PreviewItemValue>
+                    <span className="PreviewItemValue">
                       {filtersCount}{' '}
                       {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
-                    </PreviewItemValue>
+                    </span>
                   </Tooltip>
                 )}
               </ActionItem>
