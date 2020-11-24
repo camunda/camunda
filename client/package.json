@@ -19,7 +19,7 @@
     "date-fns": "^2.16.1",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.1.4",
-    "eslint-plugin-testing-library": "^3.10.0",
+    "eslint-plugin-testing-library": "^3.10.1",
     "final-form": "^4.20.1",
     "final-form-arrays": "^3.0.2",
     "graphql": "^15.4.0",
