@@ -13,6 +13,9 @@ def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def daysToKeep = isDevelopBranch ? '7' : '-1'
 def numToKeep = isDevelopBranch ? '-1' : '10'
 
+def shortTimeout = 10
+def longTimeout = 45
+
 //the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
 def cronTrigger = isDevelopBranch ? '@hourly' : ''
 
@@ -48,7 +51,7 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                timeout(1) {
+                timeout(time: shortTimeout, unit: 'MINUTES') {
                     script {
                         commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
                         displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
@@ -75,7 +78,7 @@ pipeline {
 
         stage('Build (Java)') {
             steps {
-                timeout(5) {
+                timeout(time: shortTimeout, unit: 'MINUTES') {
                     container('maven') {
                         configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                             sh '.ci/scripts/distribution/build-java.sh'
@@ -93,7 +96,7 @@ pipeline {
             }
 
             steps {
-                timeout(3) {
+                timeout(time: shortTimeout, unit: 'MINUTES') {
                     container('maven') {
                         sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                     }
@@ -111,7 +114,7 @@ pipeline {
             parallel {
                 stage('Go') {
                     steps {
-                        timeout(10) {
+                        timeout(time: shortTimeout, unit: 'MINUTES') {
                             container('golang') {
                                 sh '.ci/scripts/distribution/build-go.sh'
                             }
@@ -131,7 +134,7 @@ pipeline {
 
                 stage('Analyse (Java)') {
                     steps {
-                        timeout(10) {
+                        timeout(time: longTimeout, unit: 'MINUTES') {
                             container('maven') {
                                 configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                     sh '.ci/scripts/distribution/analyse-java.sh'
@@ -147,7 +150,7 @@ pipeline {
                     }
 
                     steps {
-                        timeout(20) {
+                        timeout(time: longTimeout, unit: 'MINUTES') {
                             container('maven') {
                                 configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                     sh '.ci/scripts/distribution/test-java.sh'
@@ -168,7 +171,7 @@ pipeline {
                     }
 
                     steps {
-                        timeout(3) {
+                        timeout(time: shortTimeout, unit: 'MINUTES') {
                             container('maven-jdk8') {
                                 configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                     sh '.ci/scripts/distribution/test-java8.sh'
@@ -203,7 +206,7 @@ pipeline {
                     }
 
                     steps {
-                        timeout(20) {
+                        timeout(time: longTimeout, unit: 'MINUTES') {
                             container('maven') {
                                 configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                     sh '.ci/scripts/distribution/prepare.sh'
@@ -231,7 +234,7 @@ pipeline {
 
                 stage('BPMN TCK') {
                     steps {
-                        timeout(10) {
+                        timeout(time: longTimeout, unit: 'MINUTES'){
                             container('maven') {
                                 configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                     sh '.ci/scripts/distribution/test-tck.sh'
@@ -290,7 +293,7 @@ pipeline {
             }
 
             steps {
-                timeout(3) {
+                timeout(time: shortTimeout, unit: 'MINUTES') {
                     container('docker') {
                         sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                         sh '.ci/scripts/docker/build.sh'
@@ -321,7 +324,7 @@ pipeline {
             when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
-                    timeout(15) {
+                    timeout(time: longTimeout, unit: 'MINUTES') {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                 sh '.ci/scripts/distribution/upload.sh'
@@ -345,7 +348,7 @@ pipeline {
 
                     steps {
                         retry(3) {
-                            timeout(5) {
+                            timeout(time: shortTimeout, unit: 'MINUTES') {
                                 build job: 'zeebe-docker', parameters: [
                                         string(name: 'BRANCH', value: env.BRANCH_NAME),
                                         string(name: 'VERSION', value: env.VERSION),
