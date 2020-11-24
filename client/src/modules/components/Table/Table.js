@@ -80,7 +80,7 @@ export default function Table({
   const firstRowIndex = pageIndex * pageSize;
   const maxLastRow = firstRowIndex + pageSize;
   const totalRows = totalEntries || body.length;
-  const empty = totalRows === 0 || head.length === 0;
+  const empty = !loading && (totalRows === 0 || head.length === 0);
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {

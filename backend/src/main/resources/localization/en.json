@@ -215,6 +215,17 @@
       "eventListChangeWarning": "Changing the event list may add or remove events. Existing event mappings may be removed.",
       "remove": "Remove Source",
       "camundaProcess": "Camunda Process"
+    },
+    "ingested": {
+      "label": "Ingested Events List",
+      "id": "Event ID",
+      "traceId": "Trace ID",
+      "group": "Group",
+      "source": "Source",
+      "eventName": "Event Name",
+      "timestamp": "Timestamp",
+      "eventSources": "Event Data Sources",
+      "search": "Search for values"
     }
   },
   "report": {

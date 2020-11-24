@@ -58,6 +58,7 @@ exports[`matches the snapshot 1`] = `
         Array [
           "/eventBasedProcess/",
           "/eventBasedProcess/*",
+          "/ingestedEvents/",
         ]
       }
       breadcrumbsEntities={

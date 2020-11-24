@@ -95,6 +95,7 @@ class App extends React.Component {
                       <PrivateRoute exact path="/" component={Home} />
                       <PrivateRoute path="/analysis" component={Analysis} />
                       <PrivateRoute exact path="/eventBasedProcess" component={Events} />
+                      <PrivateRoute path="/IngestedEvents" component={Events} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute
                         path="/(report|dashboard|collection|eventBasedProcess)/*"

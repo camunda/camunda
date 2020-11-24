@@ -79,3 +79,9 @@ export function isNonTimerEvent(node) {
 
   return true;
 }
+
+export async function loadIngestedEvents(params) {
+  const response = await get('api/event', params);
+
+  return await response.json();
+}

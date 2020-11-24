@@ -1,0 +1,106 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="IngestedEvents"
+>
+  <h1
+    className="title"
+  >
+    Event Data Sources
+  </h1>
+  <div
+    className="header"
+  >
+    <h4
+      className="tableTitle"
+    >
+      Ingested Events List
+    </h4>
+    <div
+      className="searchInputContainer"
+    >
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Search for values"
+        type="text"
+        value=""
+      />
+      <Icon
+        className="searchIcon"
+        size="20"
+        type="search"
+      />
+    </div>
+  </div>
+  <Table
+    body={
+      Array [
+        Array [
+          "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
+          "correlationValue_3",
+          "eventGroup",
+          "order-service",
+          "InvoiceProcessed",
+          "Invoice Processed",
+        ],
+        Array [
+          "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
+          "correlationValue_3",
+          "eventGroup",
+          "order-service",
+          "OrderProcessed",
+          "Order Processed",
+        ],
+      ]
+    }
+    defaultPageSize={20}
+    fetchData={[Function]}
+    head={
+      Array [
+        Object {
+          "id": "id",
+          "label": "Event ID",
+          "sortable": false,
+        },
+        Object {
+          "id": "traceId",
+          "label": "Trace ID",
+          "sortable": true,
+        },
+        Object {
+          "id": "group",
+          "label": "Group",
+          "sortable": true,
+        },
+        Object {
+          "id": "source",
+          "label": "Source",
+          "sortable": true,
+        },
+        Object {
+          "id": "eventName",
+          "label": "Event Name",
+          "sortable": true,
+        },
+        Object {
+          "id": "timestamp",
+          "label": "Timestamp",
+          "sortable": true,
+        },
+      ]
+    }
+    loading={true}
+    sorting={
+      Object {
+        "by": "timestamp",
+        "order": "desc",
+      }
+    }
+    totalEntries={2}
+    updateSorting={[Function]}
+  />
+</div>
+`;

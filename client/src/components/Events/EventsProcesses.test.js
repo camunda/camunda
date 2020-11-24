@@ -11,10 +11,8 @@ import {EntityList, Deleter} from 'components';
 
 import PublishModal from './PublishModal';
 import {loadProcesses} from './service';
-import EventsWithErrorHandling from './Events';
+import {EventsProcesses} from './EventsProcesses';
 import GenerationModal from './GenerationModal';
-
-const Events = EventsWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   loadProcesses: jest.fn().mockReturnValue([
@@ -45,13 +43,13 @@ const props = {
 };
 
 it('should load event based processes', () => {
-  shallow(<Events {...props} />);
+  shallow(<EventsProcesses {...props} />);
 
   expect(loadProcesses).toHaveBeenCalled();
 });
 
 it('should pass a process to the Deleter', () => {
-  const node = shallow(<Events {...props} />);
+  const node = shallow(<EventsProcesses {...props} />);
 
   node.find(EntityList).prop('data')[0].actions[3].action();
 
@@ -59,7 +57,7 @@ it('should pass a process to the Deleter', () => {
 });
 
 it('should pass a process id to the PublishModal', () => {
-  const node = shallow(<Events {...props} />);
+  const node = shallow(<EventsProcesses {...props} />);
 
   node.find(EntityList).prop('data')[0].actions[0].action();
 
@@ -68,7 +66,7 @@ it('should pass a process id to the PublishModal', () => {
 });
 
 it('should correctly set the republish prop on the PublishModal', () => {
-  const node = shallow(<Events {...props} />);
+  const node = shallow(<EventsProcesses {...props} />);
 
   node.find(EntityList).prop('data')[2].actions[0].action();
 
@@ -76,7 +74,7 @@ it('should correctly set the republish prop on the PublishModal', () => {
 });
 
 it('should open generation modal', () => {
-  const node = shallow(<Events {...props} />);
+  const node = shallow(<EventsProcesses {...props} />);
   node.instance().toggleGenerationModal();
   expect(node.find(GenerationModal)).toExist();
 });
