@@ -39,7 +39,7 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("getParameters")
   public void reportCsvHasExpectedValue(ProcessReportDataDto currentReport, String expectedCSV) {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     importAllEngineEntitiesFromScratch();
@@ -62,7 +62,7 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void numberReportCsvExportWorksEvenWithNoData() {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()

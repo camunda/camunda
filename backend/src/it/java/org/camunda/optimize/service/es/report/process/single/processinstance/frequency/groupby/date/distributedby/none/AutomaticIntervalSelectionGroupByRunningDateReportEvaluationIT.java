@@ -70,7 +70,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
   @SneakyThrows
   @Test
   public void automaticIntervalSelectionTakesAllProcessInstancesIntoAccount() {
-    //given
+    // given
     final OffsetDateTime startOfFirstInstance = OffsetDateTime.now();
     // two instances that run for 1min each
     final Duration instanceRuntime = Duration.of(1, ChronoUnit.MINUTES);

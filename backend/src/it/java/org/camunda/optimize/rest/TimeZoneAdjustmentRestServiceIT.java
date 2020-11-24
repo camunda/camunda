@@ -713,7 +713,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
   @Test
   public void adjustDatesInCSVExportToTimezone_byReportId() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
@@ -750,7 +750,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
   @Test
   public void adjustDatesInCSVExportToTimezone_byUnsavedRawProcessDataReport() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);

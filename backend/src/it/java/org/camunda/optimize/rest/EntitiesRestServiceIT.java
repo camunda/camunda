@@ -55,7 +55,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsMyUsersReports() {
-    //given
+    // given
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
@@ -78,7 +78,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
 
     addSingleReportToOptimize("My Report", ReportType.PROCESS);
@@ -102,7 +102,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_DoesNotReturnOtherUsersReports() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addSingleReportToOptimize("B Report", ReportType.PROCESS, null, "kermit");
@@ -155,7 +155,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsMyUsersDashboards() {
-    //given
+    // given
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard");
 
@@ -170,7 +170,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_DoesNotReturnOtherUsersDashboards() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addDashboardToOptimize("A Dashboard");
@@ -199,7 +199,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsCollections() {
-    //given
+    // given
     collectionClient.createNewCollection();
     collectionClient.createNewCollection();
 
@@ -236,7 +236,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities__noSortApplied_OrderedByTypeAndLastModified() {
-    //given
+    // given
     addCollection("B Collection");
     addCollection("A Collection");
     addSingleReportToOptimize("D Report", ReportType.PROCESS);
@@ -399,7 +399,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @MethodSource("sortParamsAndExpectedComparator")
   public void getEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
                                                                         Comparator<EntityResponseDto> expectedComparator) {
-    //given
+    // given
     addCollection("B Collection");
     addCollection("A Collection");
     addSingleReportToOptimize("D Report", ReportType.PROCESS);

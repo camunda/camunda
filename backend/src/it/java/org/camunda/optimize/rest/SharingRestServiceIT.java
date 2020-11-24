@@ -60,7 +60,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void createNewReportShare() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     ReportShareRestDto share = createReportShare(reportId);
 
@@ -75,7 +75,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void createNewReportShareWithSharingDisabled() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
     ReportShareRestDto share = createReportShare(reportId);
@@ -89,7 +89,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void createNewDashboardShare() {
-    //given
+    // given
     String dashboard = addEmptyDashboardToOptimize();
 
     DashboardShareRestDto sharingDto = new DashboardShareRestDto();
@@ -157,7 +157,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void deleteReportShare() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String id = addShareForReport(reportId);
 
@@ -175,7 +175,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void deleteDashboardShare() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     String id = addShareForDashboard(dashboardWithReport);
@@ -194,21 +194,21 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void findShareForReport() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String id = addShareForReport(reportId);
 
-    //when
+    // when
     ReportShareRestDto share = getShareForReport(reportId);
 
-    //then
+    // then
     assertThat(share).isNotNull();
     assertThat(share.getId()).isEqualTo(id);
   }
 
   @Test
   public void findShareForReportWithoutAuthentication() {
-    //given
+    // given
     addShareForFakeReport();
 
     // when
@@ -224,30 +224,30 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void findShareForSharedDashboard() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     String id = addShareForDashboard(dashboardWithReport);
 
-    //when
+    // when
     DashboardShareRestDto share = findShareForDashboard(dashboardWithReport).readEntity(DashboardShareRestDto.class);
 
-    //then
+    // then
     assertThat(share).isNotNull();
     assertThat(share.getId()).isEqualTo(id);
   }
 
   @Test
   public void evaluateSharedDashboard() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String dashboardId = createDashboardWithReport(reportId);
     String dashboardShareId = addShareForDashboard(dashboardId);
 
-    //when
+    // when
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
-    //then
+    // then
     assertThat(dashboardShareDto).isNotNull();
     assertThat(dashboardShareDto.getId()).isEqualTo(dashboardId);
     assertThat(dashboardShareDto.getReports()).isNotNull();
@@ -267,12 +267,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void findShareForDashboardWithoutAuthentication() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     addShareForDashboard(dashboardWithReport);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildFindShareForDashboardRequest(dashboardWithReport)
@@ -286,13 +286,13 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void evaluationOfNotExistingShareReturnsError() {
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedReportRequest("123")
       .execute();
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
@@ -312,7 +312,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void checkSharingAuthorizationIsOkay() {
-    //given
+    // given
     String reportId = createReportWithInstance();
     String dashboardId = createDashboardWithReport(reportId);
 
@@ -329,7 +329,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void checkSharingAuthorizationResultsInForbidden() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     String reportId = createReportWithInstance();

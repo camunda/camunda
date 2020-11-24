@@ -88,11 +88,11 @@ public class OptimizeProcessCleanupServiceTest {
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
     mockNextPageOfEntities();
 
-    //when
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
@@ -103,14 +103,14 @@ public class OptimizeProcessCleanupServiceTest {
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(customMode);
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
 
-    //when
+    // when
     mockProcessDefinitions(processDefinitionKeys);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeys);
     mockNextPageOfEntitiesThatHaveVariables();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteAllInstanceVariablesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
@@ -124,11 +124,11 @@ public class OptimizeProcessCleanupServiceTest {
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
     mockNextPageOfEntities();
 
-    //when
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, customTtl);
   }
 
@@ -148,7 +148,7 @@ public class OptimizeProcessCleanupServiceTest {
       processDefinitionKeysWithDefaultMode
     );
 
-    //when
+    // when
     mockProcessDefinitions(allProcessDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeysWithDefaultMode);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeysWithSpecificMode);
@@ -157,7 +157,7 @@ public class OptimizeProcessCleanupServiceTest {
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     verifyDeleteProcessInstanceExecutionReturnCapturedArguments(processDefinitionKeysWithDefaultMode);
     verifyDeleteAllInstanceVariablesReturnCapturedArguments(processDefinitionKeysWithSpecificMode);
   }
@@ -179,14 +179,14 @@ public class OptimizeProcessCleanupServiceTest {
       processDefinitionKeysWithDefaultTtl
     );
 
-    //when
+    // when
     mockProcessDefinitions(allProcessDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(allProcessDefinitionKeys);
     mockNextPageOfEntities();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     Map<String, OffsetDateTime> capturedArguments = verifyDeleteProcessInstanceExecutionReturnCapturedArguments(
       allProcessDefinitionKeys
     );
@@ -205,11 +205,11 @@ public class OptimizeProcessCleanupServiceTest {
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
     mockNextPageOfEntities();
 
-    //when
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
@@ -227,10 +227,10 @@ public class OptimizeProcessCleanupServiceTest {
     // and this key is not present in the known process definition keys
     mockProcessDefinitions(generateRandomDefinitionsKeys(3));
 
-    //when I run the cleanup
+    // when I run the cleanup
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
 
-    //then it fails with an exception
+    // then it fails with an exception
     OptimizeConfigurationException exception = assertThrows(
       OptimizeConfigurationException.class,
       () -> doCleanup(underTest)

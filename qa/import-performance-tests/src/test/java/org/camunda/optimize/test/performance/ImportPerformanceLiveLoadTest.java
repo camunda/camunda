@@ -75,7 +75,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     // when I start data generation and wait for it to finish
     return executor.submit(() -> {
-      //given I have data in the data
+      // given I have data in the data
       final OffsetDateTime beforeDataGeneration = OffsetDateTime.now();
       final DataGenerationInformation dataGenerationInformation = DataGenerationInformation.builder()
         .processInstanceCountToGenerate((long) instanceCountToGenerate)

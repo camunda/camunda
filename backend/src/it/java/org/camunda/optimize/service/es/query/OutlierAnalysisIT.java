@@ -434,7 +434,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       null
     );
 
-    //then
+    // then
     assertThat(result).isEmpty();
   }
 

@@ -48,11 +48,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
   }
@@ -68,11 +68,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(unaffectedProcessInstances));
   }
 
@@ -120,11 +120,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
@@ -142,11 +142,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
@@ -176,11 +176,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(getCamundaActivityEvents())
@@ -207,11 +207,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
   }
@@ -262,11 +262,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesOfDefinitionWithVariableMode));
   }
 
@@ -284,11 +284,11 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
@@ -367,7 +367,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

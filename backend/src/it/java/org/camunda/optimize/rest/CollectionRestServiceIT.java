@@ -106,7 +106,7 @@ public class CollectionRestServiceIT extends AbstractIT {
 
   @Test
   public void updateNameOfCollection() {
-    //given
+    // given
     String id = collectionClient.createNewCollection();
     final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
@@ -135,7 +135,7 @@ public class CollectionRestServiceIT extends AbstractIT {
 
   @Test
   public void getCollection() {
-    //given
+    // given
     String id = collectionClient.createNewCollection();
 
     // when
@@ -152,7 +152,7 @@ public class CollectionRestServiceIT extends AbstractIT {
 
   @Test
   public void getCollection_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     String collectionId = collectionClient.createNewCollection();
 
@@ -197,7 +197,7 @@ public class CollectionRestServiceIT extends AbstractIT {
 
   @Test
   public void deleteNewCollection() {
-    //given
+    // given
     String id = collectionClient.createNewCollection();
 
     // when

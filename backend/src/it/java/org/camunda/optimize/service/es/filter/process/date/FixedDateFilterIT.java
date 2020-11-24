@@ -31,13 +31,13 @@ public class FixedDateFilterIT extends AbstractFilterIT {
 
   @Test
   public void testGetHeatMapWithGteStartDateCriteria() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
       engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
     OffsetDateTime start = processInstance.getStartTime();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
     List<ProcessFilterDto<?>> fixedStartDateFilter =
@@ -50,16 +50,16 @@ public class FixedDateFilterIT extends AbstractFilterIT {
     reportData.setFilter(fixedStartDateFilter);
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).isEmpty();
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(start).end(null).add().buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(start.minus(1, ChronoUnit.DAYS))
@@ -67,19 +67,19 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
   }
 
   @Test
   public void testGetHeatMapWithLteStartDateCriteria() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
       engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
     OffsetDateTime start = processInstance.getStartTime();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
@@ -89,10 +89,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -100,10 +100,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -111,19 +111,19 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).isEmpty();
   }
 
   @Test
   public void testGetHeatMapWithGteEndDateCriteria() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
       engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
     OffsetDateTime end = processInstance.getEndTime();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -134,10 +134,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end)
@@ -145,10 +145,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end.plus(1, ChronoUnit.DAYS))
@@ -156,19 +156,19 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).isEmpty();
   }
 
   @Test
   public void testGetHeatMapWithLteEndDateCriteria() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
       engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
     OffsetDateTime end = processInstance.getEndTime();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
@@ -178,10 +178,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //when
+    // when
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end.plus(1, ChronoUnit.DAYS))
@@ -189,13 +189,13 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
     result = reportClient.evaluateRawReport(reportData).getResult();
-    //then
+    // then
     assertThat(result.getData()).isEmpty();
   }
 
   @Test
   public void testGetHeatMapWithMixedDateCriteria() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
       engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
@@ -210,13 +210,13 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
 
-    //when
+    // when
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //given
+    // given
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end.minusSeconds(200L))
@@ -224,13 +224,13 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
 
-    //when
+    // when
     result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
 
-    //given
+    // given
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -238,10 +238,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .add()
                            .buildList());
 
-    //when
+    // when
     result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).isEmpty();
   }
 

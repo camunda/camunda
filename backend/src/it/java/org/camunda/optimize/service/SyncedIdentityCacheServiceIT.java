@@ -69,7 +69,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
       getSyncedIdentityCacheService().synchronizeIdentities();
 
-      //then
+      // then
       assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn)).isPresent();
     } finally {
       getSyncedIdentityCacheService().startSchedulingUserSync();

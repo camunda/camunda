@@ -696,7 +696,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -709,7 +709,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -722,7 +722,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

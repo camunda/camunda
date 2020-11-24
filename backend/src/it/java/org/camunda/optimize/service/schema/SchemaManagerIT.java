@@ -96,7 +96,7 @@ public class SchemaManagerIT extends AbstractIT {
     initializeSchema();
     embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
 
-    //when
+    // when
     initializeSchema();
 
     // then

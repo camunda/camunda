@@ -483,7 +483,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -497,7 +497,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

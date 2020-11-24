@@ -122,17 +122,17 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
   @Test
   public void businessKeyNotImported_whenFeatureDisabled() throws JsonProcessingException {
-    //given
+    // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
     deployAndStartUserTaskProcess();
     ProcessInstanceEngineDto completedProcess = deployAndStartUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(completedProcess.getId());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     List<BusinessKeyDto> storedBusinessKeys = getAllStoredBusinessKeys();
     assertThat(storedBusinessKeys).isEmpty();
   }

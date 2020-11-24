@@ -247,7 +247,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(ONE_TASK)
@@ -266,7 +266,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ALL_VERSIONS);
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .isComplete(true)
@@ -279,7 +279,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(ONE_TASK)
@@ -298,7 +298,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1", "2");
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .isComplete(true)
@@ -311,7 +311,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
-    //given
+    // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(TWO_SEQUENTIAL_TASKS)
@@ -330,7 +330,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ALL_VERSIONS);
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .isComplete(true)
@@ -342,7 +342,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
-    //given
+    // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(TWO_SEQUENTIAL_TASKS)
@@ -361,7 +361,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1", "2");
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .isComplete(true)

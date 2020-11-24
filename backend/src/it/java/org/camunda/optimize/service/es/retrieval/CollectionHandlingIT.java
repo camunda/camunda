@@ -121,7 +121,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @Test
   public void getResolvedCollection() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -142,7 +142,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @Test
   public void getResolvedCollectionContainsCombinedReportSubEntityCounts() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final String reportId1 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     final String reportId2 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -553,7 +553,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @Test
   public void copyAnEmptyCollectionWithCustomPermissionsAndScope() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     String collectionId = collectionClient.createNewCollection();
@@ -567,17 +567,17 @@ public class CollectionHandlingIT extends AbstractIT {
 
     collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto("PROCESS:invoice"));
 
-    //when
+    // when
     String copyId = collectionClient.copyCollection(collectionId).getId();
     CollectionDefinitionRestDto copyDefinition = collectionClient.getCollectionById(copyId);
 
-    //then
+    // then
     assertThat(copyDefinition.getName().toLowerCase().contains("copy")).isEqualTo(true);
   }
 
   @Test
   public void copyCollectionWithASingleReport() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollection();
     String originalReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
@@ -593,14 +593,14 @@ public class CollectionHandlingIT extends AbstractIT {
 
     SingleProcessReportDefinitionRequestDto copiedReport = reportClient.getSingleProcessReportDefinitionDto(reportCopyId);
 
-    //then
+    // then
     assertThat(originalReport.getData()).isEqualTo(copiedReport.getData());
     assertThat(copiedReport.getName()).isEqualTo(originalReport.getName());
   }
 
   @Test
   public void copyCollectionWithADashboard() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollection();
     String originalReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -616,7 +616,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
     dashboardClient.updateDashboard(dashboardId, dashboardDefinition);
 
-    //when
+    // when
     String copyId = collectionClient.copyCollection(collectionId).getId();
 
     collectionClient.getCollectionById(copyId);
@@ -634,7 +634,7 @@ public class CollectionHandlingIT extends AbstractIT {
       copiedReportId);
     SingleProcessReportDefinitionRequestDto originalReportDefinition = reportClient.getSingleProcessReportDefinitionDto(
       originalReportId);
-    //then
+    // then
     //the dashboard references the same report entity as the report itself
     assertThat(copiedDashboard.getReports().get(0).getId()).isEqualTo(copiedReportId);
 
@@ -650,7 +650,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @Test
   public void copyCollectionWithANestedReport() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollection();
     String originalReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     String combinedReportId = reportClient.createEmptyCombinedReport(collectionId);
@@ -759,7 +759,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @Test
   public void copyCollectionWithAReport_entitiesNotCopiedIfCollectionCreationFailsOnEsFailure() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     final String alertId = alertClient.createAlertForReport(reportId);

@@ -52,11 +52,11 @@ public class DecisionDefinitionResolverServiceTest {
     final String version = "2";
     mockDecisionDefinitionsOnReaderLevel(id, version);
 
-    //when
+    // when
     final Optional<DecisionDefinitionOptimizeDto> decisionDefinition =
       underTest.getDefinition(id, engineContext);
 
-    //then
+    // then
     assertThat(decisionDefinition).isPresent();
     assertThat(decisionDefinition)
       .get()
@@ -72,13 +72,13 @@ public class DecisionDefinitionResolverServiceTest {
     final String version = "1";
     mockDecisionDefinitionsOnReaderLevel(id, version);
 
-    //when
+    // when
     final Optional<DecisionDefinitionOptimizeDto> firstDecisionDefinitionTry =
       underTest.getDefinition(id, engineContext);
     final Optional<DecisionDefinitionOptimizeDto> secondDecisionDefinitionTry =
       underTest.getDefinition(id, engineContext);
 
-    //then
+    // then
     assertThat(firstDecisionDefinitionTry).isPresent();
     assertThat(secondDecisionDefinitionTry).isPresent();
     assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
@@ -93,11 +93,11 @@ public class DecisionDefinitionResolverServiceTest {
     mockDecisionDefinitionsOnReaderLevel("otherId", "2");
     mockDecisionDefinitionForEngineContext(id, "1");
 
-    //when
+    // when
     final Optional<DecisionDefinitionOptimizeDto> definition =
       underTest.getDefinition(id, engineContext);
 
-    //then
+    // then
     assertThat(definition)
       .isPresent()
       .get()
@@ -118,11 +118,11 @@ public class DecisionDefinitionResolverServiceTest {
     mockDecisionDefinitionsOnReaderLevel("otherId", "2");
     mockDecisionDefinitionForEngineContext(id, "1");
 
-    //when
+    // when
     final Optional<DecisionDefinitionOptimizeDto> firstDecisionDefinitionTry =
       underTest.getDefinition(id, engineContext);
 
-    //then
+    // then
     assertThat(firstDecisionDefinitionTry).isPresent();
     verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
@@ -143,11 +143,11 @@ public class DecisionDefinitionResolverServiceTest {
     mockDecisionDefinitionsOnReaderLevel("otherId", "1");
     when(engineContext.fetchDecisionDefinition(any())).thenReturn(null);
 
-    //when
+    // when
     final Optional<DecisionDefinitionOptimizeDto> definition =
       underTest.getDefinition(id, engineContext);
 
-    //then
+    // then
     assertThat(definition).isNotPresent();
     verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
     verify(engineContext, times(1)).fetchDecisionDefinition(id);

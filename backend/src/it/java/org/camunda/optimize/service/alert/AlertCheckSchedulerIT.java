@@ -45,7 +45,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -73,7 +73,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reportDeletionRemovesAlert() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     alertClient.createAlert(simpleAlert);
@@ -90,7 +90,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void createNewAlertPropagatedToScheduler() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     // when
@@ -103,7 +103,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void createNewAlertDecisionReport() {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = setupBasicDecisionAlert();
     setEmailConfiguration();
 
@@ -116,7 +116,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void deletedAlertsAreRemovedFromScheduler() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
@@ -130,7 +130,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void updatedAlertIsRescheduled() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = alertClient.createAlert(simpleAlert);
@@ -176,7 +176,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void testScheduleTriggers() throws Exception {
 
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -190,7 +190,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
 
-    //then
+    // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
     assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
@@ -207,7 +207,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void testAccessUrlInAlertNotification() throws Exception {
-    //given
+    // given
 
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -224,7 +224,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
 
-    //then
+    // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
     String content = emails[0].getContent().toString();
@@ -238,7 +238,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void testCronMinutesInterval() throws Exception {
-    //given
+    // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Minutes");
@@ -257,7 +257,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void testCronHoursInterval() throws Exception {
-    //given
+    // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Hours");
@@ -275,7 +275,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void testCronDaysInterval() throws Exception {
-    //given
+    // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Days");
@@ -293,7 +293,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void testCronWeeksInterval() throws Exception {
-    //given
+    // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Weeks");

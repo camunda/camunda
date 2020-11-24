@@ -57,7 +57,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
 
   @Test
   public void getCorrelation() throws IOException {
-    //given
+    // given
     setupFullInstanceFlow();
 
     // when

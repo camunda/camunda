@@ -636,13 +636,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
@@ -712,13 +712,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
@@ -788,13 +788,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());

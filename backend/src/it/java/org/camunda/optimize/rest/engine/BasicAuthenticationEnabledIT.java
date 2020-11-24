@@ -61,14 +61,14 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
 
   @Test
   public void importWithBasicAuthenticationWorks() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartProcess(getSingleServiceTaskProcess());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
 
-    //then
+    // then
     Integer activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
     assertThat(activityCount).isEqualTo(3);
   }

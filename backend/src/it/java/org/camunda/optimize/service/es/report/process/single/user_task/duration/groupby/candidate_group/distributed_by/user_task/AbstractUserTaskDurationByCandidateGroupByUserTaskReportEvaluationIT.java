@@ -648,7 +648,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
@@ -665,7 +665,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -688,7 +688,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
@@ -706,7 +706,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -733,7 +733,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
@@ -750,7 +750,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -769,7 +769,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -787,7 +787,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -1169,7 +1169,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1182,7 +1182,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1195,7 +1195,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

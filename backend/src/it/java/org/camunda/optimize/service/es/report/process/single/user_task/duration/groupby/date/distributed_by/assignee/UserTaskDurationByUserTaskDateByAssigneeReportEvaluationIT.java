@@ -676,7 +676,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());

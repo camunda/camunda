@@ -225,38 +225,38 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
     updatedReport.setData(new ProcessReportDataDto());
 
-    //when
+    // when
     Response updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 

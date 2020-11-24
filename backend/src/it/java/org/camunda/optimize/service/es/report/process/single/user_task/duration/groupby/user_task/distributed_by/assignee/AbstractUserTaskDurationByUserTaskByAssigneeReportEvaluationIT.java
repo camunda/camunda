@@ -435,7 +435,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getDoubleUserTaskDiagram());
@@ -453,7 +453,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     importAndRefresh();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -476,7 +476,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
@@ -495,7 +495,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     importAndRefresh();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -522,7 +522,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getDoubleUserTaskDiagram());
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -540,7 +540,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     importAndRefresh();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -559,7 +559,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getDoubleUserTaskDiagram());
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
@@ -578,7 +578,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     importAndRefresh();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),

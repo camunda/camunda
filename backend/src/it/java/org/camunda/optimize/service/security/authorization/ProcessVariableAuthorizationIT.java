@@ -53,10 +53,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -70,10 +70,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -117,10 +117,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -135,10 +135,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
@@ -157,13 +157,13 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(
       processDefinition1,
       Lists.newArrayList(tenantId1, tenantId2)
     );
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 

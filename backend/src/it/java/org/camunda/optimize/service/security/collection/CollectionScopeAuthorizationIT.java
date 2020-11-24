@@ -629,7 +629,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
@@ -654,7 +654,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
       .execute();
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 

@@ -99,7 +99,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
       customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
         .getIndexNameService()

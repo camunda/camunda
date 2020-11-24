@@ -501,7 +501,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullOperatorField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> filterDtos = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
@@ -519,7 +519,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullValueField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> filterDtos = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()

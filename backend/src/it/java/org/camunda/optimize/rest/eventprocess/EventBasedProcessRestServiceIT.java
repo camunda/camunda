@@ -484,7 +484,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @Test
   public void getEventProcessMappingWithId_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto =
       createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
@@ -578,7 +578,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @Test
   public void getAllEventProcessMappings_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient
       .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, "process name", simpleDiagramXml);

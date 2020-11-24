@@ -44,10 +44,10 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
@@ -102,10 +102,10 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
@@ -121,10 +121,10 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
@@ -145,10 +145,10 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     Response response = executeBranchAnalysisAsKermit(processDefinition1, Lists.newArrayList(tenantId1, tenantId2));
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 

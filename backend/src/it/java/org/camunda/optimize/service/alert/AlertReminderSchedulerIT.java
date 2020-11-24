@@ -37,10 +37,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = alertClient.createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
-    //when
+    // when
     alertClient.deleteAlert(id);
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
@@ -54,10 +54,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = alertClient.createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
-    //when
+    // when
     reportClient.deleteReport(simpleAlert.getReportId(), true);
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
@@ -66,15 +66,15 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto alert = setupBasicProcessAlert();
     alertClient.createAlert(alert);
 
-    //when
+    // when
     embeddedOptimizeExtension.stopOptimize();
     embeddedOptimizeExtension.startOptimize();
 
-    //then
+    // then
     assertThat(alertClient.getAllAlerts().get(0).getReminder(), is(nullValue()));
   }
 
@@ -101,13 +101,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       is(2)
     );
 
-    //when
+    // when
     SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
@@ -116,7 +116,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreRemovedOnEvaluationResultChange() throws Exception {
-    //given
+    // given
     long daysToShift = 0L;
     long durationInSec = 2L;
 
@@ -141,13 +141,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       is(greaterThanOrEqualTo(2))
     );
 
-    //when
+    // when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
 
     triggerAndCompleteReminderJob(id);
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(1)
@@ -156,7 +156,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreRemovedOnAlertDefinitionChange() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
 
     String id = alertClient.createAlert(simpleAlert);
@@ -168,22 +168,22 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       is(greaterThanOrEqualTo(2))
     );
 
-    //when
+    // when
     simpleAlert.getCheckInterval().setValue(30);
 
     alertClient.updateAlert(id, simpleAlert);
 
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(1)
     );
 
-    //when
+    // when
     triggerAndCompleteCheckJob(id);
 
-    //then
+    // then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
@@ -192,7 +192,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreScheduledOnAlertCreation() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
 
     // when
@@ -209,7 +209,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreScheduledCorrectly() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
     AlertInterval checkInterval = new AlertInterval();
     checkInterval.setUnit("Minutes");
@@ -229,7 +229,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreScheduledAfterRestart() throws Exception {
-    //given
+    // given
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
 
     String id = alertClient.createAlert(simpleAlert);

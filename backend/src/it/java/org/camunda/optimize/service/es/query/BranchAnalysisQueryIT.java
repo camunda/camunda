@@ -63,16 +63,16 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result =
       performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -91,18 +91,18 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_withLoop() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinitionWithLoop();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(
       processDefinition.getKey(),
       processDefinition.getVersionAsString()
     );
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -121,12 +121,12 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_impossiblePath() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deployGatewayProcessWithSubprocess();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition.getKey(),
       Lists.newArrayList(processDefinition.getVersionAsString()),
@@ -154,17 +154,17 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_acrossAllVersions() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -183,7 +183,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_acrossMultipleVersions() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
@@ -194,7 +194,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ArrayList<String> versions = Lists.newArrayList(
       processDefinition1.getVersionAsString(),
       processDefinition3.getVersionAsString()
@@ -204,7 +204,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       versions
     );
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(4L);
@@ -223,7 +223,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_latestVersionOnly() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
@@ -232,10 +232,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -256,7 +256,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(3L);
@@ -270,18 +270,18 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_noneTenantId() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(
       processDefinition.getKey(),
       processDefinition.getVersionAsString()
     );
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -300,7 +300,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_multipleTenants() {
-    //given
+    // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     engineIntegrationExtension.createTenant(tenantId1);
@@ -312,7 +312,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
@@ -321,7 +321,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       END_EVENT_ID
     );
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -340,7 +340,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysis_specificTenant() {
-    //given
+    // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     engineIntegrationExtension.createTenant(tenantId1);
@@ -352,7 +352,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
@@ -361,7 +361,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       END_EVENT_ID
     );
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -380,17 +380,17 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysisTakingBothPaths() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(3L);
@@ -409,16 +409,16 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysisNotAllTokensReachedEndEvent() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessWithUserTask();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -437,7 +437,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void anotherProcessDefinitionDoesNotAffectAnalysis() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
@@ -445,10 +445,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask2(processDefinition2);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -467,14 +467,14 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysisWithDtoFilteredByDateBefore() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
       Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
@@ -493,7 +493,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -512,7 +512,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysisWithDtoFilteredByDateAfter() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
@@ -528,10 +528,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
     addStartDateFilter(now.plusSeconds(1L), null, dto);
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(0L);
@@ -550,7 +550,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void branchAnalysisWithMixedDateCriteria() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
@@ -564,10 +564,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
     addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -586,7 +586,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void bypassOfGatewayDoesNotDistortResult() {
-    //given
+    // given
     // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
@@ -622,10 +622,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       END_EVENT_ID
     );
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -644,7 +644,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void variableFilterWorkInBranchAnalysis() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
@@ -664,10 +664,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
                     .add()
                     .buildList());
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(1L);
@@ -686,7 +686,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void executedFlowNodeFilterWorksInBranchAnalysis() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
@@ -707,10 +707,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       .buildList();
     dto.getFilter().addAll(flowNodeFilter);
 
-    //when
+    // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
     assertThat(result.getTotal()).isEqualTo(0L);
@@ -754,10 +754,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo("endEvent");
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -803,10 +803,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo("endEvent");
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -865,10 +865,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     BranchAnalysisResponseDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
-    //then
+    // then
     assertThat(result).isNotNull();
     assertThat(result.getEndEvent()).isEqualTo("endEvent");
     assertThat(result.getTotal()).isEqualTo(2L);
@@ -887,21 +887,21 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void testValidationExceptionOnNullDto() {
-    //when
+    // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
-    //when
+    // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisRequestDto());
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinitionVersion() {
-    //given
+    // given
     BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
       PROCESS_DEFINITION_KEY,
       null,
@@ -910,14 +910,14 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       null
     );
 
-    //when
+    // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullGateway() {
-    //given
+    // given
     BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
       PROCESS_DEFINITION_KEY,
       Lists.newArrayList(PROCESS_DEFINITION_VERSION),
@@ -926,7 +926,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       null
     );
 
-    //when
+    // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -942,7 +942,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       null
     );
 
-    //when
+    // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

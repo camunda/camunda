@@ -83,7 +83,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeCreateIndexWithAliasStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -110,7 +110,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeCreateTemplateBasedIndexWithAliasStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -319,7 +319,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeInsertDataStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -346,7 +346,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeUpdateDataStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -373,7 +373,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeDeleteDataStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -396,7 +396,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeDeleteIndexStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -449,7 +449,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void executeUpgradeMappingIndexStep() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
@@ -468,7 +468,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void fieldRenameWithoutRemovingOldFieldAbortsUpgrade() throws IOException {
-    //given
+    // given
     createOptimizeIndexWithTypeAndVersion(new RenameFieldTestIndex(), 1);
 
     IndexRequest indexRequest = new IndexRequest("users")
@@ -491,7 +491,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void versionIsUpdatedAfterPlanWasExecuted() throws Exception {
-    //given
+    // given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)

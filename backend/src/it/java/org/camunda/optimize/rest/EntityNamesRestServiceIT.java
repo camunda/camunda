@@ -23,7 +23,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_WorksForAllPossibleEntities() {
-    //given
+    // given
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
@@ -42,7 +42,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_ReturnsNoResponseForEventBasedProcessIfThereIsNone() {
-    //given
+    // given
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
@@ -60,7 +60,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_SeveralReportsDoNotDistortResult() {
-    //given
+    // given
     String reportId = addSingleReportToOptimize("aProcessReportName", ReportType.PROCESS);
     addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
     addCombinedReport("aCombinedReportName");
@@ -78,7 +78,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_WorksForDecisionReports() {
-    //given
+    // given
     String reportId = addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -94,7 +94,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_WorksForCombinedReports() {
-    //given
+    // given
     String reportId = addCombinedReport("aCombinedReportName");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -110,7 +110,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_NotAvailableIdReturns404() {
-    //given
+    // given
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -125,7 +125,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntityNames_NoIdProvidedReturns400() {
-    //given
+    // given
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when

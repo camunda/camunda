@@ -158,7 +158,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void resolvePropertiesFromEnvironmentVariables() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
     environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     environmentVariablesExtension.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
@@ -181,7 +181,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void resolvePropertiesFromSystemVariables() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
@@ -204,7 +204,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void resolvePropertiesFromSystemVariablesWinOverEnvironmentVariables() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
     environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", "wrong");
     environmentVariablesExtension.set("IMPORT_ENABLED_1", "wrong");
@@ -238,7 +238,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void resolvePlaceholderDefaultValues() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-default-value-test-config.yaml"};
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -248,7 +248,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void resolveSetPropertiesWinOverDefaultValue() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-default-value-test-config.yaml"};
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
@@ -271,7 +271,7 @@ public class ConfigurationServiceTest {
 
   @Test
   public void failOnMissingSystemOrEnvironmentVariableAndNoDefaultValue() {
-    //when
+    // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
     OptimizeConfigurationException configurationException = null;
     try {

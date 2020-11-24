@@ -21,18 +21,18 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
 
   @Test
   public void importDataFromEngine() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_ID));
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
-    //then
+    // then
     assertThat(definitions).isNotNull().hasSize(1);
     assertThat(definitions.get(0).getId()).isNotNull();
     assertThat(definitions.get(0).getKey()).isEqualTo(PROCESS_ID);

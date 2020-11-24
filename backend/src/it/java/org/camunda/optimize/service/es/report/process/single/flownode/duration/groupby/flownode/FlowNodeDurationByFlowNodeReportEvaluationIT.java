@@ -298,7 +298,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
     assertThat(latestDefinition.getVersion()).isEqualTo(2);
@@ -317,7 +317,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReport(
       latestDefinition.getKey(),
       ALL_VERSIONS
@@ -325,7 +325,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
@@ -336,7 +336,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
     deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
@@ -356,7 +356,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReport(
       latestDefinition.getKey(),
       ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
@@ -364,7 +364,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
@@ -375,7 +375,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
     assertThat(latestDefinition.getVersion()).isEqualTo(2);
@@ -394,7 +394,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessReportDataDto reportData = createReport(
       latestDefinition.getKey(),
       ALL_VERSIONS
@@ -402,7 +402,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
@@ -411,7 +411,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
     deployProcessWithTwoTasks();
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
@@ -431,7 +431,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -440,7 +440,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
@@ -886,7 +886,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -900,7 +900,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -914,7 +914,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

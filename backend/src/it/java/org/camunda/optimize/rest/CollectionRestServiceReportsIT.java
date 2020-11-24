@@ -66,7 +66,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
 
   @Test
   public void getStoredReports_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     createReportForCollection(collectionId, DefinitionType.PROCESS);

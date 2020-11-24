@@ -61,7 +61,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withoutAuthentication(),
@@ -69,7 +69,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
@@ -86,7 +86,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor(),
@@ -94,7 +94,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
@@ -113,7 +113,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
@@ -121,7 +121,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
@@ -138,7 +138,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor(),
@@ -146,7 +146,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
@@ -168,7 +168,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
@@ -176,7 +176,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
@@ -197,7 +197,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
@@ -205,7 +205,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
@@ -231,7 +231,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final Response response = executeRequest(
       processDefinition1,
       embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
@@ -239,7 +239,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
       endpoint
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 

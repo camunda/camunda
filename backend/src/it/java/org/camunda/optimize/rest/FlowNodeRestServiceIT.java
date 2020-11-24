@@ -22,7 +22,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
   @Test
   public void mapFlowNodeWithoutAuthentication() {
-    //given
+    // given
     createProcessDefinition("aKey", "1");
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey("aKey");
@@ -40,7 +40,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
   @Test
   public void getFlowNodesWithNullNullParameter() {
-    //given
+    // given
     createProcessDefinition("aKey", "1");
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(null);
@@ -58,7 +58,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
   @Test
   public void getFlowNodesForSharedDefinition() {
-    //given
+    // given
     final String key = "aKey";
     final String version = "1";
     createProcessDefinition(key, version, ImmutableMap.of("1", "1"), null);
@@ -76,7 +76,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
   @Test
   public void getFlowNodesForTenantSpecificDefinition() {
-    //given
+    // given
     final String key = "aKey";
     final String version = "1";
     final String tenantId1 = "tenant1";
@@ -98,7 +98,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
   @Test
   public void getFlowNodesForSharedDefinitionByTenantWithNoSpecificDefinition() {
-    //given
+    // given
     final String key = "aKey";
     final String version = "1";
     final String tenantId1 = "tenant1";

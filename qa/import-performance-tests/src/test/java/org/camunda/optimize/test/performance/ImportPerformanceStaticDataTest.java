@@ -28,7 +28,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
   public void importPerformanceTest() throws Exception {
     logStats();
 
-    //given I have data in the engine database
+    // given I have data in the engine database
     // # requirement setup outside of test scope
 
     // when I import all data

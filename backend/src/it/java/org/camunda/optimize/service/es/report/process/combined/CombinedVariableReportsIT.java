@@ -65,7 +65,7 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)

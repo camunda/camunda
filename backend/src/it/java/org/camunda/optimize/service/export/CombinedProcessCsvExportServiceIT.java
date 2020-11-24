@@ -35,7 +35,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedMapReport_missingFlowNodesAreAutomaticallyAdded() {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
@@ -63,7 +63,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedMapReport_missingVariablesAreAutomaticallyAdded() {
-    //given
+    // given
     Map<String, Object> variables = new HashMap<>();
     variables.put(VARIABLE_NAME, "val1");
     ProcessInstanceEngineDto processInstance1 =
@@ -96,7 +96,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedMapReport_useLabelsForResultIfAvailable() {
-    //given
+    // given
     // @formatter:off
     final BpmnModelInstance definition = Bpmn.createExecutableProcess("aProcess")
       .name("aProcess")
@@ -130,7 +130,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedDurationMapReportHasExpectedValue() {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     engineDatabaseExtension.changeAllActivityDurations(processInstance1.getId(), 0);
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
@@ -161,7 +161,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void theOrderOfTheReportsDoesMatter() {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
@@ -190,7 +190,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedNumberReportHasExpectedValue() {
-    //given
+    // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
@@ -219,7 +219,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedDurationNumberReportHasExpectedValue() {
-    //given
+    // given
     final OffsetDateTime startDate = OffsetDateTime.now();
     final OffsetDateTime endDate = startDate.plus(1, ChronoUnit.MILLIS);
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
@@ -251,7 +251,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedReportWithUnevaluatableReportProducesEmptyResult() {
-    //given
+    // given
     String singleReportId1 = reportClient.createEmptySingleProcessReportInCollection(null);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1);
     importAllEngineEntitiesFromScratch();
@@ -273,7 +273,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void combinedReportWithoutReportsProducesEmptyResult() {
-    //given
+    // given
     String combinedReportId = reportClient.createEmptyCombinedReport(null);
     importAllEngineEntitiesFromScratch();
 

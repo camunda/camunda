@@ -156,7 +156,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void updateReport(final ReportType reportType) {
-    //given
+    // given
     String id = addEmptyReportToOptimize(reportType);
 
     // when
@@ -169,7 +169,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void updateReportWithXml(final ReportType reportType) {
-    //given
+    // given
     String id = addEmptyReportToOptimize(reportType);
 
     // when
@@ -181,7 +181,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void getStoredPrivateReports_excludesNonPrivateReports() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     String privateDecisionReportId = reportClient.createEmptySingleDecisionReport();
     String privateProcessReportId = reportClient.createEmptySingleProcessReport();
@@ -201,7 +201,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void getStoredPrivateReports_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     reportClient.createEmptySingleProcessReport();
 
@@ -238,7 +238,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void getStoredReportsWithNameFromXml() {
-    //given
+    // given
     String idProcessReport = reportClient.createEmptySingleProcessReport();
     updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
     String idDecisionReport = reportClient.createEmptySingleDecisionReport();
@@ -274,7 +274,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void getStoredReportsWithNoNameFromXml() {
-    //given
+    // given
     final String idProcessReport = reportClient.createEmptySingleProcessReport();
     final SingleProcessReportDefinitionRequestDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
       createProcessDefinitionXmlWithName(null)
@@ -325,7 +325,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void getReport(final ReportType reportType) {
-    //given
+    // given
     String id = addEmptyReportToOptimize(reportType);
 
     // when
@@ -341,7 +341,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void getReport_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     String reportId = reportClient.createEmptySingleProcessReport();
 
@@ -413,7 +413,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void deleteReport(final ReportType reportType) {
-    //given
+    // given
     String id = addEmptyReportToOptimize(reportType);
 
     // when
@@ -438,7 +438,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
-    //given
+    // given
     String reportId = addEmptyReportToOptimize(reportType);
     DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     final String dashboardId = embeddedOptimizeExtension
@@ -474,7 +474,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollection();
     String reportId = addEmptyReportToOptimize(reportType, collectionId);
     alertClient.createAlertForReport(reportId);
@@ -505,7 +505,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
-    //given
+    // given
     String reportId = addEmptyReportToOptimize(reportType);
     ReportShareRestDto sharingDto = new ReportShareRestDto();
     sharingDto.setReportId(reportId);

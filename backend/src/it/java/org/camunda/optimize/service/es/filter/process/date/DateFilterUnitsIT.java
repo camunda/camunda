@@ -50,7 +50,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
         DateFilterType.ROLLING
       );
 
-    //then
+    // then
     assertResults(processInstance, result, 1);
   }
 
@@ -66,7 +66,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     List<ProcessFilterDto<?>> rollingStartDateFilter = createRollingStartDateFilter(DateFilterUnit.QUARTERS, 1L);
     reportData.setFilter(rollingStartDateFilter);
 
-    //then
+    // then
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
@@ -92,7 +92,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
         DateFilterType.RELATIVE
       );
 
-    //then
+    // then
     assertResults(processInstance, result, 0);
   }
 
@@ -117,7 +117,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
         DateFilterType.RELATIVE
       );
 
-    //then
+    // then
     assertResults(processInstance, result, 1);
   }
 

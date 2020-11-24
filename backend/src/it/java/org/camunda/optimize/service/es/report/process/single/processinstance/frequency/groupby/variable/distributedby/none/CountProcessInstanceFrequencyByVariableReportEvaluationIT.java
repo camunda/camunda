@@ -410,13 +410,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
@@ -475,13 +475,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
@@ -540,13 +540,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
@@ -1063,7 +1063,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1076,7 +1076,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1089,7 +1089,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1103,7 +1103,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1117,7 +1117,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

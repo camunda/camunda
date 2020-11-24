@@ -18,15 +18,15 @@ public class TenantImportIT extends AbstractImportIT {
 
   @Test
   public void tenantIsAvailable() {
-    //given
+    // given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenant";
     engineIntegrationExtension.createTenant(tenantId, tenantName);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -38,16 +38,16 @@ public class TenantImportIT extends AbstractImportIT {
 
   @Test
   public void importsAllTenantsEvenIfTotalAmountIsAboveMaxPageSize() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportTenantMaxPageSize(1);
     engineIntegrationExtension.createTenant("tenant1");
     engineIntegrationExtension.createTenant("tenant2");
     engineIntegrationExtension.createTenant("tenant3");
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(3L);
@@ -55,12 +55,12 @@ public class TenantImportIT extends AbstractImportIT {
 
   @Test
   public void tenantNameIsUpdatable() {
-    //given
+    // given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenan";
     engineIntegrationExtension.createTenant(tenantId, tenantName);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
     final String newTenantName = "My New Tenant";
@@ -68,7 +68,7 @@ public class TenantImportIT extends AbstractImportIT {
 
     importAllEngineEntitiesFromLastIndex();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);

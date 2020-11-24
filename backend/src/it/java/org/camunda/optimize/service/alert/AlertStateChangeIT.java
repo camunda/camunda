@@ -59,7 +59,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsSendEmailEveryTime() throws Exception {
-    //given
+    // given
     setEmailConfiguration();
     long daysToShift = 0L;
     long durationInSec = 2L;
@@ -70,7 +70,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     triggerAndCompleteCheckJob(id);
 
-    //when
+    // when
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);
 
@@ -78,20 +78,20 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
 
-    //when
+    // when
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);
 
-    //then
+    // then
     //reminder received twice
     emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
 
-    //when
+    // when
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteCheckJob(id);
 
-    //then
+    // then
     //reminder is not received
     emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(0);
@@ -167,7 +167,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void changeNotificationIsNotSentByDefault(MockServerClient client) throws Exception {
-    //given
+    // given
     setEmailConfiguration();
     setWebhookConfiguration();
     long daysToShift = 0L;
@@ -184,13 +184,13 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     triggerAndCompleteCheckJob(id);
 
-    //when
+    // when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
     greenMail.purgeEmailFromAllMailboxes();
     clearWebhookRequestsFromClient(client);
 
-    //then
+    // then
     triggerAndCompleteReminderJob(id);
 
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -200,7 +200,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void changeNotificationIsSent(MockServerClient client) throws Exception {
-    //given
+    // given
     setEmailConfiguration();
     setWebhookConfiguration();
 
@@ -221,14 +221,14 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     triggerAndCompleteCheckJob(alertId);
 
-    //when
+    // when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
 
     greenMail.purgeEmailFromAllMailboxes();
     clearWebhookRequestsFromClient(client);
     triggerAndCompleteReminderJob(alertId);
-    //then
+    // then
 
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -299,7 +299,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void notificationFormatsDurationThresholdCorrectly() throws Exception {
-    //given
+    // given
     setEmailConfiguration();
 
     long daysToShift = 0L;
@@ -331,7 +331,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void noNotificationIsSendIfResultIsNull() throws Exception {
-    //given
+    // given
     setEmailConfiguration();
 
     ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
@@ -351,7 +351,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Test
   public void alertsWorkForVariableReports() throws Exception {
-    //given
+    // given
     setEmailConfiguration();
 
     Map<String, Object> variables = new HashMap<>();

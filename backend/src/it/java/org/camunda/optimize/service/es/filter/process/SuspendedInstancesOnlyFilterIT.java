@@ -24,7 +24,7 @@ public class SuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void suspendedInstancesOnlyFilter() throws Exception {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());

@@ -51,7 +51,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks();
     assertThat(latestProcess.getProcessDefinitionVersion()).isEqualTo("2");
@@ -63,7 +63,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(4);
@@ -72,7 +72,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     ProcessInstanceEngineDto firstProcess = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks();
@@ -88,7 +88,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(4);
@@ -97,7 +97,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     deployProcessWithTwoTasks();
     ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
     assertThat(latestProcess.getProcessDefinitionVersion()).isEqualTo("2");
@@ -109,7 +109,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
@@ -118,7 +118,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     ProcessInstanceEngineDto firstProcess = deployProcessWithTwoTasks();
     deployProcessWithTwoTasks();
     ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
@@ -135,7 +135,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
@@ -144,7 +144,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void worksWithNullTenants() {
-    //given
+    // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
 
     importAllEngineEntitiesFromScratch();
@@ -155,7 +155,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
-    //then
+    // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
   }
@@ -571,7 +571,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   @Test
   public void importWithMi() throws Exception {
-    //given
+    // given
     final String subProcessKey = "testProcess";
     final String callActivity = "callActivity";
     final String testMIProcess = "testMIProcess";
@@ -612,12 +612,12 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
     assertThat(definitions).hasSize(2);
 
-    //when
+    // when
     ProcessReportDataDto reportData =
       createReport(testMIProcess, "1");
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(5);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(5L);
@@ -666,7 +666,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessReportDataDto dataDto = createReport("123", "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -679,7 +679,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessReportDataDto dataDto = createReport("123", "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -692,7 +692,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessReportDataDto dataDto = createReport("123", "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

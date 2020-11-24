@@ -185,12 +185,12 @@ public class TenantServiceIT extends AbstractIT {
     addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, DEFAULT_ENGINE_ALIAS));
     addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, DEFAULT_ENGINE_ALIAS));
 
-    //when
+    // when
     final List<TenantDto> tenantsForUser = embeddedOptimizeExtension.getTenantService().getTenantsForUserByEngine(
       tenantUserId, DEFAULT_ENGINE_ALIAS
     );
 
-    //then
+    // then
     assertThat(tenantsForUser).hasSize(2);
     assertThat(tenantsForUser.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
     assertThat(tenantsForUser.get(1).getId()).isEqualTo(storedTenantId1);
@@ -214,12 +214,12 @@ public class TenantServiceIT extends AbstractIT {
     addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, DEFAULT_ENGINE_ALIAS));
     addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, DEFAULT_ENGINE_ALIAS));
 
-    //when
+    // when
     final List<TenantDto> tenantsForUser = embeddedOptimizeExtension.getTenantService().getTenantsForUserByEngine(
       tenantUserId, DEFAULT_ENGINE_ALIAS
     );
 
-    //then
+    // then
     assertThat(tenantsForUser).hasSize(3);
     assertThat(tenantsForUser.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
     assertThat(tenantsForUser.get(1).getId()).isEqualTo(defaultTenantId);

@@ -520,7 +520,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     );
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -542,7 +542,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setUnit(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

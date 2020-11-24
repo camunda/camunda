@@ -75,7 +75,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
   @Test
   public void automaticIntervalSelectionTakesAllProcessInstancesIntoAccount() throws SQLException {
-    //given
+    // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());

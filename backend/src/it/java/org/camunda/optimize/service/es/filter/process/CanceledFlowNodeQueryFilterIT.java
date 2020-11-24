@@ -309,7 +309,7 @@ public class CanceledFlowNodeQueryFilterIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullValueField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> filterDtos = ProcessFilterBuilder
       .filter()
       .canceledFlowNodes()

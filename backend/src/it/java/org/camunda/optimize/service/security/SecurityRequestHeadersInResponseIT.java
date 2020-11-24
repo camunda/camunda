@@ -27,7 +27,7 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
     // given
     final CredentialsRequestDto entity = new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
-    //when
+    // when
     Response authResponse = embeddedOptimizeExtension.securedRootTarget()
       .path("api/authentication")
       .request()
@@ -36,14 +36,14 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
     // then
     defaultSecurityHeadersAreSet(authResponse);
 
-    //then
+    // then
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(authResponse.getHeaderString(STRICT_TRANSPORT_SECURITY)).isNotNull();
   }
 
   @Test
   public void responseContainsSecurityHeaders_http() {
-    //when
+    // when
     Response authResponse = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then

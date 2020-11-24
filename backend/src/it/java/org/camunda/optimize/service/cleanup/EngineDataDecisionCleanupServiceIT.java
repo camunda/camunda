@@ -44,11 +44,11 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanu
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoDecisionInstanceDataExists(decisionInstanceIds);
   }
 
@@ -63,11 +63,11 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanu
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     assertNoDecisionInstanceDataExists(instanceIdsToCleanup);
     assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
   }
@@ -91,7 +91,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanu
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

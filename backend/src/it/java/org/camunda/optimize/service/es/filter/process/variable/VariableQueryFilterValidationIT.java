@@ -23,7 +23,7 @@ public class VariableQueryFilterValidationIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullValueField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
       .booleanType()
@@ -41,7 +41,7 @@ public class VariableQueryFilterValidationIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullNumericValuesField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder
       .filter()
       .variable()
@@ -61,7 +61,7 @@ public class VariableQueryFilterValidationIT extends AbstractFilterIT {
 
   @Test
   public void validationExceptionOnNullNameField() {
-    //given
+    // given
     List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
       .booleanTrue()

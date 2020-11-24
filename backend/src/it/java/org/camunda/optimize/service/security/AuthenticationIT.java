@@ -27,37 +27,37 @@ public class AuthenticationIT extends AbstractIT {
 
   @Test
   public void authenticateUser() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
   public void authenticateUserIsByDefaultCaseSensitive() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(
       StringUtils.swapCase(KERMIT_USER),
       KERMIT_USER
     );
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   @SneakyThrows
   public void authenticateUserWithCaseInsensitiveAuthenticationBackend() {
-    //given
+    // given
     final String actualUserId = KERMIT_USER;
     final String allUpperCaseUserId = actualUserId.toUpperCase();
     engineIntegrationExtension.addUser(actualUserId, actualUserId);
@@ -70,10 +70,10 @@ public class AuthenticationIT extends AbstractIT {
       allUpperCaseUserId, actualUserId
     );
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(allUpperCaseUserId, actualUserId);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final String authenticationToken = response.readEntity(String.class);
     // here the actualUserId should be present, regardless of how the user logged in
@@ -84,37 +84,37 @@ public class AuthenticationIT extends AbstractIT {
 
   @Test
   public void rejectLockedUser() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
-    //when
+    // when
     embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrongPassword");
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void rejectWrongPassword() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrong");
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void rejectUnknownUser() {
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
@@ -130,11 +130,11 @@ public class AuthenticationIT extends AbstractIT {
 
   @Test
   public void securingRestApiWorksWithProxy() {
-    //given
+    // given
     addAdminUserAndGrantAccessPermission();
     String token = authenticateAdminUser();
 
-    //when
+    // when
     Response testResponse =
       embeddedOptimizeExtension
         .getRequestExecutor()
@@ -144,7 +144,7 @@ public class AuthenticationIT extends AbstractIT {
         .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
         .execute();
 
-    //then
+    // then
     assertThat(testResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = testResponse.readEntity(String.class);
     assertThat(responseEntity).isEqualTo(Response.Status.OK.name());
@@ -160,7 +160,7 @@ public class AuthenticationIT extends AbstractIT {
       .withIssuer("admin")
       .sign(algorithm);
 
-    //when
+    // when
     Response logoutResponse =
       embeddedOptimizeExtension
         .getRequestExecutor()
@@ -168,7 +168,7 @@ public class AuthenticationIT extends AbstractIT {
         .withGivenAuthToken(selfGeneratedEvilToken)
         .execute();
 
-    //then
+    // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
@@ -181,7 +181,7 @@ public class AuthenticationIT extends AbstractIT {
       .withIssuer("admin")
       .sign(algorithm);
 
-    //when
+    // when
     Response logoutResponse =
       embeddedOptimizeExtension
         .getRequestExecutor()

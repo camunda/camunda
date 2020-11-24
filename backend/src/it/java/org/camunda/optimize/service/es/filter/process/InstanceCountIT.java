@@ -45,7 +45,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
   @SneakyThrows
   @Test
   public void instanceCountWithoutFilters_processReport() {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deploySimpleOneUserTasksDefinition();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());

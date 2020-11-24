@@ -47,7 +47,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void hyperMapFrequencyReportHasExpectedValue() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
@@ -72,7 +72,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void hyperMapDurationReportHasExpectedValue() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
@@ -99,7 +99,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
   @Test
   public void reportWithEmptyResultProducesEmptyCsv() {
-    //given
+    // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     importAllEngineEntitiesFromScratch();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
