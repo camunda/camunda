@@ -13,12 +13,14 @@ import static io.zeebe.tasklist.webapp.security.TasklistURIs.ROOT_URL;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
+import io.zeebe.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,6 +78,8 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   /** Key for claim to retrieve the user name */
   private String nameKey = "name";
 
+  @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
+
   @Bean
   public AuthenticationController authenticationController() throws UnsupportedEncodingException {
     return AuthenticationController.newBuilder(domain, clientId, clientSecret).build();
@@ -93,6 +97,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::authenticationEntry);
+    oAuth2WebConfigurer.configure(http);
   }
 
   protected void authenticationEntry(

@@ -1,0 +1,95 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package io.zeebe.tasklist.webapp.security.oauth;
+
+import static io.zeebe.tasklist.util.CollectionUtil.firstOrDefault;
+import static io.zeebe.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+
+import io.zeebe.tasklist.property.ClientProperties;
+import io.zeebe.tasklist.property.TasklistProperties;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OAuth2WebConfigurer {
+
+  public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI =
+      "spring.security.oauth2.resourceserver.jwt.issuer-uri";
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2WebConfigurer.class);
+
+  @Autowired private Environment env;
+
+  @Autowired private TasklistProperties config;
+
+  private final CustomJwtAuthenticationConverter jwtConverter =
+      new CustomJwtAuthenticationConverter();
+
+  public void configure(HttpSecurity http) throws Exception {
+    if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI)) {
+      http.oauth2ResourceServer(
+          serverCustomizer ->
+              serverCustomizer.jwt(
+                  jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
+      LOGGER.info(
+          "Enable OAuth2 JWT access to GraphQL API with issuer-uri {}",
+          env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI));
+    }
+  }
+
+  class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    public static final String AUDIENCE = "aud";
+    public static final String SCOPE = "scope";
+
+    private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
+
+    @Override
+    public AbstractAuthenticationToken convert(@NotNull final Jwt jwt) {
+      final JwtAuthenticationToken auth = (JwtAuthenticationToken) delegate.convert(jwt);
+      final Map<String, Object> payload = auth.getTokenAttributes();
+      if (isValid(payload)) {
+        return auth;
+      }
+      return null;
+    }
+
+    private boolean isValid(final Map<String, Object> payload) {
+      try {
+        final String audience = getAudience(payload);
+        final String scope = getScope(payload);
+        final ClientProperties clientConfig = config.getClient();
+        return clientConfig.getAudience().equals(audience)
+            && clientConfig.getClusterId().equals(scope);
+      } catch (Exception e) {
+        LOGGER.warn("Validation of JWT payload failed. Request is not authenticated.");
+        return false;
+      }
+    }
+
+    private String getScope(final Map<String, Object> payload) {
+      return (String) payload.get(SCOPE);
+    }
+
+    private String getAudience(final Map<String, Object> payload) {
+      return firstOrDefault(
+          (List<String>) getOrDefaultFromMap(payload, AUDIENCE, Collections.emptyList()), null);
+    }
+  }
+}

@@ -57,6 +57,8 @@ public class TasklistProperties {
 
   @NestedConfigurationProperty private ArchiverProperties archiver = new ArchiverProperties();
 
+  @NestedConfigurationProperty private ClientProperties client = new ClientProperties();
+
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
 
@@ -186,5 +188,13 @@ public class TasklistProperties {
 
   public void setPreviousSchemaVersion(String previousSchemaVersion) {
     this.previousSchemaVersion = previousSchemaVersion;
+  }
+
+  public ClientProperties getClient() {
+    return client;
+  }
+
+  public void setClient(final ClientProperties client) {
+    this.client = client;
   }
 }

@@ -67,6 +67,10 @@ public abstract class CollectionUtil {
     return key == null ? defaultValue : map.getOrDefault(key, defaultValue);
   }
 
+  public static <T> T firstOrDefault(List<T> list, T defaultValue) {
+    return list.isEmpty() ? defaultValue : list.get(0);
+  }
+
   public static <S, T> List<T> map(Collection<S> sourceList, Function<S, T> mapper) {
     return map(sourceList.stream(), mapper);
   }

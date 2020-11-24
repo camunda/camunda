@@ -8,7 +8,6 @@ package io.zeebe.tasklist.webapp.security;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.ERROR_URL;
-import static io.zeebe.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.RESPONSE_CHARACTER_ENCODING;
@@ -20,6 +19,7 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.json.Json;
@@ -56,6 +56,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private UserDetailsService userDetailsService;
 
+  @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
+
   @Override
   public void configure(AuthenticationManagerBuilder builder) throws Exception {
     builder.userDetailsService(userDetailsService);
@@ -75,7 +77,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http.authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers(GRAPHQL_URL, ERROR_URL)
+        .antMatchers(ERROR_URL)
         .authenticated()
         .and()
         .formLogin()
@@ -93,6 +95,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
+    oAuth2WebConfigurer.configure(http);
   }
 
   private void logoutSuccessHandler(

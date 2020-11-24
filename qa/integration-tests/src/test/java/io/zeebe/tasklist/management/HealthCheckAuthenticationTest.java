@@ -14,6 +14,7 @@ import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import io.zeebe.tasklist.webapp.security.WebSecurityConfig;
+import io.zeebe.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,8 @@ public class HealthCheckAuthenticationTest {
   @Autowired private TestRestTemplate testRestTemplate;
 
   @MockBean private ElsIndicesHealthIndicator probes;
+
+  @MockBean private OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Test
   public void testHealthStateEndpointIsNotSecured() {
