@@ -98,6 +98,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
@@ -110,8 +111,6 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.DEFAULT_TOPIC;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @Slf4j
 public class SimpleEngineClient {
@@ -999,7 +998,7 @@ public class SimpleEngineClient {
         objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
         });
       response.close();
-      assertThat(procDefs.size(), is(1));
+      assertThat(procDefs).hasSize(1);
       return procDefs.get(0).getId();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not fetch the process definition!", e);
@@ -1012,7 +1011,7 @@ public class SimpleEngineClient {
                                                                      String tenantId) {
     final DeploymentDto deployment = deployProcess(bpmnModelInstance, tenantId);
     final List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
-    assertThat(procDefs.size(), is(1));
+    assertThat(procDefs).hasSize(1);
     final ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
     final ProcessInstanceEngineDto processInstanceDto = startProcessInstance(
       processDefinitionEngineDto.getId(), variables, businessKey
@@ -1404,7 +1403,8 @@ public class SimpleEngineClient {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(
       deployment, client
     );
-    assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
+    assertThat(processDefinitions)
+      .withFailMessage("Deployment should contain only one process definition!").hasSize(1);
     return processDefinitions.get(0);
   }
 
@@ -1990,7 +1990,7 @@ public class SimpleEngineClient {
         new StringEntity(objectMapper.writeValueAsString(authorizationDto), ContentType.APPLICATION_JSON)
       );
       CloseableHttpResponse response = client.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.OK.getStatusCode()));
+      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(Response.Status.OK.getStatusCode());
       response.close();
     } catch (IOException e) {
       log.error("Could not create authorization", e);
@@ -2015,7 +2015,7 @@ public class SimpleEngineClient {
 
         httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(values), ContentType.APPLICATION_JSON));
         CloseableHttpResponse response = client.execute(httpPost);
-        assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.OK.getStatusCode()));
+        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(Response.Status.OK.getStatusCode());
         response.close();
       } catch (Exception e) {
         log.error("error creating authorization", e);
@@ -2036,7 +2036,7 @@ public class SimpleEngineClient {
 
       httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = client.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.NO_CONTENT.getStatusCode()));
+      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       response.close();
     } catch (Exception e) {
       log.error("error creating group", e);
@@ -2050,7 +2050,7 @@ public class SimpleEngineClient {
 
       put.setEntity(new StringEntity("", ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = client.execute(put);
-      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.NO_CONTENT.getStatusCode()));
+      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       response.close();
     } catch (Exception e) {
       log.error("error creating group members", e);

@@ -64,7 +64,33 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void getEventProcessMappingWithoutAuthorization() {
+  public void updateEventProcessMappingWithoutAuthentication() {
+    // when
+    EventProcessMappingDto updateDto =
+      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
+      .withoutAuthentication()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void deleteEventProcessMappingWithoutAuthentication() {
+    // when
+    Response response = eventProcessClient
+      .createDeleteEventProcessMappingRequest("doesNotMatter")
+      .withoutAuthentication()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void getEventProcessMappingWithoutAuthentication() {
     // when
     Response response = eventProcessClient.createGetEventProcessMappingRequest(IdGenerator.getNextId())
       .withoutAuthentication()
@@ -72,6 +98,67 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void getAllEventProcessMappingWithoutAuthentication() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetAllEventProcessMappingsRequests()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void createEventProcessMappingWithoutAuthorization() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessAccessUserIds().clear();
+
+    // when
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(
+        eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void updateEventProcessMappingWithoutAuthorization() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessAccessUserIds().clear();
+    
+    // when
+    EventProcessMappingDto updateDto =
+      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void deleteEventProcessMappingWithoutAuthorization() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessAccessUserIds().clear();
+
+    // when
+    Response response = eventProcessClient
+      .createDeleteEventProcessMappingRequest("doesNotMatter")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -120,19 +207,6 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  @Test
-  public void getAllEventProcessMappingWithoutAuthorization() {
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetAllEventProcessMappingsRequests()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -190,32 +264,6 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     // then only mappings where the user has authorization to see all event sources are returned
     assertThat(allMappings).hasSize(1);
     assertThat(allMappings.get(0).getId()).isEqualTo(expectedId);
-  }
-
-  @Test
-  public void updateEventProcessMappingWithoutAuthorization() {
-    // when
-    EventProcessMappingDto updateDto =
-      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
-    Response response = eventProcessClient
-      .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
-      .withoutAuthentication()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void deleteEventProcessMappingWithoutAuthorization() {
-    // when
-    Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest("doesNotMatter")
-      .withoutAuthentication()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test

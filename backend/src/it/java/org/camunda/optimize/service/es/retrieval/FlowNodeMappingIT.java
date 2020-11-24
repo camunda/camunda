@@ -17,13 +17,10 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FlowNodeMappingIT extends AbstractIT {
+
   private static final String A_START = "aStart";
   private static final String A_TASK = "aTask";
   private static final String AN_END = "anEnd";
@@ -34,7 +31,8 @@ public class FlowNodeMappingIT extends AbstractIT {
   public void mapFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
@@ -45,13 +43,10 @@ public class FlowNodeMappingIT extends AbstractIT {
     FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getFlowNodeNames(), is(notNullValue()));
+    assertThat(result).isNotNull();
+    assertThat(result.getFlowNodeNames()).isNotNull();
 
-    assertThat(result.getFlowNodeNames().values().size(), is(3));
-    assertThat(result.getFlowNodeNames().values().contains(A_START), is(true));
-    assertThat(result.getFlowNodeNames().values().contains(A_TASK), is(true));
-    assertThat(result.getFlowNodeNames().values().contains(AN_END), is(true));
+    assertThat(result.getFlowNodeNames()).hasSize(3).containsValues(A_START, A_TASK, AN_END);
   }
 
   private BpmnModelInstance getNamedBpmnModelInstance() {
@@ -73,7 +68,8 @@ public class FlowNodeMappingIT extends AbstractIT {
   public void mapFilteredFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      modelInstance);
     importAllEngineEntitiesFromScratch();
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
 
@@ -89,10 +85,9 @@ public class FlowNodeMappingIT extends AbstractIT {
     FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getFlowNodeNames(), is(notNullValue()));
+    assertThat(result).isNotNull();
+    assertThat(result.getFlowNodeNames()).isNotNull();
 
-    assertThat(result.getFlowNodeNames().values().size(), is(1));
-    assertThat(result.getFlowNodeNames().values().contains(A_START), is(true));
+    assertThat(result.getFlowNodeNames()).hasSize(1).containsValue(A_START);
   }
 }
