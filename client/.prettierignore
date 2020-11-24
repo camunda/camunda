@@ -8,3 +8,4 @@ coverage/
 **/*.xml
 src/fonts/
 yarn.lock
+.eslintcache
