@@ -47,7 +47,7 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_VARIABLE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
@@ -114,7 +114,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     return filter(PARENT_FILTER_AGGREGATION, matchAllQuery())
       .subAggregation(createUndefinedOrNullVariableAggregation(context))
       .subAggregation(
-        nested(NESTED_AGGREGATION, VARIABLES)
+        nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
           .subAggregation(
             filter(
               FILTERED_VARIABLES_AGGREGATION,
@@ -146,7 +146,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       return Collections.emptyList();
     }
 
-    final Nested nested = parentFilterAgg.getAggregations().get(NESTED_AGGREGATION);
+    final Nested nested = parentFilterAgg.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
     if (filteredParentAgg == null) {
@@ -202,7 +202,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     final VariableType type = getVariableType(context);
     if (!VariableType.getNumericTypes().contains(type)) {
       // missing distrBy keys evaluation only required if it's not a range (number var) aggregation
-      final ParsedNested nestedAgg = parentFilterAgg.getAggregations().get(NESTED_AGGREGATION);
+      final ParsedNested nestedAgg = parentFilterAgg.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
       final ParsedFilter filteredVarAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
       if (VariableType.DATE.equals(type)) {
         final ParsedFilter filterLimitedAgg = filteredVarAgg.getAggregations().get(FILTER_LIMITED_AGGREGATION);
