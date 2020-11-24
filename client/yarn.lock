@@ -3098,7 +3098,7 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@testing-library/dom@^7.2.2", "@testing-library/dom@^7.27.1":
+"@testing-library/dom@^7.27.1":
   version "7.28.0"
   resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-7.28.0.tgz#4d68a39675dbf0fa2f3c53bc2b9ab9e1dd1d55b2"
   integrity sha512-jY9wE3eF/fjrxUCC1VTCnMWE/g+aCP582Df4H6H9wQYY0yLglyevTO7TET9pgg0w9Yzm8n7ck0Hxzi18pN5+4w==
@@ -3134,12 +3134,12 @@
     "@babel/runtime" "^7.12.5"
     "@testing-library/dom" "^7.27.1"
 
-"@testing-library/testcafe@^4.2.3":
-  version "4.2.3"
-  resolved "https://registry.yarnpkg.com/@testing-library/testcafe/-/testcafe-4.2.3.tgz#a46b8aea2b5eb8cbebaca5f8461a6f70296143b1"
-  integrity sha512-g1qRX5KQ2+TG/p63kRaoAZ9LTGqt8Qv1dJbOmySjax8Ik2ml1tU4hxu8PVay05LTLJgR59F0pX3sfIOHg5Hi6g==
+"@testing-library/testcafe@^4.3.1":
+  version "4.3.1"
+  resolved "https://registry.yarnpkg.com/@testing-library/testcafe/-/testcafe-4.3.1.tgz#327b401381ca019828b58beb9621dd58695393ee"
+  integrity sha512-PMoO9sGTQ/aTBsxEfzj/CLqAY84FJG3/03GBPbPcwt7pnVQaIc9bo8hoyVCMhNt0D5nN+ybQ0hznnQgn9Tw7Nw==
   dependencies:
-    "@testing-library/dom" "^7.2.2"
+    "@testing-library/dom" "^7.27.1"
 
 "@testing-library/user-event@^12.2.2":
   version "12.2.2"
