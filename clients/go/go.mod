@@ -26,5 +26,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
 	google.golang.org/grpc v1.33.2
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
