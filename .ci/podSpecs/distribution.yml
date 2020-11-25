@@ -25,11 +25,11 @@ spec:
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 8
-          memory: 8Gi
+          cpu: 12
+          memory: 24Gi
         requests:
-          cpu: 8
-          memory: 8Gi
+          cpu: 10
+          memory: 16Gi
       securityContext:
         privileged: true
     - name: maven-jdk8
@@ -48,8 +48,8 @@ spec:
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
         requests:
           cpu: 2
           memory: 4Gi
@@ -61,11 +61,11 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 4
-          memory: 4Gi
+          cpu: 6
+          memory: 12Gi
         requests:
           cpu: 4
-          memory: 4Gi
+          memory: 8Gi
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
@@ -86,8 +86,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 8
-          memory: 8Gi
+          cpu: 12
+          memory: 24Gi
         requests:
           cpu: 8
-          memory: 8Gi
+          memory: 16Gi

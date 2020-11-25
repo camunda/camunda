@@ -30,11 +30,11 @@ spec:
           value: /home/shared
       resources:
         limits:
-          cpu: 4
-          memory: 4Gi
+          cpu: 8
+          memory: 16Gi
         requests:
           cpu: 4
-          memory: 4Gi
+          memory: 8Gi
       securityContext:
         privileged: true
       volumeMounts:
@@ -56,11 +56,11 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 8
-          memory: 8Gi
+          cpu: 16
+          memory: 32Gi
         requests:
-          cpu: 8
-          memory: 8Gi
+          cpu: 12
+          memory: 16Gi
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
