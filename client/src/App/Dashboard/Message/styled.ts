@@ -11,7 +11,11 @@ import {ReactComponent as Warning} from 'modules/components/Icon/warning.svg';
 const CheckIcon = styled(Check)``;
 const WarningIcon = styled(Warning)``;
 
-const Container = styled.div`
+type Props = {
+  $variant: 'default' | 'success' | 'error';
+};
+
+const Container = styled.div<Props>`
   ${({theme, $variant = 'default'}) => {
     const colors = theme.colors.dashboard.message;
 

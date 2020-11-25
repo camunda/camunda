@@ -9,6 +9,7 @@ import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
+// @ts-expect-error
 import MutationObserver from '@sheerun/mutationobserver-shim';
 import {mockServer} from 'modules/mockServer';
 
@@ -28,16 +29,17 @@ global.beforeEach(() => {
   });
 });
 
+// @ts-expect-error
 global.localStorage = (function () {
-  var store = {};
+  let store: {[key: string]: string} = {};
   return {
-    getItem: function (key) {
+    getItem(key: string) {
       return store[key];
     },
-    setItem: function (key, value) {
-      store[key] = value.toString();
+    setItem(key: string, value: string) {
+      store[key] = value;
     },
-    clear: function () {
+    clear() {
       store = {};
     },
     removeItem: jest.fn(),

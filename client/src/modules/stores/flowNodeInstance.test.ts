@@ -73,7 +73,7 @@ describe('stores/flowNodeInstance', () => {
   it('should poll if current instance is running', async () => {
     jest.useFakeTimers();
     currentInstanceStore.setCurrentInstance(currentInstanceMock);
-    flowNodeInstanceStore.init(1);
+    flowNodeInstanceStore.init();
 
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.response).toEqual(

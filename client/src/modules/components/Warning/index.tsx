@@ -4,18 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {PropTypes} from 'prop-types';
 import React from 'react';
 import {WarningIcon, Container} from './styled';
 
-const Warning = ({title, ...props}) => (
-  <Container title={title} {...props}>
+type Props = {
+  title?: string;
+  className?: string;
+};
+
+const Warning: React.FC<Props> = ({title, className}) => (
+  <Container title={title} className={className}>
     <WarningIcon>!</WarningIcon>
   </Container>
 );
-
-Warning.propTypes = {
-  title: PropTypes.string,
-};
 
 export {Warning};

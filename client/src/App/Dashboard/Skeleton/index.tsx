@@ -9,17 +9,15 @@ import {Block, Container} from './styled';
 
 const SKELETON_ROW_HEIGHT = 55;
 
-function Skeleton() {
+const Skeleton: React.FC = () => {
   const [numberOfRows, setNumberOfRows] = useState(0);
-  const skeletonRef = useRef(null);
+  const skeletonRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    const element = skeletonRef.current;
+    const {clientHeight} = skeletonRef.current?.parentNode as Element;
 
-    if (element !== null) {
-      setNumberOfRows(
-        Math.floor(element.parentNode.clientHeight / SKELETON_ROW_HEIGHT)
-      );
+    if (clientHeight !== undefined) {
+      setNumberOfRows(Math.floor(clientHeight / SKELETON_ROW_HEIGHT));
     }
   }, []);
 
@@ -30,6 +28,6 @@ function Skeleton() {
       ))}
     </Container>
   );
-}
+};
 
 export {Skeleton};

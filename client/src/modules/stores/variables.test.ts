@@ -71,10 +71,10 @@ describe('stores/variables', () => {
   });
 
   it('should remove variables with active operations if instance is canceled', async () => {
-    variablesStore.init();
+    variablesStore.init(1);
     await Promise.all([
       variablesStore.fetchVariables(1),
-      variablesStore.addVariable(1, 'test', '1'),
+      variablesStore.addVariable('1', 'test', '1'),
     ]);
 
     expect(variablesStore.state.items).toEqual([
@@ -90,7 +90,7 @@ describe('stores/variables', () => {
   });
 
   it('should poll variables when instance is running', async () => {
-    variablesStore.init();
+    variablesStore.init(1);
 
     jest.useFakeTimers();
     currentInstanceStore.setCurrentInstance({id: '123', state: 'ACTIVE'});
@@ -220,7 +220,7 @@ describe('stores/variables', () => {
   });
 
   it('should fetch variables', async () => {
-    variablesStore.fetchVariables();
+    variablesStore.fetchVariables(1);
     expect(variablesStore.state.isLoading).toBe(true);
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(mockVariables)
@@ -230,7 +230,7 @@ describe('stores/variables', () => {
 
   it('should add variable', async () => {
     expect(variablesStore.state.items).toEqual([]);
-    await variablesStore.addVariable(1, 'test', '1');
+    await variablesStore.addVariable('1', 'test', '1');
     expect(variablesStore.state.items).toEqual([
       {name: 'test', value: '1', hasActiveOperation: true},
     ]);
@@ -242,7 +242,7 @@ describe('stores/variables', () => {
       )
     );
 
-    await variablesStore.addVariable(1, 'test2', '"value"');
+    await variablesStore.addVariable('1', 'test2', '"value"');
     expect(variablesStore.state.items).toEqual([
       {name: 'test', value: '1', hasActiveOperation: true},
       {name: 'test2', value: '"value"', hasActiveOperation: true},
@@ -252,7 +252,7 @@ describe('stores/variables', () => {
   it('should update variable', async () => {
     await variablesStore.fetchVariables(1);
     expect(variablesStore.state.items).toEqual(mockVariables);
-    await variablesStore.updateVariable(1, 'mwst', '65');
+    await variablesStore.updateVariable('1', 'mwst', '65');
     expect(variablesStore.state.items).toEqual([
       {
         name: 'mwst',
@@ -284,7 +284,7 @@ describe('stores/variables', () => {
       )
     );
 
-    await variablesStore.updateVariable(1, 'paid', 'false');
+    await variablesStore.updateVariable('1', 'paid', 'false');
     expect(variablesStore.state.items).toEqual([
       {
         name: 'mwst',
@@ -319,7 +319,7 @@ describe('stores/variables', () => {
   it('should get hasActiveOperation', async () => {
     await variablesStore.fetchVariables(1);
     expect(variablesStore.hasActiveOperation).toBe(false);
-    await variablesStore.addVariable(1, 'test', '1');
+    await variablesStore.addVariable('1', 'test', '1');
     expect(variablesStore.hasActiveOperation).toBe(true);
   });
 
@@ -381,7 +381,7 @@ describe('stores/variables', () => {
 
     await variablesStore.fetchVariables(1);
     expect(variablesStore.state.items).toEqual(mockVariables);
-    await variablesStore.addVariable(1, 'test1', '123');
+    await variablesStore.addVariable('1', 'test1', '123');
 
     mockServer.use(
       rest.post(
@@ -390,7 +390,7 @@ describe('stores/variables', () => {
       )
     );
 
-    await variablesStore.updateVariable(1, 'paid', 'false');
+    await variablesStore.updateVariable('1', 'paid', 'false');
 
     mockServer.use(
       rest.get(

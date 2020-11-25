@@ -36,7 +36,7 @@ describe('stores/events', () => {
   it('should poll if current instance is running', async () => {
     jest.useFakeTimers();
     currentInstanceStore.setCurrentInstance(currentInstanceMock);
-    eventsStore.init(1);
+    eventsStore.init();
 
     await waitFor(() => expect(eventsStore.state.items).toEqual(eventsMock));
 
@@ -75,7 +75,7 @@ describe('stores/events', () => {
   });
 
   it('should reset store', async () => {
-    await eventsStore.fetchWorkflowEvents(1);
+    await eventsStore.fetchWorkflowEvents('1');
     expect(eventsStore.state.items).toEqual(eventsMock);
     eventsStore.reset();
     expect(eventsStore.state.items).toEqual([]);

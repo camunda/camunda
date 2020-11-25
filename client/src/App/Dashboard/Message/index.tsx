@@ -6,10 +6,15 @@
 
 import React from 'react';
 import styled from 'styled-components';
-import PropTypes from 'prop-types';
 import {Container, CheckIcon, WarningIcon} from './styled';
 
-const Message = styled(({children, variant, className}) => {
+type Props = {
+  variant: 'default' | 'success' | 'error';
+  className?: string;
+  children: React.ReactNode;
+};
+
+const Message = styled<React.FC<Props>>(({children, variant, className}) => {
   return (
     <Container $variant={variant} className={className}>
       {variant === 'success' && <CheckIcon />}
@@ -18,11 +23,5 @@ const Message = styled(({children, variant, className}) => {
     </Container>
   );
 })``;
-
-Message.propTypes = {
-  children: PropTypes.node.isRequired,
-  variant: PropTypes.oneOf(['default', 'error', 'success']).isRequired,
-  className: PropTypes.string,
-};
 
 export {Message};
