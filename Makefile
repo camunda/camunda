@@ -22,9 +22,6 @@ env-ldap-up:
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:
-ifndef CAMUNDA_OPERATE_AUTH0_CLIENTSECRET
-$(error Environment variable 'CAMUNDA_OPERATE_AUTH0_CLIENTSECRET' is not set)
-endif
 	@docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_AUTH0_BACKENDDOMAIN=camunda-dev.eu.auth0.com \
