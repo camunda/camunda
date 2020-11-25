@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableMap.of;
 import static com.google.common.collect.Lists.newArrayList;
@@ -1754,23 +1753,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isEmpty();
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    return deployAndStartSimpleProcesses(variables).get(0);
-  }
-
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    return IntStream.range(0, 1)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto =
-          engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
-  }
+//  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
+//    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+//      getSingleServiceTaskProcess());
+//    ProcessInstanceEngineDto processInstanceEngineDto =
+//      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+//    processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+//    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+//    return processInstanceEngineDto;
+//  }
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
                                                     String processDefinitionId,

@@ -49,7 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableMap.of;
 import static com.google.common.collect.Lists.newArrayList;
@@ -61,7 +60,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.group.Aggreg
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -1238,25 +1236,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    return deployAndStartSimpleProcesses(1, variables).get(0);
-  }
-
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number, Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
-      .deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
-
-    return IntStream.range(0, number)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto =
-          engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,

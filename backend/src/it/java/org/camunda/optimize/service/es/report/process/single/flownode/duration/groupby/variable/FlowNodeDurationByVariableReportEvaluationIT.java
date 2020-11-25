@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.variable;
+package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.variable;
 
 import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
@@ -41,13 +41,14 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void simpleReportEvaluation_stringVariable() {
     // given
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("stringVar", "aStringValue"));
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -66,7 +67,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("stringVar");
@@ -79,7 +80,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(4.);
+      .isEqualTo(10.);
   }
 
   @Test
@@ -87,6 +88,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     // given
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("doubleVar", 1.0));
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -105,7 +107,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(4.);
+      .isEqualTo(10.);
   }
 
   @Test
@@ -114,20 +116,29 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 100.0);
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    final ProcessInstanceEngineDto procInst1 = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(procInst1, 10.);
 
     variables.put(varName, 200.0);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    final ProcessInstanceEngineDto procInst2 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(),
+      variables
+    );
+    changeActivityDuration(procInst2, 10.);
 
     variables.put(varName, 300.0);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    final ProcessInstanceEngineDto procInst3 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(),
+      variables
+    );
+    changeActivityDuration(procInst3, 10.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
+      procInst1.getProcessDefinitionKey(),
+      procInst1.getProcessDefinitionVersion(),
       "doubleVar",
       VariableType.DOUBLE
     );
@@ -141,9 +152,9 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     assertThat(resultData)
       .extracting(MapResultEntryDto::getKey)
       .containsExactly("10.00", "110.00", "210.00");
-    assertThat(resultData.get(0).getValue()).isEqualTo(4L);
-    assertThat(resultData.get(1).getValue()).isEqualTo(4L);
-    assertThat(resultData.get(2).getValue()).isEqualTo(4L);
+    assertThat(resultData.get(0).getValue()).isEqualTo(10.);
+    assertThat(resultData.get(1).getValue()).isEqualTo(10.);
+    assertThat(resultData.get(2).getValue()).isEqualTo(10.);
   }
 
   @ParameterizedTest
@@ -154,14 +165,16 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
     OffsetDateTime dateVarValue = OffsetDateTime.parse("2020-06-15T00:00:00+01:00");
 
-    final ProcessInstanceEngineDto processInstanceDto =
+    ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("dateVar", dateVarValue));
+    changeActivityDuration(processInstanceDto, 10.);
 
     for (int i = 1; i < numberOfInstances; i++) {
-      engineIntegrationExtension.startProcessInstance(
+      final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(),
         Collections.singletonMap("dateVar", dateVarValue.plus(i, chronoUnit))
       );
+      changeActivityDuration(instance, 10.);
     }
 
     importAllEngineEntitiesFromScratch();
@@ -189,7 +202,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
         .isPresent()
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(4.);
+        .isEqualTo(10.);
     }
   }
 
@@ -199,14 +212,16 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     final int numberOfInstances = 3;
     OffsetDateTime dateVarValue = OffsetDateTime.parse("2020-06-15T00:00:00+01:00");
 
-    final ProcessInstanceEngineDto processInstanceDto =
+    ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("dateVar", dateVarValue));
+    changeActivityDuration(processInstanceDto, 10.);
 
     for (int i = 1; i < numberOfInstances; i++) {
-      engineIntegrationExtension.startProcessInstance(
+      final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(),
         Collections.singletonMap("dateVar", dateVarValue.plusMinutes(i))
       );
+      changeActivityDuration(instance, 10.);
     }
 
     importAllEngineEntitiesFromScratch();
@@ -236,54 +251,65 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
-      .isEqualTo(4.0 * numberOfInstances); // each instance went through 4 flownodes
+    assertThat(result.getData().stream()
+                 .filter(entry -> entry.getValue() != null)
+                 .mapToDouble(MapResultEntryDto::getValue)
+                 .sum())
+      .isEqualTo(10. * numberOfInstances); // each instance has a duration of 10
   }
 
   @Test
   public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
     // given
     // 1 process instance with 'testVar'
-    ProcessInstanceEngineDto processInstanceDto =
+    final ProcessInstanceEngineDto procInst1 =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("testVar", "withValue"));
+    changeActivityDuration(procInst1, 10.);
 
     // 4 process instances without 'testVar'
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineIntegrationExtension.startProcessInstance(
-      processInstanceDto.getDefinitionId(),
+    final ProcessInstanceEngineDto procInst2 =
+      engineIntegrationExtension.startProcessInstance(procInst1.getDefinitionId());
+    changeActivityDuration(procInst2, 20.);
+
+    final ProcessInstanceEngineDto procInst3 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(),
       Collections.singletonMap("testVar", null)
     );
-    engineIntegrationExtension.startProcessInstance(
-      processInstanceDto.getDefinitionId(),
+    changeActivityDuration(procInst3, 20.);
+
+    final ProcessInstanceEngineDto procInst4 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(),
       Collections.singletonMap("testVar", new EngineVariableValue(null, "String"))
     );
-    engineIntegrationExtension.startProcessInstance(
-      processInstanceDto.getDefinitionId(),
+    changeActivityDuration(procInst4, 20.);
+
+    final ProcessInstanceEngineDto procInst5 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(),
       Collections.singletonMap("differentStringValue", "test")
     );
+    changeActivityDuration(procInst5, 20.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
+      procInst1.getProcessDefinitionKey(),
+      procInst1.getProcessDefinitionVersion(),
       "testVar",
       VariableType.STRING
     );
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    // then the instance withValue has passed through 4 flownodes and the 4 instances without the variable
-    // have passed through 16 flownodes (4 flownodes each)
+    // then the instance withValue has a duration of 10 and the 4 missing instances each have a duration of 20
     assertThat(result.getData()).isNotNull().hasSize(2);
     assertThat(result.getEntryForKey("withValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(4.);
+      .isEqualTo(10.);
     assertThat(result.getEntryForKey("missing")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(16.);
+      .isEqualTo(20.);
   }
 
   @Test
@@ -293,8 +319,10 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       "stringVar",
       "aStringValue"
     );
-    deployAndStartSimpleProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
     final ProcessInstanceEngineDto latestProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(latestProcess, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -307,12 +335,12 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     );
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    // then the result counts 2 flownodes from first definition plus 4 flownodes of the latest definition
+    // then the result takes into account both processes (average duration both processes = 70)
     assertThat(result.getData()).isNotNull().hasSize(1);
     assertThat(result.getEntryForKey("aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(6.);
+      .isEqualTo(70.);
   }
 
   @Test
@@ -322,27 +350,30 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       "stringVar",
       "aStringValue"
     );
-    final ProcessInstanceEngineDto firstProcessInst = deployAndStartSimpleProcessWithVariables(variables);
-    deployAndStartSimpleProcessWithVariables(variables);
-    final ProcessInstanceEngineDto latestProcessInst = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
+    final ProcessInstanceEngineDto secondProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(secondProcess, 10000.);
+    final ProcessInstanceEngineDto latestProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(latestProcess, 100.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
-      latestProcessInst.getProcessDefinitionKey(),
-      ImmutableList.of(firstProcessInst.getProcessDefinitionVersion(), latestProcessInst.getProcessDefinitionVersion()),
+      latestProcess.getProcessDefinitionKey(),
+      ImmutableList.of(firstProcess.getProcessDefinitionVersion(), latestProcess.getProcessDefinitionVersion()),
       "stringVar",
       VariableType.STRING
     );
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    // then the result counts 2 flownodes of the first decfinition plus 4 flownodes of the latest definition
+    // then the result takes into account first and last processes (average duration both processes = 70)
     assertThat(result.getData()).isNotNull().hasSize(1);
     assertThat(result.getEntryForKey("aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(6.);
+      .isEqualTo(70.);
   }
 
   @Test
@@ -360,6 +391,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .done();
     engineIntegrationExtension.deployProcessAndGetId(subProcess);
 
+
     final BpmnModelInstance model = Bpmn.createExecutableProcess(testMIProcess)
       .name("MultiInstance")
       .startEvent("miStart")
@@ -373,12 +405,12 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .multiInstanceDone()
       .endEvent("miEnd")
       .done();
-    engineIntegrationExtension.deployAndStartProcessWithVariables(
+    final ProcessInstanceEngineDto instance = engineIntegrationExtension.deployAndStartProcessWithVariables(
       model,
       Collections.singletonMap("stringVar", "aStringValue")
     );
-
     engineIntegrationExtension.waitForAllProcessesToFinish();
+    changeActivityDuration(instance, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -391,7 +423,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     assertThat(result.getEntryForKey("aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(7.);
+      .isEqualTo(10.);
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey,
@@ -417,7 +449,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .setTenantIds(Collections.singletonList(null))
       .setVariableName(variableName)
       .setVariableType(variableType)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE)
       .build();
   }
 }

@@ -66,7 +66,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @Test
   public void reportEvaluationForOneProcess() {
-
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -991,11 +990,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .setTenantIds(tenantIds)
       .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
       .build();
-  }
-
-  @SneakyThrows
-  private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
-    engineDatabaseExtension.changeAllActivityDurations(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   @SneakyThrows

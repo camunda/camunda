@@ -132,6 +132,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return deployAndStartSimpleServiceTaskProcess(key, activityId, null);
   }
 
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(TEST_PROCESS);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+  }
+
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
                                                                             String activityId,
                                                                             String tenantId) {
@@ -161,6 +166,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
     BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(TEST_PROCESS);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final String key,
@@ -235,6 +245,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     engineDatabaseExtension.changeAllActivityDurations(thirdProcessInstance.getId(), activityDurationInMs);
   }
 
+  protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
+                                        final Double durationInMs) {
+    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMs.longValue());
+  }
+
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
                                                             final String definitionVersion,
                                                             final ProcessReportDataType reportType,
@@ -264,7 +279,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
     singleProcessReportDefinitionDto.setLastModifier("something");
     singleProcessReportDefinitionDto.setName("something");

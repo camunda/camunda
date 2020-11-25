@@ -1303,19 +1303,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultData).isEmpty();
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:off
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")

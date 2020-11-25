@@ -417,6 +417,18 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableType(variableType)
+          .variableName(variableName)
+          .build();
+        break;
       case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)
@@ -468,10 +480,10 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .build();
         break;
-      case FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE:
+      case FLOW_NODE_DURATION_GROUP_BY_VARIABLE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)
-          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.VARIABLE)
           .visualization(ProcessVisualization.HEAT)
           .processDefinitionKey(processDefinitionKey)
