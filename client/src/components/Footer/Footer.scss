@@ -1,7 +1,7 @@
 .Footer {
   line-height: 24px;
   font-size: 0.875em;
-  background-color: var(--silver-lighten-99);
+  background-color: var(--white);
   border-top: 1px solid var(--silver-darken-94);
   color: var(--grey-lighten-50);
   cursor: default;
@@ -54,7 +54,7 @@
           width: 0.8em;
           height: 0.8em;
           background-size: cover;
-          background-color: var(--silver-lighten-99);
+          background-color: var(--white);
           background-image: url(./loading.svg);
         }
       }

@@ -9,25 +9,25 @@
 }
 
 .MessageBox--blue {
-  border: 1px solid var(--blue-lighten-75);
-  background-color: var(--blue-lighten-82);
+  border: 1px solid var(--blue-base-65);
+  background-color: var(--blue-lighten-93);
 }
 
 .MessageBox--yellow,
 .MessageBox--warning {
   border: 1px solid var(--orange-base-60);
-  background-color: (--orange-base-60);
+  background-color: var(--orange-lighten-85);
 }
 
 .MessageBox--red,
 .MessageBox--danger,
 .MessageBox--error {
-  border: 1px solid var(--red-darken-38);
+  border: 1px solid var(--red-base-62);
   background-color: var(--red-lighten-85);
 }
 
 .MessageBox--green,
 .MessageBox--success {
   border: 1px solid var(--green-base-44);
-  background-color: var(--green-base-44);
+  background-color: var(--green-lighten-80);
 }

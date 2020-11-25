@@ -7,7 +7,7 @@
     position: absolute;
     width: auto;
     min-width: 250px;
-    background-color: var(--silver-lighten-99);
+    background-color: var(--white);
     border: 1px solid var(--silver-darken-80);
     box-shadow: 0 2px 7px -4px var(--grey-darken-36);
     border-radius: 8px;
@@ -56,7 +56,7 @@
 
 .Popover__dialog-arrow {
   border-color: transparent;
-  border-bottom-color: var(--silver-lighten-99);
+  border-bottom-color: var(--white);
   border-width: 10px;
   margin-left: -10px;
 }

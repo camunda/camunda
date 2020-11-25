@@ -113,11 +113,11 @@
           }
 
           &:not(.disabled).mapped {
-            color: var(--silver-lighten-99);
+            color: var(--white);
             background-color: var(--blue-darken-62);
 
             .Button {
-              color: var(--silver-lighten-99);
+              color: var(--white);
             }
           }
 

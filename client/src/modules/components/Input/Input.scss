@@ -68,7 +68,7 @@ input[type='checkbox'] {
   vertical-align: middle;
   padding: 0;
   appearance: none;
-  background-color: var(--silver-lighten-99);
+  background-color: var(--white);
   border: 1px solid var(--silver-darken-80);
 
   &:disabled {
@@ -96,7 +96,7 @@ input[type='checkbox'] {
   }
 
   &:indeterminate {
-    background: linear-gradient(var(--silver-lighten-99));
+    background: linear-gradient(var(--white), var(--white));
     background-color: var(--blue-darken-55);
     background-size: 6px 2px;
     background-repeat: no-repeat;
@@ -108,11 +108,7 @@ input[type='radio'] {
   border-radius: 50%;
 
   &:checked {
-    background: radial-gradient(
-      var(--silver-lighten-99) 0,
-      var(--silver-lighten-99) 40%,
-      var(--blue-darken-55) 60%
-    );
+    background: radial-gradient(var(--white) 0, var(--white) 40%, var(--blue-darken-55) 60%);
     border-color: var(--blue-darken-55);
 
     &:focus {
