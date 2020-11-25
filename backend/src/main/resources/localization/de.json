@@ -56,7 +56,8 @@
     "privacyPolicy": "Camunda Datenschutzerklärung"
   },
   "templates": {
-    "noProcessHint": "Dashboards und Berichte erstellen"
+    "noProcessHint": "Leeres Dashboard erstellen",
+    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen"
   },
   "home": {
     "createBtn": {

@@ -56,7 +56,8 @@
     "privacyPolicy": "Camunda Privacy Policy"
   },
   "templates": {
-    "noProcessHint": "Create Dashboard and Reports"
+    "noProcessHint": "Create Blank Dashboard",
+    "noXmlHint": "Select Process definition to display diagram"
   },
   "home": {
     "createBtn": {

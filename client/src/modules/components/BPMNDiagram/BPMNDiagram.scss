@@ -21,11 +21,17 @@
     opacity: 0.5;
   }
 
-  .diagramLoading {
+  .diagramLoading,
+  .emptyText {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  .emptyText {
+    font-size: 14px;
+    color: var(--grey-lighten-56);
   }
 
   .djs-element.hover .djs-outline,

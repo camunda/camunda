@@ -85,7 +85,6 @@ export function TemplateModal({
             <DefinitionSelection
               type="process"
               expanded
-              autofocus
               definitionKey={definitionKey}
               versions={versions}
               tenants={tenants}
@@ -100,7 +99,7 @@ export function TemplateModal({
             />
           </div>
           <div className="diagramArea">
-            <BPMNDiagram xml={xml} />
+            <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
           </div>
           {!template && <div className="noProcessHint">{t('templates.noProcessHint')}</div>}
         </div>
