@@ -33,7 +33,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
   public static final String DATA = EventDto.Fields.data;
   public static final String N_GRAM_FIELD = "nGramField";
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   @Override
   public String getIndexName() {

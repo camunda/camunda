@@ -19,15 +19,11 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitio
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeFrom32To33Factory {
@@ -43,12 +39,10 @@ public class UpgradeFrom32To33Factory {
       .fromVersion("3.2.0")
       .toVersion("3.3.0")
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
-      .addUpgradeStep(new UpdateMappingIndexStep(PROCESS_REPORT_INDEX))
       .addUpgradeStep(migrateDistributedByField(PROCESS_REPORT_INDEX))
-      .addUpgradeStep(new UpdateIndexStep(DECISION_REPORT_INDEX, null))
       .addUpgradeStep(migrateDistributedByField(DECISION_REPORT_INDEX))
       .addUpgradeStep(migrateDashboardAvailableFilters())
-      .addUpgradeStep(new UpdateMappingIndexStep(new EventIndex()))
+      .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .build();
   }
 
@@ -66,22 +60,15 @@ public class UpgradeFrom32To33Factory {
       "  }" +
       "}\n";
     //@formatter:on
-    return new UpdateDataStep(
-      new DashboardIndex(),
-      matchAllQuery(),
-      script
-    );
+    return new UpdateIndexStep(new DashboardIndex(), script);
   }
 
   private static List<UpgradeStep> markExistingDefinitionsAsNotDeleted() {
     final String script = "ctx._source.deleted = false;";
     return Arrays.asList(
-      new UpdateMappingIndexStep(PROCESS_DEFINITION_INDEX),
-      new UpdateMappingIndexStep(DECISION_DEFINITION_INDEX),
-      new UpdateMappingIndexStep(EVENT_PROCESS_DEFINITION_INDEX),
-      new UpdateDataStep(PROCESS_DEFINITION_INDEX, matchAllQuery(), script),
-      new UpdateDataStep(DECISION_DEFINITION_INDEX, matchAllQuery(), script),
-      new UpdateDataStep(EVENT_PROCESS_DEFINITION_INDEX, matchAllQuery(), script)
+      new UpdateIndexStep(PROCESS_DEFINITION_INDEX, script),
+      new UpdateIndexStep(DECISION_DEFINITION_INDEX, script),
+      new UpdateIndexStep(EVENT_PROCESS_DEFINITION_INDEX, script)
     );
   }
 
@@ -108,7 +95,6 @@ public class UpgradeFrom32To33Factory {
         "configuration.remove(\"${distributeByField}\");\n"
     );
     //@formatter:on
-
-    return new UpdateDataStep(index, matchAllQuery(), script, params);
+    return new UpdateIndexStep(index, script, params);
   }
 }

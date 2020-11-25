@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.upgrade.migrate32To33;
 
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.migrate32To33.indices.DashboardIndexV3Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.DecisionDefinitionIndexV3Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.EventIndexV3Old;
 import org.camunda.optimize.upgrade.migrate32To33.indices.EventProcessDefinitionIndexV2Old;
@@ -27,7 +27,7 @@ public class AbstractUpgrade32IT extends AbstractUpgradeIT {
   protected static final DecisionDefinitionIndexV3Old DECISION_DEFINITION_INDEX = new DecisionDefinitionIndexV3Old();
   protected static final EventProcessDefinitionIndexV2Old EVENT_PROCESS_DEFINITION_INDEX =
     new EventProcessDefinitionIndexV2Old();
-  protected static final DashboardIndex DASHBOARD_INDEX = new DashboardIndex();
+  protected static final DashboardIndexV3Old DASHBOARD_INDEX = new DashboardIndexV3Old();
   protected static final EventIndexV3Old EVENT_INDEX = new EventIndexV3Old();
 
   @BeforeEach
