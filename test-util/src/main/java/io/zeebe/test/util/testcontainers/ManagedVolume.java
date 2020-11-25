@@ -11,6 +11,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateVolumeCmd;
 import com.github.dockerjava.api.command.CreateVolumeResponse;
+import com.github.dockerjava.api.command.RemoveVolumeCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.HostConfig;
 import java.util.Objects;
@@ -22,16 +23,18 @@ import org.testcontainers.DockerClientFactory;
  * labels the volumes with {@link DockerClientFactory#DEFAULT_LABELS} so that the Ryuk container can
  * reap the volumes should our JVM process crash.
  */
-public final class ManagedVolume {
+public final class ManagedVolume implements AutoCloseable {
 
   @SuppressWarnings("java:S1075")
   private static final String DEFAULT_ZEEBE_DATA_PATH = "/usr/local/zeebe/data";
 
   private final String name;
+  private final DockerClient client;
 
   /** @param name the name of the volume */
-  public ManagedVolume(final String name) {
+  public ManagedVolume(final String name, final DockerClient client) {
     this.name = name;
+    this.client = client;
   }
 
   /** @return the name of the volume */
@@ -72,6 +75,19 @@ public final class ManagedVolume {
     command.withHostConfig(hostConfig);
   }
 
+  /**
+   * Removes the volume from Docker.
+   *
+   * @throws com.github.dockerjava.api.exception.NotFoundException if no such volume exists
+   * @throws com.github.dockerjava.api.exception.ConflictException if the volume is currently in use
+   */
+  @Override
+  public void close() throws Exception {
+    try (final RemoveVolumeCmd command = client.removeVolumeCmd(name)) {
+      command.exec();
+    }
+  }
+
   /** @return a new default managed volume */
   public static ManagedVolume newVolume() {
     return newVolume(UnaryOperator.identity());
@@ -86,7 +102,7 @@ public final class ManagedVolume {
     try (final CreateVolumeCmd command = client.createVolumeCmd()) {
       final CreateVolumeResponse response =
           configurator.apply(command.withLabels(DockerClientFactory.DEFAULT_LABELS)).exec();
-      return new ManagedVolume(response.getName());
+      return new ManagedVolume(response.getName(), client);
     }
   }
 }
