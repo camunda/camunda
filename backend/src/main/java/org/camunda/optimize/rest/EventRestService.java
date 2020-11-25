@@ -13,21 +13,23 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestD
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.Page;
-import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;
 import org.camunda.optimize.service.events.ExternalEventService;
+import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
 import org.camunda.optimize.service.security.EventProcessAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
-import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -71,20 +73,25 @@ public class EventRestService {
                                            @BeanParam @Valid final EventSearchRequestDto eventSearchRequestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
-      throw new ForbiddenException("The user " + userId + " is not authorized to use the event inspection API nor " +
-                                     "part of a group that is.");
+      throw new EventProcessManagementForbiddenException(userId);
     }
-    validateEventRequest(eventSearchRequestDto);
+    validateSortRequest(eventSearchRequestDto.getSortRequestDto());
     return externalEventService.getEventsForRequest(eventSearchRequestDto);
   }
 
-  private void validateEventRequest(final EventSearchRequestDto eventSearchRequestDto) {
-    final PaginationRequestDto paginationRequestDto = eventSearchRequestDto.getPaginationRequestDto();
-    if (paginationRequestDto == null || paginationRequestDto.getLimit() == null
-      || paginationRequestDto.getOffset() == null) {
-      throw new BadRequestException("Pagination parameters must be supplied when requesting events");
+  @POST
+  @Path("/delete")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void deleteEvents(@Context final ContainerRequestContext requestContext,
+                           @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) List<String> eventIdsToDelete) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
+      throw new EventProcessManagementForbiddenException(userId);
     }
-    final SortRequestDto sortRequestDto = eventSearchRequestDto.getSortRequestDto();
+    externalEventService.deleteEvents(eventIdsToDelete);
+  }
+
+  private void validateSortRequest(final SortRequestDto sortRequestDto) {
     final Optional<String> sortBy = sortRequestDto.getSortBy();
     final Optional<SortOrder> sortOrder = sortRequestDto.getSortOrder();
     if ((sortBy.isPresent() && !sortOrder.isPresent()) || (!sortBy.isPresent() && sortOrder.isPresent())) {

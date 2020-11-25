@@ -14,8 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
@@ -23,6 +26,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
@@ -31,12 +36,14 @@ import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseD
 import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
@@ -169,7 +176,7 @@ public class EventProcessClient {
     return buildEventProcessMappingDto(null, xml);
   }
 
-  public EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xml) {
+  private EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xml) {
     return buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, name, xml);
   }
 
@@ -278,6 +285,32 @@ public class EventProcessClient {
       .group(IdGenerator.getNextId())
       .source(IdGenerator.getNextId())
       .eventName(IdGenerator.getNextId())
+      .build();
+  }
+
+  public ProcessInstanceDto createEventInstanceWithEvents(List<CloudEventRequestDto> eventsToInclude) {
+    return EventProcessInstanceDto.builder()
+      .processInstanceId(IdGenerator.getNextId())
+      .processDefinitionKey(IdGenerator.getNextId())
+      .processDefinitionVersion("1")
+      .endDate(OffsetDateTime.now().minusMinutes(1L))
+      .endDate(OffsetDateTime.now())
+      .duration(60000L)
+      .state(ProcessInstanceConstants.COMPLETED_STATE)
+      .variables(Collections.emptyList())
+      .userTasks(Collections.emptyList())
+      .incidents(Collections.emptyList())
+      .events(eventsToInclude.stream()
+                .map(ingestedEvent -> FlowNodeInstanceDto.builder()
+                  .id(ingestedEvent.getId())
+                  .activityId(IdGenerator.getNextId())
+                  .processInstanceId(ingestedEvent.getTraceid())
+                  .startDate(OffsetDateTime.now().minusSeconds(30L))
+                  .endDate(OffsetDateTime.now().minusSeconds(10L))
+                  .durationInMs(0L)
+                  .activityType("startEvent")
+                  .build()
+                ).collect(Collectors.toList()))
       .build();
   }
 

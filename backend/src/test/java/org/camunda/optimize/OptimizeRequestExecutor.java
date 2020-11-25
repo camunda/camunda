@@ -1403,9 +1403,17 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetEventListRequest(final EventSearchRequestDto eventSearchRequestDto) {
     this.path = "event/";
     this.method = GET;
-    Optional.ofNullable(eventSearchRequestDto.getSearchTerm()).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventSearchRequestDto.getSearchTerm())
+      .ifPresent(term -> addSingleQueryParam("searchTerm", term));
     Optional.ofNullable(eventSearchRequestDto.getPaginationRequestDto()).ifPresent(this::addPaginationParams);
     Optional.ofNullable(eventSearchRequestDto.getSortRequestDto()).ifPresent(this::addSortParams);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteEventsRequest(final List<String> eventIdsToDelete) {
+    this.path = "event/delete";
+    this.method = POST;
+    this.body = Optional.ofNullable(eventIdsToDelete).map(this::getBody).orElse(null);
     return this;
   }
 

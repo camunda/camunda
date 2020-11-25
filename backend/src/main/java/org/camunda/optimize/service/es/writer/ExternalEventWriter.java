@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Slf4j
@@ -89,12 +90,34 @@ public class ExternalEventWriter {
         deletedItemIdentifier,
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
-        esClient.getIndexNameService()
-          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+        esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
       );
     } finally {
       progressReporter.stop();
     }
+  }
+
+  public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
+    final String deletedItemName = "external events";
+    final String deletedItemIdentifier = String.format(
+      "%s with ID from list of size %s",
+      deletedItemName,
+      eventIdsToDelete.size()
+    );
+
+    log.info("Deleting events with ID in {}", eventIdsToDelete);
+
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termsQuery(EventIndex.ID, eventIdsToDelete));
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      filterQuery,
+      deletedItemName,
+      deletedItemIdentifier,
+      true,
+      // use wildcarded index name to catch all indices that exist after potential rollover
+      esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+    );
   }
 
   private UpdateRequest createEventUpsert(final EventDto eventDto) {

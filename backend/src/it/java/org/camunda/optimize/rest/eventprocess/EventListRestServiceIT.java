@@ -505,13 +505,6 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
       .hasSize(5);
   }
 
-  private void removeAllUserEventProcessAuthorizations() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEventBasedProcessConfiguration()
-      .getAuthorizedUserIds()
-      .clear();
-  }
-
   private Comparator<DeletableEventDto> getExpectedSortComparator(final String sortField, final SortOrder sortOrder) {
     Comparator<DeletableEventDto> comparator;
     if (sortField.equalsIgnoreCase(DeletableEventDto.Fields.group)) {

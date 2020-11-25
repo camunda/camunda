@@ -71,12 +71,12 @@ public abstract class AbstractActivityInstanceWriter {
       (List<FlowNodeEventDto>) (List<?>) activitiesByProcessInstance.getValue();
     final String processInstanceId = activitiesByProcessInstance.getKey();
 
-    final List<FlowNodeInstanceDto> simpleEvents = getSimpleEventDtos(activityInstances);
+    final List<FlowNodeInstanceDto> flowNodeInstanceDtos = convertToFlowNodeInstanceDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
 
     try {
-      params.put(EVENTS, simpleEvents);
+      params.put(EVENTS, flowNodeInstanceDtos);
       final Script updateScript = createDefaultScriptWithSpecificDtoParams(
         createInlineUpdateScript(),
         params,
@@ -86,7 +86,7 @@ public abstract class AbstractActivityInstanceWriter {
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
         .engine(activityInstances.get(0).getEngineAlias())
-        .events(simpleEvents)
+        .events(flowNodeInstanceDtos)
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
@@ -106,7 +106,7 @@ public abstract class AbstractActivityInstanceWriter {
 
   protected abstract String createInlineUpdateScript();
 
-  private List<FlowNodeInstanceDto> getSimpleEventDtos(List<FlowNodeEventDto> activityInstances) {
+  private List<FlowNodeInstanceDto> convertToFlowNodeInstanceDtos(List<FlowNodeEventDto> activityInstances) {
     return activityInstances.stream()
       .map(activity -> FlowNodeInstanceDto.builder()
         .durationInMs(activity.getDurationInMs())

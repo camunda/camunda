@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -62,6 +63,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -529,6 +531,54 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
       .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
       .build();
+  }
+
+  protected ProcessInstanceDto createAndSaveEventInstanceContainingEvents(final List<CloudEventRequestDto> eventsToAdd,
+                                                                        final String indexId) {
+    final ProcessInstanceDto eventInstanceContainingEvent =
+      eventProcessClient.createEventInstanceWithEvents(eventsToAdd);
+    final EventProcessInstanceIndex eventInstanceIndex = createEventInstanceIndex(indexId);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      eventInstanceIndex.getIndexName(),
+      IdGenerator.getNextId(),
+      eventInstanceContainingEvent
+    );
+    return eventInstanceContainingEvent;
+  }
+
+  protected List<EventProcessInstanceDto> getAllStoredEventInstances() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventProcessInstanceIndex("*")),
+      EventProcessInstanceDto.class
+    );
+  }
+
+  protected EventProcessInstanceDto getSavedInstanceWithId(final String processInstanceId) {
+    final List<EventProcessInstanceDto> collect = getAllStoredEventInstances().stream()
+      .filter(instance -> instance.getProcessInstanceId().equalsIgnoreCase(processInstanceId))
+      .collect(Collectors.toList());
+    assertThat(collect).hasSize(1);
+    return collect.get(0);
+  }
+
+  protected List<EventDto> getAllStoredEvents() {
+    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+  }
+
+  @SneakyThrows
+  protected EventProcessInstanceIndex createEventInstanceIndex(final String indexId) {
+    final EventProcessInstanceIndex newIndex = new EventProcessInstanceIndex(indexId);
+    final boolean indexExists = embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), Collections.singletonList(newIndex));
+    if (!indexExists) {
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+        embeddedOptimizeExtension.getOptimizeElasticClient(),
+        newIndex
+      );
+    }
+    return newIndex;
   }
 
   protected Map<String, EventMappingDto> createMappingsForEventProcess(final ProcessInstanceEngineDto processInstanceEngineDto,

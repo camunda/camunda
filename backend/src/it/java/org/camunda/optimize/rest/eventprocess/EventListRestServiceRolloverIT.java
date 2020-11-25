@@ -7,18 +7,12 @@ package org.camunda.optimize.rest.eventprocess;
 
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
-import java.time.Instant;
-import java.util.Collections;
 import java.util.Comparator;
 
 import static java.util.Comparator.naturalOrder;
@@ -26,43 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
 
-public class EventListRestServiceRolloverIT extends AbstractEventProcessIT {
-
-  private static final String TIMESTAMP = DeletableEventDto.Fields.timestamp;
-  private static final String GROUP = DeletableEventDto.Fields.group;
-
-  private CloudEventRequestDto impostorSabotageNav = createEventDtoWithProperties(
-    "impostors",
-    "navigationRoom",
-    "sabotage",
-    Instant.now()
-  );
-
-  private CloudEventRequestDto impostorMurderedMedBay = createEventDtoWithProperties(
-    "impostors",
-    "medBay",
-    "murderedNormie",
-    Instant.now().plusSeconds(1)
-  );
-
-  private CloudEventRequestDto normieTaskNav = createEventDtoWithProperties(
-    "normie",
-    "navigationRoom",
-    "finishedTask",
-    Instant.now().plusSeconds(2)
-  );
-
-  @BeforeEach
-  public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new EventIndex()
-    );
-    embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    embeddedOptimizeExtension.reloadConfiguration();
-  }
+public class EventListRestServiceRolloverIT extends AbstractEventRestServiceRolloverIT {
 
   @Test
   public void getEventCountsWithRolledOverEventIndices_noSearchTerm() {
@@ -288,25 +246,6 @@ public class EventListRestServiceRolloverIT extends AbstractEventProcessIT {
     assertThat(eventsPage.getResults())
       .extracting(DeletableEventDto::getId)
       .containsExactly(normieTaskNav.getId());
-  }
-
-  private void ingestEventAndRolloverIndex(final CloudEventRequestDto cloudEventRequestDto) {
-    eventClient.ingestEventBatch(Collections.singletonList(cloudEventRequestDto));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
-  }
-
-  private CloudEventRequestDto createEventDtoWithProperties(final String group,
-                                                            final String source,
-                                                            final String type,
-                                                            final Instant timestamp) {
-    return eventClient.createCloudEventDto()
-      .toBuilder()
-      .group(group)
-      .source(source)
-      .type(type)
-      .time(timestamp)
-      .build();
   }
 
 }

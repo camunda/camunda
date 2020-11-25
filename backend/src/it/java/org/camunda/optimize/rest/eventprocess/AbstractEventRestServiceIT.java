@@ -101,14 +101,18 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
     AtomicInteger incrementCounter = new AtomicInteger(0);
     Instant currentTimestamp = Instant.now();
     return events.stream()
-      .map(event -> createEventDtoWithProperties(event.getGroup().orElse(null), event.getSource(), event.getType()))
+      .map(event -> createEventDtoWithProperties(
+        event.getGroup().orElse(null),
+        event.getSource(),
+        event.getType()
+      ).toBuilder().id(event.getId() + traceId).build())
       .peek(eventDto -> eventDto.setTraceid(traceId))
       .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
       .collect(toList());
   }
 
-  protected CloudEventRequestDto createEventDtoWithProperties(final String group, final String source,
-                                                              final String type) {
+  private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source,
+                                                            final String type) {
     return eventClient.createCloudEventDto()
       .toBuilder()
       .group(group)
@@ -120,6 +124,13 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
   protected void processEventTracesAndSequences() {
     embeddedOptimizeExtension.processEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  protected void removeAllUserEventProcessAuthorizations() {
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .getAuthorizedUserIds()
+      .clear();
   }
 
 }

@@ -18,15 +18,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 public class EventProcessInstanceIndex extends ProcessInstanceIndex {
 
-  public static final String PENDING_FLOW_NODE_UPDATES = EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates;
-  public static final String ACTIVITY_UPDATE_ID = "id";
-  public static final String ACTIVITY_UPDATE_SOURCE_EVENT_ID = FlowNodeInstanceUpdateDto.Fields.sourceEventId;
-  public static final String ACTIVITY_UPDATE_ACTIVITY_ID = FlowNodeInstanceUpdateDto.Fields.flowNodeId;
-  public static final String ACTIVITY_UPDATE_ACTIVITY_TYPE = FlowNodeInstanceUpdateDto.Fields.flowNodeType;
-  public static final String ACTIVITY_UPDATE_MAPPED_AS = FlowNodeInstanceUpdateDto.Fields.mappedAs;
-  public static final String ACTIVITY_UPDATE_DATE = FlowNodeInstanceUpdateDto.Fields.date;
-
-  public static final String CORRELATED_EVENTS_BY_EVENT_ID = EventProcessInstanceDto.Fields.correlatedEventsById;
+  private static final String PENDING_FLOW_NODE_UPDATES = EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates;
+  private static final String CORRELATED_EVENTS_BY_EVENT_ID = EventProcessInstanceDto.Fields.correlatedEventsById;
+  private static final String ACTIVITY_UPDATE_ID = "id";
+  private static final String ACTIVITY_UPDATE_SOURCE_EVENT_ID = FlowNodeInstanceUpdateDto.Fields.sourceEventId;
+  private static final String ACTIVITY_UPDATE_ACTIVITY_ID = FlowNodeInstanceUpdateDto.Fields.flowNodeId;
+  private static final String ACTIVITY_UPDATE_ACTIVITY_TYPE = FlowNodeInstanceUpdateDto.Fields.flowNodeType;
+  private static final String ACTIVITY_UPDATE_MAPPED_AS = FlowNodeInstanceUpdateDto.Fields.mappedAs;
+  private static final String ACTIVITY_UPDATE_DATE = FlowNodeInstanceUpdateDto.Fields.date;
 
   public EventProcessInstanceIndex(final String eventProcessId) {
     super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId.toLowerCase());

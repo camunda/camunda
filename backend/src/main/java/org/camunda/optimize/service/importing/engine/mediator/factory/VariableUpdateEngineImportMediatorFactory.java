@@ -54,10 +54,10 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
       importIndexHandlerRegistry.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
       new VariableUpdateInstanceImportService(
+        elasticsearchImportJobExecutor,
+        variableImportAdapterProvider,
         variableWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        variableImportAdapterProvider,
-        elasticsearchImportJobExecutor,
         engineContext
       ),
       configurationService,

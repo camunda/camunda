@@ -27,6 +27,7 @@ import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.events.EventMappingCleanupService;
+import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.security.EventProcessAuthorizationService;
@@ -38,7 +39,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
@@ -240,8 +240,7 @@ public class EventBasedProcessRestService {
 
   private void validateAccessToEventProcessManagement(final String userId) {
     if (!isUserGrantedEventProcessManagementAccess(userId)) {
-      throw new ForbiddenException("The user " + userId + " is not authorized to use the event process API nor part " +
-                                     "of a group that is.");
+      throw new EventProcessManagementForbiddenException(userId);
     }
   }
 

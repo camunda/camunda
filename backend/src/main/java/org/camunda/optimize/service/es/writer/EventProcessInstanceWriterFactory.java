@@ -32,4 +32,13 @@ public class EventProcessInstanceWriterFactory {
     );
   }
 
+  public EventProcessInstanceWriter createAllEventProcessInstanceWriter() {
+    return new EventProcessInstanceWriter(
+      new EventProcessInstanceIndex("*"),
+      elasticsearchClient,
+      objectMapper,
+      dateTimeFormatter
+    );
+  }
+
 }

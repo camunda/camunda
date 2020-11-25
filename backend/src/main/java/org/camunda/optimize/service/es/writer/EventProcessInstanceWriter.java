@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -21,9 +22,11 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 
 import java.text.MessageFormat;
 import java.time.OffsetDateTime;
@@ -34,6 +37,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENT_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
@@ -43,6 +48,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -129,6 +135,42 @@ public class EventProcessInstanceWriter {
     }
 
     log.info("Finished cleanup on {}", updatedItemIdentifier);
+  }
+
+  public void deleteEventsWithIdsInFromAllInstances(final List<String> eventIdsToDelete) {
+    final String updateItemName = "event instance events";
+    final String updatedItemIdentifier = String.format(
+      "%s with ID from list of size %s",
+      updateItemName,
+      eventIdsToDelete.size()
+    );
+
+    final NestedQueryBuilder query = nestedQuery(
+      EVENTS,
+      termsQuery(EVENTS + "." + EVENT_ID, eventIdsToDelete.toArray()),
+      ScoreMode.None
+    );
+
+    final Script deleteEventsScript = buildDeleteEventsWithIdsInScript(eventIdsToDelete);
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      esClient, updateItemName, updatedItemIdentifier, deleteEventsScript, query, getIndexName()
+    );
+  }
+
+  private Script buildDeleteEventsWithIdsInScript(final List<String> eventIdsToDelete) {
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("eventIdsToDelete", eventIdsToDelete)
+      .build();
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      MessageFormat.format(
+        "ctx._source.{0}.removeIf(event -> params.eventIdsToDelete.contains(event.{1}));\n",
+        EVENTS,
+        EVENT_ID
+      ),
+      params
+    );
   }
 
   private String getIndexName() {

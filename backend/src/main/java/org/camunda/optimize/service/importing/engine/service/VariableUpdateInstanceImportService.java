@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -31,27 +32,14 @@ import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimiz
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 @Slf4j
+@AllArgsConstructor
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected EngineContext engineContext;
   private VariableImportAdapterProvider variableImportAdapterProvider;
   private ProcessVariableUpdateWriter variableWriter;
   private CamundaEventImportService camundaEventService;
-
-  public VariableUpdateInstanceImportService(
-    ProcessVariableUpdateWriter variableWriter,
-    CamundaEventImportService camundaEventService,
-    VariableImportAdapterProvider variableImportAdapterProvider,
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-    EngineContext engineContext
-  ) {
-    this.camundaEventService = camundaEventService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
-    this.variableWriter = variableWriter;
-    this.variableImportAdapterProvider = variableImportAdapterProvider;
-  }
+  protected EngineContext engineContext;
 
   @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
