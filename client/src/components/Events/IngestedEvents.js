@@ -55,6 +55,10 @@ export function IngestedEvents({mightFail}) {
 
   const search = useMemo(() => debounce(async (query) => setSearchTerm(query), 500), []);
 
+  useEffect(() => {
+    search(query);
+  }, [query, search]);
+
   const headerKeys = Object.keys(eventsResponse.results[0] || {});
   const bodyData = eventsResponse.results.map((event) => Object.values(event));
 
@@ -69,10 +73,7 @@ export function IngestedEvents({mightFail}) {
             className="searchInput"
             placeholder={t('events.ingested.search')}
             type="text"
-            onChange={(evt) => {
-              setQuery(evt.target.value);
-              search(evt.target.value);
-            }}
+            onChange={(evt) => setQuery(evt.target.value)}
             onClear={() => setQuery('')}
           />
           <Icon className="searchIcon" type="search" size="20" />

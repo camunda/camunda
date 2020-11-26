@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Input} from 'components';
@@ -47,7 +47,7 @@ const props = {
 it('should match snapshot', () => {
   const node = shallow(<IngestedEvents {...props} />);
 
-  runLastEffect();
+  runAllEffects();
 
   expect(node).toMatchSnapshot();
 });
@@ -56,7 +56,7 @@ it('should load events initially', () => {
   loadIngestedEvents.mockClear();
   shallow(<IngestedEvents {...props} />);
 
-  runLastEffect();
+  runAllEffects();
   expect(loadIngestedEvents).toHaveBeenCalled();
 });
 
@@ -65,6 +65,7 @@ it('should add sorting and search params to the load event request', () => {
   const node = shallow(<IngestedEvents {...props} />);
 
   node.find(Input).simulate('change', {target: {value: 'invoice'}});
+  runAllEffects();
   node.find('Table').prop('updateSorting')('group', 'asc');
   node.find('Table').prop('fetchData')({pageSize: 50, pageIndex: 2});
   expect(loadIngestedEvents).toHaveBeenCalledWith({

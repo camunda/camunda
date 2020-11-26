@@ -217,7 +217,7 @@
       "camundaProcess": "Camunda Prozess"
     },
     "ingested": {
-      "label": "Liste der ingestrierten Events",
+      "label": "Liste der verarbeiteten Events",
       "id": "Event ID",
       "traceId": "Trace ID",
       "group": "Gruppe",
