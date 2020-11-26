@@ -25,11 +25,11 @@ spec:
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 12
+          cpu: 8
           memory: 32Gi
         requests:
           cpu: 8
-          memory: 24Gi
+          memory: 32Gi
       securityContext:
         privileged: true
     - name: maven-jdk8
@@ -48,8 +48,8 @@ spec:
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 4Gi
         requests:
           cpu: 2
           memory: 4Gi
@@ -61,8 +61,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 8
-          memory: 12Gi
+          cpu: 4
+          memory: 8Gi
         requests:
           cpu: 4
           memory: 8Gi
@@ -86,8 +86,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 12
-          memory: 24Gi
+          cpu: 8
+          memory: 16Gi
         requests:
           cpu: 8
           memory: 16Gi
