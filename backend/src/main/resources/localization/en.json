@@ -686,6 +686,7 @@
     "add": "Add",
     "copy": "Copy",
     "export": "Export",
+    "import": "Import",
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",

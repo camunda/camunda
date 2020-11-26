@@ -20,7 +20,7 @@ import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import DashboardTemplateModal from './modals/DashboardTemplateModal';
-import {loadEntities} from './service';
+import {loadEntities, importEntity} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -39,6 +39,8 @@ export class Home extends React.Component {
     sorting: null,
     isLoading: true,
   };
+
+  fileInput = React.createRef();
 
   componentDidMount() {
     this.loadList();
@@ -75,6 +77,16 @@ export class Home extends React.Component {
     }
   };
 
+  createUploadedEntity = () => {
+    const reader = new FileReader();
+
+    reader.addEventListener('load', () => {
+      this.props.mightFail(importEntity(reader.result), this.loadList, showError);
+      this.fileInput.current.value = null;
+    });
+    reader.readAsText(this.fileInput.current.files[0]);
+  };
+
   render() {
     const {
       entities,
@@ -108,6 +120,7 @@ export class Home extends React.Component {
                 createCollection={this.startCreatingCollection}
                 createProcessReport={() => this.setState({creatingProcessReport: true})}
                 createDashboard={() => this.setState({creatingDashboard: true})}
+                importEntity={() => this.fileInput.current.click()}
               />
             }
             empty={t('home.empty')}
@@ -241,6 +254,13 @@ export class Home extends React.Component {
         {creatingDashboard && (
           <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
         )}
+        <input
+          className="hidden"
+          onChange={this.createUploadedEntity}
+          type="file"
+          accept=".json"
+          ref={this.fileInput}
+        />
       </div>
     );
   }

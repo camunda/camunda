@@ -14,8 +14,9 @@ import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
 import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
-import {loadCollectionEntities} from './service';
 import {showError, addNotification} from 'notifications';
+
+import {loadCollectionEntities, importEntity} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -44,6 +45,8 @@ export class Collection extends React.Component {
     sorting: null,
     isLoading: true,
   };
+
+  fileInput = React.createRef();
 
   componentDidMount() {
     this.loadCollection();
@@ -85,6 +88,20 @@ export class Collection extends React.Component {
   };
   stopEditingCollection = () => {
     this.setState({editingCollection: false});
+  };
+
+  createUploadedEntity = () => {
+    const reader = new FileReader();
+
+    reader.addEventListener('load', () => {
+      this.props.mightFail(
+        importEntity(reader.result, this.props.match.params.id),
+        this.loadEntities,
+        showError
+      );
+      this.fileInput.current.value = null;
+    });
+    reader.readAsText(this.fileInput.current.files[0]);
   };
 
   render() {
@@ -167,6 +184,7 @@ export class Collection extends React.Component {
                     collection={collection.id}
                     createProcessReport={() => this.setState({creatingProcessReport: true})}
                     createDashboard={() => this.setState({creatingDashboard: true})}
+                    importEntity={() => this.fileInput.current.click()}
                   />
                 )
               }
@@ -325,6 +343,13 @@ export class Collection extends React.Component {
         {creatingDashboard && (
           <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
         )}
+        <input
+          className="hidden"
+          onChange={this.createUploadedEntity}
+          type="file"
+          accept=".json"
+          ref={this.fileInput}
+        />
       </div>
     );
   }
