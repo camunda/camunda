@@ -199,6 +199,12 @@
       <artifactId>elasticsearch-rest-client</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
