@@ -4,7 +4,7 @@
 @Library('camunda-ci') _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 def static OPENJDK_MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.3-jdk-${javaVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
