@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.main;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;

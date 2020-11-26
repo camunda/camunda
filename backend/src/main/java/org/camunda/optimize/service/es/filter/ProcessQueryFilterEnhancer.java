@@ -34,6 +34,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @RequiredArgsConstructor
 @Component
 public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
@@ -121,7 +123,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
     return endDateQueryFilter;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T extends FilterDataDto> List<T> extractFilters(final List<ProcessFilterDto<?>> filter,
                                                           final Class<? extends ProcessFilterDto<T>> clazz) {
     return filter

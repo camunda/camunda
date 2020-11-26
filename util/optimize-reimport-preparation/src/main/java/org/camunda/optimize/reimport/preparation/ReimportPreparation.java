@@ -8,7 +8,7 @@ package org.camunda.optimize.reimport.preparation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;

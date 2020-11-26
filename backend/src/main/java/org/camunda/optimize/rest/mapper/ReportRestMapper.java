@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @Component
 public class ReportRestMapper {
 
@@ -31,7 +33,7 @@ public class ReportRestMapper {
     this.identityService = identityService;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public AuthorizedEvaluationResultDto<?, ?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {
     resolveOwnerAndModifierNames(reportEvaluationResult.getEvaluationResult().getReportDefinition());
     if (reportEvaluationResult.getEvaluationResult() instanceof CombinedProcessReportResult) {

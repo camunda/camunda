@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -169,7 +170,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   private void changeDuration(ProcessInstanceEngineDto processInstanceDto, long millis) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(

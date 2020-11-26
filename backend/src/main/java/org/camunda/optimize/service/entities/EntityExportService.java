@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.Optional;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -31,7 +33,7 @@ public class EntityExportService {
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T extends ReportDefinitionExportDto> Optional<T> getJsonReportExportDto(final String userId,
                                                                                   final ReportType reportType,
                                                                                   final String reportId) {

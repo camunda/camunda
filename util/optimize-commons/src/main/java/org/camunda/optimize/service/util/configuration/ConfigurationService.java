@@ -43,6 +43,8 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
+import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_ASSIGNED_TO_NULL;
+import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_FIELD_OR_PARAM;
 
 @Setter
 public class ConfigurationService {
@@ -141,7 +143,7 @@ public class ConfigurationService {
 
   // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  @SuppressWarnings(OPTIONAL_FIELD_OR_PARAM)
   private Optional<String> containerAccessUrl;
 
   // We use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
@@ -149,7 +151,7 @@ public class ConfigurationService {
   // We also distinguish between null and Optional.empty here,
   // null results in the value getting read from the config json.
   // Optional.empty is an actual value that does not trigger read from configuration json on access.
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  @SuppressWarnings(OPTIONAL_FIELD_OR_PARAM)
   private Optional<Integer> containerHttpPort;
 
   private Integer maxStatusConnections;
@@ -678,7 +680,7 @@ public class ConfigurationService {
     return containerKeystorePassword;
   }
 
-  @SuppressWarnings("OptionalAssignedToNull")
+  @SuppressWarnings(OPTIONAL_ASSIGNED_TO_NULL)
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
       containerAccessUrl =

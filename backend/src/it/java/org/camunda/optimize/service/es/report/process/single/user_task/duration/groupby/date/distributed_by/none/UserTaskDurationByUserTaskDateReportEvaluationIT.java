@@ -51,6 +51,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
 public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
   extends ModelElementDurationByModelElementDateReportEvaluationIT {
@@ -586,7 +587,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     );
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskId,
@@ -598,7 +599,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     );
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskKey,

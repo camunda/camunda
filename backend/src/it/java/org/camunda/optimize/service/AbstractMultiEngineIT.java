@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticati
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,6 +32,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.*;
 
 public class AbstractMultiEngineIT extends AbstractIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
@@ -62,7 +64,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     return useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<Integer> definitionType() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }

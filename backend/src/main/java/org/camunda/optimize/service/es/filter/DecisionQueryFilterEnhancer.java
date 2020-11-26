@@ -18,6 +18,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<DecisionFilterDto<?>> {
@@ -46,7 +48,7 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
     return evaluationDateQueryFilter;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T extends FilterDataDto> List<T> extractFilters(final List<DecisionFilterDto<?>> filter,
                                                           final Class<? extends DecisionFilterDto<?>> filterClass) {
     return filter

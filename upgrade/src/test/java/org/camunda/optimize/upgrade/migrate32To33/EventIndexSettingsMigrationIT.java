@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
 
@@ -123,7 +124,7 @@ public class EventIndexSettingsMigrationIT extends AbstractUpgrade32IT {
       );
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private Map<String, Map<String, Object>> extractMappingProperties(final Map<String, MappingMetadata> mappings) {
     return (Map<String, Map<String, Object>>) mappings.values()
       .iterator()

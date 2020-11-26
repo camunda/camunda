@@ -53,8 +53,9 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
-@SuppressWarnings("SameParameterValue")
+@SuppressWarnings(SAME_PARAM_VALUE)
 public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 

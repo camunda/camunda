@@ -12,12 +12,14 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
 public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
@@ -138,7 +140,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   private String addEventProcessMappingToOptimize(final String eventProcessName) {
     EventProcessMappingCreateRequestDto eventBasedProcessDto =
       EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()

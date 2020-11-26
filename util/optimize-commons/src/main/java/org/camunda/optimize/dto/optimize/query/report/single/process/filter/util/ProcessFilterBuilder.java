@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 public class ProcessFilterBuilder {
 
   private final List<ProcessFilterDto<?>> filters = new ArrayList<>();
@@ -106,7 +108,7 @@ public class ProcessFilterBuilder {
     filters.add(result);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T extends ProcessFilterDto<?>> List<T> buildList() {
     return (List<T>) filters;
   }

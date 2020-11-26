@@ -7,7 +7,7 @@ package org.camunda.optimize.jetty;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

@@ -42,13 +42,14 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 // we need to create the test instance per class since this allows
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforcing the scope with one tenant works for {2}")
   @MethodSource("scopeEnforcedForEndpointAndType")
   public void enforceScope_oneTenantInScope(final Function<ScopeScenario, String> functionToEnforceScopeFor,
@@ -78,7 +79,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .contains(reportId);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforcing the scope with multiple tenants in scope works for {2}")
   @MethodSource("scopeEnforcedForEndpointAndType")
   public void enforceScope_multipleTenantsInScope(final Function<ScopeScenario, String> functionToEnforceScopeFor,
@@ -110,7 +111,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .contains(reportId);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforcing the scope with one valid and two invalid scopes works for {2}")
   @MethodSource("scopeEnforcedForEndpointAndType")
   public void enforceScope_oneValidAndTwoInvalidScopes(final Function<ScopeScenario, String> functionToEnforceScopeFor,
@@ -139,7 +140,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .contains(reportId);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "scopes are ignored for empty reports in scenario {2}")
   @MethodSource("scopeEnforcedForEndpointAndType")
   public void enforceScope_emptyReportIgnoresScope(final Function<ScopeScenario, String> functionToEnforceScopeFor,
@@ -165,7 +166,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .contains(reportId);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "scopes are ignore for private reports in scenario {2}")
   @MethodSource("scopeEnforcedForEndpointAndType")
   public void enforceScope_privateReportsIgnoreScope(final Function<ScopeScenario, String> functionToEnforceScopeFor,
@@ -221,7 +222,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .contains(reportId);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforce scope for missing tenant in scenario {2}")
   @MethodSource("scopeEnforcedForEndpointAndTypeRequest")
   public void enforceScope_missingTenant(final Function<ScopeScenario, Response> functionToEnforceScopeFor,
@@ -244,7 +245,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforce scope if one tenant of report is not in scope for {2}")
   @MethodSource("scopeEnforcedForEndpointAndTypeRequest")
   public void enforceScope_oneTenantOfScopeNotInReport(final Function<ScopeScenario, Response> functionToEnforceScopeFor,
@@ -272,7 +273,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforce scope if the report type and scope type are different for {2}")
   @MethodSource("scopeEnforcedForEndpointAndTypeRequest")
   public void enforceScope_differentDefinitionType(final Function<ScopeScenario, Response> functionToEnforceScopeFor,

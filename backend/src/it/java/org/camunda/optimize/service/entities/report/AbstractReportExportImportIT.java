@@ -51,6 +51,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class AbstractReportExportImportIT extends AbstractIT {
   protected static final String DEFINITION_KEY = "aKey";
@@ -63,12 +64,12 @@ public class AbstractReportExportImportIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<ReportType> reportTypes() {
     return Stream.of(ReportType.PROCESS, ReportType.DECISION);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<SingleProcessReportDefinitionRequestDto> getTestProcessReports() {
     // A raw report with some custom table column config
     final ProcessReportDataDto rawReport = TemplatedProcessReportDataBuilder
@@ -119,7 +120,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
     );
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<SingleDecisionReportDefinitionRequestDto> getTestDecisionReports() {
     // A raw data report with custom table configs
     final DecisionReportDataDto rawReport = new DecisionReportDataDto();

@@ -47,6 +47,7 @@ import static org.camunda.optimize.util.DmnModels.OUTPUT_VARIABLE_STRING_OUTPUT;
 import static org.camunda.optimize.util.DmnModels.STRING_INPUT_ID;
 import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
 
@@ -186,7 +187,7 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
       .build();
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
     return Arrays.stream(AggregateByDateUnit.values()).filter(unit -> !AggregateByDateUnit.AUTOMATIC.equals(unit));
   }

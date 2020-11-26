@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
@@ -235,7 +236,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   }
 
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexIfExistsStep(indexMapping);
   }

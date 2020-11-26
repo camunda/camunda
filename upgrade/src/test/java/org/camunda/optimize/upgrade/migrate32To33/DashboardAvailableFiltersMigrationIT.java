@@ -21,12 +21,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
 
   @SneakyThrows
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void dashboardFiltersAllowCustomVariableSetFalse() {
     // given
     executeBulk("steps/3.2/dashboards/32-dashboard-bulk");
@@ -91,7 +92,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       }).collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private List<Map<String, Object>> getBooleanAndDateVariableFilters(final List<Map<String, Object>> filters) {
     return filters.stream()
       .filter(filter -> DashboardFilterType.VARIABLE.getId()
@@ -104,7 +105,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       }).collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private List<Map<String, Object>> getStringAndNumberVariableFilters(final List<Map<String, Object>> filters) {
     return filters.stream()
       .filter(filter -> DashboardFilterType.VARIABLE.getId()

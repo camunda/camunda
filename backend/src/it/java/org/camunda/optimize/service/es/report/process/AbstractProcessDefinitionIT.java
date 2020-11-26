@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -385,7 +386,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   // this method is used for the parameterized tests
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
     return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }

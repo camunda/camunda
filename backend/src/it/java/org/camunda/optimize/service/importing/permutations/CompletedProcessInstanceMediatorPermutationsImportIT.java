@@ -89,7 +89,6 @@ public class CompletedProcessInstanceMediatorPermutationsImportIT extends Abstra
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(6);
   }
 
-  @SuppressWarnings("unchecked")
   private static Stream<List<Class<? extends EngineImportMediator>>> completedActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       CompletedActivityInstanceEngineImportMediator.class,

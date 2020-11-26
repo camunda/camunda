@@ -62,6 +62,8 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   extends ModelElementDurationByModelElementDateByModelElementReportEvaluationIT {
@@ -615,7 +617,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
                                                                   final String[] filterValues,
                                                                   final List<Tuple> expectedResult) {
@@ -674,7 +676,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
                                                                               final String[] filterValues,
                                                                               final List<Tuple> expectedResult) {
@@ -951,7 +953,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     // @formatter:on
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskId,
@@ -963,7 +965,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     );
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskKey,

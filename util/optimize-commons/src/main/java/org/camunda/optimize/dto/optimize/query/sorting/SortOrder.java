@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.sorting;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
 public enum SortOrder {
   @JsonProperty("asc")
   ASC,
@@ -15,7 +17,7 @@ public enum SortOrder {
   ;
 
   // This is used for parameter deserialization under the hood as part of Jersey's TypeFromStringEnum
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   public static SortOrder fromString(String sortOrderParam) {
     return valueOf(sortOrderParam.toUpperCase());
   }

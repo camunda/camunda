@@ -85,6 +85,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -762,7 +763,7 @@ public class DefinitionReader {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
     switch (type) {
       case PROCESS:

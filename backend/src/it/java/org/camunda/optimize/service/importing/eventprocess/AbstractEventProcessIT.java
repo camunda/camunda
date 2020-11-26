@@ -75,6 +75,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -139,7 +140,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   // it's used as test param via @MethodSource
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<Arguments> cancelOrDeleteAction() {
     return Stream.of(
       Arguments.arguments(

@@ -24,6 +24,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.JsonBody.json;
 
 public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanupIT {
@@ -351,7 +352,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
 
   @Test
   @SneakyThrows
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionNoInstancesCleaned() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";

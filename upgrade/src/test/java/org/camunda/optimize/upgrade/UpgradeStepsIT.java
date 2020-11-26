@@ -56,6 +56,8 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -538,7 +540,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private Map<String, Object> getMappingFields() throws IOException {
     GetMappingsRequest request = new GetMappingsRequest();
     request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
@@ -584,7 +586,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     return new DeleteDataStep(TEST_INDEX_V2, QueryBuilders.termQuery("username", "admin"));
   }
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexIfExistsStep(indexMapping);
   }

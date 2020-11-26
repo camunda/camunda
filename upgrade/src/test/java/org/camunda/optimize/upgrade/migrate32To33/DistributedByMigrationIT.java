@@ -22,6 +22,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class DistributedByMigrationIT extends AbstractUpgrade32IT {
 
@@ -35,7 +36,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void migratedDistributedBy_processReports() {
     // given
     final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
@@ -65,7 +66,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void migratedDistributedBy_decisionReports() {
     // given
     final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();

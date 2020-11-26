@@ -65,6 +65,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -543,7 +544,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByAssigneeOnlyCountsUserTaskWithThatAssignee(final FilterOperator filterOperator,
                                                                  final String[] filterValues,
                                                                  final List<Tuple> expectedResult) {
@@ -600,7 +601,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByCandidateGroupOnlyCountsUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
                                                                              final String[] filterValues,
                                                                              final List<Tuple> expectedResult) {

@@ -28,6 +28,7 @@ import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.F
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
 
@@ -86,7 +87,7 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<Arguments> sortParamsAndExpectedComparator() {
     return Stream.of(
       Arguments.of(name, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getName)),

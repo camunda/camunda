@@ -110,6 +110,7 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
 public class OptimizeRequestExecutor {
@@ -283,7 +284,7 @@ public class OptimizeRequestExecutor {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T> Page<T> executeAndGetPage(Class<T> classToExtractFromResponse, int responseCode) {
     try (final Response response = execute()) {
       assertStatusCode(response, responseCode);

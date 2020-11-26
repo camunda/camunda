@@ -51,12 +51,13 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@SuppressWarnings("SameParameterValue")
+@SuppressWarnings(SAME_PARAM_VALUE)
 public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
