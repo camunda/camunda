@@ -24,7 +24,7 @@ static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
 }
 
 static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
-  return itStageBasePod(3) + camBpmContainerSpec(camBpmVersion)
+  return itStageBasePod(2) + camBpmContainerSpec(camBpmVersion)
 }
 
 static String itStageBasePod(int limitsCpu) {
@@ -219,7 +219,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 120, unit: 'MINUTES')
+    timeout(time: 240, unit: 'MINUTES')
   }
 
   stages {
