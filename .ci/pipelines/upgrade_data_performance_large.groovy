@@ -223,9 +223,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "agents-n1-standard-32-netssd-stable"
       operator: "Exists"
       effect: "NoSchedule"
   containers:
