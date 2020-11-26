@@ -33,6 +33,7 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
@@ -293,8 +294,8 @@ public class EventProcessClient {
       .processInstanceId(IdGenerator.getNextId())
       .processDefinitionKey(IdGenerator.getNextId())
       .processDefinitionVersion("1")
-      .endDate(OffsetDateTime.now().minusMinutes(1L))
-      .endDate(OffsetDateTime.now())
+      .endDate(LocalDateUtil.getCurrentDateTime().minusMinutes(1L))
+      .endDate(LocalDateUtil.getCurrentDateTime())
       .duration(60000L)
       .state(ProcessInstanceConstants.COMPLETED_STATE)
       .variables(Collections.emptyList())
@@ -305,8 +306,8 @@ public class EventProcessClient {
                   .id(ingestedEvent.getId())
                   .activityId(IdGenerator.getNextId())
                   .processInstanceId(ingestedEvent.getTraceid())
-                  .startDate(OffsetDateTime.now().minusSeconds(30L))
-                  .endDate(OffsetDateTime.now().minusSeconds(10L))
+                  .startDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
+                  .endDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
                   .durationInMs(0L)
                   .activityType("startEvent")
                   .build()

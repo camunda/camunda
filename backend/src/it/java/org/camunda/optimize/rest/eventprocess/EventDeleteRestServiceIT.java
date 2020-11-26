@@ -548,11 +548,11 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   private void assertThatEventsHaveBeenDeleted(final List<EventDto> allSavedEventsBeforeDelete,
-                                               final List<String> expectedDeletedEvenIds) {
+                                               final List<String> expectedDeletedEventIds) {
     assertThat(getAllStoredEvents())
-      .hasSize(allSavedEventsBeforeDelete.size() - expectedDeletedEvenIds.size())
+      .hasSize(allSavedEventsBeforeDelete.size() - expectedDeletedEventIds.size())
       .extracting(EventDto::getId)
-      .doesNotContainAnyElementsOf(expectedDeletedEvenIds);
+      .doesNotContainAnyElementsOf(expectedDeletedEventIds);
   }
 
   private void assertEventInstanceContainsAllEventsOfIds(final EventProcessInstanceDto eventInstance,
