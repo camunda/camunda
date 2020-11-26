@@ -17,11 +17,12 @@ import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.PartitionsActuatorClient.PartitionStatus;
+import io.zeebe.test.util.asserts.EitherAssert;
 import io.zeebe.test.util.asserts.TopologyAssert;
+import io.zeebe.test.util.testcontainers.ManagedVolume;
+import io.zeebe.util.Either;
 import io.zeebe.util.VersionUtil;
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,15 +34,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.agrona.IoUtil;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
-import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
 
 public class RollingUpdateTest {
@@ -56,24 +55,8 @@ public class RollingUpdateTest {
           .endEvent()
           .done();
 
-  private static final File SHARED_DATA;
-
-  // There's an issue when running tests with a docker-in-docker sibling on our CI platform, where
-  // mounting shared folders to /tmp on the test container fails to persist anything. So on CI we
-  // use a different mount point, but locally it makes sense to use /tmp to ensure the folder is
-  // later removed.
-  static {
-    final var sharedDataPath =
-        Optional.ofNullable(System.getenv("ZEEBE_CI_SHARED_DATA"))
-            .map(Paths::get)
-            .orElse(Paths.get(System.getProperty("tmpdir", "/tmp"), "shared"));
-    SHARED_DATA = sharedDataPath.toAbsolutePath().toFile();
-    IoUtil.ensureDirectoryExists(SHARED_DATA, "temporary folder for Docker");
-  }
-
-  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder(SHARED_DATA);
-
   private List<ZeebeContainer> containers;
+  private List<ManagedVolume> volumes;
   private String initialContactPoints;
   private Network network;
 
@@ -85,6 +68,8 @@ public class RollingUpdateTest {
             .collect(Collectors.joining(","));
 
     network = Network.newNetwork();
+    volumes =
+        List.of(ManagedVolume.newVolume(), ManagedVolume.newVolume(), ManagedVolume.newVolume());
     containers =
         Arrays.asList(
             new ZeebeContainer("camunda/zeebe:" + OLD_VERSION),
@@ -98,8 +83,12 @@ public class RollingUpdateTest {
 
   @After
   public void tearDown() {
-    containers.parallelStream().forEach(Startable::stop);
-    network.close();
+    if (containers != null) {
+      containers.parallelStream().forEach(CloseHelper::quietClose);
+    }
+
+    CloseHelper.quietClose(network);
+    CloseHelper.quietCloseAll(volumes);
   }
 
   @Test
@@ -311,7 +300,9 @@ public class RollingUpdateTest {
   }
 
   private ZeebeContainer updateBroker(final int index) {
-    final var broker = new ZeebeContainer(CURRENT_IMAGE_NAME);
+    final var broker =
+        new ZeebeContainer(CURRENT_IMAGE_NAME)
+            .withVolumesFrom(containers.get(index), BindMode.READ_WRITE);
     containers.set(index, broker);
     return configureBrokerContainer(index, containers);
   }
@@ -321,11 +312,12 @@ public class RollingUpdateTest {
     final int clusterSize = brokers.size();
     final var broker = brokers.get(index);
     final var hostName = "broker-" + index;
-    final var volumePath = getBrokerVolumePath(index);
+    final var volume = volumes.get(index);
 
     return broker
         .withNetwork(network)
         .withNetworkAliases(hostName)
+        .withCreateContainerCmdModifier(volume::attachVolumeToContainer)
         .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
         .withEnv("ZEEBE_BROKER_CLUSTER_NODEID", String.valueOf(index))
@@ -337,20 +329,20 @@ public class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "250ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
         .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        .withFileSystemBind(volumePath.toString(), "/usr/local/zeebe/data");
-  }
-
-  private Path getBrokerVolumePath(final int index) {
-    final var file = new File(tmpFolder.getRoot(), "broker-" + index);
-    IoUtil.ensureDirectoryExists(file, "broker shared data folder");
-
-    return file.toPath().toAbsolutePath();
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
   }
 
   private void assertBrokerHasAtLeastOneSnapshot(final int index) {
-    final var path = getBrokerVolumePath(index);
-    final var snapshotPath = path.resolve("raft-partition/partitions/1/snapshots");
-    assertThat(snapshotPath).isNotEmptyDirectory();
+    final ZeebeContainer broker = containers.get(index);
+    final PartitionsActuatorClient partitionsActuatorClient =
+        new PartitionsActuatorClient(broker.getExternalMonitoringAddress());
+
+    final Either<Throwable, Map<String, PartitionStatus>> response =
+        partitionsActuatorClient.queryPartitions();
+    EitherAssert.assertThat(response).isRight();
+
+    final PartitionStatus partitionStatus = response.get().get("1");
+    assertThat(partitionStatus).isNotNull();
+    assertThat(partitionStatus.snapshotId).isNotBlank();
   }
 }
