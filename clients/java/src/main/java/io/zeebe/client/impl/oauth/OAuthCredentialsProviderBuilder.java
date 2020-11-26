@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
@@ -29,7 +30,11 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
   public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
   public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
+  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
+  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
+  private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+  private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
 
   private String clientId;
   private String clientSecret;
@@ -38,6 +43,8 @@ public final class OAuthCredentialsProviderBuilder {
   private URL authorizationServer;
   private String credentialsCachePath;
   private File credentialsCache;
+  private Duration connectTimeout;
+  private Duration readTimeout;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -98,6 +105,34 @@ public final class OAuthCredentialsProviderBuilder {
     return credentialsCache;
   }
 
+  /**
+   * The connection timeout of request. The default value is 5 seconds. Max value is {@link
+   * Integer#MAX_VALUE} milliseconds.
+   */
+  public OAuthCredentialsProviderBuilder connectTimeout(final Duration connectTimeout) {
+    this.connectTimeout = connectTimeout;
+    return this;
+  }
+
+  /** @see #connectTimeout(Duration) */
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  /**
+   * The data read timeout of request. The default value is 5 seconds. Max value is {@link
+   * Integer#MAX_VALUE} milliseconds.
+   */
+  public OAuthCredentialsProviderBuilder readTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
+    return this;
+  }
+
+  /** @see #readTimeout(Duration) */
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
   /** @return a new {@link OAuthCredentialsProvider} with the provided configuration options. */
   public OAuthCredentialsProvider build() {
     checkEnvironmentOverrides();
@@ -113,6 +148,8 @@ public final class OAuthCredentialsProviderBuilder {
     final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
     final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
     final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
+    final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
+    final String envConnectTimeout = Environment.system().get(OAUTH_ENV_CONNECT_TIMEOUT);
 
     if (envClientId != null) {
       clientId = envClientId;
@@ -133,6 +170,14 @@ public final class OAuthCredentialsProviderBuilder {
     if (envCachePath != null) {
       credentialsCachePath = envCachePath;
     }
+
+    if (envConnectTimeout != null) {
+      connectTimeout = Duration.ofMillis(Long.parseLong(envConnectTimeout));
+    }
+
+    if (envReadTimeout != null) {
+      readTimeout = Duration.ofMillis(Long.parseLong(envReadTimeout));
+    }
   }
 
   private void applyDefaults() {
@@ -145,6 +190,14 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (authorizationServerUrl == null) {
       authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
+    }
+
+    if (connectTimeout == null) {
+      connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+    }
+
+    if (readTimeout == null) {
+      readTimeout = DEFAULT_READ_TIMEOUT;
     }
   }
 
@@ -163,8 +216,19 @@ public final class OAuthCredentialsProviderBuilder {
         throw new IllegalArgumentException(
             "Expected specified credentials cache to be a file but found directory instead.");
       }
+      validateTimeout(connectTimeout, "ConnectTimeout");
+      validateTimeout(readTimeout, "ReadTimeout");
     } catch (final NullPointerException | IOException e) {
       throw new IllegalArgumentException(e);
+    }
+  }
+
+  private void validateTimeout(final Duration timeout, final String timeoutName) {
+    if (timeout.isZero() || timeout.isNegative() || timeout.toMillis() > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          String.format(
+              "%s timeout is %s milliseconds, expected timeout to be a positive number of milliseconds smaller than %s.",
+              timeoutName, timeout.toMillis(), Integer.MAX_VALUE));
     }
   }
 }
