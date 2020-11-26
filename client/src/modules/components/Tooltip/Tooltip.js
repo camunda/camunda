@@ -39,6 +39,11 @@ export default function Tooltip({
     setStyle({left: left + 'px', top: box[position] + 'px'});
   }
 
+  let useLightTheme = theme === 'light';
+  if (document.body.classList.contains('dark')) {
+    useLightTheme = !useLightTheme;
+  }
+
   return (
     <>
       {React.Children.map(children, (child) =>
@@ -60,10 +65,13 @@ export default function Tooltip({
       )}
       {hovering &&
         ReactDOM.createPortal(
-          <div className={classnames('Tooltip', position, theme, align)} style={style}>
+          <div
+            className={classnames('Tooltip', position, align, useLightTheme ? 'light' : 'dark')}
+            style={style}
+          >
             {content}
           </div>,
-          document.body
+          document.fullscreenElement || document.body
         )}
     </>
   );
