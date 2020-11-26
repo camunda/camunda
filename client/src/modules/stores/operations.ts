@@ -13,7 +13,12 @@ import {
   IReactionDisposer,
 } from 'mobx';
 import * as operationsApi from 'modules/api/batchOperations';
-import * as instancesApi from 'modules/api/instances';
+import {
+  applyBatchOperation,
+  applyOperation,
+  BatchOperationQuery,
+} from 'modules/api/instances';
+import {OperationType} from 'modules/types';
 import {sortOperations} from './utils/sortOperations';
 
 type Operation = {
@@ -77,16 +82,33 @@ class Operations {
     this.setOperations(response);
   };
 
-  applyBatchOperation = async (operationType: any, query: any) => {
-    const response = await instancesApi.applyBatchOperation(
-      operationType,
-      query
-    );
-    this.prependOperations(response);
+  applyBatchOperation = async ({
+    operationType,
+    query,
+    onSuccess,
+    onError,
+  }: {
+    operationType: OperationType;
+    query: BatchOperationQuery;
+    onSuccess: () => void;
+    onError: () => void;
+  }) => {
+    try {
+      const response = await applyBatchOperation(operationType, query);
+
+      if (response.ok) {
+        this.prependOperations(await response.json());
+        onSuccess();
+      } else {
+        onError();
+      }
+    } catch {
+      onError();
+    }
   };
 
   applyOperation = async (id: any, payload: any) => {
-    const response = await instancesApi.applyOperation(id, payload);
+    const response = await applyOperation(id, payload);
     this.prependOperations(response);
   };
 

@@ -9,6 +9,7 @@ import React, {useState, useContext} from 'react';
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
+import {OperationType} from 'modules/types';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
@@ -27,7 +28,7 @@ type Props = {
 };
 
 const CreateOperationDropdown = ({label, selectedCount}: Props) => {
-  const [modalMode, setModalMode] = useState(null);
+  const [modalMode, setModalMode] = useState<OperationType | null>(null);
 
   const [dropdownWidth, setDropdownWidth] = useState();
   const {applyBatchOperation} = useOperationApply();
@@ -40,8 +41,9 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
 
   const handleApplyClick = () => {
     closeModal();
-    applyBatchOperation(modalMode);
-    expandOperations();
+    if (modalMode !== null) {
+      applyBatchOperation(modalMode, expandOperations);
+    }
   };
 
   const handleCancelClick = () => {
@@ -69,12 +71,10 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
         calculateWidth={setDropdownWidth}
       >
         <Dropdown.Option
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
           onClick={() => setModalMode(OPERATION_TYPE.RESOLVE_INCIDENT)}
           label="Retry"
         />
         <Dropdown.Option
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
           onClick={() => setModalMode(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
           label="Cancel"
         />

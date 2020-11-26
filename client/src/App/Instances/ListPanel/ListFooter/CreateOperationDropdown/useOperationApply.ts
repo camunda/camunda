@@ -6,12 +6,14 @@
 
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {filtersStore} from 'modules/stores/filters';
+import {OperationType} from 'modules/types';
 import {operationsStore} from 'modules/stores/operations';
 import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
 } from 'modules/utils/filter';
 import {instancesStore} from 'modules/stores/instances';
+import {useNotifications} from 'modules/notifications';
 
 export default function useOperationApply() {
   const {
@@ -20,8 +22,13 @@ export default function useOperationApply() {
     reset,
   } = instanceSelectionStore;
 
+  const notifications = useNotifications();
+
   return {
-    applyBatchOperation: (operationType: any) => {
+    applyBatchOperation: (
+      operationType: OperationType,
+      onSuccess: () => void
+    ) => {
       const {filter, groupedWorkflows} = filtersStore.state;
 
       const query = parseFilterForRequest(
@@ -46,10 +53,23 @@ export default function useOperationApply() {
         });
       }
 
-      operationsStore.applyBatchOperation(operationType, {
-        ...query,
-        ids,
-        excludeIds: excludedInstanceIds,
+      operationsStore.applyBatchOperation({
+        operationType,
+        query: {
+          ...query,
+          ids,
+          excludeIds: excludedInstanceIds,
+        },
+        onSuccess,
+        onError: () => {
+          instancesStore.removeInstanceFromInstancesWithActiveOperations({
+            ids,
+            shouldPollAllVisibleIds: selectedInstanceIds.length === 0,
+          });
+          notifications.displayNotification('error', {
+            headline: 'Operation could not be created',
+          });
+        },
       });
 
       reset();

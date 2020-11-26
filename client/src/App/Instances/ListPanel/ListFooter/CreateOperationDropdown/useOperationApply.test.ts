@@ -23,12 +23,12 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {isEqual} from 'lodash';
 
-const OPERATION_TYPE = 'DUMMY';
+const OPERATION_TYPE = 'RESOLVE_INCIDENT';
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
 
-  result.current.applyBatchOperation(OPERATION_TYPE);
+  result.current.applyBatchOperation(OPERATION_TYPE, jest.fn());
 }
 
 describe('useOperationApply', () => {

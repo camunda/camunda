@@ -77,37 +77,102 @@ describe('stores/operations', () => {
     ]);
   });
 
-  it('should prepend operations when an operation is applied', async () => {
-    const newOperation = {
-      id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
-      name: null,
-      type: 'RESOLVE_INCIDENT',
-      startDate: '2020-09-30T06:14:55.185+0000',
-      endDate: '2020-09-30T06:14:55.209+0000',
-      username: 'demo',
-      instancesCount: 2,
-      operationsTotalCount: 0,
-      operationsFinishedCount: 0,
-    };
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
-    mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
-        res.once(ctx.json(newOperation))
-      )
-    );
+  describe('Apply Batch Operation', () => {
+    it('should prepend operations when a batch operation is applied', async () => {
+      const newOperation = {
+        id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
+        name: null,
+        type: 'RESOLVE_INCIDENT',
+        startDate: '2020-09-30T06:14:55.185+0000',
+        endDate: '2020-09-30T06:14:55.209+0000',
+        username: 'demo',
+        instancesCount: 2,
+        operationsTotalCount: 0,
+        operationsFinishedCount: 0,
+      };
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+          res.once(ctx.json(newOperation))
+        )
+      );
 
-    await operationsStore.fetchOperations();
-    expect(operationsStore.state.operations).toEqual(operations);
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
 
-    await operationsStore.applyBatchOperation('CANCEL_WORKFLOW_INSTANCE', {});
-    expect(operationsStore.state.operations).toEqual([
-      newOperation,
-      ...operations,
-    ]);
+      const mockOnSuccess = jest.fn();
+      await operationsStore.applyBatchOperation({
+        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        query: {ids: [], excludeIds: []},
+        onSuccess: mockOnSuccess,
+        onError: () => {},
+      });
+      expect(operationsStore.state.operations).toEqual([
+        newOperation,
+        ...operations,
+      ]);
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
+
+    it('should not prepend operations and call error callback when a server error occured', async () => {
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        )
+      );
+
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
+
+      const mockOnError = jest.fn();
+
+      await operationsStore.applyBatchOperation({
+        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        query: {ids: [], excludeIds: []},
+        onSuccess: jest.fn(),
+        onError: mockOnError,
+      });
+
+      expect(operationsStore.state.operations).toEqual(operations);
+      expect(mockOnError).toHaveBeenCalled();
+    });
+
+    it('should not prepend operations and call error callback when a network error occured', async () => {
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post('/api/workflow-instances/batch-operation', (_, res) =>
+          res.networkError('A network error')
+        )
+      );
+
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
+
+      const mockOnError = jest.fn();
+
+      await operationsStore.applyBatchOperation({
+        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        query: {ids: [], excludeIds: []},
+        onSuccess: jest.fn(),
+        onError: mockOnError,
+      });
+
+      expect(operationsStore.state.operations).toEqual(operations);
+      expect(mockOnError).toHaveBeenCalled();
+    });
   });
 
   it('should increase page', () => {

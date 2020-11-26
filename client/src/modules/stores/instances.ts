@@ -16,6 +16,7 @@ import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import {
   fetchWorkflowInstances,
   fetchWorkflowInstancesByIds,
+  WorkflowInstancesQuery,
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {DEFAULT_MAX_RESULTS} from 'modules/constants';
@@ -91,7 +92,12 @@ class Instances {
     this.state.instancesWithCompletedOperations = [];
   };
 
-  fetchInstances = async (payload: any) => {
+  fetchInstances = async (
+    payload: WorkflowInstancesQuery = {
+      firstResult: 0,
+      maxResults: DEFAULT_MAX_RESULTS,
+    }
+  ) => {
     this.startLoading();
 
     const response = await fetchWorkflowInstances(payload);
@@ -181,6 +187,27 @@ class Instances {
     }
   };
 
+  removeInstanceFromInstancesWithActiveOperations = ({
+    ids,
+    shouldPollAllVisibleIds,
+  }: {
+    ids: string[];
+    shouldPollAllVisibleIds?: boolean;
+  }) => {
+    if (shouldPollAllVisibleIds) {
+      this.fetchInstances({
+        ...filtersStore.getFiltersPayload(),
+        sorting: filtersStore.state.sorting,
+        firstResult: filtersStore.firstElement,
+        maxResults: DEFAULT_MAX_RESULTS,
+      });
+    } else {
+      this.state.instancesWithActiveOperations = this.state.instancesWithActiveOperations.filter(
+        (id) => !ids.includes(id)
+      );
+    }
+  };
+
   startPollingInstancesById = async () => {
     this.intervalId = setInterval(() => {
       this.handlePollingInstancesByIds(
@@ -221,6 +248,7 @@ decorate(Instances, {
   resetInstancesWithCompletedOperations: action,
   setInstancesWithActiveOperations: action,
   setInstancesWithCompletedOperations: action,
+  removeInstanceFromInstancesWithActiveOperations: action,
   visibleIdsInListPanel: computed,
   areWorkflowInstancesEmpty: computed,
 });

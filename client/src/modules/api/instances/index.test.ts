@@ -154,7 +154,7 @@ describe('instances api', () => {
   describe('applyBatchOperation', () => {
     it('should call post with the right payload', async () => {
       // given
-      const query = {id: 1, incidents: true};
+      const query = {ids: ['1'], incidents: true, excludeIds: []};
 
       // when
       await applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT, query);
@@ -198,7 +198,7 @@ describe('instances api', () => {
   describe('fetchSequenceFlows', () => {
     it('should call get with the right url', async () => {
       // given
-      const workflowId = 100;
+      const workflowId = ['100'];
 
       // when
       await fetchSequenceFlows(workflowId);

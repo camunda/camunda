@@ -14,7 +14,11 @@ import {
 import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {groupedWorkflowsMock, mockWorkflowStatistics} from 'modules/testUtils';
+import {
+  groupedWorkflowsMock,
+  mockWorkflowStatistics,
+  mockWorkflowInstances,
+} from 'modules/testUtils';
 import {filtersStore} from 'modules/stores/filters';
 
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
@@ -24,6 +28,7 @@ import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {instancesStore} from 'modules/stores/instances';
+import {NotificationProvider} from 'modules/notifications';
 
 const locationMock = {pathname: '/instances'};
 const historyMock = createMemoryHistory();
@@ -32,7 +37,9 @@ const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter>
-        <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+        <NotificationProvider>
+          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+        </NotificationProvider>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -74,7 +81,7 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances({});
+      await instancesStore.fetchInstances();
       filtersStore.setFilter({});
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -97,7 +104,7 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances({});
+      await instancesStore.fetchInstances();
 
       filtersStore.setFilter(DEFAULT_FILTER);
       render(<ListPanel />, {
@@ -123,7 +130,7 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      instancesStore.fetchInstances({});
+      instancesStore.fetchInstances();
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -147,7 +154,7 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances({});
+      await instancesStore.fetchInstances();
 
       render(<ListPanel />, {wrapper: Wrapper});
       expect(screen.getByTestId('instances-list')).toBeInTheDocument();
@@ -165,7 +172,7 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances({});
+      await instancesStore.fetchInstances();
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
@@ -182,10 +189,14 @@ describe('ListPanel', () => {
         '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
         (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 0}))
+      ),
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) => res.once(ctx.json({}))
       )
     );
 
-    await instancesStore.fetchInstances({});
+    await instancesStore.fetchInstances();
     render(<ListPanel />, {
       wrapper: Wrapper,
     });
@@ -197,5 +208,115 @@ describe('ListPanel', () => {
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
+  });
+
+  describe('spinner', () => {
+    it('should display spinners on batch operation', async () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        ),
+        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+          res.once(ctx.json({}))
+        )
+      );
+      instancesStore.fetchInstances();
+
+      render(<ListPanel />, {
+        wrapper: Wrapper,
+      });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+      fireEvent.click(
+        screen.getByRole('checkbox', {name: 'Select all instances'})
+      );
+      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        )
+      );
+      instancesStore.fetchInstances();
+      await waitForElementToBeRemoved(
+        screen.getAllByTestId('operation-spinner')
+      );
+    });
+
+    it('should remove spinners after batch operation if a server error occurs', async () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        ),
+        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+        ),
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        )
+      );
+
+      instancesStore.fetchInstances();
+
+      render(<ListPanel />, {
+        wrapper: Wrapper,
+      });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+      fireEvent.click(
+        screen.getByRole('checkbox', {name: 'Select all instances'})
+      );
+      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+      await waitForElementToBeRemoved(
+        screen.getAllByTestId('operation-spinner')
+      );
+    });
+
+    it('should remove spinners after batch operation if a network error occurs', async () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        ),
+        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+          res.networkError('A network error')
+        ),
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        )
+      );
+
+      instancesStore.fetchInstances();
+
+      render(<ListPanel />, {
+        wrapper: Wrapper,
+      });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+      fireEvent.click(
+        screen.getByRole('checkbox', {name: 'Select all instances'})
+      );
+      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+      await waitForElementToBeRemoved(
+        screen.getAllByTestId('operation-spinner')
+      );
+    });
   });
 });
