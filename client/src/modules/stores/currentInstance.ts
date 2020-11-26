@@ -12,31 +12,12 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
+import {Instance} from 'modules/types';
 import {fetchWorkflowInstance} from 'modules/api/instances';
 import {getWorkflowName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
 import {PAGE_TITLE} from 'modules/constants';
-
-type Operation = {
-  id: string;
-  type: string;
-  state: string;
-  errorMessage: null | string;
-};
-
-type Instance = {
-  bpmnProcessId: string;
-  endDate: null | string;
-  hasActiveOperation: boolean;
-  id: string;
-  operations: Operation[];
-  startDate: string;
-  state: 'ACTIVE' | 'COMPLETED' | 'CANCELED' | 'INCIDENT' | 'TERMINATED';
-  workflowId: string;
-  workflowName: string;
-  workflowVersion: number;
-};
 
 type State = {
   instance: null | Instance;
@@ -70,6 +51,18 @@ class CurrentInstance {
 
   setCurrentInstance = (currentInstance: any) => {
     this.state.instance = currentInstance;
+  };
+
+  activateOperation = () => {
+    if (this.state.instance != null) {
+      this.state.instance.hasActiveOperation = true;
+    }
+  };
+
+  deactivateOperation = () => {
+    if (this.state.instance != null) {
+      this.state.instance.hasActiveOperation = false;
+    }
   };
 
   get workflowTitle() {
@@ -117,6 +110,8 @@ decorate(CurrentInstance, {
   state: observable,
   reset: action,
   setCurrentInstance: action,
+  activateOperation: action,
+  deactivateOperation: action,
   workflowTitle: computed,
 });
 

@@ -110,10 +110,10 @@ describe('instance utils', () => {
         );
       });
 
-    it('should return {} when no operations are available', () => {
+    it('should return null when no operations are available', () => {
       mockOperations = [];
       createMockOperations(0, mockOperations);
-      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual({});
+      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual(null);
     });
 
     it('should retrun operations sorted in ascending order by startDate', () => {

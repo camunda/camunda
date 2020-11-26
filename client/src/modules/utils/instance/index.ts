@@ -5,6 +5,7 @@
  */
 
 import {STATE} from 'modules/constants';
+import {Operation} from 'modules/types';
 
 /**
  * @returns a boolean showing if the current instance has an incident
@@ -26,8 +27,10 @@ export const isRunning = (instance: any) => {
  * @returns the last operation from an operations list or an empty {}
  * @param {*} operations array of operations
  */
-export const getLatestOperation = (operations = []) => {
-  return operations.length > 0 ? operations[0] : {};
+export const getLatestOperation = (
+  operations: Array<Operation> = []
+): Operation | null => {
+  return operations.length > 0 ? operations[0] : null;
 };
 
 export const getActiveIncident = (incidents = []) => {

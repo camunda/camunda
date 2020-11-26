@@ -18,13 +18,15 @@ const mockOperationCreated = {
   operationsFinishedCount: 0,
 };
 
-const mockInstanceWithActiveOperation = Object.freeze(createInstance());
+const mockInstanceWithActiveOperation = createInstance({
+  hasActiveOperation: true,
+});
 
-const mockInstanceWithoutOperations = Object.freeze({
+const mockInstanceWithoutOperations = {
   ...mockInstanceWithActiveOperation,
   hasActiveOperation: false,
   operations: [],
-});
+} as const;
 
 export {
   mockOperationCreated,

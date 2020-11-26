@@ -25,10 +25,6 @@ const ListPanel = observer((props: any) => {
     },
   } = instancesStore;
 
-  const handleOperationButtonClick = (instance: any) => {
-    instancesStore.addInstancesWithActiveOperations({ids: [instance.id]});
-  };
-
   const getEmptyListMessage = () => {
     const {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'active' does not exist on type '{}'.
@@ -74,7 +70,6 @@ const ListPanel = observer((props: any) => {
           data={workflowInstances}
           expandState={props.expandState}
           isDataLoaded={!areInstancesLoading}
-          onOperationButtonClick={handleOperationButtonClick}
           Overlay={renderSpinner()}
         >
           {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Header' does not exist on type 'typeof L... Remove this comment to see the full error message */}

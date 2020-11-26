@@ -25,6 +25,15 @@ import {
   mockOperationCreated,
 } from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {NotificationProvider} from 'modules/notifications';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <NotificationProvider>{children}</NotificationProvider>
+    </ThemeProvider>
+  );
+};
 
 describe('InstanceHeader', () => {
   afterEach(() => {
@@ -40,7 +49,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: ThemeProvider});
+    render(<InstanceHeader />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -57,7 +66,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
-    render(<InstanceHeader />, {wrapper: ThemeProvider});
+    render(<InstanceHeader />, {wrapper: Wrapper});
 
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
@@ -85,7 +94,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    render(<InstanceHeader />, {wrapper: ThemeProvider});
+    render(<InstanceHeader />, {wrapper: Wrapper});
 
     mockServer.use(
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
@@ -104,8 +113,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    jest.advanceTimersByTime(5000);
-
+    jest.runOnlyPendingTimers();
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
     jest.useRealTimers();
   });
@@ -121,7 +129,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: ThemeProvider});
+    render(<InstanceHeader />, {wrapper: Wrapper});
 
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
@@ -130,9 +138,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole('button', {name: new RegExp('Cancel Instance')})
-    );
+    fireEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
@@ -158,7 +164,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: ThemeProvider});
+    render(<InstanceHeader />, {wrapper: Wrapper});
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -177,5 +183,31 @@ describe('InstanceHeader', () => {
     variablesStore.fetchVariables(mockInstanceWithActiveOperation.id);
 
     await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
+  });
+
+  it('should remove spinner when operation fails', async () => {
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithoutOperations))
+      ),
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+      )
+    );
+    render(<InstanceHeader />, {wrapper: Wrapper});
+
+    currentInstanceStore.init(mockInstanceWithoutOperations.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
+
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
   });
 });

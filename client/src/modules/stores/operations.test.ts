@@ -43,38 +43,98 @@ describe('stores/operations', () => {
     expect(operationsStore.state.page).toBe(2);
   });
 
-  it('should prepend operations when an operation is applied', async () => {
-    const newOperation = {
-      id: 'c6cde799-69bc-4dd5-9f98-3f931aa2c922',
-      name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
-      startDate: '2020-09-30T06:13:21.312+0000',
-      endDate: null,
-      username: 'demo',
-      instancesCount: 1,
-      operationsTotalCount: 1,
-      operationsFinishedCount: 0,
-    };
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(newOperation))
-      )
-    );
+  describe('Apply Operation', () => {
+    it('should prepend operations when an operation is applied', async () => {
+      const newOperation = {
+        id: 'c6cde799-69bc-4dd5-9f98-3f931aa2c922',
+        name: null,
+        type: 'CANCEL_WORKFLOW_INSTANCE',
+        startDate: '2020-09-30T06:13:21.312+0000',
+        endDate: null,
+        username: 'demo',
+        instancesCount: 1,
+        operationsTotalCount: 1,
+        operationsFinishedCount: 0,
+      };
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(newOperation))
+        )
+      );
 
-    await operationsStore.fetchOperations();
-    expect(operationsStore.state.operations).toEqual(operations);
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
 
-    await operationsStore.applyOperation(1, {});
-    expect(operationsStore.state.operations).toEqual([
-      newOperation,
-      ...operations,
-    ]);
+      await operationsStore.applyOperation({
+        instanceId: '1',
+        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        onError: () => {},
+      });
+      expect(operationsStore.state.operations).toEqual([
+        newOperation,
+        ...operations,
+      ]);
+    });
+
+    it('should not prepend operations and call error callback when a server error occured', async () => {
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) =>
+            res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        )
+      );
+
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
+
+      const mockOnError = jest.fn();
+
+      await operationsStore.applyOperation({
+        instanceId: '1',
+        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        onError: mockOnError,
+      });
+      expect(operationsStore.state.operations).toEqual(operations);
+      expect(mockOnError).toHaveBeenCalled();
+    });
+
+    it('should not prepend operations and call error callback when a network error occured', async () => {
+      mockServer.use(
+        rest.post('/api/batch-operations', (_, res, ctx) =>
+          res.once(ctx.json(operations))
+        )
+      );
+      mockServer.use(
+        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+          res.networkError('A network error')
+        )
+      );
+
+      await operationsStore.fetchOperations();
+      expect(operationsStore.state.operations).toEqual(operations);
+
+      const mockOnError = jest.fn();
+
+      await operationsStore.applyOperation({
+        instanceId: '1',
+        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        onError: mockOnError,
+      });
+      expect(operationsStore.state.operations).toEqual(operations);
+      expect(mockOnError).toHaveBeenCalled();
+    });
   });
 
   describe('Apply Batch Operation', () => {

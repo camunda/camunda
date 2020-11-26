@@ -15,9 +15,11 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 
 import * as Styled from './styled';
 import {variablesStore} from 'modules/stores/variables';
+import {useNotifications} from 'modules/notifications';
 
 const InstanceHeader = observer(() => {
   const {instance} = currentInstanceStore.state;
+  const notifications = useNotifications();
 
   return (
     <Styled.SplitPaneHeader>
@@ -43,6 +45,13 @@ const InstanceHeader = observer(() => {
                 <Styled.OperationsWrapper>
                   <Operations
                     instance={instance}
+                    onOperation={() => currentInstanceStore.activateOperation()}
+                    onFailure={() => {
+                      currentInstanceStore.deactivateOperation();
+                      notifications.displayNotification('error', {
+                        headline: 'Operation could not be created',
+                      });
+                    }}
                     forceSpinner={
                       variablesStore.hasActiveOperation ||
                       instance?.hasActiveOperation

@@ -36,11 +36,11 @@ const historyMock = createMemoryHistory();
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter>
-        <NotificationProvider>
+      <NotificationProvider>
+        <MemoryRouter>
           <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-        </NotificationProvider>
-      </MemoryRouter>
+        </MemoryRouter>
+      </NotificationProvider>
     </ThemeProvider>
   );
 };
@@ -208,6 +208,36 @@ describe('ListPanel', () => {
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
+  });
+
+  it('should remove spinner when operation on an instance has failed', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 0}))
+      ),
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+      )
+    );
+
+    await instancesStore.fetchInstances();
+    render(<ListPanel />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      screen.queryByTitle(/has scheduled operations/i)
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel Instance 1'}));
+    expect(
+      screen.getByTitle(/instance 1 has scheduled operations/i)
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
   });
 
   describe('spinner', () => {

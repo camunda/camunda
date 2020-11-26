@@ -38,6 +38,17 @@ type State = {
   isInitialLoadComplete: boolean;
 };
 
+type Payload = {
+  operationType: OperationType;
+  incidentId?: string;
+};
+
+type ApplyOperationProps = {
+  instanceId: string;
+  payload: Payload;
+  onError: () => void;
+};
+
 const DEFAULT_STATE: State = {
   operations: [],
   page: 1,
@@ -107,9 +118,22 @@ class Operations {
     }
   };
 
-  applyOperation = async (id: any, payload: any) => {
-    const response = await applyOperation(id, payload);
-    this.prependOperations(response);
+  applyOperation = async ({
+    instanceId,
+    payload,
+    onError,
+  }: ApplyOperationProps) => {
+    try {
+      const response = await applyOperation(instanceId, payload);
+
+      if (response.ok) {
+        this.prependOperations(await response.json());
+      } else {
+        onError();
+      }
+    } catch {
+      return onError();
+    }
   };
 
   handlePolling = async () => {

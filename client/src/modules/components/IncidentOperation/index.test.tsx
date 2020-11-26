@@ -7,12 +7,26 @@
 import React from 'react';
 import {createIncident} from 'modules/testUtils';
 import {IncidentOperation} from './index';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {operationsStore} from 'modules/stores/operations';
 import {mockOperationCreated, mockProps} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {NotificationProvider} from 'modules/notifications';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <NotificationProvider>{children}</NotificationProvider>
+    </ThemeProvider>
+  );
+};
 
 describe('IncidentOperation', () => {
   afterEach(() => {
@@ -20,7 +34,7 @@ describe('IncidentOperation', () => {
   });
 
   it('should not render a spinner', () => {
-    render(<IncidentOperation {...mockProps} />, {wrapper: ThemeProvider});
+    render(<IncidentOperation {...mockProps} />, {wrapper: Wrapper});
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
   });
 
@@ -45,7 +59,7 @@ describe('IncidentOperation', () => {
         instanceId={'instance_1'}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -55,12 +69,54 @@ describe('IncidentOperation', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
+  it('should remove spinner when a server error occurs on an operation', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+      )
+    );
+
+    render(
+      <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+  });
+
+  it('should remove spinner when a network error occurs on an operation', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) => res.networkError('A network error')
+      )
+    );
+
+    render(
+      <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+  });
+
   it('should render a spinner when retry button is clicked', () => {
     render(
-      <IncidentOperation
-        incident={createIncident()}
-        instanceId={'instance_1'}
-      />,
+      <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {wrapper: ThemeProvider}
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();

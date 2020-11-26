@@ -630,6 +630,27 @@ describe('stores/instances', () => {
         ])
       );
     });
+
+    it('should remove a single instance from instances with active operations list', async () => {
+      await instancesStore.fetchInstances();
+
+      instancesStore.addInstancesWithActiveOperations({
+        ids: ['instance_id_1', 'instance_id_2'],
+      });
+
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
+        'instance_id_1',
+        'instance_id_2',
+      ]);
+
+      instancesStore.removeInstanceFromInstancesWithActiveOperations({
+        ids: ['instance_id_2'],
+      });
+
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
+        'instance_id_1',
+      ]);
+    });
   });
 
   describe('fetch instances autorun', () => {
@@ -637,7 +658,8 @@ describe('stores/instances', () => {
       instancesStore.init();
       fetchInstancesSpy.mockReset();
     });
-    it('should fetch instances every time sorting changes', () => {
+
+    it('should fetch instances every time sorting changes', async () => {
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
       expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
       filtersStore.setSorting({...DEFAULT_SORTING, sortBy: 'instanceId'});
@@ -647,6 +669,7 @@ describe('stores/instances', () => {
       });
 
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(instancesStore.state.isLoading).toBe(false));
 
       filtersStore.setSorting(DEFAULT_SORTING);
       expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);

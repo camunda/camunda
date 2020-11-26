@@ -17,6 +17,7 @@ import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
+import {InstanceState} from 'modules/types';
 
 import {getPopoverPosition, isNonSelectableFlowNode} from './service';
 
@@ -32,7 +33,7 @@ type Props = {
   onFlowNodeSelection?: (...args: any[]) => any;
   flowNodeStateOverlays?: {
     id: string;
-    state: 'ACTIVE' | 'COMPLETED' | 'CANCELED' | 'INCIDENT' | 'TERMINATED';
+    state: InstanceState;
   }[];
   flowNodesStatistics?: {
     activityId: string;

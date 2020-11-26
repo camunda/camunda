@@ -9,4 +9,31 @@ type OperationType =
   | 'CANCEL_WORKFLOW_INSTANCE'
   | 'UPDATE_VARIABLE';
 
-export type {OperationType};
+type InstanceState =
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELED'
+  | 'INCIDENT'
+  | 'TERMINATED';
+
+type Operation = {
+  id: string;
+  type: OperationType;
+  state: InstanceState;
+  errorMessage: null | string;
+};
+
+type Instance = {
+  bpmnProcessId: string;
+  endDate: null | string;
+  hasActiveOperation: boolean;
+  id: string;
+  operations: Operation[];
+  startDate: string;
+  state: InstanceState;
+  workflowId: string;
+  workflowName: string;
+  workflowVersion: number;
+};
+
+export type {OperationType, InstanceState, Operation, Instance};

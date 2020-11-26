@@ -134,11 +134,9 @@ async function applyBatchOperation(
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.
  */
-async function applyOperation(instanceId: any, payload: any) {
-  const url = `${URL}/${instanceId}/operation`;
 
-  const response = await post(url, payload);
-  return await response.json();
+async function applyOperation(instanceId: string, payload: any) {
+  return post(`${URL}/${instanceId}/operation`, payload);
 }
 
 async function fetchVariables({instanceId, scopeId}: any) {

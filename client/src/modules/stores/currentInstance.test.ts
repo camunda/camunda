@@ -129,4 +129,17 @@ describe('stores/currentInstance', () => {
     currentInstanceStore.reset();
     expect(currentInstanceStore.workflowTitle).toBe(null);
   });
+
+  it('should set active operation state', async () => {
+    currentInstanceStore.setCurrentInstance({
+      id: '123',
+      hasActiveOperation: false,
+    });
+
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
+    currentInstanceStore.activateOperation();
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(true);
+    currentInstanceStore.deactivateOperation();
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
+  });
 });

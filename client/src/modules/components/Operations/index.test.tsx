@@ -5,27 +5,37 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {createMemoryHistory} from 'history';
-import {STATE, OPERATION_STATE} from 'modules/constants';
 import {filtersStore} from 'modules/stores/filters';
 import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
 import {mockServer} from 'modules/mockServer';
-import {INSTANCE, ACTIVE_INSTANCE, mockOperationCreated} from './index.setup';
+import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {Instance} from 'modules/types';
+
+const instanceMock: Instance = {
+  id: 'instance_1',
+  state: 'ACTIVE',
+  operations: [],
+  bpmnProcessId: '',
+  startDate: '',
+  endDate: null,
+  hasActiveOperation: true,
+  workflowId: '',
+  workflowName: '',
+  workflowVersion: 1,
+};
 
 describe('Operations', () => {
   describe('Operation Buttons', () => {
     it('should render retry and cancel button if instance is running and has an incident', () => {
-      render(
-        <Operations
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-        />,
-        {wrapper: ThemeProvider}
-      );
+      render(<Operations instance={{...instanceMock, state: 'INCIDENT'}} />, {
+        wrapper: ThemeProvider,
+      });
 
       expect(
         screen.getByTitle(`Retry Instance instance_1`)
@@ -35,12 +45,9 @@ describe('Operations', () => {
       ).toBeInTheDocument();
     });
     it('should render only cancel button if instance is running and does not have an incident', () => {
-      render(
-        <Operations
-          instance={{id: 'instance_1', state: STATE.ACTIVE, operations: []}}
-        />,
-        {wrapper: ThemeProvider}
-      );
+      render(<Operations instance={{...instanceMock, state: 'ACTIVE'}} />, {
+        wrapper: ThemeProvider,
+      });
 
       expect(
         screen.queryByTitle(`Retry Instance instance_1`)
@@ -52,7 +59,10 @@ describe('Operations', () => {
     it('should not render retry and cancel buttons if instance is completed', () => {
       render(
         <Operations
-          instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
+          instance={{
+            ...instanceMock,
+            state: 'COMPLETED',
+          }}
         />,
         {wrapper: ThemeProvider}
       );
@@ -67,7 +77,10 @@ describe('Operations', () => {
     it('should not render retry and cancel buttons if instance is canceled', () => {
       render(
         <Operations
-          instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
+          instance={{
+            ...instanceMock,
+            state: 'CANCELED',
+          }}
         />,
         {wrapper: ThemeProvider}
       );
@@ -79,54 +92,15 @@ describe('Operations', () => {
         screen.queryByTitle(`Cancel Instance instance_1`)
       ).not.toBeInTheDocument();
     });
-
-    it('should display spinner after clicking retry button', () => {
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
-        )
-      );
-
-      render(
-        <Operations
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-          onButtonClick={jest.fn()}
-        />,
-        {wrapper: ThemeProvider}
-      );
-
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTitle(`Retry Instance instance_1`));
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
-
-    it('should display spinner after clicking cancel button', () => {
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
-        )
-      );
-
-      render(
-        <Operations
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-          onButtonClick={jest.fn()}
-        />,
-        {wrapper: ThemeProvider}
-      );
-
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTitle(`Cancel Instance instance_1`));
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
   });
   describe('Spinner', () => {
     it('should not display spinner', () => {
       render(
         <Operations
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
+          instance={{
+            ...instanceMock,
+            state: 'INCIDENT',
+          }}
         />,
         {wrapper: ThemeProvider}
       );
@@ -136,49 +110,15 @@ describe('Operations', () => {
     it('should display spinner if it is forced', () => {
       render(
         <Operations
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
+          instance={{
+            ...instanceMock,
+            state: 'INCIDENT',
+          }}
           forceSpinner={true}
         />,
         {wrapper: ThemeProvider}
       );
 
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
-
-    it("should display spinner if incident's latest operation is scheduled, locked or sent", () => {
-      const {rerender} = render(
-        <Operations
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.SCHEDULED}],
-          }}
-        />,
-        {wrapper: ThemeProvider}
-      );
-
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-
-      rerender(
-        <Operations
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.LOCKED}],
-          }}
-        />
-      );
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-
-      rerender(
-        <Operations
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.SENT}],
-          }}
-        />
-      );
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     });
 
@@ -204,9 +144,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [],
+            ...instanceMock,
+            state: 'INCIDENT',
           }}
         />,
         {wrapper: ThemeProvider}

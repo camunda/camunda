@@ -187,7 +187,7 @@ export const createInstance = (options = {}) => {
     workflowName: 'someWorkflowName',
     workflowVersion: 1,
     ...options,
-  };
+  } as const;
 };
 
 export const createMockInstancesObject = (amount = 5, options = {}) => ({

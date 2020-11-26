@@ -9,6 +9,7 @@ import React, {useState} from 'react';
 import {OPERATION_TYPE} from 'modules/constants';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import {operationsStore} from 'modules/stores/operations';
+import {useNotifications} from 'modules/notifications';
 
 import OperationItems from 'modules/components/OperationItems';
 import {observer} from 'mobx-react';
@@ -24,16 +25,28 @@ type Props = {
 const IncidentOperation: React.FC<Props> = observer(
   ({instanceId, incident, showSpinner}) => {
     const [isSpinnerVisible, setIsSpinnerVisible] = useState(false);
+    const notifications = useNotifications();
+
+    const handleError = () => {
+      setIsSpinnerVisible(false);
+      notifications.displayNotification('error', {
+        headline: 'Operation could not be created',
+      });
+    };
 
     const handleOnClick = async (e: any) => {
       e.stopPropagation();
       setIsSpinnerVisible(true);
 
       // incidents operations should listen to main btn who publishes the incident ids which are affected
-      operationsStore.applyOperation(instanceId, {
-        operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
-        // @ts-expect-error
-        incidentId: incident.id,
+      operationsStore.applyOperation({
+        instanceId,
+        payload: {
+          operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+          // @ts-expect-error
+          incidentId: incident.id,
+        },
+        onError: handleError,
       });
     };
 

@@ -6,11 +6,11 @@
 
 import React from 'react';
 import {isEqual} from 'lodash';
-import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
-import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import {OPERATION_TYPE} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
+import {Instance, OperationType} from 'modules/types';
 
 import {
   getLatestOperation,
@@ -24,66 +24,60 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import * as Styled from './styled';
 
 type Props = {
-  instance: unknown;
+  instance: Instance;
   selected?: boolean;
-  onButtonClick?: () => void;
+  onOperation?: () => void;
+  onFailure?: () => void;
   forceSpinner?: boolean;
 };
 
+type State = {
+  operationType: OperationType | undefined;
+};
+
 const Operations = observer(
-  class Operations extends React.Component<Props, {}> {
+  class Operations extends React.Component<Props, State> {
     static defaultProps = {
       forceSpinner: false,
     };
 
-    state = {operationState: '', operationType: ''};
+    state = {operationType: undefined};
 
     componentDidMount = () => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'instance' does not exist on type 'Readon... Remove this comment to see the full error message
       const {operations} = this.props.instance;
       if (operations.length > 0) {
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'type' does not exist on type '{}'.
-        const {type, state} = getLatestOperation(operations);
+        const operation = getLatestOperation(operations);
         this.setState({
-          operationState: state,
-          operationType: type,
+          operationType: operation?.type,
         });
       }
     };
 
     componentDidUpdate = (prevProps: any) => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'instance' does not exist on type 'Readon... Remove this comment to see the full error message
       const {operations} = this.props.instance;
       if (!isEqual(operations, prevProps.instance.operations)) {
-        // change operation state & failed operation icons when new page is loaded;
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'state' does not exist on type '{}'.
-        const {state, type} = getLatestOperation(operations);
+        // change failed operation icons when new page is loaded;
+        const operation = getLatestOperation(operations);
         this.setState({
-          operationState: state,
-          operationType: type,
+          operationType: operation?.type,
         });
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'instance' does not exist on type 'Readon... Remove this comment to see the full error message
-      } else if (this.props.instance.id !== prevProps.instance.id) {
-        // change operation state
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'state' does not exist on type '{}'.
-        const {state} = getLatestOperation(operations);
-
-        this.setState({operationState: state});
       }
     };
 
-    handleOnClick = async (operationType: any) => {
-      this.setState({operationState: OPERATION_STATE.SCHEDULED});
-
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'instance' does not exist on type 'Readon... Remove this comment to see the full error message
-      operationsStore.applyOperation(this.props.instance.id, {
-        operationType,
+    handleOnClick = async (operationType: OperationType) => {
+      operationsStore.applyOperation({
+        instanceId: this.props.instance.id,
+        payload: {
+          operationType,
+        },
+        onError: () => {
+          this.props.onFailure?.();
+        },
       });
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'onButtonClick' does not exist on type 'R... Remove this comment to see the full error message
-      this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
+      this.props.onOperation?.();
     };
 
-    renderItem = (operationType: any) => {
+    renderItem = (operationType: OperationType) => {
       const ariaLabelMap = {
         [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
         [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry',
@@ -104,14 +98,12 @@ const Operations = observer(
       return (
         <Styled.Operations>
           {(forceSpinner ||
-            ACTIVE_OPERATION_STATES.includes(this.state.operationState) ||
             instancesStore.state.instancesWithActiveOperations.includes(
               // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
               instance.id
             )) && (
             <OperationSpinner
               selected={selected}
-              // @ts-expect-error
               title={`Instance ${instance.id} has scheduled Operations`}
               data-testid="operation-spinner"
             />

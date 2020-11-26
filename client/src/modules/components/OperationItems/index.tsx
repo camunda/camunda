@@ -6,13 +6,8 @@
 
 import React from 'react';
 
-import {OPERATION_TYPE} from 'modules/constants';
+import {OperationType} from 'modules/types';
 import * as Styled from './styled';
-
-const iconsMap = {
-  [OPERATION_TYPE.RESOLVE_INCIDENT]: <Styled.RetryIcon />,
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: <Styled.CancelIcon />,
-} as const;
 
 type Props = {
   children: React.ReactNode;
@@ -25,24 +20,21 @@ export default function OperationItems(props: Props) {
 }
 
 type ItemProps = {
-  type: 'RESOLVE_INCIDENT' | 'CANCEL_WORKFLOW_INSTANCE';
+  type: OperationType;
   onClick?: (...args: unknown[]) => any;
   title?: string;
 };
 
 const Item: React.FC<ItemProps> = function ({title, onClick, type, ...rest}) {
-  if (iconsMap.hasOwnProperty(type)) {
-    return (
-      <Styled.Li onClick={onClick}>
-        {/* @ts-expect-error */}
-        <Styled.Button {...rest} type={type} title={title}>
-          {iconsMap[type]}
-        </Styled.Button>
-      </Styled.Li>
-    );
-  }
-
-  return null;
+  return (
+    <Styled.Li onClick={onClick}>
+      {/* @ts-expect-error */}
+      <Styled.Button {...rest} type={type} title={title}>
+        {type === 'RESOLVE_INCIDENT' && <Styled.RetryIcon />}
+        {type === 'CANCEL_WORKFLOW_INSTANCE' && <Styled.CancelIcon />}
+      </Styled.Button>
+    </Styled.Li>
+  );
 };
 
 OperationItems.Item = Item;

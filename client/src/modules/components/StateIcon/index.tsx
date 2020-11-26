@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {STATE} from 'modules/constants';
+import {InstanceState} from 'modules/types';
 
 import * as Styled from './styled';
 
@@ -19,7 +20,7 @@ const stateIconsMap = {
 };
 
 type Props = {
-  state?: 'ACTIVE' | 'COMPLETED' | 'CANCELED' | 'INCIDENT' | 'TERMINATED';
+  state?: InstanceState;
 };
 
 function StateIcon({state, ...props}: Props) {
