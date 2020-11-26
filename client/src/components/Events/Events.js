@@ -21,18 +21,18 @@ export default function Events() {
       <SubNav>
         <SubNav.Item
           name={t('events.label')}
-          linksTo="/eventBasedProcess/"
-          active="/eventBasedProcess"
+          linksTo="/events/processes/"
+          active="/events/processes"
         />
         <SubNav.Item
           name={t('events.ingested.eventSources')}
-          linksTo="/ingestedEvents/"
-          active="/ingestedEvents"
+          linksTo="/events/ingested/"
+          active="/events/ingested"
         />
       </SubNav>
       <Switch>
-        <Route path="/eventBasedProcess/" exact component={EventsProcesses} />
-        <Route path="/ingestedEvents" component={IngestedEvents} />
+        <Route path="/events/processes/" exact component={EventsProcesses} />
+        <Route path="/events/ingested/" component={IngestedEvents} />
         <Route path="*" component={() => <ErrorPage noLink />} />
       </Switch>
     </div>

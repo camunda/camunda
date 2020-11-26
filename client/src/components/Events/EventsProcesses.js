@@ -145,7 +145,7 @@ export class EventsProcesses extends React.Component {
             processes.map((process) => {
               const {id, name, lastModified, state, publishingProgress} = process;
 
-              const link = `/eventBasedProcess/${id}/`;
+              const link = `/events/processes/${id}/`;
 
               const actions = [
                 {

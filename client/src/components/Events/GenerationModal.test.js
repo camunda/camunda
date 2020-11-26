@@ -44,5 +44,5 @@ it('should redirect to the process view on confirmation', () => {
   });
 
   expect(node.find('Redirect')).toExist();
-  expect(node.props().to).toEqual('/eventBasedProcess/processId/generated');
+  expect(node.props().to).toEqual('/events/processes/processId/generated');
 });

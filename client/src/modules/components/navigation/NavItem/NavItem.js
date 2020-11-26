@@ -51,7 +51,8 @@ export default withRouter(
       let breadcrumbs = [];
       const entitiesIds = {};
       breadcrumbsEntities.forEach((entity) => {
-        const splittedUrl = pathname.split(`/${entity}/`);
+        const entityUrl = entity === 'eventBasedProcess' ? 'events/processes' : entity;
+        const splittedUrl = pathname.split(`/${entityUrl}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
           if (!id.includes('new')) {
@@ -59,7 +60,7 @@ export default withRouter(
             breadcrumbs.push({
               id,
               type: entity,
-              url: splittedUrl[0] + `/${entity}/${id}/`,
+              url: splittedUrl[0] + `/${entityUrl}/${id}/`,
             });
           }
         }

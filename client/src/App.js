@@ -45,10 +45,10 @@ class App extends React.Component {
     const components = {
       report: Report,
       dashboard: Dashboard,
-      eventBasedProcess: Process,
+      'events/processes': Process,
       collection: Collection,
     };
-    const entities = ['report', 'dashboard', 'collection', 'eventBasedProcess'];
+    const entities = ['report', 'dashboard', 'collection', 'events/processes'];
     let Component, newProps;
     for (let entity of entities) {
       const splitResult = props.location.pathname.split('/' + entity)[1];
@@ -94,11 +94,11 @@ class App extends React.Component {
                     <Switch>
                       <PrivateRoute exact path="/" component={Home} />
                       <PrivateRoute path="/analysis" component={Analysis} />
-                      <PrivateRoute exact path="/eventBasedProcess" component={Events} />
-                      <PrivateRoute path="/IngestedEvents" component={Events} />
+                      <PrivateRoute exact path="/events/processes" component={Events} />
+                      <PrivateRoute path="/events/ingested" component={Events} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute
-                        path="/(report|dashboard|collection|eventBasedProcess)/*"
+                        path="/(report|dashboard|collection|events/processes)/*"
                         render={this.renderEntity}
                       />
                       <Route path="/license" component={License} />

@@ -52,7 +52,7 @@ it('should show and hide the event based process nav item depending on authoriza
 
   await runLastEffect();
 
-  expect(enabled.find('[linksTo="/eventBasedProcess/"]')).toExist();
+  expect(enabled.find('[linksTo="/events/processes/"]')).toExist();
 
   isEventBasedProcessEnabled.mockReturnValueOnce(false);
   const disabled = shallow(<Header {...props} />);
