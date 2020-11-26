@@ -6,7 +6,8 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
+import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.slf4j.Logger;
@@ -23,20 +24,28 @@ public class StatusNotifier implements ImportObserver {
   private ObjectMapper objectMapper;
   private Session session;
 
-  private Map<String, Boolean> importStatusMap;
+  private Map<String, EngineStatusDto> engineStatusMap;
 
   public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;
     this.objectMapper = objectMapper;
     this.session = session;
-    importStatusMap = statusCheckingService.getConnectionStatusWithProgress().getIsImporting();
+    engineStatusMap = statusCheckingService.getStatusResponse().getEngineStatus();
     sendStatus();
   }
 
   @Override
   public synchronized void importInProgress(String engineAlias) {
-    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && !importStatusMap.get(engineAlias);
-    importStatusMap.put(engineAlias, true);
+    boolean containsKey = engineStatusMap.containsKey(engineAlias);
+    boolean sendUpdate = containsKey && !engineStatusMap.get(engineAlias).getIsImporting();
+    EngineStatusDto engineStatus = new EngineStatusDto();
+    if (containsKey) {
+      engineStatus.setIsConnected(engineStatusMap.get(engineAlias).getIsConnected());
+    } else {
+      engineStatus.setIsConnected(false);
+    }
+    engineStatus.setIsImporting(true);
+    engineStatusMap.put(engineAlias, engineStatus);
     if (sendUpdate) {
       sendStatus();
     }
@@ -44,18 +53,23 @@ public class StatusNotifier implements ImportObserver {
 
   @Override
   public synchronized void importIsIdle(String engineAlias) {
-    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && importStatusMap.get(engineAlias);
-    importStatusMap.put(engineAlias, false);
+    boolean containsKey = engineStatusMap.containsKey(engineAlias);
+    boolean sendUpdate = containsKey && engineStatusMap.get(engineAlias).getIsImporting();
+    EngineStatusDto engineStatus = new EngineStatusDto();
+    if (containsKey) {
+      engineStatus.setIsConnected(engineStatusMap.get(engineAlias).getIsConnected());
+    } else {
+      engineStatus.setIsConnected(false);
+    }
+    engineStatus.setIsImporting(false);
+    engineStatusMap.put(engineAlias, engineStatus);
     if (sendUpdate) {
       sendStatus();
     }
   }
 
   private void sendStatus() {
-    StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
-    result.setConnectionStatus(statusCheckingService.getConnectionStatus());
-    result.setIsImporting(importStatusMap);
-
+    StatusResponseDto result = statusCheckingService.getStatusResponse();
     try {
       if (session.isOpen()) {
         session.getBasicRemote().sendText(objectMapper.writeValueAsString(result));

@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.status;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
+import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -34,22 +34,24 @@ public class StatusCheckingService {
   private final EngineContextFactory engineContextFactory;
   private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
 
-  public StatusWithProgressResponseDto getConnectionStatusWithProgress() {
-    final StatusWithProgressResponseDto result = new StatusWithProgressResponseDto();
-    result.setConnectionStatus(getConnectionStatus());
-    result.setIsImporting(engineImportSchedulerManagerService.getImportStatusMap());
-    return result;
-  }
-
-  public ConnectionStatusDto getConnectionStatus() {
-    ConnectionStatusDto status = new ConnectionStatusDto();
-    status.setConnectedToElasticsearch(isConnectedToElasticSearch());
-    Map<String, Boolean> engineConnections = new HashMap<>();
+  public StatusResponseDto getStatusResponse() {
+    StatusResponseDto statusWithProgress = new StatusResponseDto();
+    statusWithProgress.setConnectedToElasticsearch(isConnectedToElasticSearch());
+    Map<String, Boolean> importStatusMap = engineImportSchedulerManagerService.getImportStatusMap();
+    Map<String, EngineStatusDto> engineConnections = new HashMap<>();
     for (EngineContext e : engineContextFactory.getConfiguredEngines()) {
-      engineConnections.put(e.getEngineAlias(), isConnectedToEngine(e));
+
+      EngineStatusDto engineConnection = new EngineStatusDto();
+      engineConnection.setIsConnected(isConnectedToEngine(e));
+      if (importStatusMap.containsKey(e.getEngineAlias())) {
+        engineConnection.setIsImporting(importStatusMap.get(e.getEngineAlias()));
+      } else {
+        engineConnection.setIsImporting(false);
+      }
+      engineConnections.put(e.getEngineAlias(), engineConnection);
     }
-    status.setEngineConnections(engineConnections);
-    return status;
+    statusWithProgress.setEngineStatus(engineConnections);
+    return statusWithProgress;
   }
 
   public boolean isConnectedToEsAndAtLeastOneEngine() {

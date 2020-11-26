@@ -8,10 +8,12 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
+import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,12 +42,13 @@ public class StatusClientSocket {
   public void onText(String message) throws Exception {
     log.info("Message received from server:" + message);
 
-    StatusWithProgressResponseDto dto = objectMapper.readValue(message, StatusWithProgressResponseDto.class);
+    StatusResponseDto dto = objectMapper.readValue(message, StatusResponseDto.class);
 
-    assertThat(dto.getIsImporting()).isNotNull();
+    assertThat(dto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS)).isNotNull();
     initialStatusReceivedLatch.countDown();
 
-    if (dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS)) {
+    Map<String, EngineStatusDto> engineConnections = dto.getEngineStatus();
+    if (engineConnections.get(DEFAULT_ENGINE_ALIAS).getIsImporting()) {
       importingStatusReceivedLatch.countDown();
     }
   }

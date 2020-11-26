@@ -10,9 +10,8 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class ConnectionStatusDto {
-
-  protected Map<String, Boolean> engineConnections;
+public class StatusResponseDto {
+  protected Map<String, EngineStatusDto> engineStatus;
 
   /**
    * True if Optimize is connected to the Elasticsearch, false otherwise.

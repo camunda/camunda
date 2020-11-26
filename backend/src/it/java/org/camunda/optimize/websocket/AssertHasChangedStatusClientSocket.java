@@ -8,7 +8,7 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
@@ -39,11 +39,12 @@ public class AssertHasChangedStatusClientSocket {
   public void onText(String message) throws Exception {
     log.info("Message received from server:" + message);
 
-    StatusWithProgressResponseDto statusDto = objectMapper.readValue(message, StatusWithProgressResponseDto.class);
+    StatusResponseDto statusDto = objectMapper.readValue(message, StatusResponseDto.class);
+    Boolean engineIsImporting = statusDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsImporting();
 
-    assertThat(statusDto.getIsImporting()).isNotNull();
-    importStatusChanged |= importStatus != null && statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS) != importStatus;
-    importStatus = statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS);
+    assertThat(engineIsImporting).isNotNull();
+    importStatusChanged |= importStatus != null && engineIsImporting != importStatus;
+    importStatus = engineIsImporting;
     initialStatusReceivedLatch.countDown();
     receivedTwoUpdatesLatch.countDown();
   }

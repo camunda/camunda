@@ -19,11 +19,8 @@ export default class Footer extends React.Component {
     this.state = {
       loaded: false,
       error: false,
-      connectionStatus: {
-        engineConnections: {},
-        connectedToElasticsearch: false,
-      },
-      isImporting: {},
+      engineStatus: {},
+      connectedToElasticsearch: false,
       optimizeVersion: null,
     };
   }
@@ -80,13 +77,7 @@ export default class Footer extends React.Component {
   };
 
   render() {
-    const {
-      isImporting,
-      connectionStatus: {engineConnections, connectedToElasticsearch},
-      optimizeVersion,
-      loaded,
-      error,
-    } = this.state;
+    const {engineStatus, connectedToElasticsearch, optimizeVersion, loaded, error} = this.state;
 
     const timezoneInfo =
       t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -100,8 +91,12 @@ export default class Footer extends React.Component {
             loaded && (
               <ul className="status">
                 <>
-                  {Object.keys(engineConnections).map((key) =>
-                    this.renderListElement(key, engineConnections[key], isImporting[key])
+                  {Object.keys(engineStatus).map((key) =>
+                    this.renderListElement(
+                      key,
+                      engineStatus[key].isConnected,
+                      engineStatus[key].isImporting
+                    )
                   )}
                   {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
                 </>
