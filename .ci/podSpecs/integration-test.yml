@@ -28,7 +28,7 @@ spec:
           cpu: 16
           memory: 32Gi
         requests:
-          cpu: 10
+          cpu: 8
           memory: 16Gi
       securityContext:
         privileged: true
