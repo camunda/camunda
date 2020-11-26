@@ -10,8 +10,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -27,7 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public class CustomIndexPrefixIT extends AbstractIT {
@@ -77,7 +75,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
         mapping.getIndexName(),
         CUSTOM_PREFIX
       );
-      final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(
+      final String expectedIndexName = getOptimizeIndexOrTemplateNameForAliasAndVersion(
         expectedAliasName, String.valueOf(mapping.getVersion()))
         + mapping.getIndexNameInitialSuffix();
 

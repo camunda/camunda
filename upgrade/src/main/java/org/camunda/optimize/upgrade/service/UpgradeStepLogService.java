@@ -16,7 +16,7 @@ import java.util.Optional;
 public class UpgradeStepLogService {
 
   public void initializeOrUpdate(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.createIndex(new UpdateLogEntryIndex());
+    schemaUpgradeClient.createOrUpdateIndex(new UpdateLogEntryIndex());
   }
 
   @SneakyThrows

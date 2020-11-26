@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.main;
 
-import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
@@ -13,7 +12,6 @@ import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,13 +25,6 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   protected final LogCapturer logCapturer = LogCapturer.create().captureForType(UpgradeProcedure.class);
 
   private final UpgradePlan upgradePlan = GenericUpgradeFactory.createUpgradePlan();
-
-  @BeforeEach
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    initSchema(Lists.newArrayList(METADATA_INDEX));
-  }
 
   @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {

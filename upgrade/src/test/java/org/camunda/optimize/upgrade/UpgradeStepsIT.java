@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -14,21 +13,12 @@ import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.RenameFieldTestIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestWithTemplateIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestWithTemplateUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
-import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
-import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
-import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -44,9 +34,7 @@ import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -63,25 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UpgradeStepsIT extends AbstractUpgradeIT {
 
-  private static final IndexMappingCreator TEST_INDEX_V1 = new UserTestIndex(1);
-  private static final IndexMappingCreator TEST_INDEX_V2 = new UserTestIndex(2);
-  private static final IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING = new UserTestUpdatedMappingIndex();
-  private static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE = new UserTestWithTemplateIndex();
-  private static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING =
-    new UserTestWithTemplateUpdatedMappingIndex();
-
   private static final String FROM_VERSION = "2.6.0";
   private static final String INTERMEDIATE_VERSION = "2.6.1";
   private static final String TO_VERSION = "2.7.0";
-
-  @BeforeEach
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    initSchema(Lists.newArrayList(METADATA_INDEX));
-    setMetadataVersion(FROM_VERSION);
-  }
 
   @Test
   public void executeCreateIndexWithAliasStep() throws Exception {
@@ -90,7 +62,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
         .build();
 
     // when
@@ -98,7 +70,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final String versionedIndexName = indexNameService
-      .getOptimizeIndexNameWithVersionForAllIndicesOf(TEST_INDEX_WITH_UPDATED_MAPPING);
+      .getOptimizeIndexNameWithVersionForAllIndicesOf(TEST_INDEX_WITH_UPDATED_MAPPING_V2);
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
@@ -106,7 +78,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
-      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName()));
+      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName()));
     assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
   }
 
@@ -117,7 +89,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
         .build();
 
     // when
@@ -125,7 +97,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final String versionedIndexName = indexNameService
-      .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE);
+      .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1);
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
@@ -133,7 +105,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
-      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_TEMPLATE.getIndexName()));
+      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName()));
     assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
   }
 
@@ -145,15 +117,15 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
         .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
   }
 
   @SneakyThrows
@@ -167,18 +139,18 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
         .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
     // even though not being set before the writeIndex flag is now set
     final GetAliasesResponse alias = getAliasesForAlias(aliasForIndex);
     assertThatIndexIsSetAsWriteIndex(
-      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING),
+      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2),
       alias
     );
   }
@@ -191,15 +163,15 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
         .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
 
     final Map<String, Object> mappingFields = getMappingFields();
     assertThat(mappingFields).containsKey("email");
@@ -216,21 +188,21 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
         .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
 
     final Map<String, Object> mappingFields = getMappingFields();
     assertThat(mappingFields).containsKey("email");
 
     // even though not being set before the writeIndex flag is now set
     assertThatIndexIsSetAsWriteIndex(
-      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING),
+      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
       getAliasesForAlias(aliasForIndex)
     );
   }
@@ -254,17 +226,17 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
         .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
 
     final String versionedIndexName = indexNameService
-      .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING);
+      .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     assertThatIndexIsSetAsWriteIndex(versionedIndexName, getAliasesForAlias(aliasForIndex));
 
     assertThat(getAliasesForAlias(readOnlyAliasForIndex).getAliases())
@@ -285,18 +257,18 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(INTERMEDIATE_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
         .build();
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE.getIndexName(), 0);
+    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(INTERMEDIATE_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
         .build();
 
     // when update index after rollover
@@ -305,7 +277,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // then optimize-users write alias points to updated users index
     final String expectedSuffixAfterRollover = "-000002";
     final String indexAlias =
-      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING.getIndexName());
+      indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
     final Map<String, Set<AliasMetadata>> aliasMap = getAliasMap(indexAlias);
     final List<String> indicesWithWriteAlias = aliasMap.entrySet()
       .stream()
@@ -326,8 +298,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
-        .addUpgradeStep(buildInsertDataStep())
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
         .build();
 
     // when
@@ -353,9 +325,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
-        .addUpgradeStep(buildInsertDataStep())
-        .addUpgradeStep(buildUpdateDataStep())
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
+        .addUpgradeStep(buildUpdateTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
         .build();
 
     // when
@@ -380,9 +352,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
-        .addUpgradeStep(buildInsertDataStep())
-        .addUpgradeStep(buildDeleteDataStep())
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
+        .addUpgradeStep(buildDeleteTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
         .build();
 
     // when
@@ -403,7 +375,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
         .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
         .build();
 
@@ -421,31 +393,31 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(INTERMEDIATE_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_WITH_TEMPLATE))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
         .build();
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE.getIndexName(), 0);
+    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     // then two indices exist after the rollover
-    boolean indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE);
+    boolean indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_V1);
     assertThat(indicesExist).isTrue();
-    final GetIndexResponse response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE);
+    final GetIndexResponse response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_V1);
     assertThat(response.getIndices()).hasSize(2);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(INTERMEDIATE_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_WITH_TEMPLATE))
+        .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
         .build();
 
     // when update index after rollover
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then both the initial and rolled over index are deleted
-    indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE);
+    indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_V1);
     assertThat(indicesExist).isFalse();
   }
 
@@ -456,8 +428,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
-        .addUpgradeStep(new UpdateMappingIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(new UpdateMappingIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
         .build();
 
     // when
@@ -484,7 +456,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING, "def foo = \"noop\";"))
+        .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2, "def foo = \"noop\";"))
         .build();
 
     // when
@@ -498,7 +470,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
         .build();
 
     // when
@@ -543,7 +515,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   @SuppressWarnings(UNCHECKED_CAST)
   private Map<String, Object> getMappingFields() throws IOException {
     GetMappingsRequest request = new GetMappingsRequest();
-    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
+    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
     GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
     final Object propertiesMap = getMappingResponse.mappings()
       .values()
@@ -557,33 +529,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     } else {
       throw new OptimizeRuntimeException("ElasticSearch index mapping properties should be of type map");
     }
-  }
-
-  private InsertDataStep buildInsertDataStep() {
-    return new InsertDataStep(
-      TEST_INDEX_V2,
-      UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
-    );
-  }
-
-  private CreateIndexStep buildCreateIndexStep(final IndexMappingCreator index) {
-    return new CreateIndexStep(index);
-  }
-
-  private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index, null);
-  }
-
-  private UpdateDataStep buildUpdateDataStep() {
-    return new UpdateDataStep(
-      TEST_INDEX_V2,
-      termQuery("username", "admin"),
-      "ctx._source.password = ctx._source.password + \"1\""
-    );
-  }
-
-  private UpgradeStep buildDeleteDataStep() {
-    return new DeleteDataStep(TEST_INDEX_V2, QueryBuilders.termQuery("username", "admin"));
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)
@@ -603,13 +548,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);
     }
-  }
-
-  private GetIndexResponse getIndicesForMapping(final IndexMappingCreator mapping) throws IOException {
-    return prefixAwareClient.getHighLevelClient().indices().get(
-      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mapping)),
-      RequestOptions.DEFAULT
-    );
   }
 
 }

@@ -25,6 +25,6 @@ public class CreateIndexStep extends UpgradeStep {
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.createIndex(getIndex());
+    schemaUpgradeClient.createOrUpdateIndex(index);
   }
 }

@@ -5,31 +5,20 @@
  */
 package org.camunda.optimize.upgrade;
 
-import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
-import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
-import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
-import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
@@ -39,64 +28,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
-import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
-import static org.mockserver.model.HttpRequest.request;
+import static org.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_CREATE_INDEX;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpgradeStepsLogIT extends AbstractUpgradeIT {
 
-  private static final IndexMappingCreator TEST_INDEX_V1 = new UserTestIndex(1);
-  private static final IndexMappingCreator TEST_INDEX_V2 = new UserTestIndex(2);
-
-  private static final String FROM_VERSION = "2.6.0";
-  private static final String TO_VERSION = "2.7.0";
-
   @RegisterExtension
-  LogCapturer logs = LogCapturer.create().captureForType(UpgradeProcedure.class);
-
-  private ClientAndServer esMockServer;
-
-  @BeforeEach
-  @Override
-  public void setUp() throws Exception {
-    this.configurationService = createDefaultConfiguration();
-    final ElasticsearchConnectionNodeConfiguration elasticConfig =
-      this.configurationService.getFirstElasticsearchConnectionNode();
-
-    this.esMockServer = createElasticMock(elasticConfig);
-    elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
-    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-
-    this.upgradeDependencies =
-      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(this.configurationService);
-    this.objectMapper = upgradeDependencies.getObjectMapper();
-    this.prefixAwareClient = upgradeDependencies.getEsClient();
-    this.indexNameService = upgradeDependencies.getIndexNameService();
-    this.metadataService = upgradeDependencies.getMetadataService();
-    this.upgradeProcedure = new UpgradeProcedure(
-      prefixAwareClient,
-      new UpgradeValidationService(),
-      createSchemaUpgradeClient(upgradeDependencies),
-      new UpgradeStepLogService()
-    );
-
-    cleanAllDataFromElasticsearch();
-    createEmptyEnvConfig();
-    initSchema(Lists.newArrayList(METADATA_INDEX));
-    setMetadataVersion(FROM_VERSION);
-  }
-
-  @AfterEach
-  @Override
-  public void after() throws Exception {
-    super.after();
-    this.esMockServer.close();
-  }
+  protected final LogCapturer logs = LogCapturer.create().captureForType(UpgradeProcedure.class);
 
   @Test
   public void singleUpdateStepIsLogged() {
@@ -115,7 +55,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     // then
     final Optional<UpgradeStepLogEntryDto> updateLogEntries = getDocumentsOfIndexByIdAs(
       UpdateLogEntryIndex.INDEX_NAME,
-      TO_VERSION + "_" + UpgradeStepType.SCHEMA_CREATE_INDEX.toString() + "_001",
+      TO_VERSION + "_" + SCHEMA_CREATE_INDEX.toString() + "_001",
       UpgradeStepLogEntryDto.class
     );
     assertThat(updateLogEntries)
@@ -126,7 +66,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
           .indexName(TEST_INDEX_V1.getIndexName())
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
-          .stepType(UpgradeStepType.SCHEMA_CREATE_INDEX)
+          .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build()
       );
@@ -157,7 +97,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
           .indexName(TEST_INDEX_V1.getIndexName())
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
-          .stepType(UpgradeStepType.SCHEMA_CREATE_INDEX)
+          .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()
@@ -181,7 +121,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
       indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1)
     );
     esMockServer
@@ -204,7 +144,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
           .indexName(TEST_INDEX_V1.getIndexName())
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
-          .stepType(UpgradeStepType.SCHEMA_CREATE_INDEX)
+          .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build()
       );
@@ -221,7 +161,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
       indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1)
     );
     esMockServer
@@ -254,7 +194,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
           .indexName(TEST_INDEX_V1.getIndexName())
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
-          .stepType(UpgradeStepType.SCHEMA_CREATE_INDEX)
+          .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()
@@ -278,12 +218,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
-    final HttpRequest stepOneLogUpsertRequest = request()
-      .withPath(
-        "/" + indexNameService.getOptimizeIndexAliasForIndex(UpdateLogEntryIndex.INDEX_NAME) + "/_update/"
-          + TO_VERSION + "_" + UpgradeStepType.SCHEMA_CREATE_INDEX.toString() + "_001"
-      )
-      .withMethod(POST);
+    final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(SCHEMA_CREATE_INDEX);
     esMockServer
       .when(stepOneLogUpsertRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
@@ -313,7 +248,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
           .indexName(TEST_INDEX_V1.getIndexName())
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
-          .stepType(UpgradeStepType.SCHEMA_CREATE_INDEX)
+          .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate2.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()

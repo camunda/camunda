@@ -574,7 +574,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final boolean indexExists = embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), Collections.singletonList(newIndex));
     if (!indexExists) {
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
         embeddedOptimizeExtension.getOptimizeElasticClient(),
         newIndex
       );

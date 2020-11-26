@@ -155,7 +155,7 @@ public class ElasticSearchSchemaManager {
     try {
       final boolean indexAlreadyExists = indexExists(esClient, indexMapping);
       if (!indexAlreadyExists) {
-        createOptimizeIndex(esClient, indexMapping);
+        createOrUpdateOptimizeIndex(esClient, indexMapping);
       }
     } catch (final Exception e) {
       log.error("Failed ensuring index is present: {}", indexMapping.getIndexName(), e);
@@ -170,18 +170,18 @@ public class ElasticSearchSchemaManager {
    */
   public void createOptimizeIndices(OptimizeElasticsearchClient esClient) {
     for (IndexMappingCreator mapping : mappings) {
-      createOptimizeIndex(esClient, mapping);
+      createOrUpdateOptimizeIndex(esClient, mapping);
     }
   }
 
-  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
-                                  final IndexMappingCreator mapping) {
-    createOptimizeIndex(esClient, mapping, Collections.emptySet());
+  public void createOrUpdateOptimizeIndex(final OptimizeElasticsearchClient esClient,
+                                          final IndexMappingCreator mapping) {
+    createOrUpdateOptimizeIndex(esClient, mapping, Collections.emptySet());
   }
 
-  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
-                                  final IndexMappingCreator mapping,
-                                  final Set<String> readOnlyAliases) {
+  public void createOrUpdateOptimizeIndex(final OptimizeElasticsearchClient esClient,
+                                          final IndexMappingCreator mapping,
+                                          final Set<String> readOnlyAliases) {
     final Set<String> prefixedReadOnlyAliases =
       readOnlyAliases.stream()
         .map(indexNameService::getOptimizeIndexAliasForIndex)
@@ -191,7 +191,7 @@ public class ElasticSearchSchemaManager {
     final Settings indexSettings = createIndexSettings(mapping);
 
     try {
-      if (mapping.getCreateFromTemplate()) {
+      if (mapping.isCreateFromTemplate()) {
         // Creating template without alias and adding aliases manually to indices created from this template to
         // ensure correct alias handling on rollover
         createOrUpdateTemplateWithAliases(
@@ -269,13 +269,12 @@ public class ElasticSearchSchemaManager {
   }
 
   public void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
-                                                   final IndexMappingCreator mappingCreator,
-                                                   final String templateName) {
-    final String indexNameWithoutSuffix = indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
+                                                   final IndexMappingCreator mappingCreator) {
+    final String templateName = indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
     final Settings indexSettings = createIndexSettings(mappingCreator);
 
-    log.debug("creating or updating template with name {}", indexNameWithoutSuffix);
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
+    log.debug("Creating or updating template with name {}.", templateName);
+    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
@@ -286,7 +285,7 @@ public class ElasticSearchSchemaManager {
     try {
       esClient.getHighLevelClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      String message = String.format("Could not create or update template %s", templateName);
+      final String message = String.format("Could not create or update template %s.", templateName);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -361,7 +360,7 @@ public class ElasticSearchSchemaManager {
   public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
                                                IndexMappingCreator indexMapping) {
     updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), indexMapping);
-    if (indexMapping.getCreateFromTemplate()) {
+    if (indexMapping.isCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
     }
   }

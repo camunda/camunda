@@ -158,13 +158,12 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void createOrUpdateTemplateWithoutAliases(final IndexMappingCreator mappingCreator,
-                                                   final String templateName) {
-    schemaManager.createOrUpdateTemplateWithoutAliases(elasticsearchClient, mappingCreator, templateName);
+  public void createOrUpdateTemplateWithoutAliases(final IndexMappingCreator mappingCreator) {
+    schemaManager.createOrUpdateTemplateWithoutAliases(elasticsearchClient, mappingCreator);
   }
 
-  public void createIndex(final IndexMappingCreator indexMapping) {
-    schemaManager.createOptimizeIndex(elasticsearchClient, indexMapping);
+  public void createOrUpdateIndex(final IndexMappingCreator indexMapping) {
+    schemaManager.createOrUpdateOptimizeIndex(elasticsearchClient, indexMapping);
   }
 
   public void initializeSchema() {

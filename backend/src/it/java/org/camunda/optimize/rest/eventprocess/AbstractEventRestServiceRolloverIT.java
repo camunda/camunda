@@ -43,7 +43,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
   @BeforeEach
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndex()
     );

@@ -18,7 +18,7 @@ public interface IndexMappingCreator {
     return "";
   }
 
-  default boolean getCreateFromTemplate() {
+  default boolean isCreateFromTemplate() {
     return false;
   }
 

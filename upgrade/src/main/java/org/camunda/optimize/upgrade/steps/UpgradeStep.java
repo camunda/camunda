@@ -16,7 +16,7 @@ import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public abstract class UpgradeStep {
-  private IndexMappingCreator index;
+  protected IndexMappingCreator index;
 
   public abstract UpgradeStepType getType();
 

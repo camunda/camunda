@@ -28,7 +28,7 @@ public class UserTestWithTemplateUpdatedMappingIndex extends DefaultIndexMapping
   }
 
   @Override
-  public boolean getCreateFromTemplate() {
+  public boolean isCreateFromTemplate() {
     return true;
   }
 

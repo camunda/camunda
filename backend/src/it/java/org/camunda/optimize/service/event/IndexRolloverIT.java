@@ -56,11 +56,11 @@ public class IndexRolloverIT extends AbstractIT {
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
     elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndex()
     );
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new VariableUpdateInstanceIndex()
     );

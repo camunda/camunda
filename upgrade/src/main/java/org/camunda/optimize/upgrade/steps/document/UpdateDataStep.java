@@ -53,6 +53,6 @@ public class UpdateDataStep extends UpgradeStep {
     if (paramMapProvider != null) {
       parameters = paramMapProvider.call();
     }
-    schemaUpgradeClient.updateDataByIndexName(getIndex(), query, updateScript, parameters);
+    schemaUpgradeClient.updateDataByIndexName(index, query, updateScript, parameters);
   }
 }
