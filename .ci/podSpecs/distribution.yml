@@ -26,10 +26,10 @@ spec:
       resources:
         limits:
           cpu: 8
-          memory: 8Gi
+          memory: 32Gi
         requests:
           cpu: 8
-          memory: 8Gi
+          memory: 32Gi
       securityContext:
         privileged: true
     - name: maven-jdk8
@@ -87,7 +87,7 @@ spec:
       resources:
         limits:
           cpu: 8
-          memory: 8Gi
+          memory: 16Gi
         requests:
           cpu: 8
-          memory: 8Gi
+          memory: 16Gi
