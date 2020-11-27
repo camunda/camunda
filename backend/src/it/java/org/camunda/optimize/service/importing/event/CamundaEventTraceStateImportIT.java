@@ -177,7 +177,8 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
 
     // then
     assertTracesAndCountsArePresentForDefinitionKey(definitionKey, processInstanceEngineDto1, true);
-    final List<EventTraceStateDto> initialStoredTraceStates = getAllStoredCamundaEventTraceStatesForDefinitionKey(definitionKey);
+    final List<EventTraceStateDto> initialStoredTraceStates = getAllStoredCamundaEventTraceStatesForDefinitionKey(
+      definitionKey);
     assertThat(getAllStoredCamundaEventsForEventDefinitionKey(definitionKey)).hasSize(6);
 
     // when import index reset and traces reprocessed after event reimport
@@ -208,8 +209,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   private void removeStoredOrderCountersForDefinitionKey(final String definitionKey) {
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
-      "camunda activity events",
-      "activityEventOrderCounter",
+      String.format("Camunda activity events with definitionKey [%s]", definitionKey),
       new Script("ctx._source.orderCounter = null"),
       matchAllQuery(),
       CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + definitionKey
@@ -260,7 +260,12 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
-    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram(processName, START_EVENT, END_EVENT, USER_TASK));
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram(
+      processName,
+      START_EVENT,
+      END_EVENT,
+      USER_TASK
+    ));
   }
 
   private Long findMostRecentEventTimestamp(final String definitionKey) {

@@ -17,6 +17,7 @@ import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -63,12 +64,14 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
 
   public boolean markRedeployedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
     final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
+    final Set<String> processDefIds = new HashSet<>();
     importedDefinitions
       .forEach(definition -> {
         final BoolQueryBuilder matchingDefinitionQuery = boolQuery()
           .must(termQuery(PROCESS_DEFINITION_KEY, definition.getKey()))
           .must(termQuery(PROCESS_DEFINITION_VERSION, definition.getVersion()))
           .mustNot(termQuery(PROCESS_DEFINITION_ID, definition.getId()));
+        processDefIds.add(definition.getId());
         if (definition.getTenantId() != null) {
           matchingDefinitionQuery.must(termQuery(DecisionDefinitionIndex.TENANT_ID, definition.getTenantId()));
         } else {
@@ -79,8 +82,10 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
 
     final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "processDefinition",
-      "process definition deleted",
+      String.format(
+        "process definitions with IDs [%s]",
+        processDefIds
+      ),
       MARK_AS_DELETED_SCRIPT,
       definitionsToDeleteQuery,
       PROCESS_DEFINITION_INDEX_NAME

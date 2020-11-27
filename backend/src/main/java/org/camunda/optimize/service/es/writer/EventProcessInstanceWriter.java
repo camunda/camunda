@@ -111,11 +111,10 @@ public class EventProcessInstanceWriter {
 
   public void deleteVariablesOfInstancesThatEndedBefore(final OffsetDateTime endDate) {
     final String indexName = getIndexName();
-    final String updateItemName = "event process variables";
-    final String updatedItemIdentifier = String.format(
-      "%s in index %s that ended before %s", updateItemName, indexName, endDate
+    final String updateItem = String.format(
+      "event process variables in index %s that ended before %s", indexName, endDate
     );
-    log.info("Performing cleanup on {}", updatedItemIdentifier);
+    log.info("Performing cleanup on {}", updateItem);
 
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
       getClass().getName(), esClient, UpdateByQueryAction.NAME
@@ -128,20 +127,18 @@ public class EventProcessInstanceWriter {
         .filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None));
 
       ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient, updateItemName, updatedItemIdentifier, VARIABLE_CLEAR_SCRIPT, filterQuery, indexName
+        esClient, updateItem, VARIABLE_CLEAR_SCRIPT, filterQuery, indexName
       );
     } finally {
       progressReporter.stop();
     }
 
-    log.info("Finished cleanup on {}", updatedItemIdentifier);
+    log.info("Finished cleanup on {}", updateItem);
   }
 
   public void deleteEventsWithIdsInFromAllInstances(final List<String> eventIdsToDelete) {
-    final String updateItemName = "event instance events";
-    final String updatedItemIdentifier = String.format(
-      "%s with ID from list of size %s",
-      updateItemName,
+    final String updateItem = String.format(
+      "event instance events with ID from list of size %s",
       eventIdsToDelete.size()
     );
 
@@ -153,7 +150,7 @@ public class EventProcessInstanceWriter {
 
     final Script deleteEventsScript = buildDeleteEventsWithIdsInScript(eventIdsToDelete);
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-      esClient, updateItemName, updatedItemIdentifier, deleteEventsScript, query, getIndexName()
+      esClient, updateItem, deleteEventsScript, query, getIndexName()
     );
   }
 

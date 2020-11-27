@@ -217,7 +217,8 @@ public class ReportWriter {
 
   public void updateProcessDefinitionXmlForProcessReportsWithKey(final String definitionKey,
                                                                  final String definitionXml) {
-    log.debug("Updating definition XML in reports with definitionKey [{}] in Elasticsearch", definitionKey);
+    final String updateItem = String.format("reports with definitionKey [%s]", definitionKey);
+    log.debug("Updating definition XML in {} in Elasticsearch", updateItem);
 
     final Script updateDefinitionXmlScript = new Script(
       ScriptType.INLINE,
@@ -229,8 +230,7 @@ public class ReportWriter {
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "report",
-      "definitionKey: " + definitionKey,
+      updateItem,
       updateDefinitionXmlScript,
       termQuery(PROCESS_DEFINITION_PROPERTY, definitionKey),
       SINGLE_PROCESS_REPORT_INDEX_NAME
@@ -293,10 +293,8 @@ public class ReportWriter {
   }
 
   public void removeSingleReportFromCombinedReports(final String reportId) {
-    String updateItemName = "report";
-    log.info(
-      "Removing {} with ID [{}] from combined report.", updateItemName, reportId
-    );
+    String updateItemName = String.format("report with ID [%s]", reportId);
+    log.info("Removing {} from combined report.", updateItemName);
 
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
@@ -320,8 +318,7 @@ public class ReportWriter {
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "report",
-      reportId,
+      updateItemName,
       removeReportIdFromCombinedReportsScript,
       query,
       COMBINED_REPORT_INDEX_NAME

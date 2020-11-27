@@ -124,9 +124,14 @@ public class EventProcessPublishStateWriter {
   }
 
   public boolean deleteAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
-    log.debug(
-      "Flagging event process publish state with processEventMappingId [{}] as deleted.",
+    final String updateItem = String.format(
+      "event process publish state with %s [%s]",
+      EventProcessPublishStateIndex.PROCESS_MAPPING_ID,
       eventProcessMappingId
+    );
+    log.debug(
+      "Flagging {} as deleted.",
+      updateItem
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
@@ -137,8 +142,7 @@ public class EventProcessPublishStateWriter {
 
     return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "processPublishState.deleted",
-      "true",
+      updateItem,
       updateScript,
       termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId),
       EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
@@ -148,10 +152,14 @@ public class EventProcessPublishStateWriter {
   public boolean deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
     final String eventProcessMappingId,
     final String publishStateIdToExclude) {
+    final String updateItem = String.format(
+      "event process publish state with %s [%s]",
+      EventProcessPublishStateIndex.PROCESS_MAPPING_ID,
+      eventProcessMappingId
+    );
     log.debug(
-      "Flagging event process publish state with processEventMappingId [{}] as deleted, except for process publish " +
-        "state with ID [{}].",
-      eventProcessMappingId,
+      "Flagging {} as deleted, except for process publish state with ID [{}].",
+      updateItem,
       publishStateIdToExclude
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
@@ -168,8 +176,7 @@ public class EventProcessPublishStateWriter {
 
     return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "processPublishState.deleted",
-      "true",
+      updateItem,
       updateScript,
       query,
       EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
