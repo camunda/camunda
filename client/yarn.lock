@@ -1338,17 +1338,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5":
-  version "7.12.1"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.12.1.tgz#b4116a6b6711d010b2dad3b7b6e43bf1b9954740"
-  integrity sha512-J5AIf3vPj3UwXaAzb5j1xM4WAQDX3EMgemF8rjCP3SoW09LfRKAXQKt6CoVYl230P6iWdRcBbnLDDdnqWxZSCA==
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
-"@babel/runtime@^7.1.2", "@babel/runtime@^7.11.2", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.2", "@babel/runtime@^7.8.4":
-  version "7.11.2"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.11.2.tgz#f549c13c754cc40b87644b9fa9f09a6a95fe0736"
-  integrity sha512-TeWkU52so0mPtDcaCTxNBI/IHiz0pZgr8VEFqXFtZWpYD08ZB6FaSwVAS8MKRQAP3bYKiVjwysOJgMFY28o6Tw==
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.2", "@babel/runtime@^7.8.4":
+  version "7.12.5"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.12.5.tgz#410e7e487441e1b360c29be715d870d9b985882e"
+  integrity sha512-plcc+hbExy3McchJCEQG3knOsuh3HH+Prx1P6cLIkET/0dLuQDEnrT+s27Axgc9bqfsmNUNHfscgMUdBpC9xfg==
   dependencies:
     regenerator-runtime "^0.13.4"
 
@@ -2247,13 +2240,13 @@
   resolved "https://registry.yarnpkg.com/@types/q/-/q-1.5.2.tgz#690a1475b84f2a884fd07cd797c00f5f31356ea8"
   integrity sha512-ce5d3q03Ex0sy4R14722Rmt6MT07Ua+k4FwDfdcToYJcMKNtRVQvJ6JCAPdAmAnbRb6CsX6aYb9m96NGod9uTw==
 
-"@types/react@*":
-  version "16.9.5"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.9.5.tgz#079dabd918b19b32118c25fd00a786bb6d0d5e51"
-  integrity sha512-jQ12VMiFOWYlp+j66dghOWcmDDwhca0bnlcTxS4Qz/fh5gi6wpaZDthPEu/Gc/YlAuO87vbiUXL8qKstFvuOaA==
+"@types/react@*", "@types/react@^17.0.0":
+  version "17.0.0"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.0.tgz#5af3eb7fad2807092f0046a1302b7823e27919b8"
+  integrity sha512-aj/L7RIMsRlWML3YB6KZiXB3fV2t41+5RBGYF8z+tAKU43Px8C3cYUZsDvf1/+Bm4FK21QWBrDutu8ZJ/70qOw==
   dependencies:
     "@types/prop-types" "*"
-    csstype "^2.2.0"
+    csstype "^3.0.2"
 
 "@types/stack-utils@^1.0.1":
   version "1.0.1"
@@ -5499,10 +5492,10 @@ cssstyle@^1.0.0, cssstyle@^1.1.1:
   dependencies:
     cssom "0.3.x"
 
-csstype@^2.2.0:
-  version "2.6.7"
-  resolved "https://registry.yarnpkg.com/csstype/-/csstype-2.6.7.tgz#20b0024c20b6718f4eda3853a1f5a1cce7f5e4a5"
-  integrity sha512-9Mcn9sFbGBAdmimWb2gLVDtFJzeKtDGIr76TUqmjZrw9LFXBMSU70lcs+C0/7fyCd6iBDqmksUcCOUIkisPHsQ==
+csstype@^3.0.2:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.0.5.tgz#7fdec6a28a67ae18647c51668a9ff95bb2fa7bb8"
+  integrity sha512-uVDi8LpBUKQj6sdxNaTetL6FpeCqTjOvAQuQUa/qAqq8oOd4ivkbhgnqayl0dnPal8Tb/yB1tF+gOvCBiicaiQ==
 
 cuint@^0.2.2:
   version "0.2.2"
@@ -15640,12 +15633,13 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
-use-deep-compare-effect@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/use-deep-compare-effect/-/use-deep-compare-effect-1.4.0.tgz#3f40e3fa5b0b8d79e4126e83be384ed602472405"
-  integrity sha512-46rF7ULcRnxI4+1Zoul95+KB48hpn1MUH1aXEBMyU+Sh1KJDqrTAkwhnxQL6ydBAqu3gLebYylcr0zpVBzbxxQ==
+use-deep-compare-effect@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/use-deep-compare-effect/-/use-deep-compare-effect-1.5.0.tgz#3408459680f02fdff7b06219b22b993c230779e3"
+  integrity sha512-rHNHjYxVfoBFP1HZQMz8U/foLVkJ121zFnO3t6hJICKBwVSe4TwDoBDD9ERjq2hgH6NCD5tZdrmrGQRneYcbXQ==
   dependencies:
-    "@babel/runtime" "^7.11.2"
+    "@babel/runtime" "^7.12.5"
+    "@types/react" "^17.0.0"
     "@types/use-deep-compare-effect" "^1.2.0"
     dequal "^2.0.2"
 
