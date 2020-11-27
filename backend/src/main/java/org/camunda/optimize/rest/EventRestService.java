@@ -11,10 +11,8 @@ import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
-import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;
 import org.camunda.optimize.service.events.ExternalEventService;
@@ -27,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -39,7 +36,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Path("/event")
@@ -71,11 +67,8 @@ public class EventRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public Page<DeletableEventDto> getEvents(@Context final ContainerRequestContext requestContext,
                                            @BeanParam @Valid final EventSearchRequestDto eventSearchRequestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
-      throw new EventProcessManagementForbiddenException(userId);
-    }
-    validateSortRequest(eventSearchRequestDto.getSortRequestDto());
+    validateEventProcessManagementAuthorization(requestContext);
+    eventSearchRequestDto.validateRequest();
     return externalEventService.getEventsForRequest(eventSearchRequestDto);
   }
 
@@ -84,24 +77,14 @@ public class EventRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void deleteEvents(@Context final ContainerRequestContext requestContext,
                            @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) List<String> eventIdsToDelete) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
-      throw new EventProcessManagementForbiddenException(userId);
-    }
+    validateEventProcessManagementAuthorization(requestContext);
     externalEventService.deleteEvents(eventIdsToDelete);
   }
 
-  private void validateSortRequest(final SortRequestDto sortRequestDto) {
-    final Optional<String> sortBy = sortRequestDto.getSortBy();
-    final Optional<SortOrder> sortOrder = sortRequestDto.getSortOrder();
-    if ((sortBy.isPresent() && !sortOrder.isPresent()) || (!sortBy.isPresent() && sortOrder.isPresent())) {
-      throw new BadRequestException(String.format(
-        "Cannot supply only one of %s and %s",
-        SortRequestDto.SORT_BY,
-        SortRequestDto.SORT_ORDER
-      ));
-    } else if (sortBy.isPresent() && !EventSearchRequestDto.sortableFields.contains(sortBy.get().toLowerCase())) {
-      throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
+  private void validateEventProcessManagementAuthorization(@Context final ContainerRequestContext requestContext) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
+      throw new EventProcessManagementForbiddenException(userId);
     }
   }
 

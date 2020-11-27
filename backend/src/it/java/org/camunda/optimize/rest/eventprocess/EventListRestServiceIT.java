@@ -130,6 +130,24 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
+  public void getEventCounts_defaultPaginationParamsAppliedIfMissing() {
+    // when
+    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetEventListRequest(eventRequestDto(GROUP, DESC, null, null))
+      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventsPage.getLimit()).isEqualTo(EventSearchRequestDto.DEFAULT_LIMIT);
+    assertThat(eventsPage.getOffset()).isEqualTo(EventSearchRequestDto.DEFAULT_OFFSET);
+    assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
+    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
+    assertThat(eventsPage.getTotal()).isEqualTo(allEventDtos.size());
+    assertThat(eventsPage.getResults())
+      .isSortedAccordingTo(getExpectedSortComparator(GROUP, DESC))
+      .hasSize(allEventDtos.size());
+  }
+
+  @Test
   public void getEventCounts_eventsSortedByDescendingTimestampIfCannotBeResolvedBySortParam() {
     // when
     final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
