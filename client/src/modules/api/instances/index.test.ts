@@ -46,7 +46,6 @@ describe('instances api', () => {
       // then
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'mock' does not exist on type '(url: any,... Remove this comment to see the full error message
       expect(wrappers.get.mock.calls[0][0]).toBe('/api/workflow-instances/1');
-      expect(successResponse.json).toBeCalled();
     });
   });
 
@@ -74,7 +73,6 @@ describe('instances api', () => {
           queries: [{}],
         },
       });
-      expect(successResponse.json).toBeCalled();
     });
   });
 
@@ -86,7 +84,6 @@ describe('instances api', () => {
       //then
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'mock' does not exist on type '(url: any,... Remove this comment to see the full error message
       expect(wrappers.get.mock.calls[0][0]).toBe('/api/workflows/grouped');
-      expect(successResponse.json).toBeCalled();
     });
   });
 
@@ -100,7 +97,6 @@ describe('instances api', () => {
       expect(wrappers.get.mock.calls[0][0]).toBe(
         '/api/workflow-instances/core-statistics'
       );
-      expect(successResponse.json).toBeCalled();
     });
   });
 

@@ -9,6 +9,5 @@ import {post} from 'modules/request';
 const URL = `/api/events`;
 
 export async function fetchEvents(workflowInstanceId: any) {
-  const response = await post(URL, {workflowInstanceId});
-  return await response.json();
+  return post(URL, {workflowInstanceId});
 }

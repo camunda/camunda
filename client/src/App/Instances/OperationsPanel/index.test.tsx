@@ -63,7 +63,10 @@ describe('OperationsPanel', () => {
   it('should render operation entries', async () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json([mockOperationRunning, mockOperationFinished]))
+        res.once(
+          ctx.status(200),
+          ctx.json([mockOperationRunning, mockOperationFinished])
+        )
       )
     );
     render(<OperationsPanel />, {wrapper: Wrapper});

@@ -82,6 +82,10 @@ export default class Modal extends React.Component<ModalProps> {
     }
   }
 
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
   addEventListener() {
     this.eventListenerAdded = true;
     this.prevActiveElement = document.activeElement;

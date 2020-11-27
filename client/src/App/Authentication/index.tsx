@@ -4,10 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {Redirect, withRouter} from 'react-router-dom';
 
 import {get, setResponseInterceptor} from 'modules/request';
+import {useNotifications} from 'modules/notifications';
+import {sessionValidationStore} from 'modules/stores/sessionValidation';
+import {logoutUrl} from 'modules/api/header';
 
 type Props = {
   location: {
@@ -16,91 +19,74 @@ type Props = {
       isLoggedIn?: boolean;
     };
   };
+  children: React.ReactNode;
 };
 
-type State = any;
+//@ts-expect-error
+const Authentication: React.FC<Props> = (props) => {
+  const [forceRedirect, setForceRedirect] = useState<boolean | null>(null);
 
-class Authentication extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
+  useEffect(() => {
+    requestUserEndpoint().then((status: number) => {
+      if (status === 401 || status === 403) {
+        setForceRedirect(true);
+      } else {
+        sessionValidationStore.enableUserSession();
+        setForceRedirect(false);
+      }
+      setResponseInterceptor(({status, url}: Response) => {
+        if ((status === 401 || status === 403) && !url.includes(logoutUrl)) {
+          setForceRedirect(true);
+        }
+      });
+    });
 
-    // forceRedirect === null indicates the login status was not checked yet
-    this.state = {
-      forceRedirect: null,
+    return () => {
+      setResponseInterceptor(null);
     };
-  }
+  }, []);
 
-  componentDidMount() {
-    this.requestUserEndpoint().then(this.checkLoginStatus);
-  }
-
-  componentWillUnmount() {
-    setResponseInterceptor(null);
-  }
-
-  requestUserEndpoint = () => {
+  const notifications = useNotifications();
+  const requestUserEndpoint = () => {
     // use user endpoint to check for authentication
     return get('/api/authentications/user')
       .then((response) => response.status)
       .catch((error) => error.status);
   };
 
-  checkLoginStatus = (status: any) => {
-    // intercept further responses to check if we get logged out
-    setResponseInterceptor(this.interceptResponse);
-
-    if (status === 401) {
-      this.enableForceRedirect();
-    } else {
-      this.disableForceRedirect();
+  const {state} = props.location;
+  if (forceRedirect) {
+    if (
+      props.location.pathname !== '/' ||
+      (props.location.pathname === '/' &&
+        sessionValidationStore.state.isSessionValid)
+    ) {
+      notifications
+        .displayNotification('info', {headline: 'Session expired'})
+        .then((res) => {
+          sessionValidationStore.disableUserSession(res);
+        });
     }
-  };
 
-  enableForceRedirect = () => {
-    // redirect to login then make sure to reset the state
-    // in order to be able to render the children (i.e. the Routes)
-    this.setState(
-      {
-        forceRedirect: true,
-      },
-      this.disableForceRedirect
+    return (
+      <Redirect
+        to={{
+          pathname: '/login',
+          state: {referrer: props.location.pathname},
+        }}
+        push={true}
+      />
     );
-  };
-
-  disableForceRedirect = () => {
-    this.setState({
-      forceRedirect: false,
-    });
-  };
-
-  interceptResponse = ({status}: any) => {
-    if (status === 401) {
-      this.enableForceRedirect();
-    }
-  };
-
-  render() {
-    const {state} = this.props.location;
-    if (state && state.isLoggedIn) {
-      return this.props.children;
-    } else if (this.state.forceRedirect === null) {
-      // show empty page until we know if we need to redirect to login screen
-      return null;
-    } else if (this.state.forceRedirect) {
-      return (
-        <Redirect
-          to={{
-            pathname: '/login',
-            state: {referrer: this.props.location.pathname},
-          }}
-          push={true}
-        />
-      );
-    } else {
-      return this.props.children;
-    }
+  } else if (state && state.isLoggedIn) {
+    sessionValidationStore.enableUserSession();
+    return props.children;
+  } else if (state === undefined && forceRedirect === null) {
+    // show empty page until we know if we need to redirect to login screen
+    return null;
+  } else {
+    return props.children;
   }
-}
+};
 
 // @ts-expect-error ts-migrate(2345) FIXME: Type 'unknown' is not assignable to type '{ isLogg... Remove this comment to see the full error message
 export default withRouter(Authentication);

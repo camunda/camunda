@@ -180,7 +180,7 @@ describe('stores/flowNodeInstance', () => {
   it('should handle request failure', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({error: 'an error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
@@ -233,7 +233,7 @@ describe('stores/flowNodeInstance', () => {
   it('should get instance execution history availability', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({error: 'an error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
@@ -297,7 +297,7 @@ describe('stores/flowNodeInstance', () => {
   it('should get mapped flow nodes', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({error: 'an error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});

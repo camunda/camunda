@@ -44,6 +44,7 @@ const DEFAULT_STATE: State = {
 
 class Variables {
   state: State = {...DEFAULT_STATE};
+  shouldCancelOngoingRequests: boolean = false;
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
 
@@ -65,6 +66,9 @@ class Variables {
   };
 
   reset = () => {
+    if (this.state.isLoading) {
+      this.shouldCancelOngoingRequests = true;
+    }
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
@@ -118,27 +122,33 @@ class Variables {
     });
 
     if (this.intervalId !== null) {
-      this.handleResponse(response);
+      await this.handleResponse(response);
     }
   };
 
-  handleResponse = (response: any) => {
-    if (response.error) {
+  handleResponse = async (response: any) => {
+    if (this.shouldCancelOngoingRequests) {
+      this.shouldCancelOngoingRequests = false;
+      return;
+    }
+
+    if (!response.ok) {
       this.handleFailure();
       return;
     }
 
+    const data = await response.json();
     if (this.state.items.length === 0) {
-      this.setItems(response);
+      this.setItems(data);
     } else {
       const {items} = this.state;
       const localVariables = differenceWith(
         items,
-        response,
-        (item: any, responseItem: any) =>
-          item.name === responseItem.name && item.value === responseItem.value
+        data,
+        (item: any, dataItem: any) =>
+          item.name === dataItem.name && item.value === dataItem.value
       );
-      const serverVariables = differenceBy(response, localVariables, 'name');
+      const serverVariables = differenceBy(data, localVariables, 'name');
 
       this.setItems([...serverVariables, ...localVariables]);
     }
@@ -148,12 +158,11 @@ class Variables {
 
   fetchVariables = async (workflowInstanceId: any) => {
     this.startLoading();
-    this.handleResponse(
-      await fetchVariables({
-        instanceId: workflowInstanceId,
-        scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
-      })
-    );
+    const response = await fetchVariables({
+      instanceId: workflowInstanceId,
+      scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
+    });
+    await this.handleResponse(response);
   };
 
   setSingleVariable = (variable: Variable) => {

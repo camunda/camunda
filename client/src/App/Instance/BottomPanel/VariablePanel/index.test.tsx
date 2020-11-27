@@ -44,7 +44,8 @@ describe('VariablePanel', () => {
     mockServer.use(
       rest.get(
         '/api/workflow-instances/invalid_instance/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json({error: 'An error occured'}))
+        (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
       ),
       rest.get(
         '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',

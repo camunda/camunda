@@ -78,14 +78,17 @@ class Events {
   }
 
   fetchWorkflowEvents = async (instanceId: string) => {
-    this.setItems(await fetchEvents(instanceId));
+    const response = await fetchEvents(instanceId);
+    if (response.ok) {
+      this.setItems(await response.json());
+    }
   };
 
   handlePolling = async (instanceId: string) => {
     const response = await fetchEvents(instanceId);
 
-    if (this.intervalId !== null) {
-      this.setItems(response);
+    if (this.intervalId !== null && response.ok) {
+      this.setItems(await response.json());
     }
   };
 

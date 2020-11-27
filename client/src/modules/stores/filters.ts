@@ -66,9 +66,14 @@ class Filters {
   locationReactionDisposer: null | IReactionDisposer = null;
 
   async init() {
-    this.setGroupedWorkflows(
-      formatGroupedWorkflows(await fetchGroupedWorkflows())
-    );
+    try {
+      const response = await fetchGroupedWorkflows();
+      if (response.ok) {
+        this.setGroupedWorkflows(formatGroupedWorkflows(await response.json()));
+      }
+    } catch {
+      this.setGroupedWorkflows(formatGroupedWorkflows([]));
+    }
 
     when(
       () => this.state.location !== null,

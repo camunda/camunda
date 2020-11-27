@@ -85,7 +85,9 @@ class Operations {
       this.completeInitialLoad();
     }
 
-    this.setOperations(response);
+    if (response.ok) {
+      this.setOperations(await response.json());
+    }
   };
 
   applyBatchOperation = async ({
@@ -140,8 +142,8 @@ class Operations {
       pageSize: PAGE_SIZE * this.state.page,
     });
 
-    if (this.intervalId !== null) {
-      this.setOperations(response);
+    if (this.intervalId !== null && response.ok) {
+      this.setOperations(await response.json());
     }
   };
 

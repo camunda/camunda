@@ -56,14 +56,20 @@ class SequenceFlows {
 
   fetchWorkflowSequenceFlows = async (instanceId: any) => {
     const response = await fetchSequenceFlows(instanceId);
-    const processedSequenceFlows = getProcessedSequenceFlows(response);
-    this.setItems(processedSequenceFlows);
+    if (response.ok) {
+      const processedSequenceFlows = getProcessedSequenceFlows(
+        await response.json()
+      );
+      this.setItems(processedSequenceFlows);
+    }
   };
 
   handlePolling = async (instanceId: any) => {
     const response = await fetchSequenceFlows(instanceId);
-    if (this.intervalId !== null) {
-      const processedSequenceFlows = getProcessedSequenceFlows(response);
+    if (this.intervalId !== null && response.ok) {
+      const processedSequenceFlows = getProcessedSequenceFlows(
+        await response.json()
+      );
       this.setItems(processedSequenceFlows);
     }
   };

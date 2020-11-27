@@ -50,11 +50,10 @@ class InstancesDiagram {
     this.startLoading();
     const response = await fetchWorkflowXML(workflowId);
 
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'error' does not exist on type 'string'.
-    if (response.error) {
-      this.handleFailure();
+    if (response.ok) {
+      this.handleSuccess(await parseDiagramXML(await response.text()));
     } else {
-      this.handleSuccess(await parseDiagramXML(response));
+      this.handleFailure();
     }
 
     if (!this.state.isInitialLoadComplete) {

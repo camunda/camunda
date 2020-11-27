@@ -5,117 +5,83 @@
  */
 
 import React from 'react';
-import {Redirect} from 'react-router-dom';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
+import {MemoryRouter, Route} from 'react-router-dom';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import Authentication from './index';
 
-import * as request from 'modules/request/request';
-import * as wrappers from 'modules/request/wrappers';
+const LOGIN_CONTENT = 'Login content';
+const PRIVATE_COMPONENT_CONTENT = 'Private component content';
+const PrivateComponent = () => <div>{PRIVATE_COMPONENT_CONTENT}</div>;
 
-import AuthenticationWithRouter from './index';
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+jest.mock('modules/notifications', () => {
+  return {
+    useNotifications: () => {
+      return {
+        displayNotification: () => {
+          return new Promise((resolve) => {
+            resolve({});
+          });
+        },
+      };
+    },
+  };
+});
 
-const {WrappedComponent: Authentication} = AuthenticationWithRouter;
+type Props = {
+  children?: React.ReactNode;
+};
 
-jest.mock('modules/request/request');
-jest.mock('modules/request/wrappers');
+const Wrapper = ({children}: Props) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter initialEntries={[`/instances/1`]}>
+        <Route path="/login" render={() => <h1>{LOGIN_CONTENT}</h1>} />
+        <Authentication>
+          <Route>{children} </Route>
+        </Authentication>
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('Authentication', () => {
-  // @ts-expect-error ts-migrate(2540) FIXME: Cannot assign to 'get' because it is a read-only p... Remove this comment to see the full error message
-  wrappers.get = mockResolvedAsyncFn({status: 200});
-
-  let Child: any, node: any;
-  const mockLocation = {pathname: '/some/page'};
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    Child = () => <span>I am a child component</span>;
-    node = shallow(
-      // @ts-expect-error ts-migrate(2739) FIXME: Type '{ pathname: string; }' is missing the follow... Remove this comment to see the full error message
-      <Authentication location={mockLocation}>
-        <Child />
-      </Authentication>
+  it('should render component if user is logged in', async () => {
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json({}))
+      )
     );
+
+    render(<PrivateComponent />, {wrapper: Wrapper});
+    expect(
+      await screen.findByText(PRIVATE_COMPONENT_CONTENT)
+    ).toBeInTheDocument();
   });
 
-  it('should attach a responseInterceptor', () => {
-    expect(request.setResponseInterceptor).toBeCalled();
+  it('should redirect to login page if user is not authenticated (401)', async () => {
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.status(401), ctx.json({}))
+      )
+    );
+
+    render(<PrivateComponent />, {wrapper: Wrapper});
+
+    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
   });
 
-  it('should render children if logged in', async () => {
-    node.setProps({
-      location: {...mockLocation, state: {isLoggedIn: true}},
-    });
+  it('should redirect to login page if user is authenticated (403)', async () => {
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.status(403), ctx.json({}))
+      )
+    );
 
-    node.update();
-    expect(node.find(Child)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
-  });
+    render(<PrivateComponent />, {wrapper: Wrapper});
 
-  it('should render children by default', async () => {
-    expect(node.state('forceRedirect')).toBe(false);
-    expect(node.find(Child)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should redirect to login when forceRedirect is true', () => {
-    // given
-    const expectedTo = {
-      pathname: '/login',
-      state: {referrer: mockLocation.pathname},
-    };
-
-    // when
-    node.setState({forceRedirect: true});
-
-    // then
-    expect(node.find(Child)).toHaveLength(0);
-    const RedirectNode = node.find(Redirect);
-    expect(RedirectNode).toHaveLength(1);
-    expect(RedirectNode.prop('to')).toEqual(expectedTo);
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should redirect to login when check login status failed', () => {
-    // given
-    const expectedTo = {
-      pathname: '/login',
-      state: {referrer: mockLocation.pathname},
-    };
-
-    // mock resetState so we can catch the forceRedirect change in state
-    node.instance().disableForceRedirect = jest.fn();
-
-    // when
-    node.instance().checkLoginStatus(401);
-
-    // then
-    expect(node.find(Child)).toHaveLength(0);
-    const RedirectNode = node.find(Redirect);
-    expect(RedirectNode).toHaveLength(1);
-    expect(RedirectNode.prop('to')).toEqual(expectedTo);
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should set forceRedirect to true on failed response', async () => {
-    // given
-    // mock resetState so we can catch the forceRedirect change in state
-    node.instance().disableForceRedirect = jest.fn();
-
-    // when
-    node.instance().interceptResponse({status: 401});
-
-    // then
-    expect(node.state().forceRedirect).toBe(true);
-    expect(node.instance().disableForceRedirect).toBeCalled();
-  });
-
-  it('should reset forceRedirect to false when disableForceRedirect is called', () => {
-    // when
-    node.setState({forceRedirect: true});
-    node.instance().disableForceRedirect();
-
-    // then
-    expect(node.state('forceRedirect')).toBe(false);
+    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
   });
 });

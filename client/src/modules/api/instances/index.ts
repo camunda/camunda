@@ -51,35 +51,26 @@ type OperationPayload = {
 };
 
 async function fetchWorkflowInstance(id: any) {
-  const response = await get(`${URL}/${id}`);
-  return await response.json();
+  return get(`${URL}/${id}`);
 }
 
 async function fetchWorkflowInstanceIncidents(id: any) {
-  const response = await get(`${URL}/${id}/incidents`);
-  return await response.json();
+  return get(`${URL}/${id}/incidents`);
 }
 
 async function fetchWorkflowInstances(options: WorkflowInstancesQuery) {
   const {firstResult, maxResults, ...payload} = options;
   const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`;
 
-  const response = await post(url, payload);
-  return await response.json();
+  return post(url, payload);
 }
 
 async function fetchSequenceFlows(workflowInstanceId: any) {
-  const response = await get(`${URL}/${workflowInstanceId}/sequence-flows`);
-  return await response.json();
+  return get(`${URL}/${workflowInstanceId}/sequence-flows`);
 }
 
 async function fetchGroupedWorkflows() {
-  try {
-    const response = await get('/api/workflows/grouped');
-    return await response.json();
-  } catch (e) {
-    return [];
-  }
+  return get('/api/workflows/grouped');
 }
 
 async function fetchWorkflowCoreStatistics() {
@@ -99,7 +90,7 @@ async function fetchWorkflowInstancesByIds(ids: any) {
     ...payload,
   };
 
-  return await fetchWorkflowInstances(options);
+  return fetchWorkflowInstances(options);
 }
 
 async function fetchWorkflowInstancesBySelection(payload: any) {
@@ -148,10 +139,7 @@ async function applyOperation(instanceId: string, payload: OperationPayload) {
 
 async function fetchVariables({instanceId, scopeId}: any) {
   // TODO: API CHANGED - tests will fail
-  const response = await get(
-    `${URL}/${instanceId}/variables?scopeId=${scopeId}`
-  );
-  return await response.json();
+  return get(`${URL}/${instanceId}/variables?scopeId=${scopeId}`);
 }
 
 export type {OperationPayload, BatchOperationQuery, WorkflowInstancesQuery};

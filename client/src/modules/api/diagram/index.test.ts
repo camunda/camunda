@@ -29,8 +29,9 @@ describe('diagram api', () => {
       // then
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'mock' does not exist on type '(url: any,... Remove this comment to see the full error message
       expect(wrappers.get.mock.calls[0][0]).toBe(expectedURL);
-      expect(successResponse.text).toHaveBeenCalledTimes(1);
-      expect(response).toBe(mockXML);
+
+      const data = await response.text();
+      expect(data).toBe(mockXML);
     });
   });
 });

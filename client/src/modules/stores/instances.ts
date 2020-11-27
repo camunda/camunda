@@ -101,12 +101,13 @@ class Instances {
     this.startLoading();
 
     const response = await fetchWorkflowInstances(payload);
-    const {workflowInstances, totalCount} = response;
-
-    this.setInstances({
-      filteredInstancesCount: totalCount,
-      workflowInstances,
-    });
+    if (response.ok) {
+      const {workflowInstances, totalCount} = await response.json();
+      this.setInstances({
+        filteredInstancesCount: totalCount,
+        workflowInstances,
+      });
+    }
 
     this.stopLoading();
     this.setInstancesWithActiveOperations(this.state.workflowInstances);
@@ -118,11 +119,13 @@ class Instances {
 
   refreshInstances = async (payload: any) => {
     const response = await fetchWorkflowInstances(payload);
-    const {workflowInstances, totalCount} = response;
-    this.setInstances({
-      filteredInstancesCount: totalCount,
-      workflowInstances,
-    });
+    if (response.ok) {
+      const {workflowInstances, totalCount} = await response.json();
+      this.setInstances({
+        filteredInstancesCount: totalCount,
+        workflowInstances,
+      });
+    }
   };
 
   startLoading = () => {
@@ -181,9 +184,10 @@ class Instances {
 
   handlePollingInstancesByIds = async (instanceIds: string[]) => {
     const response = await fetchWorkflowInstancesByIds(instanceIds);
+    const {workflowInstances} = await response.json();
     if (this.intervalId !== null) {
-      this.setInstancesWithActiveOperations(response.workflowInstances);
-      this.setInstancesWithCompletedOperations(response.workflowInstances);
+      this.setInstancesWithActiveOperations(workflowInstances);
+      this.setInstancesWithCompletedOperations(workflowInstances);
     }
   };
 

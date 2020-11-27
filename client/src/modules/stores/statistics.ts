@@ -121,6 +121,7 @@ class Statistics {
   reset = () => {
     this.state = {...DEFAULT_STATE};
 
+    this.stopPolling();
     this.pollingDisposer?.();
     this.fetchStatisticsDisposer?.();
   };

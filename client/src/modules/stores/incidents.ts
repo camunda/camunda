@@ -78,7 +78,9 @@ class Incidents {
 
   fetchIncidents = async (id: string) => {
     const response = await fetchWorkflowInstanceIncidents(id);
-    this.setIncidents(response);
+    if (response.ok) {
+      this.setIncidents(await response.json());
+    }
   };
 
   stopPolling = () => {
@@ -92,8 +94,8 @@ class Incidents {
 
   handlePolling = async (id: any) => {
     const response = await fetchWorkflowInstanceIncidents(id);
-    if (this.intervalId !== null) {
-      this.setIncidents(response);
+    if (this.intervalId !== null && response.ok) {
+      this.setIncidents(await response.json());
     }
   };
 

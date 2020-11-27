@@ -111,10 +111,14 @@ class FlowNodeInstance {
     this.startLoading();
 
     const response = await fetchActivityInstancesTree(id);
-    if (response.error) {
-      this.handleFailure();
+    await this.handleResponse(response);
+  };
+
+  handleResponse = async (response: any) => {
+    if (response.ok) {
+      this.handleSuccess(await response.json());
     } else {
-      this.handleSuccess(response);
+      this.handleFailure();
     }
 
     if (!this.state.isInitialLoadComplete) {
@@ -172,9 +176,17 @@ class FlowNodeInstance {
   };
 
   startPolling = async (workflowInstanceId: any) => {
-    this.intervalId = setInterval(async () => {
-      await this.fetchInstanceExecutionHistory(workflowInstanceId);
+    this.intervalId = setInterval(() => {
+      this.handlePolling(workflowInstanceId);
     }, 5000);
+  };
+
+  handlePolling = async (workflowInstanceId: string) => {
+    const response = await fetchActivityInstancesTree(workflowInstanceId);
+
+    if (this.intervalId !== null) {
+      await this.handleResponse(response);
+    }
   };
 
   stopPolling = () => {

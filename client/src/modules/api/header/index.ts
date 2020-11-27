@@ -6,9 +6,10 @@
 
 import {get, post} from 'modules/request';
 
+const logoutUrl = '/api/logout';
 function logout() {
   // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
-  return post('/api/logout');
+  return post(logoutUrl);
 }
 
 async function fetchUser() {
@@ -16,4 +17,4 @@ async function fetchUser() {
   return response.json();
 }
 
-export {logout, fetchUser};
+export {logout, fetchUser, logoutUrl};

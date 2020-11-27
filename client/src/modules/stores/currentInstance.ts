@@ -35,8 +35,10 @@ class CurrentInstance {
   disposer: null | IReactionDisposer = null;
 
   async init(id: any) {
-    const workflowInstance = await fetchWorkflowInstance(id);
-    this.setCurrentInstance(workflowInstance);
+    const response = await fetchWorkflowInstance(id);
+    if (response.ok) {
+      this.setCurrentInstance(await response.json());
+    }
 
     this.disposer = autorun(() => {
       if (isInstanceRunning(this.state.instance)) {
@@ -79,8 +81,8 @@ class CurrentInstance {
   handlePolling = async (instanceId: any) => {
     const response = await fetchWorkflowInstance(instanceId);
 
-    if (this.intervalId !== null) {
-      this.setCurrentInstance(response);
+    if (this.intervalId !== null && response.ok) {
+      this.setCurrentInstance(await response.json());
     }
   };
 

@@ -505,6 +505,22 @@ describe('stores/variables', () => {
     expect(variablesStore.state.isInitialLoadComplete).toBe(false);
   });
 
+  it('should not update state if store is reset when there are ongoing requests', async () => {
+    mockServer.use(
+      rest.get(
+        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+        (_, res, ctx) => res.once(ctx.status(500), ctx.json(mockVariables))
+      )
+    );
+
+    const variablesRequest = variablesStore.fetchVariables(1);
+    variablesStore.reset();
+    expect(variablesStore.shouldCancelOngoingRequests).toBe(true);
+    await variablesRequest;
+    expect(variablesStore.shouldCancelOngoingRequests).toBe(false);
+    expect(variablesStore.state.isFailed).toBe(false);
+  });
+
   it('should manage local and server variables correctly', async () => {
     expect(variablesStore.state.items).toEqual([]);
 

@@ -9,9 +9,8 @@ import {post} from 'modules/request';
 const URL = '/api/batch-operations';
 
 export async function fetchOperations({pageSize, searchAfter}: any) {
-  const response = await post(URL, {
+  return post(URL, {
     pageSize,
     searchAfter,
   });
-  return await response.json();
 }

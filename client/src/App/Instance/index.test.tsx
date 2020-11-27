@@ -10,6 +10,7 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
+  waitFor,
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
@@ -18,23 +19,11 @@ import {mockSuccessResponseForActivityTree} from './FlowNodeInstanceLog/index.se
 import {PAGE_TITLE} from 'modules/constants';
 
 import {getWorkflowName} from 'modules/utils/instance';
-import {
-  fetchWorkflowInstance,
-  fetchWorkflowCoreStatistics,
-  fetchVariables,
-  fetchSequenceFlows,
-} from 'modules/api/instances';
-import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
-import {fetchEvents} from 'modules/api/events';
-
-import {fetchWorkflowXML} from 'modules/api/diagram';
 import {Instance} from './index';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/diagram');
-jest.mock('modules/api/events');
-jest.mock('modules/api/instances');
-jest.mock('modules/api/activityInstances');
 
 type Props = {
   children?: React.ReactNode;
@@ -43,7 +32,7 @@ type Props = {
 const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/instances/1']}>
+      <MemoryRouter initialEntries={['/instances/4294980768']}>
         <Route path="/instances/:id">{children}</Route>
       </MemoryRouter>
     </ThemeProvider>
@@ -52,54 +41,64 @@ const Wrapper = ({children}: Props) => {
 
 describe('Instance', () => {
   beforeAll(() => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchWorkflowXML.mockResolvedValue('');
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchSequenceFlows.mockResolvedValue(mockSequenceFlows);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchEvents.mockResolvedValue(mockEvents);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchActivityInstancesTree.mockResolvedValue(
-      mockSuccessResponseForActivityTree
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res(ctx.text(''))
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/sequence-flows',
+        (_, res, ctx) => res(ctx.json(mockSequenceFlows))
+      ),
+      rest.post('/api/events', (_, res, ctx) => res(ctx.json(mockEvents))),
+      rest.post('/api/activity-instances', (_, res, ctx) =>
+        res(ctx.json(mockSuccessResponseForActivityTree))
+      ),
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res(
+          ctx.json({
+            coreStatistics: {
+              running: 821,
+              active: 90,
+              withIncidents: 731,
+            },
+          })
+        )
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+        (_, res, ctx) =>
+          res(
+            ctx.json([
+              {
+                id: '2251799813686037-mwst',
+                name: 'newVariable',
+                value: '1234',
+                scopeId: '2251799813686037',
+                workflowInstanceId: '2251799813686037',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      )
     );
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchWorkflowCoreStatistics.mockResolvedValue({
-      coreStatistics: {
-        running: 821,
-        active: 90,
-        withIncidents: 731,
-      },
-    });
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-    fetchVariables.mockResolvedValue([
-      {
-        id: '2251799813686037-mwst',
-        name: 'newVariable',
-        value: '1234',
-        scopeId: '2251799813686037',
-        workflowInstanceId: '2251799813686037',
-        hasActiveOperation: false,
-      },
-    ]);
-  });
-
-  afterEach(() => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockReset' does not exist on type '(id: ... Remove this comment to see the full error message
-    fetchWorkflowInstance.mockReset();
   });
 
   it('should render and set the page title', async () => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValueOnce' does not exist on... Remove this comment to see the full error message
-    fetchWorkflowInstance.mockResolvedValueOnce(
-      testData.fetch.onPageLoad.workflowInstance
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.workflowInstance))
+      )
     );
 
     render(<Instance />, {wrapper: Wrapper});
-
+    jest.useFakeTimers();
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-panel-body')).toBeInTheDocument();
     expect(screen.getByText('Instance History')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText('newVariable')).toBeInTheDocument()
+    );
     expect(screen.getByText('newVariable')).toBeInTheDocument();
     expect(document.title).toBe(
       PAGE_TITLE.INSTANCE(
@@ -107,69 +106,6 @@ describe('Instance', () => {
         getWorkflowName(testData.fetch.onPageLoad.workflowInstance)
       )
     );
-  });
-
-  describe('polling', () => {
-    it('should poll for active instances until component is unmounted', async () => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-      fetchWorkflowInstance.mockResolvedValue(
-        testData.fetch.onPageLoad.workflowInstance
-      );
-
-      const component = render(<Instance />, {wrapper: Wrapper});
-
-      jest.useFakeTimers();
-
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-
-      jest.advanceTimersByTime(5000);
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(2);
-
-      jest.advanceTimersByTime(5000);
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(3);
-
-      component.unmount();
-      jest.advanceTimersByTime(5000);
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(3);
-      jest.useRealTimers();
-    });
-
-    it('should not poll for completed instances', async () => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-      fetchWorkflowInstance.mockResolvedValue(
-        testData.fetch.onPageLoad.workflowInstanceCompleted
-      );
-      render(<Instance />, {wrapper: Wrapper});
-      jest.useFakeTimers();
-
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-
-      jest.advanceTimersByTime(5000);
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-      jest.useRealTimers();
-    });
-
-    it('should not poll for canceled instances', async () => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockResolvedValue' does not exist on typ... Remove this comment to see the full error message
-      fetchWorkflowInstance.mockResolvedValue(
-        testData.fetch.onPageLoad.workflowInstanceCanceled
-      );
-
-      render(<Instance />, {wrapper: Wrapper});
-
-      jest.useFakeTimers();
-
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-
-      jest.advanceTimersByTime(5000);
-      expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-      jest.useRealTimers();
-    });
+    jest.useRealTimers();
   });
 });
