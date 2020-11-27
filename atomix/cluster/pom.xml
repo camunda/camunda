@@ -137,7 +137,7 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.25.2-rc1</version>
+    <version>0.25.3-SNAPSHOT</version>
   </parent>
 
 
