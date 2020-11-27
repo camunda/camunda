@@ -17,6 +17,7 @@ import {
   applyBatchOperation,
   applyOperation,
   BatchOperationQuery,
+  OperationPayload,
 } from 'modules/api/instances';
 import {OperationType} from 'modules/types';
 import {sortOperations} from './utils/sortOperations';
@@ -41,12 +42,6 @@ type State = {
 type Payload = {
   operationType: OperationType;
   incidentId?: string;
-};
-
-type ApplyOperationProps = {
-  instanceId: string;
-  payload: Payload;
-  onError: () => void;
 };
 
 const DEFAULT_STATE: State = {
@@ -122,7 +117,11 @@ class Operations {
     instanceId,
     payload,
     onError,
-  }: ApplyOperationProps) => {
+  }: {
+    instanceId: string;
+    payload: OperationPayload;
+    onError: () => void;
+  }) => {
     try {
       const response = await applyOperation(instanceId, payload);
 

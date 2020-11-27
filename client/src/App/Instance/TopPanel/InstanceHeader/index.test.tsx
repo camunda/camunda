@@ -172,11 +172,12 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    variablesStore.addVariable(
-      mockInstanceWithoutOperations.id,
-      mockVariable.name,
-      mockVariable.value
-    );
+    variablesStore.addVariable({
+      id: mockInstanceWithoutOperations.id,
+      name: mockVariable.name,
+      value: mockVariable.value,
+      onError: () => {},
+    });
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 

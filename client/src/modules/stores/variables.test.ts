@@ -74,7 +74,12 @@ describe('stores/variables', () => {
     variablesStore.init(1);
     await Promise.all([
       variablesStore.fetchVariables(1),
-      variablesStore.addVariable('1', 'test', '1'),
+      variablesStore.addVariable({
+        id: '1',
+        name: 'test',
+        value: '1',
+        onError: () => {},
+      }),
     ]);
 
     expect(variablesStore.state.items).toEqual([
@@ -228,83 +233,202 @@ describe('stores/variables', () => {
     expect(variablesStore.state.isLoading).toBe(false);
   });
 
-  it('should add variable', async () => {
-    expect(variablesStore.state.items).toEqual([]);
-    await variablesStore.addVariable('1', 'test', '1');
-    expect(variablesStore.state.items).toEqual([
-      {name: 'test', value: '1', hasActiveOperation: true},
-    ]);
+  describe('Add Variable', () => {
+    it('should add variable', async () => {
+      expect(variablesStore.state.items).toEqual([]);
+      await variablesStore.addVariable({
+        id: '1',
+        name: 'test',
+        value: '1',
+        onError: () => {},
+      });
+      expect(variablesStore.state.items).toEqual([
+        {name: 'test', value: '1', hasActiveOperation: true},
+      ]);
 
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
-      )
-    );
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
+        )
+      );
 
-    await variablesStore.addVariable('1', 'test2', '"value"');
-    expect(variablesStore.state.items).toEqual([
-      {name: 'test', value: '1', hasActiveOperation: true},
-      {name: 'test2', value: '"value"', hasActiveOperation: true},
-    ]);
+      await variablesStore.addVariable({
+        id: '1',
+        name: 'test2',
+        value: '"value"',
+        onError: () => {},
+      });
+      expect(variablesStore.state.items).toEqual([
+        {name: 'test', value: '1', hasActiveOperation: true},
+        {name: 'test2', value: '"value"', hasActiveOperation: true},
+      ]);
+    });
+
+    it('should not add variable on server error', async () => {
+      expect(variablesStore.state.items).toEqual([]);
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) =>
+            res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+        )
+      );
+
+      const mockOnError = jest.fn();
+      await variablesStore.addVariable({
+        id: '1',
+        name: 'test',
+        value: '1',
+        onError: mockOnError,
+      });
+      expect(variablesStore.state.items).toEqual([]);
+      expect(mockOnError).toHaveBeenCalled();
+    });
+
+    it('should not add variable on network error', async () => {
+      expect(variablesStore.state.items).toEqual([]);
+
+      mockServer.use(
+        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+          res.networkError('A network error')
+        )
+      );
+
+      const mockOnError = jest.fn();
+      await variablesStore.addVariable({
+        id: '1',
+        name: 'test',
+        value: '1',
+        onError: mockOnError,
+      });
+      expect(variablesStore.state.items).toEqual([]);
+      expect(mockOnError).toHaveBeenCalled();
+    });
   });
 
-  it('should update variable', async () => {
-    await variablesStore.fetchVariables(1);
-    expect(variablesStore.state.items).toEqual(mockVariables);
-    await variablesStore.updateVariable('1', 'mwst', '65');
-    expect(variablesStore.state.items).toEqual([
-      {
+  describe('Update Variable', () => {
+    it('should update variable', async () => {
+      await variablesStore.fetchVariables(1);
+      expect(variablesStore.state.items).toEqual(mockVariables);
+      await variablesStore.updateVariable({
+        id: '1',
         name: 'mwst',
         value: '65',
-        hasActiveOperation: true,
-      },
-      {
-        id: '2251799813686374-orderStatus',
-        name: 'orderStatus',
-        value: '"NEW"',
-        scopeId: '2251799813686374',
-        workflowInstanceId: '2251799813686374',
-        hasActiveOperation: false,
-      },
-      {
-        id: '2251799813686374-paid',
-        name: 'paid',
-        value: 'true',
-        scopeId: '2251799813686374',
-        workflowInstanceId: '2251799813686374',
-        hasActiveOperation: false,
-      },
-    ]);
+        onError: () => {},
+      });
+      expect(variablesStore.state.items).toEqual([
+        {
+          id: '2251799813686374-mwst',
+          name: 'mwst',
+          value: '65',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: true,
+        },
+        {
+          id: '2251799813686374-orderStatus',
+          name: 'orderStatus',
+          value: '"NEW"',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: false,
+        },
+        {
+          id: '2251799813686374-paid',
+          name: 'paid',
+          value: 'true',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: false,
+        },
+      ]);
 
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
-      )
-    );
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
+        )
+      );
 
-    await variablesStore.updateVariable('1', 'paid', 'false');
-    expect(variablesStore.state.items).toEqual([
-      {
-        name: 'mwst',
-        value: '65',
-        hasActiveOperation: true,
-      },
-      {
-        id: '2251799813686374-orderStatus',
-        name: 'orderStatus',
-        value: '"NEW"',
-        scopeId: '2251799813686374',
-        workflowInstanceId: '2251799813686374',
-        hasActiveOperation: false,
-      },
-      {
+      await variablesStore.updateVariable({
+        id: '1',
         name: 'paid',
         value: 'false',
-        hasActiveOperation: true,
-      },
-    ]);
+        onError: () => {},
+      });
+      expect(variablesStore.state.items).toEqual([
+        {
+          id: '2251799813686374-mwst',
+          name: 'mwst',
+          value: '65',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: true,
+        },
+        {
+          id: '2251799813686374-orderStatus',
+          name: 'orderStatus',
+          value: '"NEW"',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: false,
+        },
+        {
+          id: '2251799813686374-paid',
+          name: 'paid',
+          value: 'false',
+          scopeId: '2251799813686374',
+          workflowInstanceId: '2251799813686374',
+          hasActiveOperation: true,
+        },
+      ]);
+    });
+
+    it('should not update variable on server error', async () => {
+      await variablesStore.fetchVariables(1);
+      expect(variablesStore.state.items).toEqual(mockVariables);
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) =>
+            res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+        )
+      );
+
+      const mockOnError = jest.fn();
+      await variablesStore.updateVariable({
+        id: '1',
+        name: 'mwst',
+        value: '65',
+        onError: mockOnError,
+      });
+      expect(variablesStore.state.items).toEqual(mockVariables);
+      expect(mockOnError).toHaveBeenCalled();
+    });
+
+    it('should not update variable on network error', async () => {
+      await variablesStore.fetchVariables(1);
+      expect(variablesStore.state.items).toEqual(mockVariables);
+
+      mockServer.use(
+        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+          res.networkError('A network error')
+        )
+      );
+
+      const mockOnError = jest.fn();
+      await variablesStore.updateVariable({
+        id: '1',
+        name: 'mwst',
+        value: '65',
+        onError: mockOnError,
+      });
+      expect(variablesStore.state.items).toEqual(mockVariables);
+      expect(mockOnError).toHaveBeenCalled();
+    });
   });
 
   it('should get scopeId', async () => {
@@ -319,7 +443,12 @@ describe('stores/variables', () => {
   it('should get hasActiveOperation', async () => {
     await variablesStore.fetchVariables(1);
     expect(variablesStore.hasActiveOperation).toBe(false);
-    await variablesStore.addVariable('1', 'test', '1');
+    await variablesStore.addVariable({
+      id: '1',
+      name: 'test',
+      value: '1',
+      onError: () => {},
+    });
     expect(variablesStore.hasActiveOperation).toBe(true);
   });
 
@@ -381,7 +510,12 @@ describe('stores/variables', () => {
 
     await variablesStore.fetchVariables(1);
     expect(variablesStore.state.items).toEqual(mockVariables);
-    await variablesStore.addVariable('1', 'test1', '123');
+    await variablesStore.addVariable({
+      id: '1',
+      name: 'test1',
+      value: '123',
+      onError: () => {},
+    });
 
     mockServer.use(
       rest.post(
@@ -390,7 +524,12 @@ describe('stores/variables', () => {
       )
     );
 
-    await variablesStore.updateVariable('1', 'paid', 'false');
+    await variablesStore.updateVariable({
+      id: '1',
+      name: 'paid',
+      value: 'false',
+      onError: () => {},
+    });
 
     mockServer.use(
       rest.get(
@@ -463,9 +602,12 @@ describe('stores/variables', () => {
         workflowInstanceId: '2251799813686374',
       },
       {
-        hasActiveOperation: true,
+        id: '2251799813686374-paid',
         name: 'paid',
         value: 'false',
+        scopeId: '2251799813686374',
+        workflowInstanceId: '2251799813686374',
+        hasActiveOperation: true,
       },
       {
         hasActiveOperation: true,

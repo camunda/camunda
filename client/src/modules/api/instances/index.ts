@@ -42,6 +42,14 @@ type WorkflowInstancesQuery = {
   variable?: {name: string; value: string};
 };
 
+type OperationPayload = {
+  operationType: OperationType;
+  variableName?: string;
+  variableScopeId?: string | undefined;
+  variableValue?: string;
+  incidentId?: string;
+};
+
 async function fetchWorkflowInstance(id: any) {
   const response = await get(`${URL}/${id}`);
   return await response.json();
@@ -134,8 +142,7 @@ async function applyBatchOperation(
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.
  */
-
-async function applyOperation(instanceId: string, payload: any) {
+async function applyOperation(instanceId: string, payload: OperationPayload) {
   return post(`${URL}/${instanceId}/operation`, payload);
 }
 
@@ -147,7 +154,7 @@ async function fetchVariables({instanceId, scopeId}: any) {
   return await response.json();
 }
 
-export type {BatchOperationQuery, WorkflowInstancesQuery};
+export type {OperationPayload, BatchOperationQuery, WorkflowInstancesQuery};
 export {
   fetchWorkflowInstance,
   fetchWorkflowInstanceIncidents,

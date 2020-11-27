@@ -33,7 +33,7 @@ type Response = {
 };
 type State = {
   selection: {
-    treeRowIds: unknown[];
+    treeRowIds: string[];
     flowNodeId: null | string;
   };
   isInitialLoadComplete: boolean;

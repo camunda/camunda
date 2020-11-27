@@ -156,43 +156,91 @@ class Variables {
     );
   };
 
-  addVariable = async (id: string, name: string, value: string) => {
+  setSingleVariable = (variable: Variable) => {
+    const {items} = this.state;
+    this.state.items = items.map((item) => {
+      if (item.name === variable.name) {
+        return variable;
+      }
+
+      return item;
+    });
+  };
+
+  addVariable = async ({
+    id,
+    name,
+    value,
+    onError,
+  }: {
+    id: string;
+    name: string;
+    value: string;
+    onError: () => void;
+  }) => {
     this.setItems([
       ...this.state.items,
       {name, value, hasActiveOperation: true},
     ]);
 
-    await applyOperation(id, {
-      operationType: 'UPDATE_VARIABLE',
-      variableScopeId: this.scopeId,
-      variableName: name,
-      variableValue: value,
-    });
+    try {
+      const response = await applyOperation(id, {
+        operationType: 'UPDATE_VARIABLE',
+        variableScopeId: this.scopeId,
+        variableName: name,
+        variableValue: value,
+      });
+
+      if (!response.ok) {
+        this.setItems(this.state.items.filter((item) => item.name !== name));
+        onError();
+      }
+    } catch {
+      this.setItems(this.state.items.filter((item) => item.name !== name));
+      onError();
+    }
   };
 
-  updateVariable = async (id: string, name: string, value: string) => {
+  updateVariable = async ({
+    id,
+    name,
+    value,
+    onError,
+  }: {
+    id: string;
+    name: string;
+    value: string;
+    onError: () => void;
+  }) => {
     const {items} = this.state;
 
-    this.setItems(
-      items.map((item) => {
-        if (item.name === name) {
-          return {
-            name,
-            value,
-            hasActiveOperation: true,
-          };
-        }
+    const originalVariable = items.find((item) => item.name === name);
+    if (originalVariable === undefined) {
+      return;
+    }
 
-        return item;
-      })
-    );
-
-    await applyOperation(id, {
-      operationType: 'UPDATE_VARIABLE',
-      variableScopeId: this.scopeId,
-      variableName: name,
-      variableValue: value,
+    this.setSingleVariable({
+      ...originalVariable,
+      value,
+      hasActiveOperation: true,
     });
+
+    try {
+      const response = await applyOperation(id, {
+        operationType: 'UPDATE_VARIABLE',
+        variableScopeId: this.scopeId,
+        variableName: name,
+        variableValue: value,
+      });
+
+      if (!response.ok) {
+        this.setSingleVariable(originalVariable);
+        onError();
+      }
+    } catch {
+      this.setSingleVariable(originalVariable);
+      onError();
+    }
   };
 
   get hasActiveOperation() {
@@ -237,6 +285,7 @@ decorate(Variables, {
   clearItems: action,
   updateVariable: action,
   addVariable: action,
+  setSingleVariable: action,
   hasNoVariables: computed,
   hasActiveOperation: computed,
   scopeId: computed,

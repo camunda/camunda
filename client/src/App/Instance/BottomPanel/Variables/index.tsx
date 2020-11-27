@@ -11,6 +11,7 @@ import {isRunning} from 'modules/utils/instance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {variablesStore} from 'modules/stores/variables';
+import {useNotifications} from 'modules/notifications';
 
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
@@ -36,6 +37,7 @@ const Variables = observer(function Variables() {
   } = variablesStore;
   // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
   const {id: workflowInstanceId} = useParams();
+  const notifications = useNotifications();
 
   useEffect(() => {
     variablesStore.fetchVariables(workflowInstanceId);
@@ -91,11 +93,27 @@ const Variables = observer(function Variables() {
     setValue('');
   }
 
+  function handleError() {
+    notifications.displayNotification('error', {
+      headline: 'Variable could not be saved',
+    });
+  }
+
   function saveVariable() {
     if (editMode === VARIABLE_MODE.ADD) {
-      variablesStore.addVariable(workflowInstanceId, key, value);
+      variablesStore.addVariable({
+        id: workflowInstanceId,
+        name: key,
+        value,
+        onError: handleError,
+      });
     } else if (editMode === VARIABLE_MODE.EDIT) {
-      variablesStore.updateVariable(workflowInstanceId, key, value);
+      variablesStore.updateVariable({
+        id: workflowInstanceId,
+        name: key,
+        value,
+        onError: handleError,
+      });
     }
 
     closeEdit();
