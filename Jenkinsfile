@@ -320,13 +320,16 @@ pipeline {
 
     post {
         always {
-            // Retrigger the build if there were connection issues
+            // Retrigger the build if there were connection issues (but not
+            // on bors staging branch as bors does not recognize this result)
             script {
                 if (agentDisconnected()) {
                     currentBuild.result = 'ABORTED'
                     currentBuild.description = "Aborted due to connection error"
 
-                    build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+                    if (!isBorsStagingBranch()) {
+                        build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+                    }
                 }
 
                 String userReason = null
