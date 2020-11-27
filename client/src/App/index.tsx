@@ -18,6 +18,7 @@ import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';
 import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
+import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <NotificationProvider>
         <CollapsablePanelProvider>
           <GlobalStyles />
+          <NetworkStatusWatcher />
           <Router>
             <Switch>
               <Route path="/login" component={Login} />
