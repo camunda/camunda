@@ -203,57 +203,6 @@ pipeline {
                         }
                     }
                 }
-
-                stage('Update') {
-                    agent {
-                        kubernetes {
-                            cloud 'zeebe-ci'
-                            label "zeebe-ci-build_${buildName}_update"
-                            defaultContainer 'jnlp'
-                            yamlFile '.ci/podSpecs/update-test.yml'
-                        }
-                    }
-
-                    stages {
-                        stage('Prepare') {
-                            steps {
-                                prepareMavenContainer()
-                            }
-                        }
-
-                        stage('Build Docker Image') {
-                            environment {
-                                DOCKER_BUILDKIT = "1"
-                                IMAGE = "camunda/zeebe"
-                                TAG = 'current-test'
-                            }
-
-                            steps {
-                                unstash name: "zeebe-distro"
-                                container('docker') {
-                                    sh '.ci/scripts/docker/build.sh'
-                                }
-                            }
-                        }
-
-                        stage('Test') {
-                            environment {
-                                SUREFIRE_REPORT_NAME_SUFFIX = 'update-testrun'
-                            }
-
-                            steps {
-                                unstash name: "zeebe-build"
-                                runMavenContainerCommand('.ci/scripts/distribution/test-update-java.sh')
-                            }
-
-                            post {
-                                always {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
             post {
