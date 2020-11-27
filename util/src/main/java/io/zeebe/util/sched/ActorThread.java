@@ -173,7 +173,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   @Override
-  public void start() {
+  public synchronized void start() {
     if (UNSAFE.compareAndSwapObject(
         this, STATE_OFFSET, ActorThreadState.NEW, ActorThreadState.RUNNING)) {
       super.start();
