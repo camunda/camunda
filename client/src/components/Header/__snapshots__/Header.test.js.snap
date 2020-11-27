@@ -57,8 +57,8 @@ exports[`matches the snapshot 1`] = `
       active={
         Array [
           "/events/processes/",
+          "/events/ingested/",
           "/events/processes/*",
-          "/ingestedEvents/",
         ]
       }
       breadcrumbsEntities={

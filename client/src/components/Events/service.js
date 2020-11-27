@@ -85,3 +85,7 @@ export async function loadIngestedEvents(params) {
 
   return await response.json();
 }
+
+export async function deleteEvents(eventsIds) {
+  return await post('api/event/delete', eventsIds);
+}

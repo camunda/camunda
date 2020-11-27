@@ -9,7 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Events.elements.js';
-import * as Homepage from "./Homepage.elements";
+import * as Homepage from './Homepage.elements';
 
 fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
 
@@ -96,7 +96,7 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
-  await t.expect(e.notification.exists).ok({ timeout: 5000 });
+  await t.expect(e.notification.exists).ok({timeout: 5000});
   await t.click(e.notificationCloseButton(e.notification));
 
   // Listing
@@ -131,4 +131,23 @@ test('auto generate a process', async (t) => {
   await t.click(e.buttonWithText('Generate'));
 
   await t.expect(e.diagram.visible).ok();
+});
+
+test('delete multiple external events', async (t) => {
+  await t.click(e.navItem);
+  await t.click(e.externalEventsTab);
+
+  await t.resizeWindow(1100, 800);
+
+  await t.takeScreenshot('event-based-processes/external-events.png', {fullPage: true});
+
+  await t.click(e.eventCheckbox(0));
+  await t.click(e.eventCheckbox(3));
+  await t.click(e.selectionDropdown);
+  await t.hover(e.dropdownOption('Delete Event(s)'));
+
+  await t.takeScreenshot('event-based-processes/deleting-events.png', {fullPage: true});
+
+  await t.click(e.dropdownOption('Delete Event(s)'));
+  await t.click(e.confirmModalButton);
 });

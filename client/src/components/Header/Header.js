@@ -63,7 +63,7 @@ export function Header({mightFail, location, noActions}) {
               <HeaderNav.Item
                 name={t('navigation.events')}
                 linksTo="/events/processes/"
-                active={['/events/processes/', '/events/processes/*', '/ingestedEvents/']}
+                active={['/events/processes/', '/events/ingested/', '/events/processes/*']}
                 breadcrumbsEntities={['eventBasedProcess']}
               />
             )}

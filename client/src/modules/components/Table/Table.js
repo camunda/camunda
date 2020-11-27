@@ -281,9 +281,9 @@ Table.formatColumns = (head, ctx = '', columnWidths = {}) => {
         title: elem.title,
         accessor: (d) => d[id],
         id,
-        minWidth: 100,
+        minWidth: elem.width || 100,
         disableSortBy: elem.sortable === false,
-        width: columnWidths[id] || 180,
+        width: columnWidths[id] || elem.width || 180,
       };
     }
     return {
