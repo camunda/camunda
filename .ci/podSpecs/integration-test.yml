@@ -35,53 +35,16 @@ spec:
       resources:
         limits:
           cpu: 12
-          memory: 50Gi
+          memory: 48Gi
         requests:
           cpu: 12
-          memory: 50Gi
+          memory: 48Gi
       securityContext:
         privileged: true
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
           mountPropagation: Bidirectional
-    - name: maven-jdk8
-      image: maven:3.6.3-jdk-8
-      command: ["cat"]
-      tty: true
-      env:
-        - name: LIMITS_CPU
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UseContainerSupport
-      resources:
-        limits:
-          cpu: 2
-          memory: 4Gi
-        requests:
-          cpu: 2
-          memory: 4Gi
-      securityContext:
-        privileged: true
-    - name: golang
-      image: golang:1.13.4
-      command: ["cat"]
-      tty: true
-      resources:
-        limits:
-          cpu: 4
-          memory: 4Gi
-        requests:
-          cpu: 4
-          memory: 4Gi
-      env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
-      securityContext:
-        privileged: true
     - name: docker
       image: docker:19.03.13-dind
       args:
@@ -97,11 +60,11 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 12
-          memory: 50Gi
+          cpu: 18
+          memory: 60Gi
         requests:
-          cpu: 12
-          memory: 50Gi
+          cpu: 18
+          memory: 60Gi
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
