@@ -54,10 +54,7 @@ public final class JobActivationClient {
     this.environmentRule = environmentRule;
 
     jobBatchRecord = new JobBatchRecord();
-    jobBatchRecord
-        .setTimeout(DEFAULT_TIMEOUT)
-        .setWorker(DEFAULT_WORKER)
-        .setMaxJobsToActivate(DEFAULT_MAX_ACTIVATE);
+    jobBatchRecord.setTimeout(DEFAULT_TIMEOUT).setMaxJobsToActivate(DEFAULT_MAX_ACTIVATE);
     partitionId = DEFAULT_PARTITION;
   }
 

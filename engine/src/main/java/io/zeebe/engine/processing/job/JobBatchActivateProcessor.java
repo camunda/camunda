@@ -79,8 +79,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private boolean isValid(final JobBatchRecord record) {
     return record.getMaxJobsToActivate() > 0
         && record.getTimeout() > 0
-        && record.getTypeBuffer().capacity() > 0
-        && record.getWorkerBuffer().capacity() > 0;
+        && record.getTypeBuffer().capacity() > 0;
   }
 
   private void activateJobs(
@@ -215,9 +214,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     } else if (value.getTypeBuffer().capacity() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = String.format(format, "type", "present", "blank");
-    } else if (value.getWorkerBuffer().capacity() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason = String.format(format, "worker", "present", "blank");
     } else {
       throw new IllegalStateException(
           "Expected to reject an invalid activate job batch command, but it appears to be valid");

@@ -112,16 +112,23 @@ public final class ActivateJobsTest {
   }
 
   @Test
-  public void shouldRejectInvalidWorker() {
+  public void shouldAcceptEmptyWorker() {
+    // given
+    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+
+    final Duration timeout = Duration.ofMinutes(12);
+
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(taskType).byWorker("").expectRejection().activate();
+        ENGINE
+            .jobs()
+            .withType(taskType)
+            .withTimeout(timeout.toMillis())
+            .withMaxJobsToActivate(1)
+            .activate();
 
     // then
-    assertThat(batchRecord)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Expected to activate job batch with worker to be present, but it was blank");
+    assertThat(batchRecord.getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
   }
 
   @Test
