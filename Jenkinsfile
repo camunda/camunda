@@ -22,7 +22,7 @@ pipeline {
             cloud 'zeebe-ci'
             label "zeebe-ci-build_${buildName}"
             defaultContainer 'jnlp'
-            yamlFile ".ci/podSpecs/distribution.yml"
+            yaml templatePodspec('.ci/podSpecs/distribution-template.yml')
         }
     }
 
@@ -403,4 +403,30 @@ def sendZeebeSlackMessage() {
     slackSend(
         channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
         message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+}
+
+def isBorsStagingBranch() {
+    env.BRANCH_NAME == 'staging'
+}
+
+def templatePodspec(String podspecPath, flags = [:]) {
+    def defaultFlags = [
+      useStableNodePool: isBorsStagingBranch()
+    ]
+    // will merge Maps by overwriting left Map with values of the right Map
+    def effectiveFlags = defaultFlags + flags
+
+    def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
+
+    // Needs no workspace, see:
+    // https://www.jenkins.io/doc/pipeline/steps/workflow-multibranch/#readtrusted-read-trusted-file-from-scm
+    String templateString = readTrusted(podspecPath)
+
+    // Note: Templating is currently done via simple string substitution as this
+    // is enough to solve all existing use cases. If need arises the templating
+    // can be transparently changed to a more sophisticated YAML-merge based
+    // approach as it is an implementation detail that the caller does not know.
+    templateString = templateString.replaceAll('PODSPEC_TEMPLATE_NODE_POOL', nodePoolName)
+
+    templateString
 }

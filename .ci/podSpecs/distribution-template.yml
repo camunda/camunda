@@ -1,0 +1,93 @@
+metadata:
+  labels:
+    agent: zeebe-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: "PODSPEC_TEMPLATE_NODE_POOL"
+  tolerations:
+    - key: "PODSPEC_TEMPLATE_NODE_POOL"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+    - name: maven
+      image: maven:3.6.3-jdk-11
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      resources:
+        limits:
+          cpu: 8
+          memory: 8Gi
+        requests:
+          cpu: 8
+          memory: 8Gi
+      securityContext:
+        privileged: true
+    - name: maven-jdk8
+      image: maven:3.6.3-jdk-8
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      resources:
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 2
+          memory: 4Gi
+      securityContext:
+        privileged: true
+    - name: golang
+      image: golang:1.13.4
+      command: ["cat"]
+      tty: true
+      resources:
+        limits:
+          cpu: 4
+          memory: 4Gi
+        requests:
+          cpu: 4
+          memory: 4Gi
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      securityContext:
+        privileged: true
+    - name: docker
+      image: docker:19.03.13-dind
+      args:
+        - --storage-driver=overlay
+      env:
+        # The new dind versions expect secure access using cert
+        # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+        # (see https://hub.docker.com/_/docker?tab=description&page=1)
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      securityContext:
+        privileged: true
+      tty: true
+      resources:
+        limits:
+          cpu: 8
+          memory: 8Gi
+        requests:
+          cpu: 8
+          memory: 8Gi
