@@ -90,17 +90,21 @@ const Task: React.FC = () => {
           const newVariables: ReadonlyArray<Variable> =
             get(values, 'new-variables') || [];
 
-          await completeTask({
+          completeTask({
             variables: {
               id,
               variables: [...existingVariables, ...newVariables],
             },
-          });
-
-          history.push({
-            pathname: Pages.Initial(),
-            search: history.location.search,
-          });
+          })
+            .then(() => {
+              history.push({
+                pathname: Pages.Initial(),
+                search: history.location.search,
+              });
+            })
+            .catch(() => {
+              // TODO: handle 'Task could not be completed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/508
+            });
         }}
       >
         {({form, handleSubmit}) => {

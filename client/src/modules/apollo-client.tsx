@@ -7,39 +7,37 @@
 /* istanbul ignore file */
 
 import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
-import {onError} from '@apollo/client/link/error';
 
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
 
 const client = new ApolloClient({
   cache: new InMemoryCache(), //TODO - Issue #243
-  link: onError((error) => {
-    const {networkError} = error;
+  link: new HttpLink({
+    uri: '/graphql',
+    async fetch(uri: RequestInfo, options: RequestInit) {
+      const token = getCsrfToken(document.cookie);
 
-    // @ts-ignore - TODO[Vinicius]: check why type defs are wrong here - Issue #68
-    if ([401, 403].includes(networkError?.statusCode)) {
-      resetApolloStore().then(login.disableSession);
-    } else {
-      console.error(error);
-    }
-  }).concat(
-    new HttpLink({
-      uri: '/graphql',
-      fetch(uri: RequestInfo, options: RequestInit) {
-        const token = getCsrfToken(document.cookie);
+      if (token !== null) {
+        options.headers = {
+          ...options.headers,
+          [CsrfKeyName]: token,
+        };
+      }
 
-        if (token !== null) {
-          options.headers = {
-            ...options.headers,
-            [CsrfKeyName]: token,
-          };
-        }
+      const response = await fetch(uri, options);
+      if (response.ok) {
+        login.activateSession();
+      }
 
-        return fetch(uri, options);
-      },
-    }),
-  ),
+      if ([401, 403].includes(response.status)) {
+        await resetApolloStore();
+        login.disableSession();
+      }
+
+      return response;
+    },
+  }),
 });
 
 async function resetApolloStore() {

@@ -122,7 +122,14 @@ const Details: React.FC = () => {
                 <>
                   {assignee.firstname} {assignee.lastname}
                   {taskState === TaskStates.Created && (
-                    <ClaimButton variant="small" onClick={() => unclaimTask()}>
+                    <ClaimButton
+                      variant="small"
+                      onClick={() => {
+                        unclaimTask().catch(() => {
+                          // TODO: handle 'Task could not be unclaimed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/507
+                        });
+                      }}
+                    >
                       Unclaim
                     </ClaimButton>
                   )}
@@ -131,7 +138,14 @@ const Details: React.FC = () => {
                 <>
                   --
                   {taskState === TaskStates.Created && (
-                    <ClaimButton variant="small" onClick={() => claimTask()}>
+                    <ClaimButton
+                      variant="small"
+                      onClick={() => {
+                        claimTask().catch(() => {
+                          // TODO: handle 'Task could not be claimed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/507
+                        });
+                      }}
+                    >
                       Claim
                     </ClaimButton>
                   )}

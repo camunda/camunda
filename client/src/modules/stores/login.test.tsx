@@ -19,7 +19,7 @@ describe('login store', () => {
   });
 
   it('should assume that there is an existing session', () => {
-    expect(login.isLoggedIn).toBe(true);
+    expect(login.status).toBe('initial');
   });
 
   it('should login', async () => {
@@ -27,11 +27,11 @@ describe('login store', () => {
 
     login.disableSession();
 
-    expect(login.isLoggedIn).toBe(false);
+    expect(login.status).toBe('session-invalid');
 
     await login.handleLogin('demo', 'demo');
 
-    expect(login.isLoggedIn).toBe(true);
+    expect(login.status).toBe('logged-in');
   });
 
   it('should throw an error on login failure', async () => {
@@ -47,11 +47,11 @@ describe('login store', () => {
 
     await login.handleLogin('demo', 'demo');
 
-    expect(login.isLoggedIn).toBe(true);
+    expect(login.status).toBe('logged-in');
 
     await login.handleLogout();
 
-    expect(login.isLoggedIn).toBe(false);
+    expect(login.status).toBe('logged-out');
   });
 
   it('should throw an error on logout failure', async () => {

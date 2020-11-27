@@ -15,7 +15,12 @@ const Endpoints = {
 } as const;
 
 class Login {
-  isLoggedIn: boolean = true;
+  status:
+    | 'initial'
+    | 'logged-in'
+    | 'logged-out'
+    | 'session-expired'
+    | 'session-invalid' = 'initial';
 
   handleLogin = async (username: string, password: string) => {
     const response = await request(Endpoints.Login, {
@@ -30,7 +35,15 @@ class Login {
       throw new Error('Login failed');
     }
 
-    this.isLoggedIn = true;
+    this.activateSession();
+  };
+
+  logout = () => {
+    this.status = 'logged-out';
+  };
+
+  activateSession = () => {
+    this.status = 'logged-in';
   };
 
   handleLogout = async () => {
@@ -47,15 +60,23 @@ class Login {
 
     resetApolloStore();
 
-    this.isLoggedIn = false;
+    this.logout();
   };
 
   disableSession = () => {
-    this.isLoggedIn = false;
+    if (['session-invalid', 'session-expired'].includes(this.status)) {
+      return;
+    }
+
+    if (this.status === 'initial') {
+      this.status = 'session-invalid';
+    } else {
+      this.status = 'session-expired';
+    }
   };
 
   reset = () => {
-    this.isLoggedIn = true;
+    this.status = 'initial';
   };
 }
 
@@ -78,10 +99,10 @@ function request(input: string, init?: RequestInit) {
 }
 
 decorate(Login, {
-  isLoggedIn: observable,
+  status: observable,
   disableSession: action,
-  handleLogin: action,
-  handleLogout: action,
+  activateSession: action,
+  logout: action,
   reset: action,
 });
 

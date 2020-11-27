@@ -19,6 +19,7 @@ import {Pages} from 'modules/constants/pages';
 import {theme} from 'modules/theme';
 import {GlobalStyle} from './GlobalStyle';
 import {client} from './modules/apollo-client';
+import {SessionWatcher} from './SessionWatcher';
 
 const App: React.FC = () => {
   return (
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         <NotificationProvider>
           <GlobalStyle />
           <BrowserRouter>
+            <SessionWatcher />
             <Switch>
               <Route path={Pages.Login} component={Login} />
               <PrivateRoute
