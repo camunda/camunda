@@ -21,13 +21,13 @@
   <name>Atomix Parent Pom</name>
   <artifactId>atomix-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.24.6-SNAPSHOT</version>
+  <version>0.24.6-rc1</version>
   <inceptionYear>2020</inceptionYear>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.6-SNAPSHOT</version>
+    <version>0.24.6-rc1</version>
     <relativePath>../parent</relativePath>
   </parent>
 
