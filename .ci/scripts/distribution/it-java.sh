@@ -1,12 +1,25 @@
 #!/bin/bash -eux
 
-
-export JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))"
-
+# getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
+LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
+MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
+SUREFIRE_FORK_COUNT=${SUREFIRE_FORK_COUNT:-}
+MAVEN_PROPERTIES=(
+  -DtestMavenId=2
+  -Dsurefire.rerunFailingTestsCount=7
+)
 tmpfile=$(mktemp)
 
-mvn -B -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} test-compile -Pprepare-offline -pl qa/integration-tests -pl update-tests
-mvn -o -B --fail-never -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} verify -P skip-unstable-ci,parallel-tests -pl qa/integration-tests -pl update-tests -DtestMavenId=2 -Dsurefire.rerunFailingTestsCount=5 | tee ${tmpfile}
+if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
+  MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
+  # if we know the fork count, we can limit the max heap for each fork to ensure we're not OOM killed
+  JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMPercentage=$((100 / (MAVEN_PARALLELISM * $SUREFIRE_FORK_COUNT)))"
+fi
+
+# make sure to specify the profiles used in the verify goal when running preparing to go offline, as
+# these may require some additional plugin dependencies
+mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} test-compile -Pprepare-offline,skip-unstable-ci,parallel-tests -pl qa/integration-tests,update-tests
+mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -P skip-unstable-ci,parallel-tests -pl qa/integration-tests,update-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
 
 status=${PIPESTATUS[0]}
 
@@ -16,7 +29,7 @@ if grep -q "\[WARNING\] Flakes:" ${tmpfile}; then
 
   awk '/^\[WARNING\] Flakes:.*$/{flag=1}/^\[ERROR\] Tests run:.*Flakes: [0-9]*$/{print;flag=0}flag' ${tmpfile} > ${tmpfile2}
 
-  grep "\[ERROR\]   Run 1: " ${tmpfile} | awk '{print $4}' >> ./target/FlakyTests.txt
+  grep "\[ERROR\]   Run 1: " ${tmpfile2} | awk '{print $4}' >> ./FlakyTests.txt
 
   echo ERROR: Flaky Tests detected>&2
 
