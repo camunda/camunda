@@ -159,7 +159,7 @@ pipeline {
                             cloud 'zeebe-ci'
                             label "zeebe-ci-build_${buildName}_it"
                             defaultContainer 'jnlp'
-                            yamlFile '.ci/podSpecs/integration-test.yml'
+                            yamlFile '.ci/podSpecs/distribution.yml'
                         }
                     }
 
