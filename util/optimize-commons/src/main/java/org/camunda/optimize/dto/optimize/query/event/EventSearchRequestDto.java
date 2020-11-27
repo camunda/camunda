@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
@@ -50,6 +51,9 @@ public class EventSearchRequestDto {
   private PaginationRequestDto paginationRequestDto;
 
   public void validateRequest() {
+    if (StringUtils.isEmpty(searchTerm)) {
+      searchTerm = null;
+    }
     if (paginationRequestDto.getLimit() == null) {
       paginationRequestDto.setLimit(DEFAULT_LIMIT);
     }

@@ -267,6 +267,28 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  @Test
+  public void getEventCounts_usingEmptySearchTerm() {
+    // given
+    EventSearchRequestDto requestDto = eventRequestDto("", GROUP, DESC, 0, 20);
+
+    // when
+    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetEventListRequest(requestDto)
+      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
+
+    // then all events are returned
+    assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
+    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
+    assertThat(eventsPage.getTotal()).isEqualTo(allEventDtos.size());
+    assertThat(eventsPage.getResults())
+      .isSortedAccordingTo(getExpectedSortComparator(GROUP, DESC))
+      .hasSize(allEventDtos.size())
+      .extracting(DeletableEventDto.Fields.id)
+      .containsExactlyInAnyOrderElementsOf(
+        allEventDtos.stream().map(CloudEventRequestDto::getId).collect(Collectors.toList()));
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void getEventCounts_usingSearchTermMatchingTraceIdExactly(boolean caseInsensitive) {
@@ -380,28 +402,11 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
         expectedMatches.stream().map(CloudEventRequestDto::getId).collect(Collectors.toList()));
   }
 
-  @Test
-  public void getEventCounts_usingSearchTermNoMatches() {
+  // It cannot match if either the search term does not match a result, or is a long term and doesn't match any prefix
+  @ParameterizedTest
+  @ValueSource(strings = {"no matches", "no matches and this is long", "cklisted_event"})
+  public void getEventCounts_nonMatchingScenarios(final String searchTerm) {
     // given
-    final String searchTerm = "no matches";
-    EventSearchRequestDto requestDto = eventRequestDto(searchTerm, GROUP, DESC, 0, 20);
-
-    // when
-    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventListRequest(requestDto)
-      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
-    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
-    assertThat(eventsPage.getTotal()).isEqualTo(0L);
-    assertThat(eventsPage.getResults()).isEmpty();
-  }
-
-  @Test
-  public void getEventCounts_usingSearchTermNoMatchesWithLongSearchTerm() {
-    // given
-    final String searchTerm = "no matches and this is long";
     EventSearchRequestDto requestDto = eventRequestDto(searchTerm, GROUP, DESC, 0, 20);
 
     // when
@@ -440,24 +445,6 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
       .extracting(DeletableEventDto.Fields.id)
       .containsExactlyInAnyOrderElementsOf(
         expectedMatches.stream().map(CloudEventRequestDto::getId).collect(Collectors.toList()));
-  }
-
-  @Test
-  public void getEventCounts_usingSearchTermWithLongTermDoesNotMatchPrefix() {
-    // given a search term that is longer than the ngram threshold and not the matching prefix
-    final String searchTerm = "cklisted_event";
-    EventSearchRequestDto requestDto = eventRequestDto(searchTerm, GROUP, DESC, 0, 20);
-
-    // when
-    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventListRequest(requestDto)
-      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
-
-    // then the matching events aren't returned because the prefix does not match
-    assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
-    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
-    assertThat(eventsPage.getTotal()).isEqualTo(0L);
-    assertThat(eventsPage.getResults()).isEmpty();
   }
 
   @ParameterizedTest
