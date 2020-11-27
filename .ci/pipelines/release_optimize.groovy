@@ -414,7 +414,7 @@ pipeline {
           echo Giving Optimize some time to start up
           sleep 60
           echo Smoke testing if Optimize API can be reached
-          curl -q -f http://localhost:8090/api/status | grep -q connectionStatus
+          curl -q -f http://localhost:8090/api/status | grep -q engineStatus
           echo Smoke testing if Optimize Frontend resources are accessible
           curl -q -f http://localhost:8090/index.html | grep -q html
           """)
