@@ -9,7 +9,7 @@ import {CmNotificationContainer} from '@camunda-cloud/common-ui-react';
 
 const NotificationContainer = styled(CmNotificationContainer)`
   position: absolute;
-  bottom: 18px;
+  bottom: 13px;
   left: 10px;
   z-index: 1;
 `;

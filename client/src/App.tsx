@@ -11,6 +11,7 @@ import {BrowserRouter, Switch, Route} from 'react-router-dom';
 import {ThemeProvider} from 'styled-components';
 import {ApolloProvider} from '@apollo/client';
 import {NotificationProvider} from 'modules/notifications';
+import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 
 import {PrivateRoute} from './PrivateRoute';
 import {Tasklist} from './Tasklist';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
       <ThemeProvider theme={theme}>
         <NotificationProvider>
           <GlobalStyle />
+          <NetworkStatusWatcher />
           <BrowserRouter>
             <SessionWatcher />
             <Switch>
