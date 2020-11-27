@@ -12,11 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.LangUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.agrona.LangUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

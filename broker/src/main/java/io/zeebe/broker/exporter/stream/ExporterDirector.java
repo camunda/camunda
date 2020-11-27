@@ -20,7 +20,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
@@ -37,6 +36,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor {

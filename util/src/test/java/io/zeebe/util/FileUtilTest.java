@@ -46,31 +46,4 @@ public final class FileUtilTest {
             })
         .isInstanceOf(NoSuchFileException.class);
   }
-
-  @Test
-  public void shouldCreateParentDirectory() {
-    // given
-    final String folderToCreate = "folder";
-    final String fileToCreate = "file";
-    final String filePathToCreate =
-        tempFolder.getRoot().getPath()
-            + File.separator
-            + folderToCreate
-            + File.separator
-            + fileToCreate;
-
-    // when
-    FileUtil.openChannel(filePathToCreate, true);
-
-    // then
-    final File[] matchingFolders =
-        tempFolder.getRoot().listFiles((dir, name) -> folderToCreate.equals(name));
-    assertThat(matchingFolders).hasSize(1);
-
-    final File folder = matchingFolders[0];
-    final File[] filesInFolder = folder.listFiles();
-
-    assertThat(filesInFolder).hasSize(1);
-    assertThat(filesInFolder[0]).hasName(fileToCreate);
-  }
 }
