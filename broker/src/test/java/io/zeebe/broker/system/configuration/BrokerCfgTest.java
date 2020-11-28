@@ -34,7 +34,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -237,19 +239,31 @@ public final class BrokerCfgTest {
   @Test
   public void shouldEnableDebugLogExporter() {
     // given
+    final var expectedId = DebugLogExporter.defaultExporterId();
+    final var expectedConfig = DebugLogExporter.defaultConfig();
     environment.put(ENV_DEBUG_EXPORTER, "true");
 
     // then
-    assertDefaultDebugLogExporter(false);
+    assertWithDefaultConfigurations(
+        cfg -> assertThat(cfg.getExporters()).containsEntry(expectedId, expectedConfig));
   }
 
   @Test
-  public void shouldEnableDebugLogExporterWithPrettyOption() {
+  public void shouldNotRegisterDebugLogExporter() {
     // given
-    environment.put(ENV_DEBUG_EXPORTER, "pretty");
+    environment.put(ENV_DEBUG_EXPORTER, "false");
+
+    // when
+    final String exporterId = DebugLogExporter.defaultExporterId();
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig("empty", environment);
 
     // then
-    assertDefaultDebugLogExporter(true);
+    assertThat(brokerCfg.getExporters()).doesNotContainKey(exporterId);
+  }
+
+  @Test
+  public void shouldHaveNoExportersByDefault() {
+    assertWithDefaultConfigurations(cfg -> assertThat(cfg.getExporters()).isEmpty());
   }
 
   @Test
@@ -836,20 +850,6 @@ public final class BrokerCfgTest {
     assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
   }
 
-  private void assertDefaultDebugLogExporter(final boolean prettyPrint) {
-    assertDebugLogExporter("default", prettyPrint);
-    assertDebugLogExporter("empty", prettyPrint);
-  }
-
-  private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
-    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
-    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
-
-    assertThat(brokerCfg.getExporters().values())
-        .usingRecursiveFieldByFieldElementComparator()
-        .contains(exporterCfg);
-  }
-
   private void assertMetricsExporter() {
     assertMetricsExporter("default");
     assertMetricsExporter("empty");
@@ -891,5 +891,16 @@ public final class BrokerCfgTest {
     assertThat(cfgCluster.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(cfgCluster.getClusterSize()).isEqualTo(clusterSize);
     assertThat(cfgCluster.getInitialContactPoints()).isEqualTo(initialContactPoints);
+  }
+
+  private void assertWithDefaultConfigurations(final Consumer<BrokerCfg> assertions) {
+    Stream.of("default", "empty")
+        .forEach(configFileName -> assertWithConfiguration(assertions, configFileName));
+  }
+
+  private void assertWithConfiguration(
+      final Consumer<BrokerCfg> assertions, final String configFileName) {
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
+    assertions.accept(cfg);
   }
 }
