@@ -27,6 +27,7 @@ const Container = styled.main`
 const DetailsPanel = styled(Panel)`
   border: 1px solid ${({theme}) => theme.colors.ui05};
   width: 100%;
+  height: 100%;
 `;
 
 const NoTaskSelectedMessage = styled.h1`

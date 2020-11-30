@@ -5,19 +5,34 @@
  */
 
 import * as React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Router} from 'react-router-dom';
-import {createMemoryHistory, History} from 'history';
+import {createMemoryHistory} from 'history';
 
 import {Filters} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {OPTIONS} from './constants';
+import {
+  mockGetAllOpenTasks,
+  mockGetEmptyTasks,
+  mockGetClaimedByMe,
+  mockGetUnclaimed,
+  mockGetCompleted,
+} from 'modules/queries/get-tasks';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {MockedResponse} from '@apollo/client/testing';
+import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 
-const getWrapper = (history: History): React.FC => ({children}) => {
+const getWrapper = (
+  history = createMemoryHistory(),
+  mock: MockedResponse[] = [],
+): React.FC => ({children}) => {
   return (
-    <Router history={history}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </Router>
+    <MockedApolloProvider mocks={mock}>
+      <Router history={history}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </Router>
+    </MockedApolloProvider>
   );
 };
 
@@ -27,11 +42,18 @@ describe('<Filters />', () => {
   it('should write the filters to the search params', () => {
     const history = createMemoryHistory();
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(history, [
+        mockGetAllOpenTasks,
+        mockGetEmptyTasks,
+        mockGetClaimedByMe,
+        mockGetUnclaimed,
+        mockGetCompleted,
+        mockGetCurrentUser,
+      ]),
     });
 
     FILTERS.forEach((filter) => {
-      fireEvent.change(screen.getByRole('combobox'), {
+      fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
         target: {
           value: filter,
         },
@@ -46,10 +68,10 @@ describe('<Filters />', () => {
   it('should redirect to the initial page', () => {
     const history = createMemoryHistory({initialEntries: ['/foobar']});
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(history, [mockGetAllOpenTasks]),
     });
 
-    fireEvent.change(screen.getByRole('combobox'), {
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
       target: {
         value: FILTERS[0],
       },
@@ -67,10 +89,10 @@ describe('<Filters />', () => {
       initialEntries: [`/?${mockSearchParam.id}=${mockSearchParam.value}`],
     });
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(history, [mockGetAllOpenTasks]),
     });
 
-    fireEvent.change(screen.getByRole('combobox'), {
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
       target: {
         value: FILTERS[0],
       },
@@ -88,7 +110,7 @@ describe('<Filters />', () => {
       initialEntries: [`/?filter=${mockFilter.value}`],
     });
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(history, [mockGetClaimedByMe, mockGetCurrentUser]),
     });
 
     expect(screen.getByDisplayValue(mockFilter.label)).toBeInTheDocument();
@@ -96,7 +118,7 @@ describe('<Filters />', () => {
 
   it('should have the correct options', () => {
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory()),
+      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks]),
     });
 
     OPTIONS.forEach(({label, value}) => {
@@ -108,9 +130,21 @@ describe('<Filters />', () => {
 
   it('should assume the correct default value', () => {
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory()),
+      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks]),
     });
 
     expect(screen.getByDisplayValue('All open')).toBeInTheDocument();
+  });
+
+  it('should should disable the filter while loading', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks]),
+    });
+
+    expect(screen.getByDisplayValue('All open')).toBeDisabled();
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('All open')).toBeEnabled(),
+    );
   });
 });

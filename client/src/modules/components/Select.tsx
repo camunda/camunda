@@ -4,27 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
+import {rgba} from 'polished';
 
 import DownIcon from 'modules/icons/down.svg';
+import DisabledDownIcon from 'modules/icons/disabled-down.svg';
 
 const Select = styled.select`
-  width: 100%;
-  appearance: none;
-  border-radius: 3px;
-  box-shadow: ${({theme}) => theme.shadows.select};
-  border: solid 1px ${({theme}) => theme.colors.ui03};
-  font-size: 13px;
-  font-weight: 600;
-  color: ${({theme}) => theme.colors.ui07};
-  padding: 4px 8px;
-  background: ${({theme}) => theme.colors.ui01} url(${DownIcon}) no-repeat;
-  background-position: calc(100% - 5px) center;
-  outline: none;
+  ${({theme}) => {
+    return css`
+      width: 100%;
+      appearance: none;
+      border-radius: 3px;
+      box-shadow: ${theme.shadows.select};
+      border: solid 1px ${theme.colors.ui03};
+      font-size: 13px;
+      font-weight: 600;
+      color: ${theme.colors.ui07};
+      padding: 4px 8px;
+      background: ${theme.colors.ui01} url(${DownIcon}) no-repeat;
+      background-position: calc(100% - 5px) center;
+      outline: none;
 
-  &:focus {
-    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
-  }
+      &:focus {
+        box-shadow: ${theme.shadows.fakeOutline};
+      }
+
+      &:disabled {
+        border-color: ${rgba(theme.colors.ui03, 0.2)};
+        background-color: ${rgba(theme.colors.ui01, 0.4)};
+        background-image: url(${DisabledDownIcon});
+        color: ${rgba(theme.colors.ui06, 0.7)};
+        box-shadow: none;
+        font-weight: 400;
+      }
+    `;
+  }}
 `;
 
 export {Select};

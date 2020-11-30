@@ -9,7 +9,13 @@ import {Task} from './index';
 import * as React from 'react';
 import {Route, Router} from 'react-router-dom';
 import {createMemoryHistory, History} from 'history';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {MockedResponse} from '@apollo/client/testing';
 
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
@@ -256,5 +262,27 @@ describe('<Task />', () => {
       screen.getByTestId('warning-icon-new-variables[0].value'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
+  });
+
+  it('should show a loading spinner while loading', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskDetailsClaimed,
+          mockTaskWithVariables,
+          mockGetCurrentUser,
+        ],
+      }),
+    });
+
+    expect(screen.getByTestId('details-overlay')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(screen.getByTestId('details-overlay'));
   });
 });

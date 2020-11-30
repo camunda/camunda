@@ -11,7 +11,6 @@ import {FORM_ERROR} from 'final-form';
 
 import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
-import {LoadingOverlay} from './LoadingOverlay';
 import {
   Container,
   Input,
@@ -21,6 +20,7 @@ import {
   Title,
   Button,
   Error,
+  LoadingOverlay,
 } from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
@@ -38,19 +38,32 @@ const Login: React.FC = () => {
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
           try {
+            const response = await handleLogin(username, password);
             const referrer = history.location.state?.referrer;
 
-            await handleLogin(username, password);
+            if (response.ok) {
+              return history.push(
+                referrer?.pathname === undefined ? Pages.Initial() : referrer,
+              );
+            }
 
-            return history.push(
-              referrer?.pathname === undefined ? Pages.Initial() : referrer,
-            );
+            if (response.status === 401) {
+              return {
+                [FORM_ERROR]: 'Username and Password do not match',
+              };
+            }
+
+            return {
+              [FORM_ERROR]: 'Credentials could not be verified',
+            };
           } catch {
-            return {[FORM_ERROR]: 'Username and Password do not match.'};
+            return {
+              [FORM_ERROR]: 'Credentials could not be verified',
+            };
           }
         }}
       >
-        {({handleSubmit, form, submitError}) => {
+        {({handleSubmit, form, submitError, dirtyFields}) => {
           const {submitting} = form.getState();
 
           return (
@@ -82,7 +95,14 @@ const Login: React.FC = () => {
                     />
                   )}
                 </Field>
-                <Button type="submit" disabled={submitting}>
+                <Button
+                  type="submit"
+                  disabled={
+                    !form
+                      .getRegisteredFields()
+                      .every((field) => dirtyFields[field]) || submitting
+                  }
+                >
                   Login
                 </Button>
               </FormContainer>

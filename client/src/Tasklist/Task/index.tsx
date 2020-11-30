@@ -24,7 +24,7 @@ import {Button} from 'modules/components/Button';
 
 import {Variables} from './Variables';
 import {Details} from './Details';
-import {Footer, Form as StyledForm} from './styled';
+import {Footer, Form as StyledForm, Container, LoadingOverlay} from './styled';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
@@ -62,7 +62,11 @@ const Task: React.FC = () => {
     },
   );
 
-  if (data === undefined || loading) {
+  if (loading && id !== undefined) {
+    return <LoadingOverlay data-testid="details-overlay" />;
+  }
+
+  if (data === undefined) {
     return null;
   }
 
@@ -72,7 +76,7 @@ const Task: React.FC = () => {
     taskState === TaskStates.Created;
 
   return (
-    <>
+    <Container>
       <Details />
       <Form
         mutators={{...arrayMutators}}
@@ -128,7 +132,7 @@ const Task: React.FC = () => {
           );
         }}
       </Form>
-    </>
+    </Container>
   );
 };
 

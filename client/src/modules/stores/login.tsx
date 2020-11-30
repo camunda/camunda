@@ -31,11 +31,11 @@ class Login {
       },
     });
 
-    if (!response.ok) {
-      throw new Error('Login failed');
+    if (response.ok) {
+      this.activateSession();
     }
 
-    this.activateSession();
+    return response;
   };
 
   logout = () => {

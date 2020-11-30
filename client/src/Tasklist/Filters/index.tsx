@@ -14,6 +14,7 @@ import {Container} from './styled';
 import {OPTIONS} from './constants';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
+import {useTasks} from '../useTasks';
 
 interface FormValues {
   filter: string;
@@ -21,6 +22,7 @@ interface FormValues {
 
 const Filters: React.FC = () => {
   const history = useHistory();
+  const {loading} = useTasks();
 
   return (
     <Container>
@@ -30,7 +32,10 @@ const Filters: React.FC = () => {
 
           searchParams.set('filter', values.filter);
 
-          history.push(`${Pages.Initial()}?${searchParams}`);
+          history.push({
+            pathname: Pages.Initial(),
+            search: searchParams.toString(),
+          });
         }}
         initialValues={{
           filter:
@@ -50,6 +55,8 @@ const Filters: React.FC = () => {
                     input.onChange(event);
                     form.submit();
                   }}
+                  disabled={loading}
+                  aria-label="Filter"
                 >
                   {OPTIONS.map(({value, label}) => {
                     return (

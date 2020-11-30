@@ -9,7 +9,6 @@
 import React from 'react';
 import * as Styled from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
-import {LoadingOverlay} from './LoadingOverlay';
 
 export default {
   title: 'Components/Login',
@@ -47,13 +46,4 @@ const Input: React.FC = () => {
   return <Styled.Input placeholder="Username" type="text" />;
 };
 
-export {
-  Button,
-  DisabledButton,
-  CopyrightNotice,
-  Logo,
-  Error,
-  Title,
-  Input,
-  LoadingOverlay,
-};
+export {Button, DisabledButton, CopyrightNotice, Logo, Error, Title, Input};

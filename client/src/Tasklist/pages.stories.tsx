@@ -201,6 +201,14 @@ const ClaimedWithVariables: React.FC = () => {
   );
 };
 
+const Loading: React.FC = () => {
+  return (
+    <Wrapper mocks={[]} initialEntries={['/0']}>
+      <Tasklist />
+    </Wrapper>
+  );
+};
+
 export {
   EmptyPage,
   AllOpenTasks,
@@ -212,4 +220,5 @@ export {
   Completed,
   UnclaimedWithVariables,
   ClaimedWithVariables,
+  Loading,
 };

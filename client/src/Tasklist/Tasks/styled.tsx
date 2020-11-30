@@ -6,7 +6,8 @@
 
 /* istanbul ignore file */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
+import {LoadingOverlay} from 'modules/components/LoadingOverlay';
 
 const EmptyMessage = styled.div`
   border: 1px solid ${({theme}) => theme.colors.ui05};
@@ -22,6 +23,32 @@ const EmptyMessage = styled.div`
 
 const UL = styled.ul`
   overflow-y: auto;
+  width: 100%;
+  height: 100%;
 `;
 
-export {EmptyMessage, UL};
+type ContainerProps = {
+  isLoading: boolean;
+};
+
+const Container = styled.div<ContainerProps>`
+  ${({isLoading}) => {
+    return css`
+      width: 100%;
+      height: 100%;
+      ${isLoading
+        ? css`
+            position: relative;
+          `
+        : ''}
+
+      ${LoadingOverlay} {
+        position: absolute;
+        align-items: flex-start;
+        padding-top: 12.5%;
+      }
+    `;
+  }}
+`;
+
+export {EmptyMessage, UL, Container};

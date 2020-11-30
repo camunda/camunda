@@ -5,13 +5,18 @@
  */
 
 import * as React from 'react';
+import styled from 'styled-components';
 
 import {Overlay, Spinner} from './styled';
 
-const LoadingOverlay: React.FC = () => (
-  <Overlay>
+type Props = {
+  'data-testid'?: string;
+};
+
+const LoadingOverlay = styled<React.FC<Props>>((props) => (
+  <Overlay {...props}>
     <Spinner />
   </Overlay>
-);
+))``;
 
 export {LoadingOverlay};

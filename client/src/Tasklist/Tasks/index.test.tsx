@@ -5,11 +5,17 @@
  */
 
 import * as React from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 
 import {Tasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {MemoryRouter} from 'react-router-dom';
+import {Router} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   mockGetAllOpenTasks,
@@ -22,12 +28,15 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockedResponse} from '@apollo/client/testing';
 import {FilterValues} from 'modules/constants/filterValues';
 
-const getWrapper = (mock: MockedResponse[], initialEntries = ['/']) => {
+const getWrapper = (
+  mock: MockedResponse[],
+  history = createMemoryHistory({initialEntries: ['/']}),
+) => {
   const Wrapper: React.FC = ({children}) => (
     <MockedApolloProvider mocks={mock}>
-      <MemoryRouter initialEntries={initialEntries}>
+      <Router history={history}>
         <MockThemeProvider>{children}</MockThemeProvider>
-      </MemoryRouter>
+      </Router>
     </MockedApolloProvider>
   );
 
@@ -39,7 +48,9 @@ describe('<Tasks />', () => {
     render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks])});
 
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
-    await screen.findByTestId('task-0');
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
   });
 
@@ -47,8 +58,14 @@ describe('<Tasks />', () => {
     render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks])});
 
     const [firstTask, secondTask] = mockGetAllOpenTasks.result.data.tasks;
-    const withinFirstTask = within(await screen.findByTestId('task-0'));
-    const withinSecondTask = within(await screen.findByTestId('task-1'));
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
+
+    const withinFirstTask = within(screen.getByTestId('task-0'));
+    const withinSecondTask = within(screen.getByTestId('task-1'));
+
     expect(withinFirstTask.getByText(firstTask.name)).toBeInTheDocument();
     expect(
       withinFirstTask.getByText(firstTask.workflowName),
@@ -80,19 +97,25 @@ describe('<Tasks />', () => {
     render(<Tasks />, {wrapper: getWrapper([mockGetEmptyTasks])});
 
     expect(
-      await screen.findByText('There are no tasks available.'),
+      await screen.findByText('There are no tasks available'),
     ).toBeInTheDocument();
   });
 
   it('should show all tasks claimed by me', async () => {
     render(<Tasks />, {
       wrapper: getWrapper(
-        [mockGetCurrentUser, mockGetClaimedByMe],
-        [`/?filter=${FilterValues.ClaimedByMe}`],
+        [mockGetClaimedByMe, mockGetCurrentUser],
+        createMemoryHistory({
+          initialEntries: [`/?filter=${FilterValues.ClaimedByMe}`],
+        }),
       ),
     });
 
-    expect(await screen.findByTestId('task-0')).toBeInTheDocument();
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
+
+    expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
     expect(screen.getByTestId('task-2')).toBeInTheDocument();
   });
@@ -101,11 +124,17 @@ describe('<Tasks />', () => {
     render(<Tasks />, {
       wrapper: getWrapper(
         [mockGetUnclaimed],
-        [`/?filter=${FilterValues.Unclaimed}`],
+        createMemoryHistory({
+          initialEntries: [`/?filter=${FilterValues.Unclaimed}`],
+        }),
       ),
     });
 
-    expect(await screen.findByTestId('task-0')).toBeInTheDocument();
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
+
+    expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
     expect(screen.getByTestId('task-2')).toBeInTheDocument();
   });
@@ -114,12 +143,42 @@ describe('<Tasks />', () => {
     render(<Tasks />, {
       wrapper: getWrapper(
         [mockGetCompleted],
-        [`/?filter=${FilterValues.Completed}`],
+        createMemoryHistory({
+          initialEntries: [`/?filter=${FilterValues.Completed}`],
+        }),
       ),
     });
 
-    expect(await screen.findByTestId('task-0')).toBeInTheDocument();
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
+
+    expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
     expect(screen.getByTestId('task-2')).toBeInTheDocument();
+  });
+
+  it('should show the loading spinner while changing filters', async () => {
+    const historyMock = createMemoryHistory({
+      initialEntries: [`/?filter=${FilterValues.Completed}`],
+    });
+
+    render(<Tasks />, {
+      wrapper: getWrapper([mockGetAllOpenTasks, mockGetCompleted], historyMock),
+    });
+
+    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
+
+    historyMock.push('/');
+
+    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
+    );
   });
 });

@@ -17,9 +17,9 @@ import {
   Title,
   Button,
   Error as StyledError,
+  LoadingOverlay,
 } from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
-import {LoadingOverlay} from './LoadingOverlay';
 
 export default {
   title: 'Pages States/Login',

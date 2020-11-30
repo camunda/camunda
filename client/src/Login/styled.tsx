@@ -7,6 +7,7 @@
 import styled from 'styled-components';
 import {rgba} from 'polished';
 import {ReactComponent} from 'modules/icons/logo.svg';
+import {LoadingOverlay as BaseLoadingOverlay} from 'modules/components/LoadingOverlay';
 
 const Button = styled.button`
   cursor: pointer;
@@ -130,6 +131,12 @@ const FormContainer = styled.div<FormContainerProps>`
   }
 `;
 
+const LoadingOverlay = styled(BaseLoadingOverlay)`
+  position: absolute;
+  top: 0;
+  left: 0;
+`;
+
 export {
   Input,
   Logo,
@@ -139,4 +146,5 @@ export {
   CopyrightNotice,
   Container,
   Button,
+  LoadingOverlay,
 };

@@ -4,18 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {rest} from 'msw';
 import {login} from './login';
-
-const fetchMock = jest.spyOn(window, 'fetch');
+import {mockServer} from 'modules/mockServer';
 
 describe('login store', () => {
   afterEach(() => {
     login.reset();
-    fetchMock.mockClear();
-  });
-
-  afterAll(() => {
-    fetchMock.mockRestore();
   });
 
   it('should assume that there is an existing session', () => {
@@ -23,7 +18,9 @@ describe('login store', () => {
   });
 
   it('should login', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+    );
 
     login.disableSession();
 
@@ -34,16 +31,26 @@ describe('login store', () => {
     expect(login.status).toBe('logged-in');
   });
 
-  it('should throw an error on login failure', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 404}));
+  it('should handle login failure', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) =>
+        res.once(ctx.status(401), ctx.text('')),
+      ),
+    );
 
-    await expect(login.handleLogin('demo', 'demo')).rejects.toThrow();
+    expect(await login.handleLogin('demo', 'demo')).toStrictEqual(
+      expect.objectContaining({status: 401}),
+    );
+    expect(login.status).toBe('initial');
   });
 
   it('should logout', async () => {
-    fetchMock
-      .mockResolvedValueOnce(new Response(undefined, {status: 204}))
-      .mockResolvedValueOnce(new Response(undefined, {status: 200}));
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+    );
+    mockServer.use(
+      rest.post('/api/logout', (_, res, ctx) => res.once(ctx.text(''))),
+    );
 
     await login.handleLogin('demo', 'demo');
 
@@ -55,7 +62,11 @@ describe('login store', () => {
   });
 
   it('should throw an error on logout failure', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 404}));
+    mockServer.use(
+      rest.post('/api/logout', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.text('')),
+      ),
+    );
 
     await expect(login.handleLogout()).rejects.toThrow();
   });

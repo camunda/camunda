@@ -5,6 +5,7 @@
  */
 
 import styled from 'styled-components';
+import {LoadingOverlay as OriginalLoadingOverlay} from 'modules/components/LoadingOverlay';
 
 type FormProps = {
   hasFooter?: boolean;
@@ -24,4 +25,17 @@ const Footer = styled.div`
   padding: 14px 19px;
 `;
 
-export {Footer, Form};
+const Container = styled.div`
+  width: 100%;
+  height: 100%;
+  display: grid;
+  height: 100%;
+  grid-template-rows: auto 1fr;
+`;
+
+const LoadingOverlay = styled(OriginalLoadingOverlay)`
+  align-items: flex-start;
+  padding-top: 12.5%;
+`;
+
+export {Footer, Form, Container, LoadingOverlay};
