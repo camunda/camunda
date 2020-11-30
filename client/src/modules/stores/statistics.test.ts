@@ -11,6 +11,19 @@ import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
 
+const mockInstance = {
+  id: '2251799813685625',
+  workflowId: '2251799813685623',
+  workflowName: 'Without Incidents Process',
+  workflowVersion: 1,
+  startDate: '2020-11-19T08:14:05.406+0000',
+  endDate: null,
+  state: 'ACTIVE',
+  bpmnProcessId: 'withoutIncidentsProcess',
+  hasActiveOperation: false,
+  operations: [],
+} as const;
+
 describe('stores/statistics', () => {
   beforeEach(() => {
     // mock for initial fetch when statistics store is initialized
@@ -145,10 +158,7 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(725);
     expect(statisticsStore.state.withIncidents).toBe(211);
 
-    instancesStore.setInstancesWithCompletedOperations([
-      {id: '1', hasActiveOperations: false},
-      {id: '2', hasActiveOperations: false},
-    ]);
+    instancesStore.setInstancesWithCompletedOperations([mockInstance]);
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(100));
     expect(statisticsStore.state.active).toBe(60);

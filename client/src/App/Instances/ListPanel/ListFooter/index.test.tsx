@@ -26,6 +26,33 @@ const defaultProps = {
   hasContent: true,
 };
 
+const mockInstances = [
+  {
+    id: '2251799813685625',
+    workflowId: '2251799813685623',
+    workflowName: 'Without Incidents Process',
+    workflowVersion: 1,
+    startDate: '2020-11-19T08:14:05.406+0000',
+    endDate: null,
+    state: 'ACTIVE',
+    bpmnProcessId: 'withoutIncidentsProcess',
+    hasActiveOperation: false,
+    operations: [],
+  } as const,
+  {
+    id: '2251799813685627',
+    workflowId: '2251799813685623',
+    workflowName: 'Without Incidents Process',
+    workflowVersion: 1,
+    startDate: '2020-11-19T08:14:05.490+0000',
+    endDate: null,
+    state: 'ACTIVE',
+    bpmnProcessId: 'withoutIncidentsProcess',
+    hasActiveOperation: false,
+    operations: [],
+  } as const,
+];
+
 describe('ListFooter', () => {
   beforeAll(() => {
     filtersStore.setEntriesPerPage(10);
@@ -37,7 +64,10 @@ describe('ListFooter', () => {
     instanceSelectionStore.reset();
   });
   it('should show pagination, copyright, no dropdown', () => {
-    instancesStore.setInstances({filteredInstancesCount: 11});
+    instancesStore.setInstances({
+      filteredInstancesCount: 11,
+      workflowInstances: mockInstances,
+    });
 
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
@@ -54,7 +84,10 @@ describe('ListFooter', () => {
   });
 
   it('should show copyright, no dropdown, no pagination', () => {
-    instancesStore.setInstances({filteredInstancesCount: 9});
+    instancesStore.setInstances({
+      filteredInstancesCount: 9,
+      workflowInstances: mockInstances,
+    });
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
     expect(screen.queryByText(/^1$/i)).toBeNull();
@@ -68,7 +101,10 @@ describe('ListFooter', () => {
   });
 
   it('should show Dropdown when there is selection', () => {
-    instancesStore.setInstances({filteredInstancesCount: 9});
+    instancesStore.setInstances({
+      filteredInstancesCount: 9,
+      workflowInstances: mockInstances,
+    });
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
     instanceSelectionStore.selectInstance('1');
     instanceSelectionStore.selectInstance('2');
@@ -82,7 +118,10 @@ describe('ListFooter', () => {
   });
 
   it('should not show the pagination buttons when there is no content', () => {
-    instancesStore.setInstances({filteredInstancesCount: 11});
+    instancesStore.setInstances({
+      filteredInstancesCount: 11,
+      workflowInstances: mockInstances,
+    });
     render(<ListFooter {...defaultProps} hasContent={false} />, {
       wrapper: ThemeProvider,
     });

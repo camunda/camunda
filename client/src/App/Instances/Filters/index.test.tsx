@@ -64,7 +64,7 @@ describe('Filters', () => {
       )
     );
 
-    await instancesDiagramStore.fetchWorkflowXml(1);
+    await instancesDiagramStore.fetchWorkflowXml('1');
     filtersStore.setUrlParameters(historyMock, locationMock);
     await filtersStore.init();
     jest.clearAllMocks();

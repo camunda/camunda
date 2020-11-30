@@ -13,16 +13,13 @@ import {instancesStore} from 'modules/stores/instances';
 
 import List from './List';
 import ListFooter from './ListFooter';
-import * as Styled from './styled';
+import {Spinner, PaneBody} from './styled';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const ListPanel = observer((props: any) => {
   const {
     areWorkflowInstancesEmpty,
-    state: {
-      workflowInstances,
-      isLoading: areInstancesLoading,
-      isInitialLoadComplete: areInstancesInitiallyLoaded,
-    },
+    state: {workflowInstances, status},
   } = instancesStore;
 
   const getEmptyListMessage = () => {
@@ -31,10 +28,10 @@ const ListPanel = observer((props: any) => {
       filter: {active, incidents, completed, canceled},
     } = filtersStore.state;
 
-    let msg = 'There are no instances matching this filter set.';
+    let msg = 'There are no Instances matching this filter set';
 
     if (!active && !incidents && !completed && !canceled) {
-      msg += '\n To see some results, select at least one instance state.';
+      msg += '\n To see some results, select at least one Instance state';
     }
 
     return msg;
@@ -44,9 +41,20 @@ const ListPanel = observer((props: any) => {
     if (!areWorkflowInstancesEmpty) {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Body' does not exist on type 'typeof Lis... Remove this comment to see the full error message
       return <List.Body />;
-    } else if (!areInstancesInitiallyLoaded) {
+    } else if (['initial', 'first-fetch'].includes(status)) {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Skeleton' does not exist on type 'typeof... Remove this comment to see the full error message
       return <List.Skeleton />;
+    } else if (status === 'error') {
+      return (
+        //@ts-expect-error
+        <List.Message
+          message={
+            <StatusMessage variant="error">
+              Instances could not be fetched
+            </StatusMessage>
+          }
+        />
+      );
     } else {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Message' does not exist on type 'typeof ... Remove this comment to see the full error message
       return <List.Message message={getEmptyListMessage()} />;
@@ -54,29 +62,25 @@ const ListPanel = observer((props: any) => {
   };
 
   const renderSpinner = () => {
-    return (
-      areInstancesLoading &&
-      areInstancesInitiallyLoaded &&
-      (() => <Styled.Spinner />)
-    );
+    return status === 'fetching' && (() => <Spinner />);
   };
 
   return (
     <SplitPane.Pane {...props} hasShiftableControls>
       <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
 
-      <Styled.PaneBody>
+      <PaneBody>
         <List
           data={workflowInstances}
           expandState={props.expandState}
-          isDataLoaded={!areInstancesLoading}
+          isDataLoaded={status === 'fetched'}
           Overlay={renderSpinner()}
         >
           {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Header' does not exist on type 'typeof L... Remove this comment to see the full error message */}
           <List.Header />
           {renderContent()}
         </List>
-      </Styled.PaneBody>
+      </PaneBody>
       <SplitPane.Pane.Footer>
         <ListFooter
           hasContent={

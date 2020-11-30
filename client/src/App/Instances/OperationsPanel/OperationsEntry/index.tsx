@@ -10,7 +10,6 @@ import {
   OPERATION_TYPE,
   DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
-import {OperationType} from 'modules/types';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
@@ -33,7 +32,7 @@ const TYPE_LABELS = {
 type Props = {
   operation: {
     id: string;
-    type: OperationType;
+    type: OperationEntityType;
     endDate?: string;
     instancesCount: number;
     operationsTotalCount: number;

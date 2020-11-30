@@ -18,6 +18,33 @@ import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
 
+const mockInstances = [
+  {
+    id: '2251799813685625',
+    workflowId: '2251799813685623',
+    workflowName: 'Without Incidents Process',
+    workflowVersion: 1,
+    startDate: '2020-11-19T08:14:05.406+0000',
+    endDate: null,
+    state: 'ACTIVE',
+    bpmnProcessId: 'withoutIncidentsProcess',
+    hasActiveOperation: false,
+    operations: [],
+  } as const,
+  {
+    id: '2251799813685627',
+    workflowId: '2251799813685623',
+    workflowName: 'Without Incidents Process',
+    workflowVersion: 1,
+    startDate: '2020-11-19T08:14:05.490+0000',
+    endDate: null,
+    state: 'ACTIVE',
+    bpmnProcessId: 'withoutIncidentsProcess',
+    hasActiveOperation: false,
+    operations: [],
+  } as const,
+];
+
 describe('stores/workflowStatistics', () => {
   afterEach(() => {
     workflowStatisticsStore.reset();
@@ -112,7 +139,7 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    await instancesDiagramStore.fetchWorkflowXml(1);
+    await instancesDiagramStore.fetchWorkflowXml('1');
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
@@ -138,7 +165,7 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    await instancesDiagramStore.fetchWorkflowXml(1);
+    await instancesDiagramStore.fetchWorkflowXml('1');
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual([
         {
@@ -216,10 +243,7 @@ describe('stores/workflowStatistics', () => {
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
-    instancesStore.setInstancesWithCompletedOperations([
-      {id: '1', hasActiveOperations: false},
-      {id: '2', hasActiveOperations: false},
-    ]);
+    instancesStore.setInstancesWithCompletedOperations(mockInstances);
 
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual(
@@ -237,10 +261,7 @@ describe('stores/workflowStatistics', () => {
 
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
-    instancesStore.setInstancesWithCompletedOperations([
-      {id: '1', hasActiveOperations: false},
-      {id: '2', hasActiveOperations: false},
-    ]);
+    instancesStore.setInstancesWithCompletedOperations(mockInstances);
 
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual([])

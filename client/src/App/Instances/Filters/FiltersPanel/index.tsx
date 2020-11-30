@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 
 import {PANEL_POSITION, BADGE_TYPE} from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
@@ -17,15 +17,15 @@ import Badge from 'modules/components/Badge';
 
 import * as Styled from './styled';
 
-function Header() {
+const Header: React.FC = observer(() => {
   return (
     <Styled.FiltersHeader>
       <Badge type={BADGE_TYPE.FILTERS} data-testid="filter-panel-header-badge">
-        <Observer>{() => instancesStore.state.filteredInstancesCount}</Observer>
+        {instancesStore.state.filteredInstancesCount}
       </Badge>
     </Styled.FiltersHeader>
   );
-}
+});
 
 type RawFiltersPanelProps = {
   isFiltersCollapsed: boolean;

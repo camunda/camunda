@@ -6,7 +6,6 @@
 
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {filtersStore} from 'modules/stores/filters';
-import {OperationType} from 'modules/types';
 import {operationsStore} from 'modules/stores/operations';
 import {
   parseFilterForRequest,
@@ -26,7 +25,7 @@ export default function useOperationApply() {
 
   return {
     applyBatchOperation: (
-      operationType: OperationType,
+      operationType: OperationEntityType,
       onSuccess: () => void
     ) => {
       const {filter, groupedWorkflows} = filtersStore.state;
@@ -39,7 +38,7 @@ export default function useOperationApply() {
 
       // if ids are selected, ignore ids from filter
       // if no ids are selected, apply ids from filter
-      const ids =
+      const ids: string[] =
         selectedInstanceIds.length > 0 ? selectedInstanceIds : filterIds;
 
       if (selectedInstanceIds.length > 0) {

@@ -9,19 +9,21 @@ import styled from 'styled-components';
 import {Container, CheckIcon, WarningIcon} from './styled';
 
 type Props = {
-  variant: 'default' | 'success' | 'error';
-  className?: string;
   children: React.ReactNode;
+  className?: string;
+  variant: 'default' | 'error' | 'success';
 };
 
-const Message = styled<React.FC<Props>>(({children, variant, className}) => {
-  return (
-    <Container $variant={variant} className={className}>
-      {variant === 'success' && <CheckIcon />}
-      {variant === 'error' && <WarningIcon />}
-      {children}
-    </Container>
-  );
-})``;
+const StatusMessage = styled<React.FC<Props>>(
+  ({children, variant, className}) => {
+    return (
+      <Container $variant={variant} className={className}>
+        {variant === 'success' && <CheckIcon />}
+        {variant === 'error' && <WarningIcon />}
+        {children}
+      </Container>
+    );
+  }
+)``;
 
-export {Message};
+export {StatusMessage};

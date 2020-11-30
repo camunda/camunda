@@ -90,7 +90,7 @@ describe('DiagramPanel', () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: Wrapper,
     });
-    instancesDiagramStore.fetchWorkflowXml(1);
+    instancesDiagramStore.fetchWorkflowXml('1');
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
@@ -114,11 +114,11 @@ describe('DiagramPanel', () => {
     await filtersStore.init();
 
     expect(
-      screen.getByText('There is no Workflow selected.')
+      screen.getByText('There is no Workflow selected')
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a diagram, select a Workflow in the Filters panel.'
+        'To see a Diagram, select a Workflow in the Filters panel'
       )
     ).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
@@ -139,13 +139,55 @@ describe('DiagramPanel', () => {
 
     expect(
       screen.getByText(
-        'There is more than one version selected for Workflow "Big variable process".'
+        'There is more than one Version selected for Workflow "Big variable process"'
       )
     ).toBeInTheDocument();
     expect(
-      screen.getByText('To see a diagram, select a single version.')
+      screen.getByText('To see a Diagram, select a single Version')
     ).toBeInTheDocument();
 
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+  });
+
+  it('should show an error message', async () => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res) =>
+        res.networkError('A network error')
+      )
+    );
+
+    render(<DiagramPanel {...mockProps} />, {
+      wrapper: Wrapper,
+    });
+
+    instancesDiagramStore.fetchWorkflowXml('1');
+
+    expect(
+      await screen.findByText('Diagram could not be fetched')
+    ).toBeInTheDocument();
+
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      )
+    );
+
+    instancesDiagramStore.fetchWorkflowXml('1');
+
+    expect(
+      screen.queryByText('Diagram could not be fetched')
+    ).not.toBeInTheDocument();
+
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''), ctx.status(500))
+      )
+    );
+
+    instancesDiagramStore.fetchWorkflowXml('1');
+
+    expect(
+      await screen.findByText('Diagram could not be fetched')
+    ).toBeInTheDocument();
   });
 });

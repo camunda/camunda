@@ -17,19 +17,16 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {isEmpty} from 'lodash';
 import {filtersStore} from 'modules/stores/filters';
+import {logger} from 'modules/logger';
 
 type State = {
   diagramModel: unknown;
-  isInitialLoadComplete: boolean;
-  isLoading: boolean;
-  isFailed: boolean;
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   diagramModel: null,
-  isInitialLoadComplete: false,
-  isLoading: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class InstancesDiagram {
@@ -38,26 +35,26 @@ class InstancesDiagram {
 
   init = () => {
     this.disposer = autorun(() => {
-      if (!isEmpty(filtersStore.workflow)) {
-        this.fetchWorkflowXml(filtersStore.workflow.id);
-      } else {
+      if (isEmpty(filtersStore.workflow)) {
         this.resetDiagramModel();
+      } else {
+        this.fetchWorkflowXml(filtersStore.workflow.id);
       }
     });
   };
 
-  fetchWorkflowXml = async (workflowId: any) => {
-    this.startLoading();
-    const response = await fetchWorkflowXML(workflowId);
+  fetchWorkflowXml = async (workflowId: InstanceEntity['workflowId']) => {
+    this.startFetching();
+    try {
+      const response = await fetchWorkflowXML(workflowId);
 
-    if (response.ok) {
-      this.handleSuccess(await parseDiagramXML(await response.text()));
-    } else {
-      this.handleFailure();
-    }
-
-    if (!this.state.isInitialLoadComplete) {
-      this.completeInitialLoad();
+      if (response.ok) {
+        this.handleFetchSuccess(await parseDiagramXML(await response.text()));
+      } else {
+        this.handleFetchError();
+      }
+    } catch (error) {
+      this.handleFetchError(error);
     }
   };
 
@@ -75,23 +72,22 @@ class InstancesDiagram {
     this.state.diagramModel = null;
   };
 
-  completeInitialLoad = () => {
-    this.state.isInitialLoadComplete = true;
+  startFetching = () => {
+    this.state.status = 'fetching';
   };
 
-  startLoading = () => {
-    this.state.isLoading = true;
-  };
-
-  handleSuccess = (parsedDiagramXml: any) => {
+  handleFetchSuccess = (parsedDiagramXml: any) => {
     this.state.diagramModel = parsedDiagramXml;
-    this.state.isLoading = false;
-    this.state.isFailed = false;
+    this.state.status = 'fetched';
   };
 
-  handleFailure = () => {
-    this.state.isLoading = false;
-    this.state.isFailed = true;
+  handleFetchError = (error?: Error) => {
+    this.state.status = 'error';
+
+    logger.error('Diagram failed to fetch');
+    if (error !== undefined) {
+      logger.error(error);
+    }
   };
 
   reset = () => {
@@ -105,10 +101,9 @@ decorate(InstancesDiagram, {
   state: observable,
   reset: action,
   resetDiagramModel: action,
-  startLoading: action,
-  handleSuccess: action,
-  handleFailure: action,
-  completeInitialLoad: action,
+  startFetching: action,
+  handleFetchSuccess: action,
+  handleFetchError: action,
   selectableFlowNodes: computed,
   selectableIds: computed,
 });

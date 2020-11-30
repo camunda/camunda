@@ -105,7 +105,10 @@ describe('Header', () => {
       location: location.dashboard,
       ...mockCollapsablePanelProps,
     };
-    instancesStore.setInstances({filteredInstancesCount: 200});
+    instancesStore.setInstances({
+      filteredInstancesCount: 200,
+      workflowInstances: [],
+    });
 
     render(<MockApp {...mockProps} />);
 

@@ -24,10 +24,10 @@ describe('stores/operations', () => {
 
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
-    expect(operationsStore.state.isInitialLoadComplete).toBe(true);
+    expect(operationsStore.state.status).toBe('fetched');
     operationsStore.reset();
     expect(operationsStore.state.operations).toEqual([]);
-    expect(operationsStore.state.isInitialLoadComplete).toEqual(false);
+    expect(operationsStore.state.status).toEqual('initial');
   });
 
   it('should increase page if operations are requested with searchAfter parameter', async () => {
@@ -245,12 +245,6 @@ describe('stores/operations', () => {
     expect(operationsStore.state.page).toBe(3);
   });
 
-  it('should complete initial load', () => {
-    expect(operationsStore.state.isInitialLoadComplete).toBe(false);
-    operationsStore.completeInitialLoad();
-    expect(operationsStore.state.isInitialLoadComplete).toBe(true);
-  });
-
   it('should get hasRunningOperations', async () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>
@@ -295,9 +289,7 @@ describe('stores/operations', () => {
 
     operationsStore.init();
     jest.useFakeTimers();
-    await waitFor(() =>
-      expect(operationsStore.state.isInitialLoadComplete).toBe(true)
-    );
+    await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
 
     // no polling occurs in the next 2 polling
     jest.runOnlyPendingTimers();

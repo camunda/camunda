@@ -29,6 +29,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 
 const locationMock = {pathname: '/instances'};
 const historyMock = createMemoryHistory();
@@ -70,6 +71,7 @@ describe('ListPanel', () => {
   afterEach(() => {
     filtersStore.reset();
     instancesStore.reset();
+    instancesDiagramStore.reset();
   });
 
   describe('messages', () => {
@@ -81,17 +83,20 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances();
+      await instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
       filtersStore.setFilter({});
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
       expect(
-        screen.getByText('There are no instances matching this filter set.')
+        screen.getByText('There are no Instances matching this filter set')
       ).toBeInTheDocument();
       expect(
         screen.getByText(
-          'To see some results, select at least one instance state.'
+          'To see some results, select at least one Instance state'
         )
       ).toBeInTheDocument();
     });
@@ -104,18 +109,21 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances();
+      await instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       filtersStore.setFilter(DEFAULT_FILTER);
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
       expect(
-        screen.getByText('There are no instances matching this filter set.')
+        screen.getByText('There are no Instances matching this filter set')
       ).toBeInTheDocument();
       expect(
         screen.queryByText(
-          'To see some results, select at least one instance state.'
+          'To see some results, select at least one Instance state'
         )
       ).not.toBeInTheDocument();
     });
@@ -130,7 +138,10 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      instancesStore.fetchInstances();
+      instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -154,7 +165,10 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances();
+      await instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       render(<ListPanel />, {wrapper: Wrapper});
       expect(screen.getByTestId('instances-list')).toBeInTheDocument();
@@ -172,7 +186,10 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances();
+      await instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
       render(<ListPanel />, {
         wrapper: Wrapper,
       });
@@ -184,47 +201,47 @@ describe('ListPanel', () => {
   });
 
   it('should start operation on an instance from list', async () => {
+    instancesStore.init();
+    jest.useFakeTimers();
     mockServer.use(
       rest.post(
         '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
         (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 0}))
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
       ),
       rest.post(
         '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json({}))
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              id: '1',
+              name: null,
+              type: 'CANCEL_WORKFLOW_INSTANCE',
+              startDate: '2020-11-23T04:42:08.030+0000',
+              endDate: null,
+              username: 'demo',
+              instancesCount: 1,
+              operationsTotalCount: 1,
+              operationsFinishedCount: 0,
+            })
+          )
       )
     );
 
-    await instancesStore.fetchInstances();
-    render(<ListPanel />, {
-      wrapper: Wrapper,
+    await instancesStore.fetchInstances({
+      firstResult: 0,
+      maxResults: 50,
     });
-
-    expect(
-      screen.queryByTitle(/has scheduled operations/i)
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel Instance 1'}));
-    expect(
-      screen.getByTitle(/instance 1 has scheduled operations/i)
-    ).toBeInTheDocument();
-  });
-
-  it('should remove spinner when operation on an instance has failed', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 0}))
-      ),
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
-      )
-    );
-
-    await instancesStore.fetchInstances();
     render(<ListPanel />, {
       wrapper: Wrapper,
     });
@@ -237,8 +254,12 @@ describe('ListPanel', () => {
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+
+    jest.runOnlyPendingTimers();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
-  });
+
+    jest.useFakeTimers();
+  }, 10000);
 
   describe('spinner', () => {
     it('should display spinners on batch operation', async () => {
@@ -251,7 +272,10 @@ describe('ListPanel', () => {
           res.once(ctx.json({}))
         )
       );
-      instancesStore.fetchInstances();
+      instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -273,7 +297,10 @@ describe('ListPanel', () => {
           (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
         )
       );
-      instancesStore.fetchInstances();
+      instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
       await waitForElementToBeRemoved(
         screen.getAllByTestId('operation-spinner')
       );
@@ -286,7 +313,7 @@ describe('ListPanel', () => {
           (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+          res.once(ctx.status(500), ctx.json({}))
         ),
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
@@ -294,7 +321,10 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInstances();
+      instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -329,7 +359,10 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInstances();
+      instancesStore.fetchInstances({
+        firstResult: 0,
+        maxResults: 50,
+      });
 
       render(<ListPanel />, {
         wrapper: Wrapper,
@@ -348,5 +381,47 @@ describe('ListPanel', () => {
         screen.getAllByTestId('operation-spinner')
       );
     });
+  });
+
+  it('should show an error message', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
+      )
+    );
+
+    await instancesStore.fetchInstances({
+      firstResult: 0,
+      maxResults: 50,
+    });
+    const {unmount} = render(<ListPanel />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText('Instances could not be fetched')
+    ).toBeInTheDocument();
+
+    unmount();
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.networkError('A network error')
+      )
+    );
+
+    await instancesStore.fetchInstances({
+      firstResult: 0,
+      maxResults: 50,
+    });
+    render(<ListPanel />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText('Instances could not be fetched')
+    ).toBeInTheDocument();
   });
 });

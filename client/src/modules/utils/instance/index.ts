@@ -5,7 +5,6 @@
  */
 
 import {STATE} from 'modules/constants';
-import {Operation} from 'modules/types';
 
 /**
  * @returns a boolean showing if the current instance has an incident
@@ -28,8 +27,8 @@ export const isRunning = (instance: any) => {
  * @param {*} operations array of operations
  */
 export const getLatestOperation = (
-  operations: Array<Operation> = []
-): Operation | null => {
+  operations: ReadonlyArray<InstanceOperationEntity> = []
+): InstanceOperationEntity | null => {
   return operations.length > 0 ? operations[0] : null;
 };
 

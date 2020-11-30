@@ -24,7 +24,6 @@ import * as Styled from './styled';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
-import {Instance} from 'modules/types';
 import {instancesStore} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 import usePrevious from 'modules/hooks/usePrevious';
@@ -32,14 +31,14 @@ import usePrevious from 'modules/hooks/usePrevious';
 const {THead, TBody, TH, TR, TD} = Table;
 
 type ListProps = {
-  data: Array<Instance>;
+  data: InstanceEntity[];
   Overlay?: any;
   isDataLoaded: boolean;
   onSort?: () => void;
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
   children: React.ReactNode;
 };
-const List = observer((props: ListProps) => {
+const List: React.FC<ListProps> = observer((props) => {
   let containerRef: any = React.createRef();
   const prevExpandState = usePrevious(props.expandState);
   const notifications = useNotifications();

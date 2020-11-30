@@ -9,7 +9,6 @@ import React, {useState, useContext} from 'react';
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
-import {OperationType} from 'modules/types';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
@@ -28,7 +27,7 @@ type Props = {
 };
 
 const CreateOperationDropdown = ({label, selectedCount}: Props) => {
-  const [modalMode, setModalMode] = useState<OperationType | null>(null);
+  const [modalMode, setModalMode] = useState<OperationEntityType | null>(null);
 
   const [dropdownWidth, setDropdownWidth] = useState();
   const {applyBatchOperation} = useOperationApply();

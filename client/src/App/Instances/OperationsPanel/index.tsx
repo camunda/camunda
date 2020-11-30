@@ -13,10 +13,10 @@ import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {operationsStore} from 'modules/stores/operations';
 import * as Styled from './styled';
 import * as CONSTANTS from './constants';
-import {hasOperations} from './service';
 import OperationsEntry from './OperationsEntry';
 import Skeleton from './Skeleton';
 import {observer} from 'mobx-react';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 type Props = {
   isOperationsCollapsed: boolean;
@@ -24,8 +24,8 @@ type Props = {
 };
 
 const OperationsPanel: React.FC<Props> = observer(
-  ({isOperationsCollapsed, toggleOperations}: any) => {
-    const {operations, isInitialLoadComplete} = operationsStore.state;
+  ({isOperationsCollapsed, toggleOperations}) => {
+    const {operations, status} = operationsStore.state;
 
     useEffect(() => {
       operationsStore.init();
@@ -42,7 +42,7 @@ const OperationsPanel: React.FC<Props> = observer(
         toggle={toggleOperations}
         hasBackgroundColor
         verticalLabelOffset={27}
-        scrollable={isInitialLoadComplete}
+        scrollable={status === 'fetched'}
         onScroll={(event) => {
           const target = event.target as HTMLDivElement;
 
@@ -59,17 +59,22 @@ const OperationsPanel: React.FC<Props> = observer(
       >
         <Styled.OperationsList
           data-testid="operations-list"
-          isInitialLoadComplete={isInitialLoadComplete}
+          isInitialLoadComplete={status === 'fetched'}
         >
-          {!isInitialLoadComplete ? (
-            <Skeleton />
-          ) : hasOperations(operations) ? (
-            operations.map((operation) => (
-              // @ts-expect-error
-              <OperationsEntry key={operation.id} operation={operation} />
-            ))
-          ) : (
+          {['initial', 'fetching'].includes(status) && <Skeleton />}
+          {operations.map((operation) => (
+            // @ts-expect-error
+            <OperationsEntry key={operation.id} operation={operation} />
+          ))}
+          {operations.length === 0 && status === 'fetched' && (
             <Styled.EmptyMessage>{CONSTANTS.EMPTY_MESSAGE}</Styled.EmptyMessage>
+          )}
+          {status === 'error' && (
+            <Styled.EmptyMessage>
+              <StatusMessage variant="error">
+                Operations could not be fetched
+              </StatusMessage>
+            </Styled.EmptyMessage>
           )}
         </Styled.OperationsList>
       </CollapsablePanel>

@@ -6,4 +6,4 @@
 
 export const OPERATIONS_LABEL = 'Operations';
 export const EMPTY_MESSAGE =
-  'To create a new Operation, select some instances from the list and click ”Apply Operation on…”.';
+  'To create a new Operation, select some Instances from the list and click ”Apply Operation on…”';

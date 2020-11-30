@@ -8,15 +8,17 @@ import React from 'react';
 import * as Styled from './styled';
 
 type Props = {
-  message: string;
+  message: string | React.ReactNode;
 };
 
 export default function EmptyMessage({message, ...props}: Props) {
   return (
     <Styled.EmptyMessage {...props}>
-      {message.split('\n').map((item, index) => (
-        <span key={index}>{item}</span>
-      ))}
+      {typeof message === 'string'
+        ? message
+            .split('\n')
+            .map((item, index) => <span key={index}>{item}</span>)
+        : message}
     </Styled.EmptyMessage>
   );
 }

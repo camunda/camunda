@@ -17,7 +17,7 @@ import {
 
 import * as Styled from './styled';
 import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
-import {Message} from '../Message';
+import {StatusMessage} from 'modules/components/StatusMessage';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 
@@ -106,17 +106,17 @@ const IncidentsByError = observer(
 
       if (status === 'fetched' && incidents.length === 0) {
         return (
-          <Message variant="success">
+          <StatusMessage variant="success">
             There are no Instances with Incidents
-          </Message>
+          </StatusMessage>
         );
       }
 
       if (status === 'error') {
         return (
-          <Message variant="error">
+          <StatusMessage variant="error">
             Incidents by Error Message could not be fetched
-          </Message>
+          </StatusMessage>
         );
       }
 

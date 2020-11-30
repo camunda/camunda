@@ -12,7 +12,6 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
-import {Instance} from 'modules/types';
 import {fetchWorkflowInstance} from 'modules/api/instances';
 import {getWorkflowName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
@@ -20,7 +19,7 @@ import {isInstanceRunning} from './utils/isInstanceRunning';
 import {PAGE_TITLE} from 'modules/constants';
 
 type State = {
-  instance: null | Instance;
+  instance: null | InstanceEntity;
 };
 
 const DEFAULT_STATE: State = {

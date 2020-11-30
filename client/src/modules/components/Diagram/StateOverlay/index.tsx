@@ -16,7 +16,6 @@ import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagra
 import {FLOW_NODE_STATE_OVERLAY_ID, STATE} from 'modules/constants';
 import Overlay from '../Overlay';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {InstanceState} from 'modules/types';
 
 const position = {
   bottom: 17,
@@ -25,7 +24,7 @@ const position = {
 
 type Props = {
   id: string;
-  state: InstanceState;
+  state: InstanceEntityState;
   onOverlayAdd: (...args: any[]) => any;
   onOverlayClear: (...args: any[]) => any;
   isViewerLoaded: boolean;

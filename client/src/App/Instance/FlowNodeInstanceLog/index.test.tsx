@@ -15,7 +15,6 @@ import {FlowNodeInstanceLog} from './index';
 import {
   mockSuccessResponseForActivityTree,
   mockFailedResponseForActivityTree,
-  mockSuccessResponseForDiagram,
 } from './index.setup';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -54,7 +53,7 @@ describe('FlowNodeInstanceLog', () => {
         res.once(ctx.json(mockSuccessResponseForActivityTree))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockSuccessResponseForDiagram))
+        res.once(ctx.text(''))
       )
     );
 
@@ -76,7 +75,7 @@ describe('FlowNodeInstanceLog', () => {
         res.once(ctx.json(mockSuccessResponseForActivityTree))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockSuccessResponseForDiagram))
+        res.once(ctx.text(''))
       )
     );
 
@@ -98,7 +97,7 @@ describe('FlowNodeInstanceLog', () => {
         res.once(ctx.status(500), ctx.json(mockFailedResponseForActivityTree))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockSuccessResponseForDiagram))
+        res.once(ctx.text(''))
       )
     );
 
@@ -136,7 +135,7 @@ describe('FlowNodeInstanceLog', () => {
         res.once(ctx.json(mockSuccessResponseForActivityTree))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockSuccessResponseForDiagram))
+        res.once(ctx.text(''))
       )
     );
 

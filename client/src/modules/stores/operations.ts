@@ -13,14 +13,12 @@ import {
   IReactionDisposer,
 } from 'mobx';
 import * as operationsApi from 'modules/api/batchOperations';
-import {
-  applyBatchOperation,
-  applyOperation,
-  BatchOperationQuery,
-  OperationPayload,
-} from 'modules/api/instances';
-import {OperationType} from 'modules/types';
+import {applyBatchOperation, applyOperation} from 'modules/api/instances';
 import {sortOperations} from './utils/sortOperations';
+import {logger} from 'modules/logger';
+
+type Query = Parameters<typeof applyBatchOperation>['1'];
+type OperationPayload = Parameters<typeof applyOperation>['1'];
 
 type Operation = {
   endDate: null | string;
@@ -36,18 +34,13 @@ type Operation = {
 type State = {
   operations: Operation[];
   page: number;
-  isInitialLoadComplete: boolean;
-};
-
-type Payload = {
-  operationType: OperationType;
-  incidentId?: string;
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   operations: [],
   page: 1,
-  isInitialLoadComplete: false,
+  status: 'initial',
 };
 
 const PAGE_SIZE = 20;
@@ -76,17 +69,22 @@ class Operations {
       this.increasePage();
     }
 
-    const response = await operationsApi.fetchOperations({
-      pageSize: PAGE_SIZE * this.state.page,
-      searchAfter,
-    });
+    this.startFetching();
 
-    if (!this.state.isInitialLoadComplete) {
-      this.completeInitialLoad();
-    }
+    try {
+      const response = await operationsApi.fetchOperations({
+        pageSize: PAGE_SIZE * this.state.page,
+        searchAfter,
+      });
 
-    if (response.ok) {
-      this.setOperations(await response.json());
+      if (response.ok) {
+        this.setOperations(await response.json());
+        this.handleFetchSuccess();
+      } else {
+        this.handleFetchError();
+      }
+    } catch (error) {
+      this.handleFetchError(error);
     }
   };
 
@@ -96,8 +94,8 @@ class Operations {
     onSuccess,
     onError,
   }: {
-    operationType: OperationType;
-    query: BatchOperationQuery;
+    operationType: OperationEntityType;
+    query: Query;
     onSuccess: () => void;
     onError: () => void;
   }) => {
@@ -138,12 +136,38 @@ class Operations {
   };
 
   handlePolling = async () => {
-    const response = await operationsApi.fetchOperations({
-      pageSize: PAGE_SIZE * this.state.page,
-    });
+    try {
+      const response = await operationsApi.fetchOperations({
+        pageSize: PAGE_SIZE * this.state.page,
+      });
 
-    if (this.intervalId !== null && response.ok) {
-      this.setOperations(await response.json());
+      if (this.intervalId !== null && response.ok) {
+        this.setOperations(await response.json());
+      }
+
+      if (!response.ok) {
+        logger.error('Failed to poll operations');
+      }
+    } catch (error) {
+      logger.error('Failed to poll operations');
+      logger.error(error);
+    }
+  };
+
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
+
+  handleFetchSuccess = () => {
+    this.state.status = 'fetched';
+  };
+
+  handleFetchError = (error?: Error) => {
+    this.state.status = 'error';
+
+    logger.error('Failed to fetch operations');
+    if (error !== undefined) {
+      logger.error(error);
     }
   };
 
@@ -182,10 +206,6 @@ class Operations {
     this.state.page++;
   }
 
-  completeInitialLoad() {
-    this.state.isInitialLoadComplete = true;
-  }
-
   get hasRunningOperations() {
     return this.state.operations.some(
       (operation) => operation.endDate === null
@@ -206,7 +226,9 @@ decorate(Operations, {
   increasePage: action,
   prependOperations: action,
   hasRunningOperations: computed,
-  completeInitialLoad: action,
+  startFetching: action,
+  handleFetchSuccess: action,
+  handleFetchError: action,
 });
 
 export const operationsStore = new Operations();

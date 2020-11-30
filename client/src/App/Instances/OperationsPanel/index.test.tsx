@@ -19,6 +19,7 @@ import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {operationsStore} from 'modules/stores/operations';
 
 type Props = {
   children?: React.ReactNode;
@@ -33,6 +34,10 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('OperationsPanel', () => {
+  afterEach(() => {
+    operationsStore.reset();
+  });
+
   it('should display empty panel on mount', async () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>
@@ -42,9 +47,9 @@ describe('OperationsPanel', () => {
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
-
-    expect(screen.getByText(CONSTANTS.EMPTY_MESSAGE)).toBeInTheDocument();
+    expect(
+      await screen.findByText(CONSTANTS.EMPTY_MESSAGE)
+    ).toBeInTheDocument();
   });
 
   it('should render skeleton when loading', async () => {
@@ -56,7 +61,6 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
   });
 
@@ -73,27 +77,52 @@ describe('OperationsPanel', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
 
-    const withinFirstEntry = within(
-      screen.getAllByTestId('operations-entry')[0]
-    );
-    const withinSecondEntry = within(
-      screen.getAllByTestId('operations-entry')[1]
+    const [firstOperation, secondOperation] = screen.getAllByTestId(
+      'operations-entry'
     );
 
     expect(
-      withinFirstEntry.getByText(mockOperationRunning.id)
+      within(firstOperation).getByText(mockOperationRunning.id)
     ).toBeInTheDocument();
-    expect(withinFirstEntry.getByText('Retry')).toBeInTheDocument();
+    expect(within(firstOperation).getByText('Retry')).toBeInTheDocument();
     expect(
-      withinFirstEntry.getByTestId('operation-retry-icon')
+      within(firstOperation).getByTestId('operation-retry-icon')
     ).toBeInTheDocument();
 
     expect(
-      withinSecondEntry.getByText(mockOperationFinished.id)
+      within(secondOperation).getByText(mockOperationFinished.id)
     ).toBeInTheDocument();
-    expect(withinSecondEntry.getByText('Cancel')).toBeInTheDocument();
+    expect(within(secondOperation).getByText('Cancel')).toBeInTheDocument();
     expect(
-      withinSecondEntry.getByTestId('operation-cancel-icon')
+      within(secondOperation).getByTestId('operation-cancel-icon')
+    ).toBeInTheDocument();
+  });
+
+  it('should show an error message', async () => {
+    mockServer.use(
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json([]), ctx.status(500))
+      )
+    );
+
+    const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Operations could not be fetched')
+    ).toBeInTheDocument();
+
+    unmount();
+
+    mockServer.use(
+      rest.post('/api/batch-operations', (_, res) =>
+        res.networkError('A network error')
+      )
+    );
+
+    render(<OperationsPanel />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Operations could not be fetched')
     ).toBeInTheDocument();
   });
 });

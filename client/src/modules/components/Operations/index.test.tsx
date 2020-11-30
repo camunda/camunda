@@ -15,9 +15,8 @@ import {mockServer} from 'modules/mockServer';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {Instance} from 'modules/types';
 
-const instanceMock: Instance = {
+const instanceMock: InstanceEntity = {
   id: 'instance_1',
   state: 'ACTIVE',
   operations: [],

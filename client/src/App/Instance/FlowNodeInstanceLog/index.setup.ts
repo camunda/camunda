@@ -17,7 +17,3 @@ export const mockSuccessResponseForActivityTree = {
 export const mockFailedResponseForActivityTree = {
   error: 'an error occured',
 };
-export const mockSuccessResponseForDiagram = '';
-export const mockFailedResponseForDiagram = {
-  error: 'an error occured',
-};

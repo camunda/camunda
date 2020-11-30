@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isOperationRunning(operation: any) {
-  return !!operation && !operation.endDate;
-}
+const logger = {
+  error(message: string | Error) {
+    if (['production', 'development'].includes(process.env.NODE_ENV)) {
+      console.error(message);
+    }
+  },
+} as const;
 
-export function hasRunningOperations(operations: any) {
-  return operations.some(isOperationRunning);
-}
+export {logger};

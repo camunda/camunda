@@ -5,7 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Message} from './Message';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const HEADER_HEIGHT = 56;
 const METRIC_PANEL_HEIGHT = 234;
@@ -43,7 +43,7 @@ const MetricPanelWrapper = styled.div`
       color: ${colors.color};
       height: 198px;
 
-      ${Message} {
+      ${StatusMessage} {
         margin-top: 53px;
       }
     `;
@@ -98,7 +98,7 @@ const TileContent = styled.div`
   padding-top: 4px;
   margin-top: -4px;
 
-  ${Message} {
+  ${StatusMessage} {
     margin-top: 207px;
   }
 `;

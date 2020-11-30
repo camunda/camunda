@@ -101,11 +101,11 @@ describe('Instances', () => {
     // diagram panel
     expect(screen.getByRole('heading', {name: 'Workflow'})).toBeInTheDocument();
     expect(
-      screen.getByText('There is no Workflow selected.')
+      screen.getByText('There is no Workflow selected')
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a diagram, select a Workflow in the Filters panel.'
+        'To see a Diagram, select a Workflow in the Filters panel'
       )
     ).toBeInTheDocument();
 

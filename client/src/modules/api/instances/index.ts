@@ -7,65 +7,65 @@
 import {post, get} from 'modules/request';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {FILTER_SELECTION} from 'modules/constants';
-import {OperationType} from 'modules/types';
 
 const URL = '/api/workflow-instances';
 
-type BatchOperationQuery = {
-  active?: boolean;
-  canceled?: boolean;
-  completed?: boolean;
-  excludeIds: Array<string>;
-  finished?: boolean;
-  ids: Array<string>;
-  incidents?: boolean;
-  running?: boolean;
-};
-
-type WorkflowInstancesQuery = {
+type Payload = {
   firstResult: number;
   maxResults: number;
-  sorting?: {sortBy: string; sortOrder: string};
   active?: boolean;
   batchOperationId?: string;
   canceled?: boolean;
   completed?: boolean;
   endDateAfter?: string;
   endDateBefore?: string;
+  errorMessage?: string;
   finished?: boolean;
-  ids?: Array<string>;
+  ids?: string[];
+  excludeIds?: string[];
   incidents?: boolean;
   running?: boolean;
   startDateAfter?: string;
   startDateBefore?: string;
-  workflowIds?: Array<string>;
-  variable?: {name: string; value: string};
+  variable?: {
+    name: string;
+    value: string;
+  };
+  workflowIds?: string[];
+  sorting?: {
+    sortBy: string;
+    sortOrder: 'desc' | 'asc';
+  };
 };
 
 type OperationPayload = {
-  operationType: OperationType;
+  operationType: OperationEntityType;
   variableName?: string;
   variableScopeId?: string | undefined;
   variableValue?: string;
   incidentId?: string;
 };
 
-async function fetchWorkflowInstance(id: any) {
+async function fetchWorkflowInstance(id: InstanceEntity['id']) {
   return get(`${URL}/${id}`);
 }
 
-async function fetchWorkflowInstanceIncidents(id: any) {
+async function fetchWorkflowInstanceIncidents(id: InstanceEntity['id']) {
   return get(`${URL}/${id}/incidents`);
 }
 
-async function fetchWorkflowInstances(options: WorkflowInstancesQuery) {
-  const {firstResult, maxResults, ...payload} = options;
-  const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`;
-
-  return post(url, payload);
+async function fetchWorkflowInstances({
+  firstResult,
+  maxResults,
+  ...payload
+}: Payload) {
+  return await post(
+    `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`,
+    payload
+  );
 }
 
-async function fetchSequenceFlows(workflowInstanceId: any) {
+async function fetchSequenceFlows(workflowInstanceId: InstanceEntity['id']) {
   return get(`${URL}/${workflowInstanceId}/sequence-flows`);
 }
 
@@ -77,7 +77,7 @@ async function fetchWorkflowCoreStatistics() {
   return get(`${URL}/core-statistics`);
 }
 
-async function fetchWorkflowInstancesByIds(ids: any) {
+async function fetchWorkflowInstancesByIds(ids: InstanceEntity['id'][]) {
   const payload = parseFilterForRequest({
     ...FILTER_SELECTION.running,
     ...FILTER_SELECTION.finished,
@@ -93,29 +93,8 @@ async function fetchWorkflowInstancesByIds(ids: any) {
   return fetchWorkflowInstances(options);
 }
 
-async function fetchWorkflowInstancesBySelection(payload: any) {
-  let query = payload.queries[0];
-
-  if (query.ids) {
-    query = {
-      ...payload.queries[0],
-      running: true,
-      active: true,
-      canceled: true,
-      completed: true,
-      finished: true,
-      incidents: true,
-    };
-  }
-
-  const url = `${URL}?firstResult=${0}&maxResults=${10}`;
-  const response = await post(url, {queries: [...payload.queries]});
-  return await response.json();
-}
-
 async function fetchWorkflowInstancesStatistics(payload: any) {
-  const url = `${URL}/statistics`;
-  const response = await post(url, payload);
+  const response = await post(`${URL}/statistics`, payload);
   return {statistics: await response.json()};
 }
 
@@ -123,8 +102,8 @@ async function fetchWorkflowInstancesStatistics(payload: any) {
  * @param {*} payload object with query params.
  */
 async function applyBatchOperation(
-  operationType: OperationType,
-  query: BatchOperationQuery
+  operationType: OperationEntityType,
+  query: Omit<Payload, 'firstResult' | 'maxResults'>
 ) {
   return post(`${URL}/batch-operation`, {operationType, query});
 }
@@ -133,25 +112,31 @@ async function applyBatchOperation(
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.
  */
-async function applyOperation(instanceId: string, payload: OperationPayload) {
+async function applyOperation(
+  instanceId: InstanceEntity['id'],
+  payload: OperationPayload
+) {
   return post(`${URL}/${instanceId}/operation`, payload);
 }
 
-async function fetchVariables({instanceId, scopeId}: any) {
-  // TODO: API CHANGED - tests will fail
+async function fetchVariables({
+  instanceId,
+  scopeId,
+}: {
+  instanceId: InstanceEntity['id'];
+  scopeId: string;
+}) {
   return get(`${URL}/${instanceId}/variables?scopeId=${scopeId}`);
 }
 
-export type {OperationPayload, BatchOperationQuery, WorkflowInstancesQuery};
 export {
+  fetchWorkflowInstances,
   fetchWorkflowInstance,
   fetchWorkflowInstanceIncidents,
-  fetchWorkflowInstances,
   fetchSequenceFlows,
   fetchGroupedWorkflows,
   fetchWorkflowCoreStatistics,
   fetchWorkflowInstancesByIds,
-  fetchWorkflowInstancesBySelection,
   fetchWorkflowInstancesStatistics,
   applyBatchOperation,
   applyOperation,

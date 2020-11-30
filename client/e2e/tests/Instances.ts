@@ -42,11 +42,11 @@ test('Instances Page Initial Load', async (t) => {
     .notOk();
 
   await t
-    .expect(screen.getByText('There is no Workflow selected.').exists)
+    .expect(screen.getByText('There is no Workflow selected').exists)
     .ok()
     .expect(
       screen.getByText(
-        'To see a diagram, select a Workflow in the Filters panel.'
+        'To see a Diagram, select a Workflow in the Filters panel'
       ).exists
     )
     .ok();
@@ -109,7 +109,7 @@ test('Select flow node in diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: 'Flow Node'}).value)
     .eql(shipArticlesTaskId)
     .expect(
-      screen.queryByText('There are no instances matching this filter set.')
+      screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .ok()

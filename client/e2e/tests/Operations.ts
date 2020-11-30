@@ -81,7 +81,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // wait for instance to disappear from instances list
   await t
     .expect(
-      screen.findByText('There are no instances matching this filter set.')
+      screen.findByText('There are no Instances matching this filter set')
         .exists
     )
     .ok();

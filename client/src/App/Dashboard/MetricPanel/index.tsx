@@ -16,7 +16,7 @@ import {
   Label,
 } from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
-import {Message} from '../Message';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 function getUrl({filter, hasFinishedInstances}: any) {
   if (hasFinishedInstances) {
@@ -34,9 +34,9 @@ const MetricPanel = observer(() => {
 
   if (status === 'error') {
     return (
-      <Message variant="error">
+      <StatusMessage variant="error">
         Workflow statistics could not be fetched
-      </Message>
+      </StatusMessage>
     );
   }
 

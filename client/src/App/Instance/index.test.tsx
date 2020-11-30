@@ -89,6 +89,11 @@ describe('Instance', () => {
         res.once(ctx.json(testData.fetch.onPageLoad.workflowInstance))
       )
     );
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      )
+    );
 
     render(<Instance />, {wrapper: Wrapper});
     jest.useFakeTimers();

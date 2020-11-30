@@ -16,31 +16,33 @@ import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import {
   fetchWorkflowInstances,
   fetchWorkflowInstancesByIds,
-  WorkflowInstancesQuery,
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {DEFAULT_MAX_RESULTS} from 'modules/constants';
+import {logger} from 'modules/logger';
+
+type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 
 type State = {
   filteredInstancesCount: null | number;
-  workflowInstances: unknown[];
-  isLoading: boolean;
-  isInitialLoadComplete: boolean;
-  instancesWithActiveOperations: unknown[];
-  instancesWithCompletedOperations: unknown[];
+  workflowInstances: InstanceEntity[];
+  instancesWithActiveOperations: InstanceEntity['id'][];
+  instancesWithCompletedOperations: InstanceEntity['id'][];
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
-const DEFAULT_STATE = {
+const DEFAULT_STATE: State = {
   filteredInstancesCount: null,
   workflowInstances: [],
-  isLoading: false,
-  isInitialLoadComplete: false,
   instancesWithActiveOperations: [],
   instancesWithCompletedOperations: [],
+  status: 'initial',
 };
 
 class Instances {
-  state = {...DEFAULT_STATE};
+  state: State = {
+    ...DEFAULT_STATE,
+  };
   intervalId: null | number = null;
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
@@ -92,55 +94,78 @@ class Instances {
     this.state.instancesWithCompletedOperations = [];
   };
 
-  fetchInstances = async (
-    payload: WorkflowInstancesQuery = {
-      firstResult: 0,
-      maxResults: DEFAULT_MAX_RESULTS,
-    }
-  ) => {
-    this.startLoading();
+  fetchInstances = async (payload: Payload) => {
+    this.startFetching();
 
-    const response = await fetchWorkflowInstances(payload);
-    if (response.ok) {
-      const {workflowInstances, totalCount} = await response.json();
-      this.setInstances({
-        filteredInstancesCount: totalCount,
-        workflowInstances,
-      });
-    }
+    try {
+      const response = await fetchWorkflowInstances(payload);
 
-    this.stopLoading();
-    this.setInstancesWithActiveOperations(this.state.workflowInstances);
+      if (response.ok) {
+        const {workflowInstances, totalCount} = await response.json();
 
-    if (!this.state.isInitialLoadComplete) {
-      this.completeInitialLoad();
+        this.setInstances({
+          filteredInstancesCount: totalCount,
+          workflowInstances,
+        });
+        this.setInstancesWithActiveOperations(this.state.workflowInstances);
+        this.handleFetchSuccess();
+      } else {
+        this.handleFetchError();
+      }
+    } catch (error) {
+      this.handleFetchError(error);
     }
   };
 
-  refreshInstances = async (payload: any) => {
-    const response = await fetchWorkflowInstances(payload);
-    if (response.ok) {
-      const {workflowInstances, totalCount} = await response.json();
-      this.setInstances({
-        filteredInstancesCount: totalCount,
-        workflowInstances,
-      });
+  refreshInstances = async (payload: Payload) => {
+    try {
+      const response = await fetchWorkflowInstances(payload);
+
+      if (response.ok) {
+        const {workflowInstances, totalCount} = await response.json();
+        this.setInstances({
+          filteredInstancesCount: totalCount,
+          workflowInstances,
+        });
+      } else {
+        logger.error('Failed to refresh instances');
+      }
+    } catch (error) {
+      logger.error('Failed to refresh instances');
+      logger.error(error);
     }
   };
 
-  startLoading = () => {
-    this.state.isLoading = true;
+  startFetching = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
 
-  stopLoading = () => {
-    this.state.isLoading = false;
+  handleFetchSuccess = () => {
+    this.state.status = 'fetched';
   };
 
-  completeInitialLoad = () => {
-    this.state.isInitialLoadComplete = true;
+  handleFetchError = (error?: Error) => {
+    this.state.status = 'error';
+    this.state.filteredInstancesCount = 0;
+    this.state.workflowInstances = [];
+
+    logger.error('Failed to fetch instances');
+    if (error !== undefined) {
+      logger.error(error);
+    }
   };
 
-  setInstances = ({filteredInstancesCount, workflowInstances}: any) => {
+  setInstances = ({
+    filteredInstancesCount,
+    workflowInstances,
+  }: {
+    filteredInstancesCount: number;
+    workflowInstances: InstanceEntity[];
+  }) => {
     this.state.workflowInstances = workflowInstances;
     this.state.filteredInstancesCount = filteredInstancesCount;
 
@@ -158,7 +183,10 @@ class Instances {
   addInstancesWithActiveOperations = ({
     ids,
     shouldPollAllVisibleIds = false,
-  }: any) => {
+  }: {
+    ids: string[];
+    shouldPollAllVisibleIds?: boolean;
+  }) => {
     if (shouldPollAllVisibleIds) {
       this.state.instancesWithActiveOperations = this.visibleIdsInListPanel.filter(
         (id) => !ids.includes(id)
@@ -170,24 +198,35 @@ class Instances {
     }
   };
 
-  setInstancesWithActiveOperations = (instances: any) => {
+  setInstancesWithActiveOperations = (instances: InstanceEntity[]) => {
     this.state.instancesWithActiveOperations = instances
-      .filter(({hasActiveOperation}: any) => hasActiveOperation)
-      .map(({id}: any) => id);
+      .filter(({hasActiveOperation}) => hasActiveOperation)
+      .map(({id}) => id);
   };
 
-  setInstancesWithCompletedOperations = (instances: any) => {
+  setInstancesWithCompletedOperations = (instances: InstanceEntity[]) => {
     this.state.instancesWithCompletedOperations = instances
-      .filter(({hasActiveOperation}: any) => !hasActiveOperation)
-      .map(({id}: any) => id);
+      .filter(({hasActiveOperation}) => !hasActiveOperation)
+      .map(({id}) => id);
   };
 
   handlePollingInstancesByIds = async (instanceIds: string[]) => {
-    const response = await fetchWorkflowInstancesByIds(instanceIds);
-    const {workflowInstances} = await response.json();
-    if (this.intervalId !== null) {
-      this.setInstancesWithActiveOperations(workflowInstances);
-      this.setInstancesWithCompletedOperations(workflowInstances);
+    try {
+      const response = await fetchWorkflowInstancesByIds(instanceIds);
+
+      if (response.ok) {
+        if (this.intervalId !== null) {
+          const {workflowInstances} = await response.json();
+
+          this.setInstancesWithActiveOperations(workflowInstances);
+          this.setInstancesWithCompletedOperations(workflowInstances);
+        }
+      } else {
+        logger.error('Failed to poll instances');
+      }
+    } catch (error) {
+      logger.error('Failed to poll instances');
+      logger.error(error);
     }
   };
 
@@ -244,10 +283,10 @@ class Instances {
 decorate(Instances, {
   state: observable,
   reset: action,
+  startFetching: action,
+  handleFetchSuccess: action,
+  handleFetchError: action,
   setInstances: action,
-  startLoading: action,
-  stopLoading: action,
-  completeInitialLoad: action,
   addInstancesWithActiveOperations: action,
   resetInstancesWithCompletedOperations: action,
   setInstancesWithActiveOperations: action,

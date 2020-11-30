@@ -9,6 +9,7 @@ import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {logger} from 'modules/logger';
 
 type State = {
   diagramModel: unknown;
@@ -38,13 +39,17 @@ class SingleInstanceDiagram {
 
   fetchWorkflowXml = async (workflowId: any) => {
     this.startLoading();
-    const response = await fetchWorkflowXML(workflowId);
 
-    if (response.ok) {
-      const parsedDiagramXml = await parseDiagramXML(await response.text());
-      this.handleSuccess(parsedDiagramXml);
-    } else {
-      this.handleFailure();
+    try {
+      const response = await fetchWorkflowXML(workflowId);
+
+      if (response.ok) {
+        this.handleSuccess(await parseDiagramXML(await response.text()));
+      } else {
+        this.handleFailure();
+      }
+    } catch (error) {
+      this.handleFailure(error);
     }
 
     if (!this.state.isInitialLoadComplete) {
@@ -88,9 +93,14 @@ class SingleInstanceDiagram {
     );
   }
 
-  handleFailure = () => {
+  handleFailure = (error?: Error) => {
     this.state.isLoading = false;
     this.state.isFailed = true;
+
+    logger.error('Failed to fetch single instance diagram');
+    if (error !== undefined) {
+      logger.error(error);
+    }
   };
 
   reset = () => {

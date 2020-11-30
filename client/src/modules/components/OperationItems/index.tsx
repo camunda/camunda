@@ -6,7 +6,6 @@
 
 import React from 'react';
 
-import {OperationType} from 'modules/types';
 import * as Styled from './styled';
 
 type Props = {
@@ -20,7 +19,7 @@ export default function OperationItems(props: Props) {
 }
 
 type ItemProps = {
-  type: OperationType;
+  type: OperationEntityType;
   onClick?: (...args: unknown[]) => any;
   title?: string;
 };

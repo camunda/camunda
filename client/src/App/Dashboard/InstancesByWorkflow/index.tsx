@@ -21,7 +21,7 @@ import {
 } from './service';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
-import {Message} from '../Message';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const InstancesByWorkflow = observer(
   class InstancesByWorkflow extends React.Component {
@@ -121,15 +121,17 @@ const InstancesByWorkflow = observer(
 
       if (status === 'fetched' && instances.length === 0) {
         return (
-          <Message variant="default">There are no Workflows deployed</Message>
+          <StatusMessage variant="default">
+            There are no Workflows deployed
+          </StatusMessage>
         );
       }
 
       if (status === 'error') {
         return (
-          <Message variant="error">
+          <StatusMessage variant="error">
             Instances by Workflow could not be fetched
-          </Message>
+          </StatusMessage>
         );
       }
 

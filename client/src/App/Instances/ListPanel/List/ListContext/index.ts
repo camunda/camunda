@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Instance} from 'modules/types';
 import React, {useContext} from 'react';
 
 type ContextProps = {
-  data: Array<Instance>;
+  data: InstanceEntity[];
   onSort: (key: string) => void;
   rowsToDisplay: number;
   isDataLoaded: boolean;

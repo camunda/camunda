@@ -15,12 +15,11 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {getNodeWithMetaData} from './service';
 import {TYPE} from 'modules/constants';
-import {InstanceState} from 'modules/types';
 
 type Node = {
   id: string;
   type: string;
-  state?: InstanceState;
+  state?: InstanceEntityState;
   activityId: string;
   startDate: string;
   endDate: null | string;

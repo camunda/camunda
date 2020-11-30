@@ -226,7 +226,7 @@ test.skip('End Date filter', async (t) => {
   // wait for operation to be completed
   await t
     .expect(
-      screen.queryByText('There are no instances matching this filter set.')
+      screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .ok();
@@ -372,7 +372,7 @@ test.skip('Operation ID filter', async (t) => {
   // wait for operation to be completed
   await t
     .expect(
-      screen.queryByText('There are no instances matching this filter set.')
+      screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .ok();
@@ -636,12 +636,12 @@ test('Workflow Filter', async (t) => {
     .notOk()
     .expect(
       screen.getByText(
-        'There is more than one version selected for Workflow "Process With Multiple Versions".'
+        'There is more than one Version selected for Workflow "Process With Multiple Versions"'
       ).exists
     )
     .ok()
     .expect(
-      screen.getByText('To see a diagram, select a single version.').exists
+      screen.getByText('To see a Diagram, select a single Version').exists
     )
     .ok();
 
@@ -707,11 +707,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   });
 
   await t
-    .expect(screen.getByText('There is no Workflow selected.').exists)
+    .expect(screen.getByText('There is no Workflow selected').exists)
     .ok()
     .expect(
       screen.getByText(
-        'To see a diagram, select a Workflow in the Filters panel.'
+        'To see a Diagram, select a Workflow in the Filters panel'
       ).exists
     )
     .ok()
@@ -744,11 +744,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   await t
     .expect(screen.getByTestId('diagram').exists)
     .ok()
-    .expect(screen.queryByText('There is no Workflow selected.').exists)
+    .expect(screen.queryByText('There is no Workflow selected').exists)
     .notOk()
     .expect(
       screen.queryByText(
-        'To see a diagram, select a Workflow in the Filters panel.'
+        'To see a Diagram, select a Workflow in the Filters panel'
       ).exists
     )
     .notOk()
@@ -773,8 +773,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   await t
     .click(within(screen.getByTestId('diagram')).getByText(/ship articles/i))
     .expect(
-      screen.getByText('There are no instances matching this filter set.')
-        .exists
+      screen.getByText('There are no Instances matching this filter set').exists
     )
     .ok()
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
@@ -792,7 +791,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   await t
     .click(within(screen.getByTestId('diagram')).getByText(/check payment/i))
     .expect(
-      screen.queryByText('There are no instances matching this filter set.')
+      screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .notOk()

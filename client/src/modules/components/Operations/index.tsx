@@ -10,7 +10,6 @@ import {OPERATION_TYPE} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
-import {Instance, OperationType} from 'modules/types';
 
 import {
   getLatestOperation,
@@ -24,7 +23,7 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import * as Styled from './styled';
 
 type Props = {
-  instance: Instance;
+  instance: InstanceEntity;
   selected?: boolean;
   onOperation?: () => void;
   onFailure?: () => void;
@@ -32,7 +31,7 @@ type Props = {
 };
 
 type State = {
-  operationType: OperationType | undefined;
+  operationType: InstanceOperationEntity['type'] | undefined;
 };
 
 const Operations = observer(
@@ -64,7 +63,7 @@ const Operations = observer(
       }
     };
 
-    handleOnClick = async (operationType: OperationType) => {
+    handleOnClick = async (operationType: InstanceOperationEntity['type']) => {
       operationsStore.applyOperation({
         instanceId: this.props.instance.id,
         payload: {
@@ -77,7 +76,7 @@ const Operations = observer(
       this.props.onOperation?.();
     };
 
-    renderItem = (operationType: OperationType) => {
+    renderItem = (operationType: InstanceOperationEntity['type']) => {
       const ariaLabelMap = {
         [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
         [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry',
@@ -95,11 +94,11 @@ const Operations = observer(
 
     render() {
       const {instance, selected, forceSpinner} = this.props;
+
       return (
         <Styled.Operations>
           {(forceSpinner ||
             instancesStore.state.instancesWithActiveOperations.includes(
-              // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
               instance.id
             )) && (
             <OperationSpinner
@@ -109,9 +108,9 @@ const Operations = observer(
             />
           )}
           <OperationItems>
-            {isWithIncident(this.props.instance) &&
+            {isWithIncident(instance) &&
               this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
-            {isRunning(this.props.instance) &&
+            {isRunning(instance) &&
               this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
           </OperationItems>
         </Styled.Operations>
