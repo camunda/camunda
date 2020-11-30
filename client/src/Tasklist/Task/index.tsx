@@ -19,7 +19,8 @@ import {
   COMPLETE_TASK,
   CompleteTaskVariables,
 } from 'modules/mutations/complete-task';
-
+import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
+import {shouldFetchMore} from './shouldFetchMore';
 import {Button} from 'modules/components/Button';
 
 import {Variables} from './Variables';
@@ -36,6 +37,7 @@ import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {useLocation} from 'react-router-dom';
 import {FilterValues} from 'modules/constants/filterValues';
+import {useNotifications} from 'modules/notifications';
 
 const Task: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -44,9 +46,12 @@ const Task: React.FC = () => {
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
 
-  const {data, loading} = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
-    variables: {id},
-  });
+  const {data, loading, fetchMore} = useQuery<GetTask, TaskQueryVariables>(
+    GET_TASK,
+    {
+      variables: {id},
+    },
+  );
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
@@ -61,6 +66,7 @@ const Task: React.FC = () => {
       ],
     },
   );
+  const notifications = useNotifications();
 
   if (loading && id !== undefined) {
     return <LoadingOverlay data-testid="details-overlay" />;
@@ -94,21 +100,29 @@ const Task: React.FC = () => {
           const newVariables: ReadonlyArray<Variable> =
             get(values, 'new-variables') || [];
 
-          completeTask({
-            variables: {
-              id,
-              variables: [...existingVariables, ...newVariables],
-            },
-          })
-            .then(() => {
-              history.push({
-                pathname: Pages.Initial(),
-                search: history.location.search,
-              });
-            })
-            .catch(() => {
-              // TODO: handle 'Task could not be completed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/508
+          try {
+            await completeTask({
+              variables: {
+                id,
+                variables: [...existingVariables, ...newVariables],
+              },
             });
+
+            history.push({
+              pathname: Pages.Initial(),
+              search: history.location.search,
+            });
+          } catch (error) {
+            notifications.displayNotification('error', {
+              headline: 'Task could not be completed',
+              description: getCompleteTaskErrorMessage(error.message),
+            });
+
+            // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
+            if (shouldFetchMore(error.message)) {
+              fetchMore({variables: {id}});
+            }
+          }
         }}
       >
         {({form, handleSubmit}) => {
