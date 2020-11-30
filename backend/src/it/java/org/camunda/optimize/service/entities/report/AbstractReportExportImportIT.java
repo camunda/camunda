@@ -57,6 +57,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
   protected static final String DEFINITION_KEY = "aKey";
   protected static final String DEFINITION_NAME = "aDefinitionName";
   protected static final String DEFINITION_VERSION = "1";
+  protected static final String DEFINITION_XML_STRING = "xmlString";
 
   @BeforeEach
   public void setUp() {
@@ -130,7 +131,6 @@ public class AbstractReportExportImportIT extends AbstractIT {
     final DecisionViewDto rawDataView = new DecisionViewDto();
     rawDataView.setProperty(RAW_DATA);
     rawReport.setView(rawDataView);
-
     rawReport.getConfiguration().getTableColumns().setIncludeNewVariables(false);
     rawReport.getConfiguration().getTableColumns().getExcludedColumns().add(DecisionInstanceDto.Fields.engine);
 
@@ -150,11 +150,9 @@ public class AbstractReportExportImportIT extends AbstractIT {
     groupByDto.setValue(variableValueDto);
     groupByVarReport.setGroupBy(new DecisionGroupByInputVariableDto());
     groupByVarReport.getFilter().add(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS));
-
     groupByVarReport.getConfiguration().getCustomBucket().setActive(true);
     groupByVarReport.getConfiguration().getCustomBucket().setBaseline(500.0);
     groupByVarReport.getConfiguration().getCustomBucket().setBucketSize(15.0);
-
 
     return Stream.of(
       createDecisionReportDefinition(rawReport),
@@ -260,7 +258,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .versionTag(version)
       .tenantId(tenantId)
       .engine(DEFAULT_ENGINE_ALIAS)
-      .bpmn20Xml(DEFINITION_KEY + DEFINITION_VERSION)
+      .bpmn20Xml(DEFINITION_XML_STRING + version)
       .build();
   }
 
@@ -273,6 +271,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .versionTag(version)
       .tenantId(tenantId)
       .engine(DEFAULT_ENGINE_ALIAS)
+      .dmn10Xml(DEFINITION_XML_STRING + version)
       .build();
   }
 

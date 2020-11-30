@@ -7,7 +7,9 @@ package org.camunda.optimize.service.entities.report;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -33,6 +35,7 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -40,7 +43,6 @@ import static java.util.stream.Collectors.toList;
 @Component
 @Slf4j
 public class ReportImportService {
-
 
   private final ReportService reportService;
   private final DefinitionService definitionService;
@@ -51,13 +53,9 @@ public class ReportImportService {
                                                          final String collectionId,
                                                          final SingleProcessReportDefinitionExportDto exportedDto) {
     validateIndexVersionOrFail(new SingleProcessReportIndex(), exportedDto);
-    prepareVersionListForImportOrFailIfNoneExists(exportedDto);
-    validateAuthorizedToAccessDefinitionOrFail(
-      userId,
-      DefinitionType.PROCESS,
-      exportedDto.getData().getProcessDefinitionKey(),
-      exportedDto.getData().getTenantIds()
-    );
+    removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
+    validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
+    populateDefinitionXml(exportedDto);
 
     return reportService.importReport(
       userId,
@@ -70,13 +68,9 @@ public class ReportImportService {
                                                           final String collectionId,
                                                           final SingleDecisionReportDefinitionExportDto exportedDto) {
     validateIndexVersionOrFail(new SingleDecisionReportIndex(), exportedDto);
-    prepareVersionListForImportOrFailIfNoneExists(exportedDto);
-    validateAuthorizedToAccessDefinitionOrFail(
-      userId,
-      DefinitionType.DECISION,
-      exportedDto.getData().getDecisionDefinitionKey(),
-      exportedDto.getData().getTenantIds()
-    );
+    removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
+    validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
+    populateDefinitionXml(exportedDto);
 
     return reportService.importReport(
       userId,
@@ -103,34 +97,28 @@ public class ReportImportService {
     return reportDefinition;
   }
 
-  private void prepareVersionListForImportOrFailIfNoneExists(final SingleDecisionReportDefinitionExportDto exportDto) {
-    final List<String> existingRequiredVersions = prepareVersionListForImportOrFailIfNoneExists(
+  private void removeMissingVersionsOrFailIfNoVersionsExist(final SingleDecisionReportDefinitionExportDto exportDto) {
+    removeMissingVersionsOrFailIfNoneExist(
       DefinitionType.DECISION,
       exportDto.getData().getDecisionDefinitionKey(),
       exportDto.getData().getDecisionDefinitionVersions(),
       exportDto.getData().getTenantIds()
     );
-    exportDto.getData()
-      .getDecisionDefinitionVersions()
-      .removeIf(version -> !existingRequiredVersions.contains(version));
   }
 
-  private void prepareVersionListForImportOrFailIfNoneExists(final SingleProcessReportDefinitionExportDto exportDto) {
-    final List<String> existingRequiredVersions = prepareVersionListForImportOrFailIfNoneExists(
+  private void removeMissingVersionsOrFailIfNoVersionsExist(final SingleProcessReportDefinitionExportDto exportDto) {
+    removeMissingVersionsOrFailIfNoneExist(
       DefinitionType.PROCESS,
       exportDto.getData().getProcessDefinitionKey(),
       exportDto.getData().getProcessDefinitionVersions(),
       exportDto.getData().getTenantIds()
     );
-    exportDto.getData()
-      .getProcessDefinitionVersions()
-      .removeIf(version -> !existingRequiredVersions.contains(version));
   }
 
-  private List<String> prepareVersionListForImportOrFailIfNoneExists(final DefinitionType definitionType,
-                                                                     final String definitionKey,
-                                                                     final List<String> definitionVersions,
-                                                                     final List<String> tenantIds) {
+  private void removeMissingVersionsOrFailIfNoneExist(final DefinitionType definitionType,
+                                                      final String definitionKey,
+                                                      final List<String> definitionVersions,
+                                                      final List<String> tenantIds) {
     final List<String> requiredVersions = new ArrayList<>(definitionVersions);
     final List<String> defVersions = getExistingDefinitionVersions(
       definitionType,
@@ -150,7 +138,6 @@ public class ReportImportService {
         )
       );
     }
-    return definitionVersions;
   }
 
   private List<String> getExistingDefinitionVersions(final DefinitionType definitionType,
@@ -163,6 +150,26 @@ public class ReportImportService {
     ).stream()
       .map(DefinitionVersionResponseDto::getVersion)
       .collect(toList());
+  }
+
+  private void populateDefinitionXml(final SingleProcessReportDefinitionExportDto exportDto) {
+    final Optional<ProcessDefinitionOptimizeDto> definitionWithXml = definitionService.getDefinitionWithXmlAsService(
+      DefinitionType.PROCESS,
+      exportDto.getData().getProcessDefinitionKey(),
+      exportDto.getData().getDefinitionVersions(),
+      exportDto.getData().getTenantIds()
+    );
+    definitionWithXml.ifPresent(def -> exportDto.getData().getConfiguration().setXml(def.getBpmn20Xml()));
+  }
+
+  private void populateDefinitionXml(final SingleDecisionReportDefinitionExportDto exportDto) {
+    final Optional<DecisionDefinitionOptimizeDto> definitionWithXml = definitionService.getDefinitionWithXmlAsService(
+      DefinitionType.DECISION,
+      exportDto.getData().getDecisionDefinitionKey(),
+      exportDto.getData().getDefinitionVersions(),
+      exportDto.getData().getTenantIds()
+    );
+    definitionWithXml.ifPresent(def -> exportDto.getData().getConfiguration().setXml(def.getDmn10Xml()));
   }
 
   private void validateIndexVersionOrFail(final DefaultIndexMappingCreator targetIndex,
@@ -179,6 +186,26 @@ public class ReportImportService {
         )
       );
     }
+  }
+
+  private void validateAuthorizedToAccessDefinitionOrFail(final String userId,
+                                                          final SingleProcessReportDefinitionExportDto exportDto) {
+    validateAuthorizedToAccessDefinitionOrFail(
+      userId,
+      DefinitionType.PROCESS,
+      exportDto.getData().getProcessDefinitionKey(),
+      exportDto.getData().getTenantIds()
+    );
+  }
+
+  private void validateAuthorizedToAccessDefinitionOrFail(final String userId,
+                                                          final SingleDecisionReportDefinitionExportDto exportDto) {
+    validateAuthorizedToAccessDefinitionOrFail(
+      userId,
+      DefinitionType.DECISION,
+      exportDto.getData().getDecisionDefinitionKey(),
+      exportDto.getData().getTenantIds()
+    );
   }
 
   private void validateAuthorizedToAccessDefinitionOrFail(final String userId,

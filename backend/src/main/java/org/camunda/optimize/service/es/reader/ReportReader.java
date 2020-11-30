@@ -66,7 +66,7 @@ public class ReportReader {
 
   protected static final String REPORT_DATA_XML_PROPERTY = String.join(
     ".",
-    DATA, SingleReportDataDto.Fields.configuration.name(), SingleReportConfigurationDto.Fields.xml.name()
+    DATA, SingleReportDataDto.Fields.configuration, SingleReportConfigurationDto.Fields.xml
   );
   private static final String[] REPORT_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
   private static final String[] ALL_REPORT_INDICES = {SINGLE_PROCESS_REPORT_INDEX_NAME,
@@ -100,7 +100,7 @@ public class ReportReader {
     return result;
   }
 
-  public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(String reportId) {
+  public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(final String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     GetResponse getResponse;
@@ -118,14 +118,17 @@ public class ReportReader {
 
     String responseAsString = getResponse.getSourceAsString();
     try {
-      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleProcessReportDefinitionRequestDto.class));
+      return Optional.ofNullable(objectMapper.readValue(
+        responseAsString,
+        SingleProcessReportDefinitionRequestDto.class
+      ));
     } catch (IOException e) {
       log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
       throw new OptimizeRuntimeException("Can't fetch report");
     }
   }
 
-  public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(String reportId) {
+  public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(final String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
@@ -144,7 +147,10 @@ public class ReportReader {
 
     String responseAsString = getResponse.getSourceAsString();
     try {
-      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionRequestDto.class));
+      return Optional.ofNullable(objectMapper.readValue(
+        responseAsString,
+        SingleDecisionReportDefinitionRequestDto.class
+      ));
     } catch (IOException e) {
       log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
       throw new OptimizeRuntimeException("Can't fetch report");
@@ -191,7 +197,8 @@ public class ReportReader {
     final List<String> processReportIds = processReportsForKey.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toList());
-    final List<CombinedReportDefinitionRequestDto> combinedReports = getCombinedReportsForSimpleReports(processReportIds);
+    final List<CombinedReportDefinitionRequestDto> combinedReports =
+      getCombinedReportsForSimpleReports(processReportIds);
     processReportsForKey.addAll(combinedReports);
     return processReportsForKey;
   }
@@ -295,7 +302,11 @@ public class ReportReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), CombinedReportDefinitionRequestDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+      searchResponse.getHits(),
+      CombinedReportDefinitionRequestDto.class,
+      objectMapper
+    );
   }
 
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,

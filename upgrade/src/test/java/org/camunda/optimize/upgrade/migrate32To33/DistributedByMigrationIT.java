@@ -52,7 +52,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration);
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);
@@ -81,7 +81,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration);
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);

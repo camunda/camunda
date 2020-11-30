@@ -35,7 +35,7 @@ public class SingleDecisionReportIndexV4Old extends AbstractReportIndex {
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties")
-          .startObject(SingleReportDataDto.Fields.configuration.name())
+          .startObject(SingleReportDataDto.Fields.configuration)
             .field("type", "object")
             .field("dynamic", true)
             .startObject("properties")

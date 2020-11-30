@@ -8,6 +8,8 @@ package org.camunda.optimize.service.entities.report;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
@@ -55,7 +57,16 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isNull();
     assertThat(importedReport.getName()).isEqualTo(reportDefToImport.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison().isEqualTo(reportDefToImport.getData());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(importedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(importedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
   }
 
   @Test
@@ -140,11 +151,12 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final SingleProcessReportDefinitionRequestDto reportDefinitionToImport = createSimpleProcessReportDefinition();
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
     exportedReportDto.getData().setProcessDefinitionVersions(Lists.newArrayList("1", "2", "3", "5"));
+    exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
     final Response response = importClient.importReport(exportedReportDto);
 
-    // then
+    // then all non version related data is accurate
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -156,12 +168,22 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isNull();
     assertThat(importedReport.getName()).isEqualTo(reportDefinitionToImport.getName());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(ProcessReportDataDto.Fields.processDefinitionVersions)
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(reportDefinitionToImport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(reportDefinitionToImport.getData().getConfiguration());
 
     // nonexistent versions have been removed from the version list
     assertThat(importedReport.getData().getDefinitionVersions()).containsExactly("1", "3");
-    assertThat(importedReport.getData()).usingRecursiveComparison()
-      .ignoringFields(ProcessReportDataDto.Fields.processDefinitionVersions)
-      .isEqualTo(reportDefinitionToImport.getData());
+
+    // and the XML has been updated to reflect the latest existing version's XML
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "3");
   }
 
   @Test
@@ -221,7 +243,16 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isNull();
     assertThat(importedReport.getName()).isEqualTo(exportedReportDto.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison().isEqualTo(exportedReportDto.getData());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(importedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(importedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
   }
 
   @Test
@@ -251,7 +282,16 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isNull();
     assertThat(importedReport.getName()).isEqualTo(exportedReportDto.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison().isEqualTo(exportedReportDto.getData());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(importedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(importedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
   }
 
   @ParameterizedTest
@@ -287,7 +327,16 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isEqualTo(collectionId);
     assertThat(importedReport.getName()).isEqualTo(reportDefToImport.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison().isEqualTo(reportDefToImport.getData());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(importedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(importedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
   }
 
   @Test
