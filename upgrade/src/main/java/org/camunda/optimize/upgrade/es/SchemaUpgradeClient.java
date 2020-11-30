@@ -17,6 +17,8 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -29,6 +31,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
@@ -37,6 +40,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.tasks.TaskInfo;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -73,42 +77,39 @@ public class SchemaUpgradeClient {
   }
 
   public void reindex(final String sourceIndex,
-                      final String destinationIndex) {
-    this.reindex(sourceIndex, destinationIndex, null, Collections.emptyMap());
+                      final String targetIndex) {
+    this.reindex(sourceIndex, targetIndex, null, Collections.emptyMap());
   }
 
-  public void reindex(final String sourceIndexName,
-                      final String destinationIndexName,
+  public void reindex(final String sourceIndex,
+                      final String targetIndex,
                       final String mappingScript,
                       final Map<String, Object> parameters) {
     log.debug(
-      "Reindexing from index [{}] to [{}] using the mapping script [{}].",
-      sourceIndexName, destinationIndexName, mappingScript
+      "Reindexing from index [{}] to [{}] using the mapping script [{}].", sourceIndex, targetIndex, mappingScript
     );
 
-    ReindexRequest reindexRequest = new ReindexRequest()
-      .setSourceIndices(sourceIndexName)
-      .setDestIndex(destinationIndexName)
-      .setRefresh(true);
-
-    if (mappingScript != null) {
-      reindexRequest.setScript(
-        createDefaultScriptWithSpecificDtoParams(mappingScript, parameters, objectMapper)
+    if (areDocCountsEqual(sourceIndex, targetIndex)) {
+      log.info(
+        "Found that index [{}] already contains the same amount of documents as [{}], will skip reindex.",
+        targetIndex, sourceIndex
       );
-    }
+    } else {
+      String reindexTaskId;
+      // if the reindex wasn't completed previously, try to get the pending task to resume waiting for
+      final Optional<TaskInfo> pendingReindexTask = getPendingReindexTask(sourceIndex, targetIndex);
+      if (pendingReindexTask.isPresent()) {
+        reindexTaskId = pendingReindexTask.get().getTaskId().toString();
+        log.info(
+          "Found pending reindex task with id [{}] from index [{}] to [{}], will wait for it to finish.",
+          reindexTaskId, sourceIndex, targetIndex
+        );
+      } else {
+        reindexTaskId = submitReindexTask(sourceIndex, targetIndex, mappingScript, parameters);
+      }
 
-    String taskId;
-    try {
-      taskId = getHighLevelRestClient().submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
-    } catch (Exception e) {
-      throw new UpgradeRuntimeException(
-        String.format(
-          "Error while trying to reindex data from index [%s] to [%s]!", sourceIndexName, destinationIndexName
-        ),
-        e
-      );
+      waitUntilTaskIsFinished(reindexTaskId, targetIndex);
     }
-    waitUntilTaskIsFinished(taskId, destinationIndexName);
   }
 
   public <T> void upsert(final String index, final String id, final T documentDto) {
@@ -322,6 +323,74 @@ public class SchemaUpgradeClient {
 
   private RestHighLevelClient getHighLevelRestClient() {
     return elasticsearchClient.getHighLevelClient();
+  }
+
+  private boolean areDocCountsEqual(final String sourceIndex, final String targetIndex) {
+    try {
+      final long sourceIndexDocCount = elasticsearchClient.getHighLevelClient()
+        .count(new CountRequest(sourceIndex), RequestOptions.DEFAULT)
+        .getCount();
+      final long targetIndexDocCount = elasticsearchClient.getHighLevelClient()
+        .count(new CountRequest(targetIndex), RequestOptions.DEFAULT)
+        .getCount();
+      return sourceIndexDocCount == targetIndexDocCount;
+    } catch (Exception e) {
+      log.warn(
+        "Could not compare doc counts of index [{}] and [{}], assuming them to be not equal.", sourceIndex, targetIndex
+      );
+      return false;
+    }
+  }
+
+  private Optional<TaskInfo> getPendingReindexTask(final String sourceIndex,
+                                                   final String targetIndex) {
+
+    try {
+      final ListTasksResponse tasksResponse = elasticsearchClient.getHighLevelClient().tasks()
+        .list(
+          new ListTasksRequest().setDetailed(true).setActions("indices:data/write/reindex"), RequestOptions.DEFAULT
+        );
+      return tasksResponse.getTasks().stream()
+        .filter(taskInfo ->
+                  taskInfo.getDescription() != null
+                    && taskInfo.getDescription().contains(sourceIndex)
+                    && taskInfo.getDescription().contains(targetIndex)
+        ).findAny();
+    } catch (Exception e) {
+      log.warn(
+        "Could not get pending reindex task from index [{}] to [{}], assuming there are none.", sourceIndex, targetIndex
+      );
+      return Optional.empty();
+    }
+  }
+
+  private String submitReindexTask(final String sourceIndexName,
+                                   final String targetIndexName,
+                                   final String mappingScript,
+                                   final Map<String, Object> parameters) {
+    final ReindexRequest reindexRequest = new ReindexRequest()
+      .setSourceIndices(sourceIndexName)
+      .setDestIndex(targetIndexName)
+      .setRefresh(true);
+
+    if (mappingScript != null) {
+      reindexRequest.setScript(
+        createDefaultScriptWithSpecificDtoParams(mappingScript, parameters, objectMapper)
+      );
+    }
+
+    String taskId;
+    try {
+      taskId = getHighLevelRestClient().submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+    } catch (Exception e) {
+      throw new UpgradeRuntimeException(
+        String.format(
+          "Error while trying to reindex data from index [%s] to [%s]!", sourceIndexName, targetIndexName
+        ),
+        e
+      );
+    }
+    return taskId;
   }
 
   private void waitUntilTaskIsFinished(final String taskId, final String destinationIndex) {

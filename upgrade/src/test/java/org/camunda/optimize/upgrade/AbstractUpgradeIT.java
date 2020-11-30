@@ -117,7 +117,10 @@ public abstract class AbstractUpgradeIT {
     this.indexNameService = upgradeDependencies.getIndexNameService();
     this.metadataService = upgradeDependencies.getMetadataService();
     this.upgradeProcedure = new UpgradeProcedure(
-      prefixAwareClient, new UpgradeValidationService(), createSchemaUpgradeClient(upgradeDependencies), new UpgradeStepLogService()
+      prefixAwareClient,
+      new UpgradeValidationService(),
+      createSchemaUpgradeClient(upgradeDependencies),
+      new UpgradeStepLogService()
     );
 
     cleanAllDataFromElasticsearch();

@@ -6,6 +6,8 @@
 package org.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -18,14 +20,19 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.tasks.TaskId;
+import org.elasticsearch.tasks.TaskInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,10 +49,12 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class SchemaUpgradeClientTest {
+public class SchemaUpgradeClientReindexTest {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperFactory(
     new OptimizeDateTimeFormatterFactory().getObject(),
@@ -69,6 +78,9 @@ public class SchemaUpgradeClientTest {
 
   private SchemaUpgradeClient underTest;
 
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClient.class);
+
   @BeforeEach
   public void init() {
     when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
@@ -88,15 +100,97 @@ public class SchemaUpgradeClientTest {
     final String index2 = "index2";
     final String taskId = "12345";
 
-    // the task is successfully submitted
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(0L);
     when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask())
       .thenReturn(taskId);
 
     // the first task response is in progress, the second is successfully complete
     mockReindexStatus(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L));
 
-    // then no exceptions are thrown
-    assertThatCode(() -> underTest.reindex(index1, index2)).doesNotThrowAnyException();
+    // when
+    assertThatCode(() -> underTest.reindex(index1, index2))
+      // then no exceptions are thrown
+      .doesNotThrowAnyException();
+
+    // and reindex was executed
+    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+  }
+
+  @Test
+  public void testReindexDetectsPendingReindexAndWaitForIt() throws IOException {
+    // given
+    final String index1 = "index1";
+    final String index2 = "index2";
+    final String nodeId = "abc";
+    final int numericTaskId = 12345;
+    final String taskId = nodeId + ":" + numericTaskId;
+
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(0L);
+    final TaskInfo taskInfo = mock(TaskInfo.class);
+    when(highLevelRestClient.tasks().list(any(ListTasksRequest.class), eq(RequestOptions.DEFAULT)).getTasks())
+      .thenReturn(ImmutableList.of(taskInfo));
+    when(taskInfo.getTaskId()).thenReturn(new TaskId(nodeId, numericTaskId));
+    when(taskInfo.getDescription()).thenReturn(index1 + index2);
+
+    mockReindexStatus(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L));
+
+    // when
+    assertThatCode(() -> underTest.reindex(index1, index2))
+      // then no exceptions are thrown
+      .doesNotThrowAnyException();
+
+    // and the log contains expected entries
+    logCapturer.assertContains(
+      "Found pending reindex task with id [" + taskId + "] from index [" + index1 + "] to [" + index2
+        + "], will wait for it to finish."
+    );
+
+    // and reindex was never submitted
+    verify(highLevelRestClient, never()).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+  }
+
+  @Test
+  public void testReindexSkippedDueToEqualDocCount() throws IOException {
+    // given
+    final String index1 = "index1";
+    final String index2 = "index2";
+    final String taskId = "12345";
+
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+
+    // when
+    assertThatCode(() -> underTest.reindex(index1, index2))
+      // then no exceptions are thrown
+      .doesNotThrowAnyException();
+
+    logCapturer.assertContains(
+      "Found that index [" + index2 + "] already contains the same amount of documents as ["
+        + index1 + "], will skip reindex."
+    );
+
+    // and reindex was never submitted
+    verify(highLevelRestClient, never()).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
   }
 
   @Test
@@ -105,14 +199,26 @@ public class SchemaUpgradeClientTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    // the task cannot be submitted
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(0L);
     given(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
             .getTask()).willAnswer(invocation -> {
       throw new IOException();
     });
 
-    // then an exception is thrown
-    assertThatThrownBy(() -> underTest.reindex(index1, index2)).isInstanceOf(UpgradeRuntimeException.class);
+    // when
+    assertThatThrownBy(() -> underTest.reindex(index1, index2))
+      // then an exception is thrown
+      .isInstanceOf(UpgradeRuntimeException.class);
+
+    // and reindex was submitted
+    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
   }
 
   @Test
@@ -122,11 +228,18 @@ public class SchemaUpgradeClientTest {
     final String index2 = "index2";
     final String taskId = "12345";
 
-    // the task is successfully submitted
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(1L);
+    when(
+      elasticsearchClient.getHighLevelClient()
+        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
+    ).thenReturn(0L);
     when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
            .getTask()).thenReturn(taskId);
 
-    // but the task status response contains an error when checking for status
+    // the task status response contains an error when checking for status
     final TaskResponse taskResponseWithError = new TaskResponse(
       true,
       new TaskResponse.Task(taskId, new TaskResponse.Status(1L, 0L, 0L, 0L)),
@@ -136,10 +249,14 @@ public class SchemaUpgradeClientTest {
     final Response taskStatusResponse = createEsResponse(taskResponseWithError);
     whenReindexStatusRequest(taskId).thenReturn(taskStatusResponse);
 
-    // then an exception is thrown
+    // when
     assertThatThrownBy(() -> underTest.reindex(index1, index2))
+      // then an exception is thrown
       .isInstanceOf(UpgradeRuntimeException.class)
       .hasMessage(taskResponseWithError.getError().toString());
+
+    // and reindex was submitted
+    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
   }
 
   @SneakyThrows
