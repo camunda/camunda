@@ -25,7 +25,7 @@
     "graphql": "^15.4.0",
     "jest-environment-jsdom-fifteen": "^1.0.2",
     "mobx": "^6.0.4",
-    "mobx-react-lite": "^2.2.2",
+    "mobx-react-lite": "^3.1.6",
     "polished": "^4.0.5",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
