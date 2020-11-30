@@ -7,12 +7,12 @@
 import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 
-import {Icon, Input, Table} from 'components';
+import {Deleter, Dropdown, Icon, Input, Table, Tooltip} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
-import {loadIngestedEvents} from './service';
+import {deleteEvents, loadIngestedEvents} from './service';
 
 import './IngestedEvents.scss';
 
@@ -26,9 +26,11 @@ export function IngestedEvents({mightFail}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [selected, setSelected] = useState([]);
+  const [deleting, setDeleting] = useState(false);
 
   const loadEvents = useCallback(
-    async (payload) => {
+    async (payload = {limit: initialLimit, offset: initialOffset}) => {
       setLoading(true);
       await mightFail(loadIngestedEvents(payload), setEventsResponse, showError);
       setLoading(false);
@@ -50,7 +52,7 @@ export function IngestedEvents({mightFail}) {
   );
 
   useEffect(() => {
-    loadEvents({limit: initialLimit, offset: initialOffset});
+    loadEvents();
   }, [loadEvents]);
 
   const search = useMemo(() => debounce(async (query) => setSearchTerm(query), 500), []);
@@ -60,7 +62,40 @@ export function IngestedEvents({mightFail}) {
   }, [query, search]);
 
   const headerKeys = Object.keys(eventsResponse.results[0] || {});
-  const bodyData = eventsResponse.results.map((event) => Object.values(event));
+  const currentViewIds = eventsResponse.results.map(({id}) => id);
+  const allSelectedInView =
+    currentViewIds.length > 0 && currentViewIds.every((id) => selected.includes(id));
+  const maxDeletionReached = selected.length > 1000;
+
+  const head = headerKeys.map((key) => ({
+    label: t('events.ingested.' + key),
+    id: key,
+    sortable: key !== 'id',
+  }));
+
+  if (head.length) {
+    head.unshift({
+      label: (
+        <Input
+          type="checkbox"
+          checked={allSelectedInView}
+          onChange={({target: {checked}}) =>
+            checked
+              ? setSelected([...selected, ...currentViewIds])
+              : setSelected(selected.filter((id) => !currentViewIds.includes(id)))
+          }
+          ref={(input) => {
+            if (input != null && selected.length !== eventsResponse.total) {
+              input.indeterminate = selected.length;
+            }
+          }}
+        />
+      ),
+      id: 'selectedAll',
+      sortable: false,
+      width: 50,
+    });
+  }
 
   return (
     <div className="IngestedEvents">
@@ -78,14 +113,37 @@ export function IngestedEvents({mightFail}) {
           />
           <Icon className="searchIcon" type="search" size="20" />
         </div>
+        {selected.length > 0 && (
+          <Dropdown
+            className="selectionActions"
+            primary
+            label={selected.length + ' ' + t('common.selected')}
+          >
+            <Tooltip
+              content={maxDeletionReached ? t('events.ingested.deleteLimitReached') : undefined}
+            >
+              <Dropdown.Option onClick={() => setDeleting(true)} disabled={maxDeletionReached}>
+                <Icon type="delete" />
+                {t('common.deleteEntity', {entity: t('common.deleter.types.ingestedEvents')})}
+              </Dropdown.Option>
+            </Tooltip>
+          </Dropdown>
+        )}
       </div>
       <Table
-        head={headerKeys.map((key) => ({
-          label: t('events.ingested.' + key),
-          id: key,
-          sortable: key !== 'id',
-        }))}
-        body={bodyData}
+        head={head}
+        body={eventsResponse.results.map((event) => [
+          <Input
+            type="checkbox"
+            checked={selected.includes(event.id)}
+            onChange={({target: {checked}}) =>
+              checked
+                ? setSelected([...selected, event.id])
+                : setSelected(selected.filter((id) => id !== event.id))
+            }
+          />,
+          ...Object.values(event),
+        ])}
         fetchData={fetchData}
         loading={loading}
         defaultPageSize={eventsResponse.limit}
@@ -95,6 +153,23 @@ export function IngestedEvents({mightFail}) {
           setSortBy(by);
           setSortOrder(order);
         }}
+      />
+      <Deleter
+        type="ingestedEvents"
+        deleteText={t('common.deleteEntity', {entity: t('common.deleter.types.ingestedEvents')})}
+        entity={deleting}
+        deleteEntity={() =>
+          mightFail(
+            deleteEvents(selected),
+            () => {
+              setSelected([]);
+              loadEvents();
+            },
+            showError
+          )
+        }
+        onClose={() => setDeleting(false)}
+        descriptionText={t('events.ingested.deleteWarning')}
       />
     </div>
   );

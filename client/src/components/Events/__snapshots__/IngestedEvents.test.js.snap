@@ -7,7 +7,7 @@ exports[`should match snapshot 1`] = `
   <h1
     className="title"
   >
-    Event Data Sources
+    External Events
   </h1>
   <div
     className="header"
@@ -15,7 +15,7 @@ exports[`should match snapshot 1`] = `
     <h4
       className="tableTitle"
     >
-      Ingested Events List
+      Ingested External Events
     </h4>
     <div
       className="searchInputContainer"
@@ -39,6 +39,11 @@ exports[`should match snapshot 1`] = `
     body={
       Array [
         Array [
+          <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
           "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
           "correlationValue_3",
           "eventGroup",
@@ -47,6 +52,11 @@ exports[`should match snapshot 1`] = `
           "Invoice Processed",
         ],
         Array [
+          <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
           "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
           "correlationValue_3",
           "eventGroup",
@@ -60,6 +70,16 @@ exports[`should match snapshot 1`] = `
     fetchData={[Function]}
     head={
       Array [
+        Object {
+          "id": "selectedAll",
+          "label": <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
+          "sortable": false,
+          "width": 50,
+        },
         Object {
           "id": "id",
           "label": "Event ID",
@@ -101,6 +121,14 @@ exports[`should match snapshot 1`] = `
     }
     totalEntries={2}
     updateSorting={[Function]}
+  />
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    deleteText="Delete Event(s)"
+    descriptionText="Deleting ingested events will not be fully reflected in your published processes. Make sure to republish your Event Based Process in order to make your Process Reports more accurate."
+    entity={false}
+    onClose={[Function]}
+    type="ingestedEvents"
   />
 </div>
 `;

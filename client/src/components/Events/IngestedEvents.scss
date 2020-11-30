@@ -51,10 +51,21 @@
         color: var(--silver-darken-80);
       }
     }
+
+    .selectionActions {
+      margin-right: 10px;
+      .Button {
+        border-radius: 32px;
+      }
+    }
   }
 
   .Table {
     flex-grow: 1;
     margin-bottom: 10px;
+
+    .selectAll .label {
+      margin-left: 10px;
+    }
   }
 }

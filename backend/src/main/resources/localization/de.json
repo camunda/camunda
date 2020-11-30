@@ -218,15 +218,17 @@
       "camundaProcess": "Camunda Prozess"
     },
     "ingested": {
-      "label": "Liste der verarbeiteten Events",
+      "label": "Verarbeitete externe Events",
       "id": "Event ID",
       "traceId": "Trace ID",
       "group": "Gruppe",
       "source": "Quelle",
       "eventName": "Event Name",
       "timestamp": "Timestamp",
-      "eventSources": "Event Datenquellen",
-      "search": "Suche nach Werten"
+      "eventSources": "Externe Events",
+      "search": "Suche nach Werten",
+      "deleteWarning": "Das Löschen von verarbeiteten Events wird nicht vollständig in Ihren veröffentlichten Prozessen reflektiert. Stellen Sie sicher, dass Sie Ihren eventbasierten Prozess erneut veröffentlichen, um Ihre Prozessberichte genauer zu machen.",
+      "deleteLimitReached": "Die entfernung von mehr als 10000 Events is nicht moglich"
     }
   },
   "report": {
@@ -734,6 +736,7 @@
     "timeAt": "um",
     "value": "Wert",
     "dataSource": "Datenquelle",
+    "selected": "Ausgewählt",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -983,7 +986,8 @@
         "source": "Datenquelle",
         "collection": "Sammlung",
         "process": "Prozess",
-        "processEvents": "Prozessevents"
+        "processEvents": "Prozessevents",
+        "ingestedEvents": "Event(s)"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

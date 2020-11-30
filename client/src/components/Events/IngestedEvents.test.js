@@ -7,9 +7,9 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Input} from 'components';
+import {Deleter, Dropdown, Input} from 'components';
 
-import {loadIngestedEvents} from './service';
+import {deleteEvents, loadIngestedEvents} from './service';
 import {IngestedEvents} from './IngestedEvents';
 
 jest.mock('./service', () => ({
@@ -36,6 +36,7 @@ jest.mock('./service', () => ({
       },
     ],
   }),
+  deleteEvents: jest.fn(),
 }));
 
 jest.mock('debounce', () => (fn) => fn);
@@ -75,4 +76,41 @@ it('should add sorting and search params to the load event request', () => {
     sortBy: 'group',
     sortOrder: 'asc',
   });
+});
+
+it('should be possible to delete multiple events from the table', () => {
+  const node = shallow(<IngestedEvents {...props} />);
+
+  runAllEffects();
+  node
+    .find('Table')
+    .prop('body')[0][0]
+    .props.onChange({target: {checked: true}});
+  node
+    .find('Table')
+    .prop('body')[1][0]
+    .props.onChange({target: {checked: true}});
+
+  node.find(Dropdown.Option).simulate('click');
+
+  expect(node.find(Deleter).prop('entity')).toBe(true);
+  node.find(Deleter).prop('deleteEntity')();
+
+  expect(deleteEvents).toHaveBeenCalledWith([
+    '8edc4160-74e5-4ffc-af59-2d281cf5aca347',
+    '7edc4160-74e5-4ffc-af59-2d281cf5aca346',
+  ]);
+});
+
+it('should select all events in view', () => {
+  const node = shallow(<IngestedEvents {...props} />);
+
+  runAllEffects();
+
+  node
+    .find('Table')
+    .prop('head')[0]
+    .label.props.onChange({target: {checked: true}});
+
+  expect(node.find('.selectionActions').prop('label')).toBe('2 Selected');
 });
