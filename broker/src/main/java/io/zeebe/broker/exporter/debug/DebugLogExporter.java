@@ -17,7 +17,6 @@ import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -79,10 +78,9 @@ public class DebugLogExporter implements Exporter {
     }
   }
 
-  public static ExporterCfg defaultConfig(final boolean prettyPrint) {
+  public static ExporterCfg defaultConfig() {
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(DebugLogExporter.class.getName());
-    exporterCfg.setArgs(Collections.singletonMap("prettyPrint", prettyPrint));
     return exporterCfg;
   }
 
