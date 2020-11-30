@@ -17,6 +17,12 @@ public interface BrokerAdminService {
   /** Request a partition to resume its StreamProcessor */
   void resumeStreamProcessing();
 
+  /** Request a partition to pause exporting */
+  void pauseExporting();
+
+  /** Request a partition to resume exporting */
+  void resumeExporting();
+
   /**
    * Trigger a snapshot. Partition will attempt to take a snapshot instead of waiting for the
    * snapshot interval.

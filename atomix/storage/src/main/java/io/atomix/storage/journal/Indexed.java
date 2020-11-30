@@ -25,11 +25,13 @@ public class Indexed<E> {
   private final long index;
   private final E entry;
   private final int size;
+  private final long checksum;
 
-  public Indexed(final long index, final E entry, final int size) {
+  public Indexed(final long index, final E entry, final int size, final long checksum) {
     this.index = index;
     this.entry = entry;
     this.size = size;
+    this.checksum = checksum;
   }
 
   /**
@@ -57,6 +59,15 @@ public class Indexed<E> {
    */
   public int size() {
     return size;
+  }
+
+  /**
+   * Returns the entry checksum.
+   *
+   * @return The entry checksum.
+   */
+  public long checksum() {
+    return checksum;
   }
 
   /**
@@ -92,11 +103,18 @@ public class Indexed<E> {
       return false;
     }
     final Indexed<?> indexed = (Indexed<?>) o;
-    return index == indexed.index && size == indexed.size && Objects.equals(entry, indexed.entry);
+    return index == indexed.index
+        && size == indexed.size
+        && Objects.equals(entry, indexed.entry)
+        && checksum == indexed.checksum;
   }
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("index", index).add("entry", entry).toString();
+    return toStringHelper(this)
+        .add("index", index)
+        .add("entry", entry)
+        .add("checksum", checksum)
+        .toString();
   }
 }

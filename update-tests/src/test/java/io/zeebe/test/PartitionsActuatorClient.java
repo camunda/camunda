@@ -79,5 +79,7 @@ public final class PartitionsActuatorClient {
     public Long processedPosition;
     public Long processedPositionInSnapshot;
     public String streamProcessorPhase;
+    public Long exportedPosition;
+    public String exporterPhase;
   }
 }

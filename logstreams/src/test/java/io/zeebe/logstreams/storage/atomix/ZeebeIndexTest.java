@@ -55,7 +55,7 @@ public class ZeebeIndexTest {
 
     // when
     zeebeIndexAdapter.index(
-        new Indexed<>(5, new InitializeEntry(0, System.currentTimeMillis()), 10), 10);
+        new Indexed<>(5, new InitializeEntry(0, System.currentTimeMillis()), 10, -1), 10);
 
     // then
     assertThat(zeebeIndexAdapter.lookupPosition(1)).isEqualTo(-1);
@@ -224,6 +224,7 @@ public class ZeebeIndexTest {
     return new Indexed(
         index,
         new ZeebeEntry(0, System.currentTimeMillis(), lowestPos, lowestPos, ByteBuffer.allocate(0)),
-        0);
+        0,
+        -1);
   }
 }

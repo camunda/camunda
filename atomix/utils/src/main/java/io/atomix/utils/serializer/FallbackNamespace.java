@@ -30,7 +30,7 @@ public class FallbackNamespace implements Namespace {
 
   private static final Logger LOG = getLogger(FallbackNamespace.class);
   private static final String DESERIALIZE_ERROR =
-      "Serialized bytes contained header with version but deserialization failed (will fallback to FieldSerializer):\n";
+      "Serialized bytes contained header with version but deserialization failed (will fallback to FieldSerializer): ";
   private static final String UNKNOWN_VERSION_ERROR =
       "Magic byte was encountered, signalling newer version of serializer, but version {} is unrecognized. Using FieldSerializer as fallback";
   private final NamespaceImpl fallback;
@@ -91,7 +91,7 @@ public class FallbackNamespace implements Namespace {
       try {
         return namespace.deserialize(bytes, VERSION_HEADER.length);
       } catch (final Exception e) {
-        LOG.debug(DESERIALIZE_ERROR, e);
+        LOG.warn(DESERIALIZE_ERROR, e);
       }
     } else {
       LOG.debug(UNKNOWN_VERSION_ERROR, (int) versionByte);
@@ -122,7 +122,7 @@ public class FallbackNamespace implements Namespace {
         buffer.position(position + VERSION_HEADER.length);
         return namespace.deserialize(buffer);
       } catch (final Exception e) {
-        LOG.debug(DESERIALIZE_ERROR, e);
+        LOG.warn(DESERIALIZE_ERROR, e);
       }
     } else {
       LOG.debug(UNKNOWN_VERSION_ERROR, (int) version);

@@ -10,6 +10,7 @@ package io.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -389,5 +390,43 @@ public final class ZeebePartition extends Actor
 
   public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
     return actor.call(() -> Optional.ofNullable(context.getStreamProcessor()));
+  }
+
+  public ActorFuture<Optional<ExporterDirector>> getExporterDirector() {
+    return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
+  }
+
+  public ActorFuture<Void> pauseExporting() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          try {
+            final var pauseStatePersisted = context.pauseExporting();
+
+            if (context.getExporterDirector() != null && pauseStatePersisted) {
+              context.getExporterDirector().pauseExporting().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause exporting", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeExporting() {
+    actor.call(
+        () -> {
+          try {
+            context.resumeExporting();
+            if (context.getExporterDirector() != null && context.shouldExport()) {
+              context.getExporterDirector().resumeExporting();
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not resume exporting", e);
+          }
+        });
   }
 }

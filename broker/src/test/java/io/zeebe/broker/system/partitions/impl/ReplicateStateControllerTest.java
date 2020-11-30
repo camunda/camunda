@@ -68,7 +68,8 @@ public final class ReplicateStateControllerTest {
             replicator,
             l ->
                 Optional.of(
-                    new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
+                    new Indexed(
+                        l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0, -1)),
             db -> Long.MAX_VALUE);
     senderStore.addSnapshotListener(replicatorSnapshotController);
 
@@ -82,7 +83,8 @@ public final class ReplicateStateControllerTest {
             replicator,
             l ->
                 Optional.of(
-                    new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
+                    new Indexed(
+                        l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0, -1)),
             db -> Long.MAX_VALUE);
     receiverStore.addSnapshotListener(receiverSnapshotController);
 

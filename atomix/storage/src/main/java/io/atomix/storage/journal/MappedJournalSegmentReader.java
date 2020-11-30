@@ -132,7 +132,7 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
 
     final Position position = this.index.lookup(index - 1);
     if (position != null && position.index() >= firstIndex && position.index() <= lastIndex) {
-      currentEntry = new Indexed<>(position.index() - 1, null, 0);
+      currentEntry = new Indexed<>(position.index() - 1, null, 0, -1);
       buffer.position(position.position());
 
       nextEntry = null;
@@ -182,7 +182,7 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
       if (checksum == crc32.getValue()) {
         slice.rewind();
         final E entry = namespace.deserialize(slice);
-        nextEntry = new Indexed<>(index, entry, length);
+        nextEntry = new Indexed<>(index, entry, length, checksum);
         buffer.position(buffer.position() + length);
       } else {
         buffer.reset();

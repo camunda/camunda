@@ -266,11 +266,23 @@ public class PartitionContext {
     return partitionProcessingState.shouldProcess();
   }
 
+  public boolean shouldExport() {
+    return !partitionProcessingState.isExportingPaused();
+  }
+
   public void pauseProcessing() throws IOException {
     partitionProcessingState.pauseProcessing();
   }
 
   public void resumeProcessing() throws IOException {
     partitionProcessingState.resumeProcessing();
+  }
+
+  public boolean pauseExporting() throws IOException {
+    return partitionProcessingState.pauseExporting();
+  }
+
+  public boolean resumeExporting() throws IOException {
+    return partitionProcessingState.resumeExporting();
   }
 }
