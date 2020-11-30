@@ -54,7 +54,7 @@
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
-    <version.httpcomponents>4.4.13</version.httpcomponents>
+    <version.httpcomponents>4.4.14</version.httpcomponents>
     <version.jackson>2.11.3</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.jna>5.6.0</version.jna>
