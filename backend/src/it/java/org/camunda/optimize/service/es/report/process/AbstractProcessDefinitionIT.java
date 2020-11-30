@@ -108,6 +108,13 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
   }
 
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess(final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
     return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
