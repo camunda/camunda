@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   computed,
   when,
@@ -38,6 +38,24 @@ class Variables {
   shouldCancelOngoingRequests: boolean = false;
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      reset: action,
+      setItems: action,
+      handleFetchSuccess: action,
+      startFetch: action,
+      handleFetchFailure: action,
+      clearItems: action,
+      updateVariable: action,
+      addVariable: action,
+      setSingleVariable: action,
+      hasNoVariables: computed,
+      hasActiveOperation: computed,
+      scopeId: computed,
+    });
+  }
 
   init = async (instanceId: WorkflowInstanceEntity['id']) => {
     when(
@@ -295,21 +313,5 @@ class Variables {
     }
   };
 }
-
-decorate(Variables, {
-  state: observable,
-  reset: action,
-  setItems: action,
-  handleFetchSuccess: action,
-  startFetch: action,
-  handleFetchFailure: action,
-  clearItems: action,
-  updateVariable: action,
-  addVariable: action,
-  setSingleVariable: action,
-  hasNoVariables: computed,
-  hasActiveOperation: computed,
-  scopeId: computed,
-});
 
 export const variablesStore = new Variables();

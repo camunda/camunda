@@ -5,10 +5,10 @@
  */
 
 import {
-  observable,
-  decorate,
-  action,
+  makeObservable,
   computed,
+  observable,
+  action,
   autorun,
   IReactionDisposer,
 } from 'mobx';
@@ -49,6 +49,22 @@ class Instances {
   instancesPollingDisposer: null | IReactionDisposer = null;
 
   constructor() {
+    makeObservable(this, {
+      state: observable,
+      reset: action,
+      startFetching: action,
+      handleFetchSuccess: action,
+      handleFetchError: action,
+      setInstances: action,
+      addInstancesWithActiveOperations: action,
+      resetInstancesWithCompletedOperations: action,
+      setInstancesWithActiveOperations: action,
+      setInstancesWithCompletedOperations: action,
+      removeInstanceFromInstancesWithActiveOperations: action,
+      visibleIdsInListPanel: computed,
+      areWorkflowInstancesEmpty: computed,
+    });
+
     this.state.filteredInstancesCount =
       getStateLocally().filteredInstancesCount || null;
   }
@@ -281,21 +297,5 @@ class Instances {
     this.instancesPollingDisposer?.();
   };
 }
-
-decorate(Instances, {
-  state: observable,
-  reset: action,
-  startFetching: action,
-  handleFetchSuccess: action,
-  handleFetchError: action,
-  setInstances: action,
-  addInstancesWithActiveOperations: action,
-  resetInstancesWithCompletedOperations: action,
-  setInstancesWithActiveOperations: action,
-  setInstancesWithCompletedOperations: action,
-  removeInstanceFromInstancesWithActiveOperations: action,
-  visibleIdsInListPanel: computed,
-  areWorkflowInstancesEmpty: computed,
-});
 
 export const instancesStore = new Instances();

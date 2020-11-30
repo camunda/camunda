@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   when,
   autorun,
@@ -52,6 +52,14 @@ class Events {
   };
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      setItems: action,
+      reset: action,
+    });
+  }
 
   init() {
     when(
@@ -134,11 +142,5 @@ class Events {
     this.disposer?.();
   };
 }
-
-decorate(Events, {
-  state: observable,
-  setItems: action,
-  reset: action,
-});
 
 export const eventsStore = new Events();

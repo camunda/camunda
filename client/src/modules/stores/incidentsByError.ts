@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 
 import {fetchIncidentsByError} from 'modules/api/incidents';
 
@@ -35,6 +35,10 @@ const DEFAULT_STATE: State = {
 
 class IncidentsByError {
   state: State = {...DEFAULT_STATE};
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   getIncidentsByError = async () => {
     this.startFetching();
@@ -69,13 +73,5 @@ class IncidentsByError {
     this.state = {...DEFAULT_STATE};
   };
 }
-
-decorate(IncidentsByError, {
-  state: observable,
-  startFetching: action,
-  setError: action,
-  setIncidents: action,
-  reset: action,
-});
 
 export const incidentsByErrorStore = new IncidentsByError();

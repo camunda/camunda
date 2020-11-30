@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 
 type State = {
   isTimeStampVisible: boolean;
@@ -16,6 +16,10 @@ const DEFAULT_STATE: State = {
 class FlowNodeTimeStamp {
   state: State = {...DEFAULT_STATE};
 
+  constructor() {
+    makeAutoObservable(this);
+  }
+
   toggleTimeStampVisibility = () => {
     this.state.isTimeStampVisible = !this.state.isTimeStampVisible;
   };
@@ -24,11 +28,5 @@ class FlowNodeTimeStamp {
     this.state = {...DEFAULT_STATE};
   };
 }
-
-decorate(FlowNodeTimeStamp, {
-  state: observable,
-  reset: action,
-  toggleTimeStampVisibility: action,
-});
 
 export const flowNodeTimeStampStore = new FlowNodeTimeStamp();

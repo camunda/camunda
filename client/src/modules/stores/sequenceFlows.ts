@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   when,
   autorun,
@@ -30,6 +30,14 @@ class SequenceFlows {
   state: State = {...DEFAULT_STATE};
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      setItems: action,
+      reset: action,
+    });
+  }
 
   init() {
     when(
@@ -115,11 +123,5 @@ class SequenceFlows {
     this.disposer?.();
   };
 }
-
-decorate(SequenceFlows, {
-  state: observable,
-  setItems: action,
-  reset: action,
-});
 
 export const sequenceFlowsStore = new SequenceFlows();

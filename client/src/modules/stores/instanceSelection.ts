@@ -5,10 +5,7 @@
  */
 
 import {
-  observable,
-  decorate,
-  action,
-  computed,
+  makeAutoObservable,
   autorun,
   observe,
   IReactionDisposer,
@@ -36,6 +33,10 @@ class InstanceSelection {
   state: State = {...DEFAULT_STATE};
   autorunDisposer: null | IReactionDisposer = null;
   observeDisposer: null | Lambda = null;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   init() {
     const {selectionMode, selectedInstanceIds} = this.state;
@@ -165,17 +166,5 @@ class InstanceSelection {
     this.observeDisposer?.();
   };
 }
-
-decorate(InstanceSelection, {
-  state: observable,
-  setMode: action,
-  setAllChecked: action,
-  setSelectedInstanceIds: action,
-  addToSelectedInstanceIds: action,
-  removeFromSelectedInstanceIds: action,
-  resetState: action,
-  selectedInstanceIds: computed,
-  excludedInstanceIds: computed,
-});
 
 export const instanceSelectionStore = new InstanceSelection();

@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   computed,
   autorun,
@@ -32,6 +32,17 @@ class CurrentInstance {
   };
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      reset: action,
+      setCurrentInstance: action,
+      activateOperation: action,
+      deactivateOperation: action,
+      workflowTitle: computed,
+    });
+  }
 
   async init(id: any) {
     const response = await fetchWorkflowInstance(id);
@@ -106,14 +117,5 @@ class CurrentInstance {
     this.disposer?.();
   };
 }
-
-decorate(CurrentInstance, {
-  state: observable,
-  reset: action,
-  setCurrentInstance: action,
-  activateOperation: action,
-  deactivateOperation: action,
-  workflowTitle: computed,
-});
 
 export const currentInstanceStore = new CurrentInstance();

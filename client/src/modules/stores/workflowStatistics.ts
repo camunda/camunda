@@ -5,9 +5,7 @@
  */
 
 import {
-  observable,
-  decorate,
-  action,
+  makeAutoObservable,
   reaction,
   observe,
   autorun,
@@ -42,6 +40,10 @@ class WorkflowStatistics {
   diagramReactionDisposer: null | IReactionDisposer = null;
   filterObserveDisposer: null | Lambda = null;
   completedOperationsDisposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   init = () => {
     this.diagramReactionDisposer = reaction(
@@ -115,13 +117,5 @@ class WorkflowStatistics {
     this.completedOperationsDisposer?.();
   };
 }
-
-decorate(WorkflowStatistics, {
-  state: observable,
-  startLoading: action,
-  stopLoading: action,
-  setWorkflowStatistics: action,
-  resetState: action,
-});
 
 export const workflowStatisticsStore = new WorkflowStatistics();

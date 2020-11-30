@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   computed,
   when,
@@ -60,6 +60,22 @@ class FlowNodeInstance {
   state: State = {...DEFAULT_STATE};
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      handleFetchSuccess: action,
+      handleFetchFailure: action,
+      startFetch: action,
+      reset: action,
+      setCurrentSelection: action,
+      areMultipleNodesSelected: computed,
+      instanceExecutionHistory: computed,
+      flowNodeIdToFlowNodeInstanceMap: computed,
+      isInstanceExecutionHistoryAvailable: computed,
+      setResponse: action,
+    });
+  }
 
   init() {
     when(
@@ -231,19 +247,5 @@ class FlowNodeInstance {
     return this.state.selection.treeRowIds.length > 1;
   }
 }
-
-decorate(FlowNodeInstance, {
-  state: observable,
-  handleFetchSuccess: action,
-  handleFetchFailure: action,
-  startFetch: action,
-  reset: action,
-  setCurrentSelection: action,
-  areMultipleNodesSelected: computed,
-  instanceExecutionHistory: computed,
-  flowNodeIdToFlowNodeInstanceMap: computed,
-  isInstanceExecutionHistoryAvailable: computed,
-  setResponse: action,
-});
 
 export const flowNodeInstanceStore = new FlowNodeInstance();

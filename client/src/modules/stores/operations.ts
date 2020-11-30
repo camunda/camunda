@@ -5,11 +5,11 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
-  autorun,
   computed,
+  autorun,
   IReactionDisposer,
 } from 'mobx';
 import * as operationsApi from 'modules/api/batchOperations';
@@ -49,6 +49,20 @@ class Operations {
   state: State = {...DEFAULT_STATE};
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      reset: action,
+      setOperations: action,
+      increasePage: action,
+      prependOperations: action,
+      hasRunningOperations: computed,
+      startFetching: action,
+      handleFetchSuccess: action,
+      handleFetchError: action,
+    });
+  }
 
   init() {
     this.fetchOperations();
@@ -218,17 +232,5 @@ class Operations {
     this.disposer?.();
   };
 }
-
-decorate(Operations, {
-  state: observable,
-  reset: action,
-  setOperations: action,
-  increasePage: action,
-  prependOperations: action,
-  hasRunningOperations: computed,
-  startFetching: action,
-  handleFetchSuccess: action,
-  handleFetchError: action,
-});
 
 export const operationsStore = new Operations();

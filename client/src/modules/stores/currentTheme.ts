@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
@@ -28,6 +28,10 @@ const INITIAL_STATE: State = {
 class CurrentTheme {
   state: State = INITIAL_STATE;
 
+  constructor() {
+    makeAutoObservable(this);
+  }
+
   toggle = () => {
     const nextTheme =
       this.state.selectedTheme === THEME_NAME.LIGHT
@@ -44,12 +48,6 @@ class CurrentTheme {
     this.state = INITIAL_STATE;
   };
 }
-
-decorate(CurrentTheme, {
-  state: observable,
-  toggle: action,
-  reset: action,
-});
 
 const currentTheme = new CurrentTheme();
 

@@ -5,8 +5,8 @@
  */
 
 import {
+  makeObservable,
   observable,
-  decorate,
   action,
   computed,
   autorun,
@@ -32,6 +32,19 @@ const DEFAULT_STATE: State = {
 class InstancesDiagram {
   state: State = {...DEFAULT_STATE};
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      reset: action,
+      resetDiagramModel: action,
+      startFetching: action,
+      handleFetchSuccess: action,
+      handleFetchError: action,
+      selectableFlowNodes: computed,
+      selectableIds: computed,
+    });
+  }
 
   init = () => {
     this.disposer = autorun(() => {
@@ -98,16 +111,5 @@ class InstancesDiagram {
     this.disposer?.();
   };
 }
-
-decorate(InstancesDiagram, {
-  state: observable,
-  reset: action,
-  resetDiagramModel: action,
-  startFetching: action,
-  handleFetchSuccess: action,
-  handleFetchError: action,
-  selectableFlowNodes: computed,
-  selectableIds: computed,
-});
 
 export const instancesDiagramStore = new InstancesDiagram();

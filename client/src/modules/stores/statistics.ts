@@ -4,7 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, autorun, IReactionDisposer} from 'mobx';
+import {
+  makeObservable,
+  observable,
+  action,
+  autorun,
+  IReactionDisposer,
+} from 'mobx';
 import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {instancesStore} from 'modules/stores/instances';
@@ -31,6 +37,16 @@ class Statistics {
   intervalId: null | number = null;
   pollingDisposer: null | IReactionDisposer = null;
   fetchStatisticsDisposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      setError: action,
+      setStatistics: action,
+      startFirstFetch: action,
+      reset: action,
+    });
+  }
 
   init() {
     this.fetchStatistics();
@@ -126,13 +142,5 @@ class Statistics {
     this.fetchStatisticsDisposer?.();
   };
 }
-
-decorate(Statistics, {
-  state: observable,
-  setError: action,
-  setStatistics: action,
-  startFirstFetch: action,
-  reset: action,
-});
 
 export const statisticsStore = new Statistics();

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 
 import {fetchInstancesByWorkflow} from 'modules/api/incidents';
 
@@ -36,6 +36,10 @@ const DEFAULT_STATE: State = {
 
 class InstancesByWorkflow {
   state: State = {...DEFAULT_STATE};
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   getInstancesByWorkflow = async () => {
     this.startFetching();
@@ -69,13 +73,5 @@ class InstancesByWorkflow {
     this.state = {...DEFAULT_STATE};
   };
 }
-
-decorate(InstancesByWorkflow, {
-  state: observable,
-  startFetching: action,
-  setError: action,
-  setInstances: action,
-  reset: action,
-});
 
 export const instancesByWorkflowStore = new InstancesByWorkflow();

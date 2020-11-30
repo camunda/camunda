@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 import {Notification} from 'modules/notifications';
 
 type State = {
@@ -19,6 +19,9 @@ const DEFAULT_STATE: State = {
 
 class SessionValidation {
   state: State = {...DEFAULT_STATE};
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   disableUserSession = (notification: Notification | undefined) => {
     this.state.isSessionValid = false;
@@ -35,12 +38,5 @@ class SessionValidation {
     this.state = {...DEFAULT_STATE};
   };
 }
-
-decorate(SessionValidation, {
-  state: observable,
-  reset: action,
-  disableUserSession: action,
-  enableUserSession: action,
-});
 
 export const sessionValidationStore = new SessionValidation();

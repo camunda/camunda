@@ -5,10 +5,7 @@
  */
 
 import {
-  observable,
-  decorate,
-  action,
-  computed,
+  makeAutoObservable,
   observe,
   reaction,
   when,
@@ -64,6 +61,10 @@ class Filters {
   state: State = {...DEFAULT_STATE};
   filterObserveDisposer: null | Lambda = null;
   locationReactionDisposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   async init() {
     try {
@@ -228,25 +229,5 @@ class Filters {
     this.locationReactionDisposer?.();
   };
 }
-
-decorate(Filters, {
-  state: observable,
-  setFilterFromUrl: action,
-  setFilter: action,
-  setPage: action,
-  setSorting: action,
-  setEntriesPerPage: action,
-  reset: action,
-  firstElement: computed,
-  decodedFilters: computed,
-  isNoVersionSelected: computed,
-  isNoWorkflowSelected: computed,
-  workflow: computed,
-  workflowName: computed,
-  setGroupedWorkflows: action,
-  completeInitialLoad: action,
-  setUrlParameters: action,
-  isSingleWorkflowSelected: computed,
-});
 
 export const filtersStore = new Filters();

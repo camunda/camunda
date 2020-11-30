@@ -5,11 +5,11 @@
  */
 
 import {
-  observable,
-  decorate,
-  action,
-  autorun,
+  makeObservable,
   computed,
+  action,
+  observable,
+  autorun,
   IReactionDisposer,
 } from 'mobx';
 import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
@@ -56,6 +56,18 @@ class Incidents {
   state: State = {...DEFAULT_STATE};
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
+
+  constructor() {
+    makeObservable(this, {
+      state: observable,
+      setIncidents: action,
+      reset: action,
+      incidents: computed,
+      flowNodes: computed,
+      errorTypes: computed,
+      incidentsCount: computed,
+    });
+  }
 
   init() {
     this.disposer = autorun(() => {
@@ -146,15 +158,5 @@ class Incidents {
     return this.state.response === null ? 0 : this.state.response.count;
   }
 }
-
-decorate(Incidents, {
-  state: observable,
-  setIncidents: action,
-  reset: action,
-  incidents: computed,
-  flowNodes: computed,
-  errorTypes: computed,
-  incidentsCount: computed,
-});
 
 export const incidentsStore = new Incidents();

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed, when} from 'mobx';
+import {makeAutoObservable, when} from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
@@ -25,6 +25,10 @@ class SingleInstanceDiagram {
   state: State = {
     ...DEFAULT_STATE,
   };
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   init() {
     when(
@@ -103,15 +107,5 @@ class SingleInstanceDiagram {
     this.state = {...DEFAULT_STATE};
   };
 }
-
-decorate(SingleInstanceDiagram, {
-  state: observable,
-  reset: action,
-  startFetch: action,
-  handleFetchSuccess: action,
-  handleFetchFailure: action,
-  nodeMetaDataMap: computed,
-  areDiagramDefinitionsAvailable: computed,
-});
 
 export const singleInstanceDiagramStore = new SingleInstanceDiagram();
