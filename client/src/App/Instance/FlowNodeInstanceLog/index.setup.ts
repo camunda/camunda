@@ -14,6 +14,3 @@ const treeNode = createRawTreeNode({
 export const mockSuccessResponseForActivityTree = {
   children: [treeNode],
 };
-export const mockFailedResponseForActivityTree = {
-  error: 'an error occured',
-};

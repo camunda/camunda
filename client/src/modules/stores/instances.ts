@@ -25,9 +25,9 @@ type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 
 type State = {
   filteredInstancesCount: null | number;
-  workflowInstances: InstanceEntity[];
-  instancesWithActiveOperations: InstanceEntity['id'][];
-  instancesWithCompletedOperations: InstanceEntity['id'][];
+  workflowInstances: WorkflowInstanceEntity[];
+  instancesWithActiveOperations: WorkflowInstanceEntity['id'][];
+  instancesWithCompletedOperations: WorkflowInstanceEntity['id'][];
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
@@ -164,7 +164,7 @@ class Instances {
     workflowInstances,
   }: {
     filteredInstancesCount: number;
-    workflowInstances: InstanceEntity[];
+    workflowInstances: WorkflowInstanceEntity[];
   }) => {
     this.state.workflowInstances = workflowInstances;
     this.state.filteredInstancesCount = filteredInstancesCount;
@@ -184,7 +184,7 @@ class Instances {
     ids,
     shouldPollAllVisibleIds = false,
   }: {
-    ids: string[];
+    ids: WorkflowInstanceEntity['id'][];
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
@@ -198,13 +198,15 @@ class Instances {
     }
   };
 
-  setInstancesWithActiveOperations = (instances: InstanceEntity[]) => {
+  setInstancesWithActiveOperations = (instances: WorkflowInstanceEntity[]) => {
     this.state.instancesWithActiveOperations = instances
       .filter(({hasActiveOperation}) => hasActiveOperation)
       .map(({id}) => id);
   };
 
-  setInstancesWithCompletedOperations = (instances: InstanceEntity[]) => {
+  setInstancesWithCompletedOperations = (
+    instances: WorkflowInstanceEntity[]
+  ) => {
     this.state.instancesWithCompletedOperations = instances
       .filter(({hasActiveOperation}) => !hasActiveOperation)
       .map(({id}) => id);

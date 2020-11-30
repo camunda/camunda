@@ -420,7 +420,7 @@ export const createEvent = (options = {}) => {
     activityInstanceId: '1215',
     bpmnProcessId: 'orderProcess',
     dateTime: '2019-01-21T08:34:07.121+0000',
-    eventSourceTyppe: 'JOB',
+    eventSourceType: 'JOB',
     eventType: 'CREATED',
     id: eventIdIterator.next().value,
     metadata: {

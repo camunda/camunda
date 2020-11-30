@@ -16,7 +16,7 @@ import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-const instanceMock: InstanceEntity = {
+const instanceMock: WorkflowInstanceEntity = {
   id: 'instance_1',
   state: 'ACTIVE',
   operations: [],

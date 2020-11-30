@@ -7,17 +7,16 @@
 import React, {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 import Variables from '../Variables';
-import EmptyPanel from 'modules/components/EmptyPanel';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {observer} from 'mobx-react';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 import * as Styled from './styled';
 
 const VariablePanel = observer(function VariablePanel() {
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
-  const {id: workflowInstanceId} = useParams();
+  const {id: workflowInstanceId} = useParams<{id: string}>();
 
   useEffect(() => {
     variablesStore.init(workflowInstanceId);
@@ -29,17 +28,23 @@ const VariablePanel = observer(function VariablePanel() {
 
   const {
     scopeId,
-    state: {isFailed},
+    state: {status},
   } = variablesStore;
+
   return (
     <Styled.VariablesPanel>
-      {isFailed || flowNodeInstanceStore.areMultipleNodesSelected ? (
-        <EmptyPanel
-          type={isFailed ? 'warning' : 'info'}
-          label={isFailed ? FAILED_PLACEHOLDER : MULTI_SCOPE_PLACEHOLDER}
-        />
+      {status === 'error' ? (
+        <StatusMessage variant="error">{FAILED_PLACEHOLDER}</StatusMessage>
       ) : (
-        <Variables key={scopeId ? scopeId : workflowInstanceId} />
+        <>
+          {flowNodeInstanceStore.areMultipleNodesSelected ? (
+            <StatusMessage variant="default">
+              {MULTI_SCOPE_PLACEHOLDER}
+            </StatusMessage>
+          ) : (
+            <Variables key={scopeId ?? workflowInstanceId} />
+          )}
+        </>
       )}
     </Styled.VariablesPanel>
   );

@@ -16,8 +16,8 @@ import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
 import {DIAGRAM, CURRENT_INSTANCE, mockNode} from './index.setup';
 
-const instanceId = 1;
-const workflowId = 1;
+const instanceId = '1';
+const workflowId = '1';
 
 describe('<FlowNodeInstancesTree />', () => {
   beforeEach(async () => {

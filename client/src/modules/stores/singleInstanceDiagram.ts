@@ -13,65 +13,63 @@ import {logger} from 'modules/logger';
 
 type State = {
   diagramModel: unknown;
-  isInitialLoadComplete: boolean;
-  isLoading: boolean;
-  isFailed: boolean;
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   diagramModel: null,
-  isInitialLoadComplete: false,
-  isLoading: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class SingleInstanceDiagram {
-  state: State = {...DEFAULT_STATE};
+  state: State = {
+    ...DEFAULT_STATE,
+  };
 
   init() {
     when(
       () => currentInstanceStore.state.instance !== null,
       () => {
-        this.fetchWorkflowXml(currentInstanceStore.state.instance?.workflowId);
+        const workflowId = currentInstanceStore.state.instance?.workflowId;
+
+        if (workflowId !== undefined) {
+          this.fetchWorkflowXml(workflowId);
+        }
       }
     );
   }
 
-  fetchWorkflowXml = async (workflowId: any) => {
-    this.startLoading();
-
+  fetchWorkflowXml = async (
+    workflowId: WorkflowInstanceEntity['workflowId']
+  ) => {
+    this.startFetch();
     try {
       const response = await fetchWorkflowXML(workflowId);
 
       if (response.ok) {
-        this.handleSuccess(await parseDiagramXML(await response.text()));
+        this.handleFetchSuccess(await parseDiagramXML(await response.text()));
       } else {
-        this.handleFailure();
+        this.handleFetchFailure();
       }
     } catch (error) {
-      this.handleFailure(error);
-    }
-
-    if (!this.state.isInitialLoadComplete) {
-      this.completeInitialLoad();
+      this.handleFetchFailure(error);
     }
   };
 
-  completeInitialLoad = () => {
-    this.state.isInitialLoadComplete = true;
+  startFetch = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
 
-  startLoading = () => {
-    this.state.isLoading = true;
-  };
-
-  handleSuccess = (parsedDiagramXml: any) => {
+  handleFetchSuccess = (parsedDiagramXml: unknown) => {
     this.state.diagramModel = parsedDiagramXml;
-    this.state.isLoading = false;
-    this.state.isFailed = false;
+    this.state.status = 'fetched';
   };
 
-  getMetaData = (activityId: any) => {
+  getMetaData = (activityId: string | null | undefined) => {
     return this.nodeMetaDataMap.get(activityId);
   };
 
@@ -83,21 +81,19 @@ class SingleInstanceDiagram {
   }
 
   get areDiagramDefinitionsAvailable() {
-    const {isInitialLoadComplete, isFailed, diagramModel} = this.state;
+    const {status, diagramModel} = this.state;
 
     return (
-      isInitialLoadComplete &&
-      !isFailed &&
+      status === 'fetched' &&
       // @ts-expect-error
       diagramModel?.definitions !== undefined
     );
   }
 
-  handleFailure = (error?: Error) => {
-    this.state.isLoading = false;
-    this.state.isFailed = true;
+  handleFetchFailure = (error?: Error) => {
+    this.state.status = 'error';
 
-    logger.error('Failed to fetch single instance diagram');
+    logger.error('Failed to fetch Diagram XML');
     if (error !== undefined) {
       logger.error(error);
     }
@@ -111,10 +107,9 @@ class SingleInstanceDiagram {
 decorate(SingleInstanceDiagram, {
   state: observable,
   reset: action,
-  startLoading: action,
-  handleSuccess: action,
-  handleFailure: action,
-  completeInitialLoad: action,
+  startFetch: action,
+  handleFetchSuccess: action,
+  handleFetchFailure: action,
   nodeMetaDataMap: computed,
   areDiagramDefinitionsAvailable: computed,
 });

@@ -16,6 +16,7 @@ import {fetchSequenceFlows} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
+import {logger} from 'modules/logger';
 
 type State = {
   items: string[];
@@ -54,27 +55,41 @@ class SequenceFlows {
     });
   }
 
-  fetchWorkflowSequenceFlows = async (instanceId: any) => {
-    const response = await fetchSequenceFlows(instanceId);
-    if (response.ok) {
-      const processedSequenceFlows = getProcessedSequenceFlows(
-        await response.json()
-      );
-      this.setItems(processedSequenceFlows);
+  fetchWorkflowSequenceFlows = async (
+    instanceId: WorkflowInstanceEntity['id']
+  ) => {
+    try {
+      const response = await fetchSequenceFlows(instanceId);
+
+      if (response.ok) {
+        this.setItems(getProcessedSequenceFlows(await response.json()));
+      } else {
+        logger.error('Failed to fetch Sequence Flows');
+      }
+    } catch (error) {
+      logger.error('Failed to fetch Sequence Flows');
+      logger.error(error);
     }
   };
 
-  handlePolling = async (instanceId: any) => {
-    const response = await fetchSequenceFlows(instanceId);
-    if (this.intervalId !== null && response.ok) {
-      const processedSequenceFlows = getProcessedSequenceFlows(
-        await response.json()
-      );
-      this.setItems(processedSequenceFlows);
+  handlePolling = async (instanceId: WorkflowInstanceEntity['id']) => {
+    try {
+      const response = await fetchSequenceFlows(instanceId);
+
+      if (this.intervalId !== null && response.ok) {
+        this.setItems(getProcessedSequenceFlows(await response.json()));
+      }
+
+      if (!response.ok) {
+        logger.error('Failed to poll Sequence Flows');
+      }
+    } catch (error) {
+      logger.error('Failed to poll Sequence Flows');
+      logger.error(error);
     }
   };
 
-  startPolling = async (instanceId: any) => {
+  startPolling = async (instanceId: WorkflowInstanceEntity['id']) => {
     this.intervalId = setInterval(() => {
       this.handlePolling(instanceId);
     }, 5000);
@@ -89,7 +104,7 @@ class SequenceFlows {
     }
   };
 
-  setItems(items: any) {
+  setItems(items: string[]) {
     this.state.items = items;
   }
 

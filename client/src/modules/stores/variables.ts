@@ -19,36 +19,27 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {STATE} from 'modules/constants';
 import {isInstanceRunning} from './utils/isInstanceRunning';
+import {logger} from 'modules/logger';
 
-type Variable = {
-  hasActiveOperation: boolean;
-  id: string;
-  name: string;
-  scopeId: string;
-  value: string;
-  workflowInstanceId: string;
-};
 type State = {
-  items: Variable[];
-  isInitialLoadComplete: boolean;
-  isLoading: boolean;
-  isFailed: boolean;
+  items: VariableEntity[];
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   items: [],
-  isInitialLoadComplete: false,
-  isLoading: false,
-  isFailed: false,
+  status: 'initial',
 };
 
 class Variables {
-  state: State = {...DEFAULT_STATE};
+  state: State = {
+    ...DEFAULT_STATE,
+  };
   shouldCancelOngoingRequests: boolean = false;
   intervalId: null | number = null;
   disposer: null | IReactionDisposer = null;
 
-  init = async (workflowInstanceId: any) => {
+  init = async (instanceId: WorkflowInstanceEntity['id']) => {
     when(
       () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
@@ -57,7 +48,7 @@ class Variables {
     this.disposer = autorun(() => {
       if (isInstanceRunning(currentInstanceStore.state.instance)) {
         if (this.intervalId === null) {
-          this.startPolling(workflowInstanceId);
+          this.startPolling(instanceId);
         }
       } else {
         this.stopPolling();
@@ -66,7 +57,7 @@ class Variables {
   };
 
   reset = () => {
-    if (this.state.isLoading) {
+    if (['first-fetch', 'fetching'].includes(this.state.status)) {
       this.shouldCancelOngoingRequests = true;
     }
     this.stopPolling();
@@ -78,29 +69,27 @@ class Variables {
     this.state.items = [];
   };
 
-  handleFailure = () => {
-    this.state.isFailed = true;
-    this.state.isLoading = false;
-
-    if (!this.state.isInitialLoadComplete) {
-      this.state.isInitialLoadComplete = true;
+  handleFetchFailure = (error?: Error) => {
+    this.state.status = 'error';
+    logger.error('Failed to fetch Variables');
+    if (error !== undefined) {
+      logger.error(error);
     }
   };
 
-  handleSuccess = () => {
-    this.state.isFailed = false;
-    this.state.isLoading = false;
+  handleFetchSuccess = () => {
+    this.state.status = 'fetched';
+  };
 
-    if (!this.state.isInitialLoadComplete) {
-      this.state.isInitialLoadComplete = true;
+  startFetch = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
     }
   };
 
-  startLoading = () => {
-    this.state.isLoading = true;
-  };
-
-  setItems = (items: any) => {
+  setItems = (items: VariableEntity[]) => {
     this.state.items = items;
   };
 
@@ -115,57 +104,75 @@ class Variables {
     return undefined;
   }
 
-  handlePolling = async (workflowInstanceId: string) => {
-    const response = await fetchVariables({
-      instanceId: workflowInstanceId,
-      scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
-    });
+  handlePolling = async (workflowInstanceId: WorkflowInstanceEntity['id']) => {
+    try {
+      const response = await fetchVariables({
+        instanceId: workflowInstanceId,
+        scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
+      });
 
-    if (this.intervalId !== null) {
-      await this.handleResponse(response);
+      if (this.shouldCancelOngoingRequests) {
+        this.shouldCancelOngoingRequests = false;
+        return;
+      }
+
+      if (this.intervalId !== null && response.ok) {
+        this.handleResponse(await response.json());
+      }
+
+      if (!response.ok) {
+        logger.error('Failed to poll Variables');
+      }
+    } catch (error) {
+      logger.error('Failed to poll Variables');
+      logger.error(error);
     }
   };
 
-  handleResponse = async (response: any) => {
-    if (this.shouldCancelOngoingRequests) {
-      this.shouldCancelOngoingRequests = false;
-      return;
-    }
-
-    if (!response.ok) {
-      this.handleFailure();
-      return;
-    }
-
-    const data = await response.json();
+  handleResponse = async (response: VariableEntity[]) => {
     if (this.state.items.length === 0) {
-      this.setItems(data);
+      this.setItems(response);
     } else {
       const {items} = this.state;
       const localVariables = differenceWith(
         items,
-        data,
-        (item: any, dataItem: any) =>
-          item.name === dataItem.name && item.value === dataItem.value
+        response,
+        (item, {name, value}) => item.name === name && item.value === value
       );
-      const serverVariables = differenceBy(data, localVariables, 'name');
+      const serverVariables = differenceBy(response, localVariables, 'name');
 
       this.setItems([...serverVariables, ...localVariables]);
     }
 
-    this.handleSuccess();
+    this.handleFetchSuccess();
   };
 
-  fetchVariables = async (workflowInstanceId: any) => {
-    this.startLoading();
-    const response = await fetchVariables({
-      instanceId: workflowInstanceId,
-      scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
-    });
-    await this.handleResponse(response);
+  fetchVariables = async (instanceId: WorkflowInstanceEntity['id']) => {
+    this.startFetch();
+
+    try {
+      const response = await fetchVariables({
+        instanceId,
+        scopeId: this.scopeId ?? instanceId,
+      });
+
+      if (this.shouldCancelOngoingRequests) {
+        this.shouldCancelOngoingRequests = false;
+        return;
+      }
+
+      if (response.ok) {
+        this.handleResponse(await response.json());
+        this.handleFetchSuccess();
+      } else {
+        this.handleFetchFailure();
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
+    }
   };
 
-  setSingleVariable = (variable: Variable) => {
+  setSingleVariable = (variable: VariableEntity) => {
     const {items} = this.state;
     this.state.items = items.map((item) => {
       if (item.name === variable.name) {
@@ -189,7 +196,12 @@ class Variables {
   }) => {
     this.setItems([
       ...this.state.items,
-      {name, value, hasActiveOperation: true},
+      {
+        name,
+        value,
+        hasActiveOperation: true,
+        workflowInstanceId: id,
+      },
     ]);
 
     try {
@@ -258,8 +270,8 @@ class Variables {
   }
 
   get hasNoVariables() {
-    const {isLoading, isInitialLoadComplete, items} = this.state;
-    return !isLoading && isInitialLoadComplete && items.length === 0;
+    const {status, items} = this.state;
+    return status === 'fetched' && items.length === 0;
   }
 
   removeVariablesWithActiveOperations = () => {
@@ -288,9 +300,9 @@ decorate(Variables, {
   state: observable,
   reset: action,
   setItems: action,
-  handleSuccess: action,
-  startLoading: action,
-  handleFailure: action,
+  handleFetchSuccess: action,
+  startFetch: action,
+  handleFetchFailure: action,
   clearItems: action,
   updateVariable: action,
   addVariable: action,

@@ -67,7 +67,7 @@ describe('stores/flowNodeInstance', () => {
       )
     );
 
-    expect(flowNodeInstanceStore.state.isInitialLoadComplete).toBe(true);
+    expect(flowNodeInstanceStore.state.status).toBe('fetched');
   });
 
   it('should poll if current instance is running', async () => {
@@ -143,12 +143,12 @@ describe('stores/flowNodeInstance', () => {
     });
 
     flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: [1, 2],
-      flowNodeId: 2,
+      treeRowIds: ['1', '2'],
+      flowNodeId: '2',
     });
     expect(flowNodeInstanceStore.state.selection).toEqual({
-      treeRowIds: [1, 2],
-      flowNodeId: 2,
+      treeRowIds: ['1', '2'],
+      flowNodeId: '2',
     });
   });
 
@@ -166,7 +166,7 @@ describe('stores/flowNodeInstance', () => {
         activityInstancesMock
       )
     );
-    expect(flowNodeInstanceStore.state.isInitialLoadComplete).toBe(true);
+    expect(flowNodeInstanceStore.state.status).toBe('fetched');
 
     flowNodeInstanceStore.reset();
     expect(flowNodeInstanceStore.state.selection).toEqual({
@@ -174,34 +174,42 @@ describe('stores/flowNodeInstance', () => {
       flowNodeId: null,
     });
     expect(flowNodeInstanceStore.state.response).toEqual(null);
-    expect(flowNodeInstanceStore.state.isInitialLoadComplete).toEqual(false);
+    expect(flowNodeInstanceStore.state.status).toEqual('initial');
   });
 
   it('should handle request failure', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        res.once(ctx.json({}), ctx.status(500))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
     flowNodeInstanceStore.init();
 
     await waitFor(() =>
-      expect(flowNodeInstanceStore.state.isFailed).toBe(true)
+      expect(flowNodeInstanceStore.state.status).toBe('error')
     );
   });
 
   it('should change current selection', async () => {
     currentInstanceStore.setCurrentInstance({id: 111, state: 'CANCELED'});
     flowNodeInstanceStore.setCurrentSelection({
-      flowNodeId: 222,
-      treeRowIds: [222],
+      flowNodeId: '222',
+      treeRowIds: ['222'],
     });
 
     // select root node if we try to set current selection to a node that is already selected
     flowNodeInstanceStore.changeCurrentSelection({
-      id: 222,
+      id: '222',
       activityId: 'nodeActivityId2',
+      children: [],
+      endDate: null,
+      isLastChild: true,
+      name: 'Never fails',
+      parentId: '2251799813685376',
+      startDate: '2020-11-26T00:54:05.188+0000',
+      state: 'ACTIVE',
+      type: 'SERVICE_TASK',
     });
 
     expect(flowNodeInstanceStore.state.selection).toEqual({
@@ -211,29 +219,45 @@ describe('stores/flowNodeInstance', () => {
 
     // set current selection to something other than root node
     flowNodeInstanceStore.changeCurrentSelection({
-      id: 333,
+      id: '333',
       activityId: 'nodeActivityId3',
+      children: [],
+      endDate: null,
+      isLastChild: true,
+      name: 'Never fails',
+      parentId: '2251799813685376',
+      startDate: '2020-11-26T00:54:05.188+0000',
+      state: 'ACTIVE',
+      type: 'SERVICE_TASK',
     });
     expect(flowNodeInstanceStore.state.selection).toEqual({
       flowNodeId: 'nodeActivityId3',
-      treeRowIds: [333],
+      treeRowIds: ['333'],
     });
 
     // set current selection to root node again
     flowNodeInstanceStore.changeCurrentSelection({
-      id: 111,
+      id: '111',
       activityId: 'nodeActivityId1',
+      children: [],
+      endDate: null,
+      isLastChild: true,
+      name: 'Never fails',
+      parentId: '2251799813685376',
+      startDate: '2020-11-26T00:54:05.188+0000',
+      state: 'ACTIVE',
+      type: 'SERVICE_TASK',
     });
     expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: null,
-      treeRowIds: [111],
+      flowNodeId: 'nodeActivityId1',
+      treeRowIds: ['111'],
     });
   });
 
   it('should get instance execution history availability', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        res.once(ctx.json({}), ctx.status(500))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
@@ -244,7 +268,7 @@ describe('stores/flowNodeInstance', () => {
       false
     );
     await waitFor(() =>
-      expect(flowNodeInstanceStore.state.isFailed).toBe(true)
+      expect(flowNodeInstanceStore.state.status).toBe('error')
     );
     expect(flowNodeInstanceStore.isInstanceExecutionHistoryAvailable).toBe(
       false
@@ -297,7 +321,7 @@ describe('stores/flowNodeInstance', () => {
   it('should get mapped flow nodes', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        res.once(ctx.json({}), ctx.status(500))
       )
     );
     currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
@@ -309,7 +333,7 @@ describe('stores/flowNodeInstance', () => {
     );
 
     await waitFor(() =>
-      expect(flowNodeInstanceStore.state.isFailed).toBe(true)
+      expect(flowNodeInstanceStore.state.status).toBe('error')
     );
     expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).toEqual(
       new Map()
@@ -340,30 +364,40 @@ describe('stores/flowNodeInstance', () => {
     jest.useRealTimers();
   });
 
-  it('should start loading', async () => {
-    expect(flowNodeInstanceStore.state.isLoading).toBe(false);
-    flowNodeInstanceStore.startLoading();
-    expect(flowNodeInstanceStore.state.isLoading).toBe(true);
-  });
+  it('should handle fetching flow nodes', async () => {
+    expect(flowNodeInstanceStore.state.status).toBe('initial');
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    expect(flowNodeInstanceStore.state.status).toBe('first-fetch');
 
-  it('should complete initial load', async () => {
-    expect(flowNodeInstanceStore.state.isInitialLoadComplete).toBe(false);
-    flowNodeInstanceStore.completeInitialLoad();
-    expect(flowNodeInstanceStore.state.isInitialLoadComplete).toBe(true);
+    await waitFor(() =>
+      expect(flowNodeInstanceStore.state.status).toBe('fetched')
+    );
+
+    mockServer.use(
+      rest.post('/api/activity-instances', (_, res, ctx) =>
+        res.once(ctx.json(activityInstancesMock))
+      )
+    );
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    expect(flowNodeInstanceStore.state.status).toBe('fetching');
+
+    await waitFor(() =>
+      expect(flowNodeInstanceStore.state.status).toBe('fetched')
+    );
   });
 
   it('should get areMultipleNodesSelected', async () => {
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
 
     flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: [1],
-      flowNodeId: 1,
+      treeRowIds: ['1'],
+      flowNodeId: '1',
     });
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
 
     flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: [1, 2],
-      flowNodeId: 1,
+      treeRowIds: ['1', '2'],
+      flowNodeId: '1',
     });
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(true);
   });

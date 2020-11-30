@@ -40,8 +40,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     sortBy: 'errorType',
     sortOrder: SORT_ORDER.DESC,
   });
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
-  const {id: instanceId} = useParams();
+  const {id: instanceId} = useParams<{id: string}>();
   const {
     state: {selection},
   } = flowNodeInstanceStore;
@@ -73,6 +72,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
       newSelection = {id: flowNodeInstanceId, activityId: flowNodeId};
     }
 
+    // @ts-expect-error
     flowNodeInstanceStore.changeCurrentSelection(newSelection);
   };
 

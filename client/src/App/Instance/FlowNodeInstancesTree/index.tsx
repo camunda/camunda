@@ -100,8 +100,7 @@ const FlowNodeInstancesTree: React.FC<FlowNodeInstancesTreeProps> = observer(
     const {
       selection: {treeRowIds},
     } = flowNodeInstanceStore.state;
-
-    const isSelected = node !== null && treeRowIds.includes(node.id);
+    const isSelected = node !== null && treeRowIds.includes(node?.id);
     const metaData = singleInstanceDiagramStore.getMetaData(node?.activityId);
 
     return treeDepth === 1 ? (

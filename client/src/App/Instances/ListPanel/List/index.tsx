@@ -31,7 +31,7 @@ import usePrevious from 'modules/hooks/usePrevious';
 const {THead, TBody, TH, TR, TD} = Table;
 
 type ListProps = {
-  data: InstanceEntity[];
+  data: WorkflowInstanceEntity[];
   Overlay?: any;
   isDataLoaded: boolean;
   onSort?: () => void;

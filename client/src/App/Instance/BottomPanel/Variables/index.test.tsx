@@ -99,7 +99,7 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      const variableList = variablesStore.fetchVariables(1);
+      const variableList = variablesStore.fetchVariables('1');
 
       expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
       await variableList;

@@ -15,6 +15,7 @@ import {
 import {fetchEvents} from 'modules/api/events';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
+import {logger} from 'modules/logger';
 
 type Event = {
   id: string;
@@ -30,7 +31,7 @@ type Event = {
     jobType: string;
     jobRetries: number;
     jobWorker: string;
-    jobDeadline: string;
+    jobDeadline: string | null;
     jobCustomHeaders: unknown;
     incidentErrorType: null | string;
     incidentErrorMessage: null | string;
@@ -77,22 +78,39 @@ class Events {
     });
   }
 
-  fetchWorkflowEvents = async (instanceId: string) => {
-    const response = await fetchEvents(instanceId);
-    if (response.ok) {
-      this.setItems(await response.json());
+  fetchWorkflowEvents = async (instanceId: WorkflowInstanceEntity['id']) => {
+    try {
+      const response = await fetchEvents(instanceId);
+
+      if (response.ok) {
+        this.setItems(await response.json());
+      } else {
+        logger.error('Failed to fetch Diagram Events');
+      }
+    } catch (error) {
+      logger.error('Failed to fetch Diagram Events');
+      logger.error(error);
     }
   };
 
-  handlePolling = async (instanceId: string) => {
-    const response = await fetchEvents(instanceId);
+  handlePolling = async (instanceId: WorkflowInstanceEntity['id']) => {
+    try {
+      const response = await fetchEvents(instanceId);
 
-    if (this.intervalId !== null && response.ok) {
-      this.setItems(await response.json());
+      if (response.ok && this.intervalId !== null) {
+        this.setItems(await response.json());
+      }
+
+      if (!response.ok) {
+        logger.error('Failed to poll Diagram Events');
+      }
+    } catch (error) {
+      logger.error('Failed to poll Diagram Events');
+      logger.error(error);
     }
   };
 
-  startPolling = async (instanceId: string) => {
+  startPolling = async (instanceId: WorkflowInstanceEntity['id']) => {
     this.intervalId = setInterval(() => {
       this.handlePolling(instanceId);
     }, 5000);
@@ -106,7 +124,7 @@ class Events {
     }
   };
 
-  setItems(items: any) {
+  setItems(items: Event[]) {
     this.state.items = items;
   }
 

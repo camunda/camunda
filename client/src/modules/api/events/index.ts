@@ -8,6 +8,8 @@ import {post} from 'modules/request';
 
 const URL = `/api/events`;
 
-export async function fetchEvents(workflowInstanceId: any) {
+export async function fetchEvents(
+  workflowInstanceId: WorkflowInstanceEntity['id']
+) {
   return post(URL, {workflowInstanceId});
 }

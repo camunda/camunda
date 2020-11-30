@@ -19,7 +19,7 @@ import {isInstanceRunning} from './utils/isInstanceRunning';
 import {PAGE_TITLE} from 'modules/constants';
 
 type State = {
-  instance: null | InstanceEntity;
+  instance: null | WorkflowInstanceEntity;
 };
 
 const DEFAULT_STATE: State = {

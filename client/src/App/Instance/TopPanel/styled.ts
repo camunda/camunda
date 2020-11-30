@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import StateIconDefault from 'modules/components/StateIcon';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const pseudoBorder = ({theme}: any) => {
   const colors = theme.colors.topPanel.pseudoBorder;
@@ -75,6 +76,10 @@ const SplitPaneBody = styled(SplitPaneComponent.Pane.Body)`
   position: relative;
   border: none;
   ${pseudoBorder}
+
+  ${StatusMessage} {
+    height: 100%;
+  }
 `;
 
 const StateIcon = styled(StateIconDefault)`

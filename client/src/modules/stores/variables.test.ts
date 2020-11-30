@@ -71,9 +71,9 @@ describe('stores/variables', () => {
   });
 
   it('should remove variables with active operations if instance is canceled', async () => {
-    variablesStore.init(1);
+    variablesStore.init('1');
     await Promise.all([
-      variablesStore.fetchVariables(1),
+      variablesStore.fetchVariables('1'),
       variablesStore.addVariable({
         id: '1',
         name: 'test',
@@ -88,6 +88,7 @@ describe('stores/variables', () => {
         hasActiveOperation: true,
         name: 'test',
         value: '1',
+        workflowInstanceId: '1',
       },
     ]);
     currentInstanceStore.setCurrentInstance({id: '123', state: 'CANCELED'});
@@ -95,7 +96,7 @@ describe('stores/variables', () => {
   });
 
   it('should poll variables when instance is running', async () => {
-    variablesStore.init(1);
+    variablesStore.init('1');
 
     jest.useFakeTimers();
     currentInstanceStore.setCurrentInstance({id: '123', state: 'ACTIVE'});
@@ -218,19 +219,19 @@ describe('stores/variables', () => {
   });
 
   it('should clear items', async () => {
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
     expect(variablesStore.state.items).toEqual(mockVariables);
     variablesStore.clearItems();
     expect(variablesStore.state.items).toEqual([]);
   });
 
   it('should fetch variables', async () => {
-    variablesStore.fetchVariables(1);
-    expect(variablesStore.state.isLoading).toBe(true);
+    variablesStore.fetchVariables('1');
+    expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(mockVariables)
     );
-    expect(variablesStore.state.isLoading).toBe(false);
+    expect(variablesStore.state.status).toBe('fetched');
   });
 
   describe('Add Variable', () => {
@@ -243,7 +244,12 @@ describe('stores/variables', () => {
         onError: () => {},
       });
       expect(variablesStore.state.items).toEqual([
-        {name: 'test', value: '1', hasActiveOperation: true},
+        {
+          name: 'test',
+          value: '1',
+          hasActiveOperation: true,
+          workflowInstanceId: '1',
+        },
       ]);
 
       mockServer.use(
@@ -260,8 +266,18 @@ describe('stores/variables', () => {
         onError: () => {},
       });
       expect(variablesStore.state.items).toEqual([
-        {name: 'test', value: '1', hasActiveOperation: true},
-        {name: 'test2', value: '"value"', hasActiveOperation: true},
+        {
+          name: 'test',
+          value: '1',
+          hasActiveOperation: true,
+          workflowInstanceId: '1',
+        },
+        {
+          name: 'test2',
+          value: '"value"',
+          hasActiveOperation: true,
+          workflowInstanceId: '1',
+        },
       ]);
     });
 
@@ -310,7 +326,7 @@ describe('stores/variables', () => {
 
   describe('Update Variable', () => {
     it('should update variable', async () => {
-      await variablesStore.fetchVariables(1);
+      await variablesStore.fetchVariables('1');
       expect(variablesStore.state.items).toEqual(mockVariables);
       await variablesStore.updateVariable({
         id: '1',
@@ -387,7 +403,7 @@ describe('stores/variables', () => {
     });
 
     it('should not update variable on server error', async () => {
-      await variablesStore.fetchVariables(1);
+      await variablesStore.fetchVariables('1');
       expect(variablesStore.state.items).toEqual(mockVariables);
 
       mockServer.use(
@@ -410,7 +426,7 @@ describe('stores/variables', () => {
     });
 
     it('should not update variable on network error', async () => {
-      await variablesStore.fetchVariables(1);
+      await variablesStore.fetchVariables('1');
       expect(variablesStore.state.items).toEqual(mockVariables);
 
       mockServer.use(
@@ -434,14 +450,14 @@ describe('stores/variables', () => {
   it('should get scopeId', async () => {
     expect(variablesStore.scopeId).toBe(undefined);
     flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: [123, 456],
+      treeRowIds: ['123', '456'],
       flowNodeId: null,
     });
-    expect(variablesStore.scopeId).toBe(123);
+    expect(variablesStore.scopeId).toBe('123');
   });
 
   it('should get hasActiveOperation', async () => {
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
     expect(variablesStore.hasActiveOperation).toBe(false);
     await variablesStore.addVariable({
       id: '1',
@@ -462,10 +478,10 @@ describe('stores/variables', () => {
 
     // should be false when initial load is not complete
     expect(variablesStore.hasNoVariables).toBe(false);
-    variablesStore.fetchVariables(1);
+    variablesStore.fetchVariables('1');
 
-    expect(variablesStore.state.isLoading).toBe(true);
-    await waitFor(() => expect(variablesStore.state.isLoading).toBe(false));
+    expect(variablesStore.state.status).toBe('first-fetch');
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     expect(variablesStore.hasNoVariables).toBe(true);
 
@@ -476,14 +492,14 @@ describe('stores/variables', () => {
       )
     );
 
-    variablesStore.fetchVariables(1);
+    variablesStore.fetchVariables('1');
 
     // should be false when loading
     expect(variablesStore.hasNoVariables).toBe(false);
-    await waitFor(() => expect(variablesStore.state.isLoading).toBe(false));
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
     expect(variablesStore.hasNoVariables).toBe(true);
 
-    variablesStore.fetchVariables(1);
+    variablesStore.fetchVariables('1');
 
     mockServer.use(
       rest.get(
@@ -491,18 +507,18 @@ describe('stores/variables', () => {
         (_, res, ctx) => res.once(ctx.json(mockVariables))
       )
     );
-    await waitFor(() => expect(variablesStore.state.isLoading).toBe(false));
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     expect(variablesStore.hasNoVariables).toBe(false);
   });
 
   it('should reset store', async () => {
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
     expect(variablesStore.state.items).toEqual(mockVariables);
-    expect(variablesStore.state.isInitialLoadComplete).toBe(true);
+    expect(variablesStore.state.status).toBe('fetched');
     variablesStore.reset();
     expect(variablesStore.state.items).toEqual([]);
-    expect(variablesStore.state.isInitialLoadComplete).toBe(false);
+    expect(variablesStore.state.status).toBe('initial');
   });
 
   it('should not update state if store is reset when there are ongoing requests', async () => {
@@ -513,18 +529,18 @@ describe('stores/variables', () => {
       )
     );
 
-    const variablesRequest = variablesStore.fetchVariables(1);
+    const variablesRequest = variablesStore.fetchVariables('1');
     variablesStore.reset();
     expect(variablesStore.shouldCancelOngoingRequests).toBe(true);
     await variablesRequest;
     expect(variablesStore.shouldCancelOngoingRequests).toBe(false);
-    expect(variablesStore.state.isFailed).toBe(false);
+    expect(variablesStore.state.status).toBe('initial');
   });
 
   it('should manage local and server variables correctly', async () => {
     expect(variablesStore.state.items).toEqual([]);
 
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
     expect(variablesStore.state.items).toEqual(mockVariables);
     await variablesStore.addVariable({
       id: '1',
@@ -590,7 +606,7 @@ describe('stores/variables', () => {
       )
     );
 
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
 
     expect(variablesStore.state.items).toEqual([
       {
@@ -629,6 +645,7 @@ describe('stores/variables', () => {
         hasActiveOperation: true,
         name: 'test1',
         value: '123',
+        workflowInstanceId: '1',
       },
     ]);
   });

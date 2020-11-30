@@ -14,7 +14,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
 
-const instance: InstanceEntity = {
+const instance: WorkflowInstanceEntity = {
   id: '2251799813685625',
   workflowId: '2251799813685623',
   workflowName: 'Without Incidents Process',
@@ -27,7 +27,7 @@ const instance: InstanceEntity = {
   operations: [],
 };
 
-const instanceWithActiveOperation: InstanceEntity = {
+const instanceWithActiveOperation: WorkflowInstanceEntity = {
   id: '2251799813685627',
   workflowId: '2251799813685623',
   workflowName: 'Without Incidents Process',
@@ -257,6 +257,7 @@ describe('stores/instances', () => {
 
   it('should set instances with active operations', () => {
     expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+
     instancesStore.setInstancesWithActiveOperations(mockInstances);
     expect(instancesStore.state.instancesWithActiveOperations).toEqual([
       instanceWithActiveOperation.id,

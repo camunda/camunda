@@ -12,10 +12,7 @@ import {
 } from '@testing-library/react';
 
 import {FlowNodeInstanceLog} from './index';
-import {
-  mockSuccessResponseForActivityTree,
-  mockFailedResponseForActivityTree,
-} from './index.setup';
+import {mockSuccessResponseForActivityTree} from './index.setup';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -24,6 +21,12 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
+
+mockServer.use(
+  rest.get('/api/workflow-instances/:instanceId', (_, res, ctx) =>
+    res.once(ctx.json({id: '1', state: 'ACTIVE', workflowName: 'workflowName'}))
+  )
+);
 
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
@@ -59,8 +62,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
-    flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
@@ -81,10 +84,12 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
-    singleInstanceDiagramStore.fetchWorkflowXml(1);
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
 
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('flownodeInstance-skeleton')
+    ).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
       screen.getByTestId('flownodeInstance-skeleton')
@@ -94,7 +99,7 @@ describe('FlowNodeInstanceLog', () => {
   it('should display error when instance tree data could not be fetched', async () => {
     mockServer.use(
       rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json(mockFailedResponseForActivityTree))
+        res.once(ctx.json({}), ctx.status(500))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
@@ -103,10 +108,10 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
     expect(
-      screen.getByText('Activity Instances could not be fetched')
+      await screen.findByText('Instance History could not be fetched')
     ).toBeInTheDocument();
   });
 
@@ -122,10 +127,11 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+
     expect(
-      screen.getByText('Activity Instances could not be fetched')
+      await screen.findByText('Instance History could not be fetched')
     ).toBeInTheDocument();
   });
 
@@ -141,8 +147,11 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
-    expect(screen.getAllByText('workflowName').length).toBeGreaterThan(0);
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+
+    expect((await screen.findAllByText('workflowName')).length).toBeGreaterThan(
+      0
+    );
   });
 });

@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const VariablesPanel = styled(Panel)`
   ${({theme}) => {
@@ -17,6 +18,10 @@ const VariablesPanel = styled(Panel)`
       font-size: 14px;
       border-left: none;
       color: ${colors.color};
+
+      ${StatusMessage} {
+        height: 58%;
+      }
     `;
   }}
 `;

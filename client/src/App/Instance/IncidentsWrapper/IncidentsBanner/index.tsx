@@ -26,11 +26,11 @@ const IncidentsBanner: React.FC<Props> = observer(
 
     const errorMessage = `There ${
       incidentsCount === 1 ? 'is' : 'are'
-    } ${pluralSuffix(incidentsCount, 'Incident')} in Instance ${id}. `;
+    } ${pluralSuffix(incidentsCount, 'Incident')} in Instance ${id}`;
     const title = `View ${pluralSuffix(
       incidentsCount,
       'Incident'
-    )} in Instance ${id}. `;
+    )} in Instance ${id}`;
 
     if (expandState === EXPAND_STATE.COLLAPSED) {
       return null;

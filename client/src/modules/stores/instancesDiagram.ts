@@ -43,7 +43,9 @@ class InstancesDiagram {
     });
   };
 
-  fetchWorkflowXml = async (workflowId: InstanceEntity['workflowId']) => {
+  fetchWorkflowXml = async (
+    workflowId: WorkflowInstanceEntity['workflowId']
+  ) => {
     this.startFetching();
     try {
       const response = await fetchWorkflowXML(workflowId);

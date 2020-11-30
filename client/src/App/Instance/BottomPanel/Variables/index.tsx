@@ -32,11 +32,10 @@ type Props = {
 
 const Variables = observer(function Variables() {
   const {
-    state: {items, isLoading, isInitialLoadComplete},
+    state: {items, status},
     hasNoVariables,
   } = variablesStore;
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
-  const {id: workflowInstanceId} = useParams();
+  const {id: workflowInstanceId} = useParams<{id: string}>();
   const notifications = useNotifications();
 
   useEffect(() => {
@@ -318,7 +317,7 @@ const Variables = observer(function Variables() {
   return (
     <>
       <Styled.VariablesContent ref={variablesContentRef}>
-        {isLoading && isInitialLoadComplete && (
+        {status === 'fetching' && (
           <Styled.EmptyPanel
             data-testid="variables-spinner"
             type="skeleton"
@@ -326,7 +325,7 @@ const Variables = observer(function Variables() {
             Skeleton={SpinnerSkeleton}
           />
         )}
-        {!editMode && !isInitialLoadComplete && (
+        {!editMode && ['initial', 'first-fetch'].includes(status) && (
           <Skeleton type="skeleton" rowHeight={32} />
         )}
         {!editMode && hasNoVariables && (
@@ -340,10 +339,7 @@ const Variables = observer(function Variables() {
           size="small"
           onClick={() => handleOpenAddVariable()}
           disabled={
-            isLoading ||
-            !isInitialLoadComplete ||
-            !!editMode ||
-            !isInstanceRunning()
+            status === 'first-fetch' || !!editMode || !isInstanceRunning()
           }
         >
           <Styled.Plus /> Add Variable

@@ -4,6 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+interface VariableEntity {
+  hasActiveOperation: boolean;
+  id?: string;
+  name: string;
+  scopeId?: string;
+  value: string;
+  workflowInstanceId: WorkflowInstanceEntity['id'];
+}
+
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_WORKFLOW_INSTANCE'
@@ -35,7 +44,7 @@ interface InstanceOperationEntity {
   errorMessage: null | string;
 }
 
-interface InstanceEntity {
+interface WorkflowInstanceEntity {
   id: string;
   workflowId: string;
   workflowName: string;

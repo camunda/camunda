@@ -17,28 +17,33 @@ import {constructFlowNodeIdToFlowNodeInstanceMap} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
+import {logger} from 'modules/logger';
 
-type Child = {
+type Node = {
   id: string;
   type: string;
-  state: string;
+  name?: string;
+  state?: InstanceEntityState;
   activityId: string;
   startDate: string;
   endDate: null | string;
   parentId: string;
-  children: Child[];
+  children: Node[];
+  isLastChild: boolean;
 };
+
 type Response = {
-  children: Child[];
+  children: Node[];
 };
+
+type Selection = {
+  treeRowIds: string[];
+  flowNodeId: null | string;
+};
+
 type State = {
-  selection: {
-    treeRowIds: string[];
-    flowNodeId: null | string;
-  };
-  isInitialLoadComplete: boolean;
-  isFailed: boolean;
-  isLoading: boolean;
+  selection: Selection;
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
   response: null | Response[];
 };
 
@@ -47,9 +52,7 @@ const DEFAULT_STATE: State = {
     treeRowIds: [],
     flowNodeId: null,
   },
-  isInitialLoadComplete: false,
-  isFailed: false,
-  isLoading: false,
+  status: 'initial',
   response: null,
 };
 
@@ -66,9 +69,12 @@ class FlowNodeInstance {
 
         this.setCurrentSelection({
           flowNodeId: null,
-          treeRowIds: [instanceId],
+          treeRowIds: instanceId === undefined ? [] : [instanceId],
         });
-        this.fetchInstanceExecutionHistory(instanceId);
+
+        if (instanceId !== undefined) {
+          this.fetchInstanceExecutionHistory(instanceId);
+        }
       }
     );
 
@@ -76,8 +82,8 @@ class FlowNodeInstance {
       const {instance} = currentInstanceStore.state;
 
       if (isInstanceRunning(instance)) {
-        if (this.intervalId === null) {
-          this.startPolling(instance?.id);
+        if (this.intervalId === null && instance?.id !== undefined) {
+          this.startPolling(instance.id);
         }
       } else {
         this.stopPolling();
@@ -85,11 +91,11 @@ class FlowNodeInstance {
     });
   }
 
-  setCurrentSelection = (selection: any) => {
+  setCurrentSelection = (selection: Selection) => {
     this.state.selection = selection;
   };
 
-  changeCurrentSelection = (node: any) => {
+  changeCurrentSelection = (node: Node) => {
     const {instance} = currentInstanceStore.state;
 
     const isRootNode = node.id === instance?.id;
@@ -101,46 +107,46 @@ class FlowNodeInstance {
 
     const newSelection =
       isRowAlreadySelected && !this.areMultipleNodesSelected
-        ? {flowNodeId: null, treeRowIds: [instance?.id]}
+        ? {
+            flowNodeId: null,
+            treeRowIds: instance?.id === undefined ? [] : [instance.id],
+          }
         : {flowNodeId, treeRowIds: [node.id]};
 
     this.setCurrentSelection(newSelection);
   };
 
-  fetchInstanceExecutionHistory = async (id: any) => {
-    this.startLoading();
+  fetchInstanceExecutionHistory = async (id: WorkflowInstanceEntity['id']) => {
+    this.startFetch();
 
-    const response = await fetchActivityInstancesTree(id);
-    await this.handleResponse(response);
-  };
+    try {
+      const response = await fetchActivityInstancesTree(id);
 
-  handleResponse = async (response: any) => {
-    if (response.ok) {
-      this.handleSuccess(await response.json());
-    } else {
-      this.handleFailure();
-    }
-
-    if (!this.state.isInitialLoadComplete) {
-      this.completeInitialLoad();
+      if (response.ok) {
+        this.setResponse(await response.json());
+        this.handleFetchSuccess();
+      } else {
+        this.handleFetchFailure();
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
     }
   };
 
   get isInstanceExecutionHistoryAvailable() {
-    const {isInitialLoadComplete, isFailed} = this.state;
+    const {status} = this.state;
 
     return (
-      isInitialLoadComplete &&
-      !isFailed &&
+      status === 'fetched' &&
       this.instanceExecutionHistory !== null &&
       Object.keys(this.instanceExecutionHistory).length > 0
     );
   }
   get instanceExecutionHistory() {
     const {instance} = currentInstanceStore.state;
-    const {response, isInitialLoadComplete} = this.state;
+    const {response, status} = this.state;
 
-    if (instance === null || !isInitialLoadComplete) {
+    if (instance === null || ['initial', 'first-fetch'].includes(status)) {
       return null;
     }
     return {
@@ -152,41 +158,58 @@ class FlowNodeInstance {
   }
 
   get flowNodeIdToFlowNodeInstanceMap() {
-    const {response, isFailed, isInitialLoadComplete} = this.state;
+    const {response, status} = this.state;
 
-    if (isFailed || !isInitialLoadComplete) {
+    if (['initial', 'first-fetch', 'error'].includes(status)) {
       return new Map();
     }
+
     return constructFlowNodeIdToFlowNodeInstanceMap(response);
   }
 
-  startLoading = () => {
-    this.state.isLoading = true;
+  startFetch = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
 
-  handleFailure = () => {
-    this.state.isLoading = false;
-    this.state.isFailed = true;
+  handleFetchFailure = (error?: Error) => {
+    this.state.status = 'error';
+
+    logger.error('Failed to fetch Instances activity');
+    if (error !== undefined) {
+      logger.error(error);
+    }
   };
 
-  handleSuccess = (response: any) => {
-    this.state.isLoading = false;
-    this.state.isFailed = false;
+  handleFetchSuccess = () => {
+    this.state.status = 'fetched';
+  };
+
+  setResponse = (response: Response[]) => {
     this.state.response = response;
   };
 
-  startPolling = async (workflowInstanceId: any) => {
-    this.intervalId = setInterval(() => {
-      this.handlePolling(workflowInstanceId);
+  startPolling = async (workflowInstanceId: WorkflowInstanceEntity['id']) => {
+    this.intervalId = setInterval(async () => {
+      try {
+        const response = await fetchActivityInstancesTree(workflowInstanceId);
+
+        if (response.ok && this.intervalId !== null) {
+          this.setResponse(await response.json());
+          this.handleFetchSuccess();
+        }
+
+        if (!response.ok) {
+          logger.error('Failed to poll Instances activity');
+        }
+      } catch (error) {
+        logger.error('Failed to poll Instances activity');
+        logger.error(error);
+      }
     }, 5000);
-  };
-
-  handlePolling = async (workflowInstanceId: string) => {
-    const response = await fetchActivityInstancesTree(workflowInstanceId);
-
-    if (this.intervalId !== null) {
-      await this.handleResponse(response);
-    }
   };
 
   stopPolling = () => {
@@ -196,10 +219,6 @@ class FlowNodeInstance {
       clearInterval(intervalId);
       this.intervalId = null;
     }
-  };
-
-  completeInitialLoad = () => {
-    this.state.isInitialLoadComplete = true;
   };
 
   reset = () => {
@@ -215,16 +234,16 @@ class FlowNodeInstance {
 
 decorate(FlowNodeInstance, {
   state: observable,
-  handleSuccess: action,
-  handleFailure: action,
-  startLoading: action,
-  completeInitialLoad: action,
+  handleFetchSuccess: action,
+  handleFetchFailure: action,
+  startFetch: action,
   reset: action,
   setCurrentSelection: action,
   areMultipleNodesSelected: computed,
   instanceExecutionHistory: computed,
   flowNodeIdToFlowNodeInstanceMap: computed,
   isInstanceExecutionHistoryAvailable: computed,
+  setResponse: action,
 });
 
 export const flowNodeInstanceStore = new FlowNodeInstance();

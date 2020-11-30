@@ -129,7 +129,7 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should reset store', async () => {
-    await sequenceFlowsStore.fetchWorkflowSequenceFlows(1);
+    await sequenceFlowsStore.fetchWorkflowSequenceFlows('1');
 
     await waitFor(() =>
       expect(sequenceFlowsStore.state.items).toEqual([

@@ -76,7 +76,7 @@ describe('IncidentsWrapper', () => {
     });
 
     expect(
-      screen.getByText('There are 2 Incidents in Instance 1.')
+      screen.getByText('There are 2 Incidents in Instance 1')
     ).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe('IncidentsWrapper', () => {
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1.',
+        name: 'View 2 Incidents in Instance 1',
       })
     );
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe('IncidentsWrapper', () => {
     });
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1.',
+        name: 'View 2 Incidents in Instance 1',
       })
     );
 
@@ -131,7 +131,7 @@ describe('IncidentsWrapper', () => {
     });
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1.',
+        name: 'View 2 Incidents in Instance 1',
       })
     );
 
@@ -161,7 +161,7 @@ describe('IncidentsWrapper', () => {
       rerender = wrapper.rerender;
       fireEvent.click(
         screen.getByRole('button', {
-          name: 'View 2 Incidents in Instance 1.',
+          name: 'View 2 Incidents in Instance 1',
         })
       );
     });

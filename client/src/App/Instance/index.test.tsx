@@ -17,7 +17,6 @@ import {testData} from './index.setup';
 import {mockSequenceFlows, mockEvents} from './TopPanel/index.setup';
 import {mockSuccessResponseForActivityTree} from './FlowNodeInstanceLog/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
-
 import {getWorkflowName} from 'modules/utils/instance';
 import {Instance} from './index';
 import {rest} from 'msw';
@@ -29,7 +28,7 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/4294980768']}>
@@ -56,11 +55,9 @@ describe('Instance', () => {
       rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
         res(
           ctx.json({
-            coreStatistics: {
-              running: 821,
-              active: 90,
-              withIncidents: 731,
-            },
+            running: 821,
+            active: 90,
+            withIncidents: 731,
           })
         )
       ),

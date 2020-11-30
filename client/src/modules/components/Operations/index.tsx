@@ -23,7 +23,7 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import * as Styled from './styled';
 
 type Props = {
-  instance: InstanceEntity;
+  instance: WorkflowInstanceEntity;
   selected?: boolean;
   onOperation?: () => void;
   onFailure?: () => void;

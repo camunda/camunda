@@ -8,7 +8,9 @@ import {post} from 'modules/request';
 
 const URL = '/api/activity-instances';
 
-export async function fetchActivityInstancesTree(workflowInstanceId: any) {
+export async function fetchActivityInstancesTree(
+  workflowInstanceId: WorkflowInstanceEntity['id']
+) {
   return post(URL, {
     workflowInstanceId,
   });

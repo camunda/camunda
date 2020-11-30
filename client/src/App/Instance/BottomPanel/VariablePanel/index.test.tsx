@@ -29,7 +29,7 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
@@ -44,8 +44,7 @@ describe('VariablePanel', () => {
     mockServer.use(
       rest.get(
         '/api/workflow-instances/invalid_instance/variables?scopeId=:scopeId',
-        (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+        (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
       ),
       rest.get(
         '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
@@ -66,8 +65,8 @@ describe('VariablePanel', () => {
 
   it('should show multiple scope placeholder when multiple nodes are selected', () => {
     flowNodeInstanceStore.setCurrentSelection({
-      flowNodeId: 1,
-      treeRowIds: [1, 2],
+      flowNodeId: '1',
+      treeRowIds: ['1', '2'],
     });
     render(<VariablePanel />, {wrapper: Wrapper});
 
@@ -75,19 +74,37 @@ describe('VariablePanel', () => {
   });
 
   it('should show failed placeholder when variables could not be fetched', async () => {
+    mockServer.use(
+      rest.get(
+        '/api/workflow-instances/invalid_instance/variables?scopeId=:scopeId',
+        (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
+      ),
+      rest.get(
+        '/api/workflow-instances/invalid_instance/variables?scopeId=:scopeId',
+        (_, res) => res.networkError('A network error')
+      )
+    );
+
     flowNodeInstanceStore.setCurrentSelection({
       flowNodeId: null,
       treeRowIds: [],
     });
-    render(<VariablePanel />, {wrapper: Wrapper});
-    await variablesStore.fetchVariables('invalid_instance');
+    const {unmount} = render(<VariablePanel />, {wrapper: Wrapper});
+    variablesStore.fetchVariables('invalid_instance');
 
-    expect(screen.getByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+
+    unmount();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    variablesStore.fetchVariables('invalid_instance');
+
+    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
   });
 
   it('should render variables', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
-    await variablesStore.fetchVariables(1);
+    await variablesStore.fetchVariables('1');
 
     expect(screen.getByText('Variables')).toBeInTheDocument();
   });

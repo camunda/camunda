@@ -6,4 +6,4 @@
 
 export const FAILED_PLACEHOLDER = 'Variables could not be fetched';
 export const MULTI_SCOPE_PLACEHOLDER =
-  'To view the variables, select a single Flow Node Instance in the Instance History.';
+  'To view the Variables, select a single Flow Node Instance in the Instance History.';

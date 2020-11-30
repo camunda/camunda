@@ -46,8 +46,8 @@ describe('TimeStampPill', () => {
     render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByRole('button')).toBeDisabled();
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory(1);
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
     expect(screen.getByRole('button')).toBeEnabled();
   });
 });

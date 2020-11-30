@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 
 import {default as PanelComponent} from 'modules/components/Panel';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 const Panel = styled(PanelComponent)`
   border-right: none;
@@ -48,6 +49,10 @@ const FlowNodeInstanceLog = styled.div`
 
 const FlowNodeInstanceSkeleton = styled(FlowNodeInstanceLog)`
   overflow: hidden;
+
+  ${StatusMessage} {
+    height: 58%;
+  }
 `;
 
 export {Panel, NodeContainer, FlowNodeInstanceLog, FlowNodeInstanceSkeleton};

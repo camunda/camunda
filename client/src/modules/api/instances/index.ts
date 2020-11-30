@@ -10,7 +10,18 @@ import {FILTER_SELECTION} from 'modules/constants';
 
 const URL = '/api/workflow-instances';
 
-type Payload = {
+type BatchOperationQuery = {
+  active?: boolean;
+  canceled?: boolean;
+  completed?: boolean;
+  excludeIds: string[];
+  finished?: boolean;
+  ids: string[];
+  incidents?: boolean;
+  running?: boolean;
+};
+
+type WorkflowInstancesQuery = {
   firstResult: number;
   maxResults: number;
   active?: boolean;
@@ -46,11 +57,13 @@ type OperationPayload = {
   incidentId?: string;
 };
 
-async function fetchWorkflowInstance(id: InstanceEntity['id']) {
+async function fetchWorkflowInstance(id: WorkflowInstanceEntity['id']) {
   return get(`${URL}/${id}`);
 }
 
-async function fetchWorkflowInstanceIncidents(id: InstanceEntity['id']) {
+async function fetchWorkflowInstanceIncidents(
+  id: WorkflowInstanceEntity['id']
+) {
   return get(`${URL}/${id}/incidents`);
 }
 
@@ -58,14 +71,16 @@ async function fetchWorkflowInstances({
   firstResult,
   maxResults,
   ...payload
-}: Payload) {
+}: WorkflowInstancesQuery) {
   return await post(
     `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`,
     payload
   );
 }
 
-async function fetchSequenceFlows(workflowInstanceId: InstanceEntity['id']) {
+async function fetchSequenceFlows(
+  workflowInstanceId: WorkflowInstanceEntity['id']
+) {
   return get(`${URL}/${workflowInstanceId}/sequence-flows`);
 }
 
@@ -77,7 +92,9 @@ async function fetchWorkflowCoreStatistics() {
   return get(`${URL}/core-statistics`);
 }
 
-async function fetchWorkflowInstancesByIds(ids: InstanceEntity['id'][]) {
+async function fetchWorkflowInstancesByIds(
+  ids: WorkflowInstanceEntity['id'][]
+) {
   const payload = parseFilterForRequest({
     ...FILTER_SELECTION.running,
     ...FILTER_SELECTION.finished,
@@ -103,7 +120,7 @@ async function fetchWorkflowInstancesStatistics(payload: any) {
  */
 async function applyBatchOperation(
   operationType: OperationEntityType,
-  query: Omit<Payload, 'firstResult' | 'maxResults'>
+  query: BatchOperationQuery
 ) {
   return post(`${URL}/batch-operation`, {operationType, query});
 }
@@ -113,7 +130,7 @@ async function applyBatchOperation(
  * @param {*} queries object with query params.
  */
 async function applyOperation(
-  instanceId: InstanceEntity['id'],
+  instanceId: WorkflowInstanceEntity['id'],
   payload: OperationPayload
 ) {
   return post(`${URL}/${instanceId}/operation`, payload);
@@ -123,8 +140,8 @@ async function fetchVariables({
   instanceId,
   scopeId,
 }: {
-  instanceId: InstanceEntity['id'];
-  scopeId: string;
+  instanceId: WorkflowInstanceEntity['id'];
+  scopeId: Required<VariableEntity>['scopeId'];
 }) {
   return get(`${URL}/${instanceId}/variables?scopeId=${scopeId}`);
 }

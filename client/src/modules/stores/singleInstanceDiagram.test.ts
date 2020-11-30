@@ -26,34 +26,47 @@ describe('stores/singleInstanceDiagram', () => {
   });
 
   it('should fetch workflow xml when current instance is available', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
+    currentInstanceStore.setCurrentInstance({
+      id: 123,
+      state: 'ACTIVE',
+      workflowId: '10',
+    });
 
     singleInstanceDiagramStore.init();
 
-    expect(singleInstanceDiagramStore.state.isLoading).toBe(true);
-    expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(false);
+    expect(singleInstanceDiagramStore.state.status).toBe('first-fetch');
 
     await waitFor(() => {
-      expect(singleInstanceDiagramStore.state.isLoading).toBe(false);
-      expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(true);
+      expect(singleInstanceDiagramStore.state.status).toBe('fetched');
       expect(singleInstanceDiagramStore.state.diagramModel).not.toBeNull();
     });
   });
 
-  it('should start loading', async () => {
-    expect(singleInstanceDiagramStore.state.isLoading).toBe(false);
-    singleInstanceDiagramStore.startLoading();
-    expect(singleInstanceDiagramStore.state.isLoading).toBe(true);
-  });
+  it('should handle diagram fetch', async () => {
+    expect(singleInstanceDiagramStore.state.status).toBe('initial');
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    expect(singleInstanceDiagramStore.state.status).toBe('first-fetch');
 
-  it('should complete initial load', async () => {
-    expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(false);
-    singleInstanceDiagramStore.completeInitialLoad();
-    expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(true);
+    await waitFor(() =>
+      expect(singleInstanceDiagramStore.state.status).toBe('fetched')
+    );
+
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockWorkflowXML))
+      )
+    );
+
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    expect(singleInstanceDiagramStore.state.status).toBe('fetching');
+
+    await waitFor(() =>
+      expect(singleInstanceDiagramStore.state.status).toBe('fetched')
+    );
   });
 
   it('should get metaData', async () => {
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
 
     expect(
       singleInstanceDiagramStore.getMetaData('invalid_activity_id')
@@ -94,7 +107,7 @@ describe('stores/singleInstanceDiagram', () => {
       false
     );
 
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
 
     expect(singleInstanceDiagramStore.areDiagramDefinitionsAvailable).toBe(
       true
@@ -102,14 +115,14 @@ describe('stores/singleInstanceDiagram', () => {
   });
 
   it('should reset store', async () => {
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
 
-    expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(true);
+    expect(singleInstanceDiagramStore.state.status).toBe('fetched');
     expect(singleInstanceDiagramStore.state.diagramModel).not.toEqual(null);
 
     singleInstanceDiagramStore.reset();
 
-    expect(singleInstanceDiagramStore.state.isInitialLoadComplete).toBe(false);
+    expect(singleInstanceDiagramStore.state.status).toBe('initial');
     expect(singleInstanceDiagramStore.state.diagramModel).toEqual(null);
   });
 });

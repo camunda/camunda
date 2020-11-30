@@ -25,6 +25,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {eventsStore} from 'modules/stores/events';
+import {StatusMessage} from 'modules/components/StatusMessage';
 
 type Props = {
   incidents?: unknown;
@@ -84,7 +85,7 @@ const TopPanel: React.FC<Props> = observer((props) => {
 
   const {
     nodeMetaDataMap,
-    state: {isLoading, isInitialLoadComplete, diagramModel},
+    state: {status, diagramModel},
   } = singleInstanceDiagramStore;
 
   const selectedFlowNodeId = selection?.flowNodeId;
@@ -95,8 +96,15 @@ const TopPanel: React.FC<Props> = observer((props) => {
     <Styled.Pane expandState={expandState}>
       <InstanceHeader />
       <Styled.SplitPaneBody data-testid="diagram-panel-body">
-        {isLoading && <SpinnerSkeleton data-testid="spinner" />}
-        {isInitialLoadComplete && (
+        {['first-fetch', 'fetching'].includes(status) && (
+          <SpinnerSkeleton data-testid="spinner" />
+        )}
+        {status === 'error' && (
+          <StatusMessage variant="error">
+            Diagram could not be fetched
+          </StatusMessage>
+        )}
+        {status === 'fetched' && (
           <>
             {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
               <IncidentsWrapper expandState={expandState} />

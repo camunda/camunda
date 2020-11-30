@@ -92,7 +92,7 @@ describe('TopPanel', () => {
     render(<TopPanel />, {wrapper: Wrapper});
 
     currentInstanceStore.init('active_instance');
-    singleInstanceDiagramStore.fetchWorkflowXml(1);
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
   });
@@ -101,9 +101,38 @@ describe('TopPanel', () => {
     render(<TopPanel />, {wrapper: Wrapper});
 
     currentInstanceStore.init('instance_with_incident');
-    await singleInstanceDiagramStore.fetchWorkflowXml(1);
+    await singleInstanceDiagramStore.fetchWorkflowXml('1');
     expect(
-      await screen.findByText('There is 1 Incident in Instance 1.')
+      await screen.findByText('There is 1 Incident in Instance 1')
+    ).toBeInTheDocument();
+  });
+
+  it('should show an error', async () => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''), ctx.status(500))
+      )
+    );
+    const {unmount} = render(<TopPanel />, {wrapper: Wrapper});
+
+    currentInstanceStore.init('instance_with_incident');
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
+
+    expect(
+      await screen.findByText('Diagram could not be fetched')
+    ).toBeInTheDocument();
+
+    unmount();
+
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.networkError('A network error')
+      )
+    );
+    render(<TopPanel />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
   });
 });

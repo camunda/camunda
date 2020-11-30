@@ -13,16 +13,15 @@ import {observer} from 'mobx-react';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
 const TimeStampPill = observer(function TimeStampPill() {
-  const {isInitialLoadComplete: isTreeLoaded} = flowNodeInstanceStore.state;
-  const {
-    isInitialLoadComplete: areDefinitionsLoaded,
-  } = singleInstanceDiagramStore.state;
+  const {status: flowNodeInstanceStatus} = flowNodeInstanceStore.state;
+  const {status: diagramStatus} = singleInstanceDiagramStore.state;
   const {
     state: {isTimeStampVisible},
     toggleTimeStampVisibility,
   } = flowNodeTimeStampStore;
 
-  const isDisabled = !isTreeLoaded && !areDefinitionsLoaded;
+  const isDisabled =
+    flowNodeInstanceStatus !== 'fetched' && diagramStatus !== 'fetched';
   return (
     <Styled.Pill
       isActive={isTimeStampVisible}

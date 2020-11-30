@@ -51,7 +51,7 @@ describe('IncidentsBanner', () => {
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
     expect(
-      screen.getByText('There is 1 Incident in Instance 1.')
+      screen.getByText('There is 1 Incident in Instance 1')
     ).toBeInTheDocument();
   });
 
@@ -74,7 +74,7 @@ describe('IncidentsBanner', () => {
     );
 
     expect(
-      screen.queryByText('There is 1 Incident in Instance 1.')
+      screen.queryByText('There is 1 Incident in Instance 1')
     ).not.toBeInTheDocument();
   });
 
@@ -94,7 +94,7 @@ describe('IncidentsBanner', () => {
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
     expect(
-      screen.getByText('There are 2 Incidents in Instance 1.')
+      screen.getByText('There are 2 Incidents in Instance 1')
     ).toBeInTheDocument();
   });
 });
