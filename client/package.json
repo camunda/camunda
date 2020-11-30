@@ -80,7 +80,7 @@
     "lint-staged": "^10.5.1",
     "msw": "^0.21.3",
     "node-fetch": "^2.6.1",
-    "prettier": "^2.1.2",
+    "prettier": "^2.2.1",
     "react-scripts": "3.4.4",
     "react-test-renderer": "^17.0.1",
     "testcafe": "^1.9.4",
