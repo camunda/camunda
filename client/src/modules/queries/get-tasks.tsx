@@ -23,6 +23,7 @@ interface GetTasks {
     assignee: Task['assignee'];
     workflowName: Task['workflowName'];
     creationTime: Task['creationTime'];
+    taskState: Task['taskState'];
   }>;
 }
 
@@ -59,6 +60,7 @@ const GET_TASKS = gql`
         lastname
       }
       creationTime
+      taskState
     }
   }
 `;

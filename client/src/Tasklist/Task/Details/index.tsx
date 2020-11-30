@@ -27,6 +27,11 @@ import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {useLocation} from 'react-router-dom';
+import {useNotifications} from 'modules/notifications';
+import {shouldFetchMore} from './shouldFetchMore';
+import {shouldDisplayNotification} from './shouldDisplayNotification';
+import {getTaskAssigmentChangeErrorMessage} from './getTaskAssigmentChangeErrorMessage';
+
 import {
   GET_CURRENT_USER,
   GetCurrentUser,
@@ -70,12 +75,14 @@ const Details: React.FC = () => {
     },
   );
 
-  const {data, loading} = useQuery<GetTaskDetails, TaskDetailsQueryVariables>(
-    GET_TASK_DETAILS,
-    {
-      variables: {id},
-    },
-  );
+  const {data, loading, fetchMore} = useQuery<
+    GetTaskDetails,
+    TaskDetailsQueryVariables
+  >(GET_TASK_DETAILS, {
+    variables: {id},
+  });
+
+  const notifications = useNotifications();
 
   if (loading || data === undefined) {
     return null;
@@ -124,10 +131,25 @@ const Details: React.FC = () => {
                   {taskState === TaskStates.Created && (
                     <ClaimButton
                       variant="small"
-                      onClick={() => {
-                        unclaimTask().catch(() => {
-                          // TODO: handle 'Task could not be unclaimed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/507
-                        });
+                      onClick={async () => {
+                        try {
+                          await unclaimTask();
+                        } catch (error) {
+                          if (shouldDisplayNotification(error.message)) {
+                            notifications.displayNotification('error', {
+                              headline: 'Task could not be unclaimed',
+                              description: getTaskAssigmentChangeErrorMessage(
+                                error.message,
+                              ),
+                            });
+                          }
+
+                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+                          if (shouldFetchMore(error.message)) {
+                            fetchMore({variables: {id}});
+                          }
+                          // Service is not reachable
+                        }
                       }}
                     >
                       Unclaim
@@ -140,10 +162,25 @@ const Details: React.FC = () => {
                   {taskState === TaskStates.Created && (
                     <ClaimButton
                       variant="small"
-                      onClick={() => {
-                        claimTask().catch(() => {
-                          // TODO: handle 'Task could not be claimed' errors https://github.com/zeebe-io/zeebe-tasklist/issues/507
-                        });
+                      onClick={async () => {
+                        try {
+                          await claimTask();
+                        } catch (error) {
+                          if (shouldDisplayNotification(error.message)) {
+                            notifications.displayNotification('error', {
+                              headline: 'Task could not be claimed',
+                              description: getTaskAssigmentChangeErrorMessage(
+                                error.message,
+                              ),
+                            });
+                          }
+
+                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+                          if (shouldFetchMore(error.message)) {
+                            fetchMore({variables: {id}});
+                          }
+                          // Service is not reachable
+                        }
                       }}
                     >
                       Claim

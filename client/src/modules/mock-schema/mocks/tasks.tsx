@@ -18,7 +18,7 @@ const tasks: ReadonlyArray<Task> = [
     completionTime: new Date().toISOString(),
     assignee: currentUser,
     variables: [],
-    taskState: TaskStates.Completed,
+    taskState: TaskStates.Created,
   },
   {
     __typename: 'Task',
