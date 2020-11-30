@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {decorate, observable, action} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {resetApolloStore} from 'modules/apollo-client';
@@ -21,6 +21,10 @@ class Login {
     | 'logged-out'
     | 'session-expired'
     | 'session-invalid' = 'initial';
+
+  constructor() {
+    makeAutoObservable(this);
+  }
 
   handleLogin = async (username: string, password: string) => {
     const response = await request(Endpoints.Login, {
@@ -97,14 +101,6 @@ function request(input: string, init?: RequestInit) {
           },
   });
 }
-
-decorate(Login, {
-  status: observable,
-  disableSession: action,
-  activateSession: action,
-  logout: action,
-  reset: action,
-});
 
 const login = new Login();
 
