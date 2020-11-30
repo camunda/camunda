@@ -38,7 +38,7 @@ export function CreateNewButton({
         </Dropdown.Option>
       </Dropdown.Submenu>
       {user?.authorizations.includes('import_export') && (
-        <Dropdown.Option onClick={importEntity}>{t('common.import')}</Dropdown.Option>
+        <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>
       )}
     </Dropdown>
   );

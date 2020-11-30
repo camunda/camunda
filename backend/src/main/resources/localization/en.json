@@ -697,7 +697,7 @@
     "add": "Add",
     "copy": "Copy",
     "export": "Export",
-    "import": "Import",
+    "importJSON": "Import JSON",
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",

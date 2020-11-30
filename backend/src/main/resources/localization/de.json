@@ -698,7 +698,7 @@
     "copy": "Kopieren",
     "change": "Ändern",
     "export": "Exportieren",
-    "import": "Importieren",
+    "importJSON": "JSON Importieren",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
     "condition": "Bedingung",
