@@ -8,6 +8,7 @@ package io.zeebe.tasklist.webapp.security;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.ERROR_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.RESPONSE_CHARACTER_ENCODING;
@@ -77,7 +78,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http.authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers(ERROR_URL)
+        .antMatchers(GRAPHQL_URL, ERROR_URL)
         .authenticated()
         .and()
         .formLogin()
