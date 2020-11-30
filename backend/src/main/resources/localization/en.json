@@ -925,7 +925,10 @@
           "empty": "No values found"
         },
         "includeUndefined": "Include instances where the selected variable is <b>null</b> or <b>undefined</b>",
-        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>"
+        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>",
+        "customValue": "Add custom variable value",
+        "addToList": "Add to list",
+        "addedToList": "Value added to list"
       },
       "durationModal": {
         "includeInstance": "Only include process instances that ran for...",

@@ -10,7 +10,7 @@
     }
 
     .Checklist {
-      margin-bottom: 10px;
+      border-bottom: 1px solid var(--silver-darken-87);
 
       .header .selectAll {
         display: none;
@@ -18,7 +18,32 @@
     }
   }
 
-  &.hasMore .Checklist {
-    border-bottom: 1px solid var(--silver-darken-87);
+  .loadMore {
+    display: block;
+    margin: 10px 0 15px 0;
+    font-size: 14px;
+  }
+
+  .customValueInput {
+    margin-top: 15px;
+    display: flex;
+
+    .Input {
+      flex: 1;
+      margin-right: 11px;
+    }
+  }
+
+  .customValueButtonRow {
+    display: flex;
+    margin-top: 15px;
+
+    .notification {
+      flex: 1;
+      text-align: center;
+      align-self: center;
+      font-size: 12px;
+      color: var(--grey-lighten-50);
+    }
   }
 }

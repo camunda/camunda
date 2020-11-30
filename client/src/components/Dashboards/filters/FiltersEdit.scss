@@ -48,7 +48,8 @@
   }
 
   .customValueCheckbox {
-    margin-top: 20px;
+    transform: translate(100px, -25px);
+    display: inline-block;
     font-size: 14px;
 
     .label {
@@ -56,14 +57,7 @@
     }
   }
 
-  .NumberInput,
-  .StringInput:not(.hasMore) {
-    & + .customValueCheckbox::before {
-      content: '';
-      width: 100%;
-      transform: translateY(-10px);
-      display: block;
-      border-top: 1px solid var(--silver-darken-87);
-    }
+  .StringInput .customValueButtonRow .notification {
+    display: none;
   }
 }
