@@ -25,7 +25,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": "src",
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "useDefineForClassFields": true
   },
   "include": ["src"]
 }
