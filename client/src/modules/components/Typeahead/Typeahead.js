@@ -36,14 +36,10 @@ export default class Typeahead extends React.Component {
   };
 
   componentDidMount() {
-    const {initialValue, value, autofocus} = this.props;
+    const {initialValue, value} = this.props;
 
     this.findAndSelect(initialValue);
     this.findAndSelect(value);
-
-    if (autofocus) {
-      this.input.current.focus();
-    }
   }
 
   componentDidUpdate(prevProps) {
