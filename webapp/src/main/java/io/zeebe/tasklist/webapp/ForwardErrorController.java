@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.webapp;
 
+import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -20,7 +21,7 @@ public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
-  @RequestMapping("/error")
+  @RequestMapping(TasklistURIs.ERROR_URL)
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
     LOGGER.warn("Requested non existing path. Forward (on serverside) to /");
     final ModelAndView modelAndView = new ModelAndView("forward:/");
@@ -31,6 +32,6 @@ public class ForwardErrorController implements ErrorController {
 
   @Override
   public String getErrorPath() {
-    return "/error";
+    return TasklistURIs.ERROR_URL;
   }
 }

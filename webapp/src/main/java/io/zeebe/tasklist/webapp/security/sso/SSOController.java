@@ -139,6 +139,6 @@ public class SSOController {
         || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
-    return redirectUri + redirectTo;
+    return redirectUri + req.getContextPath() + redirectTo;
   }
 }

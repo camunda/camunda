@@ -8,6 +8,9 @@ import {makeAutoObservable} from 'mobx';
 
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {resetApolloStore} from 'modules/apollo-client';
+import {mergePathname} from 'modules/utils/mergePathname';
+
+const BASENAME = window.clientConfig?.contextPath ?? '/';
 
 const Endpoints = {
   Login: '/api/login',
@@ -88,7 +91,7 @@ class Login {
 function request(input: string, init?: RequestInit) {
   const token = getCsrfToken(document.cookie);
 
-  return fetch(input, {
+  return fetch(mergePathname(BASENAME, input), {
     ...init,
     credentials: 'include',
     mode: 'cors',

@@ -29,7 +29,7 @@ const App: React.FC = () => {
         <NotificationProvider>
           <GlobalStyle />
           <NetworkStatusWatcher />
-          <BrowserRouter>
+          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <SessionWatcher />
             <Switch>
               <Route path={Pages.Login} component={Login} />

@@ -10,11 +10,12 @@ import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
 
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
+import {mergePathname} from 'modules/utils/mergePathname';
 
 const client = new ApolloClient({
   cache: new InMemoryCache(), //TODO - Issue #243
   link: new HttpLink({
-    uri: '/graphql',
+    uri: mergePathname(window.clientConfig?.contextPath ?? '/', '/graphql'),
     async fetch(uri: RequestInfo, options: RequestInit) {
       const token = getCsrfToken(document.cookie);
 

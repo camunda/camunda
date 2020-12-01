@@ -109,7 +109,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
     LOGGER.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
     req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(LOGIN_RESOURCE);
+    res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
   }
 
   /** Called <b>Custom domain</b> at auth0.com */

@@ -59,10 +59,10 @@ public class Application {
   }
 
   private static void setDefaultProperties(final SpringApplication springApplication) {
-    final Map<String, Object> propsMap = new HashMap<>();
-    propsMap.putAll(getManagementProperties());
-    propsMap.putAll(getGraphqlProperties());
-    springApplication.setDefaultProperties(propsMap);
+    final Map<String, Object> defaultProperties = new HashMap<>();
+    defaultProperties.putAll(getManagementProperties());
+    defaultProperties.putAll(getGraphqlProperties());
+    springApplication.setDefaultProperties(defaultProperties);
   }
 
   private static Map<String, Object> getGraphqlProperties() {
