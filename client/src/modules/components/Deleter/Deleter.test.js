@@ -140,3 +140,21 @@ it('should accept a custom name formatter', () => {
 
   expect(node.find(Modal.Content)).toMatchSnapshot();
 });
+
+it('should use provided delete text for title and button', () => {
+  const node = shallow(<Deleter {...props} deleteText="Remove entity" />);
+  setupRef(node);
+
+  node.setProps({entity});
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should use the provided delete button text', () => {
+  const node = shallow(<Deleter {...props} deleteText="Remove entity" deleteButtonText="Delete" />);
+  setupRef(node);
+
+  node.setProps({entity});
+
+  expect(node.find('.confirm')).toIncludeText('Delete');
+});

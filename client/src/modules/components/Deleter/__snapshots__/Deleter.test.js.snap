@@ -56,3 +56,45 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   </Component>
 </Modal>
 `;
+
+exports[`should use provided delete text for title and button 1`] = `
+<Modal
+  className="Deleter"
+  onClose={[Function]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Remove entity
+  </Component>
+  <Component>
+    <p>
+      The 'Doomed Report' Report will be permanently deleted.
+    </p>
+    <p>
+      <b>
+        Warning: This action cannot be undone.
+      </b>
+    </p>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="close"
+      disabled={false}
+      main={true}
+      onClick={[Function]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      disabled={false}
+      main={true}
+      onClick={[Function]}
+      warning={true}
+    >
+      Remove entity
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

@@ -227,8 +227,9 @@
       "timestamp": "Timestamp",
       "eventSources": "External Events",
       "search": "Search for values",
-      "deleteWarning": "Deleting ingested events will not be fully reflected in your published processes. Make sure to republish your Event Based Process in order to make your Process Reports more accurate.",
-      "deleteLimitReached": "Das Löschen von mehr als 1.000 Events ist nicht möglich"
+      "deleteWarning": "Any processes using these events must be re-published to reflect the deleted state.",
+      "deleteLimitReached": "Deleting more than 1000 entries at once is not possible",
+      "noData": "No ingested events."
     }
   },
   "report": {
@@ -987,7 +988,7 @@
         "collection": "Collection",
         "process": "Process",
         "processEvents": "process events",
-        "ingestedEvents": "Event(s)"
+        "ingestedEvents": "Events"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
