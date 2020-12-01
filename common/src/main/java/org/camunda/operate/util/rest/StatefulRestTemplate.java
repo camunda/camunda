@@ -19,6 +19,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -53,11 +54,13 @@ public class StatefulRestTemplate extends RestTemplate {
   private final HttpContext httpContext;
   private final StatefulHttpComponentsClientHttpRequestFactory statefulHttpComponentsClientHttpRequestFactory;
   private String csrfToken;
+  private String contextPath;
 
-  public StatefulRestTemplate(String host, Integer port) {
+  public StatefulRestTemplate(String host, Integer port, String contextPath) {
     super();
     this.host = host;
     this.port = port;
+    this.contextPath = contextPath;
     httpClient = HttpClientBuilder.create().build();
     cookieStore = new BasicCookieStore();
     httpContext = new BasicHttpContext();
@@ -124,7 +127,7 @@ public class StatefulRestTemplate extends RestTemplate {
 
   public URI getURL(String urlPart) {
     try {
-      return new URL(String.format("http://%s:%s%s", host, port, urlPart)).toURI();
+      return new URL(String.format("http://%s:%s%s", host, port, contextPath + urlPart)).toURI();
     } catch (URISyntaxException | MalformedURLException e) {
       throw new RuntimeException("Error occurred while constructing URL", e);
     }

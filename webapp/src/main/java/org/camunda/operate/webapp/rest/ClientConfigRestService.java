@@ -7,6 +7,7 @@ package org.camunda.operate.webapp.rest;
 
 import org.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,9 +19,16 @@ public class ClientConfigRestService {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Value("${server.servlet.context-path:/}")
+  private String contextPath;
+
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-    return String.format("window.clientConfig = { \"isEnterprise\": %s };", operateProperties.isEnterprise());
+    return String.format(
+        "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\" };",
+        operateProperties.isEnterprise(),
+        contextPath
+    );
   }
 
 

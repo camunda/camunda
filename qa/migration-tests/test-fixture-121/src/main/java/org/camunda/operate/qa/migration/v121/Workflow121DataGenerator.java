@@ -57,7 +57,7 @@ public class Workflow121DataGenerator {
 
   private void init(TestContext testContext) {
     zeebeClient = ZeebeClient.newClientBuilder().brokerContactPoint(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
-    operateRestClient = new StatefulRestTemplate(testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
+    operateRestClient = new StatefulRestTemplate(testContext.getExternalOperateHost(), testContext.getExternalOperatePort(), testContext.getExternalOperateContextPath());
     operateRestClient.loginWhenNeeded();
   }
 

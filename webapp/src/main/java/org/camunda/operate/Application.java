@@ -5,9 +5,6 @@
  */
 package org.camunda.operate;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
@@ -21,6 +18,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.core.env.ConfigurableEnvironment;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -43,15 +44,15 @@ public class Application {
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
     setDefaultProperties(springApplication);
-    setDeafultAuthProfile(springApplication);
+    setDefaultAuthProfile(springApplication);
     springApplication.run(args);
   }
 
-  private static void setDeafultAuthProfile(final SpringApplication springApplication) {
+  private static void setDefaultAuthProfile(final SpringApplication springApplication) {
     springApplication.addInitializers(configurableApplicationContext -> {
       ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
       Set<String> activeProfiles = Set.of(env.getActiveProfiles());
-      if (OperateURIs.AUTH_PROFILES.stream().noneMatch(p -> activeProfiles.contains(p))) {
+      if (OperateURIs.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
         env.addActiveProfile(OperateURIs.DEFAULT_AUTH);
       }
     });
@@ -74,8 +75,7 @@ public class Application {
         "management.endpoints.web.exposure.include", "health, prometheus",
 
         //add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck"
-    );
+        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");
   }
 
   @Bean(name = "dataGenerator")

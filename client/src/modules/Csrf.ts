@@ -4,19 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function getToken(cookies: any) {
-  let token;
-
-  cookies
+export function getToken(cookies: string) {
+  return cookies
     .replace(/ /g, '')
     .split(';')
-    .forEach((cookie: any) => {
-      const items = cookie.split('=');
+    .reduce<undefined | string>((accumulator, cookie) => {
+      const [name, value] = cookie.split('=');
 
-      if (items[0] === 'X-CSRF-TOKEN') {
-        token = items[1];
+      if (name === 'X-CSRF-TOKEN') {
+        return value;
       }
-    });
 
-  return token;
+      return accumulator;
+    }, undefined);
 }

@@ -26,6 +26,7 @@ public class TestContext {
 
   private String externalOperateHost;
   private Integer externalOperatePort;
+  private String externalOperateContextPath = "/";
 
   private List<String> workflowsToAssert = new ArrayList<>();
 
@@ -115,6 +116,14 @@ public class TestContext {
 
   public void setWorkflowsToAssert(List<String> workflowsToAssert) {
     this.workflowsToAssert = workflowsToAssert;
+  }
+
+  public String getExternalOperateContextPath() {
+    return externalOperateContextPath;
+  }
+
+  public void setExternalOperateContextPath(String externalOperateContextPath) {
+    this.externalOperateContextPath = externalOperateContextPath;
   }
 
   public void addWorkflow(String bpmnProcessId) {

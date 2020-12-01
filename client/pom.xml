@@ -54,6 +54,9 @@
               <goal>yarn</goal>
             </goals>
             <configuration>
+              <environmentVariables>
+                <PUBLIC_URL>.</PUBLIC_URL>
+              </environmentVariables>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
             </configuration>
@@ -65,6 +68,9 @@
               <goal>yarn</goal>
             </goals>
             <configuration>
+              <environmentVariables>
+                <PUBLIC_URL>.</PUBLIC_URL>
+              </environmentVariables>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
               <arguments>build</arguments>

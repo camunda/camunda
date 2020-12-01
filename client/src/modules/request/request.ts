@@ -5,27 +5,33 @@
  */
 
 import {getToken} from 'modules/Csrf';
+import {mergePathname} from './mergePathname';
 
-let responseInterceptor: any = null;
+let responseInterceptor: null | ((response: Response) => Promise<void>) = null;
 
-export async function request({url, method, body, query, headers}: any) {
-  const resourceUrl = query ? `${url}?${stringifyQuery(query)}` : `${url}`;
+async function request({url, method, body, headers}: any) {
   const csrfToken = getToken(document.cookie);
 
   if (csrfToken) {
-    headers = {'X-CSRF-TOKEN': csrfToken, ...headers};
+    headers = {
+      'X-CSRF-TOKEN': csrfToken,
+      ...headers,
+    };
   }
 
-  let response = await fetch(resourceUrl, {
-    method,
-    credentials: 'include',
-    body: typeof body === 'string' ? body : JSON.stringify(body),
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-    mode: 'cors',
-  });
+  const response = await fetch(
+    mergePathname(window.clientConfig?.contextPath ?? '/', url),
+    {
+      method,
+      credentials: 'include',
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      mode: 'cors',
+    }
+  );
 
   if (typeof responseInterceptor === 'function') {
     await responseInterceptor(response);
@@ -34,18 +40,8 @@ export async function request({url, method, body, query, headers}: any) {
   return response;
 }
 
-export function stringifyQuery(query: any) {
-  return Object.keys(query).reduce((queryStr, key) => {
-    const value = query[key];
-
-    if (queryStr === '') {
-      return `${key}=${encodeURIComponent(value)}`;
-    }
-
-    return `${queryStr}&${key}=${encodeURIComponent(value)}`;
-  }, '');
-}
-
-export function setResponseInterceptor(fct: any) {
+function setResponseInterceptor(fct: typeof responseInterceptor) {
   responseInterceptor = fct;
 }
+
+export {request, setResponseInterceptor};

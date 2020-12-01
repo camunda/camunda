@@ -7,7 +7,8 @@
 export declare global {
   interface Window {
     clientConfig?: {
-      isEnterprise: boolean;
+      isEnterprise?: boolean;
+      contextPath?: string;
     };
   }
 }

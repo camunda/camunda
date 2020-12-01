@@ -45,7 +45,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   // Used to store the CSRF Token in a cookie.
   private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
-  
+
   @Autowired
   private OperateProperties operateProperties;
 
@@ -98,7 +98,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     request.getSession().invalidate();
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
-    
+
     PrintWriter writer = response.getWriter();
     String jsonResponse = Json.createObjectBuilder()
       .add("message", ex.getMessage())
@@ -106,14 +106,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .toString();
 
     writer.append(jsonResponse);
-    
+
     response.setStatus(UNAUTHORIZED.value());
     response.setContentType(APPLICATION_JSON.getMimeType());
   }
-  
+
   /**
    * Stores the CSRF Token in HTTP Response Header (for REST Clients) and as Cookie (for JavaScript Browser applications)
-   * The CSRF Token is expected to be set in HTTP Request Header from the client. 
+   * The CSRF Token is expected to be set in HTTP Request Header from the client.
    * So an attacker can't trick the user to submit unindented data to the server (by a link).
    * @param request
    * @param response
@@ -133,7 +133,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
     return response;
   }
-  
+
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     String path = request.getRequestURI();
@@ -143,7 +143,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
     addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
   }
-  
+
   protected OncePerRequestFilter getCSRFHeaderFilter() {
     return new OncePerRequestFilter() {
       @Override

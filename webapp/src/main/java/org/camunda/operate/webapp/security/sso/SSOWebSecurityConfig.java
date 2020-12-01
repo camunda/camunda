@@ -51,16 +51,16 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   /**
    * This is the client id of auth0 application (see Settings page on auth0
-   * dashboard) It's like an user name for the application 
+   * dashboard) It's like an user name for the application
    */
   @Value(value = "${camunda.operate.auth0.clientId}")
   private String clientId;
 
   /**
    * This is the client secret of auth0 application (see Settings page on auth0
-   * dashboard) It's like a password for the application 
+   * dashboard) It's like a password for the application
    */
-  @Value(value = "${camunda.operate.auth0.clientSecret}") 
+  @Value(value = "${camunda.operate.auth0.clientSecret}")
   private String clientSecret;
 
   /**
@@ -70,7 +70,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   private String claimName;
 
   /**
-   * The given organization should be contained in value of claim key 
+   * The given organization should be contained in value of claim key
    * (claimName) - MUST given
    */
   @Value(value = "${camunda.operate.auth0.organization}")
@@ -94,9 +94,9 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       .antMatchers(AUTH_WHITELIST).permitAll()
       .antMatchers(API, ROOT).authenticated()
       .and().exceptionHandling()
-        .authenticationEntryPoint(this::authenticationEntry); 
+        .authenticationEntryPoint(this::authenticationEntry);
   }
-  
+
   protected void authenticationEntry(HttpServletRequest req,HttpServletResponse res, AuthenticationException ex) throws IOException {
     String requestedUrl = req.getRequestURI();
     if(req.getQueryString()!=null && !req.getQueryString().isEmpty()) {
@@ -104,12 +104,12 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
     logger.debug("Try to access protected resource {}. Save it for later redirect",requestedUrl);
     req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(LOGIN_RESOURCE);
+    res.sendRedirect(req.getContextPath()+LOGIN_RESOURCE);
   }
 
   /**
    * Called <b>Custom domain</b> at auth0.com
-   * 
+   *
    * @return
    */
   public String getDomain() {
@@ -118,7 +118,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   /**
    * Called <b>Domain</b> at auth0.com
-   * 
+   *
    * @return
    */
   public String getBackendDomain() {
