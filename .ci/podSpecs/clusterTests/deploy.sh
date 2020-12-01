@@ -55,6 +55,6 @@ IMPORTING="true"
 until [[ ${IMPORTING} = "false" ]]; do
     # note: each call here is followed by `|| true` to not let the whole script fail if the curl call fails due to potential downtimes of pods
     curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
-    IMPORTING=$(curl "http://optimize-import.${NAMESPACE}:8090/api/status" | jq '.isImporting."camunda-bpm"') || true
+    IMPORTING=$(curl "http://optimize-import.${NAMESPACE}:8090/api/status" | jq '.engineStatus."camunda-bpm".isImporting') || true
     sleep 10
 done
