@@ -34,7 +34,19 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
     context.setExporterDirector(director);
-    return director.startAsync(context.getScheduler());
+    final var startFuture = director.startAsync(context.getScheduler());
+    startFuture.onComplete(
+        (nothing, error) -> {
+          if (error == null) {
+            // Pause/Resume here in case the state was changed after the director was created
+            if (!context.shouldExport()) {
+              director.pauseExporting();
+            } else {
+              director.resumeExporting();
+            }
+          }
+        });
+    return startFuture;
   }
 
   @Override
