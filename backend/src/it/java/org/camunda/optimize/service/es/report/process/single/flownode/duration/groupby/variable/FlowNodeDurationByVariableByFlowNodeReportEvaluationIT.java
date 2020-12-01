@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.variable;
+package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.variable;
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.CALL_ACTIVITY;
 import static org.camunda.optimize.util.BpmnModels.MULTI_INSTANCE_END;
@@ -52,13 +53,14 @@ import static org.camunda.optimize.util.BpmnModels.PARALLEL_GATEWAY;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
-public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void simpleReportEvaluation_StringVariable() {
     // given
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("stringVar", "aStringValue"));
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -78,9 +80,9 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
-    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.FLOW_NODE);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     final VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("stringVar");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
@@ -90,10 +92,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -103,6 +105,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     // given
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("doubleVar", 1.0));
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -120,10 +123,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains("1.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -134,20 +137,30 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 100.0);
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(processInstanceDto, 10.);
+    final String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
 
     variables.put(varName, 200.0);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      variables
+    );
+    changeActivityDuration(processInstanceDto, 10.);
 
     variables.put(varName, 300.0);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      variables
+    );
+    changeActivityDuration(processInstanceDto, 10.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
+      processDefinitionKey,
+      "1",
       "doubleVar",
       VariableType.DOUBLE
     );
@@ -162,20 +175,20 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
       .groupByContains("10.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains("110.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains("210.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -192,14 +205,16 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
 
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("dateVar", dateVarValue));
+    changeActivityDuration(processInstanceDto, 10.);
 
     IntStream.range(1, numberOfInstances).forEach(i -> {
       final OffsetDateTime nextDateVarValue = dateVarValue.plus(i, chronoUnit);
       dateVarValues.add(nextDateVarValue);
-      engineIntegrationExtension.startProcessInstance(
+      final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(),
         Collections.singletonMap("dateVar", nextDateVarValue)
       );
+      changeActivityDuration(instance, 10.);
     });
     importAllEngineEntitiesFromScratch();
 
@@ -222,10 +237,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .forEach(date -> {
         final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(date, chronoUnit);
         final HyperMapAsserter.GroupByAdder groupByAdder = asserter.groupByContains(expectedBucketKey)
-          .distributedByContains(END_EVENT, 1., END_EVENT)
-          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-          .distributedByContains(START_EVENT, 1., START_EVENT);
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT);
         groupByAdder.add();
       });
     asserter.doAssert(result);
@@ -239,12 +254,14 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
 
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("dateVar", dateVarValue));
+    changeActivityDuration(processInstanceDto, 10.);
 
     for (int i = 1; i < numberOfInstances; i++) {
-      engineIntegrationExtension.startProcessInstance(
+      final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(),
         Collections.singletonMap("dateVar", dateVarValue.plusMinutes(i))
       );
+      changeActivityDuration(instance, 10.);
     }
 
     importAllEngineEntitiesFromScratch();
@@ -280,7 +297,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
                  .filter(mapEntry -> mapEntry.getValue() != null)
                  .mapToDouble(MapResultEntryDto::getValue)
                  .sum())
-      .isEqualTo(4.0 * numberOfInstances); // each instance went through 4 flownodes
+      .isEqualTo(10.0 * 4 * numberOfInstances); // each instance went through 4 flownodes which each took 10.0
   }
 
   @Test
@@ -289,28 +306,34 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     // 1 process instance with 'testVar'
     ProcessInstanceEngineDto processInstanceDto =
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("testVar", "withValue"));
+    changeActivityDuration(processInstanceDto, 10.);
+    final String definitionKey = processInstanceDto.getProcessDefinitionKey();
 
     // 4 process instances without 'testVar'
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineIntegrationExtension.startProcessInstance(
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+    changeActivityDuration(processInstanceDto, 20.);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processInstanceDto.getDefinitionId(),
       Collections.singletonMap("testVar", null)
     );
-    engineIntegrationExtension.startProcessInstance(
+    changeActivityDuration(processInstanceDto, 20.);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processInstanceDto.getDefinitionId(),
       Collections.singletonMap("testVar", new EngineVariableValue(null, "String"))
     );
-    engineIntegrationExtension.startProcessInstance(
+    changeActivityDuration(processInstanceDto, 20.);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processInstanceDto.getDefinitionId(),
       Collections.singletonMap("differentStringValue", "test")
     );
+    changeActivityDuration(processInstanceDto, 20.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
+      definitionKey,
+      "1",
       "testVar",
       VariableType.STRING
     );
@@ -322,15 +345,15 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
       .groupByContains("withValue")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains("missing")
-        .distributedByContains(END_EVENT, 4., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 4., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 4., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 4., START_EVENT)
+        .distributedByContains(END_EVENT, 20., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 20., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -338,8 +361,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
   @Test
   public void resultContainsNonExecutedFlowNodes() {
     // given
+    dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstanceDto =
       deployAndStartSimpleUserTaskProcess(Collections.singletonMap("stringVar", "aStringValue"));
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -351,17 +376,18 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     );
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
-    // then
-    //@formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(1L)
-      .processInstanceCountWithoutFilters(1L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
-      .doAssert(result);
-    //@formatter:on
+    // then the result includes the not executed node (endEvent)
+    assertThat(result.getDataEntryForKey("aStringValue"))
+      .isPresent()
+      .get()
+      .satisfies(
+        entry -> {
+          assertThat(entry.getValue())
+            .filteredOn(e -> END_EVENT.equals(e.getKey()))
+            .extracting(MapResultEntryDto::getValue)
+            .containsOnlyNulls();
+        }
+      );
   }
 
   @Test
@@ -375,12 +401,12 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     engineIntegrationExtension.deployProcessAndGetId(subProcess);
 
     final BpmnModelInstance model = BpmnModels.getMultiInstanceProcess(testMIProcess, subProcessKey);
-    engineIntegrationExtension.deployAndStartProcessWithVariables(
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
       model,
       Collections.singletonMap("stringVar", "aStringValue")
     );
-
     engineIntegrationExtension.waitForAllProcessesToFinish();
+    changeActivityDuration(processInstanceDto, 10.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -392,17 +418,17 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     );
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
-    // then the result counts the multi instance process correctly
+    // then the result takes the multi instance process durations into account correctly
     //@formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains("aStringValue")
-        .distributedByContains(CALL_ACTIVITY, 2., CALL_ACTIVITY)
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(MULTI_INSTANCE_END, 1., MULTI_INSTANCE_END)
-        .distributedByContains(MULTI_INSTANCE_START, 1., MULTI_INSTANCE_START)
-        .distributedByContains(PARALLEL_GATEWAY, 1., PARALLEL_GATEWAY)
+        .distributedByContains(CALL_ACTIVITY, 10., CALL_ACTIVITY)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(MULTI_INSTANCE_END, 10., MULTI_INSTANCE_END)
+        .distributedByContains(MULTI_INSTANCE_START, 10., MULTI_INSTANCE_START)
+        .distributedByContains(PARALLEL_GATEWAY, 10., PARALLEL_GATEWAY)
       .doAssert(result);
     //@formatter:on
   }
@@ -414,8 +440,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       "aStringValue"
     );
-    deployAndStartSimpleProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
     final ProcessInstanceEngineDto latestProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(latestProcess, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -428,16 +456,16 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     );
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
-    // then the result includes all flownodes of the latest version with instance counts from all versions
+    // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -449,8 +477,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       "aStringValue"
     );
-    deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
     final ProcessInstanceEngineDto latestProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(latestProcess, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -463,14 +493,14 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     );
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
-    // then the result includes only the flownodes of the latest version with instance counts from all versions
+    // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -482,15 +512,18 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       "aStringValue"
     );
-    deployAndStartSimpleProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
     final ProcessInstanceEngineDto secondProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
-    deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(secondProcess, 20.);
+    final ProcessInstanceEngineDto thirdProcess = deployAndStartSimpleProcessWithVariables(variables);
+    changeActivityDuration(thirdProcess, 10.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
-      secondProcess.getProcessDefinitionKey(),
+      firstProcess.getProcessDefinitionKey(),
       Arrays.asList("1", "2"),
       "stringVar",
       VariableType.STRING
@@ -498,16 +531,16 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
-    // with instance counts from all specified versions (1 and 2)
+    // with instance durations from all specified versions (1 and 2)
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -519,15 +552,18 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       "aStringValue"
     );
-    deployAndStartSimpleProcessWithVariables(variables);
+    final ProcessInstanceEngineDto firstProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(firstProcess, 10.);
     final ProcessInstanceEngineDto secondProcess = deployAndStartSimpleProcessWithVariables(variables);
-    deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(secondProcess, 20.);
+    final ProcessInstanceEngineDto thirdProcess = deployAndStartTwoServiceTaskProcessWithVariables(variables);
+    changeActivityDuration(thirdProcess, 10.);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
-      secondProcess.getProcessDefinitionKey(),
+      firstProcess.getProcessDefinitionKey(),
       Arrays.asList("1", "2"),
       "stringVar",
       VariableType.STRING
@@ -535,14 +571,14 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
-    // with instance counts from all specified versions (1 and 2)
+    // with instance durations from all specified versions (1 and 2)
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -570,8 +606,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       .setTenantIds(Collections.singletonList(null))
       .setVariableName(variableName)
       .setVariableType(variableType)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE_BY_FLOW_NODE)
       .build();
   }
-
 }

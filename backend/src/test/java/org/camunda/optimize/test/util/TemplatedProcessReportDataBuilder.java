@@ -505,6 +505,19 @@ public class TemplatedProcessReportDataBuilder {
           .variableName(variableName)
           .build();
         break;
+      case FLOW_NODE_DURATION_GROUP_BY_VARIABLE_BY_FLOW_NODE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.FLOW_NODE)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableType(variableType)
+          .variableName(variableName)
+          .build();
+        break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)

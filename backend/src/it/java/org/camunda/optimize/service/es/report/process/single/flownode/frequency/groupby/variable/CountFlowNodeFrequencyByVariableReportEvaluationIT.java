@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 
 import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -24,6 +23,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -89,7 +89,7 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       deployAndStartTwoServiceTaskProcessWithVariables(Collections.singletonMap("doubleVar", 1.0));
     importAllEngineEntitiesFromScratch();
 
-    // when
+    // when`
     final ProcessReportDataDto reportData = createReport(
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
@@ -352,27 +352,10 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
     final String subProcessKey = "testProcess";
     final String testMIProcess = "testMIProcess";
 
-    final BpmnModelInstance subProcess = Bpmn.createExecutableProcess(subProcessKey)
-      .startEvent()
-      .serviceTask("MI-Body-Task")
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    final BpmnModelInstance subProcess = BpmnModels.getSingleServiceTaskProcess(subProcessKey);
     engineIntegrationExtension.deployProcessAndGetId(subProcess);
 
-    final BpmnModelInstance model = Bpmn.createExecutableProcess(testMIProcess)
-      .name("MultiInstance")
-      .startEvent("miStart")
-      .parallelGateway()
-      .endEvent("end1")
-      .moveToLastGateway()
-      .callActivity("callActivity")
-      .calledElement(subProcessKey)
-      .multiInstance()
-      .cardinality("2")
-      .multiInstanceDone()
-      .endEvent("miEnd")
-      .done();
+    final BpmnModelInstance model = BpmnModels.getMultiInstanceProcess(testMIProcess, subProcessKey);
     engineIntegrationExtension.deployAndStartProcessWithVariables(
       model,
       Collections.singletonMap("stringVar", "aStringValue")

@@ -573,34 +573,12 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   public void importWithMi() throws Exception {
     // given
     final String subProcessKey = "testProcess";
-    final String callActivity = "callActivity";
     final String testMIProcess = "testMIProcess";
 
-    // @formatter:off
-    BpmnModelInstance subProcess = Bpmn.createExecutableProcess(subProcessKey)
-      .startEvent()
-      .serviceTask("MI-Body-Task")
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
+    BpmnModelInstance subProcess = BpmnModels.getSingleServiceTaskProcess(subProcessKey);
     engineIntegrationExtension.deployProcessAndGetId(subProcess);
 
-    // @formatter:off
-    BpmnModelInstance model = Bpmn.createExecutableProcess(testMIProcess)
-      .name("MultiInstance")
-      .startEvent("miStart")
-      .parallelGateway()
-        .endEvent("end1")
-      .moveToLastGateway()
-        .callActivity(callActivity)
-        .calledElement(subProcessKey)
-        .multiInstance()
-        .cardinality("2")
-        .multiInstanceDone()
-        .endEvent("miEnd")
-      .done();
-    // @formatter:on
+    BpmnModelInstance model = BpmnModels.getMultiInstanceProcess(testMIProcess, subProcessKey);
     engineIntegrationExtension.deployAndStartProcess(model);
 
     engineIntegrationExtension.waitForAllProcessesToFinish();
