@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
   <artifactId>zeebe-parent</artifactId>
-  <version>0.25.2-SNAPSHOT</version>
+  <version>0.25.3-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>0.25.2-SNAPSHOT</version>
+    <version>0.25.3-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -128,7 +128,7 @@
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>0.25.1</backwards.compat.version>
+    <backwards.compat.version>0.25.2</backwards.compat.version>
     <ignored.changes.file>ignored-changes.xml</ignored.changes.file>
   </properties>
 
