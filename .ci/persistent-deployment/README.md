@@ -33,15 +33,10 @@ ES backup (or snapshot as it is known for ES users) is done manually using the `
 kubectl -n optimize-persistent svc/elasticsearch-es-http 9200:9200
 ```
 
-* Retrieve the `elastic` user password:
-```shell script
-PASSWORD=$(kubectl -n optimize-persistent get secret elasticsearch-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
-```
-
 * Create a backup using `curl`:
 
 ```shell script
-curl -u "elastic:$PASSWORD" -X PUT "http://localhost:9200/_snapshot/optimize-persistent-data/<my-snapshot-name>"
+curl -X PUT "http://localhost:9200/_snapshot/optimize-persistent-data/<my-snapshot-name>"
 ```
 
 You can see the created snapshot by checking the content of the [optimize-persistent-data](https://console.cloud.google.com/storage/browser/optimize-persistent-data;tab=objects?forceOnBucketsSortingFiltering=false&organizationId=669107107215&project=ci-30-162810&prefix=&forceOnObjectsSortingFiltering=false)
@@ -63,5 +58,5 @@ In order to upgrade the `optimize-persistent`, you can open a PR in github `infr
 
 ##### Backup
 
-No automatic backup is configured for `optimize-persistent`, you can ask the INFRA team to create a backup for this database.
+An automatic backup is configured for `optimize-persistent` nightly at 2am Berlin time.
 
