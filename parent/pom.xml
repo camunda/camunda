@@ -128,7 +128,7 @@
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>0.24.5</backwards.compat.version>
+    <backwards.compat.version>0.24.6</backwards.compat.version>
     <ignored.changes.file>ignored-changes.xml</ignored.changes.file>
   </properties>
 
