@@ -10,7 +10,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.25.2-SNAPSHOT</version>
+    <version>0.25.2</version>
     <relativePath>../parent</relativePath>
   </parent>
 
