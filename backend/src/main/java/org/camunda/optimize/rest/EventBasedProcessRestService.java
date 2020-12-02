@@ -25,11 +25,11 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.events.EventMappingCleanupService;
 import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.EventProcessAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -230,7 +230,7 @@ public class EventBasedProcessRestService {
   }
 
   private EventProcessRoleResponseDto mapToEventProcessRoleRestDto(final EventProcessRoleRequestDto<IdentityDto> roleDto) {
-    return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+    return identityService.getIdentityWithMetadataForId(roleDto.getIdentity().getId())
       .map(EventProcessRoleResponseDto::new)
       .orElseThrow(() -> new OptimizeRuntimeException(
         "Could not map EventProcessRoleDto to EventProcessRoleRestDto, identity ["

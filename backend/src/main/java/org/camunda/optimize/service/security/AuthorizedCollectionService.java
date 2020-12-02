@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.CollectionReader;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;

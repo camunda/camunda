@@ -7,7 +7,7 @@ package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
-import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;

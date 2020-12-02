@@ -13,12 +13,11 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponse
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -86,12 +85,11 @@ public class CollectionRoleService {
   public void updateRoleOfCollection(final String userId,
                                      final String collectionId,
                                      final String roleEntryId,
-                                     final CollectionRoleUpdateRequestDto roleUpdateDto) throws OptimizeConflictException {
+                                     final CollectionRoleUpdateRequestDto roleUpdateDto) {
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
-  public void removeRoleFromCollectionUnlessIsLastManager(String userId, String collectionId, String roleEntryId)
-    throws OptimizeConflictException {
+  public void removeRoleFromCollectionUnlessIsLastManager(String userId, String collectionId, String roleEntryId) {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
@@ -106,11 +104,11 @@ public class CollectionRoleService {
       .filter(role -> identityService.isUserAuthorizedToAccessIdentity(userId, role.getIdentity()))
       .map(roleDto -> CollectionRoleResponseDto.from(
         roleDto,
-        identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+        identityService.getIdentityWithMetadataForId(roleDto.getIdentity().getId())
           .orElseThrow(() -> new OptimizeRuntimeException(
-                         "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
-                           + roleDto.getIdentity().toString() + "] could not be found."
-                       ))
+            "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
+              + roleDto.getIdentity().toString() + "] could not be found."
+          ))
       ))
       .collect(toList());
 

@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEva
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;

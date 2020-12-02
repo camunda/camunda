@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.identity;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
 import org.camunda.optimize.service.security.SessionListener;
@@ -48,13 +47,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private final IdentityAuthorizationService identityAuthorizationService;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-  private final SyncedIdentityCacheService syncedIdentityCache;
+  private final UserIdentityCacheService syncedIdentityCache;
 
   public IdentityService(final ApplicationAuthorizationService applicationAuthorizationService,
                          final IdentityAuthorizationService identityAuthorizationService,
                          final ConfigurationService configurationService,
                          final EngineContextFactory engineContextFactory,
-                         final SyncedIdentityCacheService syncedIdentityCache) {
+                         final UserIdentityCacheService syncedIdentityCache) {
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.identityAuthorizationService = identityAuthorizationService;
     this.configurationService = configurationService;
@@ -83,28 +82,27 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     return userGroupsCache.get(userId);
   }
 
-  public Optional<? extends IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
-    final Optional<UserDto> userById = getUserById(userOrGroupId);
-    if (userById.isPresent()) {
-      return userById;
-    } else {
-      return getGroupById(userOrGroupId);
-    }
+  public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
+    return getUserById(userOrGroupId)
+      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
+      .map(Optional::of)
+      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)));
   }
 
-  public Optional<? extends IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
-                                                                                                final String userOrGroupId) {
-    Optional<? extends IdentityWithMetadataResponseDto> identityById = getUserById(userOrGroupId);
-    if (!identityById.isPresent()) {
-      identityById = getGroupById(userOrGroupId);
-    }
-    if (identityById.isPresent()
-      && !isUserAuthorizedToAccessIdentity(userId, identityById.get())) {
-      throw new ForbiddenException(
-        String.format("The user with ID %s is not authorized to access the identity with ID %s", userId, userOrGroupId)
-      );
-    }
-    return identityById;
+  public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
+                                                                                      final String userOrGroupId) {
+    return getUserById(userOrGroupId)
+      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
+      .map(Optional::of)
+      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)))
+      .map(identityDto -> {
+        if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
+          throw new ForbiddenException(String.format(
+            "The user with ID %s is not authorized to access the identity with ID %s", userId, userOrGroupId
+          ));
+        }
+        return identityDto;
+      });
   }
 
   public Optional<UserDto> getUserById(final String userId) {
@@ -113,12 +111,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       .orElseGet(
         () -> {
           if (applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId)) {
-            return engineContextFactory.getConfiguredEngines().stream()
+            final Optional<UserDto> userDto = engineContextFactory.getConfiguredEngines().stream()
               .map(engineContext -> engineContext.getUserById(userId))
               .filter(Optional::isPresent)
               .map(Optional::get)
-              .peek(this::addIdentity)
               .findFirst();
+            userDto.ifPresent(this::addIdentity);
+            return userDto;
           } else {
             return Optional.empty();
           }
@@ -132,12 +131,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       .orElseGet(
         () -> {
           if (applicationAuthorizationService.isGroupAuthorizedToAccessOptimize(groupId)) {
-            return engineContextFactory.getConfiguredEngines().stream()
+            final Optional<GroupDto> groupDto = engineContextFactory.getConfiguredEngines().stream()
               .map(engineContext -> engineContext.getGroupById(groupId))
               .filter(Optional::isPresent)
               .map(Optional::get)
-              .peek(this::addIdentity)
               .findFirst();
+            groupDto.ifPresent(this::addIdentity);
+            return groupDto;
           } else {
             return Optional.empty();
           }
@@ -190,22 +190,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean doesIdentityExist(final IdentityDto identity) {
-    return resolveToIdentityWithMetadata(identity).isPresent();
-  }
-
-  public Optional<? extends IdentityWithMetadataResponseDto> resolveToIdentityWithMetadata(final IdentityDto identity) {
-    Optional<? extends IdentityWithMetadataResponseDto> identityRestDtoOpt;
-    switch (identity.getType()) {
-      case GROUP:
-        identityRestDtoOpt = getGroupById(identity.getId());
-        break;
-      case USER:
-        identityRestDtoOpt = getUserById(identity.getId());
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unsupported identity type " + identity.getType());
-    }
-    return identityRestDtoOpt;
+    return getIdentityWithMetadataForId(identity.getId()).isPresent();
   }
 
   @Override

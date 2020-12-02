@@ -3,9 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.identity;
 
-public interface SyncedIdentityCacheListener {
+import org.camunda.optimize.service.SearchableIdentityCache;
+
+public interface IdentityCacheSyncListener {
 
   void onFinishIdentitySync(SearchableIdentityCache newIdentityCache);
 }

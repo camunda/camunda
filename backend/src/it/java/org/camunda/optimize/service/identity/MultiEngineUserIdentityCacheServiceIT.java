@@ -3,12 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.identity;
 
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
+import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngineIT {
+public class MultiEngineUserIdentityCacheServiceIT extends AbstractMultiEngineIT {
 
   public AuthorizationClient defaultEngineAuthorizationClient = new AuthorizationClient(
     engineIntegrationExtension
@@ -36,8 +37,8 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     final String otherEngineUser = "otherUser";
     secondaryEngineAuthorizationClient.addUserAndGrantOptimizeAccess(otherEngineUser);
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getSyncedIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
     assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
     assertThat(getSyncedIdentityCacheService().getUserIdentityById(otherEngineUser).isPresent(), is(true));
@@ -50,8 +51,8 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     defaultEngineAuthorizationClient.addKermitUserWithoutAuthorizations();
     secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getSyncedIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
     assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
   }
@@ -68,8 +69,8 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     secondaryEngineIntegrationExtension.addUser(loosingUserProfile);
     secondaryEngineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getSyncedIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
     final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById.isPresent(), is(true));
@@ -89,8 +90,8 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     secondaryEngineIntegrationExtension.addUser(loosingUserProfile);
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getSyncedIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
     final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById.isPresent(), is(true));
@@ -111,8 +112,8 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     return losingUserProfile;
   }
 
-  private SyncedIdentityCacheService getSyncedIdentityCacheService() {
-    return embeddedOptimizeExtension.getSyncedIdentityCacheService();
+  private UserIdentityCacheService getSyncedIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
 }

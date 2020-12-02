@@ -16,10 +16,8 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
-import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
@@ -31,6 +29,8 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
@@ -487,8 +487,8 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getTelemetryService();
   }
 
-  public SyncedIdentityCacheService getSyncedIdentityCacheService() {
-    return getOptimize().getSyncedIdentityCacheService();
+  public UserIdentityCacheService getUserIdentityCacheService() {
+    return getOptimize().getUserIdentityCacheService();
   }
 
   public IndexRolloverService getEventIndexRolloverService() {

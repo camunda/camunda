@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.identity;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class SyncedIdentityCacheServiceIT extends AbstractIT {
+public class UserIdentityCacheServiceIT extends AbstractIT {
 
   public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
@@ -43,16 +44,16 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void verifySyncEnabledByDefault() {
-    assertThat(getSyncedIdentityCacheService().isScheduledToRun()).isTrue();
+    assertThat(getUserIdentityCacheService().isScheduledToRun()).isTrue();
   }
 
   @Test
   public void testSyncStoppedSuccessfully() {
     try {
-      getSyncedIdentityCacheService().stopSchedulingUserSync();
-      assertThat(getSyncedIdentityCacheService().isScheduledToRun()).isFalse();
+      getUserIdentityCacheService().stopScheduledSync();
+      assertThat(getUserIdentityCacheService().isScheduledToRun()).isFalse();
     } finally {
-      getSyncedIdentityCacheService().startSchedulingUserSync();
+      getUserIdentityCacheService().startScheduledSync();
     }
   }
 
@@ -60,19 +61,19 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   public void testCacheReplacedOnNewSync() {
     try {
       // given
-      getSyncedIdentityCacheService().stopSchedulingUserSync();
+      getUserIdentityCacheService().stopScheduledSync();
       authorizationClient.addKermitUserAndGrantAccessToOptimize();
-      getSyncedIdentityCacheService().synchronizeIdentities();
+      getUserIdentityCacheService().synchronizeIdentities();
 
       // when
       final String userIdJohn = "john";
       authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
-      getSyncedIdentityCacheService().synchronizeIdentities();
+      getUserIdentityCacheService().synchronizeIdentities();
 
       // then
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn)).isPresent();
+      assertThat(getUserIdentityCacheService().getUserIdentityById(userIdJohn)).isPresent();
     } finally {
-      getSyncedIdentityCacheService().startSchedulingUserSync();
+      getUserIdentityCacheService().startScheduledSync();
     }
   }
 
@@ -80,9 +81,9 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   public void testCacheNotReplacedOnLimitHit() {
     try {
       // given
-      getSyncedIdentityCacheService().stopSchedulingUserSync();
+      getUserIdentityCacheService().stopScheduledSync();
       authorizationClient.addKermitUserAndGrantAccessToOptimize();
-      getSyncedIdentityCacheService().synchronizeIdentities();
+      getUserIdentityCacheService().synchronizeIdentities();
 
       // when
       final String userIdJohn = "john";
@@ -91,13 +92,13 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       getIdentitySyncConfiguration().setMaxEntryLimit(1L);
 
       // then
-      final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-      assertThatThrownBy(syncedIdentityCacheService::synchronizeIdentities)
+      final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+      assertThatThrownBy(userIdentityCacheService::synchronizeIdentities)
         .isInstanceOf(MaxEntryLimitHitException.class);
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn)).isNotPresent();
+      assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
+      assertThat(getUserIdentityCacheService().getUserIdentityById(userIdJohn)).isNotPresent();
     } finally {
-      getSyncedIdentityCacheService().startSchedulingUserSync();
+      getUserIdentityCacheService().startScheduledSync();
     }
   }
 
@@ -105,10 +106,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   public void testGrantedUserIsImportedMetaDataAvailable() {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
     assertThat(userIdentityById.get().getName()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(userIdentityById.get().getFirstName()).isEqualTo(DEFAULT_FIRSTNAME);
@@ -121,10 +122,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     getIdentitySyncConfiguration().setIncludeUserMetaData(false);
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
     assertThat(userIdentityById.get().getName()).isEqualTo(KERMIT_USER);
     assertThat(userIdentityById.get().getFirstName()).isNull();
@@ -136,10 +137,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   public void testNotGrantedUserIsNotImported() {
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -148,10 +149,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    final Optional<GroupDto> groupIdentityById = getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID);
+    final Optional<GroupDto> groupIdentityById = getUserIdentityCacheService().getGroupIdentityById(GROUP_ID);
     assertThat(groupIdentityById).isPresent();
     assertThat(groupIdentityById.get().getName()).isEqualTo(KERMIT_GROUP_NAME);
     assertThat(groupIdentityById.get().getMemberCount()).isEqualTo(1L);
@@ -162,10 +163,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
@@ -174,10 +175,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -185,10 +186,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -203,10 +204,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       revokedGroupId, OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -218,10 +219,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -229,10 +230,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -243,10 +244,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -255,10 +256,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isPresent();
+    assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isPresent();
   }
 
   @Test
@@ -270,10 +271,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
@@ -285,18 +286,18 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
-    syncedIdentityCacheService.synchronizeIdentities();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    userIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
+    assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
   public void testPermissionCleanupAfterIdentitySync() {
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given a collection with permissions for users/groups
-      syncedIdentityCacheService.stopSchedulingUserSync();
+      userIdentityCacheService.stopScheduledSync();
 
       authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
       authorizationClient.addKermitUserWithoutAuthorizations();
@@ -304,7 +305,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       authorizationClient.createGroupAndAddUser(TEST_GROUP, USER_KERMIT);
       authorizationClient.createGroupAndAddUser(TEST_GROUP_B, DEFAULT_USERNAME);
 
-      syncedIdentityCacheService.synchronizeIdentities();
+      userIdentityCacheService.synchronizeIdentities();
 
       final String collectionId1 = collectionClient.createNewCollection();
       final String collectionId2 = collectionClient.createNewCollection();
@@ -346,7 +347,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
         RESOURCE_TYPE_APPLICATION
       );
 
-      syncedIdentityCacheService.synchronizeIdentities();
+      userIdentityCacheService.synchronizeIdentities();
 
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
       List<IdResponseDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
@@ -357,22 +358,22 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
         new IdResponseDto(userDemoRole.getId())
       );
     } finally {
-      syncedIdentityCacheService.startSchedulingUserSync();
+      userIdentityCacheService.startScheduledSync();
     }
   }
 
   @Test
   public void testPermissionCleanupAfterIdentitySyncRemovesLastManager() {
-    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given
-      syncedIdentityCacheService.stopSchedulingUserSync();
+      userIdentityCacheService.startScheduledSync();
 
       authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
       authorizationClient.addKermitUserWithoutAuthorizations();
       embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
 
-      syncedIdentityCacheService.synchronizeIdentities();
+      userIdentityCacheService.synchronizeIdentities();
 
       final String collectionId = collectionClient.createNewCollection(USER_KERMIT, USER_KERMIT);
 
@@ -383,18 +384,18 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
         RESOURCE_TYPE_APPLICATION
       );
 
-      syncedIdentityCacheService.synchronizeIdentities();
+      userIdentityCacheService.synchronizeIdentities();
 
       // then
       List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
       assertThat(roles).isEmpty();
     } finally {
-      syncedIdentityCacheService.startSchedulingUserSync();
+      userIdentityCacheService.startScheduledSync();
     }
   }
 
-  private SyncedIdentityCacheService getSyncedIdentityCacheService() {
-    return embeddedOptimizeExtension.getSyncedIdentityCacheService();
+  private UserIdentityCacheService getUserIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
   private IdentitySyncConfiguration getIdentitySyncConfiguration() {

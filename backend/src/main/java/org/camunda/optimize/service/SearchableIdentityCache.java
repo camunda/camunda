@@ -101,8 +101,8 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataResponseDto> identities) throws
-                                                                                               MaxEntryLimitHitException {
+  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataResponseDto> identities)
+    throws MaxEntryLimitHitException {
     if (identities.isEmpty()) {
       return;
     }
