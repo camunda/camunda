@@ -22,14 +22,13 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +56,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   private final BackoffCalculator backoffCalculator;
 
   private List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
-  private CronSequenceGenerator cronSequenceGenerator;
+  private CronExpression cronExpression;
 
   public SyncedIdentityCacheService(final ConfigurationService configurationService,
                                     final EngineContextFactory engineContextFactory,
@@ -77,7 +76,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   }
 
   private void initCronSequenceGenerator() {
-    this.cronSequenceGenerator = new CronSequenceGenerator(getIdentitySyncConfiguration().getCronTrigger());
+    this.cronExpression = CronExpression.parse(getIdentitySyncConfiguration().getCronTrigger());
   }
 
   @PostConstruct
@@ -113,18 +112,20 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   }
 
   public synchronized void syncIdentitiesWithRetry() {
-    Instant stopRetryingTime = cronSequenceGenerator
-      .next(new Date(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()))
-      .toInstant()
-      .minusSeconds(backoffCalculator.getMaximumBackoffSeconds());
-    boolean shouldRetry = true;
+    final Optional<Instant> stopRetryingTime =
+      Optional.ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime()))
+      .map(currentTime -> currentTime.toInstant().minusSeconds(backoffCalculator.getMaximumBackoffSeconds()));
+    boolean shouldRetry = false;
+    if (stopRetryingTime.isPresent()) {
+      shouldRetry = true;
+    }
     while (shouldRetry) {
       try {
         synchronizeIdentities();
         log.info("Engine identity sync complete");
         shouldRetry = false;
       } catch (final Exception e) {
-        if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime)) {
+        if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime.get())) {
           log.error(
             "Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching",
             e
