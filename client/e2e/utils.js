@@ -100,10 +100,8 @@ export async function cancel(t) {
 }
 
 export async function selectAggregation(t, type) {
-  await t.click('.Configuration .Popover');
   await t.click('.AggregationType .Select');
   await t.click(Selector('.AggregationType .DropdownOption').withText(type));
-  await t.click('.Configuration .Popover');
 }
 
 export async function gotoOverview(t) {

@@ -1,13 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should render an duration type selection for user task duration reports 1`] = `
-<fieldset
+<li
   className="UserTaskDurationTime"
 >
-  <legend>
+  <span
+    className="label"
+  >
     User Task Duration Time
-  </legend>
+  </span>
   <Select
+    className="ReportSelect"
     onChange={[Function]}
     value="total"
   >
@@ -27,7 +30,7 @@ exports[`should render an duration type selection for user task duration reports
       Total
     </Option>
   </Select>
-</fieldset>
+</li>
 `;
 
 exports[`should render nothing if the current result does is no duration or no user task 1`] = `""`;
