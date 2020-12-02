@@ -11,12 +11,7 @@ ES_VERSION=$2
 CAMPBM_VERSION=$3
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/ns.yml | kubectl apply -f -
-kubectl create secret docker-registry registry-camunda-cloud \
-    --namespace "$NAMESPACE" \
-    --docker-server=https://registry.camunda.cloud \
-    --docker-username="$REGISTRY_USR" \
-    --docker-password="$REGISTRY_PSW" \
-    --docker-email=ci@camunda.com
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/secrets.yml | kubectl apply -f -
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/rbac.yml | kubectl apply -f -
 
