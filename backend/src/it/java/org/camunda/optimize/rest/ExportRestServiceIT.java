@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.camunda.optimize.AbstractIT;
@@ -181,49 +180,49 @@ public class ExportRestServiceIT extends AbstractIT {
     return Stream.of(
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(null)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
         .processDefinitionVersions(null)
-        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
         .processDefinitionVersions(Collections.emptyList())
-        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
         .includedColumns(null)
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
         .includedColumns(Collections.emptyList())
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
         .tenantIds(null)
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
         .filter(null)
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
         .includedColumns(null)
         .build(),
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
-        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
         .includedColumns(Collections.emptyList())
         .build()
     );
@@ -238,8 +237,8 @@ public class ExportRestServiceIT extends AbstractIT {
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstance.getProcessDefinitionKey())
-      .processDefinitionVersions(Lists.newArrayList(processInstance.getProcessDefinitionVersion()))
-      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .processDefinitionVersions(Collections.singletonList(processInstance.getProcessDefinitionVersion()))
+      .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .build();
 
     // when
@@ -265,8 +264,8 @@ public class ExportRestServiceIT extends AbstractIT {
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
-      .processDefinitionVersions(Lists.newArrayList(processInstanceVersion2.getProcessDefinitionVersion()))
-      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .processDefinitionVersions(Collections.singletonList(processInstanceVersion2.getProcessDefinitionVersion()))
+      .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .build();
 
     // when
@@ -292,8 +291,8 @@ public class ExportRestServiceIT extends AbstractIT {
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
-      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+      .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .build();
 
     // when
@@ -327,9 +326,9 @@ public class ExportRestServiceIT extends AbstractIT {
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceTenant2.getProcessDefinitionKey())
-      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-      .tenantIds(Lists.newArrayList(tenantId1))
-      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+      .tenantIds(Collections.singletonList(tenantId1))
+      .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .build();
 
     // when
@@ -361,8 +360,8 @@ public class ExportRestServiceIT extends AbstractIT {
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstance1.getProcessDefinitionKey())
-      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
-      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .processDefinitionVersions(Collections.singletonList(ReportConstants.ALL_VERSIONS))
+      .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .filter(
         ProcessFilterBuilder.filter()
           .rollingStartDate().start(10L, DateFilterUnit.SECONDS).add()
@@ -423,14 +422,16 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportData) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setName("something");
     return createNewProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
-    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+      new SingleDecisionReportDefinitionRequestDto();
     singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
     singleDecisionReportDefinitionDto.setLastModifier("something");
     singleDecisionReportDefinitionDto.setName("something");

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -32,6 +31,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -138,9 +139,9 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final List<String> selectedTenants = Collections.singletonList(tenantId1);
     final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
-      Lists.newArrayList(null, tenantId1, tenantId2)
+      Arrays.asList(null, tenantId1, tenantId2)
     );
 
     importAllEngineEntitiesFromScratch();

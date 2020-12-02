@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDat
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -439,10 +440,10 @@ public class CSVUtilsTest {
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
-    List<String> includedColumns = Lists.newArrayList(
+    List<String> includedColumns = Collections.singletonList(
       OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1)
     );
-    List<String> excludedColumns = Lists.newArrayList(
+    List<String> excludedColumns = Collections.singletonList(
       OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1)
     );
 

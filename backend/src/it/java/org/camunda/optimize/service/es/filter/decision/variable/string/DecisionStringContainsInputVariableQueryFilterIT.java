@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class DecisionStringContainsInputVariableQueryFilterIT extends AbstractDe
       .flatExtracting(Map::values)
       .filteredOn(var -> var.getId().equals(INPUT_VARIABLE_ID_TO_FILTER_ON))
       .extracting(InputVariableEntry::getValue)
-      .containsExactlyInAnyOrder(shouldMatch);
+      .containsExactlyInAnyOrderElementsOf(Arrays.asList(shouldMatch));
   }
 
   @Override

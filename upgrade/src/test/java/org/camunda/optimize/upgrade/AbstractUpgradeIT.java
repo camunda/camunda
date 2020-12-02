@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -63,6 +62,7 @@ import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,7 +125,7 @@ public abstract class AbstractUpgradeIT {
 
     cleanAllDataFromElasticsearch();
     createEmptyEnvConfig();
-    initSchema(Lists.newArrayList(METADATA_INDEX));
+    initSchema(Collections.singletonList(METADATA_INDEX));
     setMetadataVersion(FROM_VERSION);
 
     prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);

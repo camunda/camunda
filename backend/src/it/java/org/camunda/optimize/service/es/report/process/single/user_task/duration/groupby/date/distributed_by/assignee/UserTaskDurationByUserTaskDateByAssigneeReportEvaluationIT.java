@@ -99,7 +99,8 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView())
-      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.DURATION));
+      .usingRecursiveComparison()
+      .isEqualTo(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())

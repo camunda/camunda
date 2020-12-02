@@ -94,7 +94,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView())
-      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.FREQUENCY));
+      .usingRecursiveComparison()
+      .isEqualTo(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -511,7 +512,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
@@ -554,15 +555,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1.))
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, Collections.singletonList(Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP},
+                   Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 1.))
+      ),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Collections.emptyList())
     );
   }
 

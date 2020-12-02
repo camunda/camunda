@@ -6,9 +6,8 @@
 package org.camunda.optimize.reimport.preparation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -32,6 +31,7 @@ import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIn
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
 
 import java.util.List;
@@ -48,7 +48,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 public class ReimportPreparation {
   private static final ConfigurationService CONFIGURATION_SERVICE =
     ConfigurationServiceBuilder.createDefaultConfiguration();
-  private static final List<IndexMappingCreator> STATIC_INDICES_TO_DELETE = Lists.newArrayList(
+  private static final List<IndexMappingCreator> STATIC_INDICES_TO_DELETE = ImmutableList.of(
     new ImportIndexIndex(),
     new TimestampBasedImportIndex(),
     new ProcessDefinitionIndex(),
@@ -61,11 +61,11 @@ public class ReimportPreparation {
     new VariableUpdateInstanceIndex(),
     new EventProcessPublishStateIndex()
   );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = Lists.newArrayList(
+  private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = ImmutableList.of(
     new EventProcessInstanceIndex("*"),
     new CamundaActivityEventIndex("*")
   );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE = Lists.newArrayList(
+  private static final List<IndexMappingCreator> DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE = ImmutableList.of(
     new EventSequenceCountIndex("*"),
     new EventTraceStateIndex("*")
   );
