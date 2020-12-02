@@ -6,6 +6,13 @@ env-up:
 	&& mvn -pl webapp jib:dockerBuild \
 	&& docker-compose up -d elasticsearch zeebe zeebe-tasklist
 
+# Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
+.PHONY: env-sso-up
+env-sso-up:
+	mvn clean install -DskipTests=true \
+	&& mvn -pl webapp jib:dockerBuild \
+	&& docker-compose up -d elasticsearch zeebe zeebe-tasklist-sso
+
 .PHONY: operate-up
 operate-up:
 	docker-compose up -d operate

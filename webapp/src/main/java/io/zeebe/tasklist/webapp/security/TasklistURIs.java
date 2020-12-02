@@ -7,6 +7,8 @@ package io.zeebe.tasklist.webapp.security;
 
 import static io.zeebe.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
 
+import java.util.Set;
+
 public final class TasklistURIs {
 
   public static final String ROOT_URL = "/";
@@ -27,6 +29,9 @@ public final class TasklistURIs {
   public static final String COOKIE_JSESSIONID = "JSESSIONID";
 
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
+
+  public static final String DEFAULT_AUTH = AUTH_PROFILE;
+  public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE, SSO_AUTH_PROFILE);
 
   public static final String[] AUTH_WHITELIST = {
     "/webjars/**", CLIENT_CONFIG_RESOURCE, ERROR_URL, NO_PERMISSION, LOGIN_RESOURCE, LOGOUT_RESOURCE

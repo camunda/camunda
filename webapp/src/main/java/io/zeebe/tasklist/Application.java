@@ -7,9 +7,9 @@ package io.zeebe.tasklist;
 
 import io.zeebe.tasklist.data.DataGenerator;
 import io.zeebe.tasklist.webapp.security.TasklistURIs;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 @SpringBootApplication
 @ComponentScan(
@@ -41,20 +42,15 @@ public class Application {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
-  public static void main(String[] args) throws Exception {
-
+  public static void main(String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     springApplication.setAddCommandLineProperties(true);
-    if (!isOneAuthProfileActive(args)) {
-      springApplication.setAdditionalProfiles(TasklistURIs.AUTH_PROFILE);
-    }
-
     setDefaultProperties(springApplication);
-
+    setDefaultAuthProfile(springApplication);
     springApplication.run(args);
   }
 
@@ -63,6 +59,17 @@ public class Application {
     defaultProperties.putAll(getManagementProperties());
     defaultProperties.putAll(getGraphqlProperties());
     springApplication.setDefaultProperties(defaultProperties);
+  }
+
+  private static void setDefaultAuthProfile(final SpringApplication springApplication) {
+    springApplication.addInitializers(
+        configurableApplicationContext -> {
+          final ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
+          final Set<String> activeProfiles = Set.of(env.getActiveProfiles());
+          if (TasklistURIs.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
+            env.addActiveProfile(TasklistURIs.DEFAULT_AUTH);
+          }
+        });
   }
 
   private static Map<String, Object> getGraphqlProperties() {
@@ -88,16 +95,6 @@ public class Application {
 
         // add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");
-  }
-
-  protected static boolean isOneAuthProfileActive(String[] args) {
-    final String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
-    final String profilesFromArgs = String.join(",", Arrays.asList(args));
-    final String profilesFromProperties =
-        String.format("%s", System.getProperty("spring.profiles.active"));
-    return profilesFromArgs.contains("auth")
-        || profilesFromEnv.contains("auth")
-        || profilesFromProperties.contains("auth");
   }
 
   @Bean(name = "dataGenerator")

@@ -133,3 +133,32 @@ services:
     networks:
       - zeebe_network
     restart: always
+
+  zeebe-tasklist-sso:
+    container_name: zeebe-tasklist
+    image: camunda/zeebe-tasklist:latest
+    ports:
+      - 8080:8080
+    environment:
+      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
+      - spring.profiles.active=dev,dev-data,sso-auth
+      - zeebe.tasklist.csrfPreventionEnabled=false
+      - zeebe.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
+      - zeebe.tasklist.auth0.claimName=https://camunda.com/orgs
+      - zeebe.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3
+      - zeebe.tasklist.auth0.clientSecret=${ZEEBE_TASKLIST_AUTH0_CLIENTSECRET}
+      - zeebe.tasklist.auth0.domain=weblogin.cloud.ultrawombat.com
+      - zeebe.tasklist.auth0.organization=ebe81097-6657-4481-8fba-be5d94cac4ce
+      - graphql.playground.enabled=true
+      - graphql.playground.settings.request.credentials=include
+    volumes:
+      - ./distro/src/main/config/application.yml:/app/resources/application.yaml
+      - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
+    depends_on:
+      - elasticsearch
+      - zeebe
+    networks:
+      - zeebe_network
+    restart: always
