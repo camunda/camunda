@@ -181,7 +181,7 @@ public class DateAggregationService {
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
-      .dateHistogramInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
+      .calendarInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
       .format(OPTIMIZE_DATE_FORMAT)
       .timeZone(context.getTimezone());
 
@@ -201,7 +201,7 @@ public class DateAggregationService {
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
-      .dateHistogramInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
+      .calendarInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
       .format(OPTIMIZE_DATE_FORMAT)
       .timeZone(context.getTimezone())
       .subAggregation(context.getSubAggregation());
