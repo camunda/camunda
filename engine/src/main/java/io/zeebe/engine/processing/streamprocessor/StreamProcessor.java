@@ -222,8 +222,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     }
   }
 
-  public ActorFuture<Void> openAsync() {
+  public ActorFuture<Void> openAsync(final boolean pauseOnStart) {
     if (isOpened.compareAndSet(false, true)) {
+      shouldProcess = !pauseOnStart;
       openFuture = new CompletableActorFuture<>();
       actorScheduler.submitActor(this);
     }
@@ -278,6 +279,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
     processingStateMachine.startProcessing(lastReprocessedPosition);
+    if (!shouldProcess) {
+      setStateToPausedAndNotifyListeners();
+    }
   }
 
   private void onFailure(final Throwable throwable) {
@@ -346,12 +350,16 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
             recoverFuture.onComplete(
                 (v, t) -> {
                   if (shouldProcess) {
-                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
-                    shouldProcess = false;
-                    phase = Phase.PAUSED;
-                    LOG.debug("Paused processing for partition {}", partitionId);
+                    setStateToPausedAndNotifyListeners();
                   }
                 }));
+  }
+
+  private void setStateToPausedAndNotifyListeners() {
+    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+    shouldProcess = false;
+    phase = Phase.PAUSED;
+    LOG.debug("Paused processing for partition {}", partitionId);
   }
 
   public void resumeProcessing() {

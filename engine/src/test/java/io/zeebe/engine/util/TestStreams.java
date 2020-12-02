@@ -240,7 +240,7 @@ public final class TestStreams {
             .streamProcessorFactory(factory)
             .detectReprocessingInconsistency(detectReprocessingInconsistency)
             .build();
-    streamProcessor.openAsync().join(15, TimeUnit.SECONDS);
+    streamProcessor.openAsync(false).join(15, TimeUnit.SECONDS);
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
