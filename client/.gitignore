@@ -30,3 +30,5 @@ camunda-h2-dbs
 src/**/*.css
 
 dependencies.json
+
+.eslintcache

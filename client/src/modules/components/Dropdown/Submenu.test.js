@@ -47,7 +47,10 @@ it('should change focus after pressing an arrow key', () => {
     <Submenu label="Click me">
       <DropdownOption>foo</DropdownOption>
       <DropdownOption>bar</DropdownOption>
-    </Submenu>
+    </Submenu>,
+    {
+      attachTo: document.body,
+    }
   );
 
   node.setProps({open: true});

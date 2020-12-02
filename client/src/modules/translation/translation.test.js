@@ -15,6 +15,7 @@ jest.mock('config', () => ({
 }));
 
 beforeAll(async () => {
+  jest.clearAllMocks();
   languageGetter.mockReturnValue(['de']);
   jest.spyOn(request, 'get').mockReturnValue({
     json: () => ({

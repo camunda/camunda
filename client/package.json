@@ -108,6 +108,9 @@
     "**/jpeg-js": "^0.4.0",
     "**/kind-of": "^6.0.3"
   },
+  "jest": {
+    "resetMocks": false
+  },
   "browserslist": [
     ">0.2%",
     "not dead",

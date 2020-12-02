@@ -15,7 +15,7 @@ import translation from '../../backend/src/main/resources/localization/en.json';
 Enzyme.configure({adapter: new Adapter()});
 document.execCommand = jest.fn();
 
-it('load translation', async () => {
+beforeAll(async () => {
   jest.spyOn(request, 'get').mockImplementationOnce(async (url) => ({json: () => translation}));
   await init();
 });
