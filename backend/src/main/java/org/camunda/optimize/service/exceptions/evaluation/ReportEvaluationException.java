@@ -7,21 +7,15 @@ package org.camunda.optimize.service.exceptions.evaluation;
 
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.util.SuppressionConstants;
 
 public class ReportEvaluationException extends OptimizeRuntimeException {
 
   protected AuthorizedReportDefinitionResponseDto reportDefinition;
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   public ReportEvaluationException() {
     super();
-  }
-
-  public ReportEvaluationException(String message) {
-    super(message);
-  }
-
-  public ReportEvaluationException(String message, Exception e) {
-    super(message, e);
   }
 
   public ReportEvaluationException(AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {

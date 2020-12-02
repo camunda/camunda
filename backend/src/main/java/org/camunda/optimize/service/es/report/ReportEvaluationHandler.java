@@ -27,13 +27,16 @@ import org.camunda.optimize.service.es.report.result.process.CombinedProcessRepo
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.variable.ProcessVariableService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -128,16 +131,17 @@ public abstract class ReportEvaluationHandler {
       (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     final String userId = evaluationInfo.getUserId();
     List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
-    List<SingleProcessReportDefinitionRequestDto> foundSingleReports = reportReader.getAllSingleProcessReportsForIdsOmitXml(
-      singleReportIds)
-      .stream()
-      .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-      .peek(reportDefinition -> addAdditionalFiltersForAuthorizedReport(
-        userId,
-        reportDefinition,
-        evaluationInfo.getAdditionalFilters()
-      ))
-      .collect(Collectors.toList());
+    List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
+      reportReader.getAllSingleProcessReportsForIdsOmitXml(
+        singleReportIds)
+        .stream()
+        .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
+        .peek(reportDefinition -> addAdditionalFiltersForAuthorizedReport(
+          userId,
+          reportDefinition,
+          evaluationInfo.getAdditionalFilters()
+        ))
+        .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
       throw new OptimizeValidationException("Some of the single reports contained in the combined report with id ["
@@ -167,9 +171,18 @@ public abstract class ReportEvaluationHandler {
       CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
     } catch (OptimizeException | OptimizeValidationException e) {
-      AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+      final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
         new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
+    } catch (ElasticsearchStatusException e) {
+      final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+        new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
+      if (Arrays.stream(e.getSuppressed())
+        .map(Throwable::getMessage)
+        .anyMatch(msg -> msg.contains("too_many_buckets_exception"))) {
+        throw new TooManyBucketsException(authorizedReportDefinitionDto, e);
+      }
+      throw e;
     }
   }
 
@@ -200,7 +213,8 @@ public abstract class ReportEvaluationHandler {
                                              Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
     if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
       if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto) {
-        SingleProcessReportDefinitionRequestDto definitionDto = (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
+        SingleProcessReportDefinitionRequestDto definitionDto =
+          (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
         Map<VariableType, Set<String>> variableFiltersByTypeForReport =
           varNameSupplier.get()
             .stream()

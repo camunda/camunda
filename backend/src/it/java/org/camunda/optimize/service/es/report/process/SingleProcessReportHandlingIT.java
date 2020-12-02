@@ -422,6 +422,10 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // then the response has the correct error code
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("tooManyBuckets");
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorMessage()).isEqualTo(
+      "Could not evaluate report because the result has more than 10.000 data points. Please add filters or adjust " +
+        "the bucket size to reduce the size of the report result.");
+    assertThat(response.readEntity(ErrorResponseDto.class).getReportDefinition()).isNotNull();
   }
 
   @Test
