@@ -954,6 +954,15 @@
         "unassigned": "Nicht zugewiesen",
         "selectValue": "Filter für ID"
       },
+      "dropdownLabel": {
+        "instance": "Prozessinstanzen filtern",
+        "view": "Prozessknoten-Daten filtern",
+        "decision": "Entscheidungsinstanzen filtern"
+      },
+      "allVisible": {
+        "instance": "Alle Instanzen sichtbar",
+        "view": "Alle Prozessknoten-Daten sichtbar"
+      },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },
     "definitionSelection": {

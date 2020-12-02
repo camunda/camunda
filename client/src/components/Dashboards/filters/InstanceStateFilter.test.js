@@ -36,7 +36,9 @@ it('should contain a popover to set instance state filters', () => {
     .find(Switch)
     .at(0)
     .simulate('change', {target: {checked: true}});
-  expect(props.setFilter).toHaveBeenCalledWith([{type: 'runningInstancesOnly', data: null}]);
+  expect(props.setFilter).toHaveBeenCalledWith([
+    {type: 'runningInstancesOnly', data: null, filterLevel: 'instance'},
+  ]);
 });
 
 it('should show the filter state', () => {

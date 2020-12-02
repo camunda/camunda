@@ -45,7 +45,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== dateFilter);
                   if (newFilter) {
-                    setFilter([...rest, {type, data: newFilter}]);
+                    setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
                   } else {
                     setFilter(rest);
                   }
@@ -68,7 +68,10 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== variableFilter);
                   if (newFilter) {
-                    setFilter([...rest, {type, data: {...data, data: newFilter}}]);
+                    setFilter([
+                      ...rest,
+                      {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
+                    ]);
                   } else {
                     setFilter(rest);
                   }

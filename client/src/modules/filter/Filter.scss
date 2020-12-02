@@ -1,3 +1,24 @@
 .Filter {
   display: inline;
+
+  .filterHeader {
+    display: flex;
+    align-items: center;
+
+    .Filter__dropdown .activateButton {
+      padding-left: 12px;
+    }
+
+    .dropdownLabel {
+      flex-grow: 1;
+      font-size: 0.875em;
+    }
+  }
+
+  .emptyMessage {
+    text-align: center;
+    color: var(--grey-lighten-56);
+    font-size: 0.875em;
+    margin: 10px 0 0;
+  }
 }

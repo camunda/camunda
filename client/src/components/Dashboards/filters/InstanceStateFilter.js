@@ -30,7 +30,7 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
   }
 
   function addFilter(type) {
-    setFilter([...filter, {type, data: null}]);
+    setFilter([...filter, {type, data: null, filterLevel: 'instance'}]);
   }
 
   function removeFilter(type) {

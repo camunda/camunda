@@ -40,7 +40,20 @@
     }
 
     .Filter {
-      position: relative;
+      .filterHeader {
+        position: relative;
+        display: inline-block;
+        margin-right: 20px;
+
+        .dropdownLabel {
+          margin-right: 10px;
+        }
+      }
+
+      .emptyMessage {
+        display: none;
+      }
+
       .FilterList {
         display: inline;
 

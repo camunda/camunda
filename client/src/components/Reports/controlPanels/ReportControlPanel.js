@@ -174,78 +174,98 @@ export default withErrorHandling(
               renderDiagram
             />
           </div>
-          <div className="reportSetup">
-            <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
-            <ul>
-              {['view', 'groupBy'].map((field, idx, fields) => {
-                const previous = fields
-                  .filter((prev, prevIdx) => prevIdx < idx)
-                  .map((prev) => data[prev]);
+          <div className="scrollable">
+            <div className="filter">
+              <Filter
+                flowNodeNames={this.state.flowNodeNames}
+                data={data.filter}
+                onChange={this.props.updateReport}
+                processDefinitionKey={data.processDefinitionKey}
+                processDefinitionVersions={data.processDefinitionVersions}
+                tenantIds={data.tenantIds}
+                xml={data.configuration.xml}
+                filterLevel="instance"
+              />
+            </div>
+            <div className="reportSetup">
+              <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
+              <ul>
+                {['view', 'groupBy'].map((field, idx, fields) => {
+                  const previous = fields
+                    .filter((prev, prevIdx) => prevIdx < idx)
+                    .map((prev) => data[prev]);
 
-                return (
-                  <li className="select" key={field}>
-                    <span className="label">{t(`report.${field}.label`)}</span>
-                    <ReportSelect
-                      type="process"
-                      field={field}
-                      value={data[field]}
+                  return (
+                    <li className="select" key={field}>
+                      <span className="label">{t(`report.${field}.label`)}</span>
+                      <ReportSelect
+                        type="process"
+                        field={field}
+                        value={data[field]}
+                        report={this.props.report}
+                        variables={{variable: this.state.variables}}
+                        previous={previous}
+                        disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
+                        onChange={(newValue) => this.updateReport(field, newValue)}
+                      />
+                    </li>
+                  );
+                })}
+                <AggregationType report={this.props.report} onChange={this.props.updateReport} />
+                <UserTaskDurationTime
+                  report={this.props.report}
+                  onChange={this.props.updateReport}
+                />
+                <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
+                {isDurationHeatmap(data) && (
+                  <li>
+                    <TargetValueComparison
                       report={this.props.report}
-                      variables={{variable: this.state.variables}}
-                      previous={previous}
-                      disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
-                      onChange={(newValue) => this.updateReport(field, newValue)}
+                      onChange={this.props.updateReport}
                     />
                   </li>
-                );
-              })}
-              <AggregationType report={this.props.report} onChange={this.props.updateReport} />
-              <UserTaskDurationTime report={this.props.report} onChange={this.props.updateReport} />
-              <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
-              {isDurationHeatmap(data) && (
-                <li>
-                  <TargetValueComparison
-                    report={this.props.report}
-                    onChange={this.props.updateReport}
-                  />
-                </li>
-              )}
-              {isProcessInstanceDuration(data) && (
-                <li>
-                  <ProcessPart
-                    flowNodeNames={this.state.flowNodeNames}
-                    xml={data.configuration.xml}
-                    processPart={data.configuration.processPart}
-                    update={(newPart) => {
-                      const change = {configuration: {processPart: {$set: newPart}}};
-                      if (data.configuration.aggregationType === 'median') {
-                        change.configuration.aggregationType = {$set: 'avg'};
-                      }
-                      this.props.updateReport(change, true);
-                    }}
-                  />
-                </li>
-              )}
-            </ul>
-          </div>
-          <div className="filter">
-            <Filter
-              flowNodeNames={this.state.flowNodeNames}
-              data={data.filter}
-              onChange={this.props.updateReport}
-              processDefinitionKey={data.processDefinitionKey}
-              processDefinitionVersions={data.processDefinitionVersions}
-              tenantIds={data.tenantIds}
-              xml={data.configuration.xml}
-            />
-          </div>
-          {result && typeof result.instanceCount !== 'undefined' && (
-            <div className="instanceCount">
-              {t(
-                `report.instanceCount.process.label${result.instanceCount !== 1 ? '-plural' : ''}`,
-                {count: result.instanceCount}
-              )}
+                )}
+                {isProcessInstanceDuration(data) && (
+                  <li>
+                    <ProcessPart
+                      flowNodeNames={this.state.flowNodeNames}
+                      xml={data.configuration.xml}
+                      processPart={data.configuration.processPart}
+                      update={(newPart) => {
+                        const change = {configuration: {processPart: {$set: newPart}}};
+                        if (data.configuration.aggregationType === 'median') {
+                          change.configuration.aggregationType = {$set: 'avg'};
+                        }
+                        this.props.updateReport(change, true);
+                      }}
+                    />
+                  </li>
+                )}
+              </ul>
             </div>
-          )}
+            <div className="filter">
+              <Filter
+                flowNodeNames={this.state.flowNodeNames}
+                data={data.filter}
+                onChange={this.props.updateReport}
+                processDefinitionKey={data.processDefinitionKey}
+                processDefinitionVersions={data.processDefinitionVersions}
+                tenantIds={data.tenantIds}
+                xml={data.configuration.xml}
+                filterLevel="view"
+              />
+            </div>
+            {result && typeof result.instanceCount !== 'undefined' && (
+              <div className="instanceCount">
+                {t(
+                  `report.instanceCount.process.label${
+                    result.instanceCount !== 1 ? '-plural' : ''
+                  }`,
+                  {count: result.instanceCount}
+                )}
+              </div>
+            )}
+          </div>
         </div>
       );
     }

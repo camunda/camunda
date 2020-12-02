@@ -60,7 +60,7 @@ export function AddFiltersButton({
   }, [reportIds]);
 
   function addFilter(type) {
-    setAvailableFilters([...availableFilters, {type}]);
+    setAvailableFilters([...availableFilters, {type, filterLevel: 'instance'}]);
   }
 
   function hasFilter(type) {

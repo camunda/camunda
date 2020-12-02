@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Dropdown} from 'components';
+import {Dropdown, Icon} from 'components';
 
 import {
   DateFilter,
@@ -105,6 +105,7 @@ export default class Filter extends React.Component {
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['runningInstancesOnly']);
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['canceledInstancesOnly']);
 
+    newFilter.filterLevel = this.props.filterLevel;
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
   };
@@ -140,8 +141,96 @@ export default class Filter extends React.Component {
     this.addFilter({
       type,
       data: null,
+      filterLevel: 'instance',
     });
   };
+
+  renderInstanceOptions = () => {
+    return (
+      <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
+        <Dropdown.Submenu label={t('common.filter.types.instanceState')}>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
+            {t('common.filter.types.runningInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
+            {t('common.filter.types.completedInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
+            {t('common.filter.types.canceledInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
+            {t('common.filter.types.nonCanceledInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('suspendedInstancesOnly')}>
+            {t('common.filter.types.suspendedInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('nonSuspendedInstancesOnly')}>
+            {t('common.filter.types.nonSuspendedInstancesOnly')}
+          </Dropdown.Option>
+        </Dropdown.Submenu>
+        <Dropdown.Submenu label={t('common.filter.types.date')}>
+          <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
+            {t('common.filter.types.startDate')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>
+            {t('common.filter.types.endDate')}
+          </Dropdown.Option>
+        </Dropdown.Submenu>
+        <Dropdown.Submenu label={t('common.filter.types.duration')}>
+          <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
+            {t('common.filter.types.instance')}
+          </Dropdown.Option>
+          <Dropdown.Option
+            disabled={this.processDefinitionIsNotSelected()}
+            onClick={this.openNewFilterModal('flowNodeDuration')}
+          >
+            {t('common.filter.types.flowNode')}
+          </Dropdown.Option>
+        </Dropdown.Submenu>
+        <Dropdown.Option
+          disabled={this.processDefinitionIsNotSelected()}
+          onClick={this.openNewFilterModal('executedFlowNodes')}
+        >
+          {t('common.filter.types.flowNode')}
+        </Dropdown.Option>
+        <Dropdown.Option
+          disabled={this.processDefinitionIsNotSelected()}
+          onClick={this.openNewFilterModal('assignee')}
+        >
+          {t('report.groupBy.userAssignee')}
+        </Dropdown.Option>
+        <Dropdown.Option
+          disabled={this.processDefinitionIsNotSelected()}
+          onClick={this.openNewFilterModal('candidateGroup')}
+        >
+          {t('report.groupBy.userGroup')}
+        </Dropdown.Option>
+        <Dropdown.Option
+          disabled={this.processDefinitionIsNotSelected()}
+          onClick={this.openNewFilterModal('variable')}
+        >
+          {t('common.filter.types.variable')}
+        </Dropdown.Option>
+      </Dropdown>
+    );
+  };
+
+  renderFlowNodeOptions = () => (
+    <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
+      <Dropdown.Option
+        disabled={this.processDefinitionIsNotSelected()}
+        onClick={this.openNewFilterModal('assignee')}
+      >
+        {t('report.groupBy.userAssignee')}
+      </Dropdown.Option>
+      <Dropdown.Option
+        disabled={this.processDefinitionIsNotSelected()}
+        onClick={this.openNewFilterModal('candidateGroup')}
+      >
+        {t('report.groupBy.userGroup')}
+      </Dropdown.Option>
+    </Dropdown>
+  );
 
   render() {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
@@ -149,84 +238,31 @@ export default class Filter extends React.Component {
       this.state.editFilter ? this.state.editFilter.type : null
     );
 
+    const filters = this.props.data.filter(
+      ({filterLevel}) => filterLevel === this.props.filterLevel
+    );
+
     return (
       <div className="Filter">
+        <div className="filterHeader">
+          <Icon type="filter" />
+          <span className="dropdownLabel">
+            {t('common.filter.dropdownLabel.' + this.props.filterLevel)}
+          </span>
+          {this.props.filterLevel === 'instance'
+            ? this.renderInstanceOptions()
+            : this.renderFlowNodeOptions()}
+        </div>
+        {filters.length === 0 && (
+          <p className="emptyMessage">{t('common.filter.allVisible.' + this.props.filterLevel)}</p>
+        )}
         <FilterList
           {...this.definitionConfig()}
           flowNodeNames={this.props.flowNodeNames}
           openEditFilterModal={this.openEditFilterModal}
-          data={this.props.data}
+          data={filters}
           deleteFilter={this.deleteFilter}
         />
-        <Dropdown
-          label={t('common.filter.addFilter')}
-          id="ControlPanel__filters"
-          className="Filter__dropdown"
-        >
-          <Dropdown.Submenu label={t('common.filter.types.instanceState')}>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
-              {t('common.filter.types.runningInstancesOnly')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
-              {t('common.filter.types.completedInstancesOnly')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
-              {t('common.filter.types.canceledInstancesOnly')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
-              {t('common.filter.types.nonCanceledInstancesOnly')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('suspendedInstancesOnly')}>
-              {t('common.filter.types.suspendedInstancesOnly')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.filterByInstancesOnly('nonSuspendedInstancesOnly')}>
-              {t('common.filter.types.nonSuspendedInstancesOnly')}
-            </Dropdown.Option>
-          </Dropdown.Submenu>
-          <Dropdown.Submenu label={t('common.filter.types.date')}>
-            <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
-              {t('common.filter.types.startDate')}
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>
-              {t('common.filter.types.endDate')}
-            </Dropdown.Option>
-          </Dropdown.Submenu>
-          <Dropdown.Submenu label={t('common.filter.types.duration')}>
-            <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
-              {t('common.filter.types.instance')}
-            </Dropdown.Option>
-            <Dropdown.Option
-              disabled={this.processDefinitionIsNotSelected()}
-              onClick={this.openNewFilterModal('flowNodeDuration')}
-            >
-              {t('common.filter.types.flowNode')}
-            </Dropdown.Option>
-          </Dropdown.Submenu>
-          <Dropdown.Option
-            disabled={this.processDefinitionIsNotSelected()}
-            onClick={this.openNewFilterModal('variable')}
-          >
-            {t('common.filter.types.variable')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.processDefinitionIsNotSelected()}
-            onClick={this.openNewFilterModal('executedFlowNodes')}
-          >
-            {t('common.filter.types.flowNode')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.processDefinitionIsNotSelected()}
-            onClick={this.openNewFilterModal('assignee')}
-          >
-            {t('report.groupBy.userAssignee')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.processDefinitionIsNotSelected()}
-            onClick={this.openNewFilterModal('candidateGroup')}
-          >
-            {t('report.groupBy.userGroup')}
-          </Dropdown.Option>
-        </Dropdown>
         <FilterModal
           addFilter={this.addFilter}
           close={this.closeModal}

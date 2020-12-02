@@ -954,6 +954,15 @@
         "unassigned": "unassigned",
         "selectValue": "Filter for ID"
       },
+      "dropdownLabel": {
+        "instance": "Filter Process instances",
+        "view": "Filter Flow Node Data",
+        "decision": "Filter Decision instances"
+      },
+      "allVisible": {
+        "instance": "All instances visible",
+        "view": "All Flow Node data visible"
+      },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {

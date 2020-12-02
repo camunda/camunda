@@ -135,6 +135,7 @@ export default class BranchControlPanel extends React.Component {
               }
               xml={this.props.xml}
               {...this.getDefinitionConfig()}
+              filterLevel="instance"
             />
           </li>
         </ul>
