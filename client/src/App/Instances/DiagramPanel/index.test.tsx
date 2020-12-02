@@ -174,6 +174,8 @@ describe('DiagramPanel', () => {
 
     instancesDiagramStore.fetchWorkflowXml('1');
 
+    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+
     expect(
       screen.queryByText('Diagram could not be fetched')
     ).not.toBeInTheDocument();

@@ -2495,17 +2495,17 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@camunda-cloud/common-ui-react@^0.0.14-beta1":
-  version "0.0.14-beta1"
-  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui-react/0.0.14-beta1/58dd5e4be92a2690e1ff47fba72c707f7ec6466d3199c9ec4fc6baec78933acf#16f6397b5b33d3cf6ec70182980422680b204360"
-  integrity sha512-U/2W99iAUdQ3Tmf6R6bIHKEo++nclbHfAC9IzAIBS8CpVKONc8Mo3/d+jE/m2vRsSggx7YXgd+Bl6wXA8CMImg==
+"@camunda-cloud/common-ui-react@^0.0.14-beta2":
+  version "0.0.14-beta2"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui-react/0.0.14-beta2/b0a424d646cfa4c4d14326adb640dd490a242a5b134fad94a779b3770ae3551a#3cbe3adf97b3e1a2bf47e0cc0a2721447a23db46"
+  integrity sha512-nd274C9cQcPIOVWazQF0n6nw74LT8U4vDXPrU3EbYxs+IejigghAgb0DjNJNS85rNjvj/FMIcGduX7mrG17Ihw==
   dependencies:
-    "@camunda-cloud/common-ui" "0.0.14-beta1"
+    "@camunda-cloud/common-ui" "0.0.14-beta2"
 
-"@camunda-cloud/common-ui@0.0.14-beta1", "@camunda-cloud/common-ui@^0.0.14-beta1":
-  version "0.0.14-beta1"
-  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui/0.0.14-beta1/75a863d0d234c021b27222a7c0d80234e43251e2f0733d17b6b70e5f4e0eeb9d#9e211f10f516075735c4e8a8d60cb6d4b39eae41"
-  integrity sha512-tujlpXLpIuQexSY8mg//olQmorr2uF3Y9byNTuUKfYVginISk00JYceAsp6bHF+9CDPLIVsxUQZz5afDbA1h2A==
+"@camunda-cloud/common-ui@0.0.14-beta2", "@camunda-cloud/common-ui@^0.0.14-beta2":
+  version "0.0.14-beta2"
+  resolved "https://npm.pkg.github.com/download/@camunda-cloud/common-ui/0.0.14-beta2/aa59b5fe8569c360a5f4e2e85187c658420e30f5ff29b9e9a0c2bb9b7e2555ae#83ebb0c245644c2a5fbab632118537afc9d3ba0c"
+  integrity sha512-DmAMiOvLI67SwDY6dxE/2X6pllpuAGJXrZ65/XljnfCNEvhu5hIeW8R3IfFGNzsu7hx2c+nVb0Ynx6KazlM1dQ==
 
 "@cnakazawa/watch@^1.0.3":
   version "1.0.3"

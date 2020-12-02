@@ -91,6 +91,7 @@ const LIGHT_COLORS = {
 
 const theme = Object.freeze({
   dark: {
+    cmTheme: 'Dark',
     colors: {
       ...DARK_COLORS,
       metricPanel: {
@@ -1103,6 +1104,7 @@ const theme = Object.freeze({
     },
   },
   light: {
+    cmTheme: 'Light',
     colors: {
       ...LIGHT_COLORS,
       metricPanel: {

@@ -19,6 +19,7 @@ import {Instances} from './Instances';
 import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
+import {CommonUiContext} from 'modules/CommonUiContext';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <CollapsablePanelProvider>
           <GlobalStyles />
           <NetworkStatusWatcher />
+          <CommonUiContext />
           <Router>
             <Switch>
               <Route path="/login" component={Login} />
