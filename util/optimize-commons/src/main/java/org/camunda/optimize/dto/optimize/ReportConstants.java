@@ -101,6 +101,10 @@ public class ReportConstants {
   // tenants
   public static final List<String> DEFAULT_TENANT_IDS = Collections.singletonList(null);
 
+  // filter application level
+  public static final String INSTANCE = "instance";
+  public static final String VIEW = "view";
+
   // date filter
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";

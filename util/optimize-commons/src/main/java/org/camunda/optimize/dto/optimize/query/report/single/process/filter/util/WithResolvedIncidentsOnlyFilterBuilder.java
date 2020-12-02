@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.WithResolvedIncidentsOnlyFilterDto;
 
 public class WithResolvedIncidentsOnlyFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private WithResolvedIncidentsOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -18,8 +21,16 @@ public class WithResolvedIncidentsOnlyFilterBuilder {
     return new WithResolvedIncidentsOnlyFilterBuilder(filterBuilder);
   }
 
+  public WithResolvedIncidentsOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new WithResolvedIncidentsOnlyFilterDto());
+    final WithResolvedIncidentsOnlyFilterDto filter = new WithResolvedIncidentsOnlyFilterDto();
+    filter.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
+
 }

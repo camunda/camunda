@@ -115,6 +115,8 @@ public class ReportService implements CollectionReferencingService {
   public IdResponseDto createNewSingleProcessReport(final String userId,
                                                     final SingleProcessReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    Optional.ofNullable(definitionDto.getData())
+      .ifPresent(data -> ValidationHelper.validateProcessFilters(data.getFilter()));
     return createReport(
       userId, definitionDto, ProcessReportDataDto::new, reportWriter::createNewSingleProcessReport
     );
@@ -327,6 +329,7 @@ public class ReportService implements CollectionReferencingService {
                                         String userId,
                                         boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
+    ValidationHelper.validateProcessFilters(updatedReport.getData().getFilter());
 
     final SingleProcessReportDefinitionRequestDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId

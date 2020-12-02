@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -64,13 +65,15 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
   public void numberReportCsvExportWorksEvenWithNoData() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    final CanceledInstancesOnlyFilterDto filter = new CanceledInstancesOnlyFilterDto();
+    filter.setFilterLevel(FilterApplicationLevel.INSTANCE);
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
       // We use a canceled instances filter to remove instance data
-      .setFilter(new CanceledInstancesOnlyFilterDto())
+      .setFilter(filter)
       .build();
 
     importAllEngineEntitiesFromScratch();

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -108,7 +109,9 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
       new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
     );
-    final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
+    final StartDateFilterDto startDateFilterDto = new StartDateFilterDto();
+    startDateFilterDto.setData(dateFilterDataDto);
+    startDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
 
     final ProcessReportDataDto reportData = createReportDataSortedDesc(
       processDefinitionKey,

@@ -6,25 +6,39 @@
 package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
@@ -201,6 +215,75 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(numberResult.getData()).isEqualTo(2.);
   }
 
+  @ParameterizedTest
+  @MethodSource("invalidFilters")
+  public void reportCreationWithInvalidFilters(List<ProcessFilterDto<?>> filters) {
+    // given
+    ProcessReportDataDto reportData = createReportWithDefinition(
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+    reportData.setFilter(filters);
+    SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto();
+    definition.setData(reportData);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(definition)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidFilters")
+  public void reportUpdateWithInvalidFilters(List<ProcessFilterDto<?>> filters) {
+    // given
+    final String reportId = reportClient.createEmptySingleProcessReport();
+    ProcessReportDataDto reportData = createReportWithDefinition(
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+    reportData.setFilter(filters);
+    SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto();
+    definition.setData(reportData);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(reportId, definition, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("validFilters")
+  public void reportEvaluationWithValidApplicationLevelsForFilters(List<ProcessFilterDto<?>> filters) {
+    // given
+    ProcessReportDataDto reportData = createReportWithDefinition(
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+    reportData.setFilter(filters);
+
+    // when
+    final Response response = reportClient.evaluateReportAndReturnResponse(reportData);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidFilters")
+  public void reportEvaluationWithInvalidApplicationLevelsForFilters(List<ProcessFilterDto<?>> filters) {
+    // given
+    ProcessReportDataDto reportData = createReportWithDefinition(
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+    reportData.setFilter(filters);
+
+    // when
+    final Response response = reportClient.evaluateReportAndReturnResponse(reportData);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   protected RawDataProcessReportResultDto createAndEvaluateReportWithFilter(
     final ProcessDefinitionEngineDto processDefinition,
     final List<ProcessFilterDto<?>> filter) {
@@ -215,6 +298,67 @@ public class MixedFilterIT extends AbstractFilterIT {
     ProcessReportDataDto processReportDataDto = createReportWithDefinition(processDefinition);
     processReportDataDto.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
     return processReportDataDto;
+  }
+
+  private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
+    return buildFilters(FilterApplicationLevel.VIEW)
+      .filter(filter -> (!(filter.get(0) instanceof CandidateGroupFilterDto)
+        && !(filter.get(0) instanceof AssigneeFilterDto)));
+  }
+
+  private static Stream<List<ProcessFilterDto<?>>> validFilters() {
+    return Stream.concat(
+      buildFilters(FilterApplicationLevel.INSTANCE),
+      buildFilters(FilterApplicationLevel.VIEW)
+        .filter(filter -> ((filter.get(0) instanceof CandidateGroupFilterDto)
+          || (filter.get(0) instanceof AssigneeFilterDto)))
+    );
+  }
+
+  private static Stream<List<ProcessFilterDto<?>>> buildFilters(final FilterApplicationLevel levelToApply) {
+    return Stream.of(
+      ProcessFilterBuilder.filter().executedFlowNodes().id("someId").filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().executingFlowNodes().id("someId").filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().canceledFlowNodes().id("someId").filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().canceledInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().nonCanceledInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().suspendedInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().nonSuspendedInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().completedInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().runningInstancesOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().withResolvedIncidentsOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .rollingStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .relativeStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .fixedStartDate()
+        .start(LocalDateUtil.getCurrentDateTime().minusMinutes(60)).end(LocalDateUtil.getCurrentDateTime())
+        .filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .fixedEndDate()
+        .start(LocalDateUtil.getCurrentDateTime().minusMinutes(60)).end(LocalDateUtil.getCurrentDateTime())
+        .filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .duration()
+        .operator(GREATER_THAN)
+        .unit(DurationFilterUnit.HOURS)
+        .value(10L)
+        .filterLevel(levelToApply)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder.filter()
+        .variable().stringType().name("name").operator(CONTAINS).values(Collections.singletonList("someString"))
+        .filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter()
+        .flowNodeDuration()
+        .flowNode("someId",
+        DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(GREATER_THAN).build()
+      ).filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().candidateGroups().id("someId").filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().assignee().id("someId").filterLevel(levelToApply).add().buildList()
+    );
   }
 
 }

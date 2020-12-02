@@ -109,16 +109,18 @@ public class ValidationHelper {
     }
   }
 
-  private static void validateProcessFilters(List<ProcessFilterDto<?>> filters) {
+  public static void validateProcessFilters(List<ProcessFilterDto<?>> filters) {
     if (filters != null) {
       for (ProcessFilterDto<?> filterDto : filters) {
+        if (!filterDto.validApplicationLevels().contains(filterDto.getFilterLevel())) {
+          throw new OptimizeValidationException(
+            String.format("%s is not a valid application level for this filter type", filterDto.getFilterLevel()));
+        }
         if (filterDto instanceof StartDateFilterDto) {
           StartDateFilterDto startDateFilterDto = (StartDateFilterDto) filterDto;
           DateFilterDataDto<?> startDateFilterDataDto = startDateFilterDto.getData();
-
-          ensureAtLeastOneNotNull("start date filter ",
-                                  startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd()
-          );
+          ensureAtLeastOneNotNull(
+            "start date filter ", startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd());
         } else if (filterDto instanceof VariableFilterDto) {
           VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
           VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();

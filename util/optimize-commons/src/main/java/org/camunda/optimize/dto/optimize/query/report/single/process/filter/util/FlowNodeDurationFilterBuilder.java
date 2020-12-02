@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
@@ -12,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 public class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
 
   private final FlowNodeDurationFiltersDataDto flowNodeFilters = new FlowNodeDurationFiltersDataDto();
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private FlowNodeDurationFilterBuilder(ProcessFilterBuilder filterBuilder) {
     super(filterBuilder);
@@ -27,8 +29,17 @@ public class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
   }
 
   @Override
+  public FlowNodeDurationFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
+  @Override
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new FlowNodeDurationFilterDto(flowNodeFilters));
+    final FlowNodeDurationFilterDto filter = new FlowNodeDurationFilterDto();
+    filter.setData(flowNodeFilters);
+    filter.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
 }

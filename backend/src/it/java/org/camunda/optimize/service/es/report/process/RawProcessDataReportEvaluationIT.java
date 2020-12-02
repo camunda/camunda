@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Du
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -1097,6 +1098,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
+    variableFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     return Collections.singletonList(variableFilterDto);
   }
 }

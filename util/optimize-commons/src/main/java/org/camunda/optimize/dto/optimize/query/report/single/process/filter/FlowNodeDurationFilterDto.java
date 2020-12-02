@@ -5,15 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+import java.util.Collections;
+import java.util.List;
+
+@NoArgsConstructor
 public class FlowNodeDurationFilterDto extends ProcessFilterDto<FlowNodeDurationFiltersDataDto> {
-
-  public FlowNodeDurationFilterDto(final FlowNodeDurationFiltersDataDto durationFilterDataDto) {
-    super(durationFilterDataDto);
+  @Override
+  public List<FilterApplicationLevel> validApplicationLevels() {
+    return Collections.singletonList(FilterApplicationLevel.INSTANCE);
   }
-
 }

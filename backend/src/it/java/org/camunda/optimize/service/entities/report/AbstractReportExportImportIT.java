@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -95,6 +96,11 @@ public class AbstractReportExportImportIT extends AbstractIT {
     durationWithPartReport.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
 
     // A distributedBy report with filters and custom bucket config
+    final RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(new RollingDateFilterStartDto(
+      4L, DateFilterUnit.DAYS));
+    final EndDateFilterDto endDateFilter = new EndDateFilterDto();
+    endDateFilter.setData(filterData);
+    endDateFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);
     final ProcessReportDataDto filteredDistrByReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEFINITION_KEY)
@@ -103,10 +109,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .setGroupByDateVariableUnit(AggregateByDateUnit.DAY)
       .setVariableType(VariableType.INTEGER)
       .setVariableName("testVariable")
-      .setFilter(
-        new EndDateFilterDto(
-          new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)))
-      )
+      .setFilter(endDateFilter)
       .setVisualization(ProcessVisualization.BAR)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
       .build();

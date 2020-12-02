@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
@@ -19,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -30,12 +31,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class VariableFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
   private VariableType type;
   private List<String> values = new ArrayList<>();
   private FilterOperator operator;
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -148,6 +151,11 @@ public class VariableFilterBuilder {
     return this;
   }
 
+  public VariableFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     switch (type) {
       case BOOLEAN:
@@ -165,7 +173,7 @@ public class VariableFilterBuilder {
     }
   }
 
-  public ProcessFilterBuilder createBooleanVariableFilter() {
+  private ProcessFilterBuilder createBooleanVariableFilter() {
     final BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
       name,
       Optional.ofNullable(values)
@@ -176,22 +184,24 @@ public class VariableFilterBuilder {
     );
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
+    filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
 
-  public ProcessFilterBuilder createVariableDateFilter() {
+  private ProcessFilterBuilder createVariableDateFilter() {
     DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(
       name,
       dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)
     );
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
+    filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
 
-  public ProcessFilterBuilder createOperatorMultipleValuesFilter() {
+  private ProcessFilterBuilder createOperatorMultipleValuesFilter() {
     VariableFilterDto filter = new VariableFilterDto();
     switch (type) {
       case INTEGER:
@@ -212,6 +222,7 @@ public class VariableFilterBuilder {
       default:
         break;
     }
+    filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

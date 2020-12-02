@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -268,8 +269,11 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
 
-    reportData.getFilter()
-      .addAll(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(null).add().buildList());
+    reportData.getFilter().addAll(
+      ProcessFilterBuilder.filter().fixedStartDate()
+        .start(OffsetDateTime.now().minusDays(1L))
+        .end(OffsetDateTime.now())
+        .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList());
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
@@ -298,6 +302,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   private List<ProcessFilterDto<?>> createVariableFilter() {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(new BooleanVariableFilterDataDto("foo", Collections.singletonList(true)));
+    variableFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     return Collections.singletonList(variableFilterDto);
   }
 
@@ -306,6 +311,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .filter()
       .executedFlowNodes()
       .id("task1")
+      .filterLevel(FilterApplicationLevel.INSTANCE)
       .add()
       .buildList();
     return new ArrayList<>(flowNodeFilter);

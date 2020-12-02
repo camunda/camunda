@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ public class ExecutedFlowNodeFilterBuilder {
   private FilterOperator operator = IN;
   private final List<String> values = new ArrayList<>();
   private final ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private ExecutedFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
@@ -55,12 +57,18 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
+  public ExecutedFlowNodeFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
     dataDto.setOperator(operator);
     dataDto.setValues(new ArrayList<>(values));
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
     executedFlowNodeFilterDto.setData(dataDto);
+    executedFlowNodeFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(executedFlowNodeFilterDto);
     return filterBuilder;
   }

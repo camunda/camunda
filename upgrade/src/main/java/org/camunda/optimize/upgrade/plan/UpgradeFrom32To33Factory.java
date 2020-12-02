@@ -10,7 +10,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -39,8 +38,8 @@ public class UpgradeFrom32To33Factory {
       .fromVersion("3.2.0")
       .toVersion("3.3.0")
       .addUpgradeSteps(markExistingDefinitionsAsNotDeleted())
-      .addUpgradeStep(migrateDistributedByField(PROCESS_REPORT_INDEX))
-      .addUpgradeStep(migrateDistributedByField(DECISION_REPORT_INDEX))
+      .addUpgradeStep(migrateProcessReports())
+      .addUpgradeStep(migrateDistributedByFieldForDecisionReports())
       .addUpgradeStep(migrateDashboardAvailableFilters())
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .build();
@@ -72,19 +71,29 @@ public class UpgradeFrom32To33Factory {
     );
   }
 
-  private static UpgradeStep migrateDistributedByField(final IndexMappingCreator index) {
+  private static UpgradeStep migrateProcessReports() {
+    final String updateScript = buildDistributedByFieldMigrationScript() + buildFilterLevelMigrationScript();
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("distributeByNoneDto", new NoneDistributedByDto())
+      .build();
+    return new UpdateIndexStep(PROCESS_REPORT_INDEX, updateScript, params);
+  }
+
+  private static UpgradeStep migrateDistributedByFieldForDecisionReports() {
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("distributeByNoneDto", new NoneDistributedByDto())
+      .build();
+    return new UpdateIndexStep(DECISION_REPORT_INDEX, buildDistributedByFieldMigrationScript(), params);
+  }
+
+  private static String buildDistributedByFieldMigrationScript() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
         .put("distributeByField", "distributedBy")
         .build()
     );
-
-    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
-      .put("distributeByNoneDto", new NoneDistributedByDto())
-      .build();
-
     //@formatter:off
-    final String script = substitutor.replace(
+    return substitutor.replace(
       "def data = ctx._source.data;\n" +
         "def configuration = data.configuration;\n" +
         "if(configuration.${distributeByField} == null) {\n" +
@@ -95,6 +104,25 @@ public class UpgradeFrom32To33Factory {
         "configuration.remove(\"${distributeByField}\");\n"
     );
     //@formatter:on
-    return new UpdateIndexStep(index, script, params);
   }
+
+  private static String buildFilterLevelMigrationScript() {
+    //@formatter:off
+    return
+      "def reportData = ctx._source.data;\n" +
+      "def view = reportData.view;\n" +
+      "boolean isUserTaskView = false;\n" +
+      "if (view != null) {\n" +
+      "  isUserTaskView = view.entity == 'userTask';\n" +
+      "}\n" +
+      "data.filter.stream().forEach(filterEntry -> {\n" +
+      "  if ((filterEntry.type == 'candidateGroup' || filterEntry.type == 'assignee') && isUserTaskView) {\n" +
+      "    filterEntry.filterLevel = 'FLOWNODE';\n" +
+      "  } else {\n" +
+      "    filterEntry.filterLevel = 'INSTANCE';\n" +
+      "  }\n" +
+      "})\n";
+    //@formatter:on
+  }
+
 }
