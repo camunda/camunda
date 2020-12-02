@@ -57,6 +57,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
+  @Builder.Default
   protected ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
   protected ProcessVisualization visualization;
 
