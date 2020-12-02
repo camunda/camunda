@@ -437,8 +437,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-github.com/zeebe-io/zeebe/clients/go v0.25.1 h1:62ZBu3VVhvWcZ62IOwupw+PI1Ynh6dlZIdK3Uah6URY=
-github.com/zeebe-io/zeebe/clients/go v0.25.1/go.mod h1:wqovO4oXK9I9Xp8VQMoMfecUn/ESpOAo/AitlHD4LRY=
+github.com/zeebe-io/zeebe/clients/go v0.25.2 h1:HsnW7tSCFpXn05TUN2YyjiMyYBH02g0hWYdty63Xlec=
+github.com/zeebe-io/zeebe/clients/go v0.25.2/go.mod h1:wqovO4oXK9I9Xp8VQMoMfecUn/ESpOAo/AitlHD4LRY=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
