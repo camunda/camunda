@@ -94,7 +94,7 @@
     "node-sass": "^4.14.1",
     "opn": "^6.0.0",
     "prettier": "2.2.1",
-    "react-scripts": "3.4.4",
+    "react-scripts": "4.0.1",
     "shelljs": "^0.8.4",
     "tarball-extract": "^0.0.6",
     "testcafe": "^1.9.4",
