@@ -55,7 +55,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   private final EngineContextFactory engineContextFactory;
   private final BackoffCalculator backoffCalculator;
 
-  private List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
+  private final List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
   private CronExpression cronExpression;
 
   public SyncedIdentityCacheService(final ConfigurationService configurationService,
@@ -71,11 +71,11 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    initCronSequenceGenerator();
+    initCronExpression();
     resetCache();
   }
 
-  private void initCronSequenceGenerator() {
+  private void initCronExpression() {
     this.cronExpression = CronExpression.parse(getIdentitySyncConfiguration().getCronTrigger());
   }
 
@@ -84,7 +84,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     log.info("Initializing user sync.");
     final IdentitySyncConfiguration identitySyncConfiguration = getIdentitySyncConfiguration();
     identitySyncConfiguration.validate();
-    initCronSequenceGenerator();
+    initCronExpression();
     startSchedulingUserSync();
   }
 
@@ -111,38 +111,39 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     }
   }
 
-  public synchronized void syncIdentitiesWithRetry() {
-    final Optional<Instant> stopRetryingTime =
-      Optional.ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime()))
-      .map(currentTime -> currentTime.toInstant().minusSeconds(backoffCalculator.getMaximumBackoffSeconds()));
-    boolean shouldRetry = false;
-    if (stopRetryingTime.isPresent()) {
-      shouldRetry = true;
-    }
-    while (shouldRetry) {
-      try {
-        synchronizeIdentities();
-        log.info("Engine identity sync complete");
-        shouldRetry = false;
-      } catch (final Exception e) {
-        if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime.get())) {
-          log.error(
-            "Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching",
-            e
-          );
+  public void syncIdentitiesWithRetry() {
+    synchronized (this) {
+      final Instant stopRetryingTime = Optional
+        .ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime().toInstant()))
+        .orElseThrow(() -> new OptimizeRuntimeException("Could not calculate next cron temporal."))
+        .minusSeconds(backoffCalculator.getMaximumBackoffSeconds());
+      boolean shouldRetry = true;
+      while (shouldRetry) {
+        try {
+          synchronizeIdentities();
+          log.info("Engine identity sync complete");
           shouldRetry = false;
-        } else {
-          long timeToSleep = backoffCalculator.calculateSleepTime();
-          log.error("Error while syncing identities with the engine. Will retry in {} millis", timeToSleep, e);
-          try {
-            Thread.sleep(timeToSleep);
-          } catch (InterruptedException ex) {
-            log.debug("Thread interrupted during sleep. Continuing.", ex);
+        } catch (final Exception e) {
+          if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime)) {
+            log.error(
+              "Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching",
+              e
+            );
+            shouldRetry = false;
+          } else {
+            long timeToSleep = backoffCalculator.calculateSleepTime();
+            log.error("Error while syncing identities with the engine. Will retry in {} millis", timeToSleep, e);
+            try {
+              this.wait(timeToSleep);
+            } catch (InterruptedException ex) {
+              log.debug("Thread interrupted during sleep. Continuing.", ex);
+              Thread.currentThread().interrupt();
+            }
           }
         }
       }
+      backoffCalculator.resetBackoff();
     }
-    backoffCalculator.resetBackoff();
   }
 
   public synchronized void synchronizeIdentities() {
@@ -153,16 +154,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
       engineContextFactory.getConfiguredEngines()
         .forEach(engineContext -> populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
       replaceActiveCache(newIdentityCache);
-      for (SyncedIdentityCacheListener syncedIdentityCacheListener : syncedIdentityCacheListeners) {
-        try {
-          syncedIdentityCacheListener.onFinishIdentitySync(newIdentityCache);
-        } catch (Exception e) {
-          log.error(
-            "Error while calling listener {} after identitySync.",
-            syncedIdentityCacheListener.getClass().getSimpleName()
-          );
-        }
-      }
+      notifyCacheListeners(newIdentityCache);
     } catch (MaxEntryLimitHitException e) {
       log.error(
         "Could not synchronize identity cache as the limit of {}} records was reached on refresh.\n {}",
@@ -208,6 +200,18 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
                                                                final int resultLimit,
                                                                final IdentitySearchResultResponseDto searchAfter) {
     return activeIdentityCache.searchIdentities(terms, resultLimit, searchAfter);
+  }
+
+  private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
+    for (SyncedIdentityCacheListener syncedIdentityCacheListener : syncedIdentityCacheListeners) {
+      try {
+        syncedIdentityCacheListener.onFinishIdentitySync(newIdentityCache);
+      } catch (Exception e) {
+        log.error(
+          "Error while calling listener {} after identitySync.", syncedIdentityCacheListener.getClass().getSimpleName()
+        );
+      }
+    }
   }
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
