@@ -16,9 +16,9 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -29,7 +29,6 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -211,9 +210,7 @@ public class BranchAnalysisReader {
                             final BoolQueryBuilder query,
                             final ZoneId timezone) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter(), timezone);
-
-    final CountRequest searchRequest = new CountRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(new SearchSourceBuilder().query(query));
+    final CountRequest searchRequest = new CountRequest(PROCESS_INSTANCE_INDEX_NAME).query(query);
     try {
       final CountResponse countResponse = esClient.count(searchRequest, RequestOptions.DEFAULT);
       return countResponse.getCount();

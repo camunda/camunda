@@ -374,11 +374,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public Integer getDocumentCountOf(final String indexName, final QueryBuilder documentQuery) {
-    final CountRequest countRequest = new CountRequest(indexName)
-      .source(new SearchSourceBuilder().query(documentQuery));
-
     try {
-      final CountResponse countResponse = getOptimizeElasticClient().count(countRequest, RequestOptions.DEFAULT);
+      final CountResponse countResponse = getOptimizeElasticClient()
+        .count(new CountRequest(indexName).query(documentQuery), RequestOptions.DEFAULT);
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);

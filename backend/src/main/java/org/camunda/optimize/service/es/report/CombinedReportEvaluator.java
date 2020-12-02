@@ -22,7 +22,6 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -85,10 +84,7 @@ public class CombinedReportEvaluator {
   private CountRequest createInstanceCountRequest(List<BoolQueryBuilder> baseQueries) {
     final BoolQueryBuilder baseQuery = new BoolQueryBuilder();
     baseQueries.forEach(baseQuery::should);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(baseQuery);
-
-    return new CountRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
+    return new CountRequest(PROCESS_INSTANCE_INDEX_NAME).query(baseQuery);
   }
 
   private List<BoolQueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,

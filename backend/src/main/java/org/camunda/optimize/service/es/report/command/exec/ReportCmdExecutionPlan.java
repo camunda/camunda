@@ -67,7 +67,8 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     final Data reportData = executionContext.getReportData();
 
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
-    CountRequest unfilteredInstanceCountRequest = createUnfilteredInstanceCountSearchRequest(reportData);
+    CountRequest unfilteredInstanceCountRequest =
+      new CountRequest(getIndexName()).query(setupUnfilteredBaseQuery(reportData));
 
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
@@ -106,14 +107,6 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
       .source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
     return searchRequest;
-  }
-
-  private CountRequest createUnfilteredInstanceCountSearchRequest(final Data reportData) {
-    final BoolQueryBuilder baseQuery = setupUnfilteredBaseQuery(reportData);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(baseQuery);
-
-    return new CountRequest(getIndexName()).source(searchSourceBuilder);
   }
 
   public String generateCommandKey() {
