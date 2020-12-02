@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -67,6 +67,8 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     // given
     importEngineData();
     elasticSearchIntegrationTestExtension.disableCleanup();
+    // We set a higher token limit to avoid a time out because the extension is initialized in beforeAll mode
+    embeddedOptimizeExtension.getConfigurationService().setTokenLifeTime(120);
   }
 
   @ParameterizedTest
