@@ -9,6 +9,7 @@ package org.camunda.optimize.dto.optimize.query.definition;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
@@ -22,6 +23,7 @@ import static java.util.Comparator.naturalOrder;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
   @NonNull
   private String version;

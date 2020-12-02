@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.rest.export.report;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
@@ -17,6 +18,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @FieldNameConstants
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
   private int sourceIndexVersion;
   @NotNull
