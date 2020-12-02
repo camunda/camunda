@@ -22,7 +22,7 @@ public class CustomCloudEventTimeDeserializer extends JsonDeserializer<Instant> 
 
   @Override
   public Instant deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
-    if (p.getCurrentTokenId() == JsonTokenId.ID_STRING) {
+    if (p.currentTokenId() == JsonTokenId.ID_STRING) {
       try {
         return ITU.parseDateTime(p.getText()).toInstant();
       } catch (DateTimeException ex) {
