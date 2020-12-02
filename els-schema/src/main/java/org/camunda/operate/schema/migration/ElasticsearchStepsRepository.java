@@ -16,6 +16,7 @@ import java.util.Optional;
 import javax.annotation.PostConstruct;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.index.IndexRequest;
@@ -40,32 +41,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Saves and retrieves Steps from Elasticsearch index.<br>
  * After creation it updates the repository index by looking in classpath folder for new steps.<br>
- * 
+ *
  */
 @Component
 public class ElasticsearchStepsRepository implements StepsRepository {
-  
+
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchStepsRepository.class);
-  
+
   private static final String STEP_FILE_EXTENSION = ".json";
 
   private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/change";
 
-  public static final String STEPS_REPOSITORY_NAME = "migration-steps-repository";
-  
   @Autowired
   private RestHighLevelClient esClient;
-  
+
   @Qualifier("operateObjectMapper")
   @Autowired
   private ObjectMapper objectMapper;
-  
+
   @Autowired
   private OperateProperties operateProperties;
-  
+
   /**
    * Updates Steps in index by comparing steps in json format with documents from index.
-   * If there are any new steps then they will be saved in index. 
+   * If there are any new steps then they will be saved in index.
    */
   @PostConstruct
   public void updateStepsInRepository(){
@@ -74,7 +73,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     for (final Step step : stepsFromFiles) {
       if (!stepsFromRepository.contains(step)) {
         step.setCreatedDate(OffsetDateTime.now());
-        logger.info("Add new step  {} to repository.", step);
+        logger.info("Add new step {} to repository.", step);
         save(step);
       }
     }
@@ -85,7 +84,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     try {
       PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
       Resource[] resources = resolver.getResources(ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
-    
+
       for(Resource resource: resources) {
         logger.info("Read step {} ", resource.getFilename());
         steps.add(readStepFromFile(resource.getFilename(), resource.getInputStream()));
@@ -93,7 +92,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     } catch (IOException e) {
       throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s", ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER), e);
     }
-   
+
     steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
     return steps;
   }
@@ -111,13 +110,13 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    */
   @Override
   public String getName() {
-    return operateProperties.getElasticsearch().getIndexPrefix() + "-" + STEPS_REPOSITORY_NAME;
+    return operateProperties.getElasticsearch().getIndexPrefix() + "-" + MigrationRepositoryIndex.INDEX_NAME;
   }
 
   protected String idFromStep(final Step step) {
     return step.getVersion() + "-" + step.getOrder();
   }
- 
+
   @Override
   public void save(final Step step){
     final IndexResponse response;
@@ -135,14 +134,12 @@ public class ElasticsearchStepsRepository implements StepsRepository {
       throw new OperateRuntimeException(String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
   }
-  
+
   protected List<Step> findBy(final Optional<QueryBuilder> query){
     try {
       final SearchSourceBuilder searchSpec = new SearchSourceBuilder()
           .sort(Step.VERSION+ ".keyword", SortOrder.ASC);
-      if (query.isPresent()) {
-        searchSpec.query(query.get());
-      }
+      query.ifPresent(searchSpec::query);
       SearchRequest request = new SearchRequest(getName())
           .source(searchSpec)
           .indicesOptions(IndicesOptions.lenientExpandOpen());
@@ -158,7 +155,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   @Override
   public List<Step> findAll() {
     logger.debug("Find all steps from Elasticsearch at {}:{} ", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
-    
+
     return findBy(Optional.empty());
   }
   /**
@@ -166,13 +163,13 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    */
   @Override
   public List<Step> findNotAppliedFor(final String indexName) {
-    logger.debug("Find 'not applied steps' for index {} from Elasticsearch at {}:{} ", indexName, 
+    logger.debug("Find 'not applied steps' for index {} from Elasticsearch at {}:{} ", indexName,
         operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
 
-    return findBy(Optional.of(
+    return findBy(Optional.ofNullable(
         joinWithAnd(
             termQuery(Step.INDEX_NAME + ".keyword", indexName),
             termQuery(Step.APPLIED, false))));
   }
-  
+
 }
