@@ -144,10 +144,10 @@ test('delete multiple external events', async (t) => {
   await t.click(e.eventCheckbox(0));
   await t.click(e.eventCheckbox(3));
   await t.click(e.selectionDropdown);
-  await t.hover(e.dropdownOption('Delete Event(s)'));
+  await t.hover(e.dropdownOption('Delete'));
 
   await t.takeScreenshot('event-based-processes/deleting-events.png', {fullPage: true});
 
-  await t.click(e.dropdownOption('Delete Event(s)'));
+  await t.click(e.dropdownOption('Delete'));
   await t.click(e.confirmModalButton);
 });

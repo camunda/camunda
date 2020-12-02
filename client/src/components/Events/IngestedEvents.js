@@ -7,7 +7,7 @@
 import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 
-import {Deleter, Dropdown, Icon, Input, Table, Tooltip} from 'components';
+import {Deleter, DocsLink, Dropdown, Icon, Input, Table, Tooltip} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -81,7 +81,7 @@ export function IngestedEvents({mightFail}) {
           checked={allSelectedInView}
           onChange={({target: {checked}}) =>
             checked
-              ? setSelected([...selected, ...currentViewIds])
+              ? setSelected([...new Set([...selected, ...currentViewIds])])
               : setSelected(selected.filter((id) => !currentViewIds.includes(id)))
           }
           ref={(input) => {
@@ -124,7 +124,7 @@ export function IngestedEvents({mightFail}) {
             >
               <Dropdown.Option onClick={() => setDeleting(true)} disabled={maxDeletionReached}>
                 <Icon type="delete" />
-                {t('common.deleteEntity', {entity: t('common.deleter.types.ingestedEvents')})}
+                {t('common.delete')}
               </Dropdown.Option>
             </Tooltip>
           </Dropdown>
@@ -153,10 +153,17 @@ export function IngestedEvents({mightFail}) {
           setSortBy(by);
           setSortOrder(order);
         }}
+        noData={
+          <>
+            {t('events.ingested.noData')}{' '}
+            <DocsLink location="technical-guide/rest-api/event-ingestion/">
+              {t('events.sources.learnMore')}
+            </DocsLink>
+          </>
+        }
       />
       <Deleter
         type="ingestedEvents"
-        deleteText={t('common.deleteEntity', {entity: t('common.deleter.types.ingestedEvents')})}
         entity={deleting}
         deleteEntity={() =>
           mightFail(
@@ -169,6 +176,7 @@ export function IngestedEvents({mightFail}) {
           )
         }
         onClose={() => setDeleting(false)}
+        deleteButtonText={t('common.delete')}
         descriptionText={t('events.ingested.deleteWarning')}
       />
     </div>

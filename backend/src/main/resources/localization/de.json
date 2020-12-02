@@ -227,8 +227,9 @@
       "timestamp": "Timestamp",
       "eventSources": "Externe Events",
       "search": "Suche nach Werten",
-      "deleteWarning": "Das Löschen von verarbeiteten Events wird nicht vollständig in Ihren veröffentlichten Prozessen reflektiert. Stellen Sie sicher, dass Sie Ihren eventbasierten Prozess erneut veröffentlichen, um Ihre Prozessberichte genauer zu machen.",
-      "deleteLimitReached": "Die entfernung von mehr als 10000 Events is nicht moglich"
+      "deleteWarning": "Alle Prozesse, die diese Events verwenden, müssen neu veröffentlicht werden, um den gelöschten Zustand wiederzugeben.",
+      "deleteLimitReached": "Das Löschen von mehr als 1.000 Events ist nicht möglich",
+      "noData": "Keine verarbeiteten Events gefunden."
     }
   },
   "report": {
@@ -987,7 +988,7 @@
         "collection": "Sammlung",
         "process": "Prozess",
         "processEvents": "Prozessevents",
-        "ingestedEvents": "Event(s)"
+        "ingestedEvents": "Events"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

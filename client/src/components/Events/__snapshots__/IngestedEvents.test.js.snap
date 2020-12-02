@@ -113,6 +113,17 @@ exports[`should match snapshot 1`] = `
       ]
     }
     loading={true}
+    noData={
+      <React.Fragment>
+        No ingested events.
+         
+        <Unknown
+          location="technical-guide/rest-api/event-ingestion/"
+        >
+          Learn more
+        </Unknown>
+      </React.Fragment>
+    }
     sorting={
       Object {
         "by": "timestamp",
@@ -123,9 +134,9 @@ exports[`should match snapshot 1`] = `
     updateSorting={[Function]}
   />
   <DeleterErrorHandler
+    deleteButtonText="Delete"
     deleteEntity={[Function]}
-    deleteText="Delete Event(s)"
-    descriptionText="Deleting ingested events will not be fully reflected in your published processes. Make sure to republish your Event Based Process in order to make your Process Reports more accurate."
+    descriptionText="Any processes using these events must be re-published to reflect the deleted state."
     entity={false}
     onClose={[Function]}
     type="ingestedEvents"
