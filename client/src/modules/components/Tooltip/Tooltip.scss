@@ -2,6 +2,7 @@
   display: inline-block;
   position: absolute;
   max-width: 500px;
+  overflow-wrap: break-word;
   background-color: var(--black);
   color: var(--white);
   padding: 9px 13px 9px 11px;
