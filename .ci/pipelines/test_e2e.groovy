@@ -133,7 +133,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.26.0-alpha1
+      image: camunda/zeebe:0.26.0-alpha2
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
       volumeMounts:
