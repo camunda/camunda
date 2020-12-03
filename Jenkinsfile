@@ -143,6 +143,8 @@ pipeline {
                 stage('Test (Java)') {
                     environment {
                         SUREFIRE_REPORT_NAME_SUFFIX = 'java-testrun'
+                        MAVEN_PARALLELISM = 2
+                        SUREFIRE_FORK_COUNT = 6
                     }
 
                     steps {
@@ -182,7 +184,7 @@ pipeline {
                             cloud 'zeebe-ci'
                             label "zeebe-ci-build_${buildName}_it"
                             defaultContainer 'jnlp'
-                            yamlFile '.ci/podSpecs/integration-test.yml'
+                            yaml templatePodspec('.ci/podSpecs/distribution-template.yml')
                         }
                     }
 
@@ -215,6 +217,8 @@ pipeline {
                         stage('Test') {
                             environment {
                                 SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
+                                MAVEN_PARALLELISM = 2
+                                SUREFIRE_FORK_COUNT = 6
                             }
 
                             steps {
@@ -253,8 +257,8 @@ pipeline {
                     archive "**/hs_err_*.log"
 
                     script {
-                        if (fileExists('./target/FlakyTests.txt')) {
-                            currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
+                        if (fileExists('./FlakyTests.txt')) {
+                            currentBuild.description = "Flaky Tests: <br>" + readFile('./FlakyTests.txt').split('\n').join('<br>')
                         }
                     }
                 }
@@ -273,7 +277,7 @@ pipeline {
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
                 ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
                 QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", \"channel\": \"Internal Dev\", " +
-                                   "\"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\"}"
+                    "\"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\"}"
             }
 
             steps {
@@ -281,19 +285,19 @@ pipeline {
                     container('docker') {
                         sh '.ci/scripts/docker/upload-gcr.sh'
                         withVault(
-                        [ vaultSecrets:
-                            [
-                            [ path: 'secret/common/ci-zeebe/testbench-secrets-int',
-                                secretValues:
-                                [
-                                    [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
-                                    [envVar: 'ZEEBE_ADDRESS', vaultKey: 'contactPoint'],
-                                ]
-                            ],
+                            [vaultSecrets:
+                                 [
+                                     [path        : 'secret/common/ci-zeebe/testbench-secrets-int',
+                                      secretValues:
+                                          [
+                                              [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
+                                              [envVar: 'ZEEBE_ADDRESS', vaultKey: 'contactPoint'],
+                                          ]
+                                     ],
+                                 ]
                             ]
-                        ]
                         ) {
-                        sh '.ci/scripts/distribution/qa-testbench.sh'
+                            sh '.ci/scripts/distribution/qa-testbench.sh'
                         }
                     }
                 }
@@ -437,7 +441,7 @@ def isBorsStagingBranch() {
 
 def templatePodspec(String podspecPath, flags = [:]) {
     def defaultFlags = [
-      useStableNodePool: isBorsStagingBranch()
+        useStableNodePool: isBorsStagingBranch()
     ]
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
