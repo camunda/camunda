@@ -108,7 +108,7 @@ function canDistributeData(view, groupBy) {
 
   if (
     view.entity === 'flowNode' &&
-    (groupBy.type === 'startDate' || groupBy.type === 'endDate' || groupBy.type === 'duration')
+    ['startDate', 'endDate', 'duration', 'variable'].includes(groupBy.type)
   ) {
     return true;
   }
@@ -147,7 +147,7 @@ function getOptionsFor(view, groupBy, variables) {
   }
 
   if (view === 'flowNode') {
-    if (['startDate', 'endDate', 'duration'].includes(groupBy)) {
+    if (['startDate', 'endDate', 'duration', 'variable'].includes(groupBy)) {
       options.push(
         <Select.Option key="flowNode" value="flowNode">
           {t('report.view.fn')}

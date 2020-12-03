@@ -162,11 +162,13 @@ export const combinations = {
   fn_duration: {
     fn: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
+    variable: ['table', 'chart'],
   },
   fn_count: {
     fn: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
     duration: ['table', 'chart'],
+    variable: ['table', 'chart'],
   },
   userTask_duration: {
     task: ['table', 'chart', 'heat'],
