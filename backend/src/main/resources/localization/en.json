@@ -223,7 +223,7 @@
       "traceId": "Trace ID",
       "group": "Group",
       "source": "Source",
-      "eventName": "Event Name",
+      "eventName": "Type",
       "timestamp": "Timestamp",
       "eventSources": "External Events",
       "search": "Search for values",
