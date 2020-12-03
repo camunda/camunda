@@ -1291,13 +1291,30 @@
 
     <profile>
       <id>parallel-tests</id>
+      <properties>
+        <forkCount>0.5C</forkCount>
+      </properties>
       <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <forkCount>0.5C</forkCount>
+              <forkCount>${forkCount}</forkCount>
+              <reuseForks>true</reuseForks>
+              <systemPropertyVariables>
+                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
+                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
+                and don't set the system property -->
+                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <forkCount>${forkCount}</forkCount>
               <reuseForks>true</reuseForks>
               <systemPropertyVariables>
                 <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve

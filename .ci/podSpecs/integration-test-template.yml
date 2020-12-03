@@ -1,0 +1,58 @@
+# n1-standard-32 nodes have 31.85 and 109Gi allocatable CPU and memory
+# there is some overhead when scheduling a pod via jenkins (e.g. jnlp container), so let's aim to
+# keep resources to max 30 CPUs and 108Gi. before scaling horizontally (more agents), always scale
+# the nodes vertically.
+metadata:
+  labels:
+    agent: zeebe-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: "PODSPEC_TEMPLATE_NODE_POOL"
+  tolerations:
+    - key: "PODSPEC_TEMPLATE_NODE_POOL"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+    - name: maven
+      image: maven:3.6.3-jdk-11
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      resources:
+        limits:
+          cpu: 12
+          memory: 48Gi
+        requests:
+          cpu: 12
+          memory: 48Gi
+      securityContext:
+        privileged: true
+    - name: docker
+      image: docker:19.03.13-dind
+      args:
+        - --storage-driver=overlay
+      env:
+        # The new dind versions expect secure access using cert
+        # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+        # (see https://hub.docker.com/_/docker?tab=description&page=1)
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      securityContext:
+        privileged: true
+      tty: true
+      resources:
+        limits:
+          cpu: 18
+          memory: 60Gi
+        requests:
+          cpu: 18
+          memory: 60Gi
