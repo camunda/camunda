@@ -202,7 +202,7 @@ export default withRouter(
 
     render() {
       const {reports, searchQuery} = this.state;
-      const {report: combinedReport, updateReport} = this.props;
+      const {report: combinedReport, updateReport, loading} = this.props;
       const reportsData = combinedReport.data.reports;
       let selectedReports = [];
 
@@ -227,7 +227,12 @@ export default withRouter(
 
       return (
         <div className="CombinedReportPanel">
-          <Configuration type={configurationType} report={combinedReport} onChange={updateReport} />
+          <Configuration
+            type={configurationType}
+            report={combinedReport}
+            onChange={updateReport}
+            loading={loading}
+          />
           <TypeaheadMultipleSelection
             availableValues={combinableReportList}
             selectedValues={selectedReports}
