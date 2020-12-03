@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.record.value.deployment;
+package io.zeebe.tasklist.zeebeimport.v26.record.value.deployment;
 
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import java.util.Objects;

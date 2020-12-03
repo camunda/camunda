@@ -3,10 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.record.value;
+package io.zeebe.tasklist.zeebeimport.v26.record.value;
 
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.tasklist.zeebeimport.v25.record.RecordValueWithPayloadImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.RecordValueWithPayloadImpl;
 import java.util.Map;
 import java.util.Objects;
 

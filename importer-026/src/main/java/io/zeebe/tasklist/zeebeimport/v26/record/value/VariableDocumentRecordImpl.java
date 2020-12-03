@@ -3,11 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.record.value;
+package io.zeebe.tasklist.zeebeimport.v26.record.value;
 
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.tasklist.zeebeimport.v25.record.RecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.RecordValueImpl;
 import java.util.Map;
 
 public class VariableDocumentRecordImpl extends RecordValueImpl

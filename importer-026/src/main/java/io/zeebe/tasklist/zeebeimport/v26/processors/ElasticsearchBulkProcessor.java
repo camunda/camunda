@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.processors;
+package io.zeebe.tasklist.zeebeimport.v26.processors;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,12 +15,12 @@ import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.AbstractImportBatchProcessor;
 import io.zeebe.tasklist.zeebeimport.ImportBatch;
-import io.zeebe.tasklist.zeebeimport.v25.record.RecordImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.DeploymentRecordValueImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.JobRecordValueImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.VariableDocumentRecordImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.VariableRecordValueImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.WorkflowInstanceRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.RecordImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.DeploymentRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.JobRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.VariableDocumentRecordImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.VariableRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.WorkflowInstanceRecordValueImpl;
 import java.util.List;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
@@ -100,6 +100,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "0.25";
+    return "0.26";
   }
 }

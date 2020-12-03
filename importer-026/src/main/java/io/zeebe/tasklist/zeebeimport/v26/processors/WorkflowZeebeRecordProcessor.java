@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.processors;
+package io.zeebe.tasklist.zeebeimport.v26.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +18,7 @@ import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.DeploymentRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.DeploymentRecordValueImpl;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;

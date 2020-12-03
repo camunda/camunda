@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.processors;
+package io.zeebe.tasklist.zeebeimport.v26.processors;
 
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
@@ -22,7 +22,7 @@ import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.DateUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.WorkflowInstanceRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.WorkflowInstanceRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;

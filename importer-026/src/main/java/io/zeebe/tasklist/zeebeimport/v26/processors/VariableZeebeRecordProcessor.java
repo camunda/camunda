@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.processors;
+package io.zeebe.tasklist.zeebeimport.v26.processors;
 
 import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
@@ -13,8 +13,8 @@ import io.zeebe.tasklist.entities.VariableEntity;
 import io.zeebe.tasklist.es.schema.indices.VariableIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
-import io.zeebe.tasklist.zeebeimport.v25.record.Intent;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.VariableRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.Intent;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.VariableRecordValueImpl;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;

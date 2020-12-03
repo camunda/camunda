@@ -14,7 +14,7 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-025</module>
+    <module>importer-026</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -23,12 +23,12 @@
   </modules>
 
   <properties>
-    <project.previous_version>0.24.0</project.previous_version>
+    <project.previous_version>0.25.0</project.previous_version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>0.25.2</version.zeebe>
+    <version.zeebe>0.26.0-alpha2</version.zeebe>
 
     <version.elasticsearch>6.8.13</version.elasticsearch>
     <version.spring.boot>2.3.5.RELEASE</version.spring.boot>

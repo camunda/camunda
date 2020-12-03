@@ -3,14 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.record.value;
+package io.zeebe.tasklist.zeebeimport.v26.record.value;
 
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.deployment.DeployedWorkflowImpl;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.deployment.DeploymentResourceImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.deployment.DeployedWorkflowImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.deployment.DeploymentResourceImpl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

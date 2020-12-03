@@ -3,12 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v25.processors;
+package io.zeebe.tasklist.zeebeimport.v26.processors;
 
 import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.zeebe.tasklist.zeebeimport.v25.record.Intent.CANCELED;
-import static io.zeebe.tasklist.zeebeimport.v25.record.Intent.COMPLETED;
-import static io.zeebe.tasklist.zeebeimport.v25.record.Intent.CREATED;
+import static io.zeebe.tasklist.zeebeimport.v26.record.Intent.CANCELED;
+import static io.zeebe.tasklist.zeebeimport.v26.record.Intent.COMPLETED;
+import static io.zeebe.tasklist.zeebeimport.v26.record.Intent.CREATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
@@ -19,7 +19,7 @@ import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.DateUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
-import io.zeebe.tasklist.zeebeimport.v25.record.value.JobRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v26.record.value.JobRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;

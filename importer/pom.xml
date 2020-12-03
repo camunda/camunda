@@ -27,7 +27,7 @@
 
     <dependency>
       <groupId>io.zeebe.tasklist</groupId>
-      <artifactId>tasklist-importer-025</artifactId>
+      <artifactId>tasklist-importer-026</artifactId>
       <version>${project.version}</version>
     </dependency>
 
