@@ -1,13 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should render an aggregation selection for duration reports 1`] = `
-<fieldset
+<li
   className="AggregationType"
 >
-  <legend>
+  <span
+    className="label"
+  >
     Aggregation
-  </legend>
+  </span>
   <Select
+    className="ReportSelect"
     onChange={[Function]}
     value="median"
   >
@@ -32,7 +35,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       Maximum
     </Option>
   </Select>
-</fieldset>
+</li>
 `;
 
 exports[`should render nothing if the current result is no duration and the view is not variable 1`] = `""`;

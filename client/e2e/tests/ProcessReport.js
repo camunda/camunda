@@ -463,7 +463,7 @@ test('different visualizations', async (t) => {
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('aggregators and reset to default', async (t) => {
+test('aggregators', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Duration');
@@ -481,11 +481,15 @@ test('aggregators and reset to default', async (t) => {
   await t.click(e.limitPrecisionSwitch);
   await t.typeText(e.limitPrecisionInput, '2', {replace: true});
 
+  await t.click(e.configurationButton);
+
   await t.click(e.aggregationTypeSelect);
 
   await t.takeScreenshot('process/single-report/durationAggregation.png', {fullPage: true});
 
   await t.click(e.aggregationOption('Minimum'));
+
+  await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
   await t.click(e.configurationButton);
 
@@ -499,15 +503,9 @@ test('aggregators and reset to default', async (t) => {
 
   await t.expect(min).notEql(avg);
   await t.expect(avg).notEql(max);
-
-  await t.click(e.configurationButton);
-  await t.click(e.resetButton);
-  await t.click(e.configurationButton);
-
-  await t.expect(e.reportNumber.textContent).eql(avg);
 });
 
-test('progress bar', async (t) => {
+test('progress bar and reset to default', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -535,6 +533,13 @@ test('progress bar', async (t) => {
     .resizeWindow(1000, 530)
     .takeElementScreenshot(e.reportRenderer, 'process/single-report/progressbarExceeded.png')
     .maximizeWindow();
+
+  await t.click(e.configurationButton);
+  await t.click(e.resetButton);
+  await t.click(e.configurationButton);
+
+  await t.expect(e.reportProgressBar.visible).notOk();
+  await t.expect(e.reportNumber.visible).ok();
 });
 
 test('heatmap target values', async (t) => {
@@ -678,8 +683,6 @@ test('should be able to select how the time of the user task is calculated', asy
   await u.selectView(t, 'User Task', 'Duration');
   await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
-
-  await t.click(e.configurationButton);
 
   await t.click(e.userTaskDurationSelect);
 

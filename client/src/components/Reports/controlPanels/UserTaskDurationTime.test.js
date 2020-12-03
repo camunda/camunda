@@ -53,5 +53,5 @@ it('should reevaluate the report when changing the duration type', () => {
 
   node.find('Select').simulate('change', 'work');
 
-  expect(spy).toHaveBeenCalledWith({userTaskDurationTime: {$set: 'work'}}, true);
+  expect(spy).toHaveBeenCalledWith({configuration: {userTaskDurationTime: {$set: 'work'}}}, true);
 });

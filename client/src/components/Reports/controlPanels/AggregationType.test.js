@@ -55,7 +55,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
 
   node.find('Select').simulate('change', 'max');
 
-  expect(spy).toHaveBeenCalledWith({aggregationType: {$set: 'max'}}, true);
+  expect(spy).toHaveBeenCalledWith({configuration: {aggregationType: {$set: 'max'}}}, true);
 });
 
 it('should hide median aggregation if processpart is defined', () => {

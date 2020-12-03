@@ -17,11 +17,12 @@ export default function AggregationType({report, onChange}) {
 
   if (isDurationReport(report) || isVariableReport) {
     return (
-      <fieldset className="AggregationType">
-        <legend>{t('report.config.aggregation.legend')}</legend>
+      <li className="AggregationType">
+        <span className="label">{t('report.config.aggregation.legend')}</span>
         <Select
+          className="ReportSelect"
           value={data.configuration.aggregationType}
-          onChange={(value) => onChange({aggregationType: {$set: value}}, true)}
+          onChange={(value) => onChange({configuration: {aggregationType: {$set: value}}}, true)}
         >
           {isVariableReport && (
             <Select.Option value="sum">{t('report.config.aggregation.sum')}</Select.Option>
@@ -33,7 +34,7 @@ export default function AggregationType({report, onChange}) {
           )}
           <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
         </Select>
-      </fieldset>
+      </li>
     );
   }
   return null;
