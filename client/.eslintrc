@@ -1,7 +1,9 @@
 {
   "plugins": ["prettier", "testcafe"],
   "rules": {
-    "prettier/prettier": "warn",
+    "prettier/prettier": ["warn", {
+      "endOfLine": "auto"
+    }],
     "curly": "error"
   },
   "globals": {
