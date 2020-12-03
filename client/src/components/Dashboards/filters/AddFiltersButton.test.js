@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow, mount} from 'enzyme';
+import React, {runLastEffect} from 'react';
+import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
 import {showPrompt} from 'prompt';
@@ -64,7 +64,9 @@ it('should show a prompt to save the dashboard when adding a variable filter on 
 });
 
 it('should fetch variable names', () => {
-  mount(<AddFiltersButton {...props} />);
+  shallow(<AddFiltersButton {...props} />);
+
+  runLastEffect();
 
   expect(getVariableNames).toHaveBeenCalledWith(['reportId']);
 });
@@ -72,7 +74,7 @@ it('should fetch variable names', () => {
 it('should remove filters that are no longer valid', () => {
   getVariableNames.mockReturnValue([{type: 'String', name: 'a'}]);
 
-  mount(
+  shallow(
     <AddFiltersButton
       {...props}
       availableFilters={[
@@ -81,6 +83,8 @@ it('should remove filters that are no longer valid', () => {
       ]}
     />
   );
+
+  runLastEffect();
 
   expect(props.setAvailableFilters).toHaveBeenCalledWith([
     {type: 'variable', data: {name: 'a', type: 'String'}},
