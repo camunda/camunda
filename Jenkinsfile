@@ -185,7 +185,7 @@ pipeline {
                             cloud 'zeebe-ci'
                             label "zeebe-ci-build_${buildName}_it"
                             defaultContainer 'jnlp'
-                            yaml templatePodspec('.ci/podSpecs/distribution-template.yml')
+                            yaml templatePodspec('.ci/podSpecs/integration-test-template.yml')
                         }
                     }
 
