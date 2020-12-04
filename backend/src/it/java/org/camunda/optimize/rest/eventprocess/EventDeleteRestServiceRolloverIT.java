@@ -5,20 +5,14 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
-import lombok.SneakyThrows;
-import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -163,6 +157,7 @@ public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRo
   private void assertEventInstancesDoNotContainAnyEventsOfIds(final List<EventProcessInstanceDto> eventInstances,
                                                               final List<String> eventIds) {
     assertThat(eventInstances)
+      .isNotEmpty()
       .allSatisfy(storedInstance -> {
         assertThat(storedInstance.getEvents())
           .extracting(FlowNodeInstanceDto::getId)
