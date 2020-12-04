@@ -104,18 +104,12 @@ export default class Configuration extends React.Component {
     this.props.onChange({configuration: change}, needsReevaluation);
   };
 
-  isResultAvailable = ({result, combined}) => {
-    return result && combined ? Object.keys(result.data).length > 0 : result;
-  };
-
   render() {
-    const {report, type} = this.props;
+    const {report, type, loading} = this.props;
     const Component = visualizations[type];
 
     const enablePopover =
-      Component &&
-      this.isResultAvailable(report) &&
-      (!Component.isDisabled || !Component.isDisabled(report));
+      Component && !loading && (!Component.isDisabled || !Component.isDisabled(report));
 
     return (
       <div className="Configuration">

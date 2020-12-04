@@ -278,6 +278,7 @@ export class ReportEdit extends React.Component {
                 <Configuration
                   type={data.visualization}
                   onChange={this.updateReport}
+                  loading={loadingReportData}
                   report={report}
                 />
               </div>
@@ -316,7 +317,13 @@ export class ReportEdit extends React.Component {
           {!combined && reportType === 'decision' && (
             <DecisionControlPanel report={report} updateReport={this.updateReport} />
           )}
-          {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
+          {combined && (
+            <CombinedReportPanel
+              report={report}
+              updateReport={this.updateReport}
+              loading={loadingReportData}
+            />
+          )}
         </div>
         <ConflictModal
           conflict={conflict}
