@@ -58,7 +58,12 @@ public final class DeploymentTransformer {
     validator = BpmnFactory.createValidator(expressionProcessor);
 
     try {
-      digestGenerator = MessageDigest.getInstance("MD5");
+      // We get an alert by LGTM, since MD5 is a weak cryptographic hash function,
+      // but it is not easy to exchange this weak algorithm without getting compatibility issues
+      // with previous versions. Furthermore it is very unlikely that we get problems on checking
+      // the deployments hashes.
+      digestGenerator =
+          MessageDigest.getInstance("MD5"); // lgtm [java/weak-cryptographic-algorithm]
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     }
