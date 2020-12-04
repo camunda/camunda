@@ -102,7 +102,7 @@ exports[`should match snapshot 1`] = `
         },
         Object {
           "id": "eventName",
-          "label": "Event Name",
+          "label": "Type",
           "sortable": true,
         },
         Object {
