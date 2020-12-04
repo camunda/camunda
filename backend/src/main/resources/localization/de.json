@@ -963,6 +963,7 @@
         "instance": "Alle Instanzen sichtbar",
         "view": "Alle Prozessknoten-Daten sichtbar"
       },
+      "linkingTip": "Filter sind durch 'and' Logik verbunden",
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },
     "definitionSelection": {

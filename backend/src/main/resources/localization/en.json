@@ -963,6 +963,7 @@
         "instance": "All instances visible",
         "view": "All Flow Node data visible"
       },
+      "linkingTip": "Filters are linked by 'and' logic",
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {

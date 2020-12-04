@@ -256,6 +256,7 @@ export default class Filter extends React.Component {
         {filters.length === 0 && (
           <p className="emptyMessage">{t('common.filter.allVisible.' + this.props.filterLevel)}</p>
         )}
+        {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
           {...this.definitionConfig()}
           flowNodeNames={this.props.flowNodeNames}
