@@ -7,14 +7,11 @@ package org.camunda.operate.data.generation;
 
 import io.zeebe.client.ZeebeClient;
 import java.util.concurrent.ThreadFactory;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -80,20 +77,20 @@ public class DataGenerationApp implements CommandLineRunner {
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(@Nullable final ThreadGroup group,
+    public DataGeneratorThread(final ThreadGroup group,
         final Runnable target, final ZeebeClient zeebeClient) {
       super(group, target);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(@NotNull final String name,
+    public DataGeneratorThread(final String name,
         final ZeebeClient zeebeClient) {
       super(name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(@Nullable final ThreadGroup group,
-        @NotNull final String name, final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(final ThreadGroup group,
+        final String name, final ZeebeClient zeebeClient) {
       super(group, name);
       this.zeebeClient = zeebeClient;
     }
@@ -104,15 +101,15 @@ public class DataGenerationApp implements CommandLineRunner {
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(@Nullable final ThreadGroup group,
-        final Runnable target, @NotNull final String name,
+    public DataGeneratorThread(final ThreadGroup group,
+        final Runnable target, final String name,
         final ZeebeClient zeebeClient) {
       super(group, target, name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(@Nullable final ThreadGroup group,
-        final Runnable target, @NotNull final String name, final long stackSize,
+    public DataGeneratorThread(final ThreadGroup group,
+        final Runnable target, final String name, final long stackSize,
         final ZeebeClient zeebeClient) {
       super(group, target, name, stackSize);
       this.zeebeClient = zeebeClient;

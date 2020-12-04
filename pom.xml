@@ -43,8 +43,8 @@
     <version.node>v14.15.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
 
-    <zeebe-test-container.version>1.0.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.14.3</elasticsearch-test-container.version>
+    <zeebe-test-container.version>1.0.1</zeebe-test-container.version>
+    <elasticsearch-test-container.version>1.15.0</elasticsearch-test-container.version>
 
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.source>11</maven.compiler.source>
@@ -136,6 +136,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${zeebe-test-container.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
