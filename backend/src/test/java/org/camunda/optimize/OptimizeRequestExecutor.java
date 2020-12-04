@@ -942,6 +942,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildImportEntityRequest(final Entity<?> importRequestBody) {
+    this.path = "import/";
+    this.body = importRequestBody;
+    this.method = POST;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCsvExportRequest(String reportId, String fileName) {
     this.path = "export/csv/" + reportId + "/" + fileName;
     this.method = GET;

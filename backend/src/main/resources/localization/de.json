@@ -1098,8 +1098,9 @@
     "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden.",
     "tooManyBuckets": "Der Bericht konnte nicht evaluiert werden, da das Ergebnis mehr als 10.000 Datenpunkte enthält. Bitte nutzen Sie Filter oder änderen Sie die konfigurierte Bucket Größe, um die Anzahl der Datenpunkte des Ergebnisses zu verringern.",
     "elasticsearchError": "Es ist ein Fehler in Elasticsearch aufgetreten. Bitte kontaktieren Sie einen Administrator falls dieses Problem längerfristig besteht.",
-    "importDefinitionDoesNotExist": "Der Import konnte nicht ausgeführt werden, weil die zu importierende Entität auf Definitionen basiert, die nicht existieren.",
-    "importIndexVersionMismatch": "Der Import konnte nicht ausgeführt werden, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
-    "importDefinitionForbidden": "Der Import konnte nicht ausgeführt werden, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt."
+    "importDefinitionDoesNotExist": "Import fehlgeschlagen, weil die zu importierende Entität auf Definitionen basiert, die nicht existieren.",
+    "importIndexVersionMismatch": "Import fehlgeschlagen, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
+    "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
+    "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden."
   }
 }

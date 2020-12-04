@@ -55,7 +55,7 @@ public class EntityImportService {
     if (!identityService.isSuperUserIdentity(userId)) {
       throw new ForbiddenException(
         String.format(
-          "User with ID [%s] is not authorized to import reports. Only superusers are authorized to import entities.",
+          "User with ID [%s] is not authorized to import entities. Only superusers are authorized to import entities.",
           userId
         )
       );
