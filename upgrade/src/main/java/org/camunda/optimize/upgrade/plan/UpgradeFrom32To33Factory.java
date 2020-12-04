@@ -117,7 +117,7 @@ public class UpgradeFrom32To33Factory {
       "}\n" +
       "data.filter.stream().forEach(filterEntry -> {\n" +
       "  if ((filterEntry.type == 'candidateGroup' || filterEntry.type == 'assignee') && isUserTaskView) {\n" +
-      "    filterEntry.filterLevel = 'FLOWNODE';\n" +
+      "    filterEntry.filterLevel = 'VIEW';\n" +
       "  } else {\n" +
       "    filterEntry.filterLevel = 'INSTANCE';\n" +
       "  }\n" +
