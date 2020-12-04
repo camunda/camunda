@@ -27,11 +27,8 @@ import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.helpers.NOPLogger;
 
-@Execution(ExecutionMode.CONCURRENT)
 final class GrpcErrorMapperTest {
   private final RecordingAppender recorder = new RecordingAppender();
   private final Logger log = (Logger) LogManager.getLogger(GrpcErrorMapperTest.class);
