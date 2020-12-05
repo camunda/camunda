@@ -13,9 +13,11 @@ import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import java.time.Duration;
 import java.util.NavigableMap;
@@ -72,6 +74,8 @@ public class MetricsExporter implements Exporter {
     final var currentValueType = record.getValueType();
     if (currentValueType == ValueType.JOB) {
       handleJobRecord(record, partitionId, recordKey);
+    } else if (currentValueType == ValueType.JOB_BATCH) {
+      handleJobBatchRecord(record, partitionId);
     } else if (currentValueType == ValueType.WORKFLOW_INSTANCE) {
       handleWorkflowInstanceRecord(record, partitionId, recordKey);
     }
@@ -105,13 +109,22 @@ public class MetricsExporter implements Exporter {
 
     if (currentIntent == JobIntent.CREATED) {
       storeJobCreation(record.getTimestamp(), recordKey);
-    } else if (currentIntent == JobIntent.ACTIVATED) {
-      final var creationTime = jobKeyToCreationTimeMap.get(recordKey);
-      executionLatencyMetrics.observeJobActivationTime(
-          partitionId, creationTime, record.getTimestamp());
     } else if (currentIntent == JobIntent.COMPLETED) {
       final var creationTime = jobKeyToCreationTimeMap.remove(recordKey);
       executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
+    }
+  }
+
+  private void handleJobBatchRecord(final Record<?> record, final int partitionId) {
+    final var currentIntent = record.getIntent();
+
+    if (currentIntent == JobBatchIntent.ACTIVATED) {
+      final var value = (JobBatchRecordValue) record.getValue();
+      for (long jobKey : value.getJobKeys()) {
+        final var creationTime = jobKeyToCreationTimeMap.get(jobKey);
+        executionLatencyMetrics.observeJobActivationTime(
+            partitionId, creationTime, record.getTimestamp());
+      }
     }
   }
 
