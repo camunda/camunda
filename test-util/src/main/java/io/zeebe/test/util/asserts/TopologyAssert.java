@@ -8,13 +8,16 @@
 package io.zeebe.test.util.asserts;
 
 import io.zeebe.client.api.response.BrokerInfo;
+import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractObjectAssert;
 
-public class TopologyAssert extends AbstractAssert<TopologyAssert, Topology> {
+public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, Topology> {
 
   public TopologyAssert(final Topology topology) {
     super(topology, TopologyAssert.class);
@@ -30,7 +33,7 @@ public class TopologyAssert extends AbstractAssert<TopologyAssert, Topology> {
     final List<BrokerInfo> brokers = actual.getBrokers();
 
     if (brokers.size() != clusterSize) {
-      failWithMessage("Expected broker count to be <%s> but was <%s>", clusterSize, brokers.size());
+      throw failure("Expected broker count to be <%s> but was <%s>", clusterSize, brokers.size());
     }
 
     final List<BrokerInfo> brokersWithUnexpectedPartitionCount =
@@ -39,12 +42,30 @@ public class TopologyAssert extends AbstractAssert<TopologyAssert, Topology> {
             .collect(Collectors.toList());
 
     if (!brokersWithUnexpectedPartitionCount.isEmpty()) {
-      failWithMessage(
+      throw failure(
           "Expected <%s> partitions at each broker, but found brokers with different partition count <%s>",
           partitionCount, brokersWithUnexpectedPartitionCount);
     }
 
-    return this;
+    final Set<Integer> partitionsWithLeader =
+        brokers.stream()
+            .flatMap(b -> b.getPartitions().stream())
+            .filter(PartitionInfo::isLeader)
+            .map(PartitionInfo::getPartitionId)
+            .collect(Collectors.toUnmodifiableSet());
+    final Set<Integer> partitionsWithoutLeader =
+        brokers.stream()
+            .flatMap(b -> b.getPartitions().stream())
+            .map(PartitionInfo::getPartitionId)
+            .filter(Predicate.not(partitionsWithLeader::contains))
+            .collect(Collectors.toUnmodifiableSet());
+    if (!partitionsWithoutLeader.isEmpty()) {
+      throw failure(
+          "Expected every partition to have a leader,but found the following have none: <%s>",
+          partitionsWithoutLeader);
+    }
+
+    return myself;
   }
 
   public final TopologyAssert doesNotContainBroker(final int nodeId) {
@@ -53,12 +74,12 @@ public class TopologyAssert extends AbstractAssert<TopologyAssert, Topology> {
     final List<Integer> brokers =
         actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toList());
     if (brokers.contains(nodeId)) {
-      failWithMessage(
+      throw failure(
           "Expected topology not to contain broker with ID %d, but found the following: [%s]",
           nodeId, brokers);
     }
 
-    return this;
+    return myself;
   }
 
   public final TopologyAssert hasBrokerSatisfying(final Consumer<BrokerInfo> condition) {
@@ -67,6 +88,18 @@ public class TopologyAssert extends AbstractAssert<TopologyAssert, Topology> {
     final List<BrokerInfo> brokers = actual.getBrokers();
     newListAssertInstance(brokers).anySatisfy(condition);
 
-    return this;
+    return myself;
+  }
+
+  public final TopologyAssert hasBrokersCount(final int count) {
+    isNotNull();
+
+    if (actual.getBrokers().size() != count) {
+      throw failure(
+          "Expected topology to contain %d brokers, but it contains %s",
+          count, actual.getBrokers());
+    }
+
+    return myself;
   }
 }
