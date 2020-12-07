@@ -4667,7 +4667,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", recordType=\"COMMAND\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\",recordType=\"COMMAND\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4731,7 +4731,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", recordType=\"EVENT\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", recordType=\"EVENT\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4795,7 +4795,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5087,7 +5087,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5151,7 +5151,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5215,7 +5215,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
