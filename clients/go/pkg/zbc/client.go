@@ -118,7 +118,7 @@ func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
 }
 
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(c.gateway, c)
+	return worker.NewJobWorkerBuilder(c.gateway, c, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) Close() error {

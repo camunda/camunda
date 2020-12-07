@@ -17,8 +17,11 @@ package worker
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"sync"
@@ -38,6 +41,7 @@ type jobPoller struct {
 	remaining      int
 	threshold      int
 	metrics        JobWorkerMetrics
+	shouldRetry    func(context.Context, error) bool
 }
 
 func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
@@ -75,9 +79,9 @@ func (poller *jobPoller) activateJobs() {
 	defer cancel()
 
 	poller.request.MaxJobsToActivate = int32(poller.maxJobsActive - poller.remaining)
-	stream, err := poller.client.ActivateJobs(ctx, &poller.request)
+	stream, err := poller.openStream(ctx)
 	if err != nil {
-		log.Println("Failed to request jobs for worker", poller.request.Worker, err)
+		log.Println(err.Error())
 		return
 	}
 
@@ -87,7 +91,20 @@ func (poller *jobPoller) activateJobs() {
 			break
 		}
 		if err != nil {
-			log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			if poller.shouldRetry(ctx, err) {
+				// the headers are outdated and need to be rebuilt
+				stream, err = poller.openStream(ctx)
+				if err == nil {
+					log.Printf("Failed to reopen job polling stream: %v\n", err)
+					break
+				}
+				continue
+			}
+
+			if err != io.EOF && status.Code(err) != codes.ResourceExhausted {
+				log.Printf("Failed to activate jobs for worker '%s': %v\n", poller.request.Worker, err)
+			}
+
 			break
 		}
 		poller.remaining += len(response.Jobs)
@@ -96,6 +113,18 @@ func (poller *jobPoller) activateJobs() {
 			poller.jobQueue <- entities.Job{ActivatedJob: *job}
 		}
 	}
+}
+
+func (poller *jobPoller) openStream(ctx context.Context) (pb.Gateway_ActivateJobsClient, error) {
+	stream, err := poller.client.ActivateJobs(ctx, &poller.request)
+	if err != nil {
+		if poller.shouldRetry(ctx, err) {
+			return poller.openStream(ctx)
+		}
+		return nil, errors.Wrapf(err, "Worker '%s' failed to open job stream", poller.request.Worker)
+	}
+
+	return stream, nil
 }
 
 func (poller *jobPoller) setJobsRemainingCountMetric(count int) {
