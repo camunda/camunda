@@ -35,7 +35,8 @@ public final class StreamProcessorMetrics {
       Histogram.build()
           .namespace(NAMESPACE)
           .name("stream_processor_latency")
-          .help("Time between a record is written until it is picked up for processing (in seconds)")
+          .help(
+              "Time between a record is written until it is picked up for processing (in seconds)")
           .labelNames("recordType", "partition")
           .register();
   private static final Histogram PROCESSING_DURATION =
