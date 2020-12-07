@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
@@ -31,6 +33,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -50,8 +53,8 @@ func TestOAuthCredsProviderSuite(t *testing.T) {
 func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
-	interceptor := newRecordingInterceptor(nil)
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -91,8 +94,8 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 func (s *oauthCredsProviderTestSuite) TestNoConfigSecureClient() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
-	interceptor := newRecordingInterceptor(nil)
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -131,17 +134,17 @@ func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: "firstToken"}
 	first := true
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
 		if first {
 			first = false
 			token.value = accessToken
-			return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 		}
 
-		return handler(ctx, req)
+		return true, nil
 	})
 
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -184,11 +187,11 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: accessToken}
 
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 	})
 
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -523,11 +526,11 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 func (s *oauthCredsProviderTestSuite) TestNoRequestIfOAuthFails() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, nil
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, nil
 	})
 
-	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	lis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 	go grpcServer.Serve(lis)
 	defer grpcServer.Stop()
 
@@ -578,6 +581,138 @@ func (s *oauthCredsProviderTestSuite) TestNoRequestIfOAuthFails() {
 	s.EqualValues(0, interceptor.interceptCounter)
 }
 
+func (s *oauthCredsProviderTestSuite) TestJobPollerRetry() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	token := &mutableToken{value: "firstToken"}
+	first := true
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		if first {
+			first = false
+			token.value = accessToken
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		}
+
+		return true, nil
+	})
+
+	gatewayLis, grpcServer := createServerWithStreamInterceptor(interceptor.interceptStream)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), token)
+	defer authzServer.Close()
+
+	var credsProvider CredentialsProvider
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer.URL,
+	})
+	s.NoError(err)
+	credsProvider = &custom{provider: credsProvider}
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	var wg sync.WaitGroup
+	var done bool
+	wg.Add(1)
+
+	_ = client.NewJobWorker().JobType("test").Handler(func(client worker.JobClient, job entities.Job) {
+		if !done {
+			done = true
+			wg.Done()
+		}
+	}).Open()
+	wg.Wait()
+
+	// then
+	s.GreaterOrEqual(1, credsProvider.(*custom).shouldRetryCalls)
+}
+
+func (s *oauthCredsProviderTestSuite) TestJobActivateRetry() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	token := &mutableToken{value: "firstToken"}
+	first := true
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		if first {
+			first = false
+			token.value = accessToken
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		}
+
+		return true, nil
+	})
+
+	gatewayLis, grpcServer := createServerWithStreamInterceptor(interceptor.interceptStream)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), token)
+	defer authzServer.Close()
+
+	var credsProvider CredentialsProvider
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer.URL,
+	})
+	s.NoError(err)
+	credsProvider = &custom{provider: credsProvider}
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	jobs, err := client.NewActivateJobsCommand().JobType("test").MaxJobsToActivate(1).Send(context.Background())
+
+	// then
+	s.NoError(err)
+	s.GreaterOrEqual(1, credsProvider.(*custom).shouldRetryCalls)
+	s.NotEmpty(jobs)
+}
+
+type custom struct {
+	provider         CredentialsProvider
+	shouldRetryCalls int
+}
+
+func (c *custom) ApplyCredentials(ctx context.Context, headers map[string]string) error {
+	return c.provider.ApplyCredentials(ctx, headers)
+}
+
+func (c *custom) ShouldRetryRequest(ctx context.Context, err error) bool {
+	retry := c.provider.ShouldRetryRequest(ctx, err)
+	if retry {
+		c.shouldRetryCalls++
+	}
+
+	return retry
+}
+
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {
 	return mockAuthorizationServerWithAudience(t, token, audience)
 }
@@ -616,17 +751,17 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 }
 
 func createAuthenticatedGrpcServer(validToken string) (net.Listener, *grpc.Server) {
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
 		if meta, ok := metadata.FromIncomingContext(ctx); ok {
 			token := meta["authorization"]
 			expected := "Bearer " + validToken
 			if token != nil && token[0] == expected {
-				return nil, nil
+				return false, nil
 			}
 		}
 
-		return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 	})
 
-	return createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	return createServerWithUnaryInterceptor(interceptor.interceptUnary)
 }
