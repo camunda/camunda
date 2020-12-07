@@ -40,3 +40,7 @@ export const templateModalProcessField = Selector('.Modal .Typeahead');
 export const templateOption = (text) =>
   Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReport');
+export const customValueAddButton = Selector('.customValueAddButton');
+export const typeahead = Selector('.Typeahead');
+export const typeaheadInput = Selector('.Typeahead .Input');
+export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);

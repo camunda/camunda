@@ -32,3 +32,4 @@ export const stringValues = Selector('.Checklist .itemsList');
 export const firstMultiSelectValue = Selector('.Checklist .itemsList .LabeledInput .label');
 export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
 export const confirmButton = Selector('.Modal .Modal__actions .primary');
+export const customValueCheckbox = Selector('.Modal .customValueCheckbox');
