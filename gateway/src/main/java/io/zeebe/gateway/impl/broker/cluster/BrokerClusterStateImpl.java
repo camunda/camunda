@@ -94,6 +94,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
 
   public void addPartitionFollower(final int partitionId, final int followerId) {
     partitionFollowers.computeIfAbsent(partitionId, ArrayList::new).add(followerId);
+    partitionLeaders.remove(partitionId, followerId);
   }
 
   public void addPartitionIfAbsent(final int partitionId) {
