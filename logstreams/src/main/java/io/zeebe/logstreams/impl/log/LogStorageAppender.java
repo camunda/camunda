@@ -27,6 +27,7 @@ import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
@@ -116,7 +117,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.getRight())) {
-      final var listener = new Listener(this, positions.getRight());
+      final var listener = new Listener(this, positions.getRight(), ActorClock.currentTimeMillis());
       logStorage.append(positions.getLeft(), positions.getRight(), copiedBuffer, listener);
 
       blockPeek.markCompleted();
@@ -215,18 +216,20 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(() -> appendEntryLimiter.onCommit(highestPosition));
   }
 
-  void notifyWritePosition(final long highestPosition) {
+  void notifyWritePosition(final long highestPosition, final long startTime) {
     actor.run(
         () -> {
           appenderMetrics.setLastAppendedPosition(highestPosition);
+          appenderMetrics.appendLatency(startTime, ActorClock.currentTimeMillis());
         });
   }
 
-  void notifyCommitPosition(final long highestPosition) {
+  void notifyCommitPosition(final long highestPosition, final long startTime) {
     actor.run(
         () -> {
           commitPositionListener.accept(highestPosition);
           appenderMetrics.setLastCommittedPosition(highestPosition);
+          appenderMetrics.commitLatency(startTime, ActorClock.currentTimeMillis());
         });
   }
 }

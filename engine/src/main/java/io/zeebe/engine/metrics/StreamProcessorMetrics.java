@@ -35,7 +35,14 @@ public final class StreamProcessorMetrics {
       Histogram.build()
           .namespace(NAMESPACE)
           .name("stream_processor_latency")
-          .help("Latency of processing in seconds")
+          .help("Time between a record is written until it is picked up for processing (in seconds)")
+          .labelNames("recordType", "partition")
+          .register();
+  private static final Histogram PROCESSING_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_processing_duration")
+          .help("Time for processing a record (in seconds)")
           .labelNames("recordType", "partition")
           .register();
 
@@ -62,6 +69,13 @@ public final class StreamProcessorMetrics {
     PROCESSING_LATENCY
         .labels(recordType.name(), partitionIdLabel)
         .observe((processed - written) / 1000f);
+  }
+
+  public void processingDuration(
+      final RecordType recordType, final long started, final long processed) {
+    PROCESSING_DURATION
+        .labels(recordType.name(), partitionIdLabel)
+        .observe((processed - started) / 1000f);
   }
 
   public void eventProcessed() {
