@@ -31,7 +31,7 @@ const Tasks: React.FC = () => {
           );
         })}
         {tasks.length === 0 && !isFirstLoad ? (
-          <EmptyMessage>There are no tasks available</EmptyMessage>
+          <EmptyMessage>There are no Tasks available</EmptyMessage>
         ) : null}
       </UL>
     </Container>

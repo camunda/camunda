@@ -30,7 +30,7 @@ test('display info message when task has no variables', async (t) => {
       .getAllByText('usertask_without_variables')
       .nth(0),
   );
-  await t.expect(screen.getByText('Task has no variables.').exists).ok();
+  await t.expect(screen.getByText('Task has no Variables').exists).ok();
 });
 
 test('display variables when task has variables', async (t) => {
@@ -39,7 +39,7 @@ test('display variables when task has variables', async (t) => {
       .getAllByText('usertask_with_variables')
       .nth(0),
   );
-  await t.expect(screen.queryByText('Task has no variables.').exists).notOk();
+  await t.expect(screen.queryByText('Task has no Variables').exists).notOk();
   await t
     .expect(screen.getByRole('columnheader', {name: 'Variable'}).exists)
     .ok();
@@ -114,7 +114,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a task to see the details.').exists)
+    .expect(screen.getByText('Select a Task to see the details').exists)
     .ok();
 
   await t.navigateTo(currentUrl);
@@ -185,7 +185,7 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a task to see the details.').exists)
+    .expect(screen.getByText('Select a Task to see the details').exists)
     .ok();
   await t.navigateTo(currentUrl);
   await t.expect(screen.getByText('"updatedValue"').exists).ok();

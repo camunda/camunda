@@ -97,7 +97,7 @@ describe('<Tasks />', () => {
     render(<Tasks />, {wrapper: getWrapper([mockGetEmptyTasks])});
 
     expect(
-      await screen.findByText('There are no tasks available'),
+      await screen.findByText('There are no Tasks available'),
     ).toBeInTheDocument();
   });
 

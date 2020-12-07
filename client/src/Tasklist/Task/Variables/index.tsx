@@ -124,7 +124,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
       <Body>
         {variables.length === 0 &&
         newVariablesFieldArray.input.value.length === 0 ? (
-          <EmptyMessage>Task has no variables.</EmptyMessage>
+          <EmptyMessage>Task has no Variables</EmptyMessage>
         ) : (
           <TableContainer ref={tableContainer}>
             <Table data-testid="variables-table">

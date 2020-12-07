@@ -42,7 +42,7 @@ const Tasklist: React.FC = () => {
         >
           <Route exact path={Pages.Initial()}>
             <NoTaskSelectedMessage>
-              Select a task to see the details.
+              Select a Task to see the details
             </NoTaskSelectedMessage>
           </Route>
           <Route path={Pages.TaskDetails()}>
