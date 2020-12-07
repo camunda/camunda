@@ -3,17 +3,14 @@ metadata:
     agent: zeebe-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: "PODSPEC_TEMPLATE_NODE_POOL"
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "PODSPEC_TEMPLATE_NODE_POOL"
       operator: "Exists"
       effect: "NoSchedule"
-  volumes:
-    - name: shared-data
-      emptyDir: {}
   containers:
     - name: maven
-      image: maven:3.6.0-jdk-11
+      image: maven:3.6.3-jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -26,23 +23,17 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
-        - name: ZEEBE_CI_SHARED_DATA
-          value: /home/shared
       resources:
         limits:
-          cpu: 8
-          memory: 32Gi
+          cpu: 12
+          memory: 50Gi
         requests:
-          cpu: 8
-          memory: 32Gi
+          cpu: 12
+          memory: 50Gi
       securityContext:
         privileged: true
-      volumeMounts:
-        - name: shared-data
-          mountPath: /home/shared
-          mountPropagation: Bidirectional
     - name: maven-jdk8
-      image: maven:3.6.0-jdk-8
+      image: maven:3.6.3-jdk-8
       command: ["cat"]
       tty: true
       env:
@@ -53,10 +44,6 @@ spec:
         - name: JAVA_TOOL_OPTIONS
           value: |
             -XX:+UseContainerSupport
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
-        - name: ZEEBE_CI_SHARED_DATA
-          value: /home/shared
       resources:
         limits:
           cpu: 2
@@ -66,46 +53,39 @@ spec:
           memory: 4Gi
       securityContext:
         privileged: true
-      volumeMounts:
-        - name: shared-data
-          mountPath: /home/shared
-          mountPropagation: Bidirectional
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
       tty: true
       resources:
         limits:
-          cpu: 3
-          memory: 2Gi
+          cpu: 4
+          memory: 4Gi
         requests:
-          cpu: 3
-          memory: 2Gi
+          cpu: 4
+          memory: 4Gi
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
-        - name: ZEEBE_CI_SHARED_DATA
-          value: /home/shared
       securityContext:
         privileged: true
-      volumeMounts:
-        - name: shared-data
-          mountPath: /home/shared
-          mountPropagation: Bidirectional
     - name: docker
-      image: docker:18.09.4-dind
-      args: ["--storage-driver=overlay2"]
+      image: docker:19.03.13-dind
+      args:
+        - --storage-driver=overlay
+      env:
+        # The new dind versions expect secure access using cert
+        # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+        # (see https://hub.docker.com/_/docker?tab=description&page=1)
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
       securityContext:
         privileged: true
       tty: true
       resources:
         limits:
-          cpu: 8
-          memory: 16Gi
+          cpu: 12
+          memory: 50Gi
         requests:
-          cpu: 8
-          memory: 16Gi
-      volumeMounts:
-        - name: shared-data
-          mountPath: /home/shared
-          mountPropagation: Bidirectional
+          cpu: 12
+          memory: 50Gi
