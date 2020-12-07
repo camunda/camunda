@@ -13,7 +13,6 @@ import io.zeebe.client.api.response.Topology;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
 
@@ -47,22 +46,23 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
           partitionCount, brokersWithUnexpectedPartitionCount);
     }
 
+    final Set<Integer> partitions =
+        brokers.stream()
+            .flatMap(b -> b.getPartitions().stream())
+            .map(PartitionInfo::getPartitionId)
+            .collect(Collectors.toSet());
     final Set<Integer> partitionsWithLeader =
         brokers.stream()
             .flatMap(b -> b.getPartitions().stream())
             .filter(PartitionInfo::isLeader)
             .map(PartitionInfo::getPartitionId)
             .collect(Collectors.toUnmodifiableSet());
-    final Set<Integer> partitionsWithoutLeader =
-        brokers.stream()
-            .flatMap(b -> b.getPartitions().stream())
-            .map(PartitionInfo::getPartitionId)
-            .filter(Predicate.not(partitionsWithLeader::contains))
-            .collect(Collectors.toUnmodifiableSet());
-    if (!partitionsWithoutLeader.isEmpty()) {
+
+    partitions.removeAll(partitionsWithLeader);
+    if (!partitions.isEmpty()) {
       throw failure(
-          "Expected every partition to have a leader,but found the following have none: <%s>",
-          partitionsWithoutLeader);
+          "Expected every partition to have a leader, but found the following have none: <%s>",
+          partitions);
     }
 
     return myself;
