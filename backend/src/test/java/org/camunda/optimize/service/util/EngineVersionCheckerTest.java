@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.service.util;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.metadata.Version;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -25,6 +27,10 @@ public class EngineVersionCheckerTest {
 
   public static final List<String> SUPPORTED_ENGINES = EngineVersionChecker.getSupportedEngines();
 
+  @RegisterExtension
+  protected final LogCapturer logCapturer = LogCapturer.create()
+    .captureForType(EngineVersionChecker.class);
+
   @ParameterizedTest
   @MethodSource("validVersions")
   public void testValidEngineVersions(final String version) {
@@ -32,7 +38,7 @@ public class EngineVersionCheckerTest {
       version,
       EngineVersionChecker.getSupportedEngines()
     );
-
+    logCapturer.assertDoesNotContain("You are using a development version of the engine");
     assertThat(isSupported).isTrue();
   }
 
@@ -43,8 +49,21 @@ public class EngineVersionCheckerTest {
       version,
       EngineVersionChecker.getSupportedEngines()
     );
-
+    logCapturer.assertDoesNotContain("You are using a development version of the engine");
     assertThat(isSupported).isFalse();
+  }
+
+  @ParameterizedTest
+  @MethodSource("alphaVersions")
+  public void testAlphaVersions(final String version) {
+    final boolean isSupported = EngineVersionChecker.isVersionSupported(
+      version,
+      EngineVersionChecker.getSupportedEngines()
+    );
+
+    String expectedInfoMessage = "You are using a development version of the engine";
+    assertThat(isSupported).isTrue();
+    logCapturer.assertContains(expectedInfoMessage);
   }
 
   private static Stream<String> validVersions() {
@@ -67,6 +86,10 @@ public class EngineVersionCheckerTest {
     invalidVersions.addAll(findUnsupportedMinorVersions());
     invalidVersions.addAll(findUnsupportedPatchVersions());
     return invalidVersions.stream();
+  }
+
+  private static Stream<String> alphaVersions() {
+    return SUPPORTED_ENGINES.stream().map(v -> (v + "-alpha1"));
   }
 
   private static List<String> findUnsupportedPatchVersions() {
@@ -111,8 +134,8 @@ public class EngineVersionCheckerTest {
 
   private static List<String> findUnsupportedMajorVersions() {
     long oldestSupportedMajor = SUPPORTED_ENGINES.stream()
-                       .mapToLong(version -> Long.parseLong(getMajorVersionFrom(version)))
-                       .min().getAsLong();
+      .mapToLong(version -> Long.parseLong(getMajorVersionFrom(version)))
+      .min().getAsLong();
     return LongStream.range(0, oldestSupportedMajor).boxed()
       .map(majorVersion -> buildVersionFromParts(String.valueOf(majorVersion), "0", "0"))
       .collect(Collectors.toList());

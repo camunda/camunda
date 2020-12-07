@@ -22,6 +22,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
@@ -250,7 +251,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
-        .startObject("fields");
+        .startObject(FIELDS);
           addValueMultifields(builder)
         .endObject()
       .endObject()

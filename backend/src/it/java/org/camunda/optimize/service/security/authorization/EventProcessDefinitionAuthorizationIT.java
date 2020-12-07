@@ -87,7 +87,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
   @Test
   public void getDefinitions_engineUserGrantForKeyDoesNotGrantEventProcessAccess() {
-    //given
+    // given
     final String definitionKey = "eventProcessKey";
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -111,7 +111,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
   @Test
   public void getDefinitions_engineGroupGrantForKeyDoesNotGrantEventProcessAccess() {
-    //given
+    // given
     final String definitionKey = "eventProcessKey";
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -133,7 +133,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
   @Test
   public void getDefinitions_engineUserRevokeForKeyDoesNotRevokeEventProcessAccess() {
-    //given
+    // given
     final String definitionKey = "eventProcessKey";
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -155,7 +155,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
   @Test
   public void getDefinitions_engineGroupRevokeForKeyDoesNotGrantEventProcessAccess() {
-    //given
+    // given
     final String definitionKey = "eventProcessKey";
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

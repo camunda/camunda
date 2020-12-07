@@ -20,7 +20,7 @@ import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import DashboardTemplateModal from './modals/DashboardTemplateModal';
-import {loadEntities} from './service';
+import {loadEntities, importEntity} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -39,6 +39,8 @@ export class Home extends React.Component {
     sorting: null,
     isLoading: true,
   };
+
+  fileInput = React.createRef();
 
   componentDidMount() {
     this.loadList();
@@ -75,6 +77,16 @@ export class Home extends React.Component {
     }
   };
 
+  createUploadedEntity = () => {
+    const reader = new FileReader();
+
+    reader.addEventListener('load', () => {
+      this.props.mightFail(importEntity(reader.result), this.loadList, showError);
+      this.fileInput.current.value = null;
+    });
+    reader.readAsText(this.fileInput.current.files[0]);
+  };
+
   render() {
     const {
       entities,
@@ -89,6 +101,8 @@ export class Home extends React.Component {
       isLoading,
     } = this.state;
 
+    const {user} = this.props;
+
     if (redirect) {
       return <Redirect to={redirect} />;
     }
@@ -96,7 +110,7 @@ export class Home extends React.Component {
     return (
       <div className="Home">
         <div className="welcomeMessage">
-          {t('home.welcome')}, {this.props.user?.name}
+          {t('home.welcome')}, {user?.name}
         </div>
         <div className="content">
           <EntityList
@@ -106,6 +120,7 @@ export class Home extends React.Component {
                 createCollection={this.startCreatingCollection}
                 createProcessReport={() => this.setState({creatingProcessReport: true})}
                 createDashboard={() => this.setState({creatingDashboard: true})}
+                importEntity={() => this.fileInput.current.click()}
               />
             }
             empty={t('home.empty')}
@@ -134,17 +149,10 @@ export class Home extends React.Component {
                   combined,
                 } = entity;
 
-                return {
-                  link: formatLink(id, entityType),
-                  icon: entityType,
-                  type: formatType(entityType, reportType, combined),
-                  name,
-                  meta: [
-                    formatSubEntities(data.subEntityCounts),
-                    lastModifier,
-                    format(parseISO(lastModified), 'PP'),
-                  ],
-                  actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
+                const actions = [];
+
+                if (entityType !== 'collection' || currentUserRole === 'manager') {
+                  actions.push(
                     {
                       icon: 'edit',
                       text: t('common.edit'),
@@ -159,8 +167,37 @@ export class Home extends React.Component {
                       icon: 'delete',
                       text: t('common.delete'),
                       action: () => this.setState({deleting: entity}),
+                    }
+                  );
+                }
+
+                if (
+                  user?.authorizations.includes('import_export') &&
+                  entityType === 'report' &&
+                  !combined
+                ) {
+                  actions.push({
+                    icon: 'save',
+                    text: t('common.export'),
+                    action: () => {
+                      window.location.href = `api/export/report/json/${entity.reportType}/${
+                        entity.id
+                      }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
                     },
+                  });
+                }
+
+                return {
+                  link: formatLink(id, entityType),
+                  icon: entityType,
+                  type: formatType(entityType, reportType, combined),
+                  name,
+                  meta: [
+                    formatSubEntities(data.subEntityCounts),
+                    lastModifier,
+                    format(parseISO(lastModified), 'PP'),
                   ],
+                  actions,
                 };
               })
             }
@@ -217,6 +254,13 @@ export class Home extends React.Component {
         {creatingDashboard && (
           <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
         )}
+        <input
+          className="hidden"
+          onChange={this.createUploadedEntity}
+          type="file"
+          accept=".json"
+          ref={this.fileInput}
+        />
       </div>
     );
   }

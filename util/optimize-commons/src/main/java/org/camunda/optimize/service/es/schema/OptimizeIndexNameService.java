@@ -32,6 +32,17 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
+  public String getOptimizeIndexAliasForIndex(final IndexMappingCreator indexMappingCreator) {
+    return getOptimizeIndexAliasForIndexNameAndPrefix(indexMappingCreator.getIndexName(), indexPrefix);
+  }
+
+  public String getOptimizeIndexTemplateNameWithVersion(final IndexMappingCreator indexMappingCreator) {
+    if (!indexMappingCreator.isCreateFromTemplate()) {
+      throw new IllegalArgumentException("Given indexMappingCreator is not templated!");
+    }
+    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
+  }
+
   /**
    * This will suffix the indices that are created from templates with their initial suffix
    */
@@ -56,7 +67,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getOptimizeIndexNameWithVersionWithoutSuffix(final IndexMappingCreator indexMappingCreator) {
-    return getOptimizeIndexNameForAliasAndVersion(
+    return getOptimizeIndexOrTemplateNameForAliasAndVersion(
       getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
       String.valueOf(indexMappingCreator.getVersion())
     );
@@ -67,7 +78,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     this.indexPrefix = context.getBean(ConfigurationService.class).getEsIndexPrefix();
   }
 
-  public static String getOptimizeIndexNameForAliasAndVersion(final String indexAlias, final String version) {
+  public static String getOptimizeIndexOrTemplateNameForAliasAndVersion(final String indexAlias, final String version) {
     final String versionSuffix = version != null ? "_v" + version : "";
     return indexAlias + versionSuffix;
   }

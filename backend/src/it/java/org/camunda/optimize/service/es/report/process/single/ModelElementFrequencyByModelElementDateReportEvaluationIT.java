@@ -488,7 +488,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
   @Test
   public void automaticIntervalSelection_takesAllModelElementsIntoAccount() {
-    //given
+    // given
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
     startAndCompleteInstanceWithDates(processDefinition.getId(), startOfToday, startOfToday);

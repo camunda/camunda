@@ -530,7 +530,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstanceDto1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());

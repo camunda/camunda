@@ -5,34 +5,40 @@
  */
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.BeanParam;
 import java.util.List;
 import java.util.Optional;
 
-@Setter
+/**
+ * The Sorter and its subclasses are responsible for applying sorting after data has been fetched from Elasticsearch
+ */
 @NoArgsConstructor
 @ToString
 public abstract class Sorter<T> {
 
-  public static final String SORT_BY = "sortBy";
-  public static final String SORT_ORDER = "sortOrder";
-
-  @QueryParam(SORT_BY)
-  protected String sortBy;
-  @QueryParam(SORT_ORDER)
-  protected SortOrder sortOrder;
+  @Getter
+  @BeanParam
+  SortRequestDto sortRequestDto;
 
   public Optional<String> getSortBy() {
-    return Optional.ofNullable(sortBy);
+    return sortRequestDto.getSortBy();
   }
 
   public Optional<SortOrder> getSortOrder() {
-    return Optional.ofNullable(sortOrder);
+    return sortRequestDto.getSortOrder();
+  }
+
+  public void setSortBy(final String sortBy) {
+    sortRequestDto.setSortBy(sortBy);
+  }
+
+  public void setSortOrder(final SortOrder sortOrder) {
+    sortRequestDto.setSortOrder(sortOrder);
   }
 
   public abstract List<T> applySort(List<T> toSort);

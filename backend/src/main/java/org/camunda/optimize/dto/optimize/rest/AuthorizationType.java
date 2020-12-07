@@ -8,7 +8,8 @@ package org.camunda.optimize.dto.optimize.rest;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AuthorizationType {
-  TELEMETRY("telemetry_administration");
+  TELEMETRY("telemetry_administration"),
+  IMPORT_EXPORT("import_export");
 
   private final String id;
 

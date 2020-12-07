@@ -13,7 +13,7 @@ describe('process update', () => {
     const changes = config.process.update(
       'view',
       {property: 'duration', entity: 'userTask'},
-      {report: {data: {view: {entity: 'flowNode', property: 'duration'}}}}
+      {report: {data: {view: {entity: 'flowNode', property: 'duration'}, configuration: {}}}}
     );
 
     expect(changes.configuration.hiddenNodes).toEqual({$set: {active: false, keys: []}});
@@ -22,7 +22,11 @@ describe('process update', () => {
     const changes = config.process.update(
       'view',
       {property: 'duration', entity: 'flowNode'},
-      {report: {data: {view: {entity: 'flowNode', property: 'frequency'}}}}
+      {
+        report: {
+          data: {view: {entity: 'flowNode', property: 'frequency'}, groupBy: {}, configuration: {}},
+        },
+      }
     );
 
     expect(changes.configuration.hiddenNodes).not.toBeDefined();
@@ -32,7 +36,7 @@ describe('process update', () => {
     const changes = config.process.update(
       'view',
       {property: 'duration', entity: 'processInstance'},
-      {report: {data: {configuration: {aggregationType: 'sum'}}}}
+      {report: {data: {configuration: {aggregationType: 'sum'}}, configuration: {}}}
     );
 
     expect(changes.configuration.aggregationType).toEqual({$set: 'avg'});
@@ -95,22 +99,7 @@ describe('process update', () => {
       }
     );
 
-    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
-
-    changes = config.process.update(
-      'groupBy',
-      {type: 'duration'},
-      {
-        report: {
-          data: {
-            view: {entity: 'userTask'},
-            distributedBy: {type: 'assignee', value: null},
-          },
-        },
-      }
-    );
-
-    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+    expect(changes.distributedBy).toEqual({$set: {type: 'userTask', value: null}});
 
     changes = config.process.update(
       'groupBy',
@@ -159,7 +148,7 @@ describe('process update', () => {
   });
 
   it('should keep distributed by compatible when changing view', () => {
-    const changes = config.process.update(
+    let changes = config.process.update(
       'view',
       {entity: 'flowNode'},
       {
@@ -167,11 +156,62 @@ describe('process update', () => {
           data: {
             view: {entity: 'processInstance'},
             distributedBy: {type: 'variable', value: {}},
+            configuration: {},
+          },
+        },
+      }
+    );
+    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'view',
+      {entity: 'flowNode', property: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'flowNode', property: 'count'},
+            groupBy: {type: 'duration'},
+            distributedBy: {type: 'flowNode', value: null},
+            configuration: {},
           },
         },
       }
     );
 
-    expect(changes.distributedBy).toEqual({$set: {type: 'none', value: null}});
+    expect(changes.distributedBy).toEqual({$set: {type: 'flowNode', value: null}});
+  });
+
+  it('should automatically distribute by flownode/usertask when possible', () => {
+    const changes = config.process.update(
+      'groupBy',
+      {type: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'userTask'},
+            distributedBy: {type: 'assignee', value: null},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).toEqual({$set: {type: 'userTask', value: null}});
+  });
+
+  it('should not automatically distribute by flownode/usertask if it was explicitely set to none', () => {
+    const changes = config.process.update(
+      'groupBy',
+      {type: 'startDate'},
+      {
+        report: {
+          data: {
+            view: {entity: 'duration'},
+            distributedBy: {type: 'none'},
+          },
+        },
+      }
+    );
+
+    expect(changes.distributedBy).not.toBeDefined();
   });
 });

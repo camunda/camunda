@@ -30,6 +30,7 @@ export class OptimizeReport extends React.Component {
       loading: true,
       data: undefined,
       error: null,
+      lastParams: {},
     };
   }
 
@@ -52,8 +53,9 @@ export class OptimizeReport extends React.Component {
     this.setState({loading: false});
   };
 
-  loadReport = (params) =>
-    new Promise((resolve) => {
+  loadReport = (params) => {
+    this.setState({lastParams: params});
+    return new Promise((resolve) => {
       this.props.mightFail(
         this.props.loadReport(
           this.props.report.id ?? this.props.report.report,
@@ -73,6 +75,9 @@ export class OptimizeReport extends React.Component {
         }
       );
     });
+  };
+
+  refreshReport = () => this.loadReport(this.state.lastParams);
 
   getName = () => {
     if (this.state.data) {
@@ -115,7 +120,7 @@ export class OptimizeReport extends React.Component {
             <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
           )}
         </div>
-        {children({loadReportData: this.loadInitialReport})}
+        {children({loadReportData: this.refreshReport})}
       </div>
     );
   }

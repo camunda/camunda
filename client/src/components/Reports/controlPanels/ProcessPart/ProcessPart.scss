@@ -1,5 +1,27 @@
 @import 'shared-styles/shared-styles.scss';
 
+.ProcessPart {
+  > .Button {
+    width: 100%;
+  }
+
+  .ProcessPart__current {
+    cursor: pointer;
+    white-space: pre-wrap;
+
+    .ActionItem {
+      width: 100%;
+      span.highlighted {
+        @include highlighted;
+        max-width: 200px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
 .ProcessPartModal .Modal__content {
   display: flex;
   flex-direction: column;
@@ -11,14 +33,5 @@
 
   .MessageBox {
     margin-top: 8px;
-  }
-}
-
-.ProcessPart__current {
-  cursor: pointer;
-  white-space: pre-wrap;
-
-  .ActionItem span.highlighted {
-    @include highlighted;
   }
 }

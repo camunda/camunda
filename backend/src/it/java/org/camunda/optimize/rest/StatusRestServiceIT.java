@@ -6,7 +6,8 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressResponseDto;
+import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
@@ -29,18 +30,11 @@ public class StatusRestServiceIT extends AbstractIT {
 
   @Test
   public void getConnectedStatus() {
-    final StatusWithProgressResponseDto statusWithProgressDto = statusClient.getStatus();
+    final StatusResponseDto statusWithProgressDto = statusClient.getStatus();
 
-    assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch()).isTrue();
-    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections()).hasSize(1);
-    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().get(DEFAULT_ENGINE_ALIAS)).isTrue();
-  }
-
-  @Test
-  public void getImportStatus() {
-    final StatusWithProgressResponseDto statusWithProgressDto = statusClient.getStatus();
-
-    assertThat(statusWithProgressDto.getIsImporting().keySet()).contains(DEFAULT_ENGINE_ALIAS);
+    assertThat(statusWithProgressDto.isConnectedToElasticsearch()).isTrue();
+    assertThat(statusWithProgressDto.getEngineStatus()).hasSize(1);
+    assertThat(statusWithProgressDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsConnected()).isTrue();
   }
 
   @Test
@@ -49,23 +43,21 @@ public class StatusRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final StatusWithProgressResponseDto status = statusClient.getStatus();
+    final StatusResponseDto status = statusClient.getStatus();
 
     // then
-    final Map<String, Boolean> isImportingMap = status.getIsImporting();
-    assertThat(isImportingMap).isNotNull();
-    assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isTrue();
+    final EngineStatusDto engineConnection = status.getEngineStatus().get(DEFAULT_ENGINE_ALIAS);
+    assertThat(engineConnection.getIsImporting()).isTrue();
   }
 
   @Test
   public void importStatusIsFalseWhenNotImporting() {
     // when
-    final StatusWithProgressResponseDto status = statusClient.getStatus();
+    final StatusResponseDto status = statusClient.getStatus();
 
     // then
-    final Map<String, Boolean> isImportingMap = status.getIsImporting();
-    assertThat(isImportingMap).isNotNull();
-    assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
+    final EngineStatusDto engineConnection = status.getEngineStatus().get(DEFAULT_ENGINE_ALIAS);
+    assertThat(engineConnection.getIsImporting()).isFalse();
   }
 
   @ParameterizedTest
@@ -79,12 +71,15 @@ public class StatusRestServiceIT extends AbstractIT {
     mockedResponse.mock(request, Times.once(), engineMockServer);
 
     // when
-    final StatusWithProgressResponseDto status = statusClient.getStatus();
+    final StatusResponseDto status = statusClient.getStatus();
 
     // then
-    final Map<String, Boolean> connectionStatusMap = status.getConnectionStatus().getEngineConnections();
+    final Map<String, EngineStatusDto> connectionStatusMap = status.getEngineStatus();
     assertThat(connectionStatusMap).isNotNull();
-    assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
+    assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).extracting(
+      EngineStatusDto::getIsConnected,
+      EngineStatusDto::getIsImporting
+    ).containsExactly(false, false);
   }
 
   private static Stream<ErrorResponseMock> engineErrors() {

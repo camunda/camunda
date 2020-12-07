@@ -83,7 +83,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
   @Override
   protected Set<String> performInitialSearchQuery() {
     log.debug("Performing initial search query!");
-    performRefresh();
     Set<String> result = new HashSet<>();
     QueryBuilder query = buildBasicQuery();
 
@@ -98,6 +97,8 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
 
     SearchResponse scrollResp;
     try {
+      // refresh to ensure we see the latest state
+      esClient.refresh(new RefreshRequest(PROCESS_DEFINITION_INDEX_NAME));
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       log.error("Was not able to scroll for process definitions!", e);
@@ -116,17 +117,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
   @Override
   protected String getElasticsearchTypeForStoring() {
     return PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
-  }
-
-  private void performRefresh() {
-    RefreshRequest refreshAllRequest = new RefreshRequest();
-
-    try {
-      esClient.getHighLevelClient().indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      log.error("Could not refresh Optimize indexes!", e);
-      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
-    }
   }
 
   private QueryBuilder buildBasicQuery() {

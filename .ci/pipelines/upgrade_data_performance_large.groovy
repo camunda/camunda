@@ -4,9 +4,9 @@
 @Library('camunda-ci') _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-physsd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
@@ -223,9 +223,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "agents-n1-standard-32-netssd-stable"
       operator: "Exists"
       effect: "NoSchedule"
   containers:

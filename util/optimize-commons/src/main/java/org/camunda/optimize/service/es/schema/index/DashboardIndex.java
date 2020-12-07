@@ -16,7 +16,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   public static final String ID = "id";
   public static final String NAME = "name";

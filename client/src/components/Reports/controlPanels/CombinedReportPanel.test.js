@@ -471,6 +471,62 @@ describe('isCompatible', () => {
     );
     expect(node.instance().isCompatible(report2)).toBeTruthy();
   });
+
+  it('should not crash when dealing with variable reports', () => {
+    const report1 = {
+      id: '1',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '1',
+        view: {
+          entity: 'processInstance',
+          property: 'frequency',
+        },
+        groupBy: {
+          type: 'none',
+          value: null,
+        },
+        visualization: 'number',
+      },
+    };
+    const report2 = {
+      id: '2',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '2',
+        view: {
+          entity: 'variable',
+          property: {name: 'longVar', type: 'Long'},
+        },
+        groupBy: {
+          type: 'none',
+          value: null,
+        },
+        visualization: 'number',
+      },
+    };
+    const node = shallow(
+      <CombinedReportPanel
+        {...props}
+        report={{
+          id: 'combinedReport',
+          name: 'Combined Report',
+          combined: true,
+          data: {
+            configuration: {},
+            reports: [{id: '1'}],
+            visualization: 'bar',
+          },
+          result: {
+            data: {
+              1: report1,
+            },
+          },
+        }}
+      />
+    );
+    expect(node.instance().isCompatible(report2)).toBeFalsy();
+  });
 });
 
 it('should update the color of a single report inside a combined report', async () => {

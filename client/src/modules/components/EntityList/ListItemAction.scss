@@ -2,6 +2,7 @@
   margin: 0 14px;
   height: 32px;
   width: 32px;
+  position: relative;
 
   .activateButton {
     width: 32px;
@@ -19,7 +20,7 @@
   }
 
   &.Dropdown.is-open .menu {
-    top: 26px;
+    transform: translateY(-6px);
     left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
     right: 0;
   }

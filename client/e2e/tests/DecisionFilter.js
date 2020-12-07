@@ -24,7 +24,6 @@ test('should apply a filter to the report result', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   const unfiltered = +(await Report.reportRenderer.textContent);
 
@@ -50,7 +49,6 @@ test('should have seperate input and output variables', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));

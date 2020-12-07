@@ -31,7 +31,7 @@ public class DecisionCsvExportServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("getArguments")
   public void reportCsvHasExpectedValue(DecisionReportDataDto currentReport, String expectedCSV) throws Exception {
-    //given
+    // given
     OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.parse("2019-01-29T18:20:23.277+01:00");
     DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition();

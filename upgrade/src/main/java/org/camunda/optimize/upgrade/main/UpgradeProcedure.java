@@ -5,56 +5,53 @@
  */
 package org.camunda.optimize.upgrade.main;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
-import org.camunda.optimize.upgrade.util.UpgradeUtil;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-public abstract class UpgradeProcedure {
+public class UpgradeProcedure {
 
-  @Getter
-  protected final UpgradeExecutionDependencies upgradeDependencies;
   protected final OptimizeElasticsearchClient esClient;
-  protected final ElasticsearchMetadataService elasticsearchMetadataService;
   protected final UpgradeValidationService upgradeValidationService;
+  protected final SchemaUpgradeClient schemaUpgradeClient;
+  protected final UpgradeStepLogService upgradeStepLogService;
 
-  public UpgradeProcedure() {
-    this(UpgradeUtil.createUpgradeDependencies(), new UpgradeValidationService());
-  }
-
-  public UpgradeProcedure(final UpgradeExecutionDependencies upgradeDependencies,
-                          final UpgradeValidationService upgradeValidationService) {
-    this.upgradeDependencies = upgradeDependencies;
-    this.esClient = upgradeDependencies.getEsClient();
-    this.elasticsearchMetadataService = upgradeDependencies.getMetadataService();
+  public UpgradeProcedure(final OptimizeElasticsearchClient esClient,
+                          final UpgradeValidationService upgradeValidationService,
+                          final SchemaUpgradeClient schemaUpgradeClient,
+                          final UpgradeStepLogService upgradeStepLogService) {
+    this.esClient = esClient;
     this.upgradeValidationService = upgradeValidationService;
+    this.schemaUpgradeClient = schemaUpgradeClient;
+    this.upgradeStepLogService = upgradeStepLogService;
   }
 
-  public abstract String getInitialVersion();
-
-  public abstract String getTargetVersion();
-
-  public void performUpgrade() {
-    final Optional<String> optionalSchemaVersion = elasticsearchMetadataService.getSchemaVersion(esClient);
+  public void performUpgrade(final UpgradePlan upgradePlan) {
+    final Optional<String> optionalSchemaVersion = schemaUpgradeClient.getSchemaVersion();
 
     if (optionalSchemaVersion.isPresent()) {
       final String schemaVersion = optionalSchemaVersion.get();
-      validateVersions(schemaVersion);
+      validateVersions(schemaVersion, upgradePlan);
 
-      if (!getTargetVersion().equals(schemaVersion)) {
+      if (!upgradePlan.getToVersion().equals(schemaVersion)) {
         try {
-          UpgradePlan upgradePlan = buildUpgradePlan();
-          upgradePlan.execute();
+          upgradeStepLogService.initializeOrUpdate(schemaUpgradeClient);
+          executeUpgradePlan(upgradePlan);
         } catch (Exception e) {
-          log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
+          log.error(
+            "Error while executing upgrade from {} to {}", upgradePlan.getFromVersion(), upgradePlan.getToVersion(), e
+          );
           throw new UpgradeRuntimeException("Upgrade failed.", e);
         }
       } else {
@@ -65,11 +62,56 @@ public abstract class UpgradeProcedure {
     }
   }
 
-  protected abstract UpgradePlan buildUpgradePlan();
+  private void executeUpgradePlan(final UpgradePlan upgradePlan) {
+    int currentStepCount = 1;
+    final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
+    for (UpgradeStep step : upgradeSteps) {
+      final UpgradeStepLogEntryDto logEntryDto = UpgradeStepLogEntryDto.builder()
+        .indexName(step.getIndex().getIndexName())
+        .optimizeVersion(upgradePlan.getToVersion())
+        .stepType(step.getType())
+        .stepNumber(currentStepCount)
+        .build();
+      final Optional<Instant> stepAppliedDate = upgradeStepLogService.getStepAppliedDate(
+        schemaUpgradeClient, logEntryDto
+      );
+      if (!stepAppliedDate.isPresent()) {
+        log.info(
+          "Starting step {}/{}: {} on index: {}",
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
+        );
+        try {
+          step.execute(schemaUpgradeClient);
+          upgradeStepLogService.recordAppliedStep(schemaUpgradeClient, logEntryDto);
+        } catch (UpgradeRuntimeException e) {
+          log.error("The upgrade will be aborted. Please investigate the cause and retry it..");
+          throw e;
+        }
+        log.info(
+          "Successfully finished step {}/{}: {} on index: {}",
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
+        );
+      } else {
+        log.info(
+          "Skipping Step {}/{}: {} on index: {} as it was found to be previously completed already at: {}.",
+          currentStepCount,
+          upgradeSteps.size(),
+          step.getClass().getSimpleName(),
+          step.getIndex().getIndexName(),
+          stepAppliedDate.get()
+        );
+      }
+      currentStepCount++;
+    }
+    schemaUpgradeClient.initializeSchema();
+    schemaUpgradeClient.updateOptimizeVersion(upgradePlan.getFromVersion(), upgradePlan.getToVersion());
+  }
 
-  private void validateVersions(final String schemaVersion) {
-    upgradeValidationService.validateESVersion(esClient, getTargetVersion());
-    upgradeValidationService.validateSchemaVersions(schemaVersion, getInitialVersion(), getTargetVersion());
+  private void validateVersions(final String schemaVersion, final UpgradePlan upgradePlan) {
+    upgradeValidationService.validateESVersion(esClient, upgradePlan.getToVersion());
+    upgradeValidationService.validateSchemaVersions(
+      schemaVersion, upgradePlan.getFromVersion(), upgradePlan.getToVersion()
+    );
   }
 
 }

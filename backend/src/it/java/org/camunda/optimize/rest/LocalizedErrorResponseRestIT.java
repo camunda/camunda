@@ -26,9 +26,11 @@ public class LocalizedErrorResponseRestIT extends AbstractIT {
 
     // then
     assertThat(errorResponseDto)
-    .isEqualToIgnoringNullFields(new ErrorResponseDto(
-      NOT_FOUND_ERROR_CODE, "The server could not find the requested resource.", null, null
-    ));
+      .usingRecursiveComparison()
+      .ignoringExpectedNullFields()
+      .isEqualTo(new ErrorResponseDto(
+        NOT_FOUND_ERROR_CODE, "The server could not find the requested resource.", null, null
+      ));
   }
 
   @Test
@@ -41,7 +43,9 @@ public class LocalizedErrorResponseRestIT extends AbstractIT {
 
     // then
     assertThat(errorResponseDto)
-      .isEqualToIgnoringNullFields(new ErrorResponseDto(
+      .usingRecursiveComparison()
+      .ignoringExpectedNullFields()
+      .isEqualTo(new ErrorResponseDto(
         NOT_FOUND_ERROR_CODE, "Der Server konnte die angeforderte Seite oder Datei nicht finden.", null, null
       ));
   }

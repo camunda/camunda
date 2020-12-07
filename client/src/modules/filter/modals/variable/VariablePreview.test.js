@@ -17,7 +17,7 @@ it('should combine multiple variable values with or', () => {
     />
   );
 
-  expect(node).toIncludeText('varName is varValue or varValue2');
+  expect(node).toMatchSnapshot();
 });
 
 it('should combine multiple variable values with or', () => {
@@ -28,7 +28,7 @@ it('should combine multiple variable values with or', () => {
     />
   );
 
-  expect(node).toIncludeText('varName is neither null nor undefined nor varValue nor varValue2');
+  expect(node).toMatchSnapshot();
 });
 
 it('should use less/greater for comparison operators', () => {
@@ -36,7 +36,7 @@ it('should use less/greater for comparison operators', () => {
     <VariablePreview filter={{operator: '<', values: ['varValue']}} variableName="varName" />
   );
 
-  expect(node).toIncludeText('varName is less than varValue');
+  expect(node).toMatchSnapshot();
 });
 
 it('should use contains operators', () => {
@@ -44,11 +44,11 @@ it('should use contains operators', () => {
     <VariablePreview filter={{operator: 'contains', values: ['varValue']}} variableName="varName" />
   );
 
-  expect(node).toIncludeText('varName contains varValue');
+  expect(node).toMatchSnapshot();
 });
 
 it('should display correct preview even if no operator is defined', () => {
   const node = shallow(<VariablePreview filter={{values: [true, false]}} variableName="varName" />);
 
-  expect(node).toIncludeText('varName is true or false');
+  expect(node).toMatchSnapshot();
 });

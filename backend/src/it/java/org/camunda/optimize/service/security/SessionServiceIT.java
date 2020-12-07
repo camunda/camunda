@@ -152,7 +152,7 @@ public class SessionServiceIT extends AbstractIT {
         .execute();
     assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    //then
+    // then
     final Response getPrivateReportsResponse =
       embeddedOptimizeExtension
         .getRequestExecutor()
@@ -186,7 +186,7 @@ public class SessionServiceIT extends AbstractIT {
       .withGivenAuthToken(firstToken)
       .execute();
 
-    //then
+    // then
     assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
@@ -214,7 +214,7 @@ public class SessionServiceIT extends AbstractIT {
       .withGivenAuthToken(firstToken)
       .execute();
 
-    //then
+    // then
     assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(testAuthenticationResponse.getCookies().keySet(), hasItem(OPTIMIZE_AUTHORIZATION));
     final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);

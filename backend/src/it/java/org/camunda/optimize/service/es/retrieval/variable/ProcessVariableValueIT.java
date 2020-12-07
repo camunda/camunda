@@ -660,7 +660,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     requestDto.setProcessDefinitionVersion("aVersion");
     requestDto.setType(STRING);
 
-    //when
+    // when
     Response response = getVariableValueResponse(requestDto);
 
     // then
@@ -675,7 +675,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     requestDto.setProcessDefinitionVersion("aVersion");
     requestDto.setName("var");
 
-    //when
+    // when
     Response response = getVariableValueResponse(requestDto);
 
     // then
@@ -690,7 +690,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     requestDto.setType(STRING);
     requestDto.setName("var");
 
-    //when
+    // when
     Response response = getVariableValueResponse(requestDto);
 
     // then
@@ -705,7 +705,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     requestDto.setType(STRING);
     requestDto.setName("var");
 
-    //when
+    // when
     Response response = getVariableValueResponse(requestDto);
 
     // then

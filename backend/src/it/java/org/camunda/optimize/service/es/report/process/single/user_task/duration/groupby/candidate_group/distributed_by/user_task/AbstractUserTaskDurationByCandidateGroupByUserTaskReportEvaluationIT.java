@@ -51,12 +51,13 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@SuppressWarnings("SameParameterValue")
+@SuppressWarnings(SAME_PARAM_VALUE)
 public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
@@ -648,7 +649,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
@@ -665,7 +666,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -688,7 +689,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
@@ -706,7 +707,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -733,7 +734,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
@@ -750,7 +751,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -769,7 +770,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -787,7 +788,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -1169,7 +1170,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1182,7 +1183,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1195,7 +1196,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

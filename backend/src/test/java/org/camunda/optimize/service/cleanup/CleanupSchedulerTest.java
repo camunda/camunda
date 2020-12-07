@@ -53,10 +53,10 @@ public class CleanupSchedulerTest {
     underTest.getCleanupServices().add(mockedCleanupService2);
     underTest.getCleanupServices().add(mockedCleanupService3);
 
-    //when
+    // when
     underTest.runCleanup();
 
-    //then
+    // then
     verify(mockedCleanupService1, times(1)).doCleanup(any());
     verify(mockedCleanupService2, times(1)).doCleanup(any());
     verify(mockedCleanupService3, never()).doCleanup(any());
@@ -76,10 +76,10 @@ public class CleanupSchedulerTest {
     underTest.getCleanupServices().add(mockedCleanupService1);
     underTest.getCleanupServices().add(mockedCleanupService2);
 
-    //when
+    // when
     underTest.runCleanup();
 
-    //then
+    // then
     verify(mockedCleanupService1, times(1)).doCleanup(any());
     verify(mockedCleanupService2, times(1)).doCleanup(any());
   }
@@ -89,10 +89,10 @@ public class CleanupSchedulerTest {
     // given
     getCleanupConfiguration().setTtl(null);
 
-    //when
+    // when
     final CleanupScheduler underTest = createOptimizeCleanupServiceToTest();
 
-    //then
+    // then
     assertThrows(OptimizeConfigurationException.class, underTest::init);
   }
 

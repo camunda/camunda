@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.migrate32To33;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.junit.jupiter.api.Test;
 
@@ -20,13 +20,13 @@ public class MarkAllDefinitionsAsNotDeletedMigrationIT extends AbstractUpgrade32
   public void processDefinitionsAreMarkedAsDeleted() {
     // given
     executeBulk("steps/3.2/definitions/32-process-definition-bulk");
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then the delete field does not exist
     assertThatDocumentsOfIndexHaveDeletionState(PROCESS_DEFINITION_INDEX.getIndexName(), 2, null);
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then the field exists and is marked as false
     assertThatDocumentsOfIndexHaveDeletionState(PROCESS_DEFINITION_INDEX.getIndexName(), 2, false);
@@ -37,13 +37,13 @@ public class MarkAllDefinitionsAsNotDeletedMigrationIT extends AbstractUpgrade32
   public void decisionDefinitionsAreMarkedAsDeleted() {
     // given
     executeBulk("steps/3.2/definitions/32-decision-definition-bulk");
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then the delete field does not exist
     assertThatDocumentsOfIndexHaveDeletionState(DECISION_DEFINITION_INDEX.getIndexName(), 2, null);
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then the field exists and is marked as false
     assertThatDocumentsOfIndexHaveDeletionState(DECISION_DEFINITION_INDEX.getIndexName(), 2, false);
@@ -54,13 +54,13 @@ public class MarkAllDefinitionsAsNotDeletedMigrationIT extends AbstractUpgrade32
   public void eventProcessDefinitionsAreMarkedAsDeleted() {
     // given
     executeBulk("steps/3.2/definitions/32-event-process-definition-bulk");
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then the delete field does not exist
     assertThatDocumentsOfIndexHaveDeletionState(EVENT_PROCESS_DEFINITION_INDEX.getIndexName(), 2, null);
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then the field exists and is marked as false
     assertThatDocumentsOfIndexHaveDeletionState(EVENT_PROCESS_DEFINITION_INDEX.getIndexName(), 2, false);

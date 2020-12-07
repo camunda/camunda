@@ -20,6 +20,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.springframework.stereotype.Component;
 
@@ -36,11 +37,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class VariableAggregationService {
 
-  public static final String NESTED_AGGREGATION = "nested";
+  public static final String NESTED_VARIABLE_AGGREGATION = "nestedVariables";
+  public static final String NESTED_FLOWNODE_AGGREGATION = "nestedFlownodes";
   public static final String VARIABLES_AGGREGATION = "variables";
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   public static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
-  public static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
+  public static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "instCount";
   public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
 
@@ -109,8 +111,15 @@ public class VariableAggregationService {
   }
 
   public Aggregations retrieveSubAggregationFromBucketMapEntry(Map.Entry<String, Aggregations> bucketMapEntry) {
-    ReverseNested reverseNested = bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
-    return reverseNested == null ? bucketMapEntry.getValue() : reverseNested.getAggregations();
+    final ReverseNested reverseNested = bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+    if (reverseNested == null) {
+      return bucketMapEntry.getValue();
+    } else {
+      final ParsedNested nestedFlownodeAgg = reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
+      return nestedFlownodeAgg == null
+        ? reverseNested.getAggregations() // this is an instance report
+        : nestedFlownodeAgg.getAggregations(); // this is a flownode report
+    }
   }
 
   private MinMaxStatDto getVariableMinMaxStats(final VariableAggregationContext context) {

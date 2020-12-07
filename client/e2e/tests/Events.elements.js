@@ -23,8 +23,8 @@ export const addSource = Selector('button.addProcess');
 export const modalContainer = Selector('.Modal__content-container');
 export const processTypeahead = Selector('.selectionPanel .Typeahead');
 export const variableTypeahead = Selector('.FormGroup .Typeahead');
-export const notification = Selector('.Notification')
-export const notificationCloseButton = (element) => element.find('.close')
+export const notification = Selector('.Notification');
+export const notificationCloseButton = (element) => element.find('.close');
 export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
 export const typeaheadInput = (typeahead) => typeahead.find('input');
 export const typeaheadOption = (typeahead, text) =>
@@ -47,3 +47,9 @@ export const buttonWithText = (text) => Selector('.Modal__content-container butt
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
 export const businessKey = Selector('.label').withText('Business Key').prevSibling();
+export const externalEventsTab = Selector('.NavItem').withText('External Events');
+export const eventCheckbox = (index) =>
+  Selector('.Table tbody tr').nth(index).find('input[type=checkbox]');
+export const selectionDropdown = Selector('.selectionActions button');
+export const confirmModalButton = Selector('.confirm.Button');
+export const externalEventsTable = Selector('.Table');

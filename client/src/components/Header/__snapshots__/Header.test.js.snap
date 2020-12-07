@@ -13,7 +13,6 @@ exports[`matches the snapshot 1`] = `
   <Link
     className="appLink"
     replace={true}
-    title="Camunda Optimize"
     to="/"
   >
     <img
@@ -57,8 +56,9 @@ exports[`matches the snapshot 1`] = `
     <withRouter(NavItem)
       active={
         Array [
-          "/eventBasedProcess/",
-          "/eventBasedProcess/*",
+          "/events/processes/",
+          "/events/ingested/",
+          "/events/processes/*",
         ]
       }
       breadcrumbsEntities={
@@ -66,7 +66,7 @@ exports[`matches the snapshot 1`] = `
           "eventBasedProcess",
         ]
       }
-      linksTo="/eventBasedProcess/"
+      linksTo="/events/processes/"
       name="Event Based Processes"
     />
   </HeaderNav>

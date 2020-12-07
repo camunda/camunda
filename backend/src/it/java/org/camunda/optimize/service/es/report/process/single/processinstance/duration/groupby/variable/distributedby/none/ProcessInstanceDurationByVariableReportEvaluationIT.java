@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableMap.of;
 import static com.google.common.collect.Lists.newArrayList;
@@ -820,13 +819,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
@@ -892,13 +891,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
@@ -964,13 +963,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
@@ -1529,7 +1528,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1550,7 +1549,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1571,7 +1570,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1593,7 +1592,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1615,7 +1614,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -1754,23 +1753,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isEmpty();
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    return deployAndStartSimpleProcesses(variables).get(0);
-  }
-
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    return IntStream.range(0, 1)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto =
-          engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
-  }
+//  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
+//    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+//      getSingleServiceTaskProcess());
+//    ProcessInstanceEngineDto processInstanceEngineDto =
+//      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+//    processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+//    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+//    return processInstanceEngineDto;
+//  }
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
                                                     String processDefinitionId,

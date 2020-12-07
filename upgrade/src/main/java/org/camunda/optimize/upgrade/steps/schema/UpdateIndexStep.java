@@ -5,98 +5,137 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.camunda.optimize.upgrade.steps.UpgradeStepType;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 
-public class UpdateIndexStep implements UpgradeStep {
-  private final IndexMappingCreator index;
+@EqualsAndHashCode(callSuper = true)
+@Slf4j
+public class UpdateIndexStep extends UpgradeStep {
   private final String mappingScript;
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
   private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
 
-  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
-    this.index = index;
-    this.mappingScript = mappingScript;
-    this.parameters = Collections.emptyMap();
+  public UpdateIndexStep(final IndexMappingCreator index) {
+    this(index, null);
   }
 
-  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript,
+  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
+    this(index, mappingScript, Collections.emptyMap());
+  }
+
+  public UpdateIndexStep(final IndexMappingCreator index,
+                         final String mappingScript,
                          final Map<String, Object> parameters) {
-    this.index = index;
+    super(index);
     this.mappingScript = mappingScript;
     this.parameters = parameters;
   }
 
   @Override
+  public UpgradeStepType getType() {
+    return UpgradeStepType.SCHEMA_UPDATE_INDEX;
+  }
+
+  @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    String indexName = index.getIndexName();
-    int targetVersion = index.getVersion();
-    final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
-    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
-    final String sourceVersionAsString = String.valueOf(targetVersion - 1);
-    final String targetVersionAsString = String.valueOf(targetVersion);
-    final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(
-      indexAlias, sourceVersionAsString
-    );
-    final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(
-      indexAlias, targetVersionAsString
-    );
+    if (index.isCreateFromTemplate()) {
+      updateIndexTemplateAndAssociatedIndexes(schemaUpgradeClient);
+    } else {
+      migrateSingleIndex(schemaUpgradeClient);
+    }
+  }
 
-    if (index.getCreateFromTemplate()) {
-      // create new template & indices and reindex data to it
-      schemaUpgradeClient.createOrUpdateTemplateWithoutAliases(index, indexAlias);
-      final Map<String, Set<AliasMetaData>> indexAliasMap = schemaUpgradeClient.getAliasMap(indexAlias);
-      for (String sourceIndex : indexAliasMap.keySet()) {
-        String suffix;
-        String sourceIndexNameWithSuffix;
-        Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
-
-        if (suffixMatcher.find()) {
-          // sourceIndex is already suffixed
-          suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
-          sourceIndexNameWithSuffix = sourceIndexName + suffix;
-        } else {
-          // sourceIndex is not yet suffixed, use default suffix
-          suffix = index.getIndexNameInitialSuffix();
-          sourceIndexNameWithSuffix = sourceIndexName;
-        }
-        final String targetIndexNameWithSuffix = targetIndexName + suffix;
-
-        final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexNameWithSuffix);
-        schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
-        schemaUpgradeClient.createIndexFromTemplate(targetIndexNameWithSuffix);
-        schemaUpgradeClient.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
-        applyAliasesToIndex(schemaUpgradeClient, targetIndexNameWithSuffix, existingAliases);
-        schemaUpgradeClient.deleteIndex(sourceIndexNameWithSuffix);
+  private void updateIndexTemplateAndAssociatedIndexes(final SchemaUpgradeClient schemaUpgradeClient) {
+    final String indexAlias = getIndexAlias(schemaUpgradeClient);
+    final String sourceTemplateName = getSourceIndexOrTemplateName(indexAlias);
+    // create new template & indices and reindex data to it
+    schemaUpgradeClient.createOrUpdateTemplateWithoutAliases(index);
+    final Map<String, Set<AliasMetadata>> indexAliasMap = schemaUpgradeClient.getAliasMap(indexAlias);
+    // this ensures the migration happens in a consistent order
+    final List<String> sortedIndices = indexAliasMap.keySet().stream()
+      // we are only interested in indices based on the source template
+      // in resumed update scenarios this could also contain indices based on the targetTemplateName already
+      // which we don't need to care about
+      .filter(indexName -> indexName.contains(sourceTemplateName))
+      .sorted().collect(Collectors.toList());
+    for (final String sourceIndex : sortedIndices) {
+      final String suffix;
+      final Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
+      if (suffixMatcher.find()) {
+        // sourceIndex is already suffixed
+        suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
+      } else {
+        // sourceIndex is not yet suffixed, use default suffix
+        suffix = index.getIndexNameInitialSuffix();
       }
+      final String targetIndexName = getTargetIndexOrTemplateName(schemaUpgradeClient) + suffix;
+
+      final Set<AliasMetadata> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndex);
+      schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndex, existingAliases);
+      schemaUpgradeClient.createIndexFromTemplate(targetIndexName);
+      schemaUpgradeClient.reindex(sourceIndex, targetIndexName, mappingScript, parameters);
+      applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      schemaUpgradeClient.deleteIndexIfExists(sourceIndex);
+    }
+  }
+
+  private void migrateSingleIndex(final SchemaUpgradeClient schemaUpgradeClient) {
+    final String indexAlias = getIndexAlias(schemaUpgradeClient);
+    final String sourceIndexName = getSourceIndexOrTemplateName(indexAlias);
+    final String targetIndexName = schemaUpgradeClient.getIndexNameService().getOptimizeIndexNameWithVersion(index);
+    if (!schemaUpgradeClient.indexExists(sourceIndexName)) {
+      // if the expected source index is not available anymore there are only two possibilities:
+      // 1. it never existed (unexpected edge-case)
+      // 2. a previous upgrade run completed this step already
+      // in both cases we can try to create/update the target index in a fail-safe way
+      log.info(
+        "Source index {} was not found, will just create/update the new index {}.", sourceIndexName, targetIndexName
+      );
+      schemaUpgradeClient.createOrUpdateIndex(index);
     } else {
       // create new index and reindex data to it
-      final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexName);
+      final Set<AliasMetadata> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexName);
       schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
-      schemaUpgradeClient.createIndex(index);
+      schemaUpgradeClient.createOrUpdateIndex(index);
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
-      schemaUpgradeClient.deleteIndex(sourceIndexName);
+      schemaUpgradeClient.deleteIndexIfExists(sourceIndexName);
     }
+  }
+
+  private String getIndexAlias(final SchemaUpgradeClient schemaUpgradeClient) {
+    return schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(index.getIndexName());
+  }
+
+  private String getSourceIndexOrTemplateName(final String indexAlias) {
+    return getOptimizeIndexOrTemplateNameForAliasAndVersion(indexAlias, String.valueOf(index.getVersion() - 1));
+  }
+
+  private String getTargetIndexOrTemplateName(final SchemaUpgradeClient schemaUpgradeClient) {
+    return schemaUpgradeClient.getIndexNameService().getOptimizeIndexTemplateNameWithVersion(index);
   }
 
   private void applyAliasesToIndex(final SchemaUpgradeClient schemaUpgradeClient,
                                    final String indexName,
-                                   final Set<AliasMetaData> aliases) {
-    for (AliasMetaData alias : aliases) {
+                                   final Set<AliasMetadata> aliases) {
+    for (AliasMetadata alias : aliases) {
       schemaUpgradeClient.addAlias(
         alias.getAlias(),
         indexName,

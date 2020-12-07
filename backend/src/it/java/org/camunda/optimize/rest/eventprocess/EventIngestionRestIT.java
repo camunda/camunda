@@ -13,7 +13,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.RequestTargetHost;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
@@ -397,8 +397,8 @@ public class EventIngestionRestIT extends AbstractIT {
 
   private void assertEventDtosArePersisted(final List<CloudEventRequestDto> cloudEventDtos) {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    final List<EventResponseDto> expectedEventDtos = cloudEventDtos.stream()
-      .map(cloudEventDto -> EventResponseDto.builder()
+    final List<EventDto> expectedEventDtos = cloudEventDtos.stream()
+      .map(cloudEventDto -> EventDto.builder()
         .id(cloudEventDto.getId())
         .eventName(cloudEventDto.getType())
         .timestamp(
@@ -414,7 +414,7 @@ public class EventIngestionRestIT extends AbstractIT {
         .build()
       )
       .collect(Collectors.toList());
-    final List<EventResponseDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    final List<EventDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
     assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 

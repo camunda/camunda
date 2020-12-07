@@ -1,40 +1,38 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .Table {
   table {
-    border-color: $grey-darken-33;
+    border-color: var(--grey-darken-33);
   }
 
   thead tr {
     &:not(.groupRow) {
-      border-color: $grey-darken-33;
+      border-color: var(--grey-darken-33);
     }
 
     .tableHeader:not(:first-child):not(.placeholder):before {
-      background: $grey-darken-33;
+      background: var(--grey-darken-33);
     }
   }
 
   tbody tr {
-    color: white;
-    background-color: rgba($grey-darken-13, 0.6);
+    color: var(--white);
+    background-color: rgba(33, 33, 33, 0.6);
 
     &:not(:last-child) {
-      border-color: $grey-darken-33;
+      border-color: var(--grey-darken-33);
     }
 
     &:nth-child(odd) {
-      background-color: rgba($grey-darken-13, 0.2);
+      background-color: rgba(33, 33, 33, 0.2);
     }
   }
 
   &.highlight tbody tr:hover {
-    background-color: $grey-darken-13;
+    background-color: var(--grey-darken-13);
   }
 
   .tableFooter {
-    background-color: $grey-darken-23;
-    border-color: $grey-darken-23;
+    background-color: var(--grey-darken-23);
+    border-color: var(--grey-darken-23);
   }
 }
 
@@ -46,7 +44,7 @@
   overflow: hidden;
 
   table {
-    border: 1px solid $silver-darken-87;
+    border: 1px solid var(--silver-darken-87);
     border-collapse: collapse;
     display: flex;
     flex-direction: column;
@@ -63,7 +61,7 @@
     min-width: max-content !important;
 
     &:not(.groupRow) {
-      border-bottom: 1px solid $silver-darken-87;
+      border-bottom: 1px solid var(--silver-darken-87);
     }
 
     &.groupRow th {
@@ -82,7 +80,7 @@
         left: 0;
         height: 38px;
         width: 1px;
-        background: $silver-darken-87;
+        background: var(--silver-darken-87);
       }
 
       &:first-child .cellContent {
@@ -129,14 +127,14 @@
     overflow-x: hidden;
 
     tr {
-      color: #606060;
+      color: var(--grey-base-40);
 
       &:not(:last-child) {
-        border-bottom: 1px solid $silver-darken-87;
+        border-bottom: 1px solid var(--silver-darken-87);
       }
 
       &:nth-child(odd) {
-        background-color: $silver-base-97;
+        background-color: var(--silver-base-97);
       }
 
       td {
@@ -156,15 +154,15 @@
   }
 
   &.highlight tbody tr:hover {
-    background-color: $silver-darken-94;
+    background-color: var(--silver-darken-94);
   }
 
   .tableFooter {
-    background: $silver-base-97;
+    background: var(--silver-base-97);
     display: flex;
     align-items: center;
     padding: 10px 20px;
-    border: 1px solid $silver-darken-87;
+    border: 1px solid var(--silver-darken-87);
     border-top: none;
     white-space: nowrap;
 
@@ -209,7 +207,7 @@
     top: 50%;
     transform: translate(-50%, -50%);
     padding: 20px;
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
   }
 
   &.loading {

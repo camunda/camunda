@@ -81,7 +81,7 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
             elasticsearchClient, processInstanceIndex
           );
           if (!indexAlreadyExists) {
-            elasticSearchSchemaManager.createOptimizeIndex(
+            elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
               elasticsearchClient, processInstanceIndex, Collections.singleton(PROCESS_INSTANCE_INDEX_NAME)
             );
           }

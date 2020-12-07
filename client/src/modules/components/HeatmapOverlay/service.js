@@ -5,7 +5,6 @@
  */
 
 import HeatmapJS from 'heatmap.js';
-import './Tooltip.scss';
 import ReactDOM from 'react-dom';
 
 const SEQUENCEFLOW_RADIUS = 30;
@@ -199,34 +198,19 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
   // create overlay node from html
   const overlayHtml = document.createElement('div');
   overlayHtml.classList.add('Tooltip');
-  if (theme === 'light') {
-    overlayHtml.classList.add('light');
-  }
-
-  const tooltipContainer = document.createElement('div');
-  tooltipContainer.classList.add('Tooltip__text-top');
-  overlayHtml.appendChild(tooltipContainer);
+  overlayHtml.classList.add('top');
+  overlayHtml.classList.add('center');
+  overlayHtml.classList.add(theme === 'light' ? 'light' : 'dark');
 
   // render tooltip react markup into the html tooltip container
-  ReactDOM.render(tooltipContent, tooltipContainer, () => {
+  ReactDOM.render(tooltipContent, overlayHtml, () => {
     overlaysContainer.appendChild(overlayHtml);
-    const overlayWidth = overlayHtml.clientWidth;
     const overlayHeight = overlayHtml.clientHeight;
     overlaysContainer.removeChild(overlayHtml);
 
     const nodeWidth = elementGraphics.querySelector('.djs-visual').getBBox().width;
-
-    // react to changes in the overlay content and reposition it
-    const observer = new MutationObserver(() => {
-      if (overlayHtml.parentNode) {
-        overlayHtml.parentNode.style.left = nodeWidth / 2 - overlayWidth / 2 + 'px';
-      }
-    });
-
-    observer.observe(overlayHtml, {childList: true, subtree: true});
-
     const position = {
-      left: nodeWidth / 2 - overlayWidth / 2,
+      left: nodeWidth / 2,
     };
 
     if (
@@ -234,11 +218,11 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
       overlayHeight
     ) {
       position.bottom = 0;
-      const classList = tooltipContainer.classList;
-      classList.remove('Tooltip__text-top');
-      classList.add('Tooltip__text-bottom');
+      const classList = overlayHtml.classList;
+      classList.remove('top');
+      classList.add('bottom');
     } else {
-      position.top = -overlayHeight;
+      position.top = 0;
     }
 
     // add overlay to viewer

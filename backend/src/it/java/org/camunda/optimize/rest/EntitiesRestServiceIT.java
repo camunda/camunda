@@ -55,7 +55,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsMyUsersReports() {
-    //given
+    // given
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
@@ -78,7 +78,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
 
     addSingleReportToOptimize("My Report", ReportType.PROCESS);
@@ -102,7 +102,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_DoesNotReturnOtherUsersReports() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addSingleReportToOptimize("B Report", ReportType.PROCESS, null, "kermit");
@@ -136,7 +136,8 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // see https://jira.camunda.com/browse/OPT-3496
 
     // given
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName("empty");
     // an empty string definition key caused trouble
     singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("");
@@ -154,7 +155,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsMyUsersDashboards() {
-    //given
+    // given
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard");
 
@@ -169,7 +170,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_DoesNotReturnOtherUsersDashboards() {
-    //given
+    // given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addDashboardToOptimize("A Dashboard");
@@ -198,7 +199,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_ReturnsCollections() {
-    //given
+    // given
     collectionClient.createNewCollection();
     collectionClient.createNewCollection();
 
@@ -235,7 +236,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities__noSortApplied_OrderedByTypeAndLastModified() {
-    //given
+    // given
     addCollection("B Collection");
     addCollection("A Collection");
     addSingleReportToOptimize("D Report", ReportType.PROCESS);
@@ -398,7 +399,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @MethodSource("sortParamsAndExpectedComparator")
   public void getEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
                                                                         Comparator<EntityResponseDto> expectedComparator) {
-    //given
+    // given
     addCollection("B Collection");
     addCollection("A Collection");
     addSingleReportToOptimize("D Report", ReportType.PROCESS);
@@ -407,7 +408,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("A Dashboard");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntitySorter sorter = entitySorter(sortBy, sortOrder);
+    EntitySorter sorter = new EntitySorter(sortBy, sortOrder);
 
     // when
     final List<EntityResponseDto> allEntities = entitiesClient.getAllEntities(sorter);
@@ -429,7 +430,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("An Entity");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntitySorter sorter = entitySorter(name, SortOrder.ASC);
+    EntitySorter sorter = new EntitySorter(name, SortOrder.ASC);
     final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName)
       .thenComparing(EntityResponseDto::getEntityType)
       .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
@@ -454,7 +455,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("F Entity");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntitySorter sorter = entitySorter(name, null);
+    EntitySorter sorter = new EntitySorter(name, null);
     final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName);
 
     // when
@@ -469,7 +470,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_invalidSortByParameterPassed() {
     // given a sortBy field which is not supported
-    EntitySorter sorter = entitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
+    EntitySorter sorter = new EntitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -483,7 +484,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_sortOrderSuppliedWithNoSortByField() {
     // given
-    EntitySorter sorter = entitySorter(null, SortOrder.ASC);
+    EntitySorter sorter = new EntitySorter(null, SortOrder.ASC);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()

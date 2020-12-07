@@ -28,6 +28,7 @@ import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.F
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
 
@@ -44,12 +45,14 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   protected String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
     switch (reportType) {
       case PROCESS:
-        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+          new SingleProcessReportDefinitionRequestDto();
         singleProcessReportDefinitionDto.setName(name);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
       case DECISION:
-        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+          new SingleDecisionReportDefinitionRequestDto();
         singleDecisionReportDefinitionDto.setName(name);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
@@ -84,14 +87,7 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
-  protected EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
-    final EntitySorter sorter = new EntitySorter();
-    sorter.setSortBy(sortBy);
-    sorter.setSortOrder(sortOrder);
-    return sorter;
-  }
-
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<Arguments> sortParamsAndExpectedComparator() {
     return Stream.of(
       Arguments.of(name, SortOrder.ASC, Comparator.comparing(EntityResponseDto::getName)),

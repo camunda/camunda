@@ -41,6 +41,17 @@ Object.defineProperty(window.HTMLElement.prototype, 'offsetParent', {
   },
 });
 
+let container;
+
+beforeEach(() => {
+  container = document.createElement('div');
+  document.body.append(container);
+});
+
+afterEach(() => {
+  document.body.removeChild(container);
+});
+
 function setupRefs(node) {
   const footer = document.createElement('div');
   footer.getBoundingClientRect = () => ({});
@@ -256,7 +267,8 @@ it('should not change focus after pressing an arrow key if closed', () => {
     <Dropdown label="Click me">
       <Dropdown.Option>foo</Dropdown.Option>
       <Dropdown.Option>bar</Dropdown.Option>
-    </Dropdown>
+    </Dropdown>,
+    {attachTo: container}
   );
 
   node.find('button').first().getDOMNode().focus();
@@ -270,7 +282,8 @@ it('should change focus after pressing an arrow key if opened', () => {
     <Dropdown label="Click me">
       <Dropdown.Option>foo</Dropdown.Option>
       <Dropdown.Option>bar</Dropdown.Option>
-    </Dropdown>
+    </Dropdown>,
+    {attachTo: container}
   );
 
   node.find('button').first().getDOMNode().focus();
@@ -330,7 +343,8 @@ it('should open a submenu when pressing the right arrow on a submenu entry', () 
   const node = mount(
     <Dropdown label="Click me">
       <Dropdown.Submenu />
-    </Dropdown>
+    </Dropdown>,
+    {attachTo: container}
   );
 
   node.instance().setState({open: true});
@@ -431,7 +445,8 @@ it('should invoke findLetterOption when typing a character', () => {
       <Dropdown.Option>foo</Dropdown.Option>
       <Dropdown.Option>far</Dropdown.Option>
       <Dropdown.Option>bar</Dropdown.Option>
-    </Dropdown>
+    </Dropdown>,
+    {attachTo: container}
   );
 
   node.find(Dropdown.Option).last().getDOMNode().focus();

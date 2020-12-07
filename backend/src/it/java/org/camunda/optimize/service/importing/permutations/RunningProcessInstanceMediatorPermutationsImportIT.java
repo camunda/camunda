@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class RunningProcessInstanceMediatorPermutationsImportIT extends AbstractImportMediatorPermutationsIT {
 
@@ -82,7 +83,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(2);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       RunningActivityInstanceEngineImportMediator.class,

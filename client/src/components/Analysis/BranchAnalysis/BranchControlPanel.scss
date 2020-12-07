@@ -1,7 +1,7 @@
 .BranchControlPanel {
-  background-color: #f4f4f4;
+  background-color: var(--silver-base-97);
   border-radius: 8px;
-  border: 1px solid #dfdfdf;
+  border: 1px solid var(--silver-darken-87);
   padding: 12px;
   margin-bottom: 1em;
 
@@ -36,6 +36,22 @@
         display: inline-block;
         margin: 0 0.5em;
         line-height: 20px;
+      }
+    }
+
+    .Filter {
+      position: relative;
+      .FilterList {
+        display: inline;
+
+        .listItem {
+          display: inline-flex;
+          width: auto;
+          margin-right: 10px;
+          .ActionItem .content {
+            padding-right: 35px;
+          }
+        }
       }
     }
   }

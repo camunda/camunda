@@ -1,7 +1,5 @@
-@import 'shared-styles/shared-styles.scss';
-
 .UncontrolledMultiValueInput {
-  border: 1px solid #bbb;
+  border: 1px solid var(--silver-darken-80);
   padding: 5px 10px 0px;
   min-height: 32px;
   border-radius: 3px;
@@ -14,7 +12,7 @@
     font-size: 0.875em;
     top: 50%;
     transform: translateY(-50%);
-    color: $grey-lighten-56;
+    color: var(--grey-lighten-56);
     pointer-events: none;
     max-width: calc(100% - 20px);
     white-space: nowrap;
@@ -27,7 +25,7 @@
   }
 
   &:focus-within {
-    box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+    box-shadow: var(--blue-darken-62) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
     transition: box-shadow 0.05s ease-out 0s;
   }
 

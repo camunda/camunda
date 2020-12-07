@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDat
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawProcessResultMapping_testQuoteEscapingInValue() {
-    //given
+    // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("\"1\"", "test");
     final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
@@ -69,16 +70,16 @@ public class CSVUtilsTest {
         "\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
         ".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n";
 
-    //when
+    // when
     final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap)));
 
-    //then matches expected String
+    // then matches expected String
     assertThat(resultString).isEqualTo(expectedString);
   }
 
   @Test
   public void testRawProcessResultMapping_withIncludingAndExcludingFields() {
-    //given
+    // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
@@ -90,12 +91,12 @@ public class CSVUtilsTest {
     // variables are irrelevant for this test case
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(extractAllProcessInstanceDtoFieldKeys().size() - excludedColumns.size())
@@ -104,7 +105,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawProcessResultMapping_withIncludingAndExcludingSameFieldExcludeWins() {
-    //given
+    // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
@@ -122,12 +123,12 @@ public class CSVUtilsTest {
     // variables are irrelevant for this test case
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(includedColumns.size() - excludedColumns.size())
@@ -136,7 +137,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawProcessResultMapping_withExcludingVariables() {
-    //given
+    // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
@@ -146,12 +147,12 @@ public class CSVUtilsTest {
     final SingleProcessReportDefinitionRequestDto reportDefinition = new SingleProcessReportDefinitionRequestDto();
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
@@ -160,7 +161,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawProcessResultMapping_withIncludingVariables() {
-    //given
+    // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
@@ -172,12 +173,12 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(includedColumns.size());
@@ -185,7 +186,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawProcessResultMapping_withIncludingVariableAndExcludingSameVariableExcludeWins() {
-    //given
+    // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
@@ -204,12 +205,12 @@ public class CSVUtilsTest {
       .getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
@@ -218,7 +219,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_newVariablesAndDtoFieldsAreIncludedByDefault() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     List<String> expectedInputVariableColumns = toMap.get(0).getInputVariables().keySet()
       .stream()
@@ -230,10 +231,10 @@ public class CSVUtilsTest {
       .collect(toList());
     List<String> expectedDtoFieldColumns = extractAllDecisionInstanceDtoFieldKeys();
 
-    //when
+    // when
     List<String[]> result = mapRawDecisionReportInstances(toMap);
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
@@ -244,7 +245,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withExcludingFields() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -258,12 +259,12 @@ public class CSVUtilsTest {
     // variables are irrelevant for this test case
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() - excludedColumns.size())
@@ -272,7 +273,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withIncludingFieldAndExcludingSameFieldExcludeWins() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -290,12 +291,12 @@ public class CSVUtilsTest {
       .getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
@@ -304,7 +305,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withExcludingInputVariables() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -314,12 +315,12 @@ public class CSVUtilsTest {
     final SingleDecisionReportDefinitionRequestDto reportDefinition = new SingleDecisionReportDefinitionRequestDto();
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
@@ -328,7 +329,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withIncludingInputVariables() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -339,12 +340,12 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() + includedColumns.size())
@@ -353,7 +354,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withIncludingInputVariableAndExcludingSameVariableExcludeWins() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -369,12 +370,12 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
@@ -383,7 +384,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withExcludingOutputVariable() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -394,12 +395,12 @@ public class CSVUtilsTest {
     final SingleDecisionReportDefinitionRequestDto reportDefinition = new SingleDecisionReportDefinitionRequestDto();
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
@@ -408,7 +409,7 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withIncludingOutputVariable() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
@@ -420,12 +421,12 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() + includedColumns.size())
@@ -434,15 +435,15 @@ public class CSVUtilsTest {
 
   @Test
   public void testRawDecisionResultMapping_withIncludingOutputVariableAndExcludingSameVariableExcludeWins() {
-    //given
+    // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
-    List<String> includedColumns = Lists.newArrayList(
+    List<String> includedColumns = Collections.singletonList(
       OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1)
     );
-    List<String> excludedColumns = Lists.newArrayList(
+    List<String> excludedColumns = Collections.singletonList(
       OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1)
     );
 
@@ -450,12 +451,12 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
-    //when
+    // when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
-    //then
+    // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())

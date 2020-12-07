@@ -17,7 +17,6 @@ import {
 } from 'services';
 import {t} from 'translation';
 
-import {Configuration} from './Configuration';
 import ReportSelect from './ReportSelect';
 
 const {decision: decisionConfig} = reportConfig;
@@ -115,71 +114,68 @@ export default class DecisionControlPanel extends React.Component {
       decisionDefinitionVersions,
       tenantIds,
       filter,
-      visualization,
       configuration: {xml},
     } = data;
 
     return (
       <div className="DecisionControlPanel ReportControlPanel">
-        <ul>
-          <li className="select">
-            <span className="label">{t('report.definition.decision')}</span>
-            <DefinitionSelection
-              type="decision"
-              definitionKey={decisionDefinitionKey}
-              versions={decisionDefinitionVersions}
-              tenants={tenantIds}
-              xml={xml}
-              onChange={this.changeDefinition}
-            />
-          </li>
-          {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
-            const previous = fields
-              .filter((prev, prevIdx) => prevIdx < idx)
-              .map((prev) => data[prev]);
-
-            return (
-              <li className="select" key={field}>
-                <span className="label">{t(`report.${field}.label`)}</span>
-                <ReportSelect
-                  type="decision"
-                  field={field}
-                  report={this.props.report}
-                  value={data[field]}
-                  variables={this.state.variables}
-                  previous={previous}
-                  disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
-                  onChange={(newValue) => this.updateReport(field, newValue)}
-                />
-              </li>
-            );
-          })}
-          <li className="filter">
-            <DecisionFilter
-              data={filter}
-              onChange={this.props.updateReport}
-              decisionDefinitionKey={decisionDefinitionKey}
-              decisionDefinitionVersions={decisionDefinitionVersions}
-              tenants={tenantIds}
-              variables={this.state.variables}
-            />
-          </li>
-          {result && typeof result.instanceCount !== 'undefined' && (
-            <li>
-              {t(
-                `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
-                {
-                  count: result.instanceCount,
-                }
-              )}
-            </li>
-          )}
-          <Configuration
-            type={visualization}
-            onChange={this.props.updateReport}
-            report={this.props.report}
+        <div className="select source">
+          <h3 className="sectionTitle">{t('common.dataSource')}</h3>
+          <DefinitionSelection
+            type="decision"
+            definitionKey={decisionDefinitionKey}
+            versions={decisionDefinitionVersions}
+            tenants={tenantIds}
+            xml={xml}
+            onChange={this.changeDefinition}
           />
-        </ul>
+        </div>
+        <div className="reportSetup">
+          <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
+          <ul>
+            {['view', 'groupBy'].map((field, idx, fields) => {
+              const previous = fields
+                .filter((prev, prevIdx) => prevIdx < idx)
+                .map((prev) => data[prev]);
+
+              return (
+                <li className="select" key={field}>
+                  <span className="label">{t(`report.${field}.label`)}</span>
+                  <ReportSelect
+                    type="decision"
+                    field={field}
+                    report={this.props.report}
+                    value={data[field]}
+                    variables={this.state.variables}
+                    previous={previous}
+                    disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                    onChange={(newValue) => this.updateReport(field, newValue)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="filter">
+          <DecisionFilter
+            data={filter}
+            onChange={this.props.updateReport}
+            decisionDefinitionKey={decisionDefinitionKey}
+            decisionDefinitionVersions={decisionDefinitionVersions}
+            tenants={tenantIds}
+            variables={this.state.variables}
+          />
+        </div>
+        {result && typeof result.instanceCount !== 'undefined' && (
+          <div className="instanceCount">
+            {t(
+              `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
+              {
+                count: result.instanceCount,
+              }
+            )}
+          </div>
+        )}
       </div>
     );
   }

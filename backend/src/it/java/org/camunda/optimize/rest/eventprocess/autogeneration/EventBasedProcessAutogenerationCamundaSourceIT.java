@@ -38,6 +38,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamund
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEventProcessAutogenerationIT {
 
@@ -49,7 +50,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       .setEnabled(true);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "modelDescription: {0}, tracedByBusinessKey: {2}")
   @MethodSource("singleStartEndModels")
   public void createFromCamundaSource_startEndEvents_singleStartSingleEndEvents(final String modelDescription,
@@ -370,7 +371,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(2);
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "{0}")
   @MethodSource("camundaModels")
   public void createFromCamundaSource_processStartEndEvents(final String modelDescription,

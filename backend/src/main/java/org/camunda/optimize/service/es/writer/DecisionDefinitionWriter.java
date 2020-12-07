@@ -19,6 +19,7 @@ import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,12 +66,14 @@ public class DecisionDefinitionWriter {
 
   public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
     final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
+    final Set<String> decisionDefIds = new HashSet<>();
     importedDefinitions
       .forEach(definition -> {
         final BoolQueryBuilder matchingDefinitionQuery = boolQuery()
           .must(termQuery(DECISION_DEFINITION_KEY, definition.getKey()))
           .must(termQuery(DECISION_DEFINITION_VERSION, definition.getVersion()))
           .mustNot(termQuery(DECISION_DEFINITION_ID, definition.getId()));
+        decisionDefIds.add(definition.getId());
         if (definition.getTenantId() != null) {
           matchingDefinitionQuery.must(termQuery(TENANT_ID, definition.getTenantId()));
         } else {
@@ -81,8 +84,10 @@ public class DecisionDefinitionWriter {
 
     final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "decisionDefinition",
-      "decision definition deleted",
+      String.format(
+        "decision definitions with IDs [%s]",
+        decisionDefIds
+      ),
       MARK_AS_DELETED_SCRIPT,
       definitionsToDeleteQuery,
       DECISION_DEFINITION_INDEX_NAME

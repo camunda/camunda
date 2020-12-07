@@ -1,8 +1,6 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .Dropdown {
   .menu {
-    background-color: $grey-darken-33;
+    background-color: var(--grey-darken-33);
   }
 }
 
@@ -38,7 +36,7 @@
   .menu {
     position: absolute;
     margin: 3px 0;
-    background-color: white;
+    background-color: var(--white);
     padding: 5px 0;
     border-radius: 3px;
     z-index: var(--z-popup);
@@ -56,11 +54,6 @@
       margin: 0;
       flex: 1 1 auto;
       min-height: 0px;
-
-      &.scrollable {
-        overflow-y: scroll;
-        @include scrollable;
-      }
     }
   }
 }

@@ -218,7 +218,7 @@ public class CombinedProcessReportResultTest {
     resultAsCsv = underTest.getResultAsCsv(0, 0, ZoneId.systemDefault());
 
 
-    //then
+    // then
     assertThat(
       new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0)
     );
@@ -237,7 +237,7 @@ public class CombinedProcessReportResultTest {
     resultAsCsv = underTest.getResultAsCsv(0, 1, ZoneId.systemDefault());
 
 
-    //then
+    // then
     assertThat(
       new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0)
     );

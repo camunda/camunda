@@ -63,6 +63,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -93,7 +94,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView())
-      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.FREQUENCY));
+      .usingRecursiveComparison()
+      .isEqualTo(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -510,7 +512,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByAssigneeOnlyCountsUserTaskWithThatAssignee(final FilterOperator filterOperator,
                                                                  final String[] filterValues,
                                                                  final List<Tuple> expectedResult) {
@@ -565,7 +567,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByCandidateGroupOnlyCountsUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
                                                                              final String[] filterValues,
                                                                              final List<Tuple> expectedResult) {
@@ -628,7 +630,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());

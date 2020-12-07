@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import java.util.List;
 
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 public abstract class SingleReportDataDto implements ReportDataDto, Combinable {

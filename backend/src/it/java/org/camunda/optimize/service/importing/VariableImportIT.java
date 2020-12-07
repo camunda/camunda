@@ -69,7 +69,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void variableImportWorks() throws JsonProcessingException {
-    //given
+    // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
@@ -77,11 +77,11 @@ public class VariableImportIT extends AbstractImportIT {
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
-    //then
+    // then
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
@@ -127,7 +127,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() throws JsonProcessingException {
-    //given
+    // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
@@ -136,11 +136,11 @@ public class VariableImportIT extends AbstractImportIT {
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
-    //then
+    // then
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).isEmpty();
   }
@@ -165,14 +165,14 @@ public class VariableImportIT extends AbstractImportIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
-    //then
+    // then
     assertThat(variablesResponseDtos).isEmpty();
     assertThat(storedVariableUpdateInstances).isEmpty();
   }
 
   @Test
   public void variableUpdateImport() throws JsonProcessingException {
-    //given
+    // given
     BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
@@ -180,18 +180,18 @@ public class VariableImportIT extends AbstractImportIT {
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
-    //then
+    // then
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
   @Test
   public void variablesCanHaveNullValue() throws JsonProcessingException {
-    //given
+    // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
@@ -217,7 +217,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void variableUpdatesOnSameVariableDoNotCreateSeveralVariables() {
-    //given
+    // given
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -235,16 +235,16 @@ public class VariableImportIT extends AbstractImportIT {
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
 
-    //then
+    // then
     assertThat(variablesResponseDtos).hasSize(1);
   }
 
   @Test
   public void onlyTheLatestVariableValueUpdateIsImported() {
-    //given
+    // given
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -267,7 +267,7 @@ public class VariableImportIT extends AbstractImportIT {
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
@@ -275,7 +275,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setType(STRING);
     List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
-    //then
+    // then
     assertThat(variableValues)
       .hasSize(1)
       .first().isEqualTo("bar");
@@ -283,7 +283,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void variablesForCompletedProcessInstancesAreFinalResult() {
-    //given
+    // given
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -302,7 +302,7 @@ public class VariableImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcess(processModel);
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
@@ -310,7 +310,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setType(STRING);
     List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
-    //then
+    // then
     assertThat(variableValues)
       .hasSize(1)
       .first().isEqualTo("bar");
@@ -323,7 +323,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setType(STRING);
     variableValues = variablesClient.getProcessVariableValues(requestDto);
 
-    //then
+    // then
     assertThat(variableValues)
       .hasSize(1)
       .first().isEqualTo("2");
@@ -331,7 +331,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void oldVariableUpdatesAreOverwritten() {
-    //given
+    // given
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -353,14 +353,14 @@ public class VariableImportIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceDto.getId());
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
     List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
-    //then
+    // then
     assertThat(variableValues)
       .hasSize(1)
       .first().isEqualTo("foo");
@@ -368,7 +368,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   public void deletingARuntimeVariableAlsoRemovesItFromOptimize() {
-    //given
+    // given
     BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = new HashMap<>();
@@ -378,7 +378,7 @@ public class VariableImportIT extends AbstractImportIT {
     engineIntegrationExtension.deleteVariableInstanceForProcessInstance("stringVar", instanceDto.getId());
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
@@ -386,7 +386,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setType(STRING);
     List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
-    //then
+    // then
     assertThat(variableValues).isEmpty();
   }
 

@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render an aggregation selection for duration reports 1`] = `
+<li
+  className="AggregationType"
+>
+  <span
+    className="label"
+  >
+    Aggregation
+  </span>
+  <Select
+    className="ReportSelect"
+    onChange={[Function]}
+    value="median"
+  >
+    <Option
+      value="min"
+    >
+      Minimum
+    </Option>
+    <Option
+      value="avg"
+    >
+      Average
+    </Option>
+    <Option
+      value="median"
+    >
+      Median
+    </Option>
+    <Option
+      value="max"
+    >
+      Maximum
+    </Option>
+  </Select>
+</li>
+`;
+
+exports[`should render nothing if the current result is no duration and the view is not variable 1`] = `""`;

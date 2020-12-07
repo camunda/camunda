@@ -129,7 +129,8 @@ public class DashboardWriter {
   }
 
   public void removeReportFromDashboards(String reportId) {
-    log.info("Removing report on dashboard with ID [{}].", reportId);
+    final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
+    log.info("Removing {}}.", reportId);
 
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
@@ -146,8 +147,7 @@ public class DashboardWriter {
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      "report",
-      reportId,
+      updateItem,
       removeReportIdFromCombinedReportsScript,
       query,
       DASHBOARD_INDEX_NAME

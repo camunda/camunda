@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
 
-import CreateNewButton from './CreateNewButton';
+import {CreateNewButton} from './CreateNewButton';
 
 it('should match snapshot', () => {
   const node = shallow(<CreateNewButton />);
@@ -47,5 +47,19 @@ it('should call the createDashboard prop', () => {
 
   node.find(Dropdown.Option).at(1).simulate('click');
 
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should include an Import option if the user is authorized to import', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <CreateNewButton importEntity={spy} user={{authorizations: ['import_export']}} />
+  );
+
+  const importOption = node.find(Dropdown.Option).last();
+
+  expect(importOption).toIncludeText('Import');
+
+  importOption.simulate('click');
   expect(spy).toHaveBeenCalled();
 });

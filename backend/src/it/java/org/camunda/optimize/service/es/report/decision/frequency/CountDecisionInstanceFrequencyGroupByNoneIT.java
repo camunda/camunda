@@ -184,7 +184,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .build();
     reportData.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
@@ -201,7 +201,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .build();
     reportData.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then

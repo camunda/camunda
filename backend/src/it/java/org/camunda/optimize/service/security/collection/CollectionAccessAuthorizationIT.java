@@ -21,10 +21,9 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
@@ -37,8 +36,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(collectionId);
 
     // then
-    assertThat(collection.getDefinitionDto().getId(), is(collectionId));
-    assertThat(collection.getCurrentUserRole(), is(RoleType.MANAGER));
+    assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
+    assertThat(collection.getCurrentUserRole()).isEqualTo(RoleType.MANAGER);
   }
 
   @Test
@@ -61,8 +60,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // then
-    assertThat(collection.getDefinitionDto().getId(), is(collectionId));
-    assertThat(collection.getCurrentUserRole(), is(RoleType.MANAGER));
+    assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
+    assertThat(collection.getCurrentUserRole()).isEqualTo(RoleType.MANAGER);
 
     mockedRequests.forEach(engineMockServer::verify);
   }
@@ -89,20 +88,20 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       KERMIT_USER
     );
 
-    final List<EntityResponseDto> entities = collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
+    final List<EntityResponseDto> entities = collectionClient.getEntitiesForCollection(
+      collectionId,
+      KERMIT_USER,
+      KERMIT_USER
+    );
     // then
-    assertThat(collection.getDefinitionDto().getId(), is(collectionId));
-    assertThat(collection.getCurrentUserRole(), is(accessIdentityRolePairs.roleType));
+    assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
+    assertThat(collection.getCurrentUserRole()).isEqualTo(accessIdentityRolePairs.roleType);
 
-    assertThat(entities.size(), is(2));
-    assertThat(
-      entities.get(0).getCurrentUserRole(),
-      is(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs))
-    );
-    assertThat(
-      entities.get(1).getCurrentUserRole(),
-      is(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs))
-    );
+    assertThat(entities).hasSize(2);
+    assertThat(entities.get(0).getCurrentUserRole())
+      .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
+    assertThat(entities.get(1).getCurrentUserRole())
+      .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
   }
 
   @Test
@@ -134,7 +133,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private void createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {

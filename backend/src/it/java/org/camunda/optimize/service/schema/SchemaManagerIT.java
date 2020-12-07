@@ -26,7 +26,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.indices.GetFieldMappingsRequest;
 import org.elasticsearch.client.indices.GetFieldMappingsResponse;
-import org.elasticsearch.client.indices.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -97,7 +96,7 @@ public class SchemaManagerIT extends AbstractIT {
     initializeSchema();
     embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
 
-    //when
+    // when
     initializeSchema();
 
     // then
@@ -268,7 +267,9 @@ public class SchemaManagerIT extends AbstractIT {
             indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
-          assertThat(setting).isEqualTo(dynamicSettings.get(settingName));
+          assertThat(setting)
+            .as("Dynamic setting %s of index %s", settingName, mapping.getIndexName())
+            .isEqualTo(dynamicSettings.get(settingName));
         });
       Settings staticSettings =
         buildStaticSettings(mapping, embeddedOptimizeExtension.getConfigurationService());
@@ -278,7 +279,9 @@ public class SchemaManagerIT extends AbstractIT {
             indexNameService.getOptimizeIndexNameWithVersion(mapping),
             "index." + settingName
           );
-          assertThat(setting).isEqualTo(staticSettings.get(settingName));
+          assertThat(setting)
+            .as("Static setting %s of index %s", settingName, mapping.getIndexName())
+            .isEqualTo(staticSettings.get(settingName));
         });
     }
   }
@@ -338,7 +341,7 @@ public class SchemaManagerIT extends AbstractIT {
       prefixAwareRestHighLevelClient.getHighLevelClient().indices().getFieldMapping(request, RequestOptions.DEFAULT);
 
     final MyUpdatedEventIndex updatedEventType = new MyUpdatedEventIndex();
-    final FieldMappingMetaData fieldEntry =
+    final GetFieldMappingsResponse.FieldMappingMetadata fieldEntry =
       response.fieldMappings(
         indexNameService.getOptimizeIndexNameWithVersion(updatedEventType),
         MyUpdatedEventIndex.MY_NEW_FIELD

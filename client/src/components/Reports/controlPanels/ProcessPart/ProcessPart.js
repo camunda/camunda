@@ -29,11 +29,11 @@ export default class ProcessPart extends React.Component {
 
   render() {
     return (
-      <React.Fragment>
+      <div className="ProcessPart">
         {this.renderButton()}
         {this.renderPart()}
         {this.renderModal()}
-      </React.Fragment>
+      </div>
     );
   }
 

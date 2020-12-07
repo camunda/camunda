@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
@@ -374,11 +374,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public Integer getDocumentCountOf(final String indexName, final QueryBuilder documentQuery) {
-    final CountRequest countRequest = new CountRequest(indexName)
-      .source(new SearchSourceBuilder().query(documentQuery));
-
     try {
-      final CountResponse countResponse = getOptimizeElasticClient().count(countRequest, RequestOptions.DEFAULT);
+      final CountResponse countResponse = getOptimizeElasticClient()
+        .count(new CountRequest(indexName).query(documentQuery), RequestOptions.DEFAULT);
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
@@ -604,8 +602,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
   }
 
-  public List<EventResponseDto> getAllStoredExternalEvents() {
-    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventResponseDto.class);
+  public List<EventDto> getAllStoredExternalEvents() {
+    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
   }
 
   public List<DecisionInstanceDto> getAllDecisionInstances() {

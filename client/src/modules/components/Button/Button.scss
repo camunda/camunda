@@ -1,117 +1,116 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark {
   .Button {
-    color: $silver-darken-87;
-    background-color: $grey-darken-33;
-    border: 1px solid $grey-darken-33;
+    color: var(--silver-darken-87);
+    background-color: var(--grey-darken-33);
+    border: 1px solid var(--grey-darken-33);
 
     &:hover,
     &:active,
     &.active {
-      color: $silver-darken-87;
-      background-color: $grey-darken-23;
-      border: 1px solid $grey-darken-23;
+      color: var(--silver-darken-87);
+      background-color: var(--grey-darken-23);
+      border: 1px solid var(--grey-darken-23);
     }
 
     &:disabled,
     &[disabled] {
-      color: $grey-lighten-56;
-      border-color: $silver-darken-87;
-      background-color: $silver-base-97;
+      color: var(--grey-lighten-56);
+      border-color: var(--silver-darken-87);
+      background-color: var(--silver-base-97);
     }
 
     &.main {
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
-      border: 1px solid $grey-darken-33;
-      background-color: $grey-darken-33;
-      color: $silver-darken-87;
+      border: 1px solid var(--grey-darken-33);
+      background-color: var(--grey-darken-33);
+      color: var(--silver-darken-87);
 
       &.focus-visible {
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5), #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5), var(--blue-darken-55) 0px 0px 0px 1px,
+          var(--blue-lighten-75) 0px 0px 0px 4px;
       }
 
       &:hover {
-        background-color: $grey-darken-23;
+        background-color: var(--grey-darken-23);
       }
 
       &:active,
       &.active {
-        border: 1px solid $grey-darken-23;
-        background-color: $grey-darken-23;
+        border: 1px solid var(--grey-darken-23);
+        background-color: var(--grey-darken-23);
       }
 
       &:disabled,
       &[disabled] {
         box-shadow: none;
-        border: 1px solid $grey-darken-33;
-        background-color: $grey-darken-33;
-        color: $grey-lighten-56;
+        border: 1px solid var(--grey-darken-33);
+        background-color: var(--grey-darken-33);
+        color: var(--grey-lighten-56);
       }
 
       &.primary {
-        border: 1px solid $blue-darken-48;
-        background-color: $blue-darken-55;
+        border: 1px solid var(--blue-darken-48);
+        background-color: var(--blue-darken-55);
 
         &:hover {
-          background-color: $blue-darken-62;
+          background-color: var(--blue-darken-62);
         }
 
         &:active,
         &.active {
-          border: 1px solid $blue-darken-62;
-          background-color: $blue-base-65;
+          border: 1px solid var(--blue-darken-62);
+          background-color: var(--blue-base-65);
         }
 
         &:disabled,
         &[disabled] {
-          border: 1px solid $blue-darken-32;
-          background-color: $blue-darken-18;
+          border: 1px solid var(--blue-darken-32);
+          background-color: var(--blue-darken-18);
         }
       }
 
       &.warning {
-        border: 1px solid $red-darken-38;
-        background-color: $red-darken-42;
+        border: 1px solid var(--red-darken-38);
+        background-color: var(--red-darken-42);
 
         &:hover {
-          border: 1px solid $red-darken-42;
-          background-color: $red-darken-52;
+          border: 1px solid var(--red-darken-42);
+          background-color: var(--red-darken-52);
         }
 
         &:active,
         &.active {
-          border: 1px solid $red-darken-52;
-          background-color: $red-base-62;
+          border: 1px solid var(--red-darken-52);
+          background-color: var(--red-base-62);
         }
 
         &:disabled,
         &[disabled] {
-          border: 1px solid $red-darken-26;
-          background-color: $red-darken-18;
+          border: 1px solid var(--red-darken-26);
+          background-color: var(--red-darken-18);
         }
       }
     }
 
     &.icon {
       background-color: transparent;
-      color: $silver-darken-87;
+      color: var(--silver-darken-87);
       border: none;
       box-shadow: none;
 
       &:hover {
-        background-color: $grey-darken-23;
+        background-color: var(--grey-darken-23);
       }
 
       &:active,
       &.active {
-        background-color: $grey-darken-33;
+        background-color: var(--grey-darken-33);
       }
 
       &:disabled,
       &[disabled] {
         background-color: transparent;
-        color: $grey-lighten-56;
+        color: var(--grey-lighten-56);
       }
     }
   }
@@ -124,171 +123,173 @@
   border-radius: 3px;
   text-decoration: none;
 
-  color: $grey-darken-23;
+  color: var(--grey-darken-23);
   font-size: 0.875em; /* 14px/16px */
   padding: 6px 12px;
-  background-color: $silver-base-97;
-  border: 1px solid $silver-darken-80;
+  background-color: var(--silver-base-97);
+  border: 1px solid var(--silver-darken-80);
 
   &:hover {
-    background-color: $silver-darken-94;
+    background-color: var(--silver-darken-94);
     transition: background-color 0.3s;
     text-decoration: none;
   }
 
   &:active,
   &.active {
-    background-color: $silver-darken-87;
+    background-color: var(--silver-darken-87);
     transition: none;
   }
 
   &:disabled,
   &[disabled] {
     cursor: not-allowed;
-    color: $grey-lighten-56;
-    border-color: $silver-darken-87;
-    background-color: $silver-base-97;
+    color: var(--grey-lighten-56);
+    border-color: var(--silver-darken-87);
+    background-color: var(--silver-base-97);
+    pointer-events: none; // fix to make mouseleave events fire: https://github.com/facebook/react/issues/4251#issuecomment-267004045
   }
 
   &.primary {
     font-weight: bold;
-    color: $silver-lighten-99;
-    background-color: $blue-darken-55;
-    border: 1px solid $blue-darken-55;
+    color: var(--silver-lighten-99);
+    background-color: var(--blue-darken-55);
+    border: 1px solid var(--blue-darken-55);
 
     &:hover {
-      border: 1px solid $blue-darken-55;
-      background-color: $blue-darken-62;
+      border: 1px solid var(--blue-darken-55);
+      background-color: var(--blue-darken-62);
     }
 
     &:active,
     &.active {
-      border: 1px solid $blue-darken-48;
-      background-color: $blue-darken-55;
+      border: 1px solid var(--blue-darken-48);
+      background-color: var(--blue-darken-55);
     }
 
     &:disabled,
     &[disabled] {
-      border: 1px solid $blue-lighten-82;
-      background-color: $blue-lighten-75;
+      border: 1px solid var(--blue-lighten-82);
+      background-color: var(--blue-lighten-75);
     }
   }
 
   &.warning {
     font-weight: bold;
-    border: 1px solid $red-darken-52;
-    background-color: $red-base-62;
+    border: 1px solid var(--red-darken-52);
+    background-color: var(--red-base-62);
 
     &:hover {
-      border: 1px solid $red-darken-42;
-      background-color: $red-darken-52;
+      border: 1px solid var(--red-darken-42);
+      background-color: var(--red-darken-52);
     }
 
     &:active,
     &.active {
-      border: 1px solid $red-darken-38;
-      background-color: $red-darken-42;
+      border: 1px solid var(--red-darken-38);
+      background-color: var(--red-darken-42);
     }
 
     &:disabled,
     &[disabled] {
-      border: 1px solid $red-lighten-85;
-      background-color: $red-lighten-85;
+      border: 1px solid var(--red-lighten-85);
+      background-color: var(--red-lighten-85);
     }
   }
 
   &.main {
-    color: $grey-darken-33;
+    color: var(--grey-darken-33);
     font-size: 14px;
     font-weight: bold;
     text-align: center;
     min-width: 117px;
     height: 35px;
     padding: 8px 17px;
-    background-color: $silver-base-97;
-    border: 1px solid $silver-darken-80;
+    background-color: var(--silver-base-97);
+    border: 1px solid var(--silver-darken-80);
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
     transition: background-color 0.1s, border-color 0.1s;
 
     &.focus-visible {
       outline: none;
-      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1), #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1), var(--blue-darken-55) 0px 0px 0px 1px,
+        var(--blue-lighten-75) 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
 
     &:hover {
-      background-color: $silver-darken-94;
+      background-color: var(--silver-darken-94);
     }
 
     &:active,
     &.active {
-      background-color: $silver-darken-87;
+      background-color: var(--silver-darken-87);
     }
 
     &:disabled,
     &[disabled] {
       box-shadow: none;
-      border: 1px solid $silver-darken-87;
-      color: $grey-lighten-56;
-      background-color: $silver-base-97;
+      border: 1px solid var(--silver-darken-87);
+      color: var(--grey-lighten-56);
+      background-color: var(--silver-base-97);
     }
 
     &.primary {
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
-      border: 1px solid $blue-darken-62;
-      background-color: $blue-base-65;
-      color: $silver-base-97;
+      border: 1px solid var(--blue-darken-62);
+      background-color: var(--blue-base-65);
+      color: var(--silver-base-97);
 
       &.focus-visible {
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35), #2b7bff 0px 0px 0px 1px,
-          #8cb7ff 0px 0px 0px 4px;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35), var(--blue-darken-55) 0px 0px 0px 1px,
+          var(--blue-lighten-75) 0px 0px 0px 4px;
       }
 
       &:hover {
-        border: 1px solid $blue-darken-55;
-        background-color: $blue-darken-62;
+        border: 1px solid var(--blue-darken-55);
+        background-color: var(--blue-darken-62);
       }
 
       &:active,
       &.active {
-        border: 1px solid $blue-darken-48;
-        background-color: $blue-darken-55;
+        border: 1px solid var(--blue-darken-48);
+        background-color: var(--blue-darken-55);
       }
 
       &:disabled,
       &[disabled] {
-        border: 1px solid $blue-lighten-82;
-        background-color: $blue-lighten-75;
+        border: 1px solid var(--blue-lighten-82);
+        background-color: var(--blue-lighten-75);
         box-shadow: none;
       }
     }
 
     &.warning {
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25);
-      border: 1px solid $red-darken-52;
-      background-color: $red-base-62;
-      color: $silver-base-97;
+      border: 1px solid var(--red-darken-52);
+      background-color: var(--red-base-62);
+      color: var(--silver-base-97);
 
       &.focus-visible {
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25), #2b7bff 0px 0px 0px 1px,
-          #8cb7ff 0px 0px 0px 4px;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25), var(--blue-darken-55) 0px 0px 0px 1px,
+          var(--blue-lighten-75) 0px 0px 0px 4px;
       }
 
       &:hover {
-        border: 1px solid $red-darken-42;
-        background-color: $red-darken-52;
+        border: 1px solid var(--red-darken-42);
+        background-color: var(--red-darken-52);
       }
 
       &:active,
       &.active {
-        border: 1px solid $red-darken-38;
-        background-color: $red-darken-42;
+        border: 1px solid var(--red-darken-38);
+        background-color: var(--red-darken-42);
       }
 
       &:disabled,
       &[disabled] {
-        border: 1px solid $red-lighten-85;
-        background-color: $red-lighten-85;
+        border: 1px solid var(--red-lighten-85);
+        background-color: var(--red-lighten-85);
         box-shadow: none;
       }
     }
@@ -298,7 +299,7 @@
     width: 32px;
     height: 32px;
     background-color: transparent;
-    color: $grey-darken-23;
+    color: var(--grey-darken-23);
     border: none;
     border-radius: 50%;
     padding: 0;
@@ -307,17 +308,17 @@
 
     &.focus-visible {
       outline: none;
-      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
 
     &:hover {
-      background-color: $silver-darken-94;
+      background-color: var(--silver-darken-94);
     }
 
     &:active,
     &.active {
-      background-color: $silver-darken-80;
+      background-color: var(--silver-darken-80);
     }
 
     .Icon {
@@ -325,16 +326,16 @@
     }
 
     &.focus-visible {
-      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
 
     &:disabled,
     &[disabled] {
       cursor: not-allowed;
-      color: $grey-lighten-56;
-      border-color: $silver-darken-87;
-      background-color: $silver-base-97;
+      color: var(--grey-lighten-56);
+      border-color: var(--silver-darken-87);
+      background-color: var(--silver-base-97);
     }
   }
 
@@ -342,8 +343,8 @@
     display: inline;
     align-items: normal;
     background-color: transparent;
-    color: $blue;
-    border-color: $blue;
+    color: var(--blue-darken-55);
+    border-color: var(--blue-darken-55);
     border-style: none;
     font: inherit;
     border-radius: 0;
@@ -352,21 +353,21 @@
     transform-origin: 0 0;
     box-shadow: none;
     &.focus-visible {
-      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
 
     &.focus-visible {
       outline: none;
       border-radius: 3px;
-      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
 
     &:hover {
       background-color: transparent;
-      color: $blue;
-      border-color: $blue;
+      color: var(--blue-darken-55);
+      border-color: var(--blue-darken-55);
       border-style: none;
       text-decoration: underline;
     }

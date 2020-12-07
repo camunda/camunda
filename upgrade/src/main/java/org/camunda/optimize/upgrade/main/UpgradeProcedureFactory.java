@@ -1,0 +1,31 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.upgrade.main;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
+
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class UpgradeProcedureFactory {
+  public static UpgradeProcedure create() {
+    return create(UpgradeUtil.createUpgradeDependencies());
+  }
+
+  public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
+    return new UpgradeProcedure(
+      upgradeDependencies.getEsClient(),
+      new UpgradeValidationService(),
+      createSchemaUpgradeClient(upgradeDependencies),
+      new UpgradeStepLogService()
+    );
+  }
+}

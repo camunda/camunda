@@ -5,11 +5,17 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.List;
+
 public class ConfigurationServiceBuilder {
 
-  private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
+  public static final List<String> DEFAULT_CONFIG_LOCATIONS = ImmutableList.of(
+    "service-config.yaml", "environment-config.yaml"
+  );
 
-  private String[] configLocations = DEFAULT_CONFIG_LOCATIONS;
+  private String[] configLocations = DEFAULT_CONFIG_LOCATIONS.toArray(new String[]{});
   private ConfigurationValidator configurationValidator = new ConfigurationValidator();
 
   public static ConfigurationService createDefaultConfiguration() {

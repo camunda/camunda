@@ -41,15 +41,13 @@ it('displays the loading indicator if is importing', () => {
   const node = shallow(<Footer />);
 
   node.setState({
-    connectionStatus: {
-      connectedToElasticsearch: true,
-      engineConnections: {
-        property1: true,
+    engineStatus: {
+      property1: {
+        isConnected: true,
+        isImporting: true,
       },
     },
-    isImporting: {
-      property1: true,
-    },
+    connectedToElasticsearch: true,
     loaded: true,
   });
 
@@ -60,15 +58,13 @@ it('does not display the loading indicator if is not importing', () => {
   const node = shallow(<Footer />);
 
   node.setState({
-    connectionStatus: {
-      connectedToElasticsearch: true,
-      engineConnections: {
-        property1: true,
+    engineStatus: {
+      property1: {
+        isConnected: true,
+        isImporting: false,
       },
     },
-    isImporting: {
-      property1: false,
-    },
+    connectedToElasticsearch: true,
     loaded: true,
   });
 
@@ -79,8 +75,11 @@ it('displays the connection status', () => {
   const node = shallow(<Footer />);
 
   node.setState({
-    engineConnections: {
-      engine1: true,
+    engineStatus: {
+      property1: {
+        isConnected: true,
+        isImporting: false,
+      },
     },
     loaded: true,
   });
@@ -114,15 +113,13 @@ it('should display an error message when the websocket connection goes wrong', (
 it('should store data from the socket connection in state', () => {
   jest.useFakeTimers();
   const data = {
-    connectionStatus: {
-      connectedToElasticsearch: true,
-      engineConnections: {
-        property1: true,
+    engineStatus: {
+      property1: {
+        isConnected: true,
+        isImporting: true,
       },
     },
-    isImporting: {
-      property1: true,
-    },
+    connectedToElasticsearch: true,
   };
 
   const node = shallow(<Footer />);

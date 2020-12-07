@@ -11,76 +11,62 @@ import java.util.List;
 
 public class UpgradePlanBuilder {
 
-  public static AddUpgradeDependenciesBuilder createUpgradePlan() {
-    UpgradeExecutionPlan upgradeExecutionPlan = new UpgradeExecutionPlan();
-    return new UpgradePlanBuilder().startUpgradePlanBuild(upgradeExecutionPlan);
+  public static AddFromVersionBuilder createUpgradePlan() {
+    UpgradePlan upgradePlan = new UpgradePlan();
+    return new UpgradePlanBuilder().startUpgradePlanBuild(upgradePlan);
   }
 
-  private AddUpgradeDependenciesBuilder startUpgradePlanBuild(UpgradeExecutionPlan upgradeExecutionPlan) {
-    return new AddUpgradeDependenciesBuilder(upgradeExecutionPlan);
+  private AddFromVersionBuilder startUpgradePlanBuild(UpgradePlan upgradePlan) {
+    return new AddFromVersionBuilder(upgradePlan);
   }
 
-  public class AddUpgradeDependenciesBuilder {
+  public static class AddFromVersionBuilder {
 
-    private UpgradeExecutionPlan upgradeExecutionPlan;
+    private final UpgradePlan upgradePlan;
 
-    public AddUpgradeDependenciesBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {
-      this.upgradeExecutionPlan = upgradeExecutionPlan;
-    }
-
-    public AddFromVersionBuilder addUpgradeDependencies(UpgradeExecutionDependencies upgradeDependencies) {
-      upgradeExecutionPlan.addUpgradeDependencies(upgradeDependencies);
-      return new AddFromVersionBuilder(upgradeExecutionPlan);
-    }
-  }
-
-  public class AddFromVersionBuilder {
-
-    private UpgradeExecutionPlan upgradeExecutionPlan;
-
-    public AddFromVersionBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {
-      this.upgradeExecutionPlan = upgradeExecutionPlan;
+    public AddFromVersionBuilder(UpgradePlan upgradePlan) {
+      this.upgradePlan = upgradePlan;
     }
 
     public AddToVersionBuilder fromVersion(String fromVersion) {
-      upgradeExecutionPlan.setFromVersion(fromVersion);
-      return new AddToVersionBuilder(upgradeExecutionPlan);
+      upgradePlan.setFromVersion(fromVersion);
+      return new AddToVersionBuilder(upgradePlan);
     }
   }
 
-  public class AddToVersionBuilder {
-    private UpgradeExecutionPlan upgradeExecutionPlan;
+  public static class AddToVersionBuilder {
+    private final UpgradePlan upgradePlan;
 
-    public AddToVersionBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {
-      this.upgradeExecutionPlan = upgradeExecutionPlan;
+    public AddToVersionBuilder(UpgradePlan upgradePlan) {
+      this.upgradePlan = upgradePlan;
     }
 
     public AddUpgradeStepBuilder toVersion(String toVersion) {
-      upgradeExecutionPlan.setToVersion(toVersion);
-      return new AddUpgradeStepBuilder(upgradeExecutionPlan);
+      upgradePlan.setToVersion(toVersion);
+      return new AddUpgradeStepBuilder(upgradePlan);
     }
   }
 
-  public class AddUpgradeStepBuilder {
+  public static class AddUpgradeStepBuilder {
 
-    private UpgradeExecutionPlan upgradeExecutionPlan;
+    private final UpgradePlan upgradePlan;
 
-    public AddUpgradeStepBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {
-      this.upgradeExecutionPlan = upgradeExecutionPlan;
+    public AddUpgradeStepBuilder(UpgradePlan upgradePlan) {
+      this.upgradePlan = upgradePlan;
     }
 
     public AddUpgradeStepBuilder addUpgradeStep(UpgradeStep upgradeStep) {
-      upgradeExecutionPlan.addUpgradeStep(upgradeStep);
+      upgradePlan.addUpgradeStep(upgradeStep);
       return this;
     }
 
     public AddUpgradeStepBuilder addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
-      upgradeExecutionPlan.addUpgradeSteps(upgradeSteps);
+      upgradePlan.addUpgradeSteps(upgradeSteps);
       return this;
     }
 
     public UpgradePlan build() {
-      return upgradeExecutionPlan;
+      return upgradePlan;
     }
 
   }

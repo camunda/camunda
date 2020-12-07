@@ -69,6 +69,11 @@ public abstract class AbstractQueryPerformanceTest {
     return Integer.parseInt(entityCountString);
   }
 
+  protected static int getNumberOfEventsToIngest() {
+    String eventCountString = PROPERTIES.getProperty("camunda.optimize.test.ingest.event.count");
+    return Integer.parseInt(eventCountString);
+  }
+
   protected static int getNumberOfEvents() {
     String eventCountString = PROPERTIES.getProperty("camunda.optimize.test.query.event.count");
     return Integer.parseInt(eventCountString);

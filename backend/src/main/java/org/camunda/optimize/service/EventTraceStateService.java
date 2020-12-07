@@ -7,7 +7,7 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
@@ -47,14 +47,14 @@ public class EventTraceStateService {
     return eventTraceStateReader.getTracesContainingAtLeastOneEventFromEach(startEvents, endEvents, maxResultsSize);
   }
 
-  public void updateTracesAndCountsForEvents(final List<EventResponseDto> eventsToProcess) {
+  public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
     Map<String, EventTraceStateDto> eventTraceStatesForUpdate = getEventTraceStatesForIds(
-      eventsToProcess.stream().map(EventResponseDto::getTraceId).distinct().collect(Collectors.toList())
+      eventsToProcess.stream().map(EventDto::getTraceId).distinct().collect(Collectors.toList())
     ).stream().collect(Collectors.toMap(EventTraceStateDto::getTraceId, Function.identity()));
     Map<String, EventTraceStateDto> eventTraceStatesToCreate = new HashMap<>();
     Map<String, EventSequenceCountDto> sequenceAdjustmentsRequired = new HashMap<>();
 
-    for (EventResponseDto event : eventsToProcess) {
+    for (EventDto event : eventsToProcess) {
       TracedEventDto tracedEventToAdd = TracedEventDto.fromEventDto(event);
       EventTraceStateDto currentTraceState = eventTraceStatesForUpdate.get(event.getTraceId());
       if (currentTraceState == null) {
@@ -148,7 +148,7 @@ public class EventTraceStateService {
   }
 
   private TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
-                                                            final EventResponseDto newEventDto) {
+                                                            final EventDto newEventDto) {
     return eventTrace.stream()
       .filter(tracedEvent -> Objects.equals(tracedEvent.getEventId(), newEventDto.getId())
         && Objects.equals(tracedEvent.getGroup(), newEventDto.getGroup())
@@ -159,7 +159,7 @@ public class EventTraceStateService {
   }
 
   private void addOrUpdateNewTraceState(final Map<String, EventTraceStateDto> eventTraceStatesToCreate,
-                                        final EventResponseDto event, final TracedEventDto tracedEventToAdd) {
+                                        final EventDto event, final TracedEventDto tracedEventToAdd) {
     Optional<EventTraceStateDto> existingTraceStateToAdd =
       Optional.ofNullable(eventTraceStatesToCreate.get(event.getTraceId()));
 

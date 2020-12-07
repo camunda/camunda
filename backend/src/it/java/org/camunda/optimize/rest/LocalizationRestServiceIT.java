@@ -26,7 +26,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("defaultLocales")
   public void getLocalizationFile(final String localeCode) {
-    //given
+    // given
     final JsonNode expectedLocaleJson = getExpectedLocalizationFile(localeCode);
 
     // when
@@ -38,7 +38,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
 
   @Test
   public void getFallbackLocalizationForInvalidCode() {
-    //given
+    // given
     final String localeCode = "xyz";
     final JsonNode expectedLocaleJson = getExpectedLocalizationFile(
       embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
@@ -53,7 +53,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
 
   @Test
   public void getFallbackLocalizationForMissingCode() {
-    //given
+    // given
     final JsonNode expectedLocaleJson = getExpectedLocalizationFile(
       embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
     );
@@ -67,7 +67,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
 
   @Test
   public void getErrorOnLocalizationFileGone() {
-    //given
+    // given
     final String localeCode = "xyz";
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
 
@@ -84,7 +84,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("defaultLocales")
   public void getLocalizedWhatsNewMarkdown(final String localeCode) {
-    //given
+    // given
     final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(localeCode);
 
     // when
@@ -96,7 +96,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
 
   @Test
   public void getFallbackWhatsNewMarkdownForInvalidCode() {
-    //given
+    // given
     final String localeCode = "xyz";
     final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(
       embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
@@ -125,7 +125,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
 
   @Test
   public void getErrorOnMarkdownFileGone() {
-    //given
+    // given
     final String localeCode = "xyz";
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
 

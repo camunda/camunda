@@ -57,7 +57,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
   @MethodSource("definitionType")
   public void cantUpdateWithoutReport(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -77,7 +77,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
   @MethodSource("definitionType")
   public void cantCreateAlertForPrivateReports(final DefinitionType definitionType) {
-    //given
+    // given
     String reportId = createNumberReportForCollection(null, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
@@ -94,7 +94,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest(name = "create new report with report definition type {0}")
   @MethodSource("definitionType")
   public void createNewAlert(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -111,7 +111,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @Test
   public void createNewAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -155,7 +155,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
   @MethodSource("definitionType")
   public void createNewAlertAllowsMaxDouble(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -204,7 +204,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest(name = "update alert for report with definition type {0}")
   @MethodSource("definitionType")
   public void updateAlert(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -224,7 +224,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @Test
   public void updateAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -269,7 +269,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest
   @MethodSource("definitionType")
   public void getStoredAlerts(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -299,7 +299,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest
   @MethodSource("definitionType")
   public void deleteNewAlert(final DefinitionType definitionType) {
-    //given
+    // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);

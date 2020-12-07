@@ -2,7 +2,7 @@
   width: 500px;
   overflow: auto;
   padding: 0.5em;
-  border-left: 1px solid lightgray;
+  border-left: 1px solid var(--silver-darken-80);
   position: relative;
 
   .diagram-container {
@@ -14,11 +14,11 @@
   .placeholder {
     margin: 1em;
     border-radius: 10px;
-    background-color: #eee;
+    background-color: var(--silver-darken-94);
     position: absolute;
     font-size: 1.4em;
     padding: 1em;
-    color: #777;
+    color: var(--grey-lighten-50);
     text-align: center;
     display: flex;
     align-items: center;

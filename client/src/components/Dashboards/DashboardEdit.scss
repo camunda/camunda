@@ -1,11 +1,9 @@
-@import 'shared-styles/shared-styles.scss';
-
 .DashboardEdit {
   .EntityNameForm {
     .separator {
       width: 1px;
       height: 23px;
-      background-color: $silver-darken-87;
+      background-color: var(--silver-darken-87);
       margin-left: 4px;
       margin-right: 10px;
       transform: translate(0, 6px);

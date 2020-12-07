@@ -1,5 +1,67 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should display a flow node duration filter 1`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+    >
+      <span
+        className="parameterName"
+      >
+        Duration
+      </span>
+      <span>
+         
+        filter is applied to
+         
+      </span>
+      <Tooltip
+        content={
+          <div
+            className="filterValues"
+          >
+            <div>
+              <div
+                className="flowNode"
+              >
+                <PreviewItemValue>
+                  flow node name
+                </PreviewItemValue>
+                <span>
+                   
+                  is less than
+                   
+                </span>
+                <PreviewItemValue>
+                  18
+                   
+                  hours
+                </PreviewItemValue>
+              </div>
+            </div>
+          </div>
+        }
+        position="bottom"
+      >
+        <span
+          className="PreviewItemValue"
+        >
+          1
+           
+          Flow Node
+        </span>
+      </Tooltip>
+    </ActionItem>
+  </li>
+</ul>
+`;
+
 exports[`should display date preview if the filter is a date filter 1`] = `
 <ul
   className="FilterList"

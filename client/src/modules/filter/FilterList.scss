@@ -1,22 +1,14 @@
 @import 'shared-styles/shared-styles.scss';
 
 .FilterList {
-  display: inline;
   padding: 0;
+  margin: 0;
 
   .listItem {
     list-style-type: none;
-    display: inline-flex;
     margin: 10px 0;
     cursor: pointer;
-
-    &:first-child {
-      margin-left: 0;
-    }
-
-    &:last-child {
-      margin-right: 20px;
-    }
+    width: 100%;
 
     &.notEditable {
       cursor: default;
@@ -26,51 +18,19 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      width: 100%;
 
-      * {
+      .content {
+        padding: 0 35px 0 10px;
+      }
+
+      :not(.PreviewItemValue) {
         white-space: pre-wrap;
       }
 
       .parameterName {
         font-style: italic;
         font-weight: bold;
-      }
-
-      .previewItemValue {
-        position: relative;
-        @include highlighted;
-
-        .Tooltip {
-          display: none;
-          position: absolute;
-          top: 28px;
-          left: 50%;
-          transform: translateX(-50%);
-
-          .Tooltip__text-bottom {
-            width: max-content;
-            border-radius: 0;
-            font-weight: normal;
-            text-align: left;
-            font-size: 1em;
-            border: 1px solid $silver-darken-80;
-            box-shadow: 0 2px 7px -4px #555;
-            border-radius: 8px;
-            padding: 10px 20px 15px 20px;
-
-            &:before {
-              border-color: transparent transparent $silver-darken-80 transparent;
-            }
-
-            .flowNode {
-              padding: 5px 0;
-            }
-          }
-        }
-
-        &:hover .Tooltip {
-          display: block;
-        }
       }
 
       .previewList {
@@ -91,5 +51,5 @@
 }
 
 .dark .FilterList .ActionItem {
-  color: #333;
+  color: var(--grey-darken-13);
 }

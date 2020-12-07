@@ -5,25 +5,15 @@
  */
 package org.camunda.optimize.upgrade;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
-import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.indexes.UserTestIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
@@ -36,57 +26,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.mockserver.model.HttpRequest.request;
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
-
-  private static final IndexMappingCreator TEST_INDEX_V1 = new UserTestIndex(1);
-  private static final IndexMappingCreator TEST_INDEX_V2 = new UserTestIndex(2);
-  private static final IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING = new UserTestUpdatedMappingIndex();
-
-  private static final String FROM_VERSION = "2.6.0";
-  private static final String TO_VERSION = "2.7.0";
-
-  private ClientAndServer esMockServer;
-
-  @BeforeEach
-  @Override
-  public void setUp() throws Exception {
-    this.configurationService = createDefaultConfiguration();
-    final ElasticsearchConnectionNodeConfiguration elasticConfig =
-      this.configurationService.getFirstElasticsearchConnectionNode();
-
-    this.esMockServer = createElasticMock(elasticConfig);
-    elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
-    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-
-    this.upgradeDependencies =
-      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(this.configurationService);
-    this.objectMapper = upgradeDependencies.getObjectMapper();
-    this.prefixAwareClient = upgradeDependencies.getEsClient();
-    this.indexNameService = upgradeDependencies.getIndexNameService();
-    this.metadataService = upgradeDependencies.getMetadataService();
-
-    cleanAllDataFromElasticsearch();
-    createEmptyEnvConfig();
-    initSchema(Lists.newArrayList(METADATA_INDEX));
-    setMetadataVersion(FROM_VERSION);
-
-    prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
-  }
-
-  @AfterEach
-  @Override
-  public void after() throws Exception {
-    super.after();
-    this.esMockServer.close();
-  }
 
   @SneakyThrows
   @Test
@@ -95,7 +43,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(versionedIndexName);
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     esMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
       .when(indexDeleteRequest, Times.exactly(2))
@@ -103,7 +51,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
-    upgradeExecution.execute(upgradePlan::execute);
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it eventually completes
     upgradeExecution.shutdown();
@@ -122,14 +70,14 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(versionedIndexName);
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     esMockServer
       // respond with a different error
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(upgradePlan::execute).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     esMockServer.verify(indexDeleteRequest, exactly(1));
@@ -144,7 +92,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(oldIndexToDeleteName);
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     esMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
       .when(indexDeleteRequest, Times.exactly(2))
@@ -152,7 +100,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
-    upgradeExecution.execute(upgradePlan::execute);
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it eventually completes
     upgradeExecution.shutdown();
@@ -163,7 +111,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the old index is gone
     assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isFalse();
     // and the new index exists
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
   }
 
   @Test
@@ -172,30 +120,25 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
-    final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(oldIndexToDeleteName);
+    final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     esMockServer
       // respond with a different error
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(upgradePlan::execute).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     esMockServer.verify(indexDeleteRequest, exactly(1));
     // and the old index is still there
     assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isTrue();
     // and the new index as well
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
-  }
-
-  private HttpRequest createIndexDeleteRequestMatcher(final String oldIndexToDeleteName) {
-    return request().withPath("/" + oldIndexToDeleteName).withMethod(DELETE);
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
   }
 
   private UpgradePlan createDeleteIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
@@ -205,20 +148,11 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   private UpgradePlan createUpdateIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
-      .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING))
+      .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
       .build();
-  }
-
-  private ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
-    return MockServerUtil.createProxyMockServer(
-      elasticConfig.getHost(),
-      elasticConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
-    );
   }
 
   private HttpResponse createSnapshotInProgressResponse(final String indexName) {
@@ -244,7 +178,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   }
 
 
-  @SuppressWarnings("SameParameterValue")
+  @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexIfExistsStep(indexMapping);
   }

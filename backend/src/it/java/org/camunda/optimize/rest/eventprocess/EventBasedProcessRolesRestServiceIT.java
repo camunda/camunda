@@ -111,7 +111,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     );
 
     // when
-    final List<EventProcessRoleResponseDto> roles = eventProcessClient.createGetEventProcessMappingRolesRequest(expectedId)
+    final List<EventProcessRoleResponseDto> roles = eventProcessClient.createGetEventProcessMappingRolesRequest(
+      expectedId)
       .withUserAuthentication(USER_KERMIT, USER_KERMIT)
       .execute(new TypeReference<List<EventProcessRoleResponseDto>>() {
       });
@@ -137,7 +138,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     );
 
     // then
-    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles =
+      eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .hasSize(1)
       .extracting(EventProcessRoleResponseDto::getIdentity)
@@ -189,7 +191,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     eventProcessClient.updateEventProcessMappingRoles(eventProcessMappingId, roleEntries);
 
     // then
-    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles =
+      eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId, IdentityDto::getType)
@@ -218,7 +221,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     eventProcessClient.updateEventProcessMappingRoles(eventProcessMappingId, roleEntries);
 
     // then
-    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles =
+      eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId, IdentityDto::getType)
@@ -309,20 +313,18 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     );
 
     // then
-    final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    final List<EventProcessRoleResponseDto> roles =
+      eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
     assertThat(roles)
       .hasSize(1)
       .extracting(EventProcessRoleResponseDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(USER_KERMIT);
-    final EventProcessMappingResponseDto updatedMapping = eventProcessClient.getEventProcessMapping(
-      eventProcessMappingId);
-    assertThat(updatedMapping).isEqualToComparingOnlyGivenFields(
-      eventProcessMapping,
-      EventProcessMappingResponseDto.Fields.lastModified,
-      EventProcessMappingResponseDto.Fields.lastModifier,
-      EventProcessMappingResponseDto.Fields.state
-    );
+    final EventProcessMappingResponseDto updatedMapping =
+      eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+    assertThat(updatedMapping.getLastModified()).isEqualTo(eventProcessMapping.getLastModified());
+    assertThat(updatedMapping.getLastModifier()).isEqualTo(eventProcessMapping.getLastModifier());
+    assertThat(updatedMapping.getState()).isEqualTo(eventProcessMapping.getState());
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {

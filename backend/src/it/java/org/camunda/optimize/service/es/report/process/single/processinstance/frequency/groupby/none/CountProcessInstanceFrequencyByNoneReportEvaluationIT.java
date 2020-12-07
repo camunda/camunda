@@ -190,7 +190,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -204,7 +204,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

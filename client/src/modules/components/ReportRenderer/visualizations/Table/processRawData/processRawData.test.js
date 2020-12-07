@@ -166,3 +166,10 @@ it('should show no data message when all column are excluded', () => {
     noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
   });
 });
+
+it('should not crash for empty results', () => {
+  expect(processRawData({report: {data, result: {data: []}}})).toEqual({
+    body: [],
+    head: [],
+  });
+});

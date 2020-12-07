@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -107,6 +108,13 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
   }
 
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess(final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
     return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
@@ -130,6 +138,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
                                                                             String activityId) {
     return deployAndStartSimpleServiceTaskProcess(key, activityId, null);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(TEST_PROCESS);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
@@ -161,6 +174,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
     BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(TEST_PROCESS);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final String key,
@@ -235,6 +253,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     engineDatabaseExtension.changeAllActivityDurations(thirdProcessInstance.getId(), activityDurationInMs);
   }
 
+  protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
+                                        final Double durationInMs) {
+    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMs.longValue());
+  }
+
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
                                                             final String definitionVersion,
                                                             final ProcessReportDataType reportType,
@@ -264,7 +287,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
     singleProcessReportDefinitionDto.setLastModifier("something");
     singleProcessReportDefinitionDto.setName("something");
@@ -369,7 +393,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   // this method is used for the parameterized tests
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
     return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }

@@ -15,7 +15,6 @@ exports[`should match snapshot 1`] = `
     invalid={false}
     key="0"
     onRemove={[Function]}
-    title="1234 label"
   >
     1234 label
   </Tag>
@@ -23,7 +22,6 @@ exports[`should match snapshot 1`] = `
     invalid={true}
     key="1"
     onRemove={[Function]}
-    title="errorValue"
   >
     errorValue
   </Tag>

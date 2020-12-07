@@ -55,6 +55,10 @@
     "learnMore": "Weitere Informationen: ",
     "privacyPolicy": "Camunda Datenschutzerklärung"
   },
+  "templates": {
+    "noProcessHint": "Leeres Dashboard erstellen",
+    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen"
+  },
   "home": {
     "createBtn": {
       "default": "Neu erstellen",
@@ -212,6 +216,20 @@
       "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "remove": "Quelle entfernen",
       "camundaProcess": "Camunda Prozess"
+    },
+    "ingested": {
+      "label": "Verarbeitete externe Events",
+      "id": "Event ID",
+      "traceId": "Trace ID",
+      "group": "Gruppe",
+      "source": "Quelle",
+      "eventName": "Type",
+      "timestamp": "Timestamp",
+      "eventSources": "Externe Events",
+      "search": "Suche nach Werten",
+      "deleteWarning": "Alle Prozesse, die diese Events verwenden, müssen neu veröffentlicht werden, um den gelöschten Zustand wiederzugeben.",
+      "deleteLimitReached": "Das Löschen von mehr als 1.000 Events ist nicht möglich",
+      "noData": "Keine verarbeiteten Events gefunden."
     }
   },
   "report": {
@@ -221,8 +239,9 @@
     "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
     "addName": "Berichtname",
+    "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
-    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die angegebene Einstellung.",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -327,7 +346,7 @@
     },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
-    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen oben.",
+    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen.",
     "incompleteNotice": {
       "message": "Um diesen Bericht anzuzeigen,",
       "action": "Konfiguration vervollständigen ... "
@@ -343,8 +362,8 @@
       "decision": "Entscheidungsdefinition"
     },
     "noDefinitionMessage": {
-      "process": "Wählen Sie oben eine <b>Prozessdefinition</b> aus.",
-      "decision": "Wählen Sie oben eine <b>Entscheidungsdefinition</b> aus."
+      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
+      "decision": "Wählen Sie eine <b>Entscheidungsdefinition</b> aus."
     },
     "saveConflict": {
       "header": "Inkompatible Änderungen",
@@ -358,9 +377,9 @@
       }
     },
     "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus.",
-    "noViewMessage": "Wählen Sie oben eine Option für <b>Ansicht</b> aus.",
-    "noGroupByMessage": "Wählen Sie oben eine Option für <b>Gruppieren nach</b> aus.",
-    "noVisualizationMessage": "Wählen Sie oben eine Option für <b>Visualisierung</b> aus.",
+    "noViewMessage": "Wählen Sie eine Option für <b>Ansicht</b> aus.",
+    "noGroupByMessage": "Wählen Sie eine Option für <b>Gruppieren nach</b> aus.",
+    "noVisualizationMessage": "Wählen Sie eine Option für <b>Visualisierung</b> aus.",
     "variables": {
       "default": "Variablen",
       "input": "Eingabevariablen",
@@ -405,7 +424,6 @@
       }
     },
     "config": {
-      "label": "Konfiguration",
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
@@ -683,6 +701,8 @@
     "add": "Hinzufügen",
     "copy": "Kopieren",
     "change": "Ändern",
+    "export": "Exportieren",
+    "importJSON": "JSON Importieren",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
     "condition": "Bedingung",
@@ -716,6 +736,8 @@
     "nullOrUndefined": "Null oder nicht definiert",
     "timeAt": "um",
     "value": "Wert",
+    "dataSource": "Datenquelle",
+    "selected": "Ausgewählt",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -903,7 +925,10 @@
           "empty": "Keine Werte gefunden"
         },
         "includeUndefined": "Schließen Sie Instanzen ein, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist",
-        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist."
+        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
+        "customValue": "Benutzerdefinierten Wert hinzufügen",
+        "addToList": "Zur Liste hinzufügen",
+        "addedToList": "Wert der Liste hinzugefügt"
       },
       "durationModal": {
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
@@ -965,7 +990,8 @@
         "source": "Datenquelle",
         "collection": "Sammlung",
         "process": "Prozess",
-        "processEvents": "Prozessevents"
+        "processEvents": "Prozessevents",
+        "ingestedEvents": "Events"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1072,6 +1098,12 @@
     "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",
     "noLicenseStoredError": "Derzeit ist keine Lizenz in Optimize vorhanden. Bitte fügen Sie eine gültige Lizenz hinzu.",
     "invalidEventProcessState": "Diese Aktion kann im aktuellen Zustand des Eventbasierten Prozesses nicht ausgeführt werden.",
-    "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden."
+    "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden.",
+    "tooManyBuckets": "Der Bericht konnte nicht evaluiert werden, da das Ergebnis mehr als 10.000 Datenpunkte enthält. Bitte nutzen Sie Filter oder änderen Sie die konfigurierte Bucket Größe, um die Anzahl der Datenpunkte des Ergebnisses zu verringern.",
+    "elasticsearchError": "Es ist ein Fehler in Elasticsearch aufgetreten. Bitte kontaktieren Sie einen Administrator falls dieses Problem längerfristig besteht.",
+    "importDefinitionDoesNotExist": "Import fehlgeschlagen, weil die zu importierende Entität auf Definitionen basiert, die nicht existieren.",
+    "importIndexVersionMismatch": "Import fehlgeschlagen, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
+    "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
+    "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden."
   }
 }

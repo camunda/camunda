@@ -32,6 +32,7 @@ jest.mock('./service', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  user: {name: 'John Doe', authorizations: []},
 };
 
 beforeEach(() => {
@@ -45,7 +46,7 @@ it('should load entities', () => {
 });
 
 it('should display the user name', () => {
-  const node = shallow(<Home {...props} user={{name: 'John Doe'}} />);
+  const node = shallow(<Home {...props} />);
 
   expect(node.find('.welcomeMessage')).toIncludeText('John Doe');
 });
@@ -78,4 +79,24 @@ it('should set the loading state of the entity list', async () => {
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
+});
+
+it('should include an option to export reports for superusers', () => {
+  const node = shallow(<Home {...props} />);
+
+  expect(
+    node
+      .find('EntityList')
+      .prop('data')[0]
+      .actions.find(({text}) => text === 'Export')
+  ).toBe(undefined);
+
+  node.setProps({user: {name: 'John Doe', authorizations: ['import_export']}});
+
+  expect(
+    node
+      .find('EntityList')
+      .prop('data')[0]
+      .actions.find(({text}) => text === 'Export')
+  ).not.toBe(undefined);
 });

@@ -40,6 +40,11 @@ public class BpmnModels {
   public static final String START_LOOP = "mergeExclusiveGateway";
   public static final String END_LOOP = "splittingGateway";
 
+  public static final String MULTI_INSTANCE_START = "miStart";
+  public static final String MULTI_INSTANCE_END = "miEnd";
+  public static final String PARALLEL_GATEWAY = "parallelGateway";
+  public static final String CALL_ACTIVITY = "callActivity";
+
   public static BpmnModelInstance getSimpleBpmnDiagram() {
     return getSimpleBpmnDiagram(DEFAULT_PROCESS_ID, START_EVENT, END_EVENT);
   }
@@ -225,6 +230,24 @@ public class BpmnModels {
         .scriptFormat("groovy")
         .scriptText("sleep(10)")
       .connectTo("mergeExclusiveGateway")
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getMultiInstanceProcess(final String processId, final String subProcessKey) {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(processId)
+      .name("MultiInstance")
+      .startEvent(MULTI_INSTANCE_START)
+        .parallelGateway(PARALLEL_GATEWAY)
+      .endEvent(END_EVENT)
+        .moveToLastGateway()
+          .callActivity(CALL_ACTIVITY)
+          .calledElement(subProcessKey)
+          .multiInstance()
+          .cardinality("2")
+        .multiInstanceDone()
+      .endEvent(MULTI_INSTANCE_END)
       .done();
     // @formatter:on
   }

@@ -30,14 +30,18 @@ exports[`should render a placeholder when no actions are provided 1`] = `
 `;
 
 exports[`should render a single button if there is only a single Action in the EntityList 1`] = `
-<ForwardRef(Button)
-  className="ListItemAction"
-  icon={true}
-  onClick={[Function]}
-  title="Delete"
+<Tooltip
+  align="right"
+  content="Delete"
 >
-  <Icon
-    type="delete"
-  />
-</ForwardRef(Button)>
+  <ForwardRef(Button)
+    className="ListItemAction"
+    icon={true}
+    onClick={[Function]}
+  >
+    <Icon
+      type="delete"
+    />
+  </ForwardRef(Button)>
+</Tooltip>
 `;

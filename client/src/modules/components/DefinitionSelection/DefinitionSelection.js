@@ -213,7 +213,7 @@ export class DefinitionSelection extends React.Component {
 
   render() {
     const {availableDefinitions, selectedSpecificVersions} = this.state;
-    const {expanded, type, disableDefinition, autofocus} = this.props;
+    const {expanded, type, disableDefinition} = this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = this.props.definitionKey;
@@ -249,13 +249,12 @@ export class DefinitionSelection extends React.Component {
                   className="name"
                   initialValue={def ? def.key : null}
                   disabled={noDefinitions || disableDefinition}
-                  autofocus={autofocus}
                   placeholder={t('common.select')}
                   onChange={this.changeDefinition}
                   noValuesMessage={t('common.definitionSelection.noDefinition')}
                 >
                   {availableDefinitions.map(({name, key}) => (
-                    <Typeahead.Option key={key} value={key} title={name || key}>
+                    <Typeahead.Option key={key} value={key}>
                       {name || key}
                     </Typeahead.Option>
                   ))}

@@ -26,7 +26,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Builder
 @Data
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 @NoArgsConstructor
 public class SingleReportConfigurationDto {
   @Builder.Default

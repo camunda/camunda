@@ -7,14 +7,16 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button, Icon} from 'components';
+import {Button, Icon, Tooltip} from 'components';
 
 import './Tag.scss';
 
 export default function Tag({className, invalid, children, onRemove = () => {}, ...props}) {
   return (
     <div className={classnames('Tag', className, {invalid})} {...props}>
-      <span className="tagText">{children}</span>
+      <Tooltip content={children} overflowOnly>
+        <span className="tagText">{children}</span>
+      </Tooltip>
       <Button icon className="close" onClick={onRemove}>
         <Icon type="close-large" size="10px" />
       </Button>

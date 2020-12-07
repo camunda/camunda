@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -72,7 +73,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
         pluginClasses.loadClasses().forEach(pluginClass -> {
           try {
             if (validPluginClass(pluginClass)) {
-              @SuppressWarnings("unchecked")
+              @SuppressWarnings(UNCHECKED_CAST)
               PluginType plugin = (PluginType) pluginClass.newInstance();
               registeredPlugins.add(plugin);
             } else {

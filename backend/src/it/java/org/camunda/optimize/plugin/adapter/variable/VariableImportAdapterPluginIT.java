@@ -56,7 +56,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
-    //then only half the variables are added to Optimize
+    // then only half the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
   }
 
@@ -78,7 +78,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
-    //then only half the variables are added to Optimize
+    // then only half the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
   }
 
@@ -95,7 +95,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
-    //then all the variables are added to Optimize
+    // then all the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
   }
 
@@ -112,7 +112,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
-    //then extra variable is added to Optimize
+    // then extra variable is added to Optimize
     assertThat(variablesResponseDtos).hasSize(3);
   }
 
@@ -128,7 +128,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
-    //then only half the variables are added to Optimize
+    // then only half the variables are added to Optimize
     assertThat(variablesResponseDtos)
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName)
@@ -161,7 +161,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
-    //then only half the variables are added to Optimize
+    // then only half the variables are added to Optimize
     assertThat(variablesResponseDtos)
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)

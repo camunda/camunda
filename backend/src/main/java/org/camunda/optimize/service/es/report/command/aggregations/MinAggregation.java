@@ -23,7 +23,7 @@ public class MinAggregation implements AggregationStrategy {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
     return min(MIN_AGGREGATION);
   }
 

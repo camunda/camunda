@@ -56,7 +56,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
 
     assertResults(processInstance, result, 1);
 
-    //when
+    // when
     if (dateFilterUnit.equals(DateFilterUnit.QUARTERS)) {
       LocalDateUtil.setCurrentTime(OffsetDateTime.now()
                                      .plus(3 * 2L, DateFilterUtil.unitOf(DateFilterUnit.MONTHS.getId())));

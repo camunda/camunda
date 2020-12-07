@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .OptimizeReport {
   padding: 10px;
 
@@ -30,7 +28,7 @@
       font-size: 14px;
       line-height: 18px;
       font-weight: 500;
-      color: $grey-darken-23;
+      color: var(--grey-darken-23);
     }
   }
 

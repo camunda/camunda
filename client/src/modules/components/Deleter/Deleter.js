@@ -86,7 +86,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {entity, getName, type, descriptionText, deleteText} = this.props;
+      const {entity, getName, type, descriptionText, deleteText, deleteButtonText} = this.props;
       const {conflicts, loading} = this.state;
 
       if (!entity) {
@@ -141,7 +141,7 @@ export default withErrorHandling(
               {t('common.cancel')}
             </Button>
             <Button main disabled={loading} warning className="confirm" onClick={this.delete}>
-              {deleteText || t('common.deleteEntity', {entity: translatedType})}
+              {deleteButtonText || deleteText || t('common.deleteEntity', {entity: translatedType})}
             </Button>
           </Modal.Actions>
         </Modal>

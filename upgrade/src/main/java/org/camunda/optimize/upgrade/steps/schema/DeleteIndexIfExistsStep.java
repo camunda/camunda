@@ -5,23 +5,29 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
-import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 
-@AllArgsConstructor
-public class DeleteIndexIfExistsStep implements UpgradeStep {
+@EqualsAndHashCode(callSuper = true)
+public class DeleteIndexIfExistsStep extends UpgradeStep {
 
-  private final IndexMappingCreator index;
+  public DeleteIndexIfExistsStep(final IndexMappingCreator index) {
+    super(index);
+  }
+
+  @Override
+  public UpgradeStepType getType() {
+    return UpgradeStepType.SCHEMA_DELETE_INDEX;
+  }
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String fullIndexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(index);
-    if (schemaUpgradeClient.indexExists(fullIndexName)) {
-      schemaUpgradeClient.deleteIndex(fullIndexName);
-    }
+    schemaUpgradeClient.deleteIndexIfExists(fullIndexName);
   }
 }

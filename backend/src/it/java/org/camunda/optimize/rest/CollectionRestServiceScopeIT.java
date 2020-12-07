@@ -52,7 +52,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
     final List<CollectionScopeEntryResponseDto> expectedCollectionScope = collectionClient.getCollectionScope(collectionId);

@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EngineImportIndexHandlerProvider {
@@ -106,7 +108,7 @@ public class EngineImportIndexHandlerProvider {
     return scrollBasedHandlers;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <C extends ImportIndexHandler> C getImportIndexHandler(Class clazz) {
     return (C) allHandlers.get(clazz.getSimpleName());
   }

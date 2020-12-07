@@ -1,12 +1,10 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Badge {
   font-size: 12px;
   border-radius: 10px;
   height: 20px;
   font-weight: normal;
-  background: #e5f6ff;
-  color: $blue;
+  background: var(--silver-base-97);
+  color: var(--blue-darken-55);
   padding: 3px 10px;
   margin-left: 5px;
   white-space: nowrap;

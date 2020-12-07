@@ -70,6 +70,14 @@ public class CollectionClient {
     return collectionId;
   }
 
+  public String createNewCollectionWithScope(final String username, final String password,
+                                             final DefinitionType definitionType, final String definitionKey,
+                                             final List<String> tenantIds) {
+    final String collectionId = createNewCollection(username, password);
+    createScopeWithTenants(collectionId, definitionKey, tenantIds, definitionType);
+    return collectionId;
+  }
+
   public String createNewCollectionWithProcessScope(final ProcessInstanceEngineDto instanceEngineDto) {
     final String collectionId = createNewCollection();
     createScopeWithTenants(
@@ -107,11 +115,13 @@ public class CollectionClient {
       .getId();
   }
 
-  public void updateCollection(final String collectionId, final PartialCollectionDefinitionRequestDto updatedCollection) {
+  public void updateCollection(final String collectionId,
+                               final PartialCollectionDefinitionRequestDto updatedCollection) {
     updateCollectionAsUser(collectionId, updatedCollection, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public void updateCollectionAsUser(final String collectionId, final PartialCollectionDefinitionRequestDto updatedCollection,
+  public void updateCollectionAsUser(final String collectionId,
+                                     final PartialCollectionDefinitionRequestDto updatedCollection,
                                      final String username, final String password) {
     getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
@@ -170,7 +180,8 @@ public class CollectionClient {
     return getEntitiesForCollection(collectionId, null);
   }
 
-  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId, final String user, final String pass) {
+  public List<EntityResponseDto> getEntitiesForCollection(final String collectionId, final String user,
+                                                          final String pass) {
     return getEntitiesForCollection(collectionId, null, user, pass);
   }
 
@@ -256,7 +267,7 @@ public class CollectionClient {
   public void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> entries) {
     getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+      .execute();
   }
 
   public void addScopeEntryToCollectionAsUser(final String collectionId, final CollectionScopeEntryDto entry,

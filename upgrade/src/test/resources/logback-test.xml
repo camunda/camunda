@@ -10,7 +10,7 @@
   
   <logger name="org.camunda.optimize" level="info" />
 
-  <root level="info">
+  <root level="warn">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 

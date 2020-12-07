@@ -1,10 +1,9 @@
-@import 'shared-styles/shared-styles.scss';
-
 .ValueListInput {
   margin-bottom: 20px;
 
   .undefinedOption {
     margin-top: 14px;
+    font-size: 14px;
 
     input[type='checkbox'] {
       margin-right: 10px;
@@ -22,14 +21,14 @@
   .MultiValueInput {
     .Tag,
     .Tag .Button {
-      background-color: #7fa8c5;
-      color: white;
+      background-color: var(--blue-lighten-75);
+      color: var(--white);
     }
 
     .Tag.invalid,
     .Tag.invalid .Button {
-      background-color: $red-lighten-85;
-      color: $grey-lighten-50;
+      background-color: var(--red-lighten-85);
+      color: var(--grey-lighten-50);
     }
   }
 }

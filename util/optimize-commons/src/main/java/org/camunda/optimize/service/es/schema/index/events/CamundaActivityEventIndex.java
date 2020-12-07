@@ -54,7 +54,7 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
   }
 
   @Override
-  public boolean getCreateFromTemplate() {
+  public boolean isCreateFromTemplate() {
     return true;
   }
 

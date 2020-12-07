@@ -10,7 +10,7 @@
     color: inherit;
 
     .tjs-table tbody tr:nth-child(2n) {
-      background-color: #444;
+      background-color: var(--grey-darken-23);
     }
 
     .decision-table-properties {

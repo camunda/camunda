@@ -12,7 +12,7 @@ NAMESPACE=$1
 IMPORTING="true"
 until [[ ("$IMPORTING" == "false") ]]; do
     curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
-    IMPORTING=$(curl "http://optimize.${NAMESPACE}:8090/api/status" | jq '.isImporting."camunda-bpm"') || true
+    IMPORTING=$(curl "http://optimize.${NAMESPACE}:8090/api/status" | jq '.engineStatus."camunda-bpm".isImporting') || true
 
     sleep 60
 done

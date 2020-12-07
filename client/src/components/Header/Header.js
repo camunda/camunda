@@ -41,7 +41,7 @@ export function Header({mightFail, location, noActions}) {
       role="banner"
       className={classnames('Header', {['text-' + config.textColor]: config.textColor})}
     >
-      <Link to="/" replace={location.pathname === '/'} className="appLink" title={name}>
+      <Link to="/" replace={location.pathname === '/'} className="appLink">
         <img src={config.logo} alt="Logo" />
         <span>{name}</span>
       </Link>
@@ -62,8 +62,8 @@ export function Header({mightFail, location, noActions}) {
             {showEventBased && (
               <HeaderNav.Item
                 name={t('navigation.events')}
-                linksTo="/eventBasedProcess/"
-                active={['/eventBasedProcess/', '/eventBasedProcess/*']}
+                linksTo="/events/processes/"
+                active={['/events/processes/', '/events/ingested/', '/events/processes/*']}
                 breadcrumbsEntities={['eventBasedProcess']}
               />
             )}

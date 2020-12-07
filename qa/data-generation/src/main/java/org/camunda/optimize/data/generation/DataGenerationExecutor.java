@@ -16,8 +16,8 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -64,7 +64,7 @@ public class DataGenerationExecutor {
   private void initGenerators() {
     userGenerator = new UserGenerator(engineClient);
     List<DataGenerator<?>> processDataGenerators = createGenerators(
-      dataGenerationInformation.getProcessDefinitions(),
+      dataGenerationInformation.getProcessDefinitionsAndNumberOfVersions(),
       dataGenerationInformation.getProcessInstanceCountToGenerate()
     );
     log.info(
@@ -72,7 +72,7 @@ public class DataGenerationExecutor {
       processDataGenerators.stream().map(Object::getClass).map(Class::getSimpleName).collect(toList())
     );
     List<DataGenerator<?>> decisionDataGenerators = createGenerators(
-      dataGenerationInformation.getDecisionDefinitions(),
+      dataGenerationInformation.getDecisionDefinitionsAndNumberOfVersions(),
       dataGenerationInformation.getDecisionInstanceCountToGenerate()
     );
     log.info(
@@ -83,8 +83,8 @@ public class DataGenerationExecutor {
     allDataGenerators.addAll(decisionDataGenerators);
   }
 
-  private List<DataGenerator<?>> createGenerators(final HashMap<String, Integer> definitions,
-                                               final Long instanceCountToGenerate) {
+  private List<DataGenerator<?>> createGenerators(final Map<String, Integer> definitions,
+                                                  final Long instanceCountToGenerate) {
     List<DataGenerator<?>> dataGenerators = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()

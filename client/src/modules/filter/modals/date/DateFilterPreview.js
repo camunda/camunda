@@ -11,6 +11,8 @@ import {t} from 'translation';
 
 import {convertFilterToState} from './service';
 
+import PreviewItemValue from '../../PreviewItemValue';
+
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType, variableName}) {
@@ -24,7 +26,7 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     excludeUndefined,
   } = convertFilterToState(filter);
 
-  const highlight = (text) => <span className="previewItemValue">{text}</span>;
+  const highlight = (text) => <PreviewItemValue>{text}</PreviewItemValue>;
 
   let previewText;
 

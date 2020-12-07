@@ -29,6 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @Component
 @RequiredArgsConstructor
 public class EventProcessInstanceImportMediatorFactory {
@@ -44,7 +46,7 @@ public class EventProcessInstanceImportMediatorFactory {
   private final VariableUpdateInstanceReader variableUpdateInstanceReader;
   private final BusinessKeyReader businessKeyReader;
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public <T extends EventProcessEventDto> List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
     final EventProcessPublishStateDto publishedStateDto) {
     return publishedStateDto.getEventImportSources().stream()

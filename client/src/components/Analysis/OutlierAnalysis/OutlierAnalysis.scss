@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .OutlierAnalysis {
   display: flex;
   flex-direction: column;
@@ -12,10 +10,10 @@
     left: 50%;
     transform: translate(-50%, 50%);
     border-radius: 10px;
-    background-color: $silver-darken-94;
+    background-color: var(--silver-darken-94);
     font-size: 1.4em;
     padding: 1em;
-    color: $grey-lighten-50;
+    color: var(--grey-lighten-50);
   }
 
   .OutlierAnalysis__diagram {

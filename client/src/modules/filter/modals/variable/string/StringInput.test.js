@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, Input} from 'components';
 
 import StringInput from './StringInput';
 
@@ -159,4 +159,42 @@ it('should filter empty values when adding the filter', () => {
       },
     },
   });
+});
+
+it('should add custom values to the list of available values', async () => {
+  const node = shallow(<StringInput {...props} filter={{operator: 'in', values: ['A']}} />);
+
+  await flushPromises();
+
+  expect(node.find('Checklist').prop('allItems')).toContain('A');
+});
+
+it('should not add custom values if they are hidden behind a load more button', async () => {
+  const node = shallow(
+    <StringInput
+      {...props}
+      config={{getValues: () => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']}}
+      filter={{operator: 'in', values: ['Z']}}
+    />
+  );
+
+  await flushPromises();
+
+  expect(node.find('Checklist').prop('allItems')).not.toContain('Z');
+});
+
+it('should allow adding custom values', async () => {
+  const node = shallow(<StringInput {...props} filter={{operator: 'in', values: []}} />);
+
+  await flushPromises();
+
+  node.find('.customValueButton').simulate('click');
+  node
+    .find('.customValueInput')
+    .find(Input)
+    .simulate('change', {target: {value: 'newValue'}});
+  node.find('.customValueInput').find(Button).simulate('click');
+
+  expect(props.changeFilter).toHaveBeenCalledWith({operator: 'in', values: ['newValue']});
+  expect(node).toIncludeText('Value added to list');
 });

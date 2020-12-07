@@ -19,10 +19,10 @@ public class AuthenticationRestServiceIT extends AbstractIT {
     // given
     addAdminUserAndGrantAccessPermission();
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest("admin", "admin");
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = response.readEntity(String.class);
     assertThat(responseEntity).isNotNull();
@@ -30,18 +30,18 @@ public class AuthenticationRestServiceIT extends AbstractIT {
 
   @Test
   public void logout() {
-    //given
+    // given
     addAdminUserAndGrantAccessPermission();
     String token = authenticateAdminUser();
 
-    //when
+    // when
     Response logoutResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildLogOutRequest()
       .withGivenAuthToken(token)
       .execute();
 
-    //then
+    // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = logoutResponse.readEntity(String.class);
     assertThat(responseEntity).isEqualTo("OK");
@@ -50,39 +50,39 @@ public class AuthenticationRestServiceIT extends AbstractIT {
   @Test
   public void logoutSecure() {
 
-    //when
+    // when
     Response logoutResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildLogOutRequest()
       .withGivenAuthToken("randomToken")
       .execute();
 
-    //then
+    // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void testAuthenticationIfNotAuthenticated() {
-    //when
+    // when
     Response logoutResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withoutAuthentication()
       .execute();
 
-    //then
+    // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void testIfAuthenticated() {
-    //when
+    // when
     Response logoutResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .execute();
 
-    //then
+    // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 

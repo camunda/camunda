@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .DateFilter__Dashboard {
   width: 190px;
   &.fixed {
@@ -11,7 +9,7 @@
   }
 
   .to {
-    color: $silver-darken-80;
+    color: var(--silver-darken-80);
   }
 
   .Popover__dialog {

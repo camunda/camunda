@@ -440,7 +440,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .build();
     reportData.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
@@ -457,7 +457,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .build();
     reportData.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then

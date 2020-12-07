@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +22,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class DistributedByMigrationIT extends AbstractUpgrade32IT {
 
@@ -35,13 +36,13 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void migratedDistributedBy_processReports() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchHit[] processReports = getAllSingleReports(SINGLE_PROCESS_REPORT_INDEX_NAME);
@@ -51,7 +52,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration);
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);
@@ -65,13 +66,13 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void migratedDistributedBy_decisionReports() {
     // given
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     Arrays.asList(getAllSingleReports(SINGLE_DECISION_REPORT_INDEX_NAME))
@@ -80,7 +81,7 @@ public class DistributedByMigrationIT extends AbstractUpgrade32IT {
           (Map<String, Object>) report.getSourceAsMap().get(AbstractReportIndex.DATA);
 
         final Map<String, Object> configuration =
-          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
+          (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration);
 
         assertThat(data).containsKey(ProcessReportDataDto.Fields.distributedBy);
         assertThat(configuration).doesNotContainKey(ProcessReportDataDto.Fields.distributedBy);

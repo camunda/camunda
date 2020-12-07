@@ -6,17 +6,28 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;
+import org.camunda.optimize.service.events.ExternalEventService;
+import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
+import org.camunda.optimize.service.security.EventProcessAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -30,10 +41,13 @@ import java.util.List;
 @Path("/event")
 @Component
 @Secured
+@Slf4j
 public class EventRestService {
 
   private final EventCountService eventCountService;
+  private final ExternalEventService externalEventService;
   private final SessionService sessionService;
+  private final EventProcessAuthorizationService eventProcessAuthorizationService;
 
   @POST
   @Path("/count")
@@ -47,6 +61,31 @@ public class EventRestService {
       userId, searchTerm, eventCountRequestDto
     );
     return eventCountSorter.applySort(eventCounts);
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  public Page<DeletableEventDto> getEvents(@Context final ContainerRequestContext requestContext,
+                                           @BeanParam @Valid final EventSearchRequestDto eventSearchRequestDto) {
+    validateEventProcessManagementAuthorization(requestContext);
+    eventSearchRequestDto.validateRequest();
+    return externalEventService.getEventsForRequest(eventSearchRequestDto);
+  }
+
+  @POST
+  @Path("/delete")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void deleteEvents(@Context final ContainerRequestContext requestContext,
+                           @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) List<String> eventIdsToDelete) {
+    validateEventProcessManagementAuthorization(requestContext);
+    externalEventService.deleteEvents(eventIdsToDelete);
+  }
+
+  private void validateEventProcessManagementAuthorization(@Context final ContainerRequestContext requestContext) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (!eventProcessAuthorizationService.hasEventProcessManagementAccess(userId)) {
+      throw new EventProcessManagementForbiddenException(userId);
+    }
   }
 
 }

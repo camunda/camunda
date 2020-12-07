@@ -23,11 +23,11 @@ public class LocalizationFileTest {
 
   @Test
   public void localizationFilesHaveTheSameKeys() {
-    //given
+    // given
     String enLocale = "en";
     String deLocale = "de";
 
-    //when
+    // when
     List<String> enKeys = buildQualifiedKeyList(
       getJsonTreeMapFromLocalizationFile(enLocale),
       Lists.newArrayList(),
@@ -39,7 +39,7 @@ public class LocalizationFileTest {
       null
     );
 
-    //then
+    // then
     assertThat(enKeys).containsExactlyInAnyOrderElementsOf(deKeys);
   }
 

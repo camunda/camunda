@@ -106,6 +106,27 @@ public class DefinitionService {
     return definitionVersions;
   }
 
+  public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
+                                                                  final String key,
+                                                                  final List<String> tenantIds) {
+    final List<DefinitionVersionResponseDto> definitionVersions = new ArrayList<>();
+
+    final Optional<DefinitionWithTenantIdsDto> optionalDefinition =
+      definitionReader.getDefinitionWithAvailableTenants(type, key);
+    if (optionalDefinition.isPresent()) {
+      final List<String> availableTenants = optionalDefinition.get().getTenantIds();
+      final List<String> tenantsToFilterFor = prepareTenantListForDefinitionSearch(
+        CollectionUtils.isEmpty(tenantIds)
+          ? availableTenants
+          : availableTenants.stream().filter(tenantIds::contains).collect(toList())
+      );
+
+      definitionVersions.addAll(definitionReader.getDefinitionVersions(type, key, Sets.newHashSet(tenantsToFilterFor)));
+    }
+
+    return definitionVersions;
+  }
+
   public List<TenantDto> getDefinitionTenants(final DefinitionType type,
                                               final String key,
                                               final String userId,

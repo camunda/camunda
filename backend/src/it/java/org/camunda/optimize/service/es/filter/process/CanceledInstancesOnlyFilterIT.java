@@ -24,7 +24,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void mixedCanceledInstancesOnlyFilter() throws Exception {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -57,7 +57,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void internallyTerminatedCanceledInstancesOnlyFilter() throws Exception {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -79,7 +79,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
       .stream()
@@ -92,7 +92,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void externallyTerminatedCanceledInstncesOnlyFilter() {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -108,7 +108,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
       .stream()

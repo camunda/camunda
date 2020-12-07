@@ -156,7 +156,7 @@
                     <echo message="Waiting for Optimize to populate ES..." />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="until test $(/bin/bash -c &quot;curl -s 'http://${optimize.importing.host}:${optimize.importing.port}/api/status' | jq '.isImporting.\&quot;camunda-bpm\&quot;'&quot;) = 'false'; do sleep 2; done" />
+                      <arg value="until test $(/bin/bash -c &quot;curl -s 'http://${optimize.importing.host}:${optimize.importing.port}/api/status' | jq '.engineStatus.\&quot;camunda-bpm\&quot;.isImporting'&quot;) = 'false'; do sleep 2; done" />
                     </exec>
 
                     <echo message="Authenticating with the not importing optimize instance..." />

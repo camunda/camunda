@@ -41,10 +41,13 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       );
     },
     labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+    afterTitle: (data, {datasets}) =>
+      data.length && datasets[data[data.length - 1].datasetIndex].label,
   };
 
   if (isPersistedTooltips) {
     tooltipCallbacks.title = () => '';
+    tooltipCallbacks.afterTitle = () => '';
   } else if (groupedByDurationMaxValue) {
     tooltipCallbacks.title = (data, {labels}) =>
       data.length && formatters.duration(labels[data[0].index]);

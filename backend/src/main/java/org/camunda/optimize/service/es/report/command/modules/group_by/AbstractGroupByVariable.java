@@ -25,6 +25,7 @@ import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -41,11 +42,13 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_FLOWNODE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_VARIABLE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -112,7 +115,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .baseQueryForMinMaxStats(searchSourceBuilder.query())
       .subAggregation(
         reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
-          .subAggregation(distributedByPart.createAggregation(context)))
+          .subAggregation(createDistributedBySubAggregation(context)))
       .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
       .build();
 
@@ -125,7 +128,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       return Collections.emptyList();
     }
 
-    final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, getVariablePath())
+    final NestedAggregationBuilder variableAggregation = nested(NESTED_VARIABLE_AGGREGATION, getVariablePath())
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
@@ -142,12 +145,22 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
+  private AggregationBuilder createDistributedBySubAggregation(final ExecutionContext<Data> context) {
+    if (distributedByPart.isFlownodeReport()) {
+      // Nest the distributed by part to ensure the aggregation is on flownode level
+      return nested(NESTED_FLOWNODE_AGGREGATION, EVENTS)
+        .subAggregation(distributedByPart.createAggregation(context));
+    } else {
+      return distributedByPart.createAggregation(context);
+    }
+  }
+
   private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<Data> context) {
     return filter(
       MISSING_VARIABLES_AGGREGATION,
       getVariableUndefinedOrNullQuery(context)
     )
-      .subAggregation(distributedByPart.createAggregation(context));
+      .subAggregation(createDistributedBySubAggregation(context));
   }
 
   @Override
@@ -159,7 +172,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       return;
     }
 
-    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
+    final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
     if (filteredParentAgg == null) {
@@ -217,7 +230,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private void addMissingVariableBuckets(final List<GroupByResult> groupedData,
                                          final SearchResponse response,
                                          final ExecutionContext<Data> context) {
-    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
+    final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
 
     final ReverseNested filteredInstAggr = filteredVariables.getAggregations()
@@ -225,11 +238,22 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     final long filteredProcInstCount = filteredInstAggr.getDocCount();
 
     if (response.getHits().getTotalHits().value > filteredProcInstCount) {
-      final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
       final List<DistributedByResult> missingVarsOperationResult =
-        distributedByPart.retrieveResult(response, aggregation.getAggregations(), context);
+        distributedByPart.retrieveResult(
+          response,
+          retrieveAggregationsForMissingVariables(response),
+          context
+        );
       groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
     }
+  }
+
+  private Aggregations retrieveAggregationsForMissingVariables(final SearchResponse response) {
+    final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
+    final ParsedNested nestedFlowNodesAgg = aggregation.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
+    return nestedFlowNodesAgg == null
+      ? aggregation.getAggregations() // this is an instance report
+      : nestedFlowNodesAgg.getAggregations(); // this is a flownode report
   }
 
   private boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {

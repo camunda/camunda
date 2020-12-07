@@ -28,6 +28,7 @@ it('should call the callback when adding a report', () => {
   node.find(ReportModal).prop('confirm')({id: 'newReport'});
 
   expect(spy).toHaveBeenCalledWith({
+    configuration: null,
     dimensions: {
       height: 4,
       width: 6,

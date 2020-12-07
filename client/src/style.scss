@@ -3,11 +3,14 @@
 @import '~react-grid-layout/css/styles.css';
 @import '~react-resizable/css/styles.css';
 
+@import 'colors.scss';
+
 :root {
   --z-notification: 1000;
   --z-login: 900;
+  --z-tooltip: 850;
   --z-modal: 800;
-  --z-popup: 500; //popovers, dropdowns, tooltips...
+  --z-popup: 500; //popovers, dropdowns, ...
   --z-above: 1;
   --z-below: -1;
 }
@@ -23,13 +26,13 @@
 html {
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans,
     Ubuntu, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #333;
+  color: var(--grey-darken-13);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
 
   .dark {
-    color: #ddd;
+    color: var(--silver-darken-87);
   }
 }
 
@@ -55,7 +58,7 @@ main {
 }
 
 a {
-  color: $blue;
+  color: var(--blue-darken-55);
   text-decoration: none;
   cursor: pointer;
 }
@@ -65,7 +68,7 @@ a:hover {
 }
 
 a:visited {
-  color: $blue;
+  color: var(--blue-darken-55);
 }
 
 a.focus-visible,
@@ -74,7 +77,7 @@ select.focus-visible,
 input:focus {
   outline: none;
   border-radius: 3px;
-  box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+  box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;
   transition: box-shadow 0.05s ease-out 0s;
 }
 

@@ -15,7 +15,7 @@ public class LocalizationServiceIT extends AbstractIT {
 
   @Test
   public void failOnMissingFileForAvailableLocales() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add("xyz");
     OptimizeConfigurationException configurationException = null;
     try {
@@ -30,7 +30,7 @@ public class LocalizationServiceIT extends AbstractIT {
 
   @Test
   public void failOnInvalidJsonFileForAvailableLocales() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add("invalid");
     OptimizeConfigurationException configurationException = null;
     try {
@@ -46,7 +46,7 @@ public class LocalizationServiceIT extends AbstractIT {
 
   @Test
   public void failOnFallbackLocaleNotPresentInAvailableLocales() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setFallbackLocale("xyz");
     OptimizeConfigurationException configurationException = null;
     try {

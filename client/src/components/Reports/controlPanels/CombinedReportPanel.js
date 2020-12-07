@@ -141,10 +141,14 @@ export default withRouter(
         (data.view.entity === 'flowNode' && referenceReport.view.entity === 'userTask') ||
         (data.view.entity === 'userTask' && referenceReport.view.entity === 'flowNode');
 
-      const sameProperty =
-        data.view.property === referenceReport.view.property ||
-        (data.view.property.toLowerCase().includes('duration') &&
-          referenceReport.view.property.toLowerCase().includes('duration'));
+      const identicalProperty = data.view.property === referenceReport.view.property;
+      const bothDurationReports =
+        data.view.property.toLowerCase?.().includes('duration') &&
+        referenceReport.view.property.toLowerCase?.().includes('duration');
+      const bothVariableReports =
+        data.view.entity === 'variable' && referenceReport.view.entity === 'variable';
+
+      const sameProperty = identicalProperty || bothDurationReports || bothVariableReports;
 
       return sameEntity && sameProperty;
     };
@@ -198,7 +202,7 @@ export default withRouter(
 
     render() {
       const {reports, searchQuery} = this.state;
-      const {report: combinedReport, updateReport} = this.props;
+      const {report: combinedReport, updateReport, loading} = this.props;
       const reportsData = combinedReport.data.reports;
       let selectedReports = [];
 
@@ -223,7 +227,12 @@ export default withRouter(
 
       return (
         <div className="CombinedReportPanel">
-          <Configuration type={configurationType} report={combinedReport} onChange={updateReport} />
+          <Configuration
+            type={configurationType}
+            report={combinedReport}
+            onChange={updateReport}
+            loading={loading}
+          />
           <TypeaheadMultipleSelection
             availableValues={combinableReportList}
             selectedValues={selectedReports}

@@ -63,7 +63,7 @@ export default React.forwardRef(function UncontrolledMultiValueInput(
       />
       <span className="sizer" ref={sizer} />
       {values.map(({value, label, invalid}, i) => (
-        <Tag key={i} invalid={invalid} title={label || value} onRemove={() => onRemove(value, i)}>
+        <Tag key={i} invalid={invalid} onRemove={() => onRemove(value, i)}>
           {label || value}
         </Tag>
       ))}

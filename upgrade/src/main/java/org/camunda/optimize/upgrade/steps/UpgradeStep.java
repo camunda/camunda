@@ -5,10 +5,21 @@
  */
 package org.camunda.optimize.upgrade.steps;
 
-
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 
-public interface UpgradeStep {
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Data
+public abstract class UpgradeStep {
+  protected IndexMappingCreator index;
 
-  void execute(SchemaUpgradeClient schemaUpgradeClient);
+  public abstract UpgradeStepType getType();
+
+  public abstract void execute(SchemaUpgradeClient schemaUpgradeClient);
+
 }

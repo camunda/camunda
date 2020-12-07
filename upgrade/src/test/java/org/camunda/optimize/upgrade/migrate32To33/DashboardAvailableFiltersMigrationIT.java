@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom32To33;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom32To33Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -21,16 +21,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
 
   @SneakyThrows
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void dashboardFiltersAllowCustomVariableSetFalse() {
     // given
     executeBulk("steps/3.2/dashboards/32-dashboard-bulk");
-    final UpgradePlan upgradePlan = new UpgradeFrom32To33().buildUpgradePlan();
+    final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
 
     // then
     final SearchHit[] dashboardsBeforeUpgrade = getAllDocumentsOfIndex(DASHBOARD_INDEX.getIndexName());
@@ -44,7 +45,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       .isEmpty();
 
     // when
-    upgradePlan.execute();
+    upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
     final SearchHit[] dashboardsAfterUpgrade = getAllDocumentsOfIndex(DASHBOARD_INDEX.getIndexName());
@@ -91,7 +92,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       }).collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private List<Map<String, Object>> getBooleanAndDateVariableFilters(final List<Map<String, Object>> filters) {
     return filters.stream()
       .filter(filter -> DashboardFilterType.VARIABLE.getId()
@@ -104,7 +105,7 @@ public class DashboardAvailableFiltersMigrationIT extends AbstractUpgrade32IT {
       }).collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private List<Map<String, Object>> getStringAndNumberVariableFilters(final List<Map<String, Object>> filters) {
     return filters.stream()
       .filter(filter -> DashboardFilterType.VARIABLE.getId()

@@ -5,17 +5,19 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
 
-  public static final int VERSION = 3;
+public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = EventSequenceCountDto.Fields.id;
   public static final String SOURCE_EVENT = EventSequenceCountDto.Fields.sourceEvent;
@@ -27,7 +29,8 @@ public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
 
   public static final String N_GRAM_FIELD = "nGramField";
-  public static final String LOWERCASE_FIELD = "lowercase";
+
+  public static final int VERSION = 3;
 
   private final String indexName;
 
@@ -57,40 +60,40 @@ public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
         .startObject("properties")
           .startObject(GROUP)
             .field("type", "keyword")
-            .startObject("fields")
+            .startObject(FIELDS)
               .startObject(N_GRAM_FIELD)
                 .field("type", "text")
-                .field("analyzer", "lowercase_ngram")
+                .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
               .startObject(LOWERCASE_FIELD)
                 .field("type", "keyword")
-                .field("normalizer", "lowercase_normalizer")
+                .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()
             .endObject()
           .endObject()
           .startObject(SOURCE)
             .field("type", "keyword")
-            .startObject("fields")
+            .startObject(FIELDS)
               .startObject(N_GRAM_FIELD)
                 .field("type", "text")
-                .field("analyzer", "lowercase_ngram")
+                .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
               .startObject(LOWERCASE_FIELD)
                 .field("type", "keyword")
-                .field("normalizer", "lowercase_normalizer")
+                .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()
             .endObject()
           .endObject()
           .startObject(EVENT_NAME)
             .field("type", "keyword")
-            .startObject("fields")
+            .startObject(FIELDS)
               .startObject(N_GRAM_FIELD)
                 .field("type", "text")
-                .field("analyzer", "lowercase_ngram")
+                .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
               .startObject(LOWERCASE_FIELD)
                 .field("type", "keyword")
-                .field("normalizer", "lowercase_normalizer")
+                .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()
             .endObject()
           .endObject()

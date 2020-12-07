@@ -1,12 +1,10 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Typeahead {
   width: 100%;
   position: relative;
 
   .Input {
     width: 100%;
-    padding-right: 65px;
+    padding-right: 40px;
 
     &.selectionVisible::placeholder {
       font-style: normal;
@@ -37,6 +35,6 @@
   ::-webkit-scrollbar-thumb {
     border-radius: 4px;
     background-color: rgba(0, 0, 0, 0.5);
-    -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
   }
 }

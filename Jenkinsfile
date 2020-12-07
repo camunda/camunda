@@ -334,7 +334,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: '**/surefire-reports/**/*.xml', keepLongStdio: true
+              junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -349,7 +349,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'client/jest-test-results.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -415,10 +415,10 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', keepLongStdio: true
+              junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
             failure {
-              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json'
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json', allowEmptyArchive: false
             }
           }
         }
@@ -434,6 +434,11 @@ pipeline {
           steps {
             unstash name: "optimize-stash-distro"
             dataUpgradeTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'qa/upgrade-tests/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+            }
           }
         }
         stage('IT Latest') {
@@ -451,7 +456,7 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -492,7 +497,7 @@ pipeline {
         stage('Build Docker') {
           when {
             expression {
-              // first part of the expessrion covers pure branch builds,
+              // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
               BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
           }
@@ -530,6 +535,19 @@ pipeline {
         }
       }
     }
+    stage ('Deploy to K8s') {
+      when {
+        expression {
+          getBranchName() ==~ /(.*-deploy)/
+        }
+      }
+      steps {
+        build job: '/deploy-optimize-branch-to-k8s',
+                parameters: [
+                        string(name: 'BRANCH', value: getBranchName()),
+                ]
+      }
+    }
   }
 
   post {
@@ -559,11 +577,15 @@ String getGitCommitHash() {
 }
 
 String getBranchSlug() {
-  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
+  return env.CHANGE_BRANCH.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getImageTag() {
   return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+}
+
+String getBranchName() {
+  return env.BRANCH_NAME == 'master' ? 'master' : env.CHANGE_BRANCH
 }
 
 void buildNotification(String buildStatus) {
@@ -590,7 +612,7 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest,it")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -pl upgrade")
     runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
     runMaven("verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests")
@@ -599,7 +621,7 @@ void migrationTestSteps() {
 
 void dataUpgradeTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
   }
 }

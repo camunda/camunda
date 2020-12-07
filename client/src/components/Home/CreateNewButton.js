@@ -8,12 +8,15 @@ import React from 'react';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
+import {withUser} from 'HOC';
 
-export default function CreateNewButton({
+export function CreateNewButton({
   createCollection,
   createProcessReport,
   createDashboard,
   collection,
+  importEntity,
+  user,
 }) {
   return (
     <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
@@ -34,6 +37,11 @@ export default function CreateNewButton({
           {t('home.createBtn.report.decision')}
         </Dropdown.Option>
       </Dropdown.Submenu>
+      {user?.authorizations.includes('import_export') && (
+        <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>
+      )}
     </Dropdown>
   );
 }
+
+export default withUser(CreateNewButton);

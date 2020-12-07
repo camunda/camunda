@@ -96,7 +96,12 @@ it('should save the dashboard when going to the report edit mode', async () => {
   const historySpy = jest.fn();
 
   const node = shallow(
-    <DashboardEdit initialReports={[report]} saveChanges={saveSpy} history={{push: historySpy}} />
+    <DashboardEdit
+      initialReports={[report]}
+      saveChanges={saveSpy}
+      history={{push: historySpy}}
+      location={{pathname: 'dashboard/1/edit'}}
+    />
   );
 
   node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
@@ -117,7 +122,7 @@ it('should save the dashboard when going to the report edit mode', async () => {
   await flushPromises();
 
   expect(saveSpy).toHaveBeenCalled();
-  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit?returnTo=dashboard/1/edit');
 });
 
 it('should not prompt to save the dashboard when going to the edit mode when there are no changes', () => {
@@ -128,11 +133,17 @@ it('should not prompt to save the dashboard when going to the edit mode when the
   };
   const historySpy = jest.fn();
 
-  const node = shallow(<DashboardEdit initialReports={[report]} history={{push: historySpy}} />);
+  const node = shallow(
+    <DashboardEdit
+      initialReports={[report]}
+      history={{push: historySpy}}
+      location={{pathname: 'dashboard/1/edit'}}
+    />
+  );
 
   isDirty.mockReturnValueOnce(false);
   node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
 
   expect(showPrompt).not.toHaveBeenCalled();
-  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit?returnTo=dashboard/1/edit');
 });

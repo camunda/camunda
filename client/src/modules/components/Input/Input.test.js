@@ -56,8 +56,11 @@ it('should invoke onClear when clear button is clicked', () => {
 });
 
 it('should focus on input when clicking the clear button', () => {
+  const container = document.createElement('div');
+  document.body.append(container);
+
   const spy = jest.fn();
-  const node = mount(<Input onClear={jest.fn()} ref={spy} />);
+  const node = mount(<Input onClear={jest.fn()} ref={spy} />, {attachTo: container});
   node.find('.searchClear').simulate('mousedown');
   expect(document.activeElement.getAttribute('class')).toBe('Input');
   expect(spy).toHaveBeenCalled();

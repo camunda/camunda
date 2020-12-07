@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.GenericExceptionMapper;
-import org.camunda.optimize.service.SyncedIdentityCacheService;
+import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
@@ -34,6 +34,7 @@ import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -128,7 +129,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     final String userId = "Baggins";
     authorizationClient.addUserAndGrantOptimizeAccess(userId);
 
-    embeddedOptimizeExtension.getSyncedIdentityCacheService().synchronizeIdentities();
+    embeddedOptimizeExtension.getUserIdentityCacheService().synchronizeIdentities();
 
     // when
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
@@ -206,13 +207,13 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -236,7 +237,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + expectedIdentity.getId() + "/profile");
@@ -244,7 +245,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/group/" + expectedIdentity.getId());
@@ -273,19 +274,19 @@ public class IdentityRestServiceIT extends AbstractIT {
   public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
                                                         final ErrorResponseMock mockedResp) {
     // given
-    SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
+    UserIdentityCacheService userIdentityCacheService = embeddedOptimizeExtension.getUserIdentityCacheService();
 
     switch (expectedIdentity.getType()) {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          syncedIdentityCacheService.getUserIdentityById(expectedIdentity.getId())
+          userIdentityCacheService.getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          syncedIdentityCacheService.getGroupIdentityById(expectedIdentity.getId())
+          userIdentityCacheService.getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -293,7 +294,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     }
 
     // synchronizing identities to make sure that the newly created identities are accessible in optimize
-    syncedIdentityCacheService.synchronizeIdentities();
+    userIdentityCacheService.synchronizeIdentities();
 
     String collectionId = collectionClient.createNewCollection();
     CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(expectedIdentity, RoleType.EDITOR);
@@ -304,10 +305,10 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
+    mockedResp.mock(engineAuthorizationsRequest, Times.once(), engineMockServer);
 
     // when
-    assertThrows(Exception.class, syncedIdentityCacheService::synchronizeIdentities);
+    assertThrows(Exception.class, userIdentityCacheService::synchronizeIdentities);
 
     // then
     List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
@@ -320,7 +321,7 @@ public class IdentityRestServiceIT extends AbstractIT {
   @MethodSource("engineErrors")
   public void syncRetryBackoff(final ErrorResponseMock mockedResp) throws InterruptedException {
     // given
-    SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
+    UserIdentityCacheService userIdentityCacheService = embeddedOptimizeExtension.getUserIdentityCacheService();
 
     ConfigurationService configurationService = embeddedOptimizeExtension.getConfigurationService();
 
@@ -340,7 +341,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // when
     try {
-      identitySyncThread.execute(syncedIdentityCacheService::syncIdentitiesWithRetry);
+      identitySyncThread.execute(userIdentityCacheService::syncIdentitiesWithRetry);
       Thread.sleep(1000);
       engineMockServer.verify(engineAuthorizationsRequest);
 
@@ -367,7 +368,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + expectedIdentity.getId() + "/profile");
@@ -375,7 +376,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/group/" + expectedIdentity.getId());
@@ -404,13 +405,13 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         engineIntegrationExtension.createGroup(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -427,12 +428,12 @@ public class IdentityRestServiceIT extends AbstractIT {
     switch (expectedIdentity.getType()) {
       case USER:
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         assertThat(
-          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -504,7 +505,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), Lists.newArrayList(AuthorizationType.TELEMETRY));
+      ), Arrays.asList(AuthorizationType.TELEMETRY, AuthorizationType.IMPORT_EXPORT));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }

@@ -5,7 +5,10 @@
  */
 
 import React from 'react';
+
 import {t} from 'translation';
+
+import PreviewItemValue from '../../PreviewItemValue';
 
 export default function NodeListPreview({nodes, operator, type}) {
   const previewList = [];
@@ -18,7 +21,7 @@ export default function NodeListPreview({nodes, operator, type}) {
       <li key={idx} className="previewItem">
         <span>
           {' '}
-          <span className="previewItemValue">{selectedNode.name || selectedNode.id}</span>
+          <PreviewItemValue>{selectedNode.name || selectedNode.id}</PreviewItemValue>
           {idx < nodes.length - 1 &&
             createOperator(
               operator === 'not in'

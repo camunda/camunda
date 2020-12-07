@@ -5,7 +5,34 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
-public interface UpgradePlan {
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
-  void execute();
+import java.util.ArrayList;
+import java.util.List;
+
+@NoArgsConstructor(access = AccessLevel.PACKAGE)
+@Slf4j
+public class UpgradePlan {
+  @Getter
+  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
+  @Getter
+  @Setter
+  private String toVersion;
+  @Getter
+  @Setter
+  private String fromVersion;
+
+  public void addUpgradeStep(UpgradeStep upgradeStep) {
+    this.upgradeSteps.add(upgradeStep);
+  }
+
+  public void addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+    this.upgradeSteps.addAll(upgradeSteps);
+  }
+
 }

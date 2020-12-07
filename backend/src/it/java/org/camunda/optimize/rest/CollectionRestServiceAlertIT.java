@@ -59,7 +59,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
   @Test
   public void getStoredAlerts_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     final String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);

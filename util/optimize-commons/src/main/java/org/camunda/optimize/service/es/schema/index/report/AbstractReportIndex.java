@@ -28,8 +28,8 @@ public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
   public static final String COMBINED = "combined";
   public static final String DATA = "data";
 
-  public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration.name();
-  public static final String XML = SingleReportConfigurationDto.Fields.xml.name();
+  public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration;
+  public static final String XML = SingleReportConfigurationDto.Fields.xml;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {

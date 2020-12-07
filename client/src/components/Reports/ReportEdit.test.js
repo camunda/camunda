@@ -7,11 +7,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportEdit} from './ReportEdit';
-import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm, InstanceCount} from 'components';
+
+import {ReportEdit} from './ReportEdit';
+import ReportControlPanel from './controlPanels/ReportControlPanel';
+import ReportSelect from './controlPanels/ReportSelect';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -35,7 +37,9 @@ const report = {
   reportType: 'process',
   combined: false,
   data: {
-    processDefinitionKey: null,
+    processDefinitionKey: 'aKey',
+    processDefinitionVersions: ['aVersion'],
+    tenantIds: [],
     configuration: {},
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
@@ -357,4 +361,40 @@ describe('showIncompleteResultWarning', () => {
 
     expect(node.instance().showIncompleteResultWarning()).toBe(false);
   });
+});
+
+it('should disable the visualization Select if view or groupBy is not selected', () => {
+  const node = shallow(
+    <ReportEdit {...props} report={{...report, data: {...report.data, groupBy: null}}} />
+  );
+
+  expect(node.find(ReportSelect)).toBeDisabled();
+});
+
+it('should go back to a custom route after saving if provided as URL Search Param', async () => {
+  const node = shallow(
+    <ReportEdit
+      {...props}
+      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
+    />
+  );
+
+  await node.find(EntityNameForm).prop('onSave')();
+
+  expect(node.find('Redirect')).toExist();
+  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+});
+
+it('should go back to a custom route after canceling if provided as URL Search Param', async () => {
+  const node = shallow(
+    <ReportEdit
+      {...props}
+      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
+    />
+  );
+
+  node.find(EntityNameForm).prop('onCancel')({preventDefault: jest.fn()});
+
+  expect(node.find('Redirect')).toExist();
+  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
 });

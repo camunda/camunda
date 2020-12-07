@@ -5,6 +5,8 @@
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
+def static NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
+
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
@@ -15,7 +17,11 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: services
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+   - key: "${NODE_POOL()}"
+     operator: "Exists"
+     effect: "NoSchedule"
   imagePullSecrets:
     - name: registry-camunda-cloud
   serviceAccountName: ci-optimize-camunda-cloud

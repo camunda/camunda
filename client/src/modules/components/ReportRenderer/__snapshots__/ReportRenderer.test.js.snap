@@ -5,7 +5,7 @@ exports[`SetupNotice should instruct to add a process definition key if not avai
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Select a <b>Process Definition</b> above.",
+        "__html": "Select a <b>Process Definition</b>.",
       }
     }
   />
@@ -17,7 +17,7 @@ exports[`SetupNotice should instruct to add a process definition version if not 
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Select a <b>Process Definition</b> above.",
+        "__html": "Select a <b>Process Definition</b>.",
       }
     }
   />
@@ -29,7 +29,7 @@ exports[`SetupNotice should instruct to add group by option if not available 1`]
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Select what to <b>Group By</b> above.",
+        "__html": "Select what to <b>Group By</b>.",
       }
     }
   />
@@ -41,7 +41,7 @@ exports[`SetupNotice should instruct to add view option if not available 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Select an option for <b>View</b> above.",
+        "__html": "Select an option for <b>View</b>.",
       }
     }
   />

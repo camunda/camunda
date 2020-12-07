@@ -89,7 +89,9 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
+    final RawDataProcessReportResultDto rawDataReportResultDto = createAndEvaluateReportWithFilter(
+      processDefinition, filterList
+    );
 
     // then
     assertThat(rawDataReportResultDto.getData()).hasSize(1);
@@ -144,7 +146,10 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
+    RawDataProcessReportResultDto rawDataReportResultDto = createAndEvaluateReportWithFilter(
+      processDefinition,
+      filterList
+    );
 
     // then
     assertThat(rawDataReportResultDto.getData()).hasSize(1);
@@ -196,12 +201,14 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(numberResult.getData()).isEqualTo(2.);
   }
 
-  protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                   List<ProcessFilterDto<?>> filter) {
+  protected RawDataProcessReportResultDto createAndEvaluateReportWithFilter(
+    final ProcessDefinitionEngineDto processDefinition,
+    final List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData =
       createReportWithCompletedInstancesFilter(processDefinition);
     reportData.setFilter(filter);
-    return reportClient.evaluateRawReport(reportData).getResult();
+    final String reportId = reportClient.createSingleProcessReport(reportData);
+    return reportClient.evaluateRawReportById(reportId).getResult();
   }
 
   private ProcessReportDataDto createReportWithCompletedInstancesFilter(ProcessDefinitionEngineDto processDefinition) {

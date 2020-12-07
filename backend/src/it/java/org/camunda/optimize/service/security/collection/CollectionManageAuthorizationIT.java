@@ -33,7 +33,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -48,14 +48,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     // when
     final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
-    //then
+    // then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityIsRejectedToUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -75,7 +75,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanUpdateNameByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -84,7 +84,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     // when
     final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
 
-    //then
+    // then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
   }
 
@@ -108,7 +108,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -127,7 +127,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -149,7 +149,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanCreateRoleByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -167,7 +167,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
@@ -191,7 +191,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final CollectionRoleRequestDto johnEditorRoleDto = createJohnEditorRoleDto();
@@ -214,7 +214,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanUpdateRoleByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
@@ -237,7 +237,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
@@ -255,7 +255,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
@@ -276,7 +276,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanDeleteRoleByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
@@ -293,7 +293,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -309,7 +309,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -329,7 +329,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanCreateScopeByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -343,7 +343,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -360,7 +360,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -380,7 +380,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanUpdateScopeByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -396,7 +396,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -418,7 +418,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -439,7 +439,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void superUserIdentityCanDeleteScopeByCollectionRole() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);

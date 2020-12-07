@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 @keyframes appear {
   from {
     opacity: 0;
@@ -20,11 +18,11 @@
   margin: auto;
   width: 731px;
   border-radius: 3px;
-  background-color: darken($cam-blue, 10%);
+  background-color: var(--blue-base-65);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
   padding: 20px 50px;
   margin-top: 34px;
-  color: #fff;
+  color: var(--white);
   animation: appear 0.35s ease-in-out;
 
   > .Icon {
@@ -39,7 +37,7 @@
     top: 20px;
     background: transparent;
     border: none;
-    color: #fff;
+    color: var(--white);
     padding: 1px;
 
     .Icon {
@@ -48,15 +46,15 @@
   }
 
   &.success {
-    background-color: $cam-green;
+    background-color: var(--green-base-44);
   }
 
   &.warning {
-    background-color: $cam-orange;
+    background-color: var(--orange-base-60);
   }
 
   &.error {
-    background-color: $cam-red;
+    background-color: var(--red-darken-38);
   }
 
   &.closing {

@@ -174,7 +174,6 @@ public class ElasticsearchWriterUtil {
   }
 
   public static boolean tryUpdateByQueryRequest(OptimizeElasticsearchClient esClient,
-                                                String updateItemName,
                                                 String updateItemIdentifier,
                                                 Script updateScript,
                                                 AbstractQueryBuilder filterQuery,
@@ -189,14 +188,14 @@ public class ElasticsearchWriterUtil {
     BulkByScrollResponse updateResponse;
     try {
       updateResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-      checkBulkByScrollResponse(updateResponse, updateItemName, "updating");
+      checkBulkByScrollResponse(updateResponse, updateItemIdentifier, "updating");
     } catch (IOException e) {
-      String reason = String.format("Could not update %s with [%s].", updateItemName, updateItemIdentifier);
+      String reason = String.format("Could not update %s.", updateItemIdentifier);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    log.debug("Updated [{}] {} with {}.", updateResponse.getUpdated(), updateItemName, updateItemIdentifier);
+    log.debug("Updated [{}] {}.", updateResponse.getUpdated(), updateItemIdentifier);
 
     return updateResponse.getUpdated() > 0L;
   }

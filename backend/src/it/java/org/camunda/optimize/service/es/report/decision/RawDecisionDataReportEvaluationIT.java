@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -32,6 +31,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -138,9 +139,9 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final List<String> selectedTenants = Collections.singletonList(tenantId1);
     final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
-      Lists.newArrayList(null, tenantId1, tenantId2)
+      Arrays.asList(null, tenantId1, tenantId2)
     );
 
     importAllEngineEntitiesFromScratch();
@@ -479,7 +480,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setOffset(0);
     paginationDto.setLimit(2);
     AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData, paginationDto);
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then we get the first page of results
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -492,7 +493,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when we request the next page of results
     paginationDto.setOffset(2);
     paginationDto.setLimit(2);
-    evaluationResult = reportClient.evaluateRawReport(reportData, paginationDto);
+    evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then we get the second page of results
     result = evaluationResult.getResult();
@@ -505,7 +506,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when we request the next page of results
     paginationDto.setOffset(4);
     paginationDto.setLimit(2);
-    evaluationResult = reportClient.evaluateRawReport(reportData, paginationDto);
+    evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then we get the last page of results, which contains less results than the limit
     result = evaluationResult.getResult();
@@ -569,7 +570,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setLimit(0);
 
     AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData, paginationDto);
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -594,7 +595,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setOffset(10);
 
     AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData, paginationDto);
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -622,7 +623,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setLimit(1);
 
     AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData, paginationDto);
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -649,7 +650,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setOffset(0);
 
     AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData, paginationDto);
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -736,7 +737,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
     paginationDto.setLimit(20);
-    return reportClient.evaluateRawReport(reportData, paginationDto);
+    return reportClient.evaluateDecisionRawReport(reportData, paginationDto);
   }
 
   private void assertInputVariablesMatchExcepted(final HashMap<String, InputVariableEntry> expectedVariables,

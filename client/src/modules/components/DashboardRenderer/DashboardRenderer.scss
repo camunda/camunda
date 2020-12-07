@@ -5,8 +5,8 @@
   width: calc(100% + 20px);
 
   .grid-entry {
-    background-color: white;
-    border: 1px solid lightgray;
+    background-color: var(--white);
+    border: 1px solid var(--silver-darken-80);
     display: flex;
     border-radius: 4px;
     flex-grow: 1;
@@ -19,6 +19,7 @@
 
   .react-grid-placeholder {
     z-index: var(--z-below);
+    background-color: var(--blue-darken-55);
   }
 
   &.isDragging .grid-entry:not(.react-draggable-dragging):not(.resizing) {
@@ -29,8 +30,8 @@
 .dark {
   .DashboardRenderer {
     .grid-entry {
-      background-color: #333;
-      border: 1px solid #555;
+      background-color: var(--grey-darken-13);
+      border: 1px solid var(--grey-darken-33);
     }
   }
 }

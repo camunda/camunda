@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -209,7 +209,7 @@ public class EntitiesReader {
   }
 
   private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator indexMapper) {
-    if (indexMapper.getCreateFromTemplate()) {
+    if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
     return Optional.ofNullable(byIndexNameTerms.getBucketByKey(

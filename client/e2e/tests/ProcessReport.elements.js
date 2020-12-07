@@ -15,7 +15,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
 export const editButton = Selector('.edit-button');
-export const shareButton = Selector('.share-button > .Button');
+export const shareButton = Selector('.share-button .Popover__button');
 export const shareSwitch = Selector('.ShareEntity .Switch');
 export const shareUrl = Selector('.ShareEntity .linkText');
 export const shareHeader = Selector('.Sharing .header');
@@ -80,7 +80,7 @@ export const showFlowNodes = Selector('.Button').withText('Select Flow Nodes...'
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
-export const distributedBySelect = Selector('legend').withText('Distributed By').nextSibling();
+export const distributedBySelect = Selector('.label').withText('Distributed By').nextSibling();
 export const userTaskDurationSelect = Selector('.UserTaskDurationTime button');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);

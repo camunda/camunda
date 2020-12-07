@@ -48,10 +48,10 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -65,10 +65,10 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -152,10 +152,10 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -170,13 +170,13 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableValuesRequestsAsKermit(
       decisionDefinition,
       Collections.singletonList(tenantId)
     );
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
@@ -191,13 +191,13 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableValuesRequestsAsKermit(
       decisionDefinition,
       Collections.singletonList(null)
     );
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -216,13 +216,13 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableNamesRequestsAsKermit(
       decisionDefinition1,
       Lists.newArrayList(tenantId1, tenantId2)
     );
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
@@ -241,13 +241,13 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     List<Response> responses = executeVariableValuesRequestsAsKermit(
       decisionDefinition1,
       Lists.newArrayList(tenantId1, tenantId2)
     );
 
-    //then
+    // then
     responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 

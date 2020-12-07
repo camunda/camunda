@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 @Slf4j
 public class CombinedProcessReportResult
   extends ReportEvaluationResult<CombinedProcessReportResultDto<?>, CombinedReportDefinitionRequestDto> {
@@ -51,7 +53,7 @@ public class CombinedProcessReportResult
       });
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   private List<String[]> mapCombinedNumberReportResultsToCsvList(final Integer limit, final Integer offset,
                                                                  final ResultType resultType) {
     final List<String[]> csvStrings;

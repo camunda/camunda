@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.service.es.report.process;
 
+import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -13,13 +15,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatm
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -28,6 +34,11 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
+import org.mockserver.model.HttpStatusCode;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -38,11 +49,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.mockserver.model.HttpRequest.request;
 
 public class SingleProcessReportHandlingIT extends AbstractIT {
 
@@ -208,38 +225,38 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
     updatedReport.setData(new ProcessReportDataDto());
 
-    //when
+    // when
     Response updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    //when
+    // when
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
-    //then
+    // then
     assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
@@ -367,6 +384,77 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
+  @Test
+  public void reportEvaluationWithTooManyBuckets_throwsTooManyBucketsException() {
+    // given a distributed by report with that exceeds the ES bucket limit
+    final Map<String, Object> variables = Collections.singletonMap("doubleVar", 1.0);
+    final ProcessInstanceEngineDto procInst1 = deployAndStartSimpleProcess(variables);
+    final ProcessInstanceEngineDto procInst2 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(), variables
+    );
+    final ProcessInstanceEngineDto procInst3 = engineIntegrationExtension.startProcessInstance(
+      procInst1.getDefinitionId(), Collections.singletonMap("doubleVar", 1000.0)
+    );
+
+    final OffsetDateTime startOfToday = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
+    engineDatabaseExtension.changeProcessInstanceStartDate(procInst1.getId(), startOfToday);
+    engineDatabaseExtension.changeProcessInstanceStartDate(procInst2.getId(), startOfToday);
+    engineDatabaseExtension.changeProcessInstanceStartDate(procInst3.getId(), startOfToday.minusDays(1));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when grouped by variable with bucket size of 1.0 (value ranges of 1-1k makes 1k group by buckets)
+    // and distributed by start date (automatic=80 buckets) we get 80k buckets exceeding the elastic limit of 65k
+    // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
+      .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setProcessDefinitionKey(procInst1.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(procInst1.getProcessDefinitionVersion())
+      .setVariableType(VariableType.DOUBLE)
+      .setVariableName("doubleVar")
+      .build();
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
+    reportData.getConfiguration().getCustomBucket().setBaseline(0.0);
+    final Response response = reportClient.evaluateReportAndReturnResponse(reportData);
+
+    // then the response has the correct error code
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("tooManyBuckets");
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorMessage()).isEqualTo(
+      "Could not evaluate report because the result has more than 10.000 data points. Please add filters or adjust " +
+        "the bucket size to reduce the size of the report result.");
+    assertThat(response.readEntity(ErrorResponseDto.class).getReportDefinition()).isNotNull();
+  }
+
+  @Test
+  @SneakyThrows
+  public void elasticsearchStatusExceptionIsMapped() {
+    // given a report evaluation that throws an ElasticsearchStatusException
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + PROCESS_INSTANCE_INDEX_NAME + "/_search")
+      .withMethod(POST);
+    // the request throws an exception which results in an ElasticsearchStatusException
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .respond((new HttpResponse()).withStatusCode(HttpStatusCode.BAD_REQUEST_400.code())
+                 .withReasonPhrase(HttpStatusCode.BAD_REQUEST_400.reasonPhrase()));
+
+    // when
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .build();
+    final Response response = reportClient.evaluateReportAndReturnResponse(reportData);
+
+    // then the response has the correct error code
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("elasticsearchError");
+  }
+
   private SingleProcessReportDefinitionRequestDto constructSingleProcessReportWithFakePD() {
     SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
@@ -381,6 +469,16 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
+    ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+    return processInstanceEngineDto;
   }
 
 }

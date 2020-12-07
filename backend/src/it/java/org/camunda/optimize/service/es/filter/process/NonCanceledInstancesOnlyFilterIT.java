@@ -26,7 +26,7 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void nonCanceledInstancesFilter() throws SQLException {
-    //given
+    // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -49,7 +49,7 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData().size(), is(1));
     List<String> resultProcDefIds = result.getData()
       .stream()

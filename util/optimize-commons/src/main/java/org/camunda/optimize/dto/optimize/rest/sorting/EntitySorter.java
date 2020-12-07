@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import javax.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Comparator.nullsFirst;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.entityType;
@@ -34,20 +35,27 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
     lastModifier.toLowerCase(), Comparator.comparing(EntityResponseDto::getLastModifier)
   );
 
+  public EntitySorter(final String sortBy, final SortOrder sortOrder) {
+    this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+  }
+
   @Override
   public List<EntityResponseDto> applySort(List<EntityResponseDto> entities) {
     Comparator<EntityResponseDto> entitySorter;
-    if (getSortBy().isPresent()) {
+    final Optional<SortOrder> sortOrderOpt = getSortOrder();
+    final Optional<String> sortByOpt = getSortBy();
+    if (sortByOpt.isPresent()) {
+      final String sortBy = sortByOpt.get();
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       Comparator<EntityResponseDto> entityDtoComparator = sortComparators.get(sortBy.toLowerCase());
-      if (SortOrder.DESC.equals(sortOrder)) {
+      if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         entityDtoComparator = entityDtoComparator.reversed();
       }
       entitySorter = entityDtoComparator.thenComparing(DEFAULT_ENTITY_COMPARATOR);
     } else {
-      if (getSortOrder().isPresent()) {
+      if (sortOrderOpt.isPresent()) {
         throw new BadRequestException("Sort order is not supported when no field selected to sort");
       }
       entitySorter = DEFAULT_ENTITY_COMPARATOR;

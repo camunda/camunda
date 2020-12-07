@@ -84,21 +84,20 @@ async function waitForData() {
     const resp = await fetch('http://localhost:8090/api/status');
     const status = await resp.json();
 
-    const {
-      connectionStatus: {engineConnections, connectedToElasticsearch},
-      isImporting,
-    } = status;
+    const {engineStatus, connectedToElasticsearch} = status;
 
     if (
       connectedToElasticsearch &&
-      engineConnections['camunda-bpm'] &&
-      !isImporting['camunda-bpm']
+      engineStatus['camunda-bpm'] &&
+      engineStatus['camunda-bpm'].isConnected &&
+      !engineStatus['camunda-bpm'].isImporting
     ) {
       console.log(chalk.green.bold('Data Available! Starting tests.'));
       clearInterval(dataInterval);
       startTest();
     } else {
       console.log('Waiting for data import');
+      console.log(JSON.stringify(status));
     }
   }
 }

@@ -58,6 +58,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT
   extends ModelElementFrequencyByModelElementDateByModelElementReportEvaluationIT {
@@ -565,7 +566,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
                                                                   final String[] filterValues,
                                                                   final List<Tuple> expectedResult) {
@@ -622,7 +623,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
                                                                               final String[] filterValues,
                                                                               final List<Tuple> expectedResult) {
@@ -655,7 +656,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());

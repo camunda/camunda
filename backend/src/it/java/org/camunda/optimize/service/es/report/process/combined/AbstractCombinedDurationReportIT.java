@@ -45,7 +45,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
@@ -54,7 +54,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
       reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
@@ -83,7 +83,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
@@ -92,7 +92,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
       reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
@@ -122,7 +122,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
       firstDefinition.getKey(), secondDefinition.getKey()
     );
@@ -131,7 +131,7 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
       reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())

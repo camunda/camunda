@@ -17,10 +17,7 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
 
   parameters {
     stringParam('INFRASTRUCTURE_BRANCH', 'master', 'Branch to use for checkout of deployment script.')
-    // We need to keep below parameter for scripts to work but since decisions
-    // in https://jira.camunda.com/browse/INFRA-1235 this only can have the
-    // value `master` and should not be changed.
-    stringParam('BRANCH', 'master', 'DO NOT CHANGE THIS! Optimize branch to use for deployment.')
+    stringParam('BRANCH', 'master', 'Optimize branch to use for deployment.')
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 

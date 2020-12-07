@@ -180,7 +180,7 @@ describe('update', () => {
     ).toEqual({groupBy: {$set: startDate}, configuration: {xLabel: {$set: 'Start Date'}}});
   });
 
-  it("should reset visualization when it's incompatible with the new group", () => {
+  it("should switch visualization when it's incompatible with the new group to one that is compatible", () => {
     expect(
       update('groupBy', startDate, {
         report: {
@@ -190,7 +190,7 @@ describe('update', () => {
           },
         },
       }).visualization
-    ).toEqual({$set: null});
+    ).toEqual({$set: 'table'});
   });
 
   it('should automatically select an unambiguous visualization when updating group', () => {
@@ -203,6 +203,7 @@ describe('update', () => {
             data: {
               view: countProcessInstances,
               visualization: 'heat',
+              distributedBy: {type: 'none'},
             },
           },
         }
@@ -233,6 +234,7 @@ describe('update', () => {
           data: {
             groupBy: {type: 'flowNodes', value: null},
             visualization: 'heat',
+            distributedBy: {type: 'none'},
           },
         },
       })

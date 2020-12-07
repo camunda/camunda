@@ -6,14 +6,14 @@
   h1 {
     font-size: 16px;
     font-weight: bold;
-    color: #bfc3c8;
+    color: var(--grey-lighten-56);
     white-space: pre;
     line-height: 1.25;
   }
 
   pre {
     margin: 60px;
-    color: #000;
+    color: var(--black);
     font-family: 'Courier New', Courier, monospace;
   }
 }

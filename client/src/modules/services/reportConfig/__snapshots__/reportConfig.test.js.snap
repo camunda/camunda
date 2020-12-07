@@ -4,14 +4,17 @@ exports[`update should adjust groupby and visualization when changing view 1`] =
 Object {
   "configuration": Object {
     "xLabel": Object {
-      "$set": "",
+      "$set": "None",
     },
     "yLabel": Object {
       "$set": "Process Instance Count",
     },
   },
   "groupBy": Object {
-    "$set": null,
+    "$set": Object {
+      "type": "none",
+      "value": null,
+    },
   },
   "view": Object {
     "$set": Object {
@@ -20,7 +23,7 @@ Object {
     },
   },
   "visualization": Object {
-    "$set": null,
+    "$set": "number",
   },
 }
 `;

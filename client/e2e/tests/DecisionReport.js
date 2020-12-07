@@ -96,7 +96,6 @@ test('create a single number report', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   await t.expect(Report.reportNumber.visible).ok();
 
@@ -193,7 +192,6 @@ test('show raw data and decision table', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'None');
 
   await u.save(t);
 
@@ -208,9 +206,9 @@ test('show raw data and decision table', async (t) => {
 });
 
 async function checkVisualizations(t) {
-  await t.expect(Report.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(Report.option('Table').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Bar Chart').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Line Chart').hasAttribute('disabled')).notOk();
-  await t.expect(Report.option('Pie Chart').hasAttribute('disabled')).notOk();
+  await t.expect(Report.option('Number').hasClass('disabled')).ok();
+  await t.expect(Report.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Report.option('Pie Chart').hasClass('disabled')).notOk();
 }

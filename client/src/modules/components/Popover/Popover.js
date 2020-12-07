@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button, Icon} from 'components';
+import {Button, Icon, Tooltip} from 'components';
 import {getRandomId} from 'services';
 
 import './Popover.scss';
@@ -120,7 +120,7 @@ export default class Popover extends React.Component {
 
   createOverlay = () => {
     return (
-      <div onClick={this.catchClick}>
+      <div className="overlay" onClick={this.catchClick}>
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
         <div className="dialogContainer" style={this.state.dialogStyles}>
@@ -170,20 +170,23 @@ export default class Popover extends React.Component {
         ref={this.storePopoverRootRef}
         className={classnames('Popover', className)}
       >
-        <Button
-          icon={icon && !title}
-          active={active}
-          main={main}
-          onClick={this.toggleOpen}
-          ref={this.storeButtonRef}
-          className="Popover__button"
-          disabled={disabled}
-          title={tooltip}
-        >
-          {icon ? <Icon type={icon} /> : ''}
-          {title}
-          <Icon type="down" className="downIcon" />
-        </Button>
+        <Tooltip content={tooltip}>
+          <div className="buttonWrapper">
+            <Button
+              icon={icon && !title}
+              active={active}
+              main={main}
+              onClick={this.toggleOpen}
+              ref={this.storeButtonRef}
+              className="Popover__button"
+              disabled={disabled}
+            >
+              {icon ? <Icon type={icon} /> : ''}
+              {title}
+              <Icon type="down" className="downIcon" />
+            </Button>
+          </div>
+        </Tooltip>
         {active && this.createOverlay()}
       </div>
     );

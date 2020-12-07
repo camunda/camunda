@@ -20,7 +20,6 @@ config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
 
   changes.configuration = changes.configuration || {};
-  changes.configuration.sorting = {$set: getDefaultSorting(update(props.report, {data: changes}))};
 
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
@@ -42,6 +41,26 @@ config.process.update = (type, data, props) => {
     changes.distributedBy = {$set: {type: 'none', value: null}};
   }
 
+  const newReport = update(props.report, {data: changes});
+  changes.configuration.sorting = {$set: getDefaultSorting(newReport)};
+
+  // automatically distribute by flownode/usertasks when view is flownode/usertask
+  if (
+    newReport.data.distributedBy?.type === 'none' &&
+    isFlowNodeViewNonFlowNodeGroupBy(newReport) &&
+    // do not automatically set the distributed by if it was explicitely set to none
+    !(
+      isFlowNodeViewNonFlowNodeGroupBy(props.report) &&
+      props.report.data.distributedBy?.type === 'none'
+    )
+  ) {
+    changes.distributedBy = {$set: {type: newReport.data.view.entity, value: null}};
+
+    if (!['line', 'table'].includes(props.report.data?.visualization)) {
+      changes.visualization = {$set: 'bar'};
+    }
+  }
+
   return changes;
 };
 
@@ -61,9 +80,16 @@ function shouldResetDistributedBy(type, data, report) {
       return true;
     }
 
-    // flow node reports: reset when changing view to anything else
-    if (type === 'view' && data.entity !== 'flowNode') {
-      return true;
+    if (type === 'view') {
+      // flow node reports: reset when changing view to anything else
+      if (data.entity !== 'flowNode') {
+        return true;
+      }
+
+      // flow node reports: reset when changing from count to duration view when grouped by duration
+      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+        return true;
+      }
     }
   }
 
@@ -86,9 +112,16 @@ function shouldResetDistributedBy(type, data, report) {
       return true;
     }
 
-    // user task report: reset when changing view to anything else
-    if (type === 'view' && data.entity !== 'userTask') {
-      return true;
+    if (type === 'view') {
+      // user task report: reset when changing view to anything else
+      if (data.entity !== 'userTask') {
+        return true;
+      }
+
+      // user task report: reset when changing from count to duration view when grouped by duration
+      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+        return true;
+      }
     }
   }
 
@@ -143,6 +176,13 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
   }
 
   return {by: 'key', order: 'desc'};
+}
+
+function isFlowNodeViewNonFlowNodeGroupBy(report) {
+  return (
+    ['userTask', 'flowNode'].includes(report.data.view?.entity) &&
+    !['userTasks', 'flowNodes'].includes(report.data.groupBy?.type)
+  );
 }
 
 export default config;

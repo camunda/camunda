@@ -1,15 +1,21 @@
-@import 'shared-styles/shared-styles.scss';
-
 .TemplateModal {
   .Modal__content {
     display: flex;
     padding: 0;
   }
 
-  &.noProcess {
-    .DefinitionSelection,
+  &.noProcess .definitionSelection {
+    align-items: center;
+    justify-content: center;
+
+    .formArea,
     .diagramArea {
-      visibility: hidden;
+      display: none;
+    }
+
+    .noProcessHint {
+      font-size: 14px;
+      color: var(--grey-lighten-56);
     }
   }
 
@@ -33,14 +39,14 @@
       display: flex;
 
       border-radius: 3px;
-      border: solid 1px $silver-darken-87;
+      border: solid 1px var(--silver-darken-87);
     }
   }
 
   .configurationSelection {
     width: 320px;
     padding: 20px 20px;
-    border-left: 1px solid $silver-darken-87;
+    border-left: 1px solid var(--silver-darken-87);
     overflow-y: auto;
 
     .templateContainer {
@@ -53,16 +59,16 @@
         width: 100%;
         padding: 1px;
         margin-bottom: 20px;
-        background-color: white;
+        background-color: var(--white);
         text-align: left;
 
         &.active {
           padding: 0;
-          border: 2px solid $blue-base-65;
+          border: 2px solid var(--blue-base-65);
 
           .name,
           .subTitle {
-            background-color: $blue-lighten-93;
+            background-color: var(--blue-lighten-93);
           }
         }
 
@@ -74,7 +80,7 @@
           }
 
           .subTitle {
-            color: $grey-base-40;
+            color: var(--grey-base-40);
             font-size: 12px;
             line-height: 1.5;
             padding: 0 10px;
@@ -91,7 +97,7 @@
         }
 
         .name {
-          color: $grey-darken-23;
+          color: var(--grey-darken-23);
           font-size: 14px;
           font-weight: 500;
           min-height: 40px;

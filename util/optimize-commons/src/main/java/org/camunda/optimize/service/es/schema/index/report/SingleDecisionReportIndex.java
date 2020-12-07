@@ -5,15 +5,17 @@
  */
 package org.camunda.optimize.service.es.schema.index.report;
 
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 
 public class SingleDecisionReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   @Override
   public String getIndexName() {
@@ -33,6 +35,18 @@ public class SingleDecisionReportIndex extends AbstractReportIndex {
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties")
+          .startObject(DecisionReportDataDto.Fields.view)
+            .field(MAPPING_ENABLED_SETTING, false)
+          .endObject()
+          .startObject(DecisionReportDataDto.Fields.groupBy)
+            .field(MAPPING_ENABLED_SETTING, false)
+          .endObject()
+          .startObject(DecisionReportDataDto.Fields.distributedBy)
+            .field(MAPPING_ENABLED_SETTING, false)
+          .endObject()
+          .startObject(DecisionReportDataDto.Fields.filter)
+            .field(MAPPING_ENABLED_SETTING, false)
+          .endObject()
           .startObject(CONFIGURATION)
             .field("type", "object")
             .field("dynamic", true)

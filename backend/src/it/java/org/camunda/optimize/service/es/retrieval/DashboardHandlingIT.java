@@ -448,7 +448,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
   @Test
   public void updateDashboardAddingOtherUsersPrivateReportFails() {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     String dashboardId = addEmptyPrivateDashboard();

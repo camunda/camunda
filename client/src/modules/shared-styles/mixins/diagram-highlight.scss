@@ -1,4 +1,3 @@
-$color: darken($cam-blue, 10%);
 @mixin diagram-highlight {
   &.DiagramBehavior__disabled,
   &.ClickBehavior__disabled {
@@ -10,7 +9,7 @@ $color: darken($cam-blue, 10%);
     circle,
     polygon,
     path {
-      stroke: $color !important;
+      stroke: var(--blue-base-65) !important;
     }
 
     rect,
@@ -24,7 +23,7 @@ $color: darken($cam-blue, 10%);
 
     polygon + path,
     text {
-      fill: $color !important;
+      fill: var(--blue-base-65) !important;
     }
   }
 
@@ -40,6 +39,6 @@ $color: darken($cam-blue, 10%);
 }
 
 #sequenceflow-end-highlight path {
-  stroke: $color !important;
-  fill: $color !important;
+  stroke: var(--blue-base-65) !important;
+  fill: var(--blue-base-65) !important;
 }

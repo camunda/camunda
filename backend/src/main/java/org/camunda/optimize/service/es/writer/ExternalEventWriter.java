@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Slf4j
@@ -41,12 +42,12 @@ public class ExternalEventWriter {
   private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
-  public void upsertEvents(final List<EventResponseDto> eventDtos) {
+  public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
 
     final BulkRequest bulkRequest = new BulkRequest();
     final Long ingestionTimestamp = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
-    for (EventResponseDto eventDto : eventDtos) {
+    for (EventDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(ingestionTimestamp);
       bulkRequest.add(createEventUpsert(eventDto));
     }
@@ -89,15 +90,37 @@ public class ExternalEventWriter {
         deletedItemIdentifier,
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
-        esClient.getIndexNameService()
-          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+        esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
       );
     } finally {
       progressReporter.stop();
     }
   }
 
-  private UpdateRequest createEventUpsert(final EventResponseDto eventDto) {
+  public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
+    final String deletedItemName = "external events";
+    final String deletedItemIdentifier = String.format(
+      "%s with ID from list of size %s",
+      deletedItemName,
+      eventIdsToDelete.size()
+    );
+
+    log.info("Deleting events with ID in {}", eventIdsToDelete);
+
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termsQuery(EventIndex.ID, eventIdsToDelete));
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      filterQuery,
+      deletedItemName,
+      deletedItemIdentifier,
+      true,
+      // use wildcarded index name to catch all indices that exist after potential rollover
+      esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+    );
+  }
+
+  private UpdateRequest createEventUpsert(final EventDto eventDto) {
     return new UpdateRequest()
       .index(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME)
       .id(IdGenerator.getNextId())

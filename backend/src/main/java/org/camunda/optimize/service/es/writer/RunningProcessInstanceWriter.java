@@ -42,6 +42,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
     BUSINESS_KEY, START_DATE, STATE,
     ENGINE, TENANT_ID
   );
+  private static final String IMPORT_ITEM_NAME = "running process instances";
 
   private final OptimizeElasticsearchClient esClient;
 
@@ -52,12 +53,11 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstanceDtos) {
-    String importItemName = "running process instances";
-    log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), importItemName);
+    log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), IMPORT_ITEM_NAME);
 
     return processInstanceDtos.stream()
       .map(instance -> ImportRequestDto.builder()
-        .importName(importItemName)
+        .importName(IMPORT_ITEM_NAME)
         .esClient(esClient)
         .request(createImportRequestForProcessInstance(instance, PRIMITIVE_UPDATABLE_FIELDS))
         .build())
@@ -65,11 +65,10 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
   }
 
   public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {
-    final String importItemName = "running process instances";
     log.debug(
       "Writing changes from user operation logs to [{}] {} to ES.",
       processInstanceDtos.size(),
-      importItemName
+      IMPORT_ITEM_NAME
     );
 
     List<ProcessInstanceDto> processInstanceDtoToUpdateList = processInstanceDtos.stream()
@@ -78,7 +77,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
 
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
-      importItemName,
+      IMPORT_ITEM_NAME,
       processInstanceDtoToUpdateList,
       (request, dto) -> addImportProcessInstanceRequest(
         request,
@@ -91,13 +90,16 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
 
   public void importProcessInstancesForProcessDefinitionIds(
     final Map<String, String> definitionIdToNewStateMap) {
-    final String importItemName = "process instances";
 
     for (Map.Entry<String, String> definitionStateEntry : definitionIdToNewStateMap.entrySet()) {
       ElasticsearchWriterUtil.tryUpdateByQueryRequest(
         esClient,
-        importItemName,
-        ProcessInstanceDto.Fields.processDefinitionId,
+        String.format(
+          "%s with %s: %s",
+          IMPORT_ITEM_NAME,
+          ProcessInstanceDto.Fields.processDefinitionId,
+          definitionStateEntry.getKey()
+        ),
         createUpdateStateScript(definitionStateEntry.getValue()),
         termsQuery(ProcessInstanceDto.Fields.processDefinitionId, definitionStateEntry.getKey()),
         PROCESS_INSTANCE_INDEX_NAME
@@ -107,13 +109,16 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
 
   public void importProcessInstancesForProcessDefinitionKeys(
     final Map<String, String> definitionKeyToNewStateMap) {
-    final String importItemName = "process instances";
 
     for (Map.Entry<String, String> definitionStateEntry : definitionKeyToNewStateMap.entrySet()) {
       ElasticsearchWriterUtil.tryUpdateByQueryRequest(
         esClient,
-        importItemName,
-        ProcessInstanceDto.Fields.processDefinitionKey,
+        String.format(
+          "%s with %s: %s",
+          IMPORT_ITEM_NAME,
+          ProcessInstanceDto.Fields.processDefinitionKey,
+          definitionStateEntry.getKey()
+        ),
         createUpdateStateScript(definitionStateEntry.getValue()),
         termsQuery(ProcessInstanceDto.Fields.processDefinitionKey, definitionStateEntry.getKey()),
         PROCESS_INSTANCE_INDEX_NAME

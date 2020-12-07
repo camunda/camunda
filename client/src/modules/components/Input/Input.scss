@@ -1,32 +1,29 @@
-@import 'shared-styles/shared-styles.scss';
-@import './Input.colors.scss';
-
 .Input[type='text'],
 .Input[type='password'],
 .Input[type='number'],
 .Input[type='email'],
 textarea {
-  color: $text;
-  border: 1px solid $border;
+  color: var(--grey-darken-13);
+  border: 1px solid var(--silver-darken-80);
   font-size: 0.875em;
   padding: 6px 10px;
   border-radius: 3px;
 
   &::placeholder {
-    color: $placeholder-color;
+    color: var(--grey-lighten-56);
     font-style: italic;
   }
 
   &[disabled],
   &[disabled='disabled'] {
     cursor: not-allowed;
-    color: $text-disabled;
-    background-color: $bg-disabled;
-    border-color: $border-disabled;
+    color: var(--grey-lighten-56);
+    background-color: var(--silver-base-97);
+    border-color: var(--silver-darken-80);
   }
 
   &.isInvalid {
-    border: 1px solid $cam-red;
+    border: 1px solid var(--red-darken-38);
   }
 
   &:not(:valid) ~ .searchClear {
@@ -49,7 +46,7 @@ textarea {
   border: none;
   background: none;
   border-radius: 100%;
-  color: $clear-icon;
+  color: var(--grey-base-40);
   height: 16px;
   padding: 0px;
   margin: auto;
@@ -60,7 +57,7 @@ textarea {
   }
 
   &:hover {
-    color: $clear-icon-hover;
+    color: var(--grey-darken-23);
   }
 }
 
@@ -71,19 +68,19 @@ input[type='checkbox'] {
   vertical-align: middle;
   padding: 0;
   appearance: none;
-  background-color: #fff;
-  border: 1px solid $silver-darken-80;
+  background-color: var(--white);
+  border: 1px solid var(--silver-darken-80);
 
   &:disabled {
     cursor: not-allowed;
-    background-color: $silver-base-97;
+    background-color: var(--silver-base-97);
     &:checked {
       opacity: 0.5;
     }
   }
 
   &:hover:not(:disabled) {
-    border-color: $blue-darken-55;
+    border-color: var(--blue-darken-55);
   }
 }
 
@@ -92,15 +89,15 @@ input[type='checkbox'] {
 
   &:checked {
     background: url('./check-small.svg');
-    background-color: $blue-darken-55;
-    border-color: $blue-darken-55;
+    background-color: var(--blue-darken-55);
+    border-color: var(--blue-darken-55);
     background-position: 0.5px;
     background-size: cover;
   }
 
   &:indeterminate {
-    background: linear-gradient(white);
-    background-color: $blue-darken-55;
+    background: linear-gradient(var(--white), var(--white));
+    background-color: var(--blue-darken-55);
     background-size: 6px 2px;
     background-repeat: no-repeat;
     background-position: center;
@@ -111,15 +108,16 @@ input[type='radio'] {
   border-radius: 50%;
 
   &:checked {
-    background: radial-gradient(#fff 0, #fff 40%, $blue-darken-55 60%);
-    border-color: $blue-darken-55;
+    background: radial-gradient(var(--white) 0, var(--white) 40%, var(--blue-darken-55) 60%);
+    border-color: var(--blue-darken-55);
 
     &:focus {
-      box-shadow: inset 0px 0px 0px 4px $blue-darken-55, #8cb7ff 0px 0px 0px 2px;
+      box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55),
+        var(--blue-lighten-75) 0px 0px 0px 2px;
     }
 
     &:not(:focus) {
-      box-shadow: inset 0px 0px 0px 4px $blue-darken-55;
+      box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55);
     }
   }
 }

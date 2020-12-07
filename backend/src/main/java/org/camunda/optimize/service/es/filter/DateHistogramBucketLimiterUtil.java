@@ -25,7 +25,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
+import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
@@ -273,14 +273,14 @@ public class DateHistogramBucketLimiterUtil {
     return Collections.singletonList(defaultFilter);
   }
 
-  public static Optional<ExtendedBounds> getExtendedBoundsFromDateFilters(final List<DateFilterDataDto<?>> dateFilters,
-                                                                          final DateTimeFormatter dateFormatter) {
+  public static Optional<LongBounds> getExtendedBoundsFromDateFilters(final List<DateFilterDataDto<?>> dateFilters,
+                                                                      final DateTimeFormatter dateFormatter) {
 
     // in case of several dateFilters, use min (oldest) one as start, and max (newest) one as end
     final Optional<OffsetDateTime> filterStart = getMinDateFilterOffsetDateTime(dateFilters);
     final OffsetDateTime filterEnd = getMaxDateFilterOffsetDateTime(dateFilters);
 
-    return filterStart.map(start -> new ExtendedBounds(dateFormatter.format(start), dateFormatter.format(filterEnd)));
+    return filterStart.map(start -> new LongBounds(dateFormatter.format(start), dateFormatter.format(filterEnd)));
   }
 
   private static OffsetDateTime getMaxDateFilterOffsetDateTime(final List<DateFilterDataDto<?>> dateFilters) {

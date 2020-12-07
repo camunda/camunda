@@ -16,6 +16,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class CollectionIndex extends DefaultIndexMappingCreator {
@@ -72,7 +73,7 @@ public class CollectionIndex extends DefaultIndexMappingCreator {
         .field("type", "nested")
         .startObject("properties")
           .startObject(CollectionDataDto.Fields.configuration.name())
-            .field("enabled", false)
+            .field(MAPPING_ENABLED_SETTING, false)
           .endObject();
           addRolesField(contentBuilder);
           addScopeField(contentBuilder)

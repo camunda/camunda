@@ -1,21 +1,19 @@
-@import 'shared-styles/shared-styles.scss';
-
 .dark .PickerDateInput {
   .Input {
-    background-color: $grey-darken-36;
-    border-color: $grey-base-40;
-    color: $silver-darken-94;
+    background-color: var(--grey-darken-36);
+    border-color: var(--grey-base-40);
+    color: var(--silver-darken-94);
 
     &.highlight {
-      border-color: $grey-base-40;
+      border-color: var(--grey-base-40);
 
       &.isInvalid {
-        background-color: $red-darken-26;
+        background-color: var(--red-darken-26);
       }
     }
 
     &.isInvalid {
-      border-color: $red-darken-38;
+      border-color: var(--red-darken-38);
     }
   }
 }
@@ -27,11 +25,11 @@
     width: 130px;
 
     &.highlight {
-      border-color: rgb(0, 145, 255);
+      border-color: var(--blue-base-65);
       background-color: rgba(0, 145, 255, 0.1);
 
       &.isInvalid {
-        background-color: lighten($cam-red, 50);
+        background-color: var(--red-lighten-85);
       }
     }
   }
@@ -41,7 +39,7 @@
     top: 50%;
     transform: translateY(-50%);
     right: 5px;
-    color: $text-disabled;
+    color: var(--grey-lighten-56);
     margin-right: 0;
   }
 

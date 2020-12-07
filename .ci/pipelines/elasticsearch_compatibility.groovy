@@ -4,12 +4,12 @@
 @Library('camunda-ci') _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
-  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
+def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) {
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
@@ -20,14 +20,14 @@ CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
 static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
-  return itStageBasePod() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
+  return itStageBasePod(4) + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
 static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
-  return itStageBasePod() + camBpmContainerSpec(camBpmVersion);
+  return itStageBasePod(2) + camBpmContainerSpec(camBpmVersion)
 }
 
-static String itStageBasePod() {
+static String itStageBasePod(int limitsCpu) {
   return """
 metadata:
   labels:
@@ -60,7 +60,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 4
+        value: ${limitsCpu}
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -184,9 +184,9 @@ void runMaven(String cmd) {
 
 void gitCheckoutOptimize() {
   git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
+    branch: "${params.BRANCH}",
+    credentialsId: 'camunda-jenkins-github-ssh',
+    poll: false
 }
 
 void integrationTestSteps() {
@@ -219,7 +219,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 120, unit: 'MINUTES')
+    timeout(time: 240, unit: 'MINUTES')
   }
 
   stages {
@@ -242,60 +242,6 @@ pipeline {
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
-        stage("Elasticsearch 7.0.0 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.0.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.0.0", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-              integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Elasticsearch 7.1.0 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.1.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.1.0", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Elasticsearch 7.2.0 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.2.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.2.0", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage("Elasticsearch 7.3.0 Integration") {
           agent {
             kubernetes {
@@ -360,9 +306,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -380,9 +324,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -400,9 +342,43 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
+          }
+        }
+        stage("Elasticsearch 7.9.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.9.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.9.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.10.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.10.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.10.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
           }
           post {
             always {

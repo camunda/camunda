@@ -60,7 +60,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
 
     assertResults(processInstance, result, 1);
 
-    //when
+    // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
     //token has to be refreshed, as the old one expired already after moving the date

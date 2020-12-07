@@ -6,8 +6,10 @@
 
 import React from 'react';
 
-import {ActionItem} from 'components';
+import {ActionItem, Tooltip} from 'components';
+
 import {NodeListPreview, DateFilterPreview, VariablePreview} from './modals';
+import PreviewItemValue from './PreviewItemValue';
 
 import './FilterList.scss';
 
@@ -109,10 +111,10 @@ export default class FilterList extends React.Component {
                 <span className="parameterName">{t('common.filter.types.duration')}</span>
                 {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
                 {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
-                <span className="previewItemValue">
+                <PreviewItemValue>
                   {value.toString()}{' '}
                   {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
-                </span>
+                </PreviewItemValue>
               </ActionItem>
             </li>
           );
@@ -120,6 +122,30 @@ export default class FilterList extends React.Component {
           const filters = filter.data;
           const filtersCount = Object.keys(filters).length;
           const flowNodeNames = this.props.flowNodeNames || {};
+
+          const filterValues = (
+            <div className="filterValues">
+              {Object.keys(filters).map((key, i) => {
+                const {value, unit, operator} = filters[key];
+                return (
+                  <div key={key}>
+                    <div key={key} className="flowNode">
+                      <PreviewItemValue>{flowNodeNames[key] || key}</PreviewItemValue>
+                      {operator === '<' &&
+                        this.createOperator(t('common.filter.list.operators.less'))}
+                      {operator === '>' &&
+                        this.createOperator(t('common.filter.list.operators.more'))}
+                      <PreviewItemValue>
+                        {value.toString()}{' '}
+                        {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
+                      </PreviewItemValue>
+                    </div>
+                    {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
+                  </div>
+                );
+              })}
+            </div>
+          );
 
           list.push(
             <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
@@ -131,39 +157,16 @@ export default class FilterList extends React.Component {
               >
                 <span className="parameterName">{t('common.filter.types.duration')}</span>
                 {this.createOperator(t('common.filter.durationModal.appliedTo'))}
-                <span className="previewItemValue withTooltip">
-                  <span>
-                    {filtersCount}{' '}
-                    {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
-                  </span>
-                  <div className="Tooltip light">
-                    <div className="Tooltip__text-bottom">
-                      {Object.keys(filters).map((key, i) => {
-                        const {value, unit, operator} = filters[key];
-                        return (
-                          <div key={key}>
-                            <div key={key} className="flowNode">
-                              <span className="previewItemValue">{flowNodeNames[key] || key}</span>
-                              {operator === '<' &&
-                                this.createOperator(t('common.filter.list.operators.less'))}
-                              {operator === '>' &&
-                                this.createOperator(t('common.filter.list.operators.more'))}
-                              <span className="previewItemValue">
-                                {value.toString()}{' '}
-                                {t(
-                                  `common.unit.${unit.slice(0, -1)}.label${
-                                    value !== 1 ? '-plural' : ''
-                                  }`
-                                )}
-                              </span>
-                            </div>
-                            {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </span>
+                {this.props.expanded ? (
+                  filterValues
+                ) : (
+                  <Tooltip position="bottom" content={filterValues}>
+                    <span className="PreviewItemValue">
+                      {filtersCount}{' '}
+                      {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
+                    </span>
+                  </Tooltip>
+                )}
               </ActionItem>
             </li>
           );
@@ -198,9 +201,9 @@ export default class FilterList extends React.Component {
                     : this.createOperator(t('common.filter.list.operators.neither')))}
                 {values.map((val, idx) => (
                   <span key={val}>
-                    <span className="previewItemValue">
+                    <PreviewItemValue>
                       {val === null ? t('common.filter.assigneeModal.unassigned') : val}
-                    </span>
+                    </PreviewItemValue>
                     {idx < values.length - 1 &&
                       (operator === 'not in'
                         ? this.createOperator(t('common.filter.list.operators.nor'))
@@ -211,14 +214,6 @@ export default class FilterList extends React.Component {
             </li>
           );
         }
-      }
-
-      if (i < this.props.data.length - 1) {
-        list.push(
-          <li className="listItemConnector" key={'connector_' + i}>
-            {t('common.and')}
-          </li>
-        );
       }
     }
 

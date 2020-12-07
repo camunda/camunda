@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
@@ -28,8 +29,8 @@ public class DecisionStringContainsOutputVariableQueryFilterIT extends AbstractD
   protected void assertThatResultContainsVariables(final RawDataDecisionReportResultDto result,
                                                    final String... shouldMatch) {
     // for outputs where the value is null the result has just an empty list so we need to filter them out
-    String[] shouldMatchWithoutNullResults =
-      Arrays.stream(shouldMatch).filter(s -> !s.isEmpty()).toArray(String[]::new);
+    List<String> shouldMatchWithoutNullResults =
+      Arrays.stream(shouldMatch).filter(s -> !s.isEmpty()).collect(Collectors.toList());
 
     assertThat(result.getData())
       .hasSize(shouldMatch.length)
@@ -37,7 +38,7 @@ public class DecisionStringContainsOutputVariableQueryFilterIT extends AbstractD
       .flatExtracting(Map::values)
       .filteredOn(var -> var.getId().equals(OUTPUT_VARIABLE_ID_TO_FILTER_ON))
       .flatExtracting(OutputVariableEntry::getValues)
-      .containsExactlyInAnyOrder(shouldMatchWithoutNullResults);
+      .containsExactlyInAnyOrderElementsOf(shouldMatchWithoutNullResults);
   }
 
   @Override

@@ -1,0 +1,71 @@
+.IngestedEvents {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .title {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: normal;
+    margin: 0;
+    flex-grow: 1;
+    margin-bottom: 20px;
+  }
+
+  .header {
+    display: flex;
+    border-bottom: solid 1px var(--silver-darken-87);
+    background-color: var(--silver-base-97);
+    display: flex;
+    align-items: flex-start;
+    height: 43px;
+    border: solid 1px var(--silver-darken-87);
+    border-bottom: none;
+    align-items: center;
+
+    .tableTitle {
+      flex-grow: 1;
+      margin-left: 20px;
+      font-weight: bold;
+      font-size: 0.875em;
+    }
+
+    .searchInputContainer {
+      position: relative;
+      margin-right: 10px;
+
+      .Input {
+        border-radius: 15px;
+        padding: 6px 30px 6px 15px;
+      }
+
+      .Input:valid ~ .searchIcon {
+        display: none;
+      }
+
+      .searchIcon {
+        position: absolute;
+        right: 10px;
+        top: calc(50% - 2px);
+        transform: translateY(-50%);
+        color: var(--silver-darken-80);
+      }
+    }
+
+    .selectionActions {
+      margin-right: 10px;
+      .Button {
+        border-radius: 32px;
+      }
+    }
+  }
+
+  .Table {
+    flex-grow: 1;
+    margin-bottom: 10px;
+
+    .selectAll .label {
+      margin-left: 10px;
+    }
+  }
+}

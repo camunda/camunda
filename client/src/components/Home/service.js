@@ -96,3 +96,11 @@ export async function copyEntity(type, id, name, collectionId) {
 
   return json.id;
 }
+
+export async function importEntity(json, collectionId) {
+  const query = {};
+  if (collectionId) {
+    query.collectionId = collectionId;
+  }
+  return await post('api/import', json, {query});
+}

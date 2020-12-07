@@ -239,7 +239,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion()).isEqualTo(2);
@@ -254,11 +254,11 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(2.);
@@ -267,7 +267,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
@@ -283,7 +283,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -291,7 +291,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       );
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(2.);
@@ -300,7 +300,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion()).isEqualTo(2);
@@ -315,11 +315,11 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(2.);
@@ -327,7 +327,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
+    // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -343,7 +343,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     final ProcessReportDataDto reportData =
       createReport(
         latestDefinition.getKey(),
@@ -351,7 +351,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       );
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    //then
+    // then
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(2.);
@@ -635,7 +635,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -648,7 +648,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -661,7 +661,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

@@ -9,7 +9,7 @@ import classnames from 'classnames';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 
 import {t} from 'translation';
-import {Select, Icon, Button, LoadingIndicator} from 'components';
+import {Select, Icon, Button, LoadingIndicator, Tooltip} from 'components';
 
 import {flatten} from './service';
 
@@ -32,7 +32,8 @@ export default function Table({
   totalEntries,
   loading,
 }) {
-  const columns = React.useMemo(() => Table.formatColumns(head), [head]);
+  const columnWidths = useRef({});
+  const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
   const initialSorting = React.useMemo(() => formatSorting(sorting, resultType, columns), [
     columns,
@@ -61,6 +62,7 @@ export default function Table({
       manualSortBy: true,
       disableMultiSort: true,
       disableSortRemove: true,
+      autoResetPage: false,
       initialState: {
         pageIndex: 0,
         sortBy: initialSorting,
@@ -78,7 +80,7 @@ export default function Table({
   const firstRowIndex = pageIndex * pageSize;
   const maxLastRow = firstRowIndex + pageSize;
   const totalRows = totalEntries || body.length;
-  const empty = totalRows === 0 || head.length === 0;
+  const empty = !loading && (totalRows === 0 || head.length === 0);
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {
@@ -129,6 +131,12 @@ export default function Table({
     }
   }, []);
 
+  useEffect(() => {
+    if (firstRowIndex >= totalRows) {
+      gotoPage(pageCount - 1);
+    }
+  });
+
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) {
@@ -137,6 +145,12 @@ export default function Table({
       fetchData({pageIndex, pageSize});
     }
   }, [fetchData, pageIndex, pageSize]);
+
+  useEffect(() => {
+    headerGroups.forEach((group) =>
+      group.headers.forEach(({id, width}) => (columnWidths.current[id] = width))
+    );
+  });
 
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
@@ -152,8 +166,10 @@ export default function Table({
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
                   {...column.getHeaderProps()}
                 >
-                  <div className="cellContent" {...getSortingProps(column)} title={column.title}>
-                    <span className="text">{column.render('Header')}</span>
+                  <div className="cellContent" {...getSortingProps(column)} title={undefined}>
+                    <Tooltip content={column.title} overflowOnly>
+                      <span className="text">{column.render('Header')}</span>
+                    </Tooltip>
                     {column.isSorted && sorting && (
                       <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
                     )}
@@ -256,7 +272,7 @@ function formatSorting(sorting, resultType, columns) {
   return [{id, desc: order === 'desc'}];
 }
 
-Table.formatColumns = (head, ctx = '') => {
+Table.formatColumns = (head, ctx = '', columnWidths = {}) => {
   return head.map((elem) => {
     if (!elem.columns) {
       const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
@@ -265,14 +281,14 @@ Table.formatColumns = (head, ctx = '') => {
         title: elem.title,
         accessor: (d) => d[id],
         id,
-        minWidth: 100,
+        minWidth: elem.width || 100,
         disableSortBy: elem.sortable === false,
-        width: 180,
+        width: columnWidths[id] || elem.width || 180,
       };
     }
     return {
       Header: elem.label,
-      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label)),
+      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths),
     };
   });
 };

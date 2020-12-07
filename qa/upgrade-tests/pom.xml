@@ -9,7 +9,6 @@
   </parent>
 
   <artifactId>upgrade-tests</artifactId>
-  <packaging>pom</packaging>
 
   <properties>
     <old.elasticsearch.port>9250</old.elasticsearch.port>
@@ -20,7 +19,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.6</version>
+      <version>3.0.7</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>
@@ -40,6 +39,12 @@
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>upgrade-optimize</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -72,6 +77,41 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.gmavenplus</groupId>
+        <artifactId>gmavenplus-plugin</artifactId>
+        <version>1.11.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>addTestSources</goal>
+              <goal>generateTestStubs</goal>
+              <goal>compileTests</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <redirectTestOutputToFile>false</redirectTestOutputToFile>
+          <failIfNoTests>true</failIfNoTests>
+          <systemPropertyVariables>
+            <previousVersion>${project.previousVersion}</previousVersion>
+            <currentVersion>${project.version}</currentVersion>
+            <buildDirectory>${project.build.directory}</buildDirectory>
+            <oldElasticPort>${old.elasticsearch.port}</oldElasticPort>
+            <newElasticPort>${new.elasticsearch.port}</newElasticPort>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>com.dkanejs.maven.plugins</groupId>
         <artifactId>docker-compose-maven-plugin</artifactId>
         <version>4.0.0</version>
@@ -79,25 +119,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.gmaven</groupId>
-        <artifactId>groovy-maven-plugin</artifactId>
-        <version>2.1.1</version>
-        <configuration>
-          <classpathScope>test</classpathScope>
-          <scriptpath>
-            <path>${project.basedir}/src/test/groovy</path>
-          </scriptpath>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-all</artifactId>
-            <version>3.0.6</version>
-            <type>pom</type>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>
@@ -189,26 +210,19 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>groovy-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/UpgradeEsSchemaIT.java</include>
+              </includes>
+            </configuration>
             <executions>
               <execution>
-                <id>schema-integrity-test</id>
-                <phase>pre-integration-test</phase>
                 <goals>
-                  <goal>execute</goal>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
                 </goals>
-                <configuration>
-                  <properties>
-                  </properties>
-                  <source>UpgradeEsSchemaTest.upgradeAndVerifySchemaIntegrityTest(
-                      properties['project.previousVersion'] as String,
-                      project.version as String,
-                      project.build.directory as String,
-                      properties['old.elasticsearch.port'] as Integer,
-                      properties['new.elasticsearch.port'] as Integer
-                  )</source>
-                </configuration>
               </execution>
             </executions>
           </plugin>
@@ -291,26 +305,19 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>groovy-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/UpgradeDataIT.java</include>
+              </includes>
+            </configuration>
             <executions>
               <execution>
-                <id>upgrade-optimize-data-test</id>
-                <phase>pre-integration-test</phase>
                 <goals>
-                  <goal>execute</goal>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
                 </goals>
-                <configuration>
-                  <properties>
-                  </properties>
-                  <source>UpgradeDataTest.upgradeWithDataAndPerformRegressionTestTest(
-                      properties['project.previousVersion'] as String,
-                      project.version as String,
-                      project.build.directory as String,
-                      properties['old.elasticsearch.port'] as Integer,
-                      properties['new.elasticsearch.port'] as Integer
-                  )</source>
-                </configuration>
               </execution>
             </executions>
           </plugin>

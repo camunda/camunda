@@ -28,7 +28,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   public void getOwnAuthorizedAlertsOnly() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
@@ -47,7 +47,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   public void superUserGetAllAlerts() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
@@ -70,7 +70,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   public void superUserGetAllAlertsOnlyForAuthorizedDefinitions() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
@@ -90,7 +90,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   public void superUserGetAllAlertsOfCollectionReports() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
@@ -112,7 +112,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   public void superUserGetAllAlertsOfCollectionReportsOnlyForAuthorizedDefinitions() {
-    //given
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);

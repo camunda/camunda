@@ -111,6 +111,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                   data={reportFilters}
                   flowNodeNames={flowNodeNames}
                   variables={variables}
+                  expanded
                 />
               </>
             )}
@@ -123,6 +124,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                   data={additionalFilters}
                   flowNodeNames={flowNodeNames}
                   variables={variables}
+                  expanded
                 />
               </>
             )}

@@ -4,11 +4,11 @@
   padding: 3px 7px;
   font-size: 12px;
   font-weight: bold;
-  color: #fff;
+  color: var(--white);
   line-height: 1;
   vertical-align: middle;
   white-space: nowrap;
   text-align: center;
-  background-color: #777;
+  background-color: var(--grey-lighten-50);
   border-radius: 10px;
 }

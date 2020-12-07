@@ -1,0 +1,145 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="IngestedEvents"
+>
+  <h1
+    className="title"
+  >
+    External Events
+  </h1>
+  <div
+    className="header"
+  >
+    <h4
+      className="tableTitle"
+    >
+      Ingested External Events
+    </h4>
+    <div
+      className="searchInputContainer"
+    >
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Search for values"
+        type="text"
+        value=""
+      />
+      <Icon
+        className="searchIcon"
+        size="20"
+        type="search"
+      />
+    </div>
+  </div>
+  <Table
+    body={
+      Array [
+        Array [
+          <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
+          "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
+          "correlationValue_3",
+          "eventGroup",
+          "order-service",
+          "InvoiceProcessed",
+          "Invoice Processed",
+        ],
+        Array [
+          <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
+          "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
+          "correlationValue_3",
+          "eventGroup",
+          "order-service",
+          "OrderProcessed",
+          "Order Processed",
+        ],
+      ]
+    }
+    defaultPageSize={20}
+    fetchData={[Function]}
+    head={
+      Array [
+        Object {
+          "id": "selectedAll",
+          "label": <ForwardRef(Input)
+            checked={false}
+            onChange={[Function]}
+            type="checkbox"
+          />,
+          "sortable": false,
+          "width": 50,
+        },
+        Object {
+          "id": "id",
+          "label": "Event ID",
+          "sortable": false,
+        },
+        Object {
+          "id": "traceId",
+          "label": "Trace ID",
+          "sortable": true,
+        },
+        Object {
+          "id": "group",
+          "label": "Group",
+          "sortable": true,
+        },
+        Object {
+          "id": "source",
+          "label": "Source",
+          "sortable": true,
+        },
+        Object {
+          "id": "eventName",
+          "label": "Type",
+          "sortable": true,
+        },
+        Object {
+          "id": "timestamp",
+          "label": "Timestamp",
+          "sortable": true,
+        },
+      ]
+    }
+    loading={true}
+    noData={
+      <React.Fragment>
+        No ingested events.
+         
+        <Unknown
+          location="technical-guide/rest-api/event-ingestion/"
+        >
+          Learn more
+        </Unknown>
+      </React.Fragment>
+    }
+    sorting={
+      Object {
+        "by": "timestamp",
+        "order": "desc",
+      }
+    }
+    totalEntries={2}
+    updateSorting={[Function]}
+  />
+  <DeleterErrorHandler
+    deleteButtonText="Delete"
+    deleteEntity={[Function]}
+    descriptionText="Any processes using these events must be re-published to reflect the deleted state."
+    entity={false}
+    onClose={[Function]}
+    type="ingestedEvents"
+  />
+</div>
+`;

@@ -14,13 +14,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringOutputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
 
-public class DecisionStringNotContainsOutputVariableQueryFilterIT extends AbstractDecisionStringNotContainsVariableQueryFilterIT {
+public class DecisionStringNotContainsOutputVariableQueryFilterIT
+  extends AbstractDecisionStringNotContainsVariableQueryFilterIT {
 
   private static final String OUTPUT_VARIABLE_ID_TO_FILTER_ON = STRING_OUTPUT_ID;
 
@@ -28,8 +31,9 @@ public class DecisionStringNotContainsOutputVariableQueryFilterIT extends Abstra
   protected void assertThatResultDoesNotContainVariables(final RawDataDecisionReportResultDto result,
                                                          final String... shouldMatch) {
     // for outputs where the value is null the result has just an empty list so we need to filter them out
-    String[] shouldMatchWithoutNullResults =
-      Arrays.stream(shouldMatch).filter(s -> !s.isEmpty()).toArray(String[]::new);
+    final List<String> shouldMatchWithoutNullResults = Arrays.stream(shouldMatch)
+      .filter(s -> !s.isEmpty())
+      .collect(Collectors.toList());
 
     assertThat(result.getData())
       .hasSize(shouldMatch.length)
@@ -37,7 +41,7 @@ public class DecisionStringNotContainsOutputVariableQueryFilterIT extends Abstra
       .flatExtracting(Map::values)
       .filteredOn(var -> var.getId().equals(OUTPUT_VARIABLE_ID_TO_FILTER_ON))
       .flatExtracting(OutputVariableEntry::getValues)
-      .containsExactlyInAnyOrder(shouldMatchWithoutNullResults);
+      .containsExactlyInAnyOrderElementsOf(shouldMatchWithoutNullResults);
   }
 
   @Override

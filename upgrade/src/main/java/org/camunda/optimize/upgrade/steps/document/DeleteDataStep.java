@@ -5,19 +5,30 @@
  */
 package org.camunda.optimize.upgrade.steps.document;
 
-import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.elasticsearch.index.query.QueryBuilder;
 
-@AllArgsConstructor
-public class DeleteDataStep implements UpgradeStep {
-  private final String indexName;
+@EqualsAndHashCode(callSuper = true)
+public class DeleteDataStep extends UpgradeStep {
   private final QueryBuilder query;
 
+  public DeleteDataStep(final IndexMappingCreator index, final QueryBuilder query) {
+    super(index);
+    this.query = query;
+  }
+
   @Override
-  public void execute(SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.deleteDataByIndexName(indexName, query);
+  public UpgradeStepType getType() {
+    return UpgradeStepType.DATA_DELETE;
+  }
+
+  @Override
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+    schemaUpgradeClient.deleteDataByIndexName(index, query);
   }
 
 }

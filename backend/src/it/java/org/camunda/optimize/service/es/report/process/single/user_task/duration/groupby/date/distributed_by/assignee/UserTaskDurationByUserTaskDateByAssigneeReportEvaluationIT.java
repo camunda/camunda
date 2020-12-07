@@ -65,6 +65,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -98,7 +99,8 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView())
-      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.DURATION));
+      .usingRecursiveComparison()
+      .isEqualTo(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -550,7 +552,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByAssigneeOnlyCountsThoseAssignees(final FilterOperator filterOperator,
                                                        final String[] filterValues,
                                                        final List<Tuple> expectedResult) {
@@ -604,7 +606,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings(UNCHECKED_CAST)
   public void filterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final FilterOperator filterOperator,
                                                                           final String[] filterValues,
                                                                           final List<Tuple> expectedResult) {
@@ -676,7 +678,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
-    //given
+    // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());

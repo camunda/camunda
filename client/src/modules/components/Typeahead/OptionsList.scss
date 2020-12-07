@@ -1,14 +1,12 @@
-@import 'shared-styles/shared-styles.scss';
-
 .OptionsList {
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid #bbb;
+  border: 1px solid var(--silver-darken-80);
   border-radius: 3px;
   z-index: var(--z-popup);
   position: absolute;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-  background-color: white;
+  background-color: var(--white);
   width: 100%;
   max-height: 350px;
 
@@ -23,28 +21,28 @@
     height: auto;
     &.isActive {
       background-color: rgba(216, 220, 227, 0.5);
-      color: black;
+      color: var(--black);
       border: none;
       transition: none;
     }
 
     &:hover {
-      background-color: $blue;
-      color: #fff;
+      background-color: var(--blue-darken-55);
+      color: var(--white);
       .subText {
-        color: #fff;
+        color: var(--white);
       }
     }
 
     &.message {
-      color: grey;
+      color: var(--grey-lighten-50);
       padding-top: 10px;
       padding-bottom: 10px;
 
       &:hover,
       &:focus {
-        color: grey;
-        background-color: #fff;
+        color: var(--grey-lighten-50);
+        background-color: var(--white);
         cursor: auto;
       }
     }

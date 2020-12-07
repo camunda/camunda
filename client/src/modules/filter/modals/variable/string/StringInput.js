@@ -6,8 +6,9 @@
 
 import React from 'react';
 import debounce from 'debounce';
+import classnames from 'classnames';
 
-import {ButtonGroup, Button, Checklist} from 'components';
+import {ButtonGroup, Button, Checklist, Input, Icon} from 'components';
 import {t} from 'translation';
 
 import ValueListInput from '../ValueListInput';
@@ -26,6 +27,9 @@ export default class StringInput extends React.Component {
     valuesLoaded: 0,
     valuesAreComplete: false,
     numberOfUnselectedValuesToDisplay: valuesToLoad,
+    showCustomValueInput: false,
+    showCustomValueSuccess: false,
+    customValue: '',
   };
 
   reset() {
@@ -55,14 +59,29 @@ export default class StringInput extends React.Component {
     const numberOfUnselectedValuesToDisplay =
       this.state.numberOfUnselectedValuesToDisplay + (more ? valuesToLoad : 0);
 
-    const availableValues = values.slice(
-      0,
-      numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length
-    );
+    // create a sorted array of all values that should be displayed
+    const availableValues = values
+      .slice(0, numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length)
+      .sort();
 
     const valuesAreComplete =
       values.length <
       this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
+
+    // Custom values are values that appear in this.props.filter.values, but are never returned as available value from the backend.
+    // These are values the customer can add before they appear in the process. We need to manually add them to the list of
+    // available values. For that, we need to check the alphabetically biggest value that we display in the Checklist. If we
+    // find a value in the filter values array that should be there but is not, we add it to the available values.
+    const maxAvailableValue = availableValues[availableValues.length - 1];
+    const sortedAddedValues = [...this.props.filter.values].sort();
+
+    sortedAddedValues.forEach((value) => {
+      if ((value < maxAvailableValue || valuesAreComplete) && !availableValues.includes(value)) {
+        availableValues.push(value);
+      }
+    });
+
+    availableValues.sort();
 
     this.setState({
       availableValues: [null, ...availableValues],
@@ -126,14 +145,55 @@ export default class StringInput extends React.Component {
     this.props.setValid(newValues.length > 0);
   };
 
+  addCustomValue = () => {
+    const {
+      filter: {values},
+    } = this.props;
+    const {valuesAreComplete, availableValues, customValue} = this.state;
+
+    this.setState({
+      showCustomValueInput: false,
+      customValue: '',
+      showCustomValueSuccess: true,
+    });
+
+    if (!values.includes(customValue)) {
+      this.updateSelected([...values, customValue]);
+
+      // if the newly added custom value should also be displayed in the Checklist (and not hidden
+      // behind a potential "Load More" button), we also need to add it to the available values
+      const maxAvailableValue = availableValues[availableValues.length - 1];
+      if (
+        !availableValues.includes(customValue) &&
+        (customValue < maxAvailableValue || valuesAreComplete)
+      ) {
+        this.setState({
+          availableValues: [
+            null, // null option is always at first position; we need to remove it from previous availableValues array when sorting
+            ...[...availableValues.filter((value) => value !== null), customValue].sort(),
+          ],
+        });
+      }
+    }
+  };
+
   render() {
     const {changeFilter, setValid, filter} = this.props;
+    const {
+      valuesAreComplete,
+      loading,
+      availableValues,
+      showCustomValueInput,
+      showCustomValueSuccess,
+      customValue,
+    } = this.state;
     const {operator, values} = filter;
 
     const notNullValues = values.filter((val) => val !== null);
+    const hasMore = !valuesAreComplete && !loading;
 
     return (
-      <div className="StringInput">
+      <div className={classnames('StringInput', {hasMore})}>
         <div className="buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
@@ -169,10 +229,10 @@ export default class StringInput extends React.Component {
             <span className="title">{t('common.filter.variableModal.multiSelect.header')}</span>
             <Checklist
               selectedItems={values}
-              allItems={this.state.availableValues}
+              allItems={availableValues}
               onSearch={this.setValueFilter}
               onChange={this.updateSelected}
-              loading={this.state.loading}
+              loading={loading}
               formatter={(values, selectedValues) =>
                 values.map((value) => ({
                   id: value,
@@ -185,8 +245,9 @@ export default class StringInput extends React.Component {
                 empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
             />
-            {!this.state.valuesAreComplete && !this.state.loading && (
+            {hasMore && (
               <Button
+                className="loadMore"
                 onClick={this.loadMore}
                 disabled={this.state.loading && this.props.disabled}
                 link
@@ -194,6 +255,38 @@ export default class StringInput extends React.Component {
                 {t('common.filter.variableModal.loadMore')}
               </Button>
             )}
+            {showCustomValueInput && (
+              <div className="customValueInput">
+                <Input
+                  value={customValue}
+                  placeholder={t('common.filter.variableModal.customValue')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      this.addCustomValue();
+                    }
+                  }}
+                  onChange={(e) => this.setState({customValue: e.target.value})}
+                />
+                <Button disabled={!customValue} onClick={this.addCustomValue}>
+                  {t('common.filter.variableModal.addToList')}
+                </Button>
+              </div>
+            )}
+            <div className="customValueButtonRow">
+              <Button
+                disabled={showCustomValueInput}
+                className="customValueButton"
+                onClick={() => {
+                  this.setState({showCustomValueInput: true, showCustomValueSuccess: false});
+                }}
+              >
+                <Icon type="plus" />
+                {t('common.value')}
+              </Button>
+              {showCustomValueSuccess && (
+                <div className="notification">{t('common.filter.variableModal.addedToList')}</div>
+              )}
+            </div>
           </div>
         )}
       </div>

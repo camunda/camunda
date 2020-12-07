@@ -8,6 +8,8 @@ import React from 'react';
 
 import {t} from 'translation';
 
+import PreviewItemValue from '../../PreviewItemValue';
+
 export default function VariablePreview({variableName, filter: {operator, values}}) {
   const createOperator = (val) => <span> {val} </span>;
 
@@ -36,12 +38,12 @@ export default function VariablePreview({variableName, filter: {operator, values
         <span key={idx}>
           {value === null ? (
             <>
-              <span className="previewItemValue">{t('common.null')}</span>
+              <PreviewItemValue>{t('common.null')}</PreviewItemValue>
               {operatorText}
-              <span className="previewItemValue">{t('common.undefined')}</span>
+              <PreviewItemValue>{t('common.undefined')}</PreviewItemValue>
             </>
           ) : (
-            <span className="previewItemValue">{value.toString()}</span>
+            <PreviewItemValue>{value.toString()}</PreviewItemValue>
           )}
           {idx < values.length - 1 && operatorText}
         </span>

@@ -13,12 +13,12 @@ import './ActionItem.scss';
 export default function ActionItem({disabled, onClick, highlighted, ...props}) {
   return (
     <div className={classnames({highlighted}, 'ActionItem')}>
-      <Button disabled={disabled} onClick={onClick}>
-        ×
-      </Button>
       <span {...props} className={classnames('content', props.className)}>
         {props.children}
       </span>
+      <Button disabled={disabled} onClick={onClick}>
+        ×
+      </Button>
     </div>
   );
 }

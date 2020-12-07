@@ -43,7 +43,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void partialCollectionUpdateDoesNotAffectRoles() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
@@ -62,7 +62,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void getRoles() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
@@ -191,7 +191,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void getRolesContainsUserMetadata_retrieveFromCache() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     UserDto expectedUserDtoWithData =
@@ -216,7 +216,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void getRolesContainsUserMetadata_fetchIfNotInCache() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     // when
@@ -237,7 +237,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void getRolesContainsGroupMetadata() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY);
@@ -269,7 +269,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   @Test
   public void getRolesNoGroupMetadataAvailable() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
 
     GroupDto testGroupDto = new GroupDto(TEST_GROUP, null);

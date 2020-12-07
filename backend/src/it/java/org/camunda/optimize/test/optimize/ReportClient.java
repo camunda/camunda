@@ -403,18 +403,6 @@ public class ReportClient {
     return response.readEntity(SingleProcessReportDefinitionRequestDto.class);
   }
 
-  public SingleDecisionReportDefinitionRequestDto getSingleDecisionReportDefinitionDto(String reportId) {
-    return getSingleDecisionReportDefinitionDto(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private SingleDecisionReportDefinitionRequestDto getSingleDecisionReportDefinitionDto(String reportId,
-                                                                                        String username,
-                                                                                        String password) {
-    Response response = getSingleReportRawResponse(reportId, username, password);
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    return response.readEntity(SingleDecisionReportDefinitionRequestDto.class);
-  }
-
   public Response getSingleReportRawResponse(String reportId, String username,
                                              String password) {
     return getRequestExecutor()
@@ -522,7 +510,7 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReport(
     DecisionReportDataDto reportData,
     PaginationRequestDto paginationDto) {
     return getRequestExecutor()
@@ -542,12 +530,22 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReport(
+    final DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
       // @formatter:on
+  }
+
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReportById(
+    final String id) {
+    return getRequestExecutor()
+      .buildEvaluateSavedReportRequest(id)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+    // @formatter:on
   }
 
   public Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {

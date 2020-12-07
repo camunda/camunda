@@ -432,7 +432,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @MethodSource("reportUpdateScenarios")
   public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails(Function<CombinedReportUpdateData,
     Response> scenario) {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     final String reportId = embeddedOptimizeExtension

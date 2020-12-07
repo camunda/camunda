@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractImportIT extends AbstractIT {
 
@@ -90,7 +91,7 @@ public abstract class AbstractImportIT extends AbstractIT {
     return MockServerUtil.engineMockedErrorResponses();
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings(UNUSED)
   protected static Stream<ErrorResponseMock> engineAuthorizationErrors() {
     return Stream.of(
       (request, times, mockServer) -> mockServer.when(request, times)

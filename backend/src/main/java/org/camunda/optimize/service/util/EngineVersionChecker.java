@@ -68,8 +68,7 @@ public class EngineVersionChecker {
       }
     }
 
-    String currentVersion = stripToPlainVersion(response.readEntity(EngineVersionDto.class).getVersion());
-
+    String currentVersion = response.readEntity(EngineVersionDto.class).getVersion();
     boolean versionMatched = isVersionSupported(currentVersion, supportedEngines);
 
     if (!versionMatched) {
@@ -78,13 +77,18 @@ public class EngineVersionChecker {
   }
 
   public static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
-    String currentMajorAndMinor = getMajorAndMinor(currentVersion);
+    String patchVersion = getPatchVersionFrom(currentVersion);
+    if (patchVersion.contains("alpha")) {
+      log.warn("You are using a development version of the engine");
+    }
 
+    String plainVersion = stripToPlainVersion(currentVersion);
+    String currentMajorAndMinor = getMajorAndMinor(currentVersion);
     return supportedVersions.stream()
       .filter(v -> currentMajorAndMinor.equals(getMajorAndMinor(v)))
       .findFirst()
-      .map(s -> Integer.parseInt(getPatchVersionFrom(currentVersion)) >= Integer.parseInt(getPatchVersionFrom(s)))
-      .orElseGet(() -> isCurrentBiggerThanSupported(currentVersion, supportedVersions));
+      .map(s -> Integer.parseInt(getPatchVersionFrom(plainVersion)) >= Integer.parseInt(getPatchVersionFrom(s)))
+      .orElseGet(() -> isCurrentBiggerThanSupported(plainVersion, supportedVersions));
   }
 
   private static boolean isCurrentBiggerThanSupported(String currentVersion, List<String> supportedVersions) {
@@ -117,4 +121,3 @@ public class EngineVersionChecker {
     return "Engine with alias [{" + engineAlias + "}] didn't respond. Can not verify this engine's version";
   }
 }
-

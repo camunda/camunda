@@ -85,7 +85,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));

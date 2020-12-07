@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useCallback} from 'react';
+import React, {useState, useMemo} from 'react';
 import classnames from 'classnames';
 import debounce from 'debounce';
 
@@ -22,13 +22,14 @@ export default function SelectionFilter({filter, type, config, setFilter, report
   const [loadingVariableValues, setLoadingVariableValues] = useState(false);
   const [variableValues, setVariableValues] = useState(['']);
 
-  const loadValues = useCallback(
-    debounce(async (value) => {
-      const reportIds = reports.map(({id}) => id).filter((id) => !!id);
-      setVariableValues(await getVariableValues(reportIds, config.name, config.type, 10, value));
-      setLoadingVariableValues(false);
-    }, 300),
-    [reports]
+  const loadValues = useMemo(
+    () =>
+      debounce(async (value) => {
+        const reportIds = reports.map(({id}) => id).filter((id) => !!id);
+        setVariableValues(await getVariableValues(reportIds, config.name, config.type, 10, value));
+        setLoadingVariableValues(false);
+      }, 300),
+    [config.name, config.type, reports]
   );
 
   function isValidValue(value) {
@@ -157,7 +158,9 @@ export default function SelectionFilter({filter, type, config, setFilter, report
                         }
                         setCustomValues(
                           customValues.map((value, oldValueIdx) => {
-                            if (oldValueIdx !== idx) return value;
+                            if (oldValueIdx !== idx) {
+                              return value;
+                            }
                             return newValue;
                           })
                         );

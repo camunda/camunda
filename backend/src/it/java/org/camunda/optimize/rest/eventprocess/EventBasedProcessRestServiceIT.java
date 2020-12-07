@@ -61,6 +61,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -465,15 +466,15 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(actual.getId()).isEqualTo(expectedId);
-    assertThat(actual).isEqualToIgnoringGivenFields(
-      eventProcessMappingDto,
+    assertThat(actual).usingRecursiveComparison().ignoringFields(
       EventProcessMappingDto.Fields.id,
       EventProcessMappingDto.Fields.lastModified,
       EventProcessMappingDto.Fields.lastModifier,
       EventProcessMappingDto.Fields.state,
       EventProcessMappingDto.Fields.roles,
       EventProcessMappingDto.Fields.eventSources
-    )
+    ).isEqualTo(eventProcessMappingDto);
+    assertThat(actual)
       .extracting(EventProcessMappingDto.Fields.eventSources).asList()
       .hasSize(1)
       .containsExactly(convertToEventSourceRestEntryDto(eventProcessMappingDto.getEventSources().get(0)));
@@ -484,7 +485,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @Test
   public void getEventProcessMappingWithId_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto =
       createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
@@ -578,7 +579,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @Test
   public void getAllEventProcessMappings_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient
       .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, "process name", simpleDiagramXml);
@@ -629,16 +630,15 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     EventSourceEntryDto eventSourceEntry = updateDto.getEventSources().get(0);
     EventProcessMappingResponseDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
     assertThat(storedDto)
-      .isEqualToIgnoringGivenFields(
-        updateDto,
-        EventProcessMappingDto.Fields.id,
-        EventProcessMappingDto.Fields.lastModified,
-        EventProcessMappingDto.Fields.lastModifier,
-        EventProcessMappingDto.Fields.state,
-        EventProcessMappingDto.Fields.roles,
-        EventProcessMappingDto.Fields.eventSources
-      )
-      .extracting("id").isEqualTo(storedEventProcessMappingId);
+      .usingRecursiveComparison().ignoringFields(
+      EventProcessMappingDto.Fields.id,
+      EventProcessMappingDto.Fields.lastModified,
+      EventProcessMappingDto.Fields.lastModifier,
+      EventProcessMappingDto.Fields.state,
+      EventProcessMappingDto.Fields.roles,
+      EventProcessMappingDto.Fields.eventSources
+    ).isEqualTo(updateDto);
+    assertThat(storedDto).extracting("id").isEqualTo(storedEventProcessMappingId);
     assertThat(storedDto.getLastModified()).isEqualTo(updatedTime);
     assertThat(storedDto.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(storedDto.getEventSources())
@@ -854,19 +854,24 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(storedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(storedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
-      .isEqualToIgnoringGivenFields(
-        EventProcessPublishStateDto.builder()
-          .processMappingId(storedEventProcessMapping.getId())
-          .name(storedEventProcessMapping.getName())
-          .publishDateTime(LocalDateUtil.getCurrentDateTime())
-          .state(EventProcessState.PUBLISH_PENDING)
-          .publishProgress(0.0D)
-          .xml(storedEventProcessMapping.getXml())
-          .mappings(eventProcessMappingDto.getMappings())
-          .deleted(false).build(),
-        EventProcessPublishStateDto.Fields.id, EventProcessPublishStateDto.Fields.eventImportSources
-      )
+    final Optional<EventProcessPublishStateDto> publishStateDto =
+      getEventProcessPublishStateDtoFromElasticsearch(
+        eventProcessId);
+    assertThat(publishStateDto).get()
+      .usingRecursiveComparison().ignoringFields(
+      EventProcessPublishStateDto.Fields.id, EventProcessPublishStateDto.Fields.eventImportSources
+    ).isEqualTo(
+      EventProcessPublishStateDto.builder()
+        .processMappingId(storedEventProcessMapping.getId())
+        .name(storedEventProcessMapping.getName())
+        .publishDateTime(LocalDateUtil.getCurrentDateTime())
+        .state(EventProcessState.PUBLISH_PENDING)
+        .publishProgress(0.0D)
+        .xml(storedEventProcessMapping.getXml())
+        .mappings(eventProcessMappingDto.getMappings())
+        .deleted(false).build()
+    );
+    assertThat(publishStateDto).get()
       .extracting(EventProcessPublishStateDto::getEventImportSources).asList()
       .hasSize(1)
       .containsExactly(EventImportSourceDto.builder()

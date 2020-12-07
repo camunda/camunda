@@ -23,7 +23,7 @@ public class AvgAggregation implements AggregationStrategy {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
     return avg(AVG_AGGREGATION);
   }
 

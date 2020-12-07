@@ -1124,7 +1124,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .build();
     reportData.getView().setProperty(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
@@ -1141,7 +1141,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .build();
     reportData.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then

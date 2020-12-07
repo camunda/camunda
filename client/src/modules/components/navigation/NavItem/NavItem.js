@@ -8,6 +8,9 @@ import React from 'react';
 import classnames from 'classnames';
 import {Link, withRouter} from 'react-router-dom';
 import {matchPath} from 'react-router';
+
+import {Tooltip} from 'components';
+
 import {loadEntitiesNames} from './service';
 
 import './NavItem.scss';
@@ -48,7 +51,8 @@ export default withRouter(
       let breadcrumbs = [];
       const entitiesIds = {};
       breadcrumbsEntities.forEach((entity) => {
-        const splittedUrl = pathname.split(`/${entity}/`);
+        const entityUrl = entity === 'eventBasedProcess' ? 'events/processes' : entity;
+        const splittedUrl = pathname.split(`/${entityUrl}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
           if (!id.includes('new')) {
@@ -56,7 +60,7 @@ export default withRouter(
             breadcrumbs.push({
               id,
               type: entity,
-              url: splittedUrl[0] + `/${entity}/${id}/`,
+              url: splittedUrl[0] + `/${entityUrl}/${id}/`,
             });
           }
         }
@@ -85,20 +89,23 @@ export default withRouter(
 
       return (
         <li className={classnames('NavItem', {activeBorder, active})}>
-          <Link
-            to={linksTo}
-            className={classnames({active: !breadcrumbsCount && active})}
-            title={name}
-            replace={active}
-          >
-            {name}
-          </Link>
+          <Tooltip content={name} position="bottom" overflowOnly>
+            <Link
+              to={linksTo}
+              className={classnames({active: !breadcrumbsCount && active})}
+              replace={active}
+            >
+              {name}
+            </Link>
+          </Tooltip>
           {active &&
             breadcrumbs.map(({id, name, url}, i) => (
-              <Link title={name} className="breadcrumb" key={id} to={url}>
-                <span className="arrow">›</span>
-                <span className={classnames({active: breadcrumbsCount - 1 === i})}>{name}</span>
-              </Link>
+              <Tooltip content={name} key={id} position="bottom" overflowOnly>
+                <Link className="breadcrumb" key={id} to={url}>
+                  <span className="arrow">›</span>
+                  <span className={classnames({active: breadcrumbsCount - 1 === i})}>{name}</span>
+                </Link>
+              </Tooltip>
             ))}
         </li>
       );

@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .FiltersEdit {
   .title {
     position: relative;
@@ -50,11 +48,16 @@
   }
 
   .customValueCheckbox {
-    margin-top: 20px;
+    transform: translate(100px, -25px);
+    display: inline-block;
     font-size: 14px;
 
     .label {
       padding-left: 10px;
     }
+  }
+
+  .StringInput .customValueButtonRow .notification {
+    display: none;
   }
 }

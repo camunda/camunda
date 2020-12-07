@@ -105,28 +105,36 @@ exports[`should not show a header entry for column entries that are hidden 1`] =
 <div
   className="columnHeaders"
 >
-  <div
-    className="name"
+  <Tooltip
+    content="Name"
     key="0"
-    title="Name"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="name"
     >
-      Name
-    </span>
-  </div>
-  <div
-    className="meta"
+      <span
+        onClick={[Function]}
+      >
+        Name
+      </span>
+    </div>
+  </Tooltip>
+  <Tooltip
+    content="Another Column"
     key="1"
-    title="Another Column"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="meta"
     >
-      Another Column
-    </span>
-  </div>
+      <span
+        onClick={[Function]}
+      >
+        Another Column
+      </span>
+    </div>
+  </Tooltip>
 </div>
 `;
 
@@ -134,49 +142,65 @@ exports[`should show a column header if specified 1`] = `
 <div
   className="columnHeaders"
 >
-  <div
-    className="name"
+  <Tooltip
+    content="Name"
     key="0"
-    title="Name"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="name"
     >
-      Name
-    </span>
-  </div>
-  <div
-    className="meta"
+      <span
+        onClick={[Function]}
+      >
+        Name
+      </span>
+    </div>
+  </Tooltip>
+  <Tooltip
+    content="Meta 1"
     key="1"
-    title="Meta 1"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="meta"
     >
-      Meta 1
-    </span>
-  </div>
-  <div
-    className="meta"
+      <span
+        onClick={[Function]}
+      >
+        Meta 1
+      </span>
+    </div>
+  </Tooltip>
+  <Tooltip
+    content="Meta 2"
     key="2"
-    title="Meta 2"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="meta"
     >
-      Meta 2
-    </span>
-  </div>
-  <div
-    className="meta"
+      <span
+        onClick={[Function]}
+      >
+        Meta 2
+      </span>
+    </div>
+  </Tooltip>
+  <Tooltip
+    content="Meta 3"
     key="3"
-    title="Meta 3"
+    overflowOnly={true}
   >
-    <span
-      onClick={[Function]}
+    <div
+      className="meta"
     >
-      Meta 3
-    </span>
-  </div>
+      <span
+        onClick={[Function]}
+      >
+        Meta 3
+      </span>
+    </div>
+  </Tooltip>
 </div>
 `;

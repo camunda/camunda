@@ -21,7 +21,7 @@
       margin-left: 10px;
       height: 30px;
       border-radius: 15px;
-      color: $grey-darken-36;
+      color: var(--grey-darken-36);
       padding-left: 15px;
 
       .tagText {
@@ -39,7 +39,7 @@
 
   .LabeledInput {
     &.highlight {
-      background: $blue-lighten-93;
+      background: var(--blue-lighten-93);
     }
 
     .label {
@@ -57,9 +57,9 @@
     max-height: calc(100vh - 440px);
 
     &:not(:only-child) {
-      margin-top: 8px;
+      margin: 8px 0;
       padding-top: 8px;
-      border-top: 1px solid #d3d3d3;
+      border-top: 1px solid var(--silver-darken-80);
     }
 
     @include scrollable;
@@ -81,7 +81,7 @@
       right: 10px;
       top: calc(50% - 2px);
       transform: translateY(-50%);
-      color: $silver-darken-80;
+      color: var(--silver-darken-80);
     }
   }
 }

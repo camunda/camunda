@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 $modal-padding-h: 40px;
 
 .Modal {
@@ -25,7 +23,7 @@ $modal-padding-h: 40px;
 
 .Modal__content-container {
   position: absolute;
-  background: #fff;
+  background: var(--white);
   top: 15px;
   left: 50%;
   margin-bottom: 15px;
@@ -58,7 +56,7 @@ $modal-padding-h: 40px;
 .Modal__header {
   height: 60px;
   font-size: 1.4em;
-  border-bottom: 1px solid lightgray;
+  border-bottom: 1px solid var(--silver-darken-80);
   padding: 17px $modal-padding-h 0;
   position: relative;
 }
@@ -100,9 +98,9 @@ $modal-padding-h: 40px;
 }
 
 .Modal__actions {
-  background: #f9fafb;
+  background: var(--silver-base-97);
   padding: 15px 20px;
-  border-top: 1px solid lightgray;
+  border-top: 1px solid var(--silver-darken-80);
   text-align: right;
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;

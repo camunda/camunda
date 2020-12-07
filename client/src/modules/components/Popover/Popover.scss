@@ -7,9 +7,9 @@
     position: absolute;
     width: auto;
     min-width: 250px;
-    background-color: white;
-    border: 1px solid lightgray;
-    box-shadow: 0 2px 7px -4px #555;
+    background-color: var(--white);
+    border: 1px solid var(--silver-darken-80);
+    box-shadow: 0 2px 7px -4px var(--grey-darken-36);
     border-radius: 8px;
     margin-top: 10px;
     z-index: var(--z-popup);
@@ -55,15 +55,15 @@
 }
 
 .Popover__dialog-arrow {
-  border-color: rgba(136, 183, 213, 0);
-  border-bottom-color: white;
+  border-color: transparent;
+  border-bottom-color: var(--white);
   border-width: 10px;
   margin-left: -10px;
 }
 
 .Popover__dialog-arrow-border {
-  border-color: rgba(194, 225, 245, 0);
-  border-bottom-color: lightgray;
+  border-color: transparent;
+  border-bottom-color: var(--silver-darken-80);
   border-width: 11px;
   margin-left: -11px;
 }

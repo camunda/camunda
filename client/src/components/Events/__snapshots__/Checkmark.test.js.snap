@@ -10,18 +10,14 @@ exports[`should match snapshot 1`] = `
     type="check-circle"
   />
   <div
-    className="Tooltip light top"
+    className="Tooltip center light top"
   >
-    <div
-      className="Tooltip__text-top"
-    >
-      <span>
-        event started
-      </span>
-      <br />
-       source: 
-      camunda
-    </div>
+    <span>
+      event started
+    </span>
+    <br />
+     source: 
+    camunda
   </div>
 </div>
 `;

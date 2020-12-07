@@ -8,7 +8,7 @@ import React, {useState} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown} from 'components';
+import {LoadingIndicator, Icon, Dropdown, Tooltip} from 'components';
 
 import SearchField from './SearchField';
 import ListItem from './ListItem';
@@ -87,21 +87,21 @@ export default function EntityList({
                 }
 
                 return (
-                  <div
-                    className={classnames({
-                      name: idx === 0,
-                      meta: idx !== 0,
-                      sortable,
-                      sorted,
-                    })}
-                    key={idx}
-                    title={title}
-                  >
-                    <span onClick={changeSorting}>{title}</span>
-                    {sorted && (
-                      <Icon type="sort-arrow" onClick={changeSorting} className={sorting.order} />
-                    )}
-                  </div>
+                  <Tooltip key={idx} content={title} overflowOnly>
+                    <div
+                      className={classnames({
+                        name: idx === 0,
+                        meta: idx !== 0,
+                        sortable,
+                        sorted,
+                      })}
+                    >
+                      <span onClick={changeSorting}>{title}</span>
+                      {sorted && (
+                        <Icon type="sort-arrow" onClick={changeSorting} className={sorting.order} />
+                      )}
+                    </div>
+                  </Tooltip>
                 );
               })}
           </div>

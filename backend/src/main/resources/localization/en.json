@@ -55,6 +55,10 @@
     "learnMore": "Learn more: ",
     "privacyPolicy": "Camunda Privacy Policy"
   },
+  "templates": {
+    "noProcessHint": "Create Blank Dashboard",
+    "noXmlHint": "Select Process definition to display diagram"
+  },
   "home": {
     "createBtn": {
       "default": "Create New",
@@ -212,6 +216,20 @@
       "eventListChangeWarning": "Changing the event list may add or remove events. Existing event mappings may be removed.",
       "remove": "Remove Source",
       "camundaProcess": "Camunda Process"
+    },
+    "ingested": {
+      "label": "Ingested External Events",
+      "id": "Event ID",
+      "traceId": "Trace ID",
+      "group": "Group",
+      "source": "Source",
+      "eventName": "Type",
+      "timestamp": "Timestamp",
+      "eventSources": "External Events",
+      "search": "Search for values",
+      "deleteWarning": "Any processes using these events must be re-published to reflect the deleted state.",
+      "deleteLimitReached": "Deleting more than 1000 entries at once is not possible",
+      "noData": "No ingested events."
     }
   },
   "report": {
@@ -221,8 +239,9 @@
     "createNew": "Create new Report",
     "new": "New Report",
     "addName": "Report Name",
+    "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
-    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
+    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your report set-up.",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -327,7 +346,7 @@
     },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data to display",
-    "editSetupMessage": "To display this report, edit your set-up above.",
+    "editSetupMessage": "To display this report, edit your report set-up.",
     "incompleteNotice": {
       "message": "To display this Report,",
       "action": "complete set-up…"
@@ -343,8 +362,8 @@
       "decision": "Decision Definition"
     },
     "noDefinitionMessage": {
-      "process": "Select a <b>Process Definition</b> above.",
-      "decision": "Select a <b>Decision Definition</b> above."
+      "process": "Select a <b>Process Definition</b>.",
+      "decision": "Select a <b>Decision Definition</b>."
     },
     "saveConflict": {
       "header": "Destructive Changes",
@@ -358,8 +377,8 @@
       }
     },
     "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
-    "noViewMessage": "Select an option for <b>View</b> above.",
-    "noGroupByMessage": "Select what to <b>Group By</b> above.",
+    "noViewMessage": "Select an option for <b>View</b>.",
+    "noGroupByMessage": "Select what to <b>Group By</b>.",
     "noVisualizationMessage": "Select an option for <b>Visualization</b> above.",
     "variables": {
       "default": "Variables",
@@ -405,7 +424,6 @@
       }
     },
     "config": {
-      "label": "Configuration",
       "buttonTooltip": "Configuration Options",
       "reset": "Reset to Defaults",
       "showCount": {
@@ -682,6 +700,8 @@
     "close": "Close",
     "add": "Add",
     "copy": "Copy",
+    "export": "Export",
+    "importJSON": "Import JSON",
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",
@@ -716,6 +736,8 @@
     "nullOrUndefined": "Null or undefined",
     "timeAt": "at",
     "value": "Value",
+    "dataSource": "Data Source",
+    "selected": "Selected",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
@@ -903,7 +925,10 @@
           "empty": "No values found"
         },
         "includeUndefined": "Include instances where the selected variable is <b>null</b> or <b>undefined</b>",
-        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>"
+        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>",
+        "customValue": "Add custom variable value",
+        "addToList": "Add to list",
+        "addedToList": "Value added to list"
       },
       "durationModal": {
         "includeInstance": "Only include process instances that ran for...",
@@ -965,7 +990,8 @@
         "source": "Data Source",
         "collection": "Collection",
         "process": "Process",
-        "processEvents": "process events"
+        "processEvents": "process events",
+        "ingestedEvents": "Events"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
@@ -1072,6 +1098,12 @@
     "invalidLicenseError": "Invalid license provided.",
     "noLicenseStoredError": "No license stored in Optimize. Please provide a valid Optimize license.",
     "invalidEventProcessState": "This operation is cannot be performed in the current state of the event based process.",
-    "userOrGroupIdNotFound": "The provided user or group ID does not exist in Optimize."
+    "userOrGroupIdNotFound": "The provided user or group ID does not exist in Optimize.",
+    "tooManyBuckets": "Could not evaluate report because the result has more than 10.000 data points. Please add filters or adjust the bucket size to reduce the size of the report result.",
+    "elasticsearchError": "Elasticsearch encountered an error. If this issue persists, please contact your administrator.",
+    "importDefinitionDoesNotExist": "Import failed because the imported entity requires definitions that don't exist.",
+    "importIndexVersionMismatch": "Import failed because the data structure of the imported entities do not match the current data structure. Please migrate the data in your source Optimize before exporting to ensure the Optimize Version matches.",
+    "importDefinitionForbidden": "Import failed because you are not authorized to access some of the required definitions for the imported entity.",
+    "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported."
   }
 }

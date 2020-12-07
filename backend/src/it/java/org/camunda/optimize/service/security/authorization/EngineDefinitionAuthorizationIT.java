@@ -57,23 +57,23 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantGlobalAccessForAllDefinitions(int definitionResourceType) {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
+    // then
     assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantGlobalAccessForAllTenants(int definitionResourceType) {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_TENANT);
@@ -81,10 +81,10 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionResourceType);
     deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
 
-    //when
+    // when
     List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
+    // then
     assertThat(definitions).hasSize(2);
   }
 
@@ -401,17 +401,17 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantAndRevokeSeveralTimes(int definitionResourceType) {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeResponseDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
+    // then
     assertThat(definitions).hasSize(1);
 
     // when
@@ -572,7 +572,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "No access to unauthorized definition of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeDefinitionAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -597,7 +597,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "If no single tenant is authorized do not allow access to definition of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -624,7 +624,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "On partial tenant authorization only authorized tenants are returned of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -660,7 +660,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions result")
   @EnumSource(DefinitionType.class)
   public void revokeDefinitionAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -685,7 +685,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -712,7 +712,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "On partial tenant authorization only authorized tenants are returned of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeJustOneTenantAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -746,7 +746,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions result")
   @EnumSource(DefinitionType.class)
   public void revokeDefinitionAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -769,7 +769,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitionKeys result")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -796,7 +796,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   )
   @EnumSource(DefinitionType.class)
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -851,7 +851,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -933,7 +933,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionTenantsByTypeKeyAndVersions(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     engineIntegrationExtension.createTenant(TENANT_ID_1);
     final int engineResourceType = getEngineResourceType(definitionType);
@@ -989,7 +989,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions grouped by tenant result")
   @EnumSource(DefinitionType.class)
   public void revokeDefinitionAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -1014,7 +1014,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
@@ -1041,7 +1041,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   @ParameterizedTest(name = "On partial definition authorization only authorized definitions are returned of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeJustOneDefinitionAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey1 = "key";
     final String definitionKey2 = "key";
     final String tenant1 = TENANT_ID_1;
@@ -1075,7 +1075,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     "of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
-    //given
+    // given
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);

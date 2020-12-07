@@ -102,7 +102,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then the user task is marked as canceled
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement().satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),

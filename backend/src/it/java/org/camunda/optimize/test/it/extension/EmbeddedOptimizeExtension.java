@@ -16,10 +16,8 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
-import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
@@ -27,9 +25,12 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
@@ -486,8 +487,8 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getTelemetryService();
   }
 
-  public SyncedIdentityCacheService getSyncedIdentityCacheService() {
-    return getOptimize().getSyncedIdentityCacheService();
+  public UserIdentityCacheService getUserIdentityCacheService() {
+    return getOptimize().getUserIdentityCacheService();
   }
 
   public IndexRolloverService getEventIndexRolloverService() {
@@ -537,6 +538,10 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(SettingsService.class);
   }
 
+  public OptimizeIndexNameService getIndexNameService() {
+    return getApplicationContext().getBean(OptimizeIndexNameService.class);
+  }
+
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {
     return getApplicationContext().getBean(EventTraceStateProcessingScheduler.class);
   }
@@ -557,7 +562,7 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
-  private ElasticsearchMetadataService getElasticsearchMetadataService() {
+  public ElasticsearchMetadataService getElasticsearchMetadataService() {
     return getApplicationContext().getBean(ElasticsearchMetadataService.class);
   }
 

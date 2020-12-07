@@ -160,42 +160,51 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     final IncidentResolver incidentResolver = createIncidentResolver();
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
       final String definitionId = definitionIds.get(ithBatch);
+      logger.info("[definition-id:{}] Starting batch execution", definitionId);
       final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(definitionId, engineClient);
       userTaskCompleter.startUserTaskCompletion();
-      IntStream
-        .range(0, batchSizes.get(ithBatch))
-        .forEach(i -> {
-          final Map<String, Object> variables = createVariables();
-          variables.putAll(createSimpleVariables());
-          startInstanceWithBackoff(definitionId, variables);
-          try {
-            Thread.sleep(5L);
-          } catch (InterruptedException e) {
-            logger.warn("Got interrupted while sleeping starting single instance");
-            Thread.currentThread().interrupt();
-          }
-          incrementStartedInstanceCount();
-          if (i % 1000 == 0) {
-            if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
-              messageEventCorrelater.correlateMessages();
-              incidentResolver.resolveIncidents();
+      try {
+        IntStream
+          .range(0, batchSizes.get(ithBatch))
+          .forEach(i -> {
+            final Map<String, Object> variables = createVariables();
+            variables.putAll(createSimpleVariables());
+            startInstanceWithBackoff(definitionId, variables);
+            try {
+              Thread.sleep(5L);
+            } catch (InterruptedException e) {
+              logger.warn(
+                "Got interrupted while sleeping starting single instance for definition id: {}", definitionId
+              );
+              Thread.currentThread().interrupt();
             }
-          }
-        });
+            incrementStartedInstanceCount();
+            if (i % 1000 == 0) {
+              correlateMessagesAndResolveIncidents(incidentResolver);
+            }
+          });
 
+        correlateMessagesAndResolveIncidents(incidentResolver);
+
+        logger.info("[definition-id:{}] Finished batch execution", definitionId);
+      } finally {
+        try {
+          logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
+          userTaskCompleter.shutdown();
+          userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          logger.warn("Got interrupted while waiting for userTask completion");
+          Thread.currentThread().interrupt();
+        }
+        logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
+      }
+    }
+  }
+
+  private void correlateMessagesAndResolveIncidents(final IncidentResolver incidentResolver) {
+    if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
       messageEventCorrelater.correlateMessages();
       incidentResolver.resolveIncidents();
-      logger.info("[definition-id:{}] Finished batch execution", definitionId);
-
-      logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
-      try {
-        userTaskCompleter.shutdown();
-        userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        logger.warn("Got interrupted while waiting for userTask completion");
-        Thread.currentThread().interrupt();
-      }
-      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
     }
   }
 

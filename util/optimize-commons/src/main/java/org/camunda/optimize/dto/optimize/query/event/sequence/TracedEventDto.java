@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 
 @Builder
 @Data
@@ -27,7 +27,7 @@ public class TracedEventDto implements OptimizeDto {
   private Long timestamp;
   private Long orderCounter;
 
-  public static TracedEventDto fromEventDto(EventResponseDto eventDto) {
+  public static TracedEventDto fromEventDto(EventDto eventDto) {
     return TracedEventDto.builder()
       .eventId(eventDto.getId())
       .timestamp(eventDto.getTimestamp())

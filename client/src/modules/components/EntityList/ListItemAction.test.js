@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Button} from 'components';
+
 import ListItemAction from './ListItemAction';
 
 it('should render a placeholder when no actions are provided', () => {
@@ -21,7 +23,7 @@ it('should render a single button if there is only a single Action in the Entity
     <ListItemAction actions={[{icon: 'delete', text: 'Delete', action}]} singleAction />
   );
 
-  node.simulate('click', {preventDefault: () => {}});
+  node.find(Button).simulate('click', {preventDefault: () => {}});
 
   expect(action).toHaveBeenCalled();
   expect(node).toMatchSnapshot();

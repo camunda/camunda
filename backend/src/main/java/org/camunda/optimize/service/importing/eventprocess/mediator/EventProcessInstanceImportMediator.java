@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.eventprocess.mediator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -54,9 +54,9 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
 
   @Override
   protected OffsetDateTime getTimestamp(final T eventProcessEventDto) {
-    if (eventProcessEventDto instanceof EventResponseDto) {
+    if (eventProcessEventDto instanceof EventDto) {
       return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(((EventResponseDto) eventProcessEventDto).getIngestionTimestamp()),
+        Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
         ZoneId.systemDefault()
       );
     } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {

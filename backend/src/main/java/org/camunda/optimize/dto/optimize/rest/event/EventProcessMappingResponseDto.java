@@ -51,6 +51,7 @@ public class EventProcessMappingResponseDto {
 
   private Double publishingProgress;
 
+  @Builder.Default
   private List<EventSourceEntryResponseDto> eventSources = new ArrayList<>();
 
   public static EventProcessMappingResponseDto from(final EventProcessMappingDto dto,

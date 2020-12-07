@@ -1,7 +1,8 @@
 .TargetValueComparison {
-  display: inline;
+  display: flex;
 
   .toggleButton {
+    flex-grow: 1;
     border-right: 0;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;

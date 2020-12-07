@@ -62,11 +62,11 @@ public class OptimizeDecisionCleanupServiceTest {
     final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockDecisionDefinitions(decisionDefinitionKeys);
 
-    //when
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
@@ -77,12 +77,12 @@ public class OptimizeDecisionCleanupServiceTest {
     getCleanupConfiguration().setTtl(customTtl);
     final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
 
-    //when
+    // when
     mockDecisionDefinitions(decisionDefinitionKeys);
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, customTtl);
   }
 
@@ -102,12 +102,12 @@ public class OptimizeDecisionCleanupServiceTest {
       decisionDefinitionKeysWithDefaultTtl
     );
 
-    //when
+    // when
     mockDecisionDefinitions(allDecisionDefinitionKeys);
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     Map<String, OffsetDateTime> capturedArguments = verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
       allDecisionDefinitionKeys
     );
@@ -124,11 +124,11 @@ public class OptimizeDecisionCleanupServiceTest {
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
     mockDecisionDefinitions(ListUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
 
-    //when
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
-    //then
+    // then
     assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
@@ -146,7 +146,7 @@ public class OptimizeDecisionCleanupServiceTest {
     // and this key is not present in the known process definition keys
     mockDecisionDefinitions(generateRandomDefinitionsKeys(3));
 
-    //when I run the cleanup then it fails with an exception
+    // when I run the cleanup then it fails with an exception
     OptimizeConfigurationException exception =
       assertThrows(OptimizeConfigurationException.class, () -> doCleanup(createOptimizeCleanupServiceToTest()));
     assertThat(exception.getMessage(), containsString(configuredKey));

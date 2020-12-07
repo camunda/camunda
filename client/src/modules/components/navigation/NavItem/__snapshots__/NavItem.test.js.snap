@@ -4,46 +4,63 @@ exports[`should render a breadcrumbs links when specified 1`] = `
 <li
   className="NavItem active"
 >
-  <Link
-    className=""
-    replace={true}
-    title="testName"
+  <Tooltip
+    content="testName"
+    overflowOnly={true}
+    position="bottom"
   >
-    testName
-  </Link>
-  <Link
-    className="breadcrumb"
-    key="did"
-    title="dashboard"
-    to="/dashboard/did/"
-  >
-    <span
-      className="arrow"
-    >
-      ›
-    </span>
-    <span
+    <Link
       className=""
+      replace={true}
     >
-      dashboard
-    </span>
-  </Link>
-  <Link
-    className="breadcrumb"
-    key="rid"
-    title="report"
-    to="/dashboard/did/report/rid/"
+      testName
+    </Link>
+  </Tooltip>
+  <Tooltip
+    content="dashboard"
+    key="did"
+    overflowOnly={true}
+    position="bottom"
   >
-    <span
-      className="arrow"
+    <Link
+      className="breadcrumb"
+      key="did"
+      to="/dashboard/did/"
     >
-      ›
-    </span>
-    <span
-      className="active"
+      <span
+        className="arrow"
+      >
+        ›
+      </span>
+      <span
+        className=""
+      >
+        dashboard
+      </span>
+    </Link>
+  </Tooltip>
+  <Tooltip
+    content="report"
+    key="rid"
+    overflowOnly={true}
+    position="bottom"
+  >
+    <Link
+      className="breadcrumb"
+      key="rid"
+      to="/dashboard/did/report/rid/"
     >
-      report
-    </span>
-  </Link>
+      <span
+        className="arrow"
+      >
+        ›
+      </span>
+      <span
+        className="active"
+      >
+        report
+      </span>
+    </Link>
+  </Tooltip>
 </li>
 `;

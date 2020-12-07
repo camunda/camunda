@@ -42,7 +42,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
   @Test
   public void logoutHidden() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(true);
 
     // when
@@ -54,7 +54,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
   @Test
   public void logoutVisible() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(false);
 
     // when
@@ -140,7 +140,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
   @Test
   public void emailNotificationIsEnabled() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
 
     // when
@@ -152,7 +152,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
   @Test
   public void emailNotificationIsDisabled() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(false);
 
     // when

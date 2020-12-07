@@ -705,7 +705,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .build();
     dataDto.getGroupBy().setType(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -727,7 +727,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     DateGroupByValueDto groupByValueDto = (DateGroupByValueDto) dataDto.getGroupBy().getValue();
     groupByValueDto.setUnit(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -749,7 +749,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ProcessGroupByDto<?> groupByDate = dataDto.getGroupBy();
     groupByDate.setValue(null);
 
-    //when
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then

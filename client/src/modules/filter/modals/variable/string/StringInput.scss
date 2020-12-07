@@ -1,18 +1,49 @@
-.StringInput .valueSelection {
-  width: 100%;
-  position: relative;
+.StringInput {
+  .valueSelection {
+    width: 100%;
+    position: relative;
 
-  .title {
-    position: absolute;
-    font-size: 0.875em;
-    top: 10px;
+    .title {
+      position: absolute;
+      font-size: 0.875em;
+      top: 10px;
+    }
+
+    .Checklist {
+      border-bottom: 1px solid var(--silver-darken-87);
+
+      .header .selectAll {
+        display: none;
+      }
+    }
   }
 
-  .Checklist {
-    margin-bottom: 10px;
+  .loadMore {
+    display: block;
+    margin: 10px 0 15px 0;
+    font-size: 14px;
+  }
 
-    .header .selectAll {
-      display: none;
+  .customValueInput {
+    margin-top: 15px;
+    display: flex;
+
+    .Input {
+      flex: 1;
+      margin-right: 11px;
+    }
+  }
+
+  .customValueButtonRow {
+    display: flex;
+    margin-top: 15px;
+
+    .notification {
+      flex: 1;
+      text-align: center;
+      align-self: center;
+      font-size: 12px;
+      color: var(--grey-lighten-50);
     }
   }
 }

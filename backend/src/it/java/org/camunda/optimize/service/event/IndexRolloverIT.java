@@ -7,7 +7,7 @@ package org.camunda.optimize.service.event;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -18,7 +18,7 @@ import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.util.configuration.EventIndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,11 +56,11 @@ public class IndexRolloverIT extends AbstractIT {
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
     elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndex()
     );
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new VariableUpdateInstanceIndex()
     );
@@ -291,7 +291,7 @@ public class IndexRolloverIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration();
   }
 
-  private List<EventResponseDto> getAllStoredExternalEvents() {
+  private List<EventDto> getAllStoredExternalEvents() {
     return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
@@ -355,7 +355,7 @@ public class IndexRolloverIT extends AbstractIT {
       .getOptimizeIndexAliasForIndex(indexName);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetaData>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
+    Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
       .getHighLevelClient()
       .indices()
       .getAlias(aliasesRequest, RequestOptions.DEFAULT)
@@ -363,7 +363,7 @@ public class IndexRolloverIT extends AbstractIT {
 
     return aliasMap.keySet()
       .stream()
-      .filter(index -> aliasMap.get(index).removeIf(AliasMetaData::writeIndex))
+      .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
       .collect(toList());
   }
 

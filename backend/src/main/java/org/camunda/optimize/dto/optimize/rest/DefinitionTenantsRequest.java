@@ -22,6 +22,7 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionTenantsRequest {
   @NotNull
+  @Builder.Default
   private List<String> versions = new ArrayList<>();
 
   private String filterByCollectionScope;

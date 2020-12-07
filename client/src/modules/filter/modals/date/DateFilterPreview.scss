@@ -1,11 +1,5 @@
-@import 'shared-styles/shared-styles.scss';
-
 .DateFilterPreview {
   .parameterName {
     font-weight: bold;
-  }
-
-  span.previewItemValue {
-    @include highlighted;
   }
 }

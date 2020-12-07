@@ -44,14 +44,6 @@ it('should display date preview if the filter is a date filter', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should display "and" between filter entries', () => {
-  const data = [{type: 'completedInstancesOnly'}, {type: 'canceledInstancesOnly'}];
-
-  const node = shallow(<FilterList data={data} />);
-
-  expect(node).toIncludeText('and');
-});
-
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
@@ -163,8 +155,10 @@ it('should display a duration filter', () => {
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const actionItem = node.find('ActionItem').dive();
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Duration is less than 18 hours');
+  expect(actionItem).toIncludeText('Duration is less than');
+  expect(actionItem.find('PreviewItemValue').prop('children').join('')).toBe('18 hours');
 });
 
 it('should display a flow node duration filter', () => {
@@ -181,9 +175,29 @@ it('should display a flow node duration filter', () => {
     <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{a: 'flow node name'}} />
   );
 
-  const actionItem = node.find('ActionItem').dive();
-  expect(actionItem).toIncludeText('Duration filter is applied to 1 Flow Node');
-  expect(actionItem).toIncludeText('flow node name is less than 18 hours');
+  expect(node).toMatchSnapshot();
+});
+
+it('should show flow node duration filter in expanded state if specified', () => {
+  const data = [
+    {
+      type: 'flowNodeDuration',
+      data: {
+        a: {operator: '<', value: 18, unit: 'hours'},
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList
+      data={data}
+      openEditFilterModal={jest.fn()}
+      flowNodeNames={{a: 'flow node name'}}
+      expanded
+    />
+  );
+
+  expect(node.find('PreviewItemValue')).toExist();
 });
 
 it('should display a running instances only filter', () => {

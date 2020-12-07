@@ -445,7 +445,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void evaluateInvalidReportById() {
-    //given
+    // given
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(RANDOM_KEY)
@@ -482,7 +482,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void evaluateUnsavedReport(ReportType reportType) {
-    //given
+    // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
 
     // when
@@ -497,7 +497,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(ReportType reportType) {
-    //given
+    // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
     final SingleReportDefinitionDto<?> reportDefinitionDto;
     final AuthorizedEvaluationResultDto<?, ?> result;
@@ -582,7 +582,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void evaluateReportWithoutViewById(ReportType reportType) {
-    //given
+    // given
     String id;
     switch (reportType) {
       case PROCESS:

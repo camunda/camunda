@@ -1,5 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should change the switches labels to space case instead of camelCase for non variables 1`] = `
+Array [
+  <b>
+    Variable: 
+  </b>,
+  "testVariable",
+]
+`;
+
 exports[`should provde a sane interface for decision tables 1`] = `
 <fieldset
   className="ColumnSelection"

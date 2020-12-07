@@ -11,12 +11,17 @@ exports[`should render content depending on the selected tab 1`] = `
       size="24"
       type="collection"
     />
-    <span
-      className="text"
-      title="aCollectionName"
+    <Tooltip
+      content="aCollectionName"
+      overflowOnly={true}
+      position="bottom"
     >
-      aCollectionName
-    </span>
+      <span
+        className="text"
+      >
+        aCollectionName
+      </span>
+    </Tooltip>
     <Dropdown
       icon={true}
       label={
@@ -113,6 +118,12 @@ exports[`should render content depending on the selected tab 1`] = `
     entity={null}
     onCancel={[Function]}
     onCopy={[Function]}
+  />
+  <input
+    accept=".json"
+    className="hidden"
+    onChange={[Function]}
+    type="file"
   />
 </div>
 `;

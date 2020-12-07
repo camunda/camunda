@@ -636,13 +636,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
@@ -712,13 +712,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
@@ -788,13 +788,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     final IdResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
     assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
@@ -1301,19 +1301,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:off
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {

@@ -241,7 +241,8 @@ public class CollectionWriter {
   }
 
   public void deleteScopeEntryFromAllCollections(final String scopeEntryId) {
-    log.info("Removing scope entry with ID [{}] from all collections.", scopeEntryId);
+    final String updateItem = String.format("collection scope entry with ID [%s].", scopeEntryId);
+    log.info("Removing {} from all collections.", updateItem);
 
     Script removeScopeEntryFromCollectionsScript = new Script(
       ScriptType.INLINE,
@@ -264,7 +265,11 @@ public class CollectionWriter {
     );
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-      esClient, "collection scopes", scopeEntryId, removeScopeEntryFromCollectionsScript, query, COLLECTION_INDEX_NAME
+      esClient,
+      updateItem,
+      removeScopeEntryFromCollectionsScript,
+      query,
+      COLLECTION_INDEX_NAME
     );
   }
 

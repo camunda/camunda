@@ -8,8 +8,8 @@ package org.camunda.optimize.service.config;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.math3.analysis.function.Gaussian;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -35,9 +35,9 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
-import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
@@ -93,7 +93,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
     // then the report evaluation should be fine even if it would include a definition from a non existing engine alias
     final RawDataDecisionReportResultDto result = reportClient
-      .evaluateRawReport(createRawDecisionDataReport(DECISION_KEY_1)).getResult();
+      .evaluateDecisionRawReport(createRawDecisionDataReport(DECISION_KEY_1)).getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 

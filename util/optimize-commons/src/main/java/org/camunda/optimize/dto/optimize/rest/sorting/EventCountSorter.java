@@ -47,20 +47,27 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
     count.toLowerCase(), COUNTS_COMPARATOR
   );
 
+  public EventCountSorter(final String sortBy, final SortOrder sortOrder) {
+    this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+  }
+
   @Override
   public List<EventCountResponseDto> applySort(List<EventCountResponseDto> eventCounts) {
     Comparator<EventCountResponseDto> eventCountSorter;
-    if (sortBy != null) {
+    final Optional<SortOrder> sortOrderOpt = getSortOrder();
+    final Optional<String> sortByOpt = getSortBy();
+    if (sortByOpt.isPresent()) {
+      final String sortBy = sortByOpt.get();
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       eventCountSorter = sortComparators.get(sortBy.toLowerCase())
         .thenComparing(DEFAULT_COMPARATOR);
-      if (SortOrder.DESC.equals(sortOrder)) {
+      if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         eventCountSorter = eventCountSorter.reversed();
       }
     } else {
-      if (sortOrder != null) {
+      if (sortOrderOpt.isPresent()) {
         throw new BadRequestException("Sort order is not supported when no field selected to sort");
       }
       eventCountSorter = DEFAULT_COMPARATOR;

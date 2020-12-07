@@ -11,13 +11,11 @@ import {Dropdown, EntityList, Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 
-import CollectionWithErrorHandling from './Collection';
+import {Collection} from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadCollectionEntities} from './service';
-
-const Collection = CollectionWithErrorHandling.WrappedComponent;
 
 jest.mock('components/navigation', () => ({refreshBreadcrumbs: jest.fn()}));
 
@@ -200,4 +198,24 @@ it('should set the loading state of the entity list', async () => {
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
+});
+
+it('should include an option to export reports for superusers', () => {
+  const node = shallow(<Collection {...props} />);
+
+  expect(
+    node
+      .find('EntityList')
+      .prop('data')[1]
+      .actions.find(({text}) => text === 'Export')
+  ).toBe(undefined);
+
+  node.setProps({user: {name: 'John Doe', authorizations: ['import_export']}});
+
+  expect(
+    node
+      .find('EntityList')
+      .prop('data')[1]
+      .actions.find(({text}) => text === 'Export')
+  ).not.toBe(undefined);
 });

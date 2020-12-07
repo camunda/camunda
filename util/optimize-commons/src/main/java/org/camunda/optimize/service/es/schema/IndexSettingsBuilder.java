@@ -14,6 +14,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
@@ -23,7 +25,7 @@ public class IndexSettingsBuilder {
 
   public static final int MAX_GRAM = 10;
   public static final String DYNAMIC_SETTING_MAX_NGRAM_DIFF = "max_ngram_diff";
-  public static int DEFAULT_SHARD_NUMBER = 1;
+  public static final int DEFAULT_SHARD_NUMBER = 1;
 
   public static Settings buildDynamicSettings(ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
@@ -31,17 +33,6 @@ public class IndexSettingsBuilder {
     builder
       .startObject();
         addDynamicSettings(configurationService, builder)
-      .endObject();
-    // @formatter:on
-    return toSettings(builder);
-  }
-
-  public static Settings buildAnalysisSettings() throws IOException {
-    XContentBuilder builder = jsonBuilder();
-    // @formatter:off
-    builder
-      .startObject();
-        addAnalysis(builder)
       .endObject();
     // @formatter:on
     return toSettings(builder);
@@ -61,10 +52,10 @@ public class IndexSettingsBuilder {
     return toSettings(builder);
   }
 
-  private static XContentBuilder addStaticSettings(final IndexMappingCreator indexMappingCreator,
-                                                   final ConfigurationService configurationService,
-                                                   final XContentBuilder builder) throws IOException {
-    return indexMappingCreator.getStaticSettings(builder, configurationService);
+  private static void addStaticSettings(final IndexMappingCreator indexMappingCreator,
+                                        final ConfigurationService configurationService,
+                                        final XContentBuilder builder) throws IOException {
+    indexMappingCreator.getStaticSettings(builder, configurationService);
   }
 
   private static XContentBuilder addDynamicSettings(final ConfigurationService configurationService,
@@ -81,7 +72,7 @@ public class IndexSettingsBuilder {
     return builder
     .startObject(ANALYSIS_SETTING)
       .startObject("analyzer")
-        .startObject("lowercase_ngram")
+        .startObject(LOWERCASE_NGRAM)
           .field("type", "custom")
           .field("tokenizer", "ngram_tokenizer")
           .field("filter", "lowercase")
@@ -96,7 +87,7 @@ public class IndexSettingsBuilder {
         .endObject()
       .endObject()
       .startObject("normalizer")
-        .startObject("lowercase_normalizer")
+        .startObject(LOWERCASE_NORMALIZER)
           .field("type", "custom")
           .field("filter", new String[]{"lowercase"})
         .endObject()
@@ -118,7 +109,7 @@ public class IndexSettingsBuilder {
     // @formatter:on
   }
 
-  public static Settings toSettings(final XContentBuilder builder) {
+  private static Settings toSettings(final XContentBuilder builder) {
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 }

@@ -28,7 +28,7 @@ export function GenerationModal({onClose, mightFail}) {
     mightFail(createProcess({eventSources: sources, autogenerate: true}), setRedirect, showError);
 
   if (redirect) {
-    return <Redirect to={`/eventBasedProcess/${redirect}/generated`} />;
+    return <Redirect to={`/events/processes/${redirect}/generated`} />;
   }
 
   return (

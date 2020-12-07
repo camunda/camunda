@@ -284,7 +284,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   @Test
   public void getDashboard() {
-    //given
+    // given
     DashboardDefinitionRestDto definitionDto = generateDashboardDefinitionDto();
     String id = dashboardClient.createDashboard(generateDashboardDefinitionDto());
 
@@ -360,7 +360,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   @Test
   public void updateDashboard() {
-    //given
+    // given
     String id = dashboardClient.createEmptyDashboard(null);
 
     // when
@@ -488,7 +488,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   @Test
   public void updateDashboardDoesNotChangeCollectionId() {
-    //given
+    // given
     final String collectionId = collectionClient.createNewCollection();
     DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
@@ -517,7 +517,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   @Test
   public void deleteNewDashboard() {
-    //given
+    // given
     String id = dashboardClient.createEmptyDashboard(null);
 
     // when

@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .ButtonGroup {
   display: flex;
 
@@ -8,13 +6,13 @@
 
     .Button,
     a.Button {
-      border: 1px solid $silver-darken-87;
-      color: $grey-lighten-56;
+      border: 1px solid var(--silver-darken-87);
+      color: var(--grey-lighten-56);
 
       &.active {
-        color: $grey-lighten-56;
-        background-color: $silver-darken-87;
-        border: 1px solid $silver-darken-80;
+        color: var(--grey-lighten-56);
+        background-color: var(--silver-darken-87);
+        border: 1px solid var(--silver-darken-80);
       }
     }
   }
@@ -30,9 +28,9 @@
     }
 
     &.active {
-      color: $silver-base-97;
-      background-color: $blue-darken-55;
-      border: 1px solid $blue-darken-48;
+      color: var(--silver-base-97);
+      background-color: var(--blue-darken-55);
+      border: 1px solid var(--blue-darken-48);
     }
 
     &:focus {

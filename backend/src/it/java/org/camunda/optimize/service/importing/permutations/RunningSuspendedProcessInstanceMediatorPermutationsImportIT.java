@@ -78,7 +78,6 @@ public class RunningSuspendedProcessInstanceMediatorPermutationsImportIT extends
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(2);
   }
 
-  @SuppressWarnings("unchecked")
   private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       RunningActivityInstanceEngineImportMediator.class,

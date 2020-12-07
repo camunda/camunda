@@ -151,7 +151,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues((String) null);
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto1);
     reportData.setFilter(filter);
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData())

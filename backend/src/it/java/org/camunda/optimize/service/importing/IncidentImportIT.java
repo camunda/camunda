@@ -246,7 +246,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
   @Test
   public void adjustPageSize() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportIncidentMaxPageSize(1);
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final String definitionId = engineIntegrationExtension.deployProcessAndGetId(incidentProcess);

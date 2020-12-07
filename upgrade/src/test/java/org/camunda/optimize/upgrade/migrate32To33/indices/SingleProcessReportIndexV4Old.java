@@ -45,7 +45,7 @@ public class SingleProcessReportIndexV4Old extends AbstractReportIndex {
           .startObject(ProcessReportDataDto.Fields.filter)
             .field("enabled", false)
           .endObject()
-          .startObject(SingleReportDataDto.Fields.configuration.name())
+          .startObject(SingleReportDataDto.Fields.configuration)
             .field("type", "object")
             .field("dynamic", true)
             .startObject("properties")

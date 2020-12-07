@@ -6,9 +6,11 @@
 
 import React from 'react';
 
-import './Footer.scss';
 import {getOptimizeVersion} from 'config';
 import {t} from 'translation';
+import {Tooltip} from 'components';
+
+import './Footer.scss';
 
 export default class Footer extends React.Component {
   constructor(props) {
@@ -17,11 +19,8 @@ export default class Footer extends React.Component {
     this.state = {
       loaded: false,
       error: false,
-      connectionStatus: {
-        engineConnections: {},
-        connectedToElasticsearch: false,
-      },
-      isImporting: {},
+      engineStatus: {},
+      connectedToElasticsearch: false,
       optimizeVersion: null,
     };
   }
@@ -71,20 +70,14 @@ export default class Footer extends React.Component {
     }
 
     return (
-      <li key={key} className={className} title={title}>
-        {key}
-      </li>
+      <Tooltip key={key} content={title} align="left">
+        <li className={className}>{key}</li>
+      </Tooltip>
     );
   };
 
   render() {
-    const {
-      isImporting,
-      connectionStatus: {engineConnections, connectedToElasticsearch},
-      optimizeVersion,
-      loaded,
-      error,
-    } = this.state;
+    const {engineStatus, connectedToElasticsearch, optimizeVersion, loaded, error} = this.state;
 
     const timezoneInfo =
       t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -98,17 +91,21 @@ export default class Footer extends React.Component {
             loaded && (
               <ul className="status">
                 <>
-                  {Object.keys(engineConnections).map((key) =>
-                    this.renderListElement(key, engineConnections[key], isImporting[key])
+                  {Object.keys(engineStatus).map((key) =>
+                    this.renderListElement(
+                      key,
+                      engineStatus[key].isConnected,
+                      engineStatus[key].isImporting
+                    )
                   )}
                   {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
                 </>
               </ul>
             )
           )}
-          <div className="timezone" title={timezoneInfo}>
-            {timezoneInfo}
-          </div>
+          <Tooltip content={timezoneInfo} overflowOnly>
+            <div className="timezone">{timezoneInfo}</div>
+          </Tooltip>
           <div className="colophon">
             © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
             {optimizeVersion}

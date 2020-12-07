@@ -1,0 +1,43 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.dto.optimize.rest.export.report;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+
+import javax.validation.constraints.NotNull;
+
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = false)
+@Data
+public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExportDto {
+  @NotNull
+  private DecisionReportDataDto data;
+
+  public SingleDecisionReportDefinitionExportDto(final SingleDecisionReportDefinitionRequestDto reportDefinition) {
+    super(
+      SingleDecisionReportIndex.VERSION,
+      reportDefinition.getId(),
+      reportDefinition.getName(),
+      reportDefinition.getCollectionId()
+    );
+    this.data = reportDefinition.getData();
+  }
+
+  @Override
+  public ExportEntityType getExportEntityType() {
+    return SINGLE_DECISION_REPORT;
+  }
+}

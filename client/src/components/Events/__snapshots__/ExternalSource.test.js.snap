@@ -6,7 +6,7 @@ exports[`display empty state with link to docs 1`] = `
 >
   No Events available. To add events, see 
   <Component
-    location="technical-guide/setup/configuration/#ingestion-configuration"
+    location="technical-guide/rest-api/event-ingestion/"
   >
     Documentation
   </Component>

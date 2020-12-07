@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONS
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class PaginationRequestDto {
 
   public static final String LIMIT_PARAM = "limit";

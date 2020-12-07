@@ -33,7 +33,7 @@ export default themed(
       };
 
       render() {
-        const {loading, style, xml, children} = this.props;
+        const {loading, style, xml, children, emptyText} = this.props;
         const {loaded} = this.state;
 
         return (
@@ -50,6 +50,7 @@ export default themed(
               )}
             {loaded && xml && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
             {(!loaded || loading) && <LoadingIndicator className="diagramLoading" />}
+            {!xml && emptyText && <div className="emptyText">{emptyText}</div>}
           </div>
         );
       }
@@ -161,7 +162,7 @@ export default themed(
       componentDidMount() {
         this.importXML(this.props.xml);
 
-        const dashboardObject = this.container.closest('.grid-entry');
+        const dashboardObject = this.container.closest('.grid-entry.react-draggable');
         if (dashboardObject) {
           // if the diagram is on a dashboard, react to changes of the dashboard objects size
           new MutationObserver(this.fitDiagram).observe(dashboardObject, {attributes: true});
