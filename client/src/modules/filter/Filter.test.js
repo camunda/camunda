@@ -21,10 +21,10 @@ it('should contain a list of filters', () => {
   expect(node.find('FilterList')).toExist();
 });
 
-it('should contain a dropdown', () => {
+it('should contain a List of Filter options', () => {
   const node = shallow(<Filter {...props} />);
 
-  expect(node).toIncludeText('Dropdown');
+  expect(node.find('InstanceFilters')).toExist();
 });
 
 it('should not contain any filter modal when no newFilter is selected', () => {
@@ -108,24 +108,23 @@ it('should add a filter to the list of filters', () => {
 it('should edit the edited filter', () => {
   const spy = jest.fn();
   const sampleFilter = {
-    data: {
-      operator: 'bar',
-      type: 'baz',
-      value: 'foo',
-    },
+    data: null,
     type: 'qux',
+    filterLevel: 'instance',
   };
 
-  const filters = [sampleFilter, 'foo'];
+  const filters = [sampleFilter, {data: null, type: 'foo', filterLevel: 'instance'}];
   const node = shallow(<Filter {...props} data={filters} onChange={spy} />);
 
   node.instance().setState({
     editFilter: sampleFilter,
   });
 
-  node.instance().editFilter('bar');
+  node.instance().editFilter({data: null, type: 'bar'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual({0: {$set: 'bar'}});
+  expect(spy.mock.calls[0][0].filter).toEqual({
+    0: {$set: {data: null, type: 'bar', filterLevel: 'instance'}},
+  });
 });
 
 it('should remove a filter from the list of filters', () => {
@@ -139,13 +138,10 @@ it('should remove a filter from the list of filters', () => {
   expect(spy.mock.calls[0][0].filter).toEqual({$set: ['Filter 1', 'Filter 3']});
 });
 
-it('should disable variable and executed flow node filter if no process definition is available', () => {
+it('should pass the information about a missing process definition to the component rendering the dropdown', () => {
   const node = shallow(<Filter {...props} />);
 
-  expect(node.find('[children="Start Date"]').prop('disabled')).toBeFalsy();
-  expect(node.find('[children="Variable"]').prop('disabled')).toBeTruthy();
-  expect(node.find('[children="Flow Node"]').at(0).prop('disabled')).toBeTruthy();
-  expect(node.find('[children="Flow Node"]').at(1).prop('disabled')).toBeTruthy();
+  expect(node.find('InstanceFilters').prop('processDefinitionIsNotSelected')).toBe(true);
 });
 
 it('should remove any previous startDate filters when adding a new date filter', () => {
@@ -185,4 +181,11 @@ it('should remove any running instances only filters when adding a new running i
   expect(spy.mock.calls[0][0].filter).toEqual({
     $set: [{type: 'runningInstancesOnly', filterLevel: 'instance'}],
   });
+});
+
+it('should render available filters depending on the provided filter level', () => {
+  const node = shallow(<Filter {...props} filterLevel="view" />);
+
+  expect(node.find('InstanceFilters')).not.toExist();
+  expect(node.find('ViewFilters')).toExist();
 });

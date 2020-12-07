@@ -6,7 +6,9 @@
 
 import React from 'react';
 
-import {Dropdown, Icon} from 'components';
+import {Icon} from 'components';
+import {loadVariables} from 'services';
+import {t} from 'translation';
 
 import {
   DateFilter,
@@ -16,13 +18,12 @@ import {
   DurationFilter,
   NodeDuration,
 } from './modals';
-
 import FilterList from './FilterList';
-import './Filter.scss';
-
 import {loadValues, filterIncompatibleExistingFilters} from './service';
-import {loadVariables} from 'services';
-import {t} from 'translation';
+import InstanceFilters from './InstanceFilters';
+import ViewFilters from './ViewFilters';
+
+import './Filter.scss';
 
 export default class Filter extends React.Component {
   state = {
@@ -91,6 +92,7 @@ export default class Filter extends React.Component {
 
     const index = filters.indexOf(filters.find((v) => this.state.editFilter.data === v.data));
 
+    newFilter.filterLevel = this.props.filterLevel;
     this.props.onChange({filter: {[index]: {$set: newFilter}}}, true);
     this.closeModal();
   };
@@ -145,93 +147,6 @@ export default class Filter extends React.Component {
     });
   };
 
-  renderInstanceOptions = () => {
-    return (
-      <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
-        <Dropdown.Submenu label={t('common.filter.types.instanceState')}>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
-            {t('common.filter.types.runningInstancesOnly')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
-            {t('common.filter.types.completedInstancesOnly')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
-            {t('common.filter.types.canceledInstancesOnly')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
-            {t('common.filter.types.nonCanceledInstancesOnly')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('suspendedInstancesOnly')}>
-            {t('common.filter.types.suspendedInstancesOnly')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.filterByInstancesOnly('nonSuspendedInstancesOnly')}>
-            {t('common.filter.types.nonSuspendedInstancesOnly')}
-          </Dropdown.Option>
-        </Dropdown.Submenu>
-        <Dropdown.Submenu label={t('common.filter.types.date')}>
-          <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
-            {t('common.filter.types.startDate')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>
-            {t('common.filter.types.endDate')}
-          </Dropdown.Option>
-        </Dropdown.Submenu>
-        <Dropdown.Submenu label={t('common.filter.types.duration')}>
-          <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
-            {t('common.filter.types.instance')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.processDefinitionIsNotSelected()}
-            onClick={this.openNewFilterModal('flowNodeDuration')}
-          >
-            {t('common.filter.types.flowNode')}
-          </Dropdown.Option>
-        </Dropdown.Submenu>
-        <Dropdown.Option
-          disabled={this.processDefinitionIsNotSelected()}
-          onClick={this.openNewFilterModal('executedFlowNodes')}
-        >
-          {t('common.filter.types.flowNode')}
-        </Dropdown.Option>
-        <Dropdown.Option
-          disabled={this.processDefinitionIsNotSelected()}
-          onClick={this.openNewFilterModal('assignee')}
-        >
-          {t('report.groupBy.userAssignee')}
-        </Dropdown.Option>
-        <Dropdown.Option
-          disabled={this.processDefinitionIsNotSelected()}
-          onClick={this.openNewFilterModal('candidateGroup')}
-        >
-          {t('report.groupBy.userGroup')}
-        </Dropdown.Option>
-        <Dropdown.Option
-          disabled={this.processDefinitionIsNotSelected()}
-          onClick={this.openNewFilterModal('variable')}
-        >
-          {t('common.filter.types.variable')}
-        </Dropdown.Option>
-      </Dropdown>
-    );
-  };
-
-  renderFlowNodeOptions = () => (
-    <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
-      <Dropdown.Option
-        disabled={this.processDefinitionIsNotSelected()}
-        onClick={this.openNewFilterModal('assignee')}
-      >
-        {t('report.groupBy.userAssignee')}
-      </Dropdown.Option>
-      <Dropdown.Option
-        disabled={this.processDefinitionIsNotSelected()}
-        onClick={this.openNewFilterModal('candidateGroup')}
-      >
-        {t('report.groupBy.userGroup')}
-      </Dropdown.Option>
-    </Dropdown>
-  );
-
   render() {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
     const EditFilterModal = this.getFilterModal(
@@ -242,6 +157,8 @@ export default class Filter extends React.Component {
       ({filterLevel}) => filterLevel === this.props.filterLevel
     );
 
+    const FilterOptions = this.props.filterLevel === 'instance' ? InstanceFilters : ViewFilters;
+
     return (
       <div className="Filter">
         <div className="filterHeader">
@@ -249,9 +166,11 @@ export default class Filter extends React.Component {
           <span className="dropdownLabel">
             {t('common.filter.dropdownLabel.' + this.props.filterLevel)}
           </span>
-          {this.props.filterLevel === 'instance'
-            ? this.renderInstanceOptions()
-            : this.renderFlowNodeOptions()}
+          <FilterOptions
+            processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
+            openNewFilterModal={this.openNewFilterModal}
+            filterByInstancesOnly={this.filterByInstancesOnly}
+          />
         </div>
         {filters.length === 0 && (
           <p className="emptyMessage">{t('common.filter.allVisible.' + this.props.filterLevel)}</p>

@@ -126,6 +126,8 @@ export default class DecisionFilter extends React.Component {
       this.state.editFilter ? this.state.editFilter.type : null
     );
 
+    const filters = this.props.data;
+
     return (
       <div className="Filter">
         <div className="filterHeader">
@@ -149,12 +151,13 @@ export default class DecisionFilter extends React.Component {
             </Dropdown.Option>
           </Dropdown>
         </div>
-        {this.props.data.length === 0 && (
+        {filters.length === 0 && (
           <p className="emptyMessage">{t('common.filter.allVisible.instance')}</p>
         )}
+        {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
           openEditFilterModal={this.openEditFilterModal}
-          data={this.props.data}
+          data={filters}
           deleteFilter={this.deleteFilter}
           variables={this.props.variables}
         />
