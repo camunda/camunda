@@ -40,7 +40,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -71,7 +70,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
   protected long startTime;
   private File newTemporaryFolder;
-  private List<String> dataDirectories;
+  private String dataDirectory;
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
@@ -244,7 +243,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
           });
     }
 
-    dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
+    dataDirectory = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {
@@ -269,17 +268,17 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void purgeSnapshots() {
-    for (final String dataDirectoryName : dataDirectories) {
-      final File dataDirectory = new File(dataDirectoryName);
+    final File directory = new File(dataDirectory);
 
-      final File[] partitionDirectories =
-          dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
+    final File[] partitionDirectories = directory.listFiles((d, f) -> new File(d, f).isDirectory());
+    if (partitionDirectories == null) {
+      return;
+    }
 
-      for (final File partitionDirectory : partitionDirectories) {
-        final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
-        if (stateDirectory.exists()) {
-          deleteSnapshots(stateDirectory);
-        }
+    for (final File partitionDirectory : partitionDirectories) {
+      final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
+      if (stateDirectory.exists()) {
+        deleteSnapshots(stateDirectory);
       }
     }
   }

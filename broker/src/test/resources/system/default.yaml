@@ -49,9 +49,9 @@ zeebe:
       host: 0.0.0.0
 
     data:
-      # Specify a list of directories in which data is stored.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORIES.
-      directories: [ data ]
+      # Specify the directory in which data is stored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
+      directory: data
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
       logSegmentSize: 512MB

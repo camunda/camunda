@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
@@ -67,7 +66,9 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.detectReprocessingInconsistency";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
       "zeebe.broker.experimental.disableExplicitRaftFlush";
+  private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
 
+  @Deprecated(since = "0.26.0")
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
@@ -350,31 +351,45 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseDefaultDirectories() {
-    assertDefaultDirectories(DEFAULT_DIRECTORY);
+  public void shouldUseDefaultDirectory() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, DEFAULT_DIRECTORY).toString();
+
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test
-  public void shouldUseSpecifiedDirectories() {
-    assertDirectories("directories", "data1", "data2", "data3");
+  public void shouldUseSpecifiedDirectory() {
+    // given
+    final BrokerCfg config = TestConfigReader.readConfig("directory", environment);
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
+
+    // then
+    assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory);
   }
 
   @Test
-  public void shouldUseDirectoriesFromEnvironment() {
+  public void shouldUseDirectoryFromEnvironment() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
+    environment.put(ZEEBE_BROKER_DATA_DIRECTORY, "foo");
+
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
+  }
+
+  @Test
+  public void shouldOverrideDirectoryWithFirstDirectories() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
     environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
-    assertDefaultDirectories("foo", "bar");
-  }
 
-  @Test
-  public void shouldUseDirectoriesFromEnvironmentWithSpecifiedDirectories() {
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
-    assertDirectories("directories", "foo", "bar");
-  }
-
-  @Test
-  public void shouldUseSingleDirectoryFromEnvironment() {
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "hello");
-    assertDirectories("directories", "hello");
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test
@@ -819,24 +834,6 @@ public final class BrokerCfgTest {
   private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
     final ClusterCfg cfg = TestConfigReader.readConfig(configFileName, environment).getCluster();
     assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
-  }
-
-  private void assertDefaultDirectories(final String... directories) {
-    assertDirectories("default", directories);
-    assertDirectories("empty", directories);
-  }
-
-  private void assertDirectories(final String configFileName, final String... directories) {
-    assertDirectories(configFileName, Arrays.asList(directories));
-  }
-
-  private void assertDirectories(final String configFileName, final List<String> directories) {
-    final DataCfg cfg = TestConfigReader.readConfig(configFileName, environment).getData();
-    final List<String> expected =
-        directories.stream()
-            .map(d -> Paths.get(BROKER_BASE, d).toString())
-            .collect(Collectors.toList());
-    assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
   }
 
   private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
