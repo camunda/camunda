@@ -426,8 +426,13 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.updateTenant(id, name);
   }
 
-  public void addUser(String username, String password) {
-    EngineUserDto userDto = engineClient.constructUserDto(username, password);
+  public void addUser(final String username, final String password) {
+    EngineUserDto userDto = engineClient.createEngineUserDto(username, password);
+    engineClient.createUser(userDto);
+  }
+
+  public void addUser(final String username, final String firstName, final String lastName) {
+    EngineUserDto userDto = engineClient.createEngineUserDto(username, firstName, lastName);
     engineClient.createUser(userDto);
   }
 

@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.util;
+package org.camunda.optimize.service.es;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -21,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -31,28 +31,39 @@ public class CompositeAggregationScroller {
   private Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer;
   private LinkedList<String> pathToAggregation;
 
-
   public static CompositeAggregationScroller create() {
     return new CompositeAggregationScroller();
   }
 
-  public void scroll() {
+  public void consumeAllPages() {
+    boolean pageConsumed;
+    do {
+      pageConsumed = consumePage();
+    } while (pageConsumed);
+  }
+
+  /**
+   * Consumes next page of the composite aggregation.
+   * @return {@code true} if a page was present, {@code false} else
+   */
+  public boolean consumePage() {
+    final List<ParsedComposite.ParsedBucket> currentPage = getNextPage();
+    currentPage.forEach(compositeBucketConsumer);
+    return !currentPage.isEmpty();
+  }
+
+  private List<ParsedComposite.ParsedBucket> getNextPage() {
     try {
-      SearchResponse searchResponse;
-      ParsedComposite compositeAggregationResult;
-      do {
-        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-        compositeAggregationResult = extractCompositeAggregationResult(searchResponse);
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ParsedComposite compositeAggregationResult = extractCompositeAggregationResult(searchResponse);
 
-        compositeAggregationResult.getBuckets().forEach(compositeBucketConsumer);
+      // find aggregation and adjust after key for next invocation
+      getCompositeAggregationBuilder().aggregateAfter(compositeAggregationResult.afterKey());
 
-        // find aggregation and adjust after key
-        getCompositeAggregationBuilder().aggregateAfter(compositeAggregationResult.afterKey());
-      } while (compositeAggregationResult.getBuckets().size() >= getCompositeAggregationBuilder().size());
+      return compositeAggregationResult.getBuckets();
     } catch (IOException e) {
       final String reason = String.format(
-        "Was not able to page through %s aggregation.",
-        pathToAggregation.getLast()
+        "Was not able to get next page of %s aggregation.", pathToAggregation.getLast()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -81,10 +92,7 @@ public class CompositeAggregationScroller {
         .filter(agg -> agg.getName().equals(pathToAggregation.get(currentIndex)))
         .findFirst()
         .orElseThrow(() -> new OptimizeRuntimeException(
-          String.format(
-            "Could not find aggregation [%s] in aggregation path.",
-            pathToAggregation.get(currentIndex)
-          )
+          String.format("Could not find aggregation [%s] in aggregation path.", pathToAggregation.get(currentIndex))
         ));
       aggCol = currentAggregationFromPath.getSubAggregations();
     }
@@ -92,10 +100,7 @@ public class CompositeAggregationScroller {
       .filter(agg -> agg.getName().equals(pathToAggregation.getLast()))
       .findFirst()
       .orElseThrow(() -> new OptimizeRuntimeException(
-        String.format(
-          "Could not find composite aggregation [%s] in aggregation path.",
-          pathToAggregation.getLast()
-        )
+        String.format("Could not find composite aggregation [%s] in aggregation path.", pathToAggregation.getLast())
       ));
   }
 
@@ -117,10 +122,11 @@ public class CompositeAggregationScroller {
   /**
    * In order to be able to access the composite aggregation the scroller needs to know
    * where to find the composite aggregation. The path can be stated in this method:
-   *
+   * <p>
    * Example:
    * Aggregation: nested("fooNested",..).subAggregation(composite("myComposite")..)
    * Respective call: setPathToAggregation("fooNested", "myComposite")
+   *
    * @param pathToAggregation a path to where to find the composite aggregation
    * @return the scroller object
    */

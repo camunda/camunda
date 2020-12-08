@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -148,14 +149,16 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
                                                                    final String searchString,
                                                                    final int maxResults) {
-    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
-    List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
+      searchString, IdentityType.values(), maxResults
+    );
     while (!result.getResult().isEmpty()
       && filteredIdentities.size() < maxResults) {
       // continue searching until either the maxResult number of hits has been found or
       // the end of the cache has been reached
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result = syncedIdentityCache.searchIdentitiesAfter(searchString, maxResults, result);
+      result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
     }
     return new IdentitySearchResultResponseDto(result.getTotal(), filteredIdentities);
   }
@@ -170,11 +173,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {
-    return identityAuthorizationService.isUserAuthorizedToSeeIdentity(
-      userId,
-      identity.getType(),
-      identity.getId()
-    );
+    return identityAuthorizationService.isUserAuthorizedToSeeIdentity(userId, identity.getType(), identity.getId());
   }
 
   public void validateUserAuthorizedToAccessRoleOrFail(final String userId, final IdentityDto identityDto) {

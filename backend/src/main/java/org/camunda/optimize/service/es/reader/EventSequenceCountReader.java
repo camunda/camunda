@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -117,7 +117,7 @@ public class EventSequenceCountReader {
       .setSearchRequest(searchRequest)
       .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
       .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
-      .scroll();
+      .consumeAllPages();
     return eventCountDtos;
   }
 
@@ -140,7 +140,7 @@ public class EventSequenceCountReader {
       .setSearchRequest(searchRequest)
       .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
       .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
-      .scroll();
+      .consumeAllPages();
     return eventCountDtos;
   }
 

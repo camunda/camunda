@@ -29,6 +29,7 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.identity.AssigneeCandidateGroupIdentityCacheService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
@@ -489,6 +490,10 @@ public class EmbeddedOptimizeExtension
 
   public UserIdentityCacheService getUserIdentityCacheService() {
     return getOptimize().getUserIdentityCacheService();
+  }
+
+  public AssigneeCandidateGroupIdentityCacheService getAssigneeCandidateGroupIdentityCacheService() {
+    return getOptimize().getAssigneeCandidateGroupIdentityCacheService();
   }
 
   public IndexRolloverService getEventIndexRolloverService() {

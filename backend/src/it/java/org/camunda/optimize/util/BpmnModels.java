@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.util;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModels {
@@ -100,6 +103,38 @@ public class BpmnModels {
       .done();
   }
 
+  public static BpmnModelInstance getUserTaskDiagramWithAssignee(final String assignee) {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaAssignee(assignee)
+      .endEvent(END_EVENT)
+      .done();
+  }
+
+  public static BpmnModelInstance getDoubleUserTaskDiagramWithAssignees(final String assigneeFirstUserTask,
+                                                                        final String assigneeSecondUserTask) {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaAssignee(assigneeFirstUserTask)
+      .userTask(USER_TASK_2).camundaAssignee(assigneeSecondUserTask)
+      .endEvent(END_EVENT)
+      .done();
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithCandidateGroup(final String candidateGroup) {
+    return getUserTaskDiagramWithMultipleCandidateGroups(ImmutableList.of(candidateGroup));
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithMultipleCandidateGroups(final List<String> candidateGroups) {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaCandidateGroups(candidateGroups)
+      .endEvent(END_EVENT)
+      .done();
+  }
 
   public static BpmnModelInstance getSingleServiceTaskProcess(String procDefKey) {
     return getSingleServiceTaskProcess(procDefKey, SERVICE_TASK);

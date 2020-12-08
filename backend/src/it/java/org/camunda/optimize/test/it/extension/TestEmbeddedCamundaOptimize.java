@@ -14,6 +14,7 @@ import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.identity.AssigneeCandidateGroupIdentityCacheService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -151,6 +152,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public UserIdentityCacheService getUserIdentityCacheService() {
     return getApplicationContext().getBean(UserIdentityCacheService.class);
+  }
+
+  public AssigneeCandidateGroupIdentityCacheService getAssigneeCandidateGroupIdentityCacheService() {
+    return getApplicationContext().getBean(AssigneeCandidateGroupIdentityCacheService.class);
   }
 
   public IndexRolloverService getEventIndexRolloverService() {

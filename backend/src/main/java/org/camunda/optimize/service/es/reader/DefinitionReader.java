@@ -17,8 +17,8 @@ import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -83,7 +83,6 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.co
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
@@ -297,7 +296,6 @@ public class DefinitionReader {
     final TermsAggregationBuilder nameAggregation =
       terms(NAME_AGGREGATION)
         .field(DEFINITION_NAME)
-        .size(MAX_RESPONSE_SIZE_LIMIT)
         .size(1);
     // 2.1 group by engine
     final TermsAggregationBuilder enginesAggregation =
@@ -342,7 +340,7 @@ public class DefinitionReader {
           }
           keyAndTypeAggBucketsByTenantId.get(tenantId).add(bucket);
         })
-      .scroll();
+      .consumeAllPages();
 
     Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
     keyAndTypeAggBucketsByTenantId.forEach((key, value) -> {

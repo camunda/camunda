@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.CandidateGroupsService;
+import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +30,7 @@ import java.util.List;
 public class CandidateGroupRestService {
 
   private final SessionService sessionService;
-  private final CandidateGroupsService candidateGroupsService;
+  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   @POST
   @Path("/values")
@@ -39,6 +39,6 @@ public class CandidateGroupRestService {
   public List<String> getCandidateGroupsForProcessDefinition(@Context ContainerRequestContext requestContext,
                                                              AssigneeRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return candidateGroupsService.getAllCandidateGroups(userId, requestDto);
+    return assigneeCandidateGroupService.getAllCandidateGroups(userId, requestDto);
   }
 }

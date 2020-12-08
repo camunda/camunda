@@ -19,8 +19,8 @@ import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -179,7 +179,7 @@ public class DurationOutliersReader {
       .setSearchRequest(searchRequest)
       .setPathToAggregation(AGG_NESTED, COMPOSITE_FLOW_NODE_IDS_AGG)
       .setCompositeBucketConsumer(deviationForEachFlowNode::add)
-      .scroll();
+      .consumeAllPages();
 
     return createFlowNodeOutlierMap(deviationForEachFlowNode, processInstanceQuery);
   }

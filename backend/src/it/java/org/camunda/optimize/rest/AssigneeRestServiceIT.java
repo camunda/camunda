@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -19,8 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AssigneeRestServiceIT extends AbstractIT {
 
-  public static final String PROC_DEF_KEY = "aProcess";
-
   @Test
   public void getAssignees() {
     ProcessInstanceEngineDto processInstanceEngineDto = startSimpleUserTaskProcessWithAssignee();
@@ -30,7 +28,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      PROC_DEF_KEY,
+      BpmnModels.DEFAULT_PROCESS_ID,
       Collections.singletonList("ALL"),
       Collections.singletonList(null)
     );
@@ -61,12 +59,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
 
   public ProcessInstanceEngineDto startSimpleUserTaskProcessWithAssignee() {
     return engineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess(PROC_DEF_KEY)
-        .startEvent()
-        .userTask().camundaAssignee("demo")
-        .userTask().camundaAssignee("john")
-        .endEvent()
-        .done()
+      BpmnModels.getDoubleUserTaskDiagramWithAssignees("demo", "john")
     );
   }
 }

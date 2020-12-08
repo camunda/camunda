@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.identity;
 
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -32,7 +33,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 public abstract class AbstractIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
-  private final Logger log = LoggerFactory.getLogger(this.getClass());
+  protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final Supplier<IdentitySyncConfiguration> identitySyncConfigurationSupplier;
   private final BackoffCalculator backoffCalculator;
@@ -42,8 +43,8 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   private CronExpression cronExpression;
 
   protected AbstractIdentityCacheService(final Supplier<IdentitySyncConfiguration> identitySyncConfigurationSupplier,
-                                      final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                      final BackoffCalculator backoffCalculator) {
+                                         final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                         final BackoffCalculator backoffCalculator) {
     this.identitySyncConfigurationSupplier = identitySyncConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
@@ -145,7 +146,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       log.error(
         "Could not synchronize {} identity cache as the limit of {} records was reached on refresh.\n {}",
         getCacheLabel(),
-        getIdentitySyncConfiguration().getMaxEntryLimit(),
+        IdentitySyncConfiguration.Fields.maxEntryLimit.name(),
         createIncreaseCacheLimitErrorMessage()
       );
       throw e;
@@ -178,10 +179,23 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     return activeIdentityCache.searchIdentities(terms, resultLimit);
   }
 
+  public IdentitySearchResultResponseDto searchIdentities(final String terms,
+                                                          final IdentityType[] identityTypes,
+                                                          final int resultLimit) {
+    return activeIdentityCache.searchIdentities(terms, identityTypes, resultLimit);
+  }
+
   public IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
                                                                final int resultLimit,
                                                                final IdentitySearchResultResponseDto searchAfter) {
-    return activeIdentityCache.searchIdentities(terms, resultLimit, searchAfter);
+    return activeIdentityCache.searchIdentitiesAfter(terms, resultLimit, searchAfter);
+  }
+
+  public IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
+                                                               final IdentityType[] identityTypes,
+                                                               final int resultLimit,
+                                                               final IdentitySearchResultResponseDto searchAfter) {
+    return activeIdentityCache.searchIdentitiesAfter(terms, identityTypes, resultLimit, searchAfter);
   }
 
   protected abstract String getCacheLabel();

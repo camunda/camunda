@@ -5,52 +5,80 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import com.google.common.collect.ImmutableList;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
+import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class AssigneeAndCandidateGroupsReader {
 
+  private static final String NESTED_USER_TASKS_AGG = "userTasks";
+  private static final String COMPOSITE_AGG = "composite";
+  private static final String TERMS_AGG = "userTaskFieldTerms";
+
   private final ProcessDefinitionReader processDefinitionReader;
   private final OptimizeElasticsearchClient esClient;
 
-  public List<String> getCandidateGroups(AssigneeRequestDto requestDto) {
+  public void consumeAssigneesInBatches(@NonNull final String engineAlias,
+                                        @NonNull final Consumer<List<String>> assigneeBatchConsumer,
+                                        final int batchSize) {
+    consumeUserTaskFieldTermsInBatches(
+      termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
+      UserTaskInstanceDto.Fields.assignee,
+      assigneeBatchConsumer,
+      batchSize
+    );
+  }
+
+  public void consumeCandidateGroupsInBatches(@NonNull final String engineAlias,
+                                              @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
+                                              final int batchSize) {
+
+    consumeUserTaskFieldTermsInBatches(
+      termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
+      UserTaskInstanceDto.Fields.candidateGroups,
+      candidateGroupBatchConsumer,
+      batchSize
+    );
+  }
+
+  public List<String> getCandidateGroups(@NonNull final AssigneeRequestDto requestDto) {
     return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS);
   }
 
-  public List<String> getAssignees(AssigneeRequestDto requestDto) {
+  public List<String> getAssignees(@NonNull final AssigneeRequestDto requestDto) {
     return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_ASSIGNEE);
   }
 
-  public List<String> getSearchResponse(AssigneeRequestDto requestDto, String field) {
+  public List<String> getSearchResponse(@NonNull final AssigneeRequestDto requestDto, @NonNull final String field) {
     if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
       log.debug("Cannot fetch {} for process definition with missing versions.", field);
       return Collections.emptyList();
@@ -58,60 +86,55 @@ public class AssigneeAndCandidateGroupsReader {
 
     log.debug(
       "Fetching {} for process definition with key [{}] and versions [{}] and tenants [{}]",
-      field,
+      field, requestDto.getProcessDefinitionKey(), requestDto.getProcessDefinitionVersions(), requestDto.getTenantIds()
+    );
+
+    final BoolQueryBuilder definitionQuery = createDefinitionQuery(
       requestDto.getProcessDefinitionKey(),
       requestDto.getProcessDefinitionVersions(),
-      requestDto.getTenantIds()
+      requestDto.getTenantIds(),
+      new ProcessInstanceIndex(),
+      processDefinitionReader::getLatestVersionToKey
     );
 
-    BoolQueryBuilder query =
-      createDefinitionQuery(
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions(),
-        requestDto.getTenantIds(),
-        new ProcessInstanceIndex(),
-        processDefinitionReader::getLatestVersionToKey
-      );
+    final List<String> result = new ArrayList<>();
+    consumeUserTaskFieldTermsInBatches(definitionQuery, field, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+    return result;
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
+  }
+
+  private void consumeUserTaskFieldTermsInBatches(final QueryBuilder filterQuery,
+                                                  final String fieldName,
+                                                  final Consumer<List<String>> termBatchConsumer,
+                                                  final int batchSize) {
+    final int resolvedLimit = Math.min(batchSize, MAX_RESPONSE_SIZE_LIMIT);
+    final CompositeAggregationBuilder assigneeCompositeAgg = new CompositeAggregationBuilder(
+      COMPOSITE_AGG, ImmutableList.of(new TermsValuesSourceBuilder(TERMS_AGG).field(getUserTaskFieldPath(fieldName)))
+    ).size(resolvedLimit);
+    final NestedAggregationBuilder userTasksAgg = nested(NESTED_USER_TASKS_AGG, ProcessInstanceDto.Fields.userTasks)
+      .subAggregation(assigneeCompositeAgg);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(filterQuery)
+      .aggregation(userTasksAgg)
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
-    TermsAggregationBuilder aggregation = terms(field)
-      .field(ProcessInstanceIndex.USER_TASKS + "." + field)
-      .size(10_000)
-      .order(BucketOrder.key(true));
-    searchSourceBuilder.aggregation(
-      nested(ProcessInstanceIndex.USER_TASKS, ProcessInstanceIndex.USER_TASKS)
-        .subAggregation(
-          aggregation
-        )
-    );
-
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch %s for definition with key [%s] and versions [%s]",
-        field,
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions()
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    Aggregations aggregations = searchResponse.getAggregations();
-    return extractValues(aggregations, field);
+    final List<String> termsBatch = new ArrayList<>();
+    final CompositeAggregationScroller compositeAggregationScroller = CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(NESTED_USER_TASKS_AGG, COMPOSITE_AGG)
+      .setCompositeBucketConsumer(bucket -> termsBatch.add((String) (bucket.getKey()).get(TERMS_AGG)));
+    boolean hasPage;
+    do {
+      hasPage = compositeAggregationScroller.consumePage();
+      termBatchConsumer.accept(termsBatch);
+      termsBatch.clear();
+    } while (hasPage);
   }
 
-  private List<String> extractValues(Aggregations aggregations, String field) {
-    Nested userTasksAgg = aggregations.get(ProcessInstanceIndex.USER_TASKS);
-    Terms candidateGroupsBuckets = userTasksAgg.getAggregations().get(field);
-    return candidateGroupsBuckets.getBuckets().stream().map(MultiBucketsAggregation.Bucket::getKeyAsString)
-      .collect(Collectors.toList());
+  private String getUserTaskFieldPath(final String fieldName) {
+    return ProcessInstanceDto.Fields.userTasks + "." + fieldName;
   }
+
 }

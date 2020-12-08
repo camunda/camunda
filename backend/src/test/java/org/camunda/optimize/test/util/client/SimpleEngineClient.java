@@ -224,12 +224,35 @@ public class SimpleEngineClient {
     return deployment;
   }
 
-  public EngineUserDto constructUserDto(String username, String password) {
+  public EngineUserDto createEngineUserDto(final String username, final String password) {
+    return createEngineUserDto(username, password, DEFAULT_FIRSTNAME, DEFAULT_LASTNAME);
+  }
+
+  public EngineUserDto createEngineUserDto(final String username,
+                                           final String firstName,
+                                           final String lastName) {
+    return createEngineUserDto(
+      username, username, username + DEFAULT_EMAIL_DOMAIN, firstName, lastName
+    );
+  }
+
+  public EngineUserDto createEngineUserDto(final String username,
+                                           final String password,
+                                           final String firstName,
+                                           final String lastName) {
+    return createEngineUserDto(username, password, username + DEFAULT_EMAIL_DOMAIN, firstName, lastName);
+  }
+
+  private EngineUserDto createEngineUserDto(final String username,
+                                            final String password,
+                                            final String email,
+                                            final String firstName,
+                                            final String lastName) {
     final UserProfileDto profile = UserProfileDto.builder()
       .id(username)
-      .email(username + DEFAULT_EMAIL_DOMAIN)
-      .firstName(DEFAULT_FIRSTNAME)
-      .lastName(DEFAULT_LASTNAME)
+      .email(email)
+      .firstName(firstName)
+      .lastName(lastName)
       .build();
     final UserCredentialsDto credentials = new UserCredentialsDto();
     credentials.setPassword(password);
