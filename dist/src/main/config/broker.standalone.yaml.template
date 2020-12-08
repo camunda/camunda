@@ -166,14 +166,9 @@
       #		  ├── runtime
       #		  └── snapshots
 
-      # Specify a list of directories in which data is stored. Using multiple
-      # directories makes sense in case the machine which is running Zeebe has
-      # multiple disks which are used in a JBOD (just a bunch of disks) manner. This
-      # allows to get greater throughput in combination with a higher io thread count
-      # since writes to different disks can potentially be done in parallel.
-      #
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORIES.
-      # directories: [ data ]
+      # Specify the directory in which data is stored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
+      # directory: data
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
