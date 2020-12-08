@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Workflow Engine</name>
   <artifactId>zeebe-workflow-engine</artifactId>
-  <version>0.25.3</version>
+  <version>0.25.4-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.25.3</version>
+    <version>0.25.4-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
