@@ -123,6 +123,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Configuration changes should not be allowed until the leader has committed a no-op entry.
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
     if (configuring() || initializing()) {
+      log.debug(
+          "Cannot accept join request {}. Another configuration change ongoing (configuring = {}) or the leader has not committed its first entry (initializing = {})",
+          request,
+          configuring(),
+          initializing());
       return CompletableFuture.completedFuture(
           logResponse(JoinResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
     }
