@@ -59,6 +59,9 @@ pipeline {
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
             }
             steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/build-go.sh'
+                }
                 runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
                 container('maven') {
                     sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
@@ -92,10 +95,6 @@ pipeline {
 
                 stage('Test (Go)') {
                     steps {
-                        container('golang') {
-                            sh '.ci/scripts/distribution/build-go.sh'
-                        }
-
                         container('golang') {
                             sh '.ci/scripts/distribution/test-go.sh'
                         }
