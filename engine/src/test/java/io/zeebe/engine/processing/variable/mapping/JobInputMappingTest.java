@@ -12,13 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.JsonUtil;
+import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,8 @@ public final class JobInputMappingTest {
   @Parameter(2)
   public String expectedVariables;
 
+  private String jobType;
+
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
@@ -66,6 +69,11 @@ public final class JobInputMappingTest {
     };
   }
 
+  @Before
+  public void setup() {
+    jobType = Strings.newRandomValidBpmnId();
+  }
+
   @Test
   public void shouldApplyInputMappings() {
     // given
@@ -77,7 +85,7 @@ public final class JobInputMappingTest {
                 .serviceTask(
                     "service",
                     builder -> {
-                      builder.zeebeJobType("test");
+                      builder.zeebeJobType(jobType);
                       mappings.accept(builder);
                     })
                 .endEvent()
@@ -98,16 +106,18 @@ public final class JobInputMappingTest {
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();
-    ENGINE_RULE.jobs().withType("test").activate();
+    ENGINE_RULE.jobs().withType(jobType).activate();
 
     // then
-    final Record<JobRecordValue> jobCreated =
-        RecordingExporter.jobRecords(JobIntent.ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
+    final var jobRecordValue =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(jobType)
+            .getFirst()
+            .getValue()
+            .getJobs()
+            .get(0);
 
-    assertThat(jobCreated.getValue().getVariables())
-        .isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
+    assertThat(jobRecordValue.getVariables()).isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
   }
 
   private static Consumer<ServiceTaskBuilder> mapping(

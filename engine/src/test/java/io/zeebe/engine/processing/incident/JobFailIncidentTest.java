@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -265,17 +266,23 @@ public final class JobFailIncidentTest {
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
 
-    // and the job is published again
-    final Record<JobRecordValue> republishedEvent =
-        RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(job -> job.getIntent() == JobIntent.RETRIES_UPDATED)
-            .withIntent(JobIntent.ACTIVATED)
-            .getFirst();
-    assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
-    assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
-    assertThat(republishedEvent.getTimestamp()).isGreaterThanOrEqualTo(jobEvent.getTimestamp());
-    assertThat(republishedEvent.getValue()).hasRetries(1);
+    // and the job is activated again
+    final var batchActivations =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .filter(
+                jobBatchRecordValueRecord ->
+                    jobBatchRecordValueRecord.getValue().getJobs().stream()
+                        .anyMatch(
+                            jobRecordValue ->
+                                jobRecordValue.getWorkflowInstanceKey() == workflowInstanceKey))
+            .limit(2)
+            .collect(Collectors.toList());
+    assertThat(batchActivations).hasSize(2);
+    final var secondActivationJobValue = batchActivations.get(1).getValue().getJobs().get(0);
+    final var secondActivationJobKey = batchActivations.get(1).getValue().getJobKeys().get(0);
+
+    assertThat(secondActivationJobKey).isEqualTo(jobEvent.getKey());
+    assertThat(secondActivationJobValue).hasRetries(1);
 
     // and the job lifecycle is correct
     final List<Record> jobEvents =
@@ -284,7 +291,7 @@ public final class JobFailIncidentTest {
                 r ->
                     r.getKey() == jobEvent.getKey()
                         || r.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
-            .limit(8)
+            .limit(6)
             .collect(Collectors.toList());
 
     assertThat(jobEvents)
@@ -292,12 +299,10 @@ public final class JobFailIncidentTest {
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED));
   }
 
   @Test

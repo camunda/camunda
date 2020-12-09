@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.job;
 
 import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -162,13 +163,11 @@ public final class ActivateJobsTest {
 
     assertThat(jobs.get(0).getVariables()).containsExactly(entry("foo", "bar"));
 
-    final Record<JobRecordValue> jobRecord =
-        jobRecords(JobIntent.ACTIVATED)
-            .withWorkflowInstanceKey(firstInstanceKey)
-            .withType(taskType)
-            .getFirst();
-    assertThat(jobRecord).hasKey(expectedJobKey);
-    assertThat(jobRecord.getValue()).hasRetries(3).hasWorker(worker);
+    final var activatedJobBatch = getActivatedJobBatch();
+    final var jobRecordValue = activatedJobBatch.getJobs().get(0);
+    final var jobKey = activatedJobBatch.getJobKeys().get(0);
+    assertThat(jobKey).isEqualTo(expectedJobKey);
+    assertThat(jobRecordValue).hasRetries(3).hasWorker(worker);
   }
 
   @Test
@@ -239,16 +238,14 @@ public final class ActivateJobsTest {
     final List<Long> jobs = activateJobs(taskType, 7);
 
     // then
-    assertThat(jobs).containsOnlyElementsOf(jobKeys);
+    assertThat(jobs).containsExactly(jobKeys.toArray(new Long[0]));
 
-    final List<Record<JobRecordValue>> records =
-        jobRecords(JobIntent.ACTIVATED)
-            .withType(taskType)
-            .limit(jobKeys.size())
-            .collect(Collectors.toList());
+    final var activatedJobBatch = getActivatedJobBatch();
+    assertThat(activatedJobBatch).hasJobKeys(jobKeys);
 
-    assertThat(records).extracting(Record::getKey).containsOnlyElementsOf(jobKeys);
-    assertThat(records).extracting("value.type").containsOnly(taskType);
+    assertThat(activatedJobBatch.getJobs())
+        .extracting(JobRecordValue::getType)
+        .containsOnly(taskType);
   }
 
   @Test
@@ -310,13 +307,8 @@ public final class ActivateJobsTest {
     ENGINE.job().ofInstance(workflowInstanceKey).withType(taskType).complete();
 
     // then
-    final JobRecordValue jobRecord =
-        jobRecords(JobIntent.ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withType(taskType)
-            .getFirst()
-            .getValue();
-    assertThat(jobRecord.getCustomHeaders().get("foo")).isEqualTo(LONG_CUSTOM_HEADER_VALUE);
+    final var jobRecordValue = getActivatedJobBatch().getJobs().get(0);
+    assertThat(jobRecordValue.getCustomHeaders()).containsEntry("foo", LONG_CUSTOM_HEADER_VALUE);
   }
 
   @Test
@@ -461,5 +453,9 @@ public final class ActivateJobsTest {
                     .limit(jobAmount)
                     .count()
                 == jobAmount);
+  }
+
+  private JobBatchRecordValue getActivatedJobBatch() {
+    return jobBatchRecords(JobBatchIntent.ACTIVATED).withType(taskType).getFirst().getValue();
   }
 }
