@@ -16,6 +16,7 @@
 package worker
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
@@ -51,6 +52,7 @@ func (suite *JobPollerSuite) BeforeTest(suiteName, testName string) {
 		closeSignal:    make(chan struct{}),
 		remaining:      0,
 		threshold:      int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
+		shouldRetry:    func(_ context.Context, _ error) bool { return false },
 	}
 	suite.waitGroup.Add(1)
 }

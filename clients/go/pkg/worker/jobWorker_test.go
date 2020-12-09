@@ -74,7 +74,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).RequestTimeout(utils.DefaultTestTimeout).Open()
 
@@ -120,7 +120,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).MaxJobsActive(123).Timeout(timeout).RequestTimeout(utils.DefaultTestTimeout).Name("fooWorker").Open()
 

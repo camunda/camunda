@@ -306,7 +306,7 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	// given
 	blockReq := make(chan struct{})
 	defer close(blockReq)
-	lis, server := createServerWithInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+	lis, server := createServerWithUnaryInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
 		<-blockReq
 		return nil, nil
 	})
