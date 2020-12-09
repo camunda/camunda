@@ -180,7 +180,7 @@ export class Home extends React.Component {
                     icon: 'save',
                     text: t('common.export'),
                     action: () => {
-                      window.location.href = `api/export/report/json/${entity.reportType}/${
+                      window.location.href = `api/export/report/json/${
                         entity.id
                       }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
                     },

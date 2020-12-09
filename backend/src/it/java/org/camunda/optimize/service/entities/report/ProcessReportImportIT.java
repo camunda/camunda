@@ -22,9 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
@@ -47,9 +49,10 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
+    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
+    assertThat(importedIds).hasSize(1);
     final SingleProcessReportDefinitionRequestDto importedReport =
-      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -158,9 +161,10 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then all non version related data is accurate
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
+    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
+    assertThat(importedIds).hasSize(1);
     final SingleProcessReportDefinitionRequestDto importedReport =
-      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -233,9 +237,10 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
+    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
+    assertThat(importedIds).hasSize(1);
     final SingleProcessReportDefinitionRequestDto importedReport =
-      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -272,9 +277,10 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
+    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
+    assertThat(importedIds).hasSize(1);
     final SingleProcessReportDefinitionRequestDto importedReport =
-      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -317,9 +323,10 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
+    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
+    assertThat(importedIds).hasSize(1);
     final SingleProcessReportDefinitionRequestDto importedReport =
-      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);

@@ -7,9 +7,12 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 
 import javax.ws.rs.core.Response;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -43,9 +46,18 @@ public class ImportClient {
                                                    final String password,
                                                    final String collectionId,
                                                    final ReportDefinitionExportDto exportedDto) {
+    final HashSet<OptimizeEntityExportDto> exportedDtos = new HashSet<>();
+    exportedDtos.add(exportedDto);
+    return importEntityIntoCollectionAsUser(userId, password, collectionId, exportedDtos);
+  }
+
+  public Response importEntityIntoCollectionAsUser(final String userId,
+                                                   final String password,
+                                                   final String collectionId,
+                                                   final Set<OptimizeEntityExportDto> exportedDtos) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
-      .buildImportEntityRequest(collectionId, exportedDto)
+      .buildImportEntityRequest(collectionId, exportedDtos)
       .execute();
   }
 

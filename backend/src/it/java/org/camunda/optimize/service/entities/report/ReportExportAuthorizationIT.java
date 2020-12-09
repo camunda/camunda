@@ -25,7 +25,7 @@ public class ReportExportAuthorizationIT extends AbstractReportExportImportIT {
     final String reportId = createSimpleReport(reportType);
 
     // when
-    final Response response = exportClient.exportReportAsJson(reportType, reportId, "my_file.json");
+    final Response response = exportClient.exportReportAsJson(reportId, "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -42,7 +42,6 @@ public class ReportExportAuthorizationIT extends AbstractReportExportImportIT {
     final Response response = exportClient.exportReportAsJsonAsUser(
       KERMIT_USER,
       KERMIT_USER,
-      reportType,
       reportId,
       "my_file.json"
     );
@@ -63,7 +62,6 @@ public class ReportExportAuthorizationIT extends AbstractReportExportImportIT {
     final Response response = exportClient.exportReportAsJsonAsUser(
       KERMIT_USER,
       KERMIT_USER,
-      reportType,
       reportId,
       "my_file.json"
     );
@@ -71,4 +69,5 @@ public class ReportExportAuthorizationIT extends AbstractReportExportImportIT {
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
+
 }

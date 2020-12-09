@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
@@ -27,6 +28,7 @@ import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIn
 import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
 import org.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.elasticsearch.common.util.set.Sets;
@@ -34,8 +36,12 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 
@@ -49,34 +55,114 @@ public class ReportImportService {
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
 
-  public IdResponseDto importProcessReportIntoCollection(final String userId,
-                                                         final String collectionId,
-                                                         final SingleProcessReportDefinitionExportDto exportedDto) {
+  public Map<String, IdResponseDto> importReportsIntoCollection(final String userId,
+                                                                final String collectionId,
+                                                                final List<OptimizeEntityExportDto> exportedReportDtos) {
+    final Map<String, IdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    final Set<ImportIndexMismatchDto> indexMismatches = new HashSet<>();
+    final Set<DefinitionExceptionItemDto> missingDefinitions = new HashSet<>();
+    final Set<DefinitionExceptionItemDto> forbiddenDefinitions = new HashSet<>();
+
+    exportedReportDtos.forEach(
+      reportExportDto -> {
+        try {
+          importReportIntoCollection(userId, collectionId, reportExportDto, originalIdToNewIdMap);
+        } catch (OptimizeImportIncorrectIndexVersionException e) {
+          indexMismatches.addAll(e.getMismatchingIndices());
+        } catch (OptimizeImportDefinitionDoesNotExistException e) {
+          missingDefinitions.addAll(e.getMissingDefinitions());
+        } catch (OptimizeImportForbiddenException e) {
+          forbiddenDefinitions.addAll(e.getForbiddenDefinitions());
+        }
+      }
+    );
+
+    if (!indexMismatches.isEmpty()) {
+      throw new OptimizeImportIncorrectIndexVersionException(
+        "Could not import because source and target index versions do not match for at least one entity.",
+        indexMismatches
+      );
+    }
+
+    if (!missingDefinitions.isEmpty()) {
+      throw new OptimizeImportDefinitionDoesNotExistException(
+        "Could not import because at least one required definition does not exist.",
+        missingDefinitions
+      );
+    }
+
+    if (!forbiddenDefinitions.isEmpty()) {
+      throw new OptimizeImportForbiddenException(
+        String.format(
+          "Could not import because user with ID [%s] is not authorized to access at least one of the required " +
+            "definitions.",
+          userId
+        ),
+        forbiddenDefinitions
+      );
+    }
+
+    return originalIdToNewIdMap;
+  }
+
+  private void importReportIntoCollection(final String userId,
+                                          final String collectionId,
+                                          final OptimizeEntityExportDto exportedDto,
+                                          final Map<String, IdResponseDto> originalIdToNewIdMap) {
+    switch (exportedDto.getExportEntityType()) {
+      case SINGLE_PROCESS_REPORT:
+        importProcessReportIntoCollection(
+          userId,
+          collectionId,
+          (SingleProcessReportDefinitionExportDto) exportedDto,
+          originalIdToNewIdMap
+        );
+        break;
+      case SINGLE_DECISION_REPORT:
+        importDecisionReportIntoCollection(
+          userId,
+          collectionId,
+          (SingleDecisionReportDefinitionExportDto) exportedDto,
+          originalIdToNewIdMap
+        );
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unknown entity type: " + exportedDto.getExportEntityType());
+    }
+  }
+
+  private void importProcessReportIntoCollection(final String userId,
+                                                 final String collectionId,
+                                                 final SingleProcessReportDefinitionExportDto exportedDto,
+                                                 final Map<String, IdResponseDto> originalIdToNewIdMap) {
     validateIndexVersionOrFail(new SingleProcessReportIndex(), exportedDto);
     removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
     validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
     populateDefinitionXml(exportedDto);
 
-    return reportService.importReport(
+    final IdResponseDto newId = reportService.importReport(
       userId,
       createProcessReportDefinition(exportedDto),
       collectionId
     );
+    originalIdToNewIdMap.put(exportedDto.getId(), newId);
   }
 
-  public IdResponseDto importDecisionReportIntoCollection(final String userId,
-                                                          final String collectionId,
-                                                          final SingleDecisionReportDefinitionExportDto exportedDto) {
+  private void importDecisionReportIntoCollection(final String userId,
+                                                  final String collectionId,
+                                                  final SingleDecisionReportDefinitionExportDto exportedDto,
+                                                  final Map<String, IdResponseDto> originalIdToNewIdMap) {
     validateIndexVersionOrFail(new SingleDecisionReportIndex(), exportedDto);
     removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
     validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
     populateDefinitionXml(exportedDto);
 
-    return reportService.importReport(
+    final IdResponseDto newId = reportService.importReport(
       userId,
       createDecisionReportDefinition(exportedDto),
       collectionId
     );
+    originalIdToNewIdMap.put(exportedDto.getId(), newId);
   }
 
   private SingleProcessReportDefinitionRequestDto createProcessReportDefinition(

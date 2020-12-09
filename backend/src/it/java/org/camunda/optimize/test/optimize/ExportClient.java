@@ -7,7 +7,6 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.ReportType;
 
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
@@ -22,20 +21,19 @@ public class ExportClient {
       .execute();
   }
 
-  public Response exportReportAsJson(final ReportType reportType, final String reportId, final String fileName) {
+  public Response exportReportAsJson(final String reportId, final String fileName) {
     return getRequestExecutor()
-      .buildExportReportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportId, fileName)
       .execute();
   }
 
   public Response exportReportAsJsonAsUser(final String userId,
                                            final String password,
-                                           final ReportType reportType,
                                            final String reportId,
                                            final String fileName) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
-      .buildExportReportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportId, fileName)
       .execute();
   }
 

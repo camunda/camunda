@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -97,6 +96,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -925,18 +925,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildExportReportRequest(final ReportType reportType,
-                                                          final String reportId,
+  public OptimizeRequestExecutor buildExportReportRequest(final String reportId,
                                                           final String fileName) {
-    this.path = "export/report/json/" + reportType + "/" + reportId + "/" + fileName;
+    this.path = "export/report/json/" + reportId + "/" + fileName;
     this.method = GET;
     return this;
   }
 
   public OptimizeRequestExecutor buildImportEntityRequest(final String collectionId,
-                                                          final OptimizeEntityExportDto exportedDto) {
+                                                          final Set<OptimizeEntityExportDto> exportedDtos) {
     this.path = "import/";
-    this.body = getBody(exportedDto);
+    this.body = getBody(exportedDtos);
     this.method = POST;
     Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     return this;

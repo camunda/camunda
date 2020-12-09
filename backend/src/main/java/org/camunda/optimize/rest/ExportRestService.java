@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -52,19 +53,16 @@ public class ExportRestService {
 
   @GET
   @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("report/json/{type}/{reportId}/{fileName}")
+  @Path("report/json/{reportId}/{fileName}")
   public Response getJsonReport(@Context ContainerRequestContext requestContext,
                                 @PathParam("reportId") String reportId,
-                                @PathParam("type") ReportType reportType,
                                 @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    final Optional<? extends ReportDefinitionExportDto> jsonReport =
-      entityExportService.getJsonReportExportDto(userId, reportType, reportId);
+    final List<ReportDefinitionExportDto> jsonReports =
+      entityExportService.getJsonReportExportDtos(userId, Sets.newHashSet(reportId));
 
-    return jsonReport
-      .map(exportDto -> createJsonResponse(fileName, exportDto))
-      .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    return createJsonResponse(fileName, jsonReports);
   }
 
   @GET
@@ -148,10 +146,10 @@ public class ExportRestService {
   }
 
   private Response createJsonResponse(final String fileName,
-                                      final ReportDefinitionExportDto jsonReport) {
+                                      final List<ReportDefinitionExportDto> jsonReports) {
     return Response
       .ok(
-        jsonReport,
+        jsonReports,
         MediaType.APPLICATION_JSON
       )
       .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))
