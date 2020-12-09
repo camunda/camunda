@@ -43,13 +43,10 @@ public final class FailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetries(retries);
     failedJob.setRetryBackOff(retryBackOff);
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
-    if (retryBackOff != 0) {
+    if (retries > 0 && retryBackOff > 0) {
       state.failForBackoff(key, failedJob);
       actorControl.runDelayed(
-          Duration.ofMillis(retryBackOff),
-          () -> {
-            state.activable(key, failedJob);
-          });
+          Duration.ofMillis(retryBackOff), () -> state.activable(key, failedJob));
     } else {
       state.fail(key, failedJob);
     }

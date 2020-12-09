@@ -27,8 +27,8 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -237,8 +237,7 @@ public final class FailJobTest {
   }
 
   @Test
-  //  @Ignore
-  public void shouldFailJobAndRetryBackOff() throws InterruptedException {
+  public void shouldFailJobAndRetryBackOff() {
     // given
     final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
 
@@ -248,7 +247,7 @@ public final class FailJobTest {
         jobRecords(ACTIVATED).withRecordKey(jobKey).getFirst();
 
     // when
-    final int backOff = 100;
+    final Duration backOff = Duration.ofSeconds(10);
     final Record<JobRecordValue> failRecord =
         ENGINE
             .job()
@@ -261,8 +260,8 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
-    TimeUnit.MILLISECONDS.sleep(backOff * 2);
-    ENGINE.jobs().withType(jobType).activate();
+    ENGINE.increaseTime(backOff);
+    final var activatedRecords = ENGINE.jobs().withType(jobType).activate();
 
     // and the job is published again
     final Record republishedEvent =
@@ -304,7 +303,7 @@ public final class FailJobTest {
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    final int backOff = 100;
+    final Duration backOff = Duration.ofSeconds(100);
     final Record<JobRecordValue> failRecord =
         ENGINE
             .job()

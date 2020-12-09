@@ -39,7 +39,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
-  private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
+  private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", -1);
 
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);

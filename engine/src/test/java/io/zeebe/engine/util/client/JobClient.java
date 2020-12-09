@@ -17,6 +17,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -87,8 +88,8 @@ public final class JobClient {
     return this;
   }
 
-  public JobClient withBackOff(final long backOff) {
-    jobRecord.setRetryBackOff(backOff);
+  public JobClient withBackOff(final Duration backOff) {
+    jobRecord.setRetryBackOff(backOff.toMillis());
     return this;
   }
 
