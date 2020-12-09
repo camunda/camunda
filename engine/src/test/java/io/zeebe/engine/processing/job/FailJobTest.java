@@ -261,7 +261,7 @@ public final class FailJobTest {
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     ENGINE.increaseTime(backOff);
-    final var activatedRecords = ENGINE.jobs().withType(jobType).activate();
+    ENGINE.jobs().withType(jobType).activate();
 
     // and the job is published again
     final Record republishedEvent =
@@ -274,24 +274,9 @@ public final class FailJobTest {
     final List<Record> jobEvents = jobRecords().limit(6).collect(Collectors.toList());
     assertThat(jobEvents)
         .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
-        .containsExactly(
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, FAIL),
+        .contains(
             tuple(RecordType.EVENT, ValueType.JOB, FAILED),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
-
-    final List<Record<JobBatchRecordValue>> jobActivateCommands =
-        RecordingExporter.jobBatchRecords().limit(4).collect(Collectors.toList());
-
-    assertThat(jobActivateCommands)
-        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
-        .containsExactly(
-            tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
-            tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED),
-            tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
-            tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED));
   }
 
   @Test
@@ -315,10 +300,7 @@ public final class FailJobTest {
 
     // then
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
-
-    ENGINE.jobs().withType(jobType).activate();
-
-    assertThat(jobRecords().skipUntil(j -> j.getIntent() == FAILED).withIntent(ACTIVATED).exists())
-        .isFalse();
+    final var record = ENGINE.jobs().withType(jobType).activate();
+    assertThat(record.getValue().getJobs()).isEmpty();
   }
 }
