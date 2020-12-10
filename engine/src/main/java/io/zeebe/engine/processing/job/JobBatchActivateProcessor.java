@@ -26,7 +26,6 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.ByteValue;
 import java.util.Collection;
@@ -174,17 +173,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobRecord jobRecord = iterator.next();
       final LongValue next1 = keyIt.next();
       final long key = next1.getValue();
-
-      // update state and write follow up event for job record
-      // we have to copy the job record because #write will reset the iterator state
-      final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
-      jobRecord.write(copy, 0);
-      final JobRecord copiedJob = new JobRecord();
-      copiedJob.wrap(copy, 0, jobRecord.getLength());
-
-      // first write follow up event as state.activate will clear the variables
-      streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, copiedJob);
-      jobState.activate(key, copiedJob);
+      jobState.activate(key, jobRecord);
     }
   }
 

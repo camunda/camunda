@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.processing.job;
 
-import static io.zeebe.protocol.record.intent.JobIntent.ACTIVATED;
 import static io.zeebe.protocol.record.intent.JobIntent.TIME_OUT;
+import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +19,6 @@ import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.Strings;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,18 +56,13 @@ public final class JobTimeOutTest {
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
-        jobRecords().withType(jobType).limit(6).collect(Collectors.toList());
+        jobRecords().withType(jobType).limit(4).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            JobIntent.CREATE,
-            JobIntent.CREATED,
-            JobIntent.ACTIVATED,
-            JobIntent.TIME_OUT,
-            JobIntent.TIMED_OUT,
-            JobIntent.ACTIVATED);
+            JobIntent.CREATE, JobIntent.CREATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
   }
 
   @Test
@@ -95,37 +89,6 @@ public final class JobTimeOutTest {
   }
 
   @Test
-  public void shouldSetCorrectSourcePositionAfterJobTimeOut() {
-    // given
-    ENGINE.createJob(jobType, PROCESS_ID);
-    final long timeout = 10L;
-    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-
-    // when expired
-    jobRecords(TIME_OUT).getFirst();
-    ENGINE.jobs().withType(jobType).activate();
-
-    // then activated again
-    final Record jobActivated =
-        jobRecords().skipUntil(j -> j.getIntent() == TIME_OUT).withIntent(ACTIVATED).getFirst();
-
-    final Record firstActivateCommand =
-        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATE).getFirst();
-    assertThat(jobActivated.getSourceRecordPosition())
-        .isNotEqualTo(firstActivateCommand.getPosition());
-
-    final Record secondActivateCommand =
-        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATE)
-            .skipUntil(s -> s.getPosition() > firstActivateCommand.getPosition())
-            .findFirst()
-            .get();
-
-    assertThat(jobActivated.getSourceRecordPosition())
-        .isEqualTo(secondActivateCommand.getPosition());
-  }
-
-  @Test
   public void shouldExpireMultipleActivatedJobsAtOnce() {
     // given
     final long instanceKey1 = createInstance();
@@ -148,27 +111,27 @@ public final class JobTimeOutTest {
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
 
     // when
-    jobRecords(ACTIVATED).withWorkflowInstanceKey(instanceKey1).limit(2).getFirst();
+    jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
 
     ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
     jobRecords(JobIntent.TIMED_OUT).withWorkflowInstanceKey(instanceKey1).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
     // then
-    final List<Record<JobRecordValue>> activatedEvents =
-        jobRecords(ACTIVATED)
-            .filter(
-                r -> {
-                  final long wfInstanceKey = r.getValue().getWorkflowInstanceKey();
-                  return wfInstanceKey == instanceKey1 || wfInstanceKey == instanceKey2;
-                })
-            .limit(4)
+    final var jobActivations =
+        jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(jobType)
+            .limit(2)
             .collect(Collectors.toList());
 
-    assertThat(activatedEvents)
-        .hasSize(4)
-        .extracting(Record::getKey)
-        .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
+    final var jobKeys =
+        jobActivations.stream()
+            .flatMap(
+                jobBatchRecordValueRecord ->
+                    jobBatchRecordValueRecord.getValue().getJobKeys().stream())
+            .collect(Collectors.toList());
+
+    assertThat(jobKeys).hasSize(4).containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
     final List<Record<JobRecordValue>> expiredEvents =
         jobRecords(JobIntent.TIMED_OUT)
