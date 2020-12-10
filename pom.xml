@@ -44,7 +44,7 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.0</elasticsearch.log4j.version>
     <guava.version>30.0-jre</guava.version>
-    <spring.version>5.3.1</spring.version>
+    <spring.version>5.3.2</spring.version>
     <mockito.version>3.6.28</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
