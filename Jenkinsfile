@@ -69,6 +69,9 @@ pipeline {
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    container('golang') {
+                        sh '.ci/scripts/distribution/build-go.sh'
+                    }
                     runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
                     container('maven') {
                         sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
@@ -123,10 +126,6 @@ pipeline {
                 stage('Test (Go)') {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            container('golang') {
-                                sh '.ci/scripts/distribution/build-go.sh'
-                            }
-
                             container('golang') {
                                 sh '.ci/scripts/distribution/test-go.sh'
                             }
