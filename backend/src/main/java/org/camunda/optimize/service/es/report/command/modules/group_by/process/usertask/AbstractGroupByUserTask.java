@@ -50,4 +50,5 @@ public abstract class AbstractGroupByUserTask extends GroupByPart<ProcessReportD
     return Optional.ofNullable(response.getAggregations())
       .map(aggs -> aggs.get(USER_TASKS_AGGREGATION));
   }
+
 }

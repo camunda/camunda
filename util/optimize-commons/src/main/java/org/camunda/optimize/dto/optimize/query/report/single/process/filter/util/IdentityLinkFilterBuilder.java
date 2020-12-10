@@ -26,14 +26,13 @@ public class IdentityLinkFilterBuilder {
   private List<String> values = new ArrayList<>();
   private Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
   private ProcessFilterBuilder filterBuilder;
-  private FilterApplicationLevel filterLevel;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private IdentityLinkFilterBuilder(
     ProcessFilterBuilder processFilterBuilder,
     Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator) {
     this.filterBuilder = processFilterBuilder;
     this.filterCreator = filterCreator;
-    this.filterLevel = FilterApplicationLevel.INSTANCE;
   }
 
   public static IdentityLinkFilterBuilder constructAssigneeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -94,22 +95,29 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   private void addMissingGroupByResults(final Map<String, String> userTaskNames,
                                         final List<GroupByResult> groupedData,
                                         final ExecutionContext<ProcessReportDataDto> context) {
-    // enrich data user tasks that haven't been executed, but should still show up in the result (limited by
-    // ESBucketLimit)
-    final int bucketLimit = configurationService.getEsAggregationBucketLimit();
-    userTaskNames.keySet().forEach(userTaskKey -> {
-      if (groupedData.size() < bucketLimit) {
-        GroupByResult emptyResult;
-        if (distributedByPart instanceof ProcessDistributedByNone) {
-          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
-        } else {
-          // Add empty result for each missing bucket
-          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
+    final boolean viewLevelFilterExists = context.getReportData()
+      .getFilter()
+      .stream()
+      .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
+    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // omitted by the filters
+    if (!viewLevelFilterExists) {
+      // If no view level filter exists, we enrich the user task data with user tasks that may not have been executed,
+      // but should still show up in the result (limited by ESBucketLimit)
+      userTaskNames.keySet().forEach(userTaskKey -> {
+        if (groupedData.size() < configurationService.getEsAggregationBucketLimit()) {
+          GroupByResult emptyResult;
+          if (distributedByPart instanceof ProcessDistributedByNone) {
+            emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
+          } else {
+            // Add empty result for each missing bucket
+            emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
+          }
+          emptyResult.setLabel(userTaskNames.get(userTaskKey));
+          groupedData.add(emptyResult);
         }
-        emptyResult.setLabel(userTaskNames.get(userTaskKey));
-        groupedData.add(emptyResult);
-      }
-    });
+      });
+    }
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {

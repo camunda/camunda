@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -93,7 +93,6 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
@@ -136,9 +135,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
         // ensure missing identity bucket is excluded if its empty
         final boolean resultIsEmpty = singleResult.isEmpty()
           || singleResult.stream()
-          .allMatch(
-            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber() == 0.0
-          );
+          .allMatch(result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber() == 0.0);
         if (!resultIsEmpty) {
           groupedData.add(GroupByResult.createGroupByResult(
             localizationService.getDefaultLocaleMessageForMissingAssigneeLabel(),

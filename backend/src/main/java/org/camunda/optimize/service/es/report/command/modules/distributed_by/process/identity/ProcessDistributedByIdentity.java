@@ -29,8 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
@@ -129,7 +129,8 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       .map(identityBucket -> identityBucket.getKeyAsString().equals(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)
         ? localizationService.getDefaultLocaleMessageForMissingAssigneeLabel()
         : identityBucket.getKeyAsString())
-      .collect(toSet());
+      .collect(Collectors.toSet());
     context.setAllDistributedByKeys(allDistributedByIdentityKeys);
   }
+
 }

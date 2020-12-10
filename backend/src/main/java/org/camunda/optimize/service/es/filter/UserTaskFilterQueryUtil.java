@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -45,14 +46,13 @@ public class UserTaskFilterQueryUtil {
     // it's possible to do report evaluations over several definitions versions. However, only the most recent
     // one is used to decide which user tasks should be taken into account. To make sure that we only fetch assignees
     // related to this definition version we filter for user tasks that only occur in the latest version.
-    addUserTaskIdFilter(filterBoolQuery, userTaskIds);
+    filterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
 
     return filterBoolQuery;
   }
 
   public static BoolQueryBuilder createUserTaskAggregationFilter(final ProcessReportDataDto reportDataDto) {
     final BoolQueryBuilder filterBoolQuery = boolQuery();
-
     final FlowNodeExecutionState flowNodeExecutionState = reportDataDto.getConfiguration().getFlowNodeExecutionState();
     addExecutionStateFilter(
       filterBoolQuery,
@@ -61,18 +61,13 @@ public class UserTaskFilterQueryUtil {
     );
     addAssigneeFilter(filterBoolQuery, reportDataDto);
     addCandidateGroupFilter(filterBoolQuery, reportDataDto);
-
     return filterBoolQuery;
-  }
-
-  private static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                          final Set<String> userTaskIds) {
-    userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
 
   private static void addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                         final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(AssigneeFilterDto.class::isInstance)
+      .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createAssigneeFilterQuery(addAssigneeFilter)));
   }
@@ -80,6 +75,7 @@ public class UserTaskFilterQueryUtil {
   private static void addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                               final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(CandidateGroupFilterDto.class::isInstance)
+      .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(addAssigneeFilter)));
   }

@@ -150,16 +150,12 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       // Nest the distributed by part to ensure the aggregation is on flownode level
       return nested(NESTED_FLOWNODE_AGGREGATION, EVENTS)
         .subAggregation(distributedByPart.createAggregation(context));
-    } else {
-      return distributedByPart.createAggregation(context);
     }
+    return distributedByPart.createAggregation(context);
   }
 
   private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<Data> context) {
-    return filter(
-      MISSING_VARIABLES_AGGREGATION,
-      getVariableUndefinedOrNullQuery(context)
-    )
+    return filter(MISSING_VARIABLES_AGGREGATION, getVariableUndefinedOrNullQuery(context))
       .subAggregation(createDistributedBySubAggregation(context));
   }
 
@@ -235,9 +231,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     final ReverseNested filteredInstAggr = filteredVariables.getAggregations()
       .get(FILTERED_INSTANCE_COUNT_AGGREGATION);
-    final long filteredProcInstCount = filteredInstAggr.getDocCount();
-
-    if (response.getHits().getTotalHits().value > filteredProcInstCount) {
+    if (response.getHits().getTotalHits().value > filteredInstAggr.getDocCount()) {
       final List<DistributedByResult> missingVarsOperationResult =
         distributedByPart.retrieveResult(
           response,

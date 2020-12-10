@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -19,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -40,6 +40,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1049,52 +1051,44 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
   }
 
-  public static Stream<Arguments> assigneeFilterScenarios() {
+  public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN,
-        new String[]{SECOND_USER},
+        IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder()
-          .put(USER_TASK_2, Lists.newArrayList(Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
-          .put(USER_TASK_1, Lists.newArrayList(Pair.of(SECOND_CANDIDATE_GROUP, null)))
+          .put(USER_TASK_2, Collections.singletonList(Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
           .build()
-
       ),
       Arguments.of(
-        IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
         ImmutableMap.builder()
           .put(
             USER_TASK_1,
-            Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null))
           )
           .put(
             USER_TASK_2,
-            Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
           )
           .build()
       ),
       Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
+        NOT_IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder()
-          .put(USER_TASK_1, Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, 10.)))
-          .put(USER_TASK_2, Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, null)))
+          .put(USER_TASK_1, Collections.singletonList(Pair.of(FIRST_CANDIDATE_GROUP, 10.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        ImmutableMap.builder().put(USER_TASK_1, Lists.newArrayList()).put(USER_TASK_2, Lists.newArrayList()).build()
-      )
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyMap())
     );
   }
 
   @ParameterizedTest
-  @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final FilterOperator filterOperator,
-                                                                   final String[] filterValues,
-                                                                   final Map<String, List<Pair<String, Double>>> expectedResult) {
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(
+    final FilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Pair<String, Double>>> expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
@@ -1104,12 +1098,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(
-      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
+
     changeDuration(processInstanceDto, USER_TASK_1, 10.);
     changeDuration(processInstanceDto, USER_TASK_2, 10.);
 
@@ -1117,16 +1110,16 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(assigneeFilter);
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
-      // we don't care about the instance count here so we just take it from the result
-      .processInstanceCount(actualResult.getInstanceCount())
-      .processInstanceCountWithoutFilters(actualResult.getInstanceCountWithoutFilters());
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(1);
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -1138,54 +1131,141 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     hyperMapAsserter.doAssert(actualResult);
   }
 
-  public static Stream<Arguments> candidateGroupFilterScenarios() {
+  public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
+        IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder()
-          .put(USER_TASK_2, Lists.newArrayList(Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
-          .put(USER_TASK_1, Lists.newArrayList(Pair.of(SECOND_CANDIDATE_GROUP, null)))
+          .put(USER_TASK_1, Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null)))
+          .put(USER_TASK_2, Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
           .build()
-
       ),
       Arguments.of(
-        IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
+        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
         ImmutableMap.builder()
           .put(
             USER_TASK_1,
-            Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 15.), Pair.of(SECOND_CANDIDATE_GROUP, null))
           )
           .put(
             USER_TASK_2,
-            Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 30.), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
           )
           .build()
       ),
       Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
+        NOT_IN, new String[]{SECOND_USER}, 2L,
         ImmutableMap.builder()
-          .put(USER_TASK_1, Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, 10.)))
-          .put(USER_TASK_2, Lists.newArrayList(Pair.of(FIRST_CANDIDATE_GROUP, null)))
+          .put(
+            USER_TASK_1,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 15.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+          )
+          .put(
+            USER_TASK_2,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 30.), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+          )
           .build()
       ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        ImmutableMap.builder().put(USER_TASK_1, Lists.newArrayList()).put(USER_TASK_2, Lists.newArrayList()).build()
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, ImmutableMap.builder()
+        .put(USER_TASK_1, Collections.emptyList())
+        .put(USER_TASK_2, Collections.emptyList())
+        .build()
       )
     );
   }
 
   @ParameterizedTest
-  @MethodSource("candidateGroupFilterScenarios")
-  // @formatter:off
-  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
-                                                                               final String[] filterValues,
-                                                                               final Map<String, List<Pair<String, Double>>> expectedResult) {
-    // @formatter:on
+  @MethodSource("instanceLevelAssigneeFilterScenarios")
+  public void instanceLevelFilterByAssigneeOnlyIncludesUserTaskForInstancesWithThatAssignee(
+    final FilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Pair<String, Double>>> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+
+    changeDuration(firstInstance, USER_TASK_1, 10.);
+    changeDuration(firstInstance, USER_TASK_2, 10.);
+    changeDuration(secondInstance, USER_TASK_1, 20.);
+    changeDuration(secondInstance, USER_TASK_2, 30.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(assigneeFilter);
+    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(2);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCountPair ->
+          groupByAdder.distributedByContains(candidateGroupAndCountPair.getKey(), candidateGroupAndCountPair.getValue())
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
+  }
+
+  public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
+        ImmutableMap.builder()
+          .put(USER_TASK_2, Collections.singletonList(Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
+          .build()
+      ),
+      Arguments.of(
+        IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L,
+        ImmutableMap.builder()
+          .put(
+            USER_TASK_1,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+          )
+          .put(
+            USER_TASK_2,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+          )
+          .build()
+      ),
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
+        ImmutableMap.builder().put(USER_TASK_1, Collections.singletonList(Pair.of(FIRST_CANDIDATE_GROUP, 10.)))
+          .build()
+      ),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyMap())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(
+    final FilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Pair<String, Double>>> expectedResult) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
@@ -1194,6 +1274,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
+
     changeDuration(processInstanceDto, USER_TASK_1, 10.);
     changeDuration(processInstanceDto, USER_TASK_2, 10.);
 
@@ -1201,16 +1282,113 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
-      // we don't care about the instance counts here so we just take it from the result
-      .processInstanceCount(actualResult.getInstanceCount())
-      .processInstanceCountWithoutFilters(actualResult.getInstanceCountWithoutFilters());
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(1);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCountPair ->
+          groupByAdder.distributedByContains(candidateGroupAndCountPair.getKey(), candidateGroupAndCountPair.getValue())
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
+  }
+
+  public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
+        ImmutableMap.builder()
+          .put(USER_TASK_1, Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 10.), Pair.of(SECOND_CANDIDATE_GROUP, null)))
+          .put(USER_TASK_2, Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, null), Pair.of(SECOND_CANDIDATE_GROUP, 10.)))
+          .build()
+      ),
+      Arguments.of(
+        IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L,
+        ImmutableMap.builder()
+          .put(
+            USER_TASK_1,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 15.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+          )
+          .put(
+            USER_TASK_2,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 30.), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+          )
+          .build()
+      ),
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 2L,
+        ImmutableMap.builder()
+          .put(
+            USER_TASK_1,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 15.), Pair.of(SECOND_CANDIDATE_GROUP, null))
+          )
+          .put(
+            USER_TASK_2,
+            Arrays.asList(Pair.of(FIRST_CANDIDATE_GROUP, 30.), Pair.of(SECOND_CANDIDATE_GROUP, 10.))
+          )
+          .build()
+      ),
+      Arguments.of(
+        NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L,
+        ImmutableMap.builder()
+          .put(USER_TASK_1, Collections.emptyList())
+          .put(USER_TASK_2, Collections.emptyList())
+          .build()
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("instanceLevelCandidateGroupFilterScenarios")
+  public void instanceLevelFilterByCandidateGroupOnlyIncludesUserTaskFromInstancesWithThatCandidateGroup(
+    final FilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Pair<String, Double>>> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    changeDuration(firstInstance, USER_TASK_1, 10.);
+    changeDuration(firstInstance, USER_TASK_2, 10.);
+    changeDuration(secondInstance, USER_TASK_1, 20.);
+    changeDuration(secondInstance, USER_TASK_2, 30.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
+    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(2);
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
