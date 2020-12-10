@@ -20,6 +20,7 @@ Testing:
 * [ ] There are unit/integration tests that verify all acceptance criterias of the issue
 * [ ] New tests are written to ensure backwards compatibility with further versions
 * [ ] The behavior is tested manually
+* [ ] The change has been varified by a QA run
 * [ ] The impact of the changes is verified by a benchmark 
 
 Documentation: 
