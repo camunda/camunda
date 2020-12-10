@@ -8,6 +8,7 @@ package org.camunda.optimize.test.it.extension;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.junit.jupiter.api.extension.Extension;
 
 import java.sql.Connection;
@@ -25,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
 
 /**
  * Engine Database Extension
@@ -399,7 +398,7 @@ public class EngineDatabaseExtension implements Extension {
       "AND OPERATION_TYPE_ = 'add'";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
-    statement.setString(2, IDENTITY_LINK_TYPE_ASSIGNEE);
+    statement.setString(2, IdentityLinkLogType.ASSIGNEE.getId());
     statement.setString(3, taskId);
     statement.executeUpdate();
     connection.commit();
@@ -597,7 +596,7 @@ public class EngineDatabaseExtension implements Extension {
       "ID_ IN (SELECT ID_ FROM ACT_HI_IDENTITYLINK ORDER BY TIMESTAMP_ DESC LIMIT 2)";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
-    statement.setString(2, IDENTITY_LINK_TYPE_ASSIGNEE);
+    statement.setString(2, IdentityLinkLogType.ASSIGNEE.getId());
     statement.executeUpdate();
     connection.commit();
   }

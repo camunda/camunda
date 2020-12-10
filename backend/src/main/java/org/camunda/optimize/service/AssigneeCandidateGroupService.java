@@ -6,10 +6,12 @@
 package org.camunda.optimize.service;
 
 
+import com.google.common.collect.Sets;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -23,8 +25,10 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
 @RequiredArgsConstructor
@@ -64,6 +68,15 @@ public class AssigneeCandidateGroupService {
                                                                   @NonNull final String searchString,
                                                                   final int maxResults) {
     return searchForIdentitiesAsUser(userId, searchString, CANDIDATE_GROUP_IDENTITY_TYPES, maxResults);
+  }
+
+  public void addIdentitiesIfNotPresent(final Set<IdentityDto> identities) {
+    final Set<IdentityDto> identitiesInCache = identityCacheService.getIdentities(identities)
+      .stream().map(IdentityWithMetadataResponseDto::toIdentityDto).collect(toSet());
+    final Sets.SetView<IdentityDto> identitiesToSync = Sets.difference(identities, identitiesInCache);
+    if (!identitiesToSync.isEmpty()) {
+      identityCacheService.resolveAndAddIdentities(identitiesToSync);
+    }
   }
 
   private IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,

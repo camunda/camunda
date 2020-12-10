@@ -27,7 +27,7 @@ public class IdentityLinkLogEntryDto implements OptimizeDto {
   @JsonIgnore
   private String engine;
 
-  private String type;
+  private IdentityLinkLogType type;
   private String userId;
   private String groupId;
   private String taskId;

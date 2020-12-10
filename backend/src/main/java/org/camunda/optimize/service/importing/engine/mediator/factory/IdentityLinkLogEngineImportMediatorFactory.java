@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.EngineImportMediator;
@@ -25,13 +26,16 @@ import java.util.List;
 @Component
 public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMediatorFactory {
   private final IdentityLinkLogWriter identityLinkLogWriter;
+  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   public IdentityLinkLogEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
-                                                    final IdentityLinkLogWriter identityLinkLogWriter) {
+                                                    final IdentityLinkLogWriter identityLinkLogWriter,
+                                                    final AssigneeCandidateGroupService assigneeCandidateGroupService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.identityLinkLogWriter = identityLinkLogWriter;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
   }
 
   @Override
@@ -50,9 +54,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
       importIndexHandlerRegistry.getIdentityLinkImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(IdentityLinkLogInstanceFetcher.class, engineContext),
       new IdentityLinkLogImportService(
-        identityLinkLogWriter,
-        elasticsearchImportJobExecutor,
-        engineContext
+        identityLinkLogWriter, assigneeCandidateGroupService, elasticsearchImportJobExecutor, engineContext
       ),
       configurationService,
       new BackoffCalculator(configurationService)

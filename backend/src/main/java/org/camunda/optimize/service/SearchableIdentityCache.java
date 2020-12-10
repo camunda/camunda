@@ -52,28 +52,31 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.lucene.search.SortField.STRING_LAST;
 
 @Slf4j
 public class SearchableIdentityCache implements AutoCloseable {
-  private final long maxEntryLimit;
+  private final Supplier<Long> maxEntryLimitSupplier;
   private final ByteBuffersDirectory memoryDirectory;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
 
   private final AtomicLong entryCount = new AtomicLong(0);
 
   @SneakyThrows(IOException.class)
-  public SearchableIdentityCache(final long maxEntryLimit) {
-    this.maxEntryLimit = maxEntryLimit;
+  public SearchableIdentityCache(final Supplier<Long> maxEntryLimitSupplier) {
+    this.maxEntryLimitSupplier = maxEntryLimitSupplier;
     this.memoryDirectory = new ByteBuffersDirectory();
     // this is needed for the directory to be accessible by a reader in cases where no write has happened yet
     new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer())).close();
@@ -128,6 +131,39 @@ public class SearchableIdentityCache implements AutoCloseable {
 
   public Optional<GroupDto> getGroupIdentityById(final String id) {
     return getTypedIdentityDtoById(id, IdentityType.GROUP, SearchableIdentityCache::mapDocumentToGroupDto);
+  }
+
+  public Set<IdentityWithMetadataResponseDto> getIdentities(final Set<IdentityDto> identities) {
+    final Set<IdentityWithMetadataResponseDto> result = new HashSet<>(identities.size());
+    doWithReadLock(() -> {
+      try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
+        final IndexSearcher searcher = new IndexSearcher(indexReader);
+
+        final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
+        identities.forEach(identity -> {
+          final BooleanQuery.Builder entryFilter = new BooleanQuery.Builder();
+          entryFilter.add(
+            new TermQuery(new Term(IdentityDto.Fields.id, identity.getId())),
+            BooleanClause.Occur.MUST
+          );
+          entryFilter.add(
+            new TermQuery(new Term(IdentityDto.Fields.type, identity.getType().name())),
+            BooleanClause.Occur.MUST
+          );
+          searchBuilder.add(entryFilter.build(), BooleanClause.Occur.SHOULD);
+        });
+
+        final TopDocs topDocs = searcher.search(searchBuilder.build(), identities.size());
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+          final Document document = searcher.doc(scoreDoc.doc);
+          final IdentityWithMetadataResponseDto identityRestDto = mapDocumentToIdentityDto(document);
+          result.add(identityRestDto);
+        }
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed searching for identities by id.", e);
+      }
+    });
+    return result;
   }
 
   public IdentitySearchResultResponseDto searchIdentities(final String terms) {
@@ -213,7 +249,7 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   private void enforceMaxEntryLimit(int newRecordCount) {
-    if (entryCount.get() + newRecordCount > maxEntryLimit) {
+    if (entryCount.get() + newRecordCount > maxEntryLimitSupplier.get()) {
       throw new MaxEntryLimitHitException();
     }
   }

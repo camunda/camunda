@@ -34,7 +34,7 @@ public class SearchableIdentityCacheTest {
 
   @BeforeEach
   public void before() {
-    cache = new SearchableIdentityCache(200_000L);
+    cache = new SearchableIdentityCache(() -> 200_000L);
 
     // some unexpected identities, so never use z in test data :)
     cache.addIdentity(new UserDto("zzz", "zzz", "zzz", "zzz"));
@@ -254,14 +254,14 @@ public class SearchableIdentityCacheTest {
 
   @Test
   public void failOnLimitHitAddSingleEntry() {
-    cache = new SearchableIdentityCache(1L);
+    cache = new SearchableIdentityCache(() -> 1L);
     cache.addIdentity(new GroupDto("xxxx", "xxxx", 5L));
     assertThrows(MaxEntryLimitHitException.class, () -> cache.addIdentity(new GroupDto("zzzz", "zzzz", 5L)));
   }
 
   @Test
   public void failOnLimitHitAddEntryBatch() {
-    cache = new SearchableIdentityCache(1L);
+    cache = new SearchableIdentityCache(() -> 1L);
     cache.addIdentities(Lists.newArrayList(new GroupDto("xxxx", "xxxx", 5L)));
     assertThrows(
       MaxEntryLimitHitException.class,

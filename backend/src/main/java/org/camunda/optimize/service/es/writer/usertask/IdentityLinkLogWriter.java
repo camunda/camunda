@@ -12,6 +12,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -22,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
@@ -37,8 +37,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
-import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
-import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_TYPE_CANDIDATE;
 
 @Component
 @Slf4j
@@ -53,19 +51,19 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
   }
 
   public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
-    String importItemName = "identity link logs";
+    final String importItemName = "identity link logs";
     log.debug("Writing [{}] {} to ES.", identityLinkLogs.size(), importItemName);
 
     final Map<String, List<IdentityLinkLogEntryDto>> identityLinksByTaskId = identityLinkLogs.stream()
       // we need to group by concurrent to make sure that the order is preserved
       .collect(groupingByConcurrent(IdentityLinkLogEntryDto::getTaskId));
 
-    List<UserTaskInstanceDto> userTaskInstances = new ArrayList<>();
+    final List<UserTaskInstanceDto> userTaskInstances = new ArrayList<>();
     for (List<IdentityLinkLogEntryDto> identityLinkLogEntryDtoList : identityLinksByTaskId.values()) {
       final IdentityLinkLogEntryDto firstOperationEntry = identityLinkLogEntryDtoList.get(0);
-      List<AssigneeOperationDto> assigneeOperations = mapToAssigneeOperationDtos(identityLinkLogEntryDtoList);
-      List<CandidateGroupOperationDto> candidateGroupOperations = mapToCandidateGroupOperationDtos(
-        identityLinkLogEntryDtoList);
+      final List<AssigneeOperationDto> assigneeOperations = mapToAssigneeOperationDtos(identityLinkLogEntryDtoList);
+      final List<CandidateGroupOperationDto> candidateGroupOperations =
+        mapToCandidateGroupOperationDtos(identityLinkLogEntryDtoList);
       userTaskInstances.add(new UserTaskInstanceDto(
         firstOperationEntry.getTaskId(),
         firstOperationEntry.getProcessInstanceId(),
@@ -96,9 +94,10 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
     ElasticsearchWriterUtil.executeImportRequestsAsBulk(importItemName, importRequests);
   }
 
-  private List<CandidateGroupOperationDto> mapToCandidateGroupOperationDtos(List<IdentityLinkLogEntryDto> identityLinkLogs) {
+  private List<CandidateGroupOperationDto> mapToCandidateGroupOperationDtos(
+    final List<IdentityLinkLogEntryDto> identityLinkLogs) {
     return identityLinkLogs.stream()
-      .filter(entry -> Objects.equals(IDENTITY_LINK_TYPE_CANDIDATE, entry.getType()))
+      .filter(entry -> IdentityLinkLogType.CANDIDATE.equals(entry.getType()))
       .map(logEntry -> new CandidateGroupOperationDto(
         logEntry.getId(),
         logEntry.getGroupId(),
@@ -108,9 +107,10 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
       .collect(Collectors.toList());
   }
 
-  private List<AssigneeOperationDto> mapToAssigneeOperationDtos(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
+  private List<AssigneeOperationDto> mapToAssigneeOperationDtos(
+    final List<IdentityLinkLogEntryDto> identityLinkLogs) {
     return identityLinkLogs.stream()
-      .filter(entry -> IDENTITY_LINK_TYPE_ASSIGNEE.equals(entry.getType()))
+      .filter(entry -> IdentityLinkLogType.ASSIGNEE.equals(entry.getType()))
       .map(logEntry -> new AssigneeOperationDto(
         logEntry.getId(),
         logEntry.getUserId(),

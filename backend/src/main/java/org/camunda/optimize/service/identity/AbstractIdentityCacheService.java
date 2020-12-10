@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.identity;
 
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -30,6 +31,7 @@ import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public abstract class AbstractIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
@@ -48,7 +50,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     this.identitySyncConfigurationSupplier = identitySyncConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
-    this.activeIdentityCache = new SearchableIdentityCache(this.getIdentitySyncConfiguration().getMaxEntryLimit());
+    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getIdentitySyncConfiguration().getMaxEntryLimit());
   }
 
   public IdentitySyncConfiguration getIdentitySyncConfiguration() {
@@ -137,7 +139,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   public synchronized void synchronizeIdentities() {
     try {
       final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache(
-        getIdentitySyncConfiguration().getMaxEntryLimit()
+        () -> getIdentitySyncConfiguration().getMaxEntryLimit()
       );
       populateCache(newIdentityCache);
       replaceActiveCache(newIdentityCache);
@@ -175,6 +177,10 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     return activeIdentityCache.getGroupIdentityById(id);
   }
 
+  public Set<IdentityWithMetadataResponseDto> getIdentities(final Set<IdentityDto> identities) {
+    return activeIdentityCache.getIdentities(identities);
+  }
+
   public IdentitySearchResultResponseDto searchIdentities(final String terms, final int resultLimit) {
     return activeIdentityCache.searchIdentities(terms, resultLimit);
   }
@@ -210,11 +216,15 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     previousIdentityCache.close();
   }
 
-  private synchronized void resetCache() {
+  synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
-      activeIdentityCache = new SearchableIdentityCache(getIdentitySyncConfiguration().getMaxEntryLimit());
+      activeIdentityCache = new SearchableIdentityCache(() -> getIdentitySyncConfiguration().getMaxEntryLimit());
     }
+  }
+
+  protected SearchableIdentityCache getActiveIdentityCache() {
+    return activeIdentityCache;
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
