@@ -28,7 +28,7 @@ const props = {
   reports: [{id: 'reportA'}],
 };
 
-jest.mock('debounce', () => (fn) => fn);
+jest.mock('debouncePromise', () => () => (fn) => fn());
 jest.mock('./service', () => ({getVariableValues: jest.fn().mockReturnValue([])}));
 
 beforeEach(() => {

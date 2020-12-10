@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import debounce from 'debounce';
 import classnames from 'classnames';
 import deepEqual from 'deep-equal';
 
@@ -13,11 +12,14 @@ import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'comp
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import debouncePromise from 'debouncePromise';
 
 import {loadEvents, isNonTimerEvent} from './service';
 import EventsSources from './EventsSources';
 
 import './EventTable.scss';
+
+const debounceRequest = debouncePromise();
 
 const asMapping = ({group, source, eventName, eventLabel}) => ({
   group,
@@ -41,35 +43,36 @@ export default withErrorHandling(
     };
 
     async componentDidMount() {
-      this.loadEvents(this.state.searchQuery);
+      this.setState({events: await this.loadEvents(this.state.searchQuery)});
     }
 
     loadEvents = (searchQuery) => {
-      const {selection, xml, mappings, eventSources} = this.props;
+      return new Promise((resolve) => {
+        const {selection, xml, mappings, eventSources} = this.props;
 
-      this.setState({events: null});
+        this.setState({events: null});
 
-      let payload = {eventSources};
-      if (
-        !this.camundaSourcesAdded() &&
-        this.state.showSuggested &&
-        this.getNumberOfPotentialMappings(selection)
-      ) {
-        payload = {
-          targetFlowNodeId: selection.id,
-          xml,
-          mappings,
-          eventSources,
-        };
-      }
+        let payload = {eventSources};
+        if (
+          !this.camundaSourcesAdded() &&
+          this.state.showSuggested &&
+          this.getNumberOfPotentialMappings(selection)
+        ) {
+          payload = {
+            targetFlowNodeId: selection.id,
+            xml,
+            mappings,
+            eventSources,
+          };
+        }
 
-      this.props.mightFail(
-        loadEvents(payload, searchQuery, this.state.sorting),
-        (events) => this.setState({events}),
-        showError
-      );
+        this.props.mightFail(
+          loadEvents(payload, searchQuery, this.state.sorting),
+          resolve,
+          showError
+        );
+      });
     };
-    loadEventsDebounced = debounce(this.loadEvents, 300);
 
     getNumberOfPotentialMappings = (node) => {
       if (!node) {
@@ -102,12 +105,13 @@ export default withErrorHandling(
       }
     };
 
-    searchFor = (searchQuery) => {
+    searchFor = async (searchQuery) => {
       this.setState({searchQuery, events: null});
-      this.loadEventsDebounced(searchQuery);
+      const events = await debounceRequest(this.loadEvents, 300, searchQuery);
+      this.setState({events});
     };
 
-    componentDidUpdate(prevProps, prevState) {
+    async componentDidUpdate(prevProps, prevState) {
       this.updateTableAfterSelectionChange(prevProps);
       if (prevState.events === null && this.state.events !== null) {
         this.scrollToSelectedElement();
@@ -117,11 +121,11 @@ export default withErrorHandling(
         prevProps.eventSources !== this.props.eventSources ||
         prevState.sorting !== this.state.sorting
       ) {
-        this.loadEvents(this.state.searchQuery);
+        this.setState({events: await this.loadEvents(this.state.searchQuery)});
       }
     }
 
-    updateTableAfterSelectionChange = (prevProps) => {
+    updateTableAfterSelectionChange = async (prevProps) => {
       const {selection} = this.props;
       const {showSuggested, searchQuery} = this.state;
 
@@ -133,7 +137,7 @@ export default withErrorHandling(
 
       if (selectionMade || selectionChanged || selectionCleared) {
         if (!this.camundaSourcesAdded() && showSuggested) {
-          this.loadEvents(searchQuery);
+          this.setState({events: await this.loadEvents(searchQuery)});
         } else {
           this.scrollToSelectedElement();
         }
@@ -185,7 +189,9 @@ export default withErrorHandling(
               disabled={this.camundaSourcesAdded()}
               checked={!this.camundaSourcesAdded() && showSuggested}
               onChange={({target: {checked}}) =>
-                this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
+                this.setState({showSuggested: checked}, async () =>
+                  this.setState({events: await this.loadEvents(searchQuery)})
+                )
               }
               title={this.camundaSourcesAdded() ? t('events.table.noSuggestionsMessage') : ''}
               label={t('events.table.showSuggestions')}

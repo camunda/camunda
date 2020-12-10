@@ -5,17 +5,19 @@
  */
 
 import React from 'react';
-import debounce from 'debounce';
 import classnames from 'classnames';
 
 import {ButtonGroup, Button, Checklist, Input, Icon} from 'components';
 import {t} from 'translation';
+import debouncePromise from 'debouncePromise';
 
 import ValueListInput from '../ValueListInput';
 
 import './StringInput.scss';
 
 const valuesToLoad = 10;
+
+const debounceRequest = debouncePromise();
 
 export default class StringInput extends React.Component {
   static defaultFilter = {operator: 'in', values: []};
@@ -34,7 +36,6 @@ export default class StringInput extends React.Component {
 
   reset() {
     this.props.setValid(this.props.filter.values.length > 0);
-    this.setState({loading: true});
     this.loadAvailableValues();
   }
 
@@ -48,49 +49,55 @@ export default class StringInput extends React.Component {
     }
   }
 
-  loadAvailableValues = debounce(async (more) => {
-    const values = await this.props.config.getValues(
-      this.props.variable.id || this.props.variable.name,
-      this.props.variable.type,
-      this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
-      this.state.valueFilter
-    );
+  loadAvailableValues = async (more) => {
+    this.setState({loading: true});
 
-    const numberOfUnselectedValuesToDisplay =
-      this.state.numberOfUnselectedValuesToDisplay + (more ? valuesToLoad : 0);
+    const stateUpdate = await debounceRequest(async () => {
+      const values = await this.props.config.getValues(
+        this.props.variable.id || this.props.variable.name,
+        this.props.variable.type,
+        this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
+        this.state.valueFilter
+      );
 
-    // create a sorted array of all values that should be displayed
-    const availableValues = values
-      .slice(0, numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length)
-      .sort();
+      const numberOfUnselectedValuesToDisplay =
+        this.state.numberOfUnselectedValuesToDisplay + (more ? valuesToLoad : 0);
 
-    const valuesAreComplete =
-      values.length <
-      this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
+      // create a sorted array of all values that should be displayed
+      const availableValues = values
+        .slice(0, numberOfUnselectedValuesToDisplay + this.selectedAvailableValues(values).length)
+        .sort();
 
-    // Custom values are values that appear in this.props.filter.values, but are never returned as available value from the backend.
-    // These are values the customer can add before they appear in the process. We need to manually add them to the list of
-    // available values. For that, we need to check the alphabetically biggest value that we display in the Checklist. If we
-    // find a value in the filter values array that should be there but is not, we add it to the available values.
-    const maxAvailableValue = availableValues[availableValues.length - 1];
-    const sortedAddedValues = [...this.props.filter.values].sort();
+      const valuesAreComplete =
+        values.length <
+        this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
 
-    sortedAddedValues.forEach((value) => {
-      if ((value < maxAvailableValue || valuesAreComplete) && !availableValues.includes(value)) {
-        availableValues.push(value);
-      }
-    });
+      // Custom values are values that appear in this.props.filter.values, but are never returned as available value from the backend.
+      // These are values the customer can add before they appear in the process. We need to manually add them to the list of
+      // available values. For that, we need to check the alphabetically biggest value that we display in the Checklist. If we
+      // find a value in the filter values array that should be there but is not, we add it to the available values.
+      const maxAvailableValue = availableValues[availableValues.length - 1];
+      const sortedAddedValues = [...this.props.filter.values].sort();
 
-    availableValues.sort();
+      sortedAddedValues.forEach((value) => {
+        if ((value < maxAvailableValue || valuesAreComplete) && !availableValues.includes(value)) {
+          availableValues.push(value);
+        }
+      });
 
-    this.setState({
-      availableValues: [null, ...availableValues],
-      valuesLoaded: availableValues.length,
-      numberOfUnselectedValuesToDisplay,
-      valuesAreComplete,
-      loading: false,
-    });
-  }, 300);
+      availableValues.sort();
+
+      return {
+        availableValues: [null, ...availableValues],
+        valuesLoaded: availableValues.length,
+        numberOfUnselectedValuesToDisplay,
+        valuesAreComplete,
+        loading: false,
+      };
+    }, 300);
+
+    this.setState({...stateUpdate, loading: false});
+  };
 
   selectedAvailableValues = (availableValues) => {
     return availableValues.filter((value) => this.props.filter.values.includes(value));
@@ -120,7 +127,6 @@ export default class StringInput extends React.Component {
 
   loadMore = (evt) => {
     evt.preventDefault();
-    this.setState({loading: true});
     this.loadAvailableValues(true);
   };
 
@@ -131,7 +137,6 @@ export default class StringInput extends React.Component {
         valueFilter,
         valuesLoaded: queryIncluded ? this.props.filter.values.length : 0,
         numberOfUnselectedValuesToDisplay: valuesToLoad,
-        loading: true,
       },
       this.loadAvailableValues
     );

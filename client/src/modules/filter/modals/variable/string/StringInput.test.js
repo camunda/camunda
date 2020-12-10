@@ -11,7 +11,7 @@ import {Button, Input} from 'components';
 
 import StringInput from './StringInput';
 
-jest.mock('debounce', () => (foo) => foo);
+jest.mock('debouncePromise', () => () => (fn) => fn());
 
 const props = {
   processDefinitionKey: 'procDefKey',

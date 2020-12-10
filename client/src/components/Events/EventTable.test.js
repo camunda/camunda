@@ -34,7 +34,7 @@ jest.mock('./service', () => ({
   isNonTimerEvent: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('debounce', () => (fn) => fn);
+jest.mock('debouncePromise', () => () => (fn, delay, ...args) => fn(...args));
 
 const props = {
   selection: {id: 'a', $instanceOf: (type) => type === 'bpmn:Event'},
@@ -58,8 +58,10 @@ const props = {
 
 const defaultSorting = {by: 'group', order: 'asc'};
 
-it('should match snapshot', () => {
+it('should match snapshot', async () => {
   const node = shallow(<EventTable {...props} />);
+
+  await flushPromises();
 
   expect(node).toMatchSnapshot();
 });
@@ -71,13 +73,15 @@ it('should load events', () => {
   expect(loadEvents).toHaveBeenCalled();
 });
 
-it('should disable table if no node is selected', () => {
+it('should disable table if no node is selected', async () => {
   const node = shallow(<EventTable {...props} selection={null} />);
+
+  await flushPromises();
 
   expect(node.find(Table).prop('body')[0].props.className).toContain('disabled');
 });
 
-it('should allow searching for events', () => {
+it('should allow searching for events', async () => {
   const node = shallow(<EventTable {...props} />);
 
   node.setState({showSuggested: false});
@@ -86,6 +90,8 @@ it('should allow searching for events', () => {
 
   node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
 
+  await flushPromises();
+
   expect(loadEvents).toHaveBeenCalledWith(
     {eventSources: props.eventSources},
     'some String',
@@ -93,14 +99,18 @@ it('should allow searching for events', () => {
   );
 });
 
-it('should call callback when changing mapping', () => {
+it('should call callback when changing mapping', async () => {
   const spy = jest.fn();
   const node = shallow(<EventTable {...props} onMappingChange={spy} />);
+
+  await flushPromises();
 
   node
     .find(Table)
     .prop('body')[0]
     .content[0].props.onChange({target: {checked: false}});
+
+  await flushPromises();
 
   expect(spy).toHaveBeenCalledWith(
     {
@@ -150,7 +160,7 @@ it('should not reload events if suggestions are not activated', () => {
   expect(loadEvents).not.toHaveBeenCalled();
 });
 
-it('should mark suggested events', () => {
+it('should mark suggested events', async () => {
   loadEvents.mockReturnValueOnce([
     {
       group: 'eventGroup',
@@ -170,6 +180,8 @@ it('should mark suggested events', () => {
 
   const node = shallow(<EventTable {...props} />);
 
+  await flushPromises();
+
   const events = node.find(Table).prop('body');
   expect(events[0].props.className).toContain('suggested');
   expect(events[1].props.className).not.toContain('suggested');
@@ -181,7 +193,7 @@ it('should disable events Suggestion if there are any camunda event sources', ()
   expect(node.find('Switch')).toBeDisabled();
 });
 
-it('should not show events from hidden sources in the table', () => {
+it('should not show events from hidden sources in the table', async () => {
   loadEvents.mockReturnValueOnce([
     {
       group: 'eventGroup',
@@ -204,13 +216,17 @@ it('should not show events from hidden sources in the table', () => {
     />
   );
 
+  await flushPromises();
+
   const events = node.find(Table).prop('body');
   expect(events).toHaveLength(1);
   expect(events[0].content).toContain('bookrequest');
 });
 
-it('should invoke onSelectEvent when clicking on an element', () => {
+it('should invoke onSelectEvent when clicking on an element', async () => {
   const node = shallow(<EventTable {...props} />);
+
+  await flushPromises();
 
   const events = node.find(Table).prop('body');
   events[0].props.onClick({target: {getAttribute: () => null, closest: () => null}});
@@ -224,8 +240,10 @@ it('should invoke onSelectEvent when clicking on an element', () => {
   });
 });
 
-it('should reset the selected event when clicking on the checkbox', () => {
+it('should reset the selected event when clicking on the checkbox', async () => {
   const node = shallow(<EventTable {...props} />);
+
+  await flushPromises();
 
   const events = node.find(Table).prop('body');
   events[0].props.onClick({target: {getAttribute: () => 'checkbox'}});

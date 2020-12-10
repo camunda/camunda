@@ -4,33 +4,35 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useState} from 'react';
 import classnames from 'classnames';
-import debounce from 'debounce';
 
 import {Popover, Form, Switch, Button, Icon, Typeahead} from 'components';
 import {VariablePreview} from 'filter';
 import {t} from 'translation';
 import {numberParser} from 'services';
+import debouncePromise from 'debouncePromise';
 
 import {getVariableValues} from './service';
 
 import './SelectionFilter.scss';
+
+const debounceRequest = debouncePromise();
 
 export default function SelectionFilter({filter, type, config, setFilter, reports}) {
   const [customValues, setCustomValues] = useState([]);
   const [loadingVariableValues, setLoadingVariableValues] = useState(false);
   const [variableValues, setVariableValues] = useState(['']);
 
-  const loadValues = useMemo(
-    () =>
-      debounce(async (value) => {
-        const reportIds = reports.map(({id}) => id).filter((id) => !!id);
-        setVariableValues(await getVariableValues(reportIds, config.name, config.type, 10, value));
-        setLoadingVariableValues(false);
-      }, 300),
-    [config.name, config.type, reports]
-  );
+  const loadValues = async (value) => {
+    const values = await debounceRequest(async () => {
+      const reportIds = reports.map(({id}) => id).filter((id) => !!id);
+      return await getVariableValues(reportIds, config.name, config.type, 10, value);
+    }, 300);
+
+    setVariableValues(values);
+    setLoadingVariableValues(false);
+  };
 
   function isValidValue(value) {
     if (config.type !== 'String') {

@@ -10,12 +10,7 @@ import {shallow} from 'enzyme';
 import MultiUserInput from './MultiUserInput';
 import {searchIdentities} from './service';
 
-jest.mock('debounce', () =>
-  jest.fn((fn) => {
-    fn.clear = jest.fn();
-    return fn;
-  })
-);
+jest.mock('debouncePromise', () => () => (fn) => fn());
 
 jest.mock('./service', () => ({
   searchIdentities: jest.fn().mockReturnValue({result: [], total: 50}),
@@ -27,10 +22,11 @@ it('should render a MultiSelect', () => {
   expect(node.find('MultiSelect')).toExist();
 });
 
-it('should load initial data when component is mounted', () => {
+it('should load initial data when component is mounted', async () => {
   shallow(<MultiUserInput />);
 
   runLastEffect();
+  await flushPromises();
 
   expect(searchIdentities).toHaveBeenCalledWith('');
 });
@@ -40,18 +36,9 @@ it('should enable loading while loading data and enable hasMore if there are mor
   runLastEffect();
 
   expect(node.find('MultiSelect').prop('loading')).toBe(true);
-  await node.update();
+  await flushPromises();
   expect(node.find('MultiSelect').prop('loading')).toBe(false);
   expect(node.find('MultiSelect').prop('hasMore')).toBe(true);
-});
-
-it('should enable loading if typeahead is closed while empty', async () => {
-  const node = shallow(<MultiUserInput />);
-
-  node.find('MultiSelect').prop('onSearch')('test');
-  await node.update();
-  node.find('MultiSelect').prop('onClose')();
-  expect(node.find('MultiSelect').prop('loading')).toBe(true);
 });
 
 it('should format user list information correctly', async () => {
@@ -69,7 +56,7 @@ it('should format user list information correctly', async () => {
     />
   );
   runLastEffect();
-  await node.update();
+  await flushPromises();
 
   expect(node).toMatchSnapshot();
 });
