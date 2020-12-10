@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 
@@ -18,6 +19,7 @@ import javax.validation.constraints.NotNull;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_DECISION_REPORT_STRING;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_PROCESS_REPORT_STRING;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -29,6 +31,7 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SING
 @JsonSubTypes({
   @JsonSubTypes.Type(value = SingleProcessReportDefinitionExportDto.class, name = SINGLE_PROCESS_REPORT_STRING),
   @JsonSubTypes.Type(value = SingleDecisionReportDefinitionExportDto.class, name = SINGLE_DECISION_REPORT_STRING),
+  @JsonSubTypes.Type(value = CombinedProcessReportDefinitionExportDto.class, name = COMBINED),
 })
 public abstract class OptimizeEntityExportDto {
   @NotNull

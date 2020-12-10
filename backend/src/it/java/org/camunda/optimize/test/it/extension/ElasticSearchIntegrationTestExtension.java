@@ -507,6 +507,21 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
+  public void deleteAllDocsInIndex(final IndexMappingCreator index) {
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getOptimizeIndexAliasForIndex(index))
+      .setQuery(matchAllQuery())
+      .setRefresh(true);
+
+    try {
+      getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(
+        "Could not delete all data in Index with alias " + getIndexNameService().getOptimizeIndexAliasForIndex(index),
+        e
+      );
+    }
+  }
+
   public void deleteIndexOfMapping(final IndexMappingCreator indexMapping) {
     getOptimizeElasticClient().deleteIndex(indexMapping);
   }

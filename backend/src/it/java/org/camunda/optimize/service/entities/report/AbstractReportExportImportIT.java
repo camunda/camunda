@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -30,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
@@ -40,6 +42,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -49,6 +52,10 @@ import static org.camunda.optimize.dto.optimize.query.report.single.decision.vie
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -69,6 +76,45 @@ public class AbstractReportExportImportIT extends AbstractIT {
   @SuppressWarnings(UNUSED)
   protected static Stream<ReportType> reportTypes() {
     return Stream.of(ReportType.PROCESS, ReportType.DECISION);
+  }
+
+  @SuppressWarnings(UNUSED)
+  protected static Stream<SingleDecisionReportDefinitionRequestDto> getTestDecisionReports() {
+    // A raw data report with custom table configs
+    final DecisionReportDataDto rawReport = new DecisionReportDataDto();
+    rawReport.setDecisionDefinitionKey(DEFINITION_KEY);
+    rawReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
+    rawReport.setVisualization(DecisionVisualization.TABLE);
+    final DecisionViewDto rawDataView = new DecisionViewDto();
+    rawDataView.setProperty(RAW_DATA);
+    rawReport.setView(rawDataView);
+    rawReport.getConfiguration().getTableColumns().setIncludeNewVariables(false);
+    rawReport.getConfiguration().getTableColumns().getExcludedColumns().add(DecisionInstanceDto.Fields.engine);
+
+    // A groupBy variable report with filters and custom bucket config
+    final DecisionReportDataDto groupByVarReport = new DecisionReportDataDto();
+    groupByVarReport.setDecisionDefinitionKey(DEFINITION_KEY);
+    groupByVarReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
+    final DecisionViewDto evalCountView = new DecisionViewDto();
+    evalCountView.setProperty(FREQUENCY);
+    groupByVarReport.setView(evalCountView);
+    groupByVarReport.setVisualization(DecisionVisualization.BAR);
+    final DecisionGroupByVariableValueDto variableValueDto = new DecisionGroupByVariableValueDto();
+    variableValueDto.setId("testVariableID");
+    variableValueDto.setName("testVariableName");
+    variableValueDto.setType(VariableType.INTEGER);
+    final DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
+    groupByDto.setValue(variableValueDto);
+    groupByVarReport.setGroupBy(new DecisionGroupByInputVariableDto());
+    groupByVarReport.getFilter().add(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS));
+    groupByVarReport.getConfiguration().getCustomBucket().setActive(true);
+    groupByVarReport.getConfiguration().getCustomBucket().setBaseline(500.0);
+    groupByVarReport.getConfiguration().getCustomBucket().setBucketSize(15.0);
+
+    return Stream.of(
+      createDecisionReportDefinition(rawReport),
+      createDecisionReportDefinition(groupByVarReport)
+    );
   }
 
   @SuppressWarnings(UNUSED)
@@ -125,41 +171,50 @@ public class AbstractReportExportImportIT extends AbstractIT {
   }
 
   @SuppressWarnings(UNUSED)
-  protected static Stream<SingleDecisionReportDefinitionRequestDto> getTestDecisionReports() {
-    // A raw data report with custom table configs
-    final DecisionReportDataDto rawReport = new DecisionReportDataDto();
-    rawReport.setDecisionDefinitionKey(DEFINITION_KEY);
-    rawReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
-    rawReport.setVisualization(DecisionVisualization.TABLE);
-    final DecisionViewDto rawDataView = new DecisionViewDto();
-    rawDataView.setProperty(RAW_DATA);
-    rawReport.setView(rawDataView);
-    rawReport.getConfiguration().getTableColumns().setIncludeNewVariables(false);
-    rawReport.getConfiguration().getTableColumns().getExcludedColumns().add(DecisionInstanceDto.Fields.engine);
+  protected static Stream<List<SingleProcessReportDefinitionRequestDto>> getTestCombinableReports() {
+    // a groupBy startDate report
+    final ProcessReportDataDto byStartDateData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
+      .build();
+    byStartDateData.setVisualization(ProcessVisualization.BAR);
 
-    // A groupBy variable report with filters and custom bucket config
-    final DecisionReportDataDto groupByVarReport = new DecisionReportDataDto();
-    groupByVarReport.setDecisionDefinitionKey(DEFINITION_KEY);
-    groupByVarReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
-    final DecisionViewDto evalCountView = new DecisionViewDto();
-    evalCountView.setProperty(FREQUENCY);
-    groupByVarReport.setView(evalCountView);
-    groupByVarReport.setVisualization(DecisionVisualization.BAR);
-    final DecisionGroupByVariableValueDto variableValueDto = new DecisionGroupByVariableValueDto();
-    variableValueDto.setId("testVariableID");
-    variableValueDto.setName("testVariableName");
-    variableValueDto.setType(VariableType.INTEGER);
-    final DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
-    groupByDto.setValue(variableValueDto);
-    groupByVarReport.setGroupBy(new DecisionGroupByInputVariableDto());
-    groupByVarReport.getFilter().add(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS));
-    groupByVarReport.getConfiguration().getCustomBucket().setActive(true);
-    groupByVarReport.getConfiguration().getCustomBucket().setBaseline(500.0);
-    groupByVarReport.getConfiguration().getCustomBucket().setBucketSize(15.0);
+    // a groupBy endDate report
+    final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
+      .build();
+    byEndDateData.setVisualization(ProcessVisualization.BAR);
+
+    // a userTask duration report
+    final ProcessReportDataDto userTaskDurData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .build();
+    userTaskDurData.setVisualization(ProcessVisualization.BAR);
+
+    // a flownode duration report
+    final ProcessReportDataDto flowNodeDurData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
+    flowNodeDurData.setVisualization(ProcessVisualization.BAR);
 
     return Stream.of(
-      createDecisionReportDefinition(rawReport),
-      createDecisionReportDefinition(groupByVarReport)
+      Arrays.asList(createProcessReportDefinition(byStartDateData), createProcessReportDefinition(byEndDateData)),
+      Arrays.asList(createProcessReportDefinition(userTaskDurData), createProcessReportDefinition(flowNodeDurData))
     );
   }
 
@@ -220,6 +275,11 @@ public class AbstractReportExportImportIT extends AbstractIT {
   protected static SingleDecisionReportDefinitionExportDto createExportDto(
     final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
     return new SingleDecisionReportDefinitionExportDto(reportDefToImport);
+  }
+
+  protected static CombinedProcessReportDefinitionExportDto createCombinedExportDto(
+    final CombinedReportDefinitionRequestDto reportDefToImport) {
+    return new CombinedProcessReportDefinitionExportDto(reportDefToImport);
   }
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
