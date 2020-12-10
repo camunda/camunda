@@ -11,14 +11,25 @@ import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {logger} from 'modules/logger';
 
+type FlowNodeMetaData = {
+  name: string;
+  type: {
+    elementType: string;
+    multiInstanceType?: string;
+    eventType?: string;
+  };
+};
+
 type State = {
   diagramModel: unknown;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  nodeMetaDataMap?: Map<string, FlowNodeMetaData>;
 };
 
 const DEFAULT_STATE: State = {
   diagramModel: null,
   status: 'initial',
+  nodeMetaDataMap: undefined,
 };
 
 class SingleInstanceDiagram {
@@ -68,21 +79,20 @@ class SingleInstanceDiagram {
     }
   };
 
-  handleFetchSuccess = (parsedDiagramXml: unknown) => {
+  handleFetchSuccess = (parsedDiagramXml: any) => {
     this.state.diagramModel = parsedDiagramXml;
+    this.state.nodeMetaDataMap = createNodeMetaDataMap(
+      getSelectableFlowNodes(parsedDiagramXml.bpmnElements)
+    );
     this.state.status = 'fetched';
   };
 
-  getMetaData = (activityId: string | null | undefined) => {
-    return this.nodeMetaDataMap.get(activityId);
+  getMetaData = (flowNodeInstanceId: string | null) => {
+    if (flowNodeInstanceId === null) {
+      return;
+    }
+    return this.state.nodeMetaDataMap?.get(flowNodeInstanceId);
   };
-
-  get nodeMetaDataMap() {
-    return createNodeMetaDataMap(
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'bpmnElements' does not exist on type 'ne... Remove this comment to see the full error message
-      getSelectableFlowNodes(this.state.diagramModel?.bpmnElements)
-    );
-  }
 
   get areDiagramDefinitionsAvailable() {
     const {status, diagramModel} = this.state;
@@ -108,4 +118,5 @@ class SingleInstanceDiagram {
   };
 }
 
+export type {FlowNodeMetaData};
 export const singleInstanceDiagramStore = new SingleInstanceDiagram();

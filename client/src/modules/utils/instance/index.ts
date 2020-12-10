@@ -42,8 +42,14 @@ export const getActiveIncident = (incidents = []) => {
   return activeIncident;
 };
 
-export function getWorkflowName({bpmnProcessId, workflowName}: any) {
-  return workflowName || bpmnProcessId;
+export function getWorkflowName({
+  workflowName,
+  bpmnProcessId,
+}: {
+  workflowName: string;
+  bpmnProcessId: string;
+}) {
+  return workflowName || bpmnProcessId || '';
 }
 
 export function formatGroupedWorkflows(workflows = []) {

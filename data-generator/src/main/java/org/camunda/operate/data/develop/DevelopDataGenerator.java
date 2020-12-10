@@ -5,20 +5,38 @@
  */
 package org.camunda.operate.data.develop;
 
-import javax.annotation.PostConstruct;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.worker.JobWorker;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import javax.annotation.PostConstruct;
 import org.camunda.operate.data.usertest.UserTestDataGenerator;
+import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import org.camunda.operate.schema.templates.ListViewTemplate;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.util.rest.StatefulRestTemplate;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,9 +47,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.worker.JobWorker;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component("dataGenerator")
 @Profile("dev-data")
@@ -48,6 +63,20 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired
   private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private ObjectMapper objectMapper;
+
+  @Autowired
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
+
+  private Random random = new Random();
 
   @PostConstruct
   private void initRestTemplate() {

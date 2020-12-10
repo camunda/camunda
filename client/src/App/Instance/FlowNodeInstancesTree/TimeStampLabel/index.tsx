@@ -12,7 +12,7 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 
 type Props = {
-  timeStamp?: string;
+  timeStamp: null | string;
   isSelected: boolean;
 };
 

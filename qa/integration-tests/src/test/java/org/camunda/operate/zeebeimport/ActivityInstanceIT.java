@@ -51,7 +51,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
   public void testActivityInstanceTreeIsBuild() throws Exception {
     // having
     String processId = "prWithSubprocess";
-    deployWorkflow("subProcess.bpmn");
+    deployWorkflow("subProcess_old.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
@@ -109,7 +109,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
     // having
     String processId = "prWithSubprocess";
-    deployWorkflow("subProcess.bpmn");
+    deployWorkflow("subProcess_old.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
@@ -142,13 +142,13 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto();
 
     MvcResult mvcResult = postRequestThatShouldFail(ACTIVITY_INSTANCE_URL,treeRequest);
-    
+
     assertErrorMessageIsEqualTo(mvcResult, "Workflow instance id must be provided when requesting for activity instance tree.");
   }
 
   protected ActivityInstanceTreeDto getActivityInstanceTreeFromRest(Long workflowInstanceKey) throws Exception {
     ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString());
-  
+
     MvcResult mvcResult =  postRequest(ACTIVITY_INSTANCE_URL,treeRequest);
 
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ActivityInstanceTreeDto>() { });

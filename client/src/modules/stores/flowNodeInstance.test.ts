@@ -62,6 +62,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
@@ -76,6 +77,7 @@ describe('stores/flowNodeInstance', () => {
     flowNodeInstanceStore.init();
 
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
@@ -115,6 +117,7 @@ describe('stores/flowNodeInstance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         secondActivityInstancesMock
       );
@@ -128,6 +131,7 @@ describe('stores/flowNodeInstance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         secondActivityInstancesMock
       );
@@ -142,6 +146,7 @@ describe('stores/flowNodeInstance', () => {
       flowNodeId: null,
     });
 
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       treeRowIds: ['1', '2'],
       flowNodeId: '2',
@@ -162,6 +167,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
@@ -173,6 +179,7 @@ describe('stores/flowNodeInstance', () => {
       treeRowIds: [],
       flowNodeId: null,
     });
+    // @ts-expect-error
     expect(flowNodeInstanceStore.state.response).toEqual(null);
     expect(flowNodeInstanceStore.state.status).toEqual('initial');
   });
@@ -193,12 +200,14 @@ describe('stores/flowNodeInstance', () => {
 
   it('should change current selection', async () => {
     currentInstanceStore.setCurrentInstance({id: 111, state: 'CANCELED'});
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       flowNodeId: '222',
       treeRowIds: ['222'],
     });
 
     // select root node if we try to set current selection to a node that is already selected
+    // @ts-expect-error
     flowNodeInstanceStore.changeCurrentSelection({
       id: '222',
       activityId: 'nodeActivityId2',
@@ -218,6 +227,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     // set current selection to something other than root node
+    // @ts-expect-error
     flowNodeInstanceStore.changeCurrentSelection({
       id: '333',
       activityId: 'nodeActivityId3',
@@ -236,6 +246,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     // set current selection to root node again
+    // @ts-expect-error
     flowNodeInstanceStore.changeCurrentSelection({
       id: '111',
       activityId: 'nodeActivityId1',
@@ -282,6 +293,7 @@ describe('stores/flowNodeInstance', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
@@ -301,6 +313,7 @@ describe('stores/flowNodeInstance', () => {
 
     expect(flowNodeInstanceStore.instanceExecutionHistory).toEqual(null);
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
@@ -328,6 +341,7 @@ describe('stores/flowNodeInstance', () => {
     jest.useFakeTimers();
     flowNodeInstanceStore.init();
 
+    // @ts-expect-error
     expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).toEqual(
       new Map()
     );
@@ -335,6 +349,7 @@ describe('stores/flowNodeInstance', () => {
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.status).toBe('error')
     );
+    // @ts-expect-error
     expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).toEqual(
       new Map()
     );
@@ -346,18 +361,22 @@ describe('stores/flowNodeInstance', () => {
     );
     jest.runOnlyPendingTimers();
     await waitFor(() =>
+      // @ts-expect-error
       expect(flowNodeInstanceStore.state.response).toEqual(
         activityInstancesMock
       )
     );
 
+    // @ts-expect-error
     expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).not.toEqual(
       new Map()
     );
     expect(
+      // @ts-expect-error
       flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap.has('start')
     ).toBe(true);
     expect(
+      // @ts-expect-error
       flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap.has('neverFails')
     ).toBe(true);
 
@@ -387,18 +406,23 @@ describe('stores/flowNodeInstance', () => {
   });
 
   it('should get areMultipleNodesSelected', async () => {
+    // @ts-expect-error
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
 
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       treeRowIds: ['1'],
       flowNodeId: '1',
     });
+    // @ts-expect-error
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
 
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       treeRowIds: ['1', '2'],
       flowNodeId: '1',
     });
+    // @ts-expect-error
     expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(true);
   });
 });

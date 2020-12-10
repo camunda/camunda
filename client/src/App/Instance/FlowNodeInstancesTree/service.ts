@@ -7,6 +7,7 @@
 import {getWorkflowName} from 'modules/utils/instance';
 import {TYPE} from 'modules/constants';
 
+// TODO (paddy): remove
 const getNodeWithMetaData = (
   node: any,
   nodeMetaData: any,

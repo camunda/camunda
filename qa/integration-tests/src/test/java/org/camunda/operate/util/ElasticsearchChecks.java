@@ -5,18 +5,28 @@
  */
 package org.camunda.operate.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
+import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
@@ -27,16 +37,25 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Configuration
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class ElasticsearchChecks {
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Autowired
   private WorkflowReader workflowReader;
@@ -46,6 +65,12 @@ public class ElasticsearchChecks {
 
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
+
+  @Autowired
+  private FlowNodeInstanceReader flowNodeInstanceReader;
+
+  @Autowired
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -80,6 +105,7 @@ public class ElasticsearchChecks {
    * @return
    */
   @Bean(name = "activityIsActiveCheck")
+  @Deprecated
   public Predicate<Object[]> getActivityIsActiveCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);
@@ -90,7 +116,7 @@ public class ElasticsearchChecks {
       try {
         List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
-          .collect(Collectors.toList());
+            .collect(Collectors.toList());
         if (activities.size() == 0) {
           return false;
         } else {
@@ -100,6 +126,100 @@ public class ElasticsearchChecks {
         return false;
       }
     };
+  }
+
+  /**
+   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state ACTIVE
+   * @return
+   */
+  @Bean(name = "flowNodeIsActiveCheck")
+  public Predicate<Object[]> getFlowNodeIsActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long workflowInstanceKey = (Long)objects[0];
+      String flowNodeId = (String)objects[1];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
+          .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state TERMINATED
+   * @return
+   */
+  @Bean(name = "flowNodeIsTerminatedCheck")
+  public Predicate<Object[]> getFlowNodeIsTerminatedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long workflowInstanceKey = (Long)objects[0];
+      String flowNodeId = (String)objects[1];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
+          .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return flowNodes.get(0).getState().equals(FlowNodeState.TERMINATED);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
+   * @return
+   */
+  @Bean(name = "flowNodeIsCompletedCheck")
+  public Predicate<Object[]> getFlowNodeIsCompletedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long workflowInstanceKey = (Long)objects[0];
+      String flowNodeId = (String)objects[1];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
+          .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return flowNodes.get(0).getState().equals(FlowNodeState.COMPLETED);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long workflowInstanceKey) {
+    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(workflowInstanceKeyQuery))
+            .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    try {
+      return ElasticsearchUtil.scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -155,6 +275,7 @@ public class ElasticsearchChecks {
    * @return
    */
   @Bean(name = "activityIsCompletedCheck")
+  @Deprecated
   public Predicate<Object[]> getActivityIsCompletedCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);
@@ -182,6 +303,7 @@ public class ElasticsearchChecks {
    * @return
    */
   @Bean(name = "activityIsTerminatedCheck")
+  @Deprecated
   public Predicate<Object[]> getActivityIsTerminatedCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);

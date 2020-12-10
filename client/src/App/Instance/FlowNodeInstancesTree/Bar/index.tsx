@@ -9,26 +9,65 @@ import React from 'react';
 import {TYPE} from 'modules/constants';
 import {TimeStampLabel} from '../TimeStampLabel';
 import {Container, NodeIcon, NodeName} from './styled';
+import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/constants';
+import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {FlowNodeMetaData} from 'modules/stores/singleInstanceDiagram';
 
-type Props = {
-  node?: {
+type LegacyProps = {
+  node: {
     id: string;
     name?: string;
     type: string;
     typeDetails: any;
-    endDate?: string;
-    children?: any[];
+    endDate: string | null;
+    children: any[];
   };
   isSelected: boolean;
 };
 
-const Bar = ({node, isSelected}: Props) => {
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'typeDetails' does not exist on type '{ i... Remove this comment to see the full error message
+type Props = {
+  flowNodeInstance: FlowNodeInstance;
+  metaData: FlowNodeMetaData;
+  isSelected: boolean;
+  isBold: boolean;
+};
+
+const Bar: React.FC<Props> = ({
+  flowNodeInstance,
+  metaData,
+  isSelected,
+  isBold,
+}) => {
+  return (
+    <Container showSelectionStyle={isSelected}>
+      <NodeIcon
+        flowNodeInstanceType={flowNodeInstance.type}
+        types={metaData.type}
+        isSelected={isSelected}
+        data-testid={`flow-node-icon-${metaData.type.elementType}`}
+      />
+      <NodeName isSelected={isSelected} isBold={isBold}>
+        {`${metaData.name || flowNodeInstance.flowNodeId}${
+          flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
+            ? ` (Multi Instance)`
+            : ''
+        }`}
+      </NodeName>
+      <TimeStampLabel
+        timeStamp={flowNodeInstance.endDate}
+        isSelected={isSelected}
+      />
+    </Container>
+  );
+};
+
+const BarLegacy = ({node, isSelected}: LegacyProps) => {
   const {typeDetails, type, children, name, endDate} = node;
 
   return (
     <Container showSelectionStyle={isSelected}>
       <NodeIcon
+        flowNodeInstanceType={type}
         types={typeDetails}
         isSelected={isSelected}
         data-testid={`flow-node-icon-${type}`}
@@ -43,4 +82,6 @@ const Bar = ({node, isSelected}: Props) => {
   );
 };
 
-export {Bar};
+const CurrentBar = IS_NEXT_FLOW_NODE_INSTANCES ? Bar : BarLegacy;
+
+export {CurrentBar as Bar};

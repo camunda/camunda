@@ -449,6 +449,7 @@ describe('stores/variables', () => {
 
   it('should get scopeId', async () => {
     expect(variablesStore.scopeId).toBe(undefined);
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       treeRowIds: ['123', '456'],
       flowNodeId: null,

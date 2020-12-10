@@ -82,11 +82,10 @@ const createNodeMetaDataMap = (bpmnElements: any) => {
 
 const getEventType = (bpmnElement: any) => {
   // doesn't return a event type when element of type 'multiple event'
-  return (
-    bpmnElement.eventDefinitions?.length === 1 &&
+  if (bpmnElement.eventDefinitions?.length === 1) {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    FLOWNODE_TYPE_HANDLE[bpmnElement.eventDefinitions[0].$type]
-  );
+    return FLOWNODE_TYPE_HANDLE[bpmnElement.eventDefinitions[0].$type];
+  }
 };
 
 const getElementType = (bpmnElement: any) => {

@@ -15,6 +15,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
 
+  private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -22,6 +24,8 @@ public class ImportProperties {
   private int readerBackoff = DEFAULT_READER_BACKOFF;
 
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
+
+  private int flowNodeTreeCacheSize = DEFAULT_FLOW_NODE_TREE_CACHE_SIZE;
 
   /**
    * Indicates, whether loading of Zeebe data should start on startup.
@@ -68,4 +72,11 @@ public class ImportProperties {
     this.schedulerBackoff = schedulerBackoff;
   }
 
+  public int getFlowNodeTreeCacheSize() {
+    return flowNodeTreeCacheSize;
+  }
+
+  public void setFlowNodeTreeCacheSize(final int flowNodeTreeCacheSize) {
+    this.flowNodeTreeCacheSize = flowNodeTreeCacheSize;
+  }
 }

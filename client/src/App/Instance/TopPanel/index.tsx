@@ -27,6 +27,8 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {eventsStore} from 'modules/stores/events';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
+import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/constants';
+
 type Props = {
   incidents?: unknown;
   children?: React.ReactNode;
@@ -55,6 +57,7 @@ const TopPanel: React.FC<Props> = observer((props) => {
       selectMultiInstanceChildrenOnly: false,
     }
   ) => {
+    // @ts-expect-error
     const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstanceStore;
     const {instance} = currentInstanceStore.state;
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -68,7 +71,7 @@ const TopPanel: React.FC<Props> = observer((props) => {
         ? getMultiInstanceChildren(flowNodeInstancesMap)
         : getMultiInstanceBodies(flowNodeInstancesMap);
     }
-
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({flowNodeId, treeRowIds});
   };
 
@@ -76,7 +79,9 @@ const TopPanel: React.FC<Props> = observer((props) => {
 
   const {
     state: {selection},
+    // @ts-expect-error
     flowNodeIdToFlowNodeInstanceMap,
+    // @ts-expect-error
     areMultipleNodesSelected,
   } = flowNodeInstanceStore;
 
@@ -84,12 +89,11 @@ const TopPanel: React.FC<Props> = observer((props) => {
   const {instance} = currentInstanceStore.state;
 
   const {
-    nodeMetaDataMap,
     state: {status, diagramModel},
+    getMetaData,
   } = singleInstanceDiagramStore;
 
   const selectedFlowNodeId = selection?.flowNodeId;
-  const metaData = singleInstanceDiagramStore.getMetaData(selectedFlowNodeId);
 
   const {items: eventList} = eventsStore.state;
   return (
@@ -106,27 +110,35 @@ const TopPanel: React.FC<Props> = observer((props) => {
         )}
         {status === 'fetched' && (
           <>
-            {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
+            {instance?.state === 'INCIDENT' && (
               <IncidentsWrapper expandState={expandState} />
             )}
             {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
             {diagramModel?.definitions && (
               <Diagram
                 expandState={expandState}
-                onFlowNodeSelection={handleFlowNodeSelection}
-                selectableFlowNodes={[
-                  ...flowNodeIdToFlowNodeInstanceMap.keys(),
-                ]}
+                onFlowNodeSelection={
+                  IS_NEXT_FLOW_NODE_INSTANCES
+                    ? () => {}
+                    : handleFlowNodeSelection
+                }
+                selectableFlowNodes={
+                  IS_NEXT_FLOW_NODE_INSTANCES
+                    ? []
+                    : [...flowNodeIdToFlowNodeInstanceMap.keys()]
+                }
                 processedSequenceFlows={processedSequenceFlows}
                 // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'string | un... Remove this comment to see the full error message
                 selectedFlowNodeId={selection.flowNodeId}
                 selectedFlowNodeName={getSelectedFlowNodeName(
                   selectedFlowNodeId,
-                  metaData
+                  getMetaData(selectedFlowNodeId)
                 )}
-                flowNodeStateOverlays={getFlowNodeStateOverlays(
-                  flowNodeIdToFlowNodeInstanceMap
-                )}
+                flowNodeStateOverlays={
+                  IS_NEXT_FLOW_NODE_INSTANCES
+                    ? []
+                    : getFlowNodeStateOverlays(flowNodeIdToFlowNodeInstanceMap)
+                }
                 // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                 definitions={diagramModel.definitions}
                 metadata={
@@ -136,8 +148,12 @@ const TopPanel: React.FC<Props> = observer((props) => {
                         eventList,
                         selectedFlowNodeId,
                         selection?.treeRowIds,
-                        flowNodeIdToFlowNodeInstanceMap,
-                        areMultipleNodesSelected
+                        IS_NEXT_FLOW_NODE_INSTANCES
+                          ? {}
+                          : flowNodeIdToFlowNodeInstanceMap,
+                        IS_NEXT_FLOW_NODE_INSTANCES
+                          ? false
+                          : areMultipleNodesSelected
                       )
                 }
               />

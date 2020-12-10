@@ -31,11 +31,15 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
         <Styled.FlowNodeInstanceLog data-testid="instance-history">
           <Styled.NodeContainer>
-            <FlowNodeInstancesTree
-              // @ts-expect-error
-              node={instanceExecutionHistory}
-              treeDepth={1}
-            />
+            <ul>
+              <FlowNodeInstancesTree
+                // @ts-expect-error this comment and next line will be removed when legacy flowNodeInstanceStore is removed
+                node={instanceExecutionHistory}
+                // @ts-expect-error this comment will be removed when legacy flowNodeInstanceStore is removed
+                flowNodeInstance={instanceExecutionHistory}
+                treeDepth={1}
+              />
+            </ul>
           </Styled.NodeContainer>
         </Styled.FlowNodeInstanceLog>
       ) : (

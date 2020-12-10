@@ -1,0 +1,75 @@
+{
+	"order": 30,
+	"index_patterns": [
+		"operate-flownode-instance-${schema.version}_*"
+	],
+	"settings": {
+		"analysis": {
+			"analyzer": {
+				"flownode_path_tree": {
+					"tokenizer": "flownode_hierarchy"
+				}
+			},
+			"tokenizer": {
+				"flownode_hierarchy": {
+					"type": "path_hierarchy",
+					"delimiter": "/"
+				}
+			}
+		}
+	},
+	"mappings": {
+		"dynamic": "strict",
+		"properties": {
+			"flowNodeId": {
+				"type": "keyword"
+			},
+			"partitionId": {
+				"type": "integer"
+			},
+			"endDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"incidentKey": {
+				"type": "long"
+			},
+			"scopeKey": {
+				"type": "long"
+			},
+			"workflowInstanceKey": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"position": {
+				"type": "long"
+			},
+			"state": {
+				"type": "keyword"
+			},
+			"type": {
+				"type": "keyword"
+			},
+			"key": {
+				"type": "long"
+			},
+			"startDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"treePath": {
+				"type": "text",
+				"analyzer": "flownode_path_tree"
+			},
+			"level": {
+				"type": "long"
+			}
+		}
+	},
+	"aliases": {
+		"operate-flownode-instance-${schema.version}_alias": {
+		}
+	}
+}

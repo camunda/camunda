@@ -4,15 +4,24 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-// TODO: remove in favor of api/flowNodeInstances
 import {post} from 'modules/request';
 
-const URL = '/api/activity-instances';
+const URL = '/api/flow-node-instances';
 
-export async function fetchActivityInstancesTree(
-  workflowInstanceId: WorkflowInstanceEntity['id']
-) {
+async function fetchFlowNodeInstances({
+  workflowInstanceId,
+  pageSize,
+  parentTreePath,
+}: {
+  workflowInstanceId: WorkflowInstanceEntity['id'];
+  pageSize: number;
+  parentTreePath: string;
+}) {
   return post(URL, {
     workflowInstanceId,
+    pageSize,
+    parentTreePath,
   });
 }
+
+export {fetchFlowNodeInstances};

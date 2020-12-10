@@ -7,6 +7,7 @@ package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
 
+@Deprecated
 public class ActivityInstanceEntity extends OperateZeebeEntity<ActivityInstanceEntity> {
 
   private String activityId;

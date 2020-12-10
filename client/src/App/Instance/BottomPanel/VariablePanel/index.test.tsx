@@ -64,6 +64,7 @@ describe('VariablePanel', () => {
   });
 
   it('should show multiple scope placeholder when multiple nodes are selected', () => {
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       flowNodeId: '1',
       treeRowIds: ['1', '2'],
@@ -85,6 +86,7 @@ describe('VariablePanel', () => {
       )
     );
 
+    // @ts-expect-error
     flowNodeInstanceStore.setCurrentSelection({
       flowNodeId: null,
       treeRowIds: [],

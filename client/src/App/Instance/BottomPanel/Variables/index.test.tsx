@@ -436,6 +436,7 @@ describe('Variables', () => {
 
   describe('Footer', () => {
     beforeAll(async () => {
+      // @ts-expect-error
       flowNodeInstanceStore.setCurrentSelection({
         flowNodeId: null,
         treeRowIds: [],

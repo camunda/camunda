@@ -8,8 +8,9 @@ import React from 'react';
 import {TYPE} from 'modules/constants';
 
 import * as Styled from './styled';
+import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
-const getEventFlowNode = (eventType: any, elementType: any) => {
+const getEventFlowNode = (eventType: string, elementType: string) => {
   const map = {
     // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
     [TYPE.EVENT_TIMER]: Styled[TYPE.EVENT_TIMER + `_${elementType}`],
@@ -51,13 +52,25 @@ const flowNodes = {
   [TYPE.EVENT_SUBPROCESS]: Styled[TYPE.EVENT_SUBPROCESS],
 };
 
-function getFlowNodeTypeIcon({elementType, eventType, multiInstanceType}: any) {
-  if (elementType === TYPE.MULTI_INSTANCE_BODY && multiInstanceType) {
+function getFlowNodeTypeIcon({
+  elementType,
+  eventType,
+  multiInstanceType,
+  flowNodeInstanceType,
+}: {
+  elementType: string;
+  eventType: string;
+  multiInstanceType: string;
+  flowNodeInstanceType: FlowNodeInstance['type'];
+}) {
+  if (
+    flowNodeInstanceType === TYPE.MULTI_INSTANCE_BODY &&
+    multiInstanceType !== undefined
+  ) {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     return Styled[multiInstanceType];
   }
-
-  return !eventType
+  return eventType === undefined
     ? // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
       flowNodes[elementType] || Styled[TYPE.TASK_DEFAULT]
     : // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
@@ -66,11 +79,20 @@ function getFlowNodeTypeIcon({elementType, eventType, multiInstanceType}: any) {
 
 type FlowNodeIconProps = {
   types: any;
+  flowNodeInstanceType: FlowNodeInstance['type'];
   isSelected?: boolean;
 };
 
-function FlowNodeIcon({types, isSelected, ...props}: FlowNodeIconProps) {
-  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon(types);
+function FlowNodeIcon({
+  types,
+  flowNodeInstanceType,
+  isSelected,
+  ...props
+}: FlowNodeIconProps) {
+  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon({
+    ...types,
+    flowNodeInstanceType,
+  });
   return <TargetFlowNodeTypeIcon {...props} />;
 }
 

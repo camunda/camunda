@@ -120,15 +120,30 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   @Qualifier("activityIsTerminatedCheck")
+  @Deprecated
   protected Predicate<Object[]> activityIsTerminatedCheck;
 
   @Autowired
   @Qualifier("activityIsCompletedCheck")
+  @Deprecated
   protected Predicate<Object[]> activityIsCompletedCheck;
 
   @Autowired
   @Qualifier("activityIsActiveCheck")
+  @Deprecated
   protected Predicate<Object[]> activityIsActiveCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsTerminatedCheck")
+  protected Predicate<Object[]> flowNodeIsTerminatedCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsCompletedCheck")
+  protected Predicate<Object[]> flowNodeIsCompletedCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsActiveCheck")
+  protected Predicate<Object[]> flowNodeIsActiveCheck;
 
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")

@@ -5,8 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-@Deprecated
-public enum ActivityState {
+public enum FlowNodeState {
 
   ACTIVE,
   INCIDENT,

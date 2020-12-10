@@ -5,128 +5,116 @@
  */
 
 import React from 'react';
-
+import {observer} from 'mobx-react';
+import {IS_NEXT_FLOW_NODE_INSTANCES, TYPE} from 'modules/constants';
+import {getWorkflowName} from 'modules/utils/instance';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {
+  flowNodeInstanceStore,
+  FlowNodeInstance,
+} from 'modules/stores/flowNodeInstance';
 import {Bar} from './Bar';
 import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
-import {observer} from 'mobx-react';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
-import {getNodeWithMetaData} from './service';
-import {TYPE} from 'modules/constants';
+import {FlowNodeInstancesTree as FlowNodeInstancesTreeLegacy} from './index.legacy';
 
-type Node = {
-  id: string;
-  type: string;
-  state?: InstanceEntityState;
-  activityId: string;
-  startDate: string;
-  endDate: null | string;
-  parentId: string;
-  children: Node[];
+type Props = {
+  flowNodeInstance: FlowNodeInstance;
+  isSelected: boolean;
+  treeDepth: number;
   isLastChild: boolean;
 };
 
-type Props = {
-  node: Node;
-  isSelected: boolean;
-  treeDepth: number;
-  metaData?: any;
-};
+const FlowNodeInstancesTree = observer(
+  ({isSelected, flowNodeInstance, treeDepth, isLastChild = true}: Props) => {
+    const children =
+      // @ts-expect-error this comment will be removed, when legacy flowNodeInstanceStore is removed
+      flowNodeInstanceStore.state.flowNodeInstances[
+        flowNodeInstance.treePath || flowNodeInstance.id
+      ];
 
-function Node({isSelected, node, treeDepth}: Props) {
-  const hasChildren = node.children.length > 0;
+    const metaData = singleInstanceDiagramStore.getMetaData(
+      flowNodeInstance.flowNodeId
+    ) || {
+      name:
+        currentInstanceStore.state.instance !== null
+          ? getWorkflowName(currentInstanceStore.state.instance)
+          : '',
+      type: {elementType: 'WORKFLOW'},
+    };
 
-  return (
-    <Li treeDepth={treeDepth} data-testid={`tree-node-${node.id}`}>
-      <NodeDetails
-        showConnectionDot={treeDepth >= 3}
-        data-testid={`treeDepth:${treeDepth}`}
-      >
-        <NodeStateIcon state={node.state} $indentationMultiplier={treeDepth} />
-      </NodeDetails>
-      {/* @ts-expect-error ts-migrate(2786) FIXME: Type 'undefined' is not assignable to type 'Elemen... Remove this comment to see the full error message */}
-      <Foldable
-        isFolded={treeDepth >= 2}
-        isFoldable={hasChildren && treeDepth >= 2}
-      >
-        <Foldable.Summary
-          data-testid={node.id}
-          onSelection={() => flowNodeInstanceStore.changeCurrentSelection(node)}
-          isSelected={isSelected}
-          isLastChild={node.isLastChild}
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type 'nodePropTy... Remove this comment to see the full error message
-          nodeName={`${node.name}${
-            node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
-          }`}
-        >
-          {/* @ts-expect-error ts-migrate(2741) FIXME: Property 'typeDetails' is missing in type 'nodePro... Remove this comment to see the full error message */}
-          <Bar node={node} isSelected={isSelected} />
-        </Foldable.Summary>
-        {hasChildren && (
-          <Foldable.Details>
-            <Ul
-              showConnectionLine={treeDepth >= 2}
-              data-testid={`treeDepth:${treeDepth}`}
-            >
-              {node.children.map((childNode, index) => {
-                return (
-                  <FlowNodeInstancesTree
-                    key={index}
-                    node={{
-                      ...childNode,
-                      isLastChild: node.children.length === index + 1,
-                    }}
-                    treeDepth={treeDepth + 1}
-                  />
-                );
-              })}
-            </Ul>
-          </Foldable.Details>
-        )}
-      </Foldable>
-    </Li>
-  );
-}
+    const isFoldable = ['SUB_PROCESS', 'MULTI_INSTANCE_BODY'].includes(
+      flowNodeInstance.type
+    );
 
-type FlowNodeInstancesTreeProps = {
-  node: null | Node;
-  treeDepth: number;
-};
-
-const FlowNodeInstancesTree: React.FC<FlowNodeInstancesTreeProps> = observer(
-  ({treeDepth, node}) => {
-    const {
-      selection: {treeRowIds},
-    } = flowNodeInstanceStore.state;
-    const isSelected = node !== null && treeRowIds.includes(node?.id);
-    const metaData = singleInstanceDiagramStore.getMetaData(node?.activityId);
-
-    return treeDepth === 1 ? (
-      <ul>
-        <Node
-          isSelected={isSelected}
-          node={getNodeWithMetaData(
-            node,
-            metaData,
-            currentInstanceStore.state.instance
-          )}
-          treeDepth={treeDepth}
-        />
-      </ul>
-    ) : (
-      <Node
-        isSelected={isSelected}
-        node={getNodeWithMetaData(
-          node,
-          metaData,
-          currentInstanceStore.state.instance
-        )}
+    return (
+      <Li
         treeDepth={treeDepth}
-      />
+        data-testid={`tree-node-${flowNodeInstance.id}`}
+      >
+        <NodeDetails
+          showConnectionDot={treeDepth >= 3}
+          data-testid={`treeDepth:${treeDepth}`}
+        >
+          <NodeStateIcon
+            state={flowNodeInstance.state}
+            $indentationMultiplier={treeDepth}
+          />
+        </NodeDetails>
+        <Foldable isFolded={treeDepth >= 2} isFoldable={isFoldable}>
+          {metaData !== undefined && (
+            <Foldable.Summary
+              data-testid={flowNodeInstance.id}
+              onSelection={() => {}}
+              isSelected={false}
+              isLastChild={isLastChild}
+              nodeName={`${metaData.name}${
+                flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
+                  ? ` (Multi Instance)`
+                  : ''
+              }`}
+            >
+              {/* @ts-expect-error this comment will be removed when legacy Bar component is removed*/}
+              <Bar
+                flowNodeInstance={flowNodeInstance}
+                metaData={metaData}
+                isSelected={false}
+                isBold={isFoldable || metaData.type.elementType === 'WORKFLOW'}
+              />
+            </Foldable.Summary>
+          )}
+          {children !== undefined && children.length > 0 && (
+            <Foldable.Details>
+              <Ul
+                showConnectionLine={treeDepth >= 2}
+                data-testid={`treeDepth:${treeDepth}`}
+              >
+                {children.map(
+                  (flowNodeInstanceChild: FlowNodeInstance, index: number) => {
+                    const isLastChild =
+                      flowNodeInstance.children?.length === index + 1;
+                    return (
+                      <FlowNodeInstancesTree
+                        isSelected={false}
+                        flowNodeInstance={flowNodeInstanceChild}
+                        treeDepth={treeDepth + 1}
+                        isLastChild={isLastChild}
+                        key={flowNodeInstanceChild.id}
+                      />
+                    );
+                  }
+                )}
+              </Ul>
+            </Foldable.Details>
+          )}
+        </Foldable>
+      </Li>
     );
   }
 );
 
-export {FlowNodeInstancesTree};
+const CurrentFlowNodeInstancesTree = IS_NEXT_FLOW_NODE_INSTANCES
+  ? FlowNodeInstancesTree
+  : FlowNodeInstancesTreeLegacy;
+export {CurrentFlowNodeInstancesTree as FlowNodeInstancesTree};

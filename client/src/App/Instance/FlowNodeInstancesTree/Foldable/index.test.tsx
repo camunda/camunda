@@ -16,7 +16,6 @@ describe('<Foldable />', () => {
     const mockContent = 'mock-content';
 
     render(
-      // @ts-expect-error ts-migrate(2786) FIXME: Type 'undefined' is not assignable to type 'Elemen... Remove this comment to see the full error message
       <Foldable isFoldable={false} isFolded={false}>
         <Foldable.Summary
           onSelection={noop}
@@ -38,7 +37,6 @@ describe('<Foldable />', () => {
     const mockOnSelection = jest.fn();
 
     render(
-      // @ts-expect-error ts-migrate(2786) FIXME: Type 'undefined' is not assignable to type 'Elemen... Remove this comment to see the full error message
       <Foldable isFoldable={false} isFolded={false}>
         <Foldable.Summary
           onSelection={mockOnSelection}
@@ -63,7 +61,6 @@ describe('<Foldable />', () => {
     const mockNodeName = 'node-name';
 
     render(
-      // @ts-expect-error ts-migrate(2786) FIXME: Type 'undefined' is not assignable to type 'Elemen... Remove this comment to see the full error message
       <Foldable isFoldable={true} isFolded={true}>
         <Foldable.Summary
           onSelection={noop}
@@ -99,7 +96,6 @@ describe('<Foldable />', () => {
     const mockDetails = 'mock-details';
 
     render(
-      // @ts-expect-error ts-migrate(2786) FIXME: Type 'undefined' is not assignable to type 'Elemen... Remove this comment to see the full error message
       <Foldable isFoldable={true} isFolded={false}>
         <Foldable.Summary
           onSelection={noop}

@@ -37,6 +37,7 @@ const VariablePanel = observer(function VariablePanel() {
         <StatusMessage variant="error">{FAILED_PLACEHOLDER}</StatusMessage>
       ) : (
         <>
+          {/* @ts-expect-error */}
           {flowNodeInstanceStore.areMultipleNodesSelected ? (
             <StatusMessage variant="default">
               {MULTI_SCOPE_PLACEHOLDER}

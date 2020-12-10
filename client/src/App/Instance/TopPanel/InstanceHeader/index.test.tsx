@@ -73,6 +73,7 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
     const {instance} = currentInstanceStore.state;
+    // @ts-expect-error
     const workflowName = getWorkflowName(instance);
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const instanceState = instance.state;

@@ -27,11 +27,6 @@
           </bpmn:extensionElements>
           <bpmn:incoming>SequenceFlow_1hs8p0q</bpmn:incoming>
           <bpmn:outgoing>SequenceFlow_0ewqunp</bpmn:outgoing>
-          <bpmn:multiInstanceLoopCharacteristics>
-            <bpmn:extensionElements>
-              <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
-            </bpmn:extensionElements>
-          </bpmn:multiInstanceLoopCharacteristics>
         </bpmn:serviceTask>
         <bpmn:endEvent id="endEventInnerSubprocess">
           <bpmn:incoming>SequenceFlow_0ewqunp</bpmn:incoming>

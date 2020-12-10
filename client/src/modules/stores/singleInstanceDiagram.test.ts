@@ -76,7 +76,7 @@ describe('stores/singleInstanceDiagram', () => {
       name: undefined,
       type: {
         elementType: 'START',
-        eventType: false,
+        eventType: undefined,
         multiInstanceType: undefined,
       },
     });
@@ -87,7 +87,7 @@ describe('stores/singleInstanceDiagram', () => {
       name: undefined,
       type: {
         elementType: 'TASK_SERVICE',
-        eventType: false,
+        eventType: undefined,
         multiInstanceType: undefined,
       },
     });
@@ -96,7 +96,7 @@ describe('stores/singleInstanceDiagram', () => {
       name: undefined,
       type: {
         elementType: 'END',
-        eventType: false,
+        eventType: undefined,
         multiInstanceType: undefined,
       },
     });

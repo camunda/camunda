@@ -13,8 +13,8 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
-import {constructFlowNodeIdToFlowNodeInstanceMap} from './mappers';
-import {isInstanceRunning} from './utils/isInstanceRunning';
+import {constructFlowNodeIdToFlowNodeInstanceMap} from 'modules/stores/mappers';
+import {isInstanceRunning} from 'modules/stores/utils/isInstanceRunning';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import {logger} from 'modules/logger';

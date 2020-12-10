@@ -292,6 +292,7 @@ const Variables = observer(function Variables() {
       state: {
         selection: {flowNodeId, treeRowIds},
       },
+      // @ts-expect-error
       flowNodeIdToFlowNodeInstanceMap,
     } = flowNodeInstanceStore;
 

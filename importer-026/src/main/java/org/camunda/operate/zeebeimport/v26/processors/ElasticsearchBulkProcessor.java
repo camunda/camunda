@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.v26.processors;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,6 +42,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Autowired
   private ActivityInstanceZeebeRecordProcessor activityInstanceZeebeRecordProcessor;
+
+  @Autowired
+  private FlowNodeInstanceZeebeRecordProcessor flowNodeInstanceZeebeRecordProcessor;
 
   @Autowired
   private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
@@ -81,6 +85,10 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
       activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, bulkRequest);
+      List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
+          .map(Record::getKey)
+          .collect(Collectors.toList());
+      flowNodeInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered, bulkRequest);
       eventZeebeRecordProcessor.processWorkflowInstanceRecords(groupedWIRecordsPerActivityInst, bulkRequest);
       for (Record record : zeebeRecords) {
         sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
@@ -91,6 +99,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       for (Record record : zeebeRecords) {
         listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         activityInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+        flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         incidentZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       }
       Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> groupedIncidentRecordsPerActivityInst = zeebeRecords.stream()
