@@ -105,7 +105,7 @@
 
         # Sets the timeout for a probe response
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
-        # probeTimeout: 2s
+        # probeTimeout: 100ms
 
         # Sets the number of probes failed before declaring a member is suspect
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES

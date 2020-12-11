@@ -17,7 +17,7 @@ public final class MembershipCfg {
   private static final Duration DEFAULT_GOSSIP_INTERVAL = Duration.ofMillis(250);
   private static final int DEFAULT_GOSSIP_FANOUT = 2;
   private static final Duration DEFAULT_PROBE_INTERVAL = Duration.ofMillis(1000);
-  private static final Duration DEFAULT_PROBE_TIMEOUT = Duration.ofMillis(2000);
+  private static final Duration DEFAULT_PROBE_TIMEOUT = Duration.ofMillis(100);
   private static final int DEFAULT_SUSPECT_PROBES = 3;
   private static final Duration DEFAULT_FAILURE_TIMEOUT = Duration.ofMillis(10_000);
   private static final Duration DEFAULT_SYNC_INTERVAL = Duration.ofMillis(10_000);
