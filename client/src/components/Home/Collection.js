@@ -235,11 +235,7 @@ export class Collection extends React.Component {
                     });
                   }
 
-                  if (
-                    user?.authorizations.includes('import_export') &&
-                    entityType === 'report' &&
-                    !combined
-                  ) {
+                  if (user?.authorizations.includes('import_export') && entityType === 'report') {
                     actions.push({
                       icon: 'save',
                       text: t('common.export'),
