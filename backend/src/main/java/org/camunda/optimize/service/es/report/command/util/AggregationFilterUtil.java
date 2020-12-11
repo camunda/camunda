@@ -66,12 +66,9 @@ public class AggregationFilterUtil {
   public static Script getDurationFilterScript(final long currRequestDateInMs,
                                                final String durationFieldName,
                                                final String referenceDateFieldName,
-                                               final DurationFilterDataDto dto) {
+                                               final DurationFilterDataDto durationFilterDto) {
     final Map<String, Object> params = new HashMap<>();
-
-    final long durationInMillis = getFilterDuration(dto);
-    params.put("filterDuration", durationInMillis);
-
+    params.put("filterDuration", getFilterDuration(durationFilterDto));
     return createDefaultScriptWithPrimitiveParams(
       getDurationCalculationScriptPart(
         params,
@@ -79,14 +76,17 @@ public class AggregationFilterUtil {
         durationFieldName,
         referenceDateFieldName
       )
-        + " return (result != null && result " + mapFilterOperator(dto.getOperator()) + " params['filterDuration'])" +
-        " || (" + dto.isIncludeNull() + " && result == null)",
+        + " return (result != null && result " + mapFilterOperator(durationFilterDto.getOperator()) + " params" +
+        "['filterDuration'])" +
+        " || (" + durationFilterDto.isIncludeNull() + " && result == null)",
       params
     );
   }
 
-  private static long getFilterDuration(final DurationFilterDataDto dto) {
-    return ChronoUnit.valueOf(dto.getUnit().name()).getDuration().toMillis() * dto.getValue();
+  private static long getFilterDuration(final DurationFilterDataDto durationFilterDto) {
+    return ChronoUnit.valueOf(durationFilterDto.getUnit().name())
+      .getDuration()
+      .toMillis() * durationFilterDto.getValue();
   }
 
   private static String getDurationCalculationScriptPart(final Map<String, Object> params,

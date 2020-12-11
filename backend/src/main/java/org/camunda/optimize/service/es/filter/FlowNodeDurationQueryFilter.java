@@ -26,7 +26,6 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-
 @Component
 public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDurationFiltersDataDto> {
 
@@ -48,7 +47,6 @@ public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDuration
             )));
           disjunctMultiFlowNodeQuery.should(particularFlowNodeQuery);
         });
-
         filters.add(nestedQuery(EVENTS, disjunctMultiFlowNodeQuery, ScoreMode.None));
       }
     }

@@ -27,6 +27,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
+
   private static final String FLOW_NODES_AGGREGATION = "flowNodes";
   private static final String FILTERED_FLOW_NODES_AGGREGATION = "filteredFlowNodes";
   private static final String MI_BODY = "multiInstanceBody";
@@ -34,7 +35,6 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
   protected AggregationBuilder createExecutionStateFilteredFlowNodeAggregation(
     final FlowNodeExecutionState flowNodeExecutionState,
     final AggregationBuilder subAggregation) {
-
     return nested(FLOW_NODES_AGGREGATION, EVENTS)
       .subAggregation(
         filter(

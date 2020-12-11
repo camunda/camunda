@@ -10,8 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
@@ -301,17 +299,20 @@ public class MixedFilterIT extends AbstractFilterIT {
   }
 
   private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
-    return buildFilters(FilterApplicationLevel.VIEW)
-      .filter(filter -> (!(filter.get(0) instanceof CandidateGroupFilterDto)
-        && !(filter.get(0) instanceof AssigneeFilterDto)));
+    return Stream.concat(
+      buildFilters(FilterApplicationLevel.INSTANCE)
+        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
+      buildFilters(FilterApplicationLevel.VIEW)
+        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
+    );
   }
 
   private static Stream<List<ProcessFilterDto<?>>> validFilters() {
     return Stream.concat(
-      buildFilters(FilterApplicationLevel.INSTANCE),
+      buildFilters(FilterApplicationLevel.INSTANCE)
+        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
       buildFilters(FilterApplicationLevel.VIEW)
-        .filter(filter -> ((filter.get(0) instanceof CandidateGroupFilterDto)
-          || (filter.get(0) instanceof AssigneeFilterDto)))
+        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
     );
   }
 
@@ -353,9 +354,10 @@ public class MixedFilterIT extends AbstractFilterIT {
         .filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode("someId",
-        DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(GREATER_THAN).build()
-      ).filterLevel(levelToApply).add().buildList(),
+        .flowNode(
+          "someId",
+          DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(GREATER_THAN).build()
+        ).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().candidateGroups().id("someId").filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().assignee().id("someId").filterLevel(levelToApply).add().buildList()
     );
