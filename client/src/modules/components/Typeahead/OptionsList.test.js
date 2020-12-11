@@ -6,6 +6,8 @@
 
 import React, {runLastEffect} from 'react';
 
+import {Dropdown} from 'components';
+
 import OptionsList from './OptionsList';
 import Typeahead from './Typeahead';
 
@@ -76,4 +78,19 @@ it('should render an option with the search as input if optionList has typedOpti
   const node = shallow(<OptionsList {...props} filter="test" typedOption />);
 
   expect(node).toMatchSnapshot();
+});
+
+it('should not display an option if it is identical to the typed option', () => {
+  const node = shallow(
+    <OptionsList {...props} filter="test" typedOption>
+      <Typeahead.Option id="test_option" value="1">
+        Test 1
+      </Typeahead.Option>
+      <Typeahead.Option id="second_option" value="2">
+        test
+      </Typeahead.Option>
+    </OptionsList>
+  );
+
+  expect(node.find(Dropdown.Option)).toHaveLength(2);
 });

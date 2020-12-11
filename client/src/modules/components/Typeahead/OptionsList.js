@@ -31,9 +31,12 @@ export default function OptionsList({
   let filteredOptions = optionsArr;
 
   if (!async) {
-    filteredOptions = optionsArr.filter(({props: {label, children}}) =>
-      (label || children).toLowerCase().includes(filter.toLowerCase())
-    );
+    filteredOptions = optionsArr.filter(({props: {label, children}}) => {
+      if (filter && typedOption && (label || children) === filter) {
+        return false; // remove options that exactly match the typed option
+      }
+      return (label || children).toLowerCase().includes(filter.toLowerCase());
+    });
   }
 
   if (filter && typedOption) {
