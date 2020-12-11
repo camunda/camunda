@@ -7,10 +7,12 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -29,7 +31,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -225,6 +231,62 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .filter().candidateGroups().ids(filterValues).operator(filterOperator).
         filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
+    if (expectedUserTaskCount != null) {
+      assertThat(result.getData())
+        .extracting(MapResultEntryDto::getValue)
+        .containsExactly(expectedUserTaskCount);
+    } else {
+      assertThat(result.getData()).isEmpty();
+    }
+  }
+
+  public static Stream<Arguments> viewLevelFlowNodeDurationFilterScenarios() {
+    return Stream.of(
+      Arguments.of(USER_TASK_1, GREATER_THAN, 1000L, 1L, 1.),
+      Arguments.of(USER_TASK_2, GREATER_THAN, 500L, 1L, 1.),
+      Arguments.of(USER_TASK_1, GREATER_THAN_EQUALS, 2000L, 1L, 1.),
+      Arguments.of(USER_TASK_1, LESS_THAN_EQUALS, 2000L, 1L, 1.),
+      Arguments.of(USER_TASK_2, LESS_THAN_EQUALS, 1000L, 1L, 1.),
+      Arguments.of(USER_TASK_1, LESS_THAN, 2000L, 0L, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelFlowNodeDurationFilterScenarios")
+  public void viewLevelFilterByFlowNodeDurationOnlyCountsUserTasksFromInstancesMatchingFilter(final String userTaskId,
+                                                                                              final FilterOperator filterOperator,
+                                                                                              final Long filterValueInMs,
+                                                                                              final Long expectedInstanceCount,
+                                                                                              final Double expectedUserTaskCount) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    // We have to change both durations as the instance level filtering applies to the activities and the
+    // view level filtering applies to the user tasks
+    engineDatabaseExtension.changeActivityDuration(instance.getId(), USER_TASK_1, 2000.);
+    engineDatabaseExtension.changeUserTaskDuration(instance.getId(), USER_TASK_1, 2000.);
+    engineDatabaseExtension.changeActivityDuration(instance.getId(), USER_TASK_2, 1000.);
+    engineDatabaseExtension.changeUserTaskDuration(instance.getId(), USER_TASK_2, 1000.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final List<ProcessFilterDto<?>> flowNodeDurationFilter = ProcessFilterBuilder.filter()
+      .flowNodeDuration()
+      .flowNode(userTaskId, DurationFilterDataDto.builder().unit(DurationFilterUnit.MILLIS)
+        .value(filterValueInMs).operator(filterOperator).build())
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add()
+      .buildList();
+    reportData.setFilter(flowNodeDurationFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
