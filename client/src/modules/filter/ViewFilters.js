@@ -18,6 +18,12 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
     >
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
+        onClick={openNewFilterModal('flowNodeDuration')}
+      >
+        {t('common.filter.types.duration')}
+      </Dropdown.Option>
+      <Dropdown.Option
+        disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('assignee')}
       >
         {t('report.groupBy.userAssignee')}
