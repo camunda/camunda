@@ -7,6 +7,7 @@ exports[`should format user list information correctly 1`] = `
   hasMore={true}
   loading={false}
   onAdd={[Function]}
+  onClose={[Function]}
   onOpen={[Function]}
   onSearch={[Function]}
   placeholder="Search for name, email or ID ..."

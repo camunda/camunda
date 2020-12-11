@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 
 import {MultiSelect} from 'components';
 import {t} from 'translation';
@@ -20,10 +20,12 @@ export default function MultiUserInput({
   users = [],
   collectionUsers = [],
   onAdd,
+  fetchUsers,
+  optionsOnly,
   onRemove,
   onClear,
 }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [identities, setIdentities] = useState([]);
 
@@ -31,7 +33,7 @@ export default function MultiUserInput({
     setLoading(true);
 
     const {total, result} = await debounceRequest(async () => {
-      return await searchIdentities(query);
+      return await (fetchUsers || searchIdentities)(query);
     }, delay);
 
     setIdentities(result);
@@ -39,12 +41,8 @@ export default function MultiUserInput({
     setHasMore(total > result.length);
   };
 
-  useEffect(() => {
-    loadNewValues('');
-  }, []);
-
   function add(id) {
-    if (id) {
+    if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
         .find((identity) => identity.id === id);
@@ -73,12 +71,13 @@ export default function MultiUserInput({
       loading={loading}
       hasMore={!loading && hasMore}
       onOpen={loadNewValues}
+      onClose={() => setLoading(true)}
       placeholder={t('common.collection.addUserModal.searchPlaceholder')}
       onAdd={add}
       onRemove={onRemove}
       onClear={onClear}
       async
-      typedOption
+      typedOption={!optionsOnly}
     >
       {identities.filter(filterSelected).map((identity) => {
         const {text, tag, subTexts} = formatTypeaheadOption(identity);

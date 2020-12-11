@@ -4,8 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runAllEffects} from 'react';
+import React from 'react';
 import {shallow} from 'enzyme';
+
+import {UserTypeahead} from 'components';
+
 import {AssigneeFilter} from './AssigneeFilter';
 import {loadUsers} from './service';
 
@@ -18,28 +21,27 @@ const props = {
   tenantIds: ['tenant1'],
 };
 
-it('should load existing roles', () => {
-  shallow(<AssigneeFilter {...props} filterType="assignee" />);
+it('should load existing roles', async () => {
+  const node = shallow(<AssigneeFilter {...props} filterType="assignee" />);
 
-  runAllEffects();
+  await node.find(UserTypeahead).prop('fetchUsers')('demo');
 
   expect(loadUsers).toHaveBeenCalledWith('assignee', {
     processDefinitionKey: props.processDefinitionKey,
-    processDefinitionVersions: props.processDefinitionVersions,
     tenantIds: props.tenantIds,
+    terms: 'demo',
   });
 });
 
-it('should add/remove a role', () => {
+it('should add/remove a role', async () => {
   const spy = jest.fn();
   const node = shallow(<AssigneeFilter addFilter={spy} {...props} filterType="assignee" />);
 
-  runAllEffects();
+  node.find(UserTypeahead).prop('onChange')([
+    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
+    {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}},
+  ]);
 
-  node.find('MultiSelect').prop('onAdd')(null);
-  node.find('MultiSelect').prop('onAdd')('demo');
-
-  expect(node.find({value: 'demo'})).not.toExist();
   node.find({primary: true}).simulate('click');
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null, 'demo']},
@@ -48,9 +50,10 @@ it('should add/remove a role', () => {
 
   spy.mockClear();
 
-  node.find('MultiSelect').prop('onRemove')('demo');
+  node.find(UserTypeahead).prop('onChange')([
+    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
+  ]);
 
-  expect(node.find({value: 'demo'})).toExist();
   node.find({primary: true}).simulate('click');
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null]},

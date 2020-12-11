@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React from 'react';
 import {shallow} from 'enzyme';
 
 import MultiUserInput from './MultiUserInput';
@@ -22,18 +22,19 @@ it('should render a MultiSelect', () => {
   expect(node.find('MultiSelect')).toExist();
 });
 
-it('should load initial data when component is mounted', async () => {
-  shallow(<MultiUserInput />);
+it('should load initial data when select is opened', async () => {
+  const node = shallow(<MultiUserInput />);
 
-  runLastEffect();
+  node.find('MultiSelect').simulate('open');
   await flushPromises();
 
-  expect(searchIdentities).toHaveBeenCalledWith('');
+  expect(searchIdentities).toHaveBeenCalled();
 });
 
 it('should enable loading while loading data and enable hasMore if there are more data available', async () => {
   const node = shallow(<MultiUserInput />);
-  runLastEffect();
+
+  node.find('MultiSelect').simulate('open');
 
   expect(node.find('MultiSelect').prop('loading')).toBe(true);
   await flushPromises();
@@ -55,7 +56,7 @@ it('should format user list information correctly', async () => {
       users={[{id: 'GROUP:groupId', identity: {id: 'groupId', name: 'groupName', type: 'group'}}]}
     />
   );
-  runLastEffect();
+  node.find('MultiSelect').simulate('open');
   await flushPromises();
 
   expect(node).toMatchSnapshot();

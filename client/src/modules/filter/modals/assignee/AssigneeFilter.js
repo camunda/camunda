@@ -5,10 +5,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Modal, Button, ButtonGroup, Labeled, Form, MultiSelect} from 'components';
-import {loadUsers} from './service';
+import {Modal, Button, ButtonGroup, Labeled, Form, UserTypeahead} from 'components';
+import {loadUsers, getUsersById} from './service';
 import {t} from 'translation';
-import update from 'immutability-helper';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -18,39 +17,47 @@ export function AssigneeFilter({
   filterData,
   close,
   processDefinitionKey,
-  processDefinitionVersions,
   tenantIds,
   mightFail,
   filterType,
   addFilter,
 }) {
-  const [values, setValues] = useState([]);
-  const [data, setData] = useState({operator: 'in', values: []});
+  const [users, setUsers] = useState([]);
+  const [operator, setOperator] = useState('in');
 
   useEffect(() => {
-    if (filterData) {
-      setData(filterData.data);
-    }
-  }, [filterData]);
+    (async () => {
+      if (filterData) {
+        setOperator(filterData.data.operator);
 
-  useEffect(() => {
-    mightFail(
-      loadUsers(filterType, {processDefinitionKey, processDefinitionVersions, tenantIds}),
-      setValues,
-      showError
-    );
-  }, [mightFail, processDefinitionKey, processDefinitionVersions, tenantIds, filterType]);
+        const hasUnassigned = filterData.data.values.includes(null);
+        const existingUsers = filterData.data.values.filter((id) => !!id);
+        const combined = [];
 
-  const addValue = (value) => setData(update(data, {values: {$push: [value]}}));
+        if (hasUnassigned) {
+          combined.push({
+            id: 'USER:null',
+            identity: {id: null, name: t('common.filter.assigneeModal.unassigned'), type: 'user'},
+          });
+        }
+        if (existingUsers.length > 0) {
+          const users = await mightFail(
+            getUsersById(filterType, existingUsers),
+            (users) =>
+              users.map((user) => ({id: `${user.type.toUpperCase()}:${user.id}`, identity: user})),
+            showError
+          );
+          combined.push(...users);
+        }
 
-  const removeValue = (value) => {
-    const newData = update(data, {
-      values: {$set: data.values.filter((val) => val !== value)},
-    });
-    setData(newData);
+        setUsers(combined);
+      }
+    })();
+  }, [filterData, filterType, mightFail]);
+
+  const confirm = () => {
+    addFilter({type: filterType, data: {operator, values: users.map((user) => user.identity.id)}});
   };
-
-  const confirm = () => addFilter({type: filterType, data});
 
   return (
     <Modal open onClose={close} className="AssigneeFilter">
@@ -61,45 +68,43 @@ export function AssigneeFilter({
       </Modal.Header>
       <Modal.Content>
         <ButtonGroup>
-          <Button
-            active={data.operator === 'in'}
-            onClick={() => setData(update(data, {operator: {$set: 'in'}}))}
-          >
+          <Button active={operator === 'in'} onClick={() => setOperator('in')}>
             {t('common.filter.assigneeModal.includeOnly')}
           </Button>
-          <Button
-            active={data.operator === 'not in'}
-            onClick={() => setData(update(data, {operator: {$set: 'not in'}}))}
-          >
+          <Button active={operator === 'not in'} onClick={() => setOperator('not in')}>
             {t('common.filter.assigneeModal.excludeOnly')}
           </Button>
         </ButtonGroup>
         <Form>
           <Form.InputGroup>
             <Labeled label={t(`common.filter.assigneeModal.type.${filterType}`)}>
-              <MultiSelect
-                values={data.values.map((value) => ({
-                  value,
-                  label: value === null ? t('common.filter.assigneeModal.unassigned') : value,
-                }))}
-                onAdd={addValue}
-                onRemove={removeValue}
-                onClear={() => setData(update(data, {values: {$set: []}}))}
-                placeholder={t('common.filter.assigneeModal.selectValue')}
-              >
-                {!data.values.includes(null) && (
-                  <MultiSelect.Option key={null} value={null}>
-                    {t('common.filter.assigneeModal.unassigned')}
-                  </MultiSelect.Option>
-                )}
-                {values
-                  ?.filter((val) => !data.values.includes(val))
-                  .map((val) => (
-                    <MultiSelect.Option key={val} value={val}>
-                      {val}
-                    </MultiSelect.Option>
-                  ))}
-              </MultiSelect>
+              <UserTypeahead
+                users={users}
+                onChange={setUsers}
+                fetchUsers={async (query) => {
+                  const result = await mightFail(
+                    loadUsers(filterType, {
+                      processDefinitionKey,
+                      tenantIds,
+                      terms: query,
+                    }),
+                    (result) => result,
+                    showError
+                  );
+
+                  if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
+                    result.total++;
+                    result.result.unshift({
+                      id: null,
+                      name: t('common.filter.assigneeModal.unassigned'),
+                      type: 'user',
+                    });
+                  }
+
+                  return result;
+                }}
+                optionsOnly
+              />
             </Labeled>
           </Form.InputGroup>
         </Form>
@@ -108,7 +113,7 @@ export function AssigneeFilter({
         <Button main onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary onClick={confirm} disabled={data.values.length === 0}>
+        <Button main primary onClick={confirm} disabled={users.length === 0}>
           {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
         </Button>
       </Modal.Actions>
