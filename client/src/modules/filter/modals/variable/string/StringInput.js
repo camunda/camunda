@@ -123,6 +123,10 @@ export default class StringInput extends React.Component {
     }
 
     changeFilter({operator, values: newValues});
+
+    if (containToEquality) {
+      this.loadAvailableValues();
+    }
   };
 
   loadMore = (evt) => {
