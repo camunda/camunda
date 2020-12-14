@@ -389,6 +389,7 @@ describe('stores/instances', () => {
       );
     });
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

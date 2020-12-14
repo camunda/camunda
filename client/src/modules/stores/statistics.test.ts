@@ -134,6 +134,7 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(60);
     expect(statisticsStore.state.withIncidents).toBe(40);
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

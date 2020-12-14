@@ -122,6 +122,8 @@ describe('Operations', () => {
     });
 
     it('should display spinner if incident id is included in instances with active operations', async () => {
+      jest.useFakeTimers();
+
       mockServer.use(
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
@@ -152,7 +154,6 @@ describe('Operations', () => {
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-      jest.useFakeTimers();
       instancesStore.init();
 
       await waitFor(() =>
@@ -164,6 +165,11 @@ describe('Operations', () => {
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
           (_, res, ctx) =>
             res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+        ),
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) =>
+            res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 2}))
         )
       );
 
@@ -178,6 +184,12 @@ describe('Operations', () => {
       instancesStore.reset();
       filtersStore.reset();
 
+      // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
+      await waitFor(() =>
+        expect(instancesStore.state.filteredInstancesCount).toBe(2)
+      );
+
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
   });

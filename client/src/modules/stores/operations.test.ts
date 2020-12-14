@@ -316,7 +316,7 @@ describe('stores/operations', () => {
       )
     );
 
-    await operationsStore.fetchOperations();
+    operationsStore.fetchOperations();
     await waitFor(() =>
       expect(operationsStore.hasRunningOperations).toBe(true)
     );
@@ -344,6 +344,7 @@ describe('stores/operations', () => {
       expect(operationsStore.hasRunningOperations).toBe(false)
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 });

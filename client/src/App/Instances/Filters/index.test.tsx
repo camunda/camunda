@@ -392,6 +392,8 @@ describe('Filters', () => {
 
       // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
       expect(filtersStore.state.filter[target.name]).toBe(target.value);
+
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
 
@@ -1222,6 +1224,8 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDate' does not exist on type '{}'.
       expect(filtersStore.state.filter.startDate).toBe('1084-10-08');
+
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
 
@@ -1348,6 +1352,8 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDate' does not exist on type '{}'.
       expect(filtersStore.state.filter.endDate).toBe('1984-10-08');
+
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
 
@@ -1454,6 +1460,7 @@ describe('Filters', () => {
     });
 
     afterEach(() => {
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
 
@@ -1610,6 +1617,7 @@ describe('Filters', () => {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'errorMessage' does not exist on type '{}... Remove this comment to see the full error message
       expect(filtersStore.state.filter.errorMessage).toBe(undefined);
 
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
 
@@ -1651,6 +1659,7 @@ describe('Filters', () => {
       jest.useFakeTimers();
     });
     afterEach(() => {
+      jest.clearAllTimers();
       jest.useRealTimers();
     });
     it('should render a batchOperationId field', async () => {

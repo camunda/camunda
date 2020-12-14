@@ -17,15 +17,11 @@ import {
   mockWorkflowStatistics,
   mockWorkflowXML,
   mockWorkflowInstances,
+  operations,
 } from 'modules/testUtils';
-import {
-  fetchWorkflowInstances,
-  fetchGroupedWorkflows,
-  fetchWorkflowInstancesStatistics,
-  fetchWorkflowInstancesByIds,
-  fetchWorkflowCoreStatistics,
-} from 'modules/api/instances';
-import {fetchWorkflowXML} from 'modules/api/diagram';
+
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/instances');
@@ -53,27 +49,36 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('Instances', () => {
-  beforeAll(() => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchWorkflowInstances.mockImplementation(() => mockWorkflowInstances);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchWorkflowInstancesByIds.mockImplementation(() => mockWorkflowInstances);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchGroupedWorkflows.mockImplementation(() => groupedWorkflowsMock);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchWorkflowInstancesStatistics.mockImplementation(
-      () => mockWorkflowStatistics
+  beforeEach(() => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockWorkflowXML))
+      ),
+      rest.get('/api/workflows/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedWorkflowsMock))
+      ),
+      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowStatistics))
+      ),
+      rest.post('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            coreStatistics: {
+              running: 821,
+              active: 90,
+              withIncidents: 731,
+            },
+          })
+        )
+      ),
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json(operations))
+      )
     );
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchWorkflowXML.mockImplementation(() => mockWorkflowXML);
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'mockImplementation' does not exist on ty... Remove this comment to see the full error message
-    fetchWorkflowCoreStatistics.mockImplementation(() => ({
-      coreStatistics: {
-        running: 821,
-        active: 90,
-        withIncidents: 731,
-      },
-    }));
   });
 
   it('should render title and document title', () => {

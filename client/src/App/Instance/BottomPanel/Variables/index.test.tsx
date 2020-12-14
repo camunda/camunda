@@ -39,29 +39,6 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('Variables', () => {
-  beforeEach(async () => {
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(null))
-      ),
-      rest.get('/api/workflow-instances/:instanceId', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 1,
-            state: 'ACTIVE',
-          })
-        )
-      ),
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
-      )
-    );
-
-    await currentInstanceStore.init(1);
-  });
-
   afterEach(() => {
     currentInstanceStore.reset();
     variablesStore.reset();
@@ -83,6 +60,12 @@ describe('Variables', () => {
     });
 
     it('should display skeleton on initial load', async () => {
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
 
       expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
@@ -90,6 +73,13 @@ describe('Variables', () => {
     });
 
     it('should display spinner on second variable fetch', async () => {
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -109,6 +99,12 @@ describe('Variables', () => {
 
   describe('Variables', () => {
     it('should render variables table', async () => {
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -126,9 +122,15 @@ describe('Variables', () => {
     });
 
     it('should show/hide spinner next to variable according to it having an active operation', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-
       const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
         ({hasActiveOperation}) => hasActiveOperation
@@ -155,6 +157,14 @@ describe('Variables', () => {
 
   describe('Add variable', () => {
     it('should show/hide add variable inputs', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -166,6 +176,14 @@ describe('Variables', () => {
     });
 
     it('should validate when adding variable', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -236,6 +254,14 @@ describe('Variables', () => {
     });
 
     it('should save new variable', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -250,6 +276,13 @@ describe('Variables', () => {
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: newVariableValue},
       });
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(null))
+        )
+      );
 
       fireEvent.click(screen.getByRole('button', {name: 'Save variable'}));
 
@@ -291,6 +324,14 @@ describe('Variables', () => {
 
   describe('Edit variable', () => {
     it('should show/hide edit button next to variable according to it having an active operation', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -317,8 +358,14 @@ describe('Variables', () => {
     });
 
     it('should not display edit button next to variables if instance is completed or canceled', async () => {
-      jest.useFakeTimers();
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
 
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -332,28 +379,25 @@ describe('Variables', () => {
         )
       ).toBeInTheDocument();
 
-      mockServer.use(
-        rest.get('/api/workflow-instances/:instanceId', (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              id: 2,
-              state: 'CANCELED',
-            })
-          )
-        )
-      );
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'CANCELED'});
 
-      jest.advanceTimersByTime(5000);
-      await waitForElementToBeRemoved(
+      expect(
         within(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
           screen.getByTestId(inactiveOperationVariable.name)
-        ).queryByTestId('edit-variable-button'),
-        {timeout: 5000}
-      );
-      jest.useRealTimers();
+        ).queryByTestId('edit-variable-button')
+      ).not.toBeInTheDocument();
     });
 
     it('should show/hide edit variable inputs', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -384,6 +428,14 @@ describe('Variables', () => {
     });
 
     it('should disable save button when nothing is changed', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -401,6 +453,14 @@ describe('Variables', () => {
     });
 
     it('should validate when editing variables', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -443,6 +503,14 @@ describe('Variables', () => {
       });
     });
     it('should disable add variable button when loading', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
 
       expect(screen.getByText('Add Variable')).toBeDisabled();
@@ -453,6 +521,13 @@ describe('Variables', () => {
     it('should disable add variable button if instance state is cancelled', async () => {
       currentInstanceStore.setCurrentInstance({id: 1, state: 'CANCELED'});
 
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -460,6 +535,14 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button if add/edit variable button is clicked', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -477,6 +560,14 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button when clicked', async () => {
+      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 

@@ -108,6 +108,8 @@ describe('Instance', () => {
         getWorkflowName(testData.fetch.onPageLoad.workflowInstance)
       )
     );
+
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 });

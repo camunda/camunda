@@ -125,6 +125,7 @@ describe('stores/sequenceFlows', () => {
       ])
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

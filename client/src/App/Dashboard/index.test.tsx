@@ -13,6 +13,8 @@ import {Dashboard} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {mockIncidentsByError} from './IncidentsByError/index.setup';
+import {mockWithSingleVersion} from './InstancesByWorkflow/index.setup';
 
 type Props = {
   children?: React.ReactNode;
@@ -25,6 +27,7 @@ const Wrapper = ({children}: Props) => {
     </ThemeProvider>
   );
 };
+
 describe('Dashboard', () => {
   beforeEach(() => {
     statisticsStore.reset();
@@ -40,12 +43,19 @@ describe('Dashboard', () => {
             withIncidents: 731,
           })
         )
+      ),
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsByError))
+      ),
+      rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+        res.once(ctx.json(mockWithSingleVersion))
       )
     );
 
     render(<Dashboard />, {wrapper: Wrapper});
 
     await statisticsStore.fetchStatistics();
+
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
     expect(screen.getByText('Camunda Operate Dashboard')).toBeInTheDocument();
     expect(

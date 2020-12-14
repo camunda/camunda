@@ -104,6 +104,7 @@ describe('stores/incidents', () => {
       })
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

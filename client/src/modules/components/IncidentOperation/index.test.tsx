@@ -113,16 +113,4 @@ describe('IncidentOperation', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
   });
-
-  it('should render a spinner when retry button is clicked', () => {
-    render(
-      <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
-      {wrapper: ThemeProvider}
-    );
-    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId('retry-incident'));
-
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-  });
 });

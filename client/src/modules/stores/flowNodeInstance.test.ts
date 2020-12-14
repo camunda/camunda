@@ -137,6 +137,7 @@ describe('stores/flowNodeInstance', () => {
       );
     });
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -303,6 +304,7 @@ describe('stores/flowNodeInstance', () => {
       true
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -328,6 +330,7 @@ describe('stores/flowNodeInstance', () => {
     currentInstanceStore.setCurrentInstance(null);
     expect(flowNodeInstanceStore.instanceExecutionHistory).toEqual(null);
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -380,6 +383,7 @@ describe('stores/flowNodeInstance', () => {
       flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap.has('neverFails')
     ).toBe(true);
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

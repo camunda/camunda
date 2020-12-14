@@ -107,13 +107,13 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show an error', async () => {
+  it('should show an error when a server error occurs', async () => {
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''), ctx.status(500))
       )
     );
-    const {unmount} = render(<TopPanel />, {wrapper: Wrapper});
+    render(<TopPanel />, {wrapper: Wrapper});
 
     currentInstanceStore.init('instance_with_incident');
     singleInstanceDiagramStore.fetchWorkflowXml('1');
@@ -121,15 +121,18 @@ describe('TopPanel', () => {
     expect(
       await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
+  });
 
-    unmount();
-
+  it('should show an error when a network error occurs', async () => {
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.networkError('A network error')
       )
     );
     render(<TopPanel />, {wrapper: Wrapper});
+
+    currentInstanceStore.init('instance_with_incident');
+    singleInstanceDiagramStore.fetchWorkflowXml('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')

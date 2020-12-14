@@ -215,6 +215,7 @@ describe('stores/variables', () => {
       ])
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

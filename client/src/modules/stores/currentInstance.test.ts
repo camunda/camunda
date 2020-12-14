@@ -90,6 +90,7 @@ describe('stores/currentInstance', () => {
       )
     );
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 

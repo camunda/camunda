@@ -60,7 +60,6 @@ describe('VariablePanel', () => {
 
   afterEach(() => {
     flowNodeInstanceStore.reset();
-    variablesStore.reset();
   });
 
   it('should show multiple scope placeholder when multiple nodes are selected', () => {

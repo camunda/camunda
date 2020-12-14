@@ -53,6 +53,10 @@ global.localStorage = (function () {
 
 window.MutationObserver = MutationObserver;
 
-beforeAll(() => mockServer.listen());
+beforeAll(() =>
+  mockServer.listen({
+    onUnhandledRequest: 'warn',
+  })
+);
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());

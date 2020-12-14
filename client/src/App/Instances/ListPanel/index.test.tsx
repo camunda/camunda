@@ -10,6 +10,8 @@ import {
   screen,
   fireEvent,
   waitForElementToBeRemoved,
+  within,
+  waitFor,
 } from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -20,6 +22,7 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {filtersStore} from 'modules/stores/filters';
+import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
@@ -34,40 +37,26 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 const locationMock = {pathname: '/instances'};
 const historyMock = createMemoryHistory();
 
-const Wrapper: React.FC = ({children}) => {
-  return (
-    <ThemeProvider>
-      <NotificationProvider>
-        <MemoryRouter>
-          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-        </MemoryRouter>
-      </NotificationProvider>
-    </ThemeProvider>
-  );
-};
+function createWrapper(expandOperationsMock = jest.fn()) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <NotificationProvider>
+          <MemoryRouter>
+            <CollapsablePanelContext.Provider
+              value={{expandOperations: expandOperationsMock}}
+            >
+              {children}
+            </CollapsablePanelContext.Provider>
+          </MemoryRouter>
+        </NotificationProvider>
+      </ThemeProvider>
+    );
+  };
+  return Wrapper;
+}
 
 describe('ListPanel', () => {
-  beforeEach(async () => {
-    mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
-      ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
-      )
-    );
-
-    filtersStore.setUrlParameters(historyMock, locationMock);
-
-    await filtersStore.init();
-    filtersStore.setFilter(DEFAULT_FILTER);
-    filtersStore.setSorting(DEFAULT_SORTING);
-    filtersStore.setEntriesPerPage(10);
-  });
-
   afterEach(() => {
     filtersStore.reset();
     instancesStore.reset();
@@ -75,7 +64,7 @@ describe('ListPanel', () => {
   });
 
   describe('messages', () => {
-    it('should display a message for empty list when filter has no state', async () => {
+    it('should display a message for empty list when no filter is selected', async () => {
       mockServer.use(
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
@@ -83,14 +72,19 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances({
+
+      filtersStore.setFilter({});
+      instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
-      filtersStore.setFilter({});
+
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
       expect(
         screen.getByText('There are no Instances matching this filter set')
       ).toBeInTheDocument();
@@ -101,7 +95,7 @@ describe('ListPanel', () => {
       ).toBeInTheDocument();
     });
 
-    it('should display an empty list message when filter has at least one state', async () => {
+    it('should display a message for empty list when at least one filter is selected', async () => {
       mockServer.use(
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
@@ -109,15 +103,20 @@ describe('ListPanel', () => {
             res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      await instancesStore.fetchInstances({
+
+      filtersStore.setFilter(DEFAULT_FILTER);
+
+      instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
 
-      filtersStore.setFilter(DEFAULT_FILTER);
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
       expect(
         screen.getByText('There are no Instances matching this filter set')
       ).toBeInTheDocument();
@@ -144,7 +143,7 @@ describe('ListPanel', () => {
       });
 
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       });
 
       expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
@@ -165,13 +164,22 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances({
+      filtersStore.setEntriesPerPage(10);
+      instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
 
-      render(<ListPanel />, {wrapper: Wrapper});
-      expect(screen.getByTestId('instances-list')).toBeInTheDocument();
+      render(<ListPanel />, {wrapper: createWrapper()});
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+      const withinFirstRow = within(
+        screen.getByRole('row', {
+          name: /instance 1/i,
+        })
+      );
+
+      expect(withinFirstRow.getByText('someWorkflowName')).toBeInTheDocument();
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
@@ -186,13 +194,16 @@ describe('ListPanel', () => {
         )
       );
 
-      await instancesStore.fetchInstances({
+      instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
+
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
 
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
@@ -201,19 +212,9 @@ describe('ListPanel', () => {
   });
 
   it('should start operation on an instance from list', async () => {
-    instancesStore.init();
     jest.useFakeTimers();
+
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
-      ),
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
-      ),
       rest.post(
         '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
         (_, res, ctx) =>
@@ -238,12 +239,17 @@ describe('ListPanel', () => {
       )
     );
 
-    await instancesStore.fetchInstances({
+    filtersStore.setEntriesPerPage(10);
+    instancesStore.fetchInstances({
       firstResult: 0,
       maxResults: 50,
     });
+    instancesStore.init();
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
     render(<ListPanel />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     expect(
@@ -255,11 +261,34 @@ describe('ListPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [INSTANCE],
+              totalCount: 2,
+            })
+          )
+      )
+    );
     jest.runOnlyPendingTimers();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 
-    jest.useFakeTimers();
-  }, 10000);
+    // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
+    await waitFor(() =>
+      expect(instancesStore.state.filteredInstancesCount).toBe(2)
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 
   describe('spinner', () => {
     it('should display spinners on batch operation', async () => {
@@ -272,16 +301,20 @@ describe('ListPanel', () => {
           res.once(ctx.json({}))
         )
       );
+
+      filtersStore.setEntriesPerPage(10);
       instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
 
+      const mockExpandOperations = jest.fn();
+
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(mockExpandOperations),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
       fireEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
@@ -297,13 +330,15 @@ describe('ListPanel', () => {
           (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
         )
       );
+
       instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
-      await waitForElementToBeRemoved(
-        screen.getAllByTestId('operation-spinner')
-      );
+
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      expect(screen.queryAllByTestId('operation-spinner').length).toBe(0);
+      expect(mockExpandOperations).toHaveBeenCalledTimes(1);
     });
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
@@ -317,20 +352,23 @@ describe('ListPanel', () => {
         ),
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+          (_, res, ctx) =>
+            res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
 
+      filtersStore.setEntriesPerPage(10);
       instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
 
+      const mockExpandOperations = jest.fn();
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(mockExpandOperations),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
       fireEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
@@ -339,9 +377,16 @@ describe('ListPanel', () => {
       fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
       fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
-      await waitForElementToBeRemoved(
-        screen.getAllByTestId('operation-spinner')
+      await waitFor(() =>
+        expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
       );
+
+      // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
+      await waitFor(() =>
+        expect(instancesStore.state.filteredInstancesCount).toBe(1000)
+      );
+
+      expect(mockExpandOperations).not.toHaveBeenCalled();
     });
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
@@ -355,20 +400,22 @@ describe('ListPanel', () => {
         ),
         rest.post(
           '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+          (_, res, ctx) =>
+            res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
 
+      filtersStore.setEntriesPerPage(10);
       instancesStore.fetchInstances({
         firstResult: 0,
         maxResults: 50,
       });
 
       render(<ListPanel />, {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
       fireEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
@@ -377,8 +424,13 @@ describe('ListPanel', () => {
       fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
       fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
-      await waitForElementToBeRemoved(
-        screen.getAllByTestId('operation-spinner')
+      await waitFor(() =>
+        expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
+      );
+
+      // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
+      await waitFor(() =>
+        expect(instancesStore.state.filteredInstancesCount).toBe(1000)
       );
     });
   });
@@ -391,12 +443,14 @@ describe('ListPanel', () => {
       )
     );
 
-    await instancesStore.fetchInstances({
+    filtersStore.setEntriesPerPage(10);
+    instancesStore.fetchInstances({
       firstResult: 0,
       maxResults: 50,
     });
+
     const {unmount} = render(<ListPanel />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     expect(
@@ -404,6 +458,7 @@ describe('ListPanel', () => {
     ).toBeInTheDocument();
 
     unmount();
+    instancesStore.reset();
 
     mockServer.use(
       rest.post(
@@ -417,7 +472,7 @@ describe('ListPanel', () => {
       maxResults: 50,
     });
     render(<ListPanel />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     expect(

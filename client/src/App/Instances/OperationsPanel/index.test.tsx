@@ -19,7 +19,6 @@ import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
-import {operationsStore} from 'modules/stores/operations';
 
 type Props = {
   children?: React.ReactNode;
@@ -34,10 +33,6 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('OperationsPanel', () => {
-  afterEach(() => {
-    operationsStore.reset();
-  });
-
   it('should display empty panel on mount', async () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>

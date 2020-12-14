@@ -57,7 +57,6 @@ describe('useOperationApply', () => {
 
     filtersStore.setUrlParameters(historyMock, locationMock);
     await filtersStore.init();
-    instancesStore.init();
   });
 
   afterEach(() => {
@@ -89,6 +88,7 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, select all ids)', async () => {
     const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectAll;
+    instancesStore.init();
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -99,11 +99,7 @@ describe('useOperationApply', () => {
       })
     );
 
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1',
-    });
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
       rest.post(
@@ -111,6 +107,14 @@ describe('useOperationApply', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
+
+    filtersStore.setFilter({
+      // @ts-expect-error
+      ...filtersStore.state.filter,
+      ids: '1',
+    });
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
     instanceSelectionStore.setAllChecked();
@@ -125,6 +129,7 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, select one id)', async () => {
     const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectOne;
+    instancesStore.init();
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -135,12 +140,7 @@ describe('useOperationApply', () => {
       })
     );
 
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1, 2',
-    });
-    instanceSelectionStore.selectInstance('1');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
       rest.post(
@@ -148,6 +148,16 @@ describe('useOperationApply', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
+    filtersStore.setFilter({
+      // @ts-expect-error
+      ...filtersStore.state.filter,
+      ids: '1, 2',
+    });
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    instanceSelectionStore.selectInstance('1');
+
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
@@ -162,6 +172,7 @@ describe('useOperationApply', () => {
       expectedQuery,
       ...context
     } = mockData.setFilterExcludeOne;
+    instancesStore.init();
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -172,13 +183,7 @@ describe('useOperationApply', () => {
       })
     );
 
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1, 2',
-    });
-    instanceSelectionStore.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
-    instanceSelectionStore.selectInstance('1');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
       rest.post(
@@ -186,6 +191,17 @@ describe('useOperationApply', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
+
+    filtersStore.setFilter({
+      // @ts-expect-error
+      ...filtersStore.state.filter,
+      ids: '1, 2',
+    });
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    instanceSelectionStore.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
+    instanceSelectionStore.selectInstance('1');
 
     expect(operationsStore.state.operations).toEqual([]);
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
@@ -202,6 +218,7 @@ describe('useOperationApply', () => {
       expectedQuery,
       ...context
     } = mockData.setWorkflowFilterSelectOne;
+    instancesStore.init();
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -212,6 +229,13 @@ describe('useOperationApply', () => {
       })
     );
 
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
     filtersStore.setFilter({
       // @ts-expect-error
       ...filtersStore.state.filter,
@@ -219,12 +243,7 @@ describe('useOperationApply', () => {
       version: '1',
     });
 
-    mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
-      )
-    );
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     instanceSelectionStore.selectInstance('1');
 
@@ -241,19 +260,33 @@ describe('useOperationApply', () => {
     const {expectedQuery, ...context} = mockData.setFilterSelectAll;
     instanceSelectionStore.setMode(INSTANCE_SELECTION_MODE.ALL);
 
+    jest.useFakeTimers();
+    instancesStore.init();
+
     await waitFor(() =>
       expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
 
-    jest.useFakeTimers();
     mockServer.use(
       rest.post(
         '/api/workflow-instances?firstResult=:firstResult&maxResults=2',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              totalCount: 100,
+              workflowInstances: mockWorkflowInstances.workflowInstances,
+            })
+          )
       ),
       rest.post(
         '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              totalCount: 200,
+              workflowInstances: mockWorkflowInstances.workflowInstances,
+            })
+          )
       )
     );
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
@@ -266,9 +299,12 @@ describe('useOperationApply', () => {
 
     jest.runOnlyPendingTimers();
 
-    await waitFor(() =>
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([])
-    );
+    await waitFor(() => {
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.state.filteredInstancesCount).toBe(200); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
+    });
+
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -276,11 +312,12 @@ describe('useOperationApply', () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
     instanceSelectionStore.selectInstance('2251799813685594');
 
+    jest.useFakeTimers();
+    instancesStore.init();
     await waitFor(() =>
       expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
 
-    jest.useFakeTimers();
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
 
@@ -290,18 +327,34 @@ describe('useOperationApply', () => {
     mockServer.use(
       rest.post(
         '/api/workflow-instances?firstResult=0&maxResults=1',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              totalCount: 100,
+              workflowInstances: mockWorkflowInstances.workflowInstances,
+            })
+          )
       ),
       rest.post(
         '/api/workflow-instances?firstResult=0&maxResults=50',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              totalCount: 200,
+              workflowInstances: mockWorkflowInstances.workflowInstances,
+            })
+          )
       )
     );
+
     jest.runOnlyPendingTimers();
 
-    await waitFor(() =>
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([])
-    );
+    await waitFor(() => {
+      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.state.filteredInstancesCount).toBe(200); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
+    });
+
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 });

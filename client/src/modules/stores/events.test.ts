@@ -65,6 +65,7 @@ describe('stores/events', () => {
       expect(eventsStore.state.items).toEqual(secondEventsMock);
     });
 
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
