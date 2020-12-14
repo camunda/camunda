@@ -20,7 +20,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import java.util.Arrays;
@@ -43,23 +42,18 @@ public class AppendRequest extends AbstractRaftRequest {
   private final List<RaftLogEntry> entries;
   private final long commitIndex;
 
-  @Since(1)
-  private final List<Long> checksums;
-
   public AppendRequest(
       final long term,
       final String leader,
       final long prevLogIndex,
       final long prevLogTerm,
       final List<RaftLogEntry> entries,
-      final List<Long> checksums,
       final long commitIndex) {
     this.term = term;
     this.leader = leader;
     this.prevLogIndex = prevLogIndex;
     this.prevLogTerm = prevLogTerm;
     this.entries = entries;
-    this.checksums = checksums;
     this.commitIndex = commitIndex;
   }
 
@@ -116,14 +110,7 @@ public class AppendRequest extends AbstractRaftRequest {
   public List<RaftLogEntry> entries() {
     return entries;
   }
-  /**
-   * Returns the checksums for the log entries.
-   *
-   * @return A list of checksums
-   */
-  public List<Long> checksums() {
-    return checksums;
-  }
+
   /**
    * Returns the leader's commit index.
    *
@@ -135,8 +122,7 @@ public class AppendRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        getClass(), term, leader, prevLogIndex, prevLogTerm, entries, commitIndex, checksums);
+    return Objects.hash(getClass(), term, leader, prevLogIndex, prevLogTerm, entries, commitIndex);
   }
 
   @Override
@@ -148,8 +134,7 @@ public class AppendRequest extends AbstractRaftRequest {
           && request.prevLogIndex == prevLogIndex
           && request.prevLogTerm == prevLogTerm
           && request.entries.equals(entries)
-          && request.commitIndex == commitIndex
-          && request.checksums.equals(checksums);
+          && request.commitIndex == commitIndex;
     }
     return false;
   }
@@ -162,7 +147,6 @@ public class AppendRequest extends AbstractRaftRequest {
         .add("prevLogIndex", prevLogIndex)
         .add("prevLogTerm", prevLogTerm)
         .add("entries", entries.size())
-        .add("checksums", checksums.size())
         .add("commitIndex", commitIndex)
         .toString();
   }
@@ -175,7 +159,6 @@ public class AppendRequest extends AbstractRaftRequest {
     private long logIndex;
     private long logTerm;
     private List<RaftLogEntry> entries;
-    private List<Long> checksums;
     private long commitIndex = -1;
 
     /**
@@ -254,18 +237,6 @@ public class AppendRequest extends AbstractRaftRequest {
     }
 
     /**
-     * Sets the entries' checksums.
-     *
-     * @param checksums The entries' checksums.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withChecksums(final List<Long> checksums) {
-      this.checksums = checkNotNull(checksums, "checksums cannot be null");
-      return this;
-    }
-
-    /**
      * Adds an entry to the request.
      *
      * @param entry The entry to add.
@@ -297,7 +268,7 @@ public class AppendRequest extends AbstractRaftRequest {
     @Override
     public AppendRequest build() {
       validate();
-      return new AppendRequest(term, leader, logIndex, logTerm, entries, checksums, commitIndex);
+      return new AppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
     }
 
     @Override
@@ -308,7 +279,6 @@ public class AppendRequest extends AbstractRaftRequest {
       checkArgument(logIndex >= 0, "prevLogIndex must be positive");
       checkArgument(logTerm >= 0, "prevLogTerm must be positive");
       checkNotNull(entries, "entries cannot be null");
-      checkNotNull(checksums, "checksums cannot be null");
       checkArgument(commitIndex >= 0, "commitIndex must be positive");
     }
   }

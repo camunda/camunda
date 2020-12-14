@@ -53,15 +53,6 @@ public interface JournalWriter<E> extends AutoCloseable {
   <T extends E> Indexed<T> append(T entry);
 
   /**
-   * Validate the entry checksum and, if successful, appends the entry to the journal.
-   *
-   * @param entry The entry to append.
-   * @param checksum The entry checksum.
-   * @return The appended indexed entry.
-   */
-  <T extends E> Indexed<T> append(T entry, long checksum);
-
-  /**
    * Appends an indexed entry to the log.
    *
    * @param entry The indexed entry to append.

@@ -52,11 +52,6 @@ public class DelegatingJournalWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  public <T extends E> Indexed<T> append(final T entry, final long checksum) {
-    return delegate.append(entry, checksum);
-  }
-
-  @Override
   public void commit(final long index) {
     delegate.commit(index);
   }

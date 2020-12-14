@@ -54,7 +54,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   private final Namespace namespace;
   private final ByteBuffer memory;
   private final long firstIndex;
-  private final Checksum crc32 = new CRC32();
   private Indexed<E> lastEntry;
 
   FileChannelJournalSegmentWriter(
@@ -97,16 +96,6 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public <T extends E> Indexed<T> append(final T entry) {
-    return append(entry, false, -1);
-  }
-
-  @Override
-  public <T extends E> Indexed<T> append(final T entry, final long checksum) {
-    return append(entry, true, checksum);
-  }
-
-  private <T extends E> Indexed<T> append(
-      final T entry, final boolean validateChecksum, final long expectedChecksum) {
     // Store the entry index.
     final long index = getNextIndex();
 
@@ -137,11 +126,13 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
             "Entry size " + length + " exceeds maximum allowed bytes (" + maxEntrySize + ")");
       }
 
-      final long checksum =
-          computeChecksum(memory.array(), 2 * Integer.BYTES, memory.limit() - 2 * Integer.BYTES);
-      if (validateChecksum && checksum != expectedChecksum) {
-        throw new StorageException.InvalidChecksum("Entry has an invalid checksum");
-      }
+      // Compute the checksum for the entry.
+      final Checksum crc32 = new CRC32();
+      crc32.update(
+          memory.array(),
+          Integer.BYTES + Integer.BYTES,
+          memory.limit() - (Integer.BYTES + Integer.BYTES));
+      final long checksum = crc32.getValue();
 
       // Create a single byte[] in memory for the entire entry and write it as a batch to the
       // underlying buffer.
@@ -150,19 +141,13 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
       channel.write(memory);
 
       // Update the last entry with the correct index/term/length.
-      final Indexed<E> indexedEntry = new Indexed<>(index, entry, length, checksum);
+      final Indexed<E> indexedEntry = new Indexed<>(index, entry, length);
       lastEntry = indexedEntry;
       this.index.index(lastEntry, (int) position);
       return (Indexed<T>) indexedEntry;
     } catch (final IOException e) {
       throw new StorageException(e);
     }
-  }
-
-  private long computeChecksum(final byte[] array, final int position, final int length) {
-    crc32.reset();
-    crc32.update(array, position, length);
-    return crc32.getValue();
   }
 
   @Override
@@ -214,13 +199,17 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
         // Read the checksum of the entry.
         final long checksum = memory.getInt() & 0xFFFFFFFFL;
 
+        // Compute the checksum for the entry bytes.
+        final Checksum crc32 = new CRC32();
+        crc32.update(memory.array(), memory.position(), length);
+
         // If the stored checksum equals the computed checksum, return the entry.
-        if (checksum == computeChecksum(memory.array(), memory.position(), length)) {
+        if (checksum == crc32.getValue()) {
           final int limit = memory.limit();
           memory.limit(memory.position() + length);
           final E entry = namespace.deserialize(memory);
           memory.limit(limit);
-          lastEntry = new Indexed<>(nextIndex, entry, length, checksum);
+          lastEntry = new Indexed<>(nextIndex, entry, length);
           this.index.index(lastEntry, (int) position);
           nextIndex++;
         } else {

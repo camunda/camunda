@@ -30,7 +30,6 @@ import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
-import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -79,14 +78,13 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45, -1);
+              return new Indexed<>(1, zeebeEntry, 45);
             });
     when(context.getLogWriter()).thenReturn(writer);
 
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
-    when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
@@ -138,7 +136,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45, -1);
+              return new Indexed<>(1, zeebeEntry, 45);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -390,7 +388,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45, -1);
+              return new Indexed<>(1, zeebeEntry, 45);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -435,7 +433,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45, -1);
+              return new Indexed<>(1, zeebeEntry, 45);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);

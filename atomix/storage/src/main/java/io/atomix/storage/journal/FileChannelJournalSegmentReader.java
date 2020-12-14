@@ -143,7 +143,7 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
 
     final Position position = this.index.lookup(index - 1);
     if (position != null && position.index() >= firstIndex && position.index() <= lastIndex) {
-      currentEntry = new Indexed<>(position.index() - 1, null, 0, -1);
+      currentEntry = new Indexed<>(position.index() - 1, null, 0);
       try {
         channel.position(position.position());
         memory.clear().flip();
@@ -209,9 +209,7 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
   }
 
   private void readNextEntry(final long index, final int length) {
-    final long checksum = memory.getInt() & 0xFFFFFFFFL;
-
-    if (isChecksumInvalid(checksum, length)) {
+    if (isChecksumInvalid(length)) {
       resetReading();
       return;
     }
@@ -221,7 +219,7 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
     memory.limit(memory.position() + length);
     final E entry = namespace.deserialize(memory);
     memory.limit(limit);
-    nextEntry = new Indexed<>(index, entry, length, checksum);
+    nextEntry = new Indexed<>(index, entry, length);
   }
 
   private void resetReading() {
@@ -229,7 +227,10 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
     nextEntry = null;
   }
 
-  private boolean isChecksumInvalid(final long checksum, final int length) {
+  private boolean isChecksumInvalid(final int length) {
+    // Read the checksum of the entry.
+    final long checksum = memory.getInt() & 0xFFFFFFFFL;
+
     // Compute the checksum for the entry bytes.
     final Checksum crc32 = new CRC32();
     crc32.update(memory.array(), memory.position(), length);

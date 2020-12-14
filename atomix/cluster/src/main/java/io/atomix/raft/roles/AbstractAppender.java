@@ -107,7 +107,6 @@ abstract class AbstractAppender implements AutoCloseable {
         .withTerm(raft.getTerm())
         .withLeader(leader.memberId())
         .withEntries(Collections.emptyList())
-        .withChecksums(Collections.emptyList())
         .withCommitIndex(raft.getCommitIndex())
         .build();
   }
@@ -147,7 +146,6 @@ abstract class AbstractAppender implements AutoCloseable {
 
     // Build a list of entries to send to the member.
     final List<RaftLogEntry> entries = new ArrayList<>();
-    final List<Long> checksums = new ArrayList<>();
 
     // Build a list of entries up to the MAX_BATCH_SIZE. Note that entries in the log may
     // be null if they've been compacted and the member to which we're sending entries is just
@@ -162,7 +160,6 @@ abstract class AbstractAppender implements AutoCloseable {
       // Otherwise, read the next entry and add it to the batch.
       final Indexed<RaftLogEntry> entry = reader.next();
       entries.add(entry.entry());
-      checksums.add(entry.checksum());
       size += entry.size();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
@@ -170,7 +167,7 @@ abstract class AbstractAppender implements AutoCloseable {
     }
 
     // Add the entries to the request builder and build the request.
-    return builder.withEntries(entries).withChecksums(checksums).build();
+    return builder.withEntries(entries).build();
   }
 
   /** Connects to the member and sends a commit message. */

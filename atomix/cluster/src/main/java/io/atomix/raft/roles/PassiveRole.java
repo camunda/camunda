@@ -437,23 +437,9 @@ public class PassiveRole extends InactiveRole {
       return future;
     }
 
-    if (!checkChecksums(request, future)) {
-      return future;
-    }
-
     // Append the entries to the log.
     appendEntries(request, future);
     return future;
-  }
-
-  private boolean checkChecksums(
-      final AppendRequest request, final CompletableFuture<AppendResponse> future) {
-    if (request.checksums() != null && request.entries().size() != request.checksums().size()) {
-      log.debug("Rejected {}: expected the same number of checksums as entries", request);
-      return failAppend(raft.getLogWriter().getLastIndex(), future);
-    }
-
-    return true;
   }
 
   /**
@@ -594,16 +580,13 @@ public class PassiveRole extends InactiveRole {
       }
 
       // Iterate through entries and append them.
-      for (int i = 0; i < request.entries().size(); ++i) {
+      for (final RaftLogEntry entry : request.entries()) {
         final long index = ++lastLogIndex;
-        final RaftLogEntry entry = request.entries().get(i);
-        final Long checksum = request.checksums() == null ? null : request.checksums().get(i);
 
         // Get the last entry written to the log by the writer.
         final Indexed<RaftLogEntry> lastEntry = writer.getLastEntry();
 
-        final boolean failedToAppend =
-            tryToAppend(future, writer, reader, entry, checksum, index, lastEntry);
+        final boolean failedToAppend = tryToAppend(future, writer, reader, entry, index, lastEntry);
         if (failedToAppend) {
           return;
         }
@@ -640,7 +623,6 @@ public class PassiveRole extends InactiveRole {
       final RaftLogWriter writer,
       final RaftLogReader reader,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index,
       final Indexed<RaftLogEntry> lastEntry) {
     boolean failedToAppend = false;
@@ -648,7 +630,7 @@ public class PassiveRole extends InactiveRole {
       // If the last written entry index is greater than the next append entry index,
       // we need to validate that the entry that's already in the log matches this entry.
       if (lastEntry.index() > index) {
-        failedToAppend = !replaceExistingEntry(future, writer, reader, entry, checksum, index);
+        failedToAppend = !replaceExistingEntry(future, writer, reader, entry, index);
       } else if (lastEntry.index() == index) {
         // If the last written entry is equal to the append entry index, we don't need
         // to read the entry from disk and can just compare the last entry in the writer.
@@ -657,13 +639,13 @@ public class PassiveRole extends InactiveRole {
         // the log and append the leader's entry.
         if (lastEntry.entry().term() != entry.term()) {
           writer.truncate(index - 1);
-          failedToAppend = !appendEntry(index, entry, checksum, writer, future);
+          failedToAppend = !appendEntry(index, entry, writer, future);
         }
       } else { // Otherwise, this entry is being appended at the end of the log.
-        failedToAppend = !appendEntry(future, writer, entry, checksum, index, lastEntry);
+        failedToAppend = !appendEntry(future, writer, entry, index, lastEntry);
       }
     } else { // Otherwise, if the last entry is null just append the entry and log a message.
-      failedToAppend = !appendEntry(index, entry, checksum, writer, future);
+      failedToAppend = !appendEntry(index, entry, writer, future);
     }
     return failedToAppend;
   }
@@ -672,7 +654,6 @@ public class PassiveRole extends InactiveRole {
       final CompletableFuture<AppendResponse> future,
       final RaftLogWriter writer,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index,
       final Indexed<RaftLogEntry> lastEntry) {
     // If the last entry index isn't the previous index, throw an exception because
@@ -683,7 +664,7 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Append the entry and log a message.
-    return appendEntry(index, entry, checksum, writer, future);
+    return appendEntry(index, entry, writer, future);
   }
 
   private boolean replaceExistingEntry(
@@ -691,7 +672,6 @@ public class PassiveRole extends InactiveRole {
       final RaftLogWriter writer,
       final RaftLogReader reader,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index) {
     // Reset the reader to the current entry index.
     if (reader.getNextIndex() != index) {
@@ -712,7 +692,7 @@ public class PassiveRole extends InactiveRole {
     // the log and append the leader's entry.
     if (existingEntry.entry().term() != entry.term()) {
       writer.truncate(index - 1);
-      if (!appendEntry(index, entry, checksum, writer, future)) {
+      if (!appendEntry(index, entry, writer, future)) {
         return false;
       }
     }
@@ -726,17 +706,10 @@ public class PassiveRole extends InactiveRole {
   private boolean appendEntry(
       final long index,
       final RaftLogEntry entry,
-      final Long checksum,
       final RaftLogWriter writer,
       final CompletableFuture<AppendResponse> future) {
     try {
-      final Indexed<RaftLogEntry> indexed;
-      if (checksum != null) {
-        indexed = writer.append(entry, checksum);
-      } else {
-        indexed = writer.append(entry);
-      }
-
+      final Indexed<RaftLogEntry> indexed = writer.append(entry);
       log.trace("Appended {}", indexed);
       raft.getReplicationMetrics().setAppendIndex(indexed.index());
     } catch (final StorageException.TooLarge e) {
@@ -744,12 +717,8 @@ public class PassiveRole extends InactiveRole {
           "Entry size exceeds maximum allowed bytes. Ensure Raft storage configuration is consistent on all nodes!");
       return false;
     } catch (final StorageException.OutOfDiskSpace e) {
-      log.trace("Append failed: ", e);
+      log.trace("Append failed: {}", e);
       raft.getLogCompactor().compact();
-      failAppend(index - 1, future);
-      return false;
-    } catch (final StorageException.InvalidChecksum e) {
-      log.debug("Entry checksum doesn't match entry data: ", e);
       failAppend(index - 1, future);
       return false;
     }
