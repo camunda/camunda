@@ -11,26 +11,39 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
 import org.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.util.set.Sets;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +57,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
 
 @AllArgsConstructor
 @Component
@@ -51,28 +67,58 @@ import static java.util.stream.Collectors.toList;
 public class ReportImportService {
 
   private final ReportService reportService;
+  private final ReportWriter reportWriter;
   private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final AuthorizedCollectionService collectionService;
   private final OptimizeIndexNameService optimizeIndexNameService;
 
   public Map<String, IdResponseDto> importReportsIntoCollection(final String userId,
                                                                 final String collectionId,
-                                                                final List<OptimizeEntityExportDto> exportedReportDtos) {
+                                                                final List<OptimizeEntityExportDto> exportedDtos) {
     final Map<String, IdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    final List<OptimizeEntityExportDto> singleReportsToImport = exportedDtos.stream()
+      .filter(entity -> SINGLE_PROCESS_REPORT.equals(entity.getExportEntityType())
+        || SINGLE_DECISION_REPORT.equals(entity.getExportEntityType()))
+      .collect(toList());
+    final List<OptimizeEntityExportDto> combinedReportsToImport = exportedDtos.stream()
+      .filter(entity -> COMBINED.equals(entity.getExportEntityType()))
+      .collect(toList());
+
+    singleReportsToImport.forEach(
+      reportExportDto -> importReportIntoCollection(userId, collectionId, reportExportDto, originalIdToNewIdMap)
+    );
+
+    combinedReportsToImport.forEach(
+      reportExportDto -> importReportIntoCollection(userId, collectionId, reportExportDto, originalIdToNewIdMap)
+    );
+
+    return originalIdToNewIdMap;
+  }
+
+  public void validateAllReportsOrFail(final String userId,
+                                       final String collectionId,
+                                       final List<OptimizeEntityExportDto> exportedDtos) {
     final Set<ImportIndexMismatchDto> indexMismatches = new HashSet<>();
     final Set<DefinitionExceptionItemDto> missingDefinitions = new HashSet<>();
     final Set<DefinitionExceptionItemDto> forbiddenDefinitions = new HashSet<>();
+    final Set<ConflictedItemDto> definitionsNotInScope = new HashSet<>();
+    final Set<ConflictedItemDto> tenantsNotInScope = new HashSet<>();
 
-    exportedReportDtos.forEach(
+    exportedDtos.forEach(
       reportExportDto -> {
         try {
-          importReportIntoCollection(userId, collectionId, reportExportDto, originalIdToNewIdMap);
+          validateReportOrFail(userId, collectionId, reportExportDto);
         } catch (OptimizeImportIncorrectIndexVersionException e) {
           indexMismatches.addAll(e.getMismatchingIndices());
         } catch (OptimizeImportDefinitionDoesNotExistException e) {
           missingDefinitions.addAll(e.getMissingDefinitions());
         } catch (OptimizeImportForbiddenException e) {
           forbiddenDefinitions.addAll(e.getForbiddenDefinitions());
+        } catch (OptimizeNonDefinitionScopeCompliantException e) {
+          definitionsNotInScope.addAll(e.getConflictedItems());
+        } catch (OptimizeNonTenantScopeCompliantException e) {
+          tenantsNotInScope.addAll(e.getConflictedItems());
         }
       }
     );
@@ -102,7 +148,49 @@ public class ReportImportService {
       );
     }
 
-    return originalIdToNewIdMap;
+    if (!definitionsNotInScope.isEmpty()) {
+      throw new OptimizeNonDefinitionScopeCompliantException(definitionsNotInScope);
+    }
+
+    if (!tenantsNotInScope.isEmpty()) {
+      throw new OptimizeNonTenantScopeCompliantException(tenantsNotInScope);
+    }
+  }
+
+  private void validateReportOrFail(final String userId,
+                                    final String collectionId,
+                                    final OptimizeEntityExportDto exportedDto) {
+    final CollectionDefinitionDto collection = Optional.ofNullable(collectionId)
+      .map(collId -> collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collId).getDefinitionDto())
+      .orElse(null);
+
+    switch (exportedDto.getExportEntityType()) {
+      case SINGLE_PROCESS_REPORT:
+        final SingleProcessReportDefinitionExportDto processExport =
+          (SingleProcessReportDefinitionExportDto) exportedDto;
+        validateIndexVersionOrFail(new SingleProcessReportIndex(), processExport);
+        removeMissingVersionsOrFailIfNoVersionsExist(processExport);
+        validateAuthorizedToAccessDefinitionOrFail(userId, processExport);
+        validateCollectionScopeOrFail(collection, processExport);
+        populateDefinitionXml(processExport);
+        break;
+      case SINGLE_DECISION_REPORT:
+        final SingleDecisionReportDefinitionExportDto decisionExport =
+          (SingleDecisionReportDefinitionExportDto) exportedDto;
+        validateIndexVersionOrFail(new SingleDecisionReportIndex(), decisionExport);
+        removeMissingVersionsOrFailIfNoVersionsExist(decisionExport);
+        validateAuthorizedToAccessDefinitionOrFail(userId, decisionExport);
+        validateCollectionScopeOrFail(collection, decisionExport);
+        populateDefinitionXml(decisionExport);
+        break;
+      case COMBINED:
+        final CombinedProcessReportDefinitionExportDto combinedExport =
+          (CombinedProcessReportDefinitionExportDto) exportedDto;
+        validateIndexVersionOrFail(new CombinedReportIndex(), combinedExport);
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unknown report entity type: " + exportedDto.getExportEntityType());
+    }
   }
 
   private void importReportIntoCollection(final String userId,
@@ -126,8 +214,16 @@ public class ReportImportService {
           originalIdToNewIdMap
         );
         break;
+      case COMBINED:
+        importCombinedProcessReportIntoCollection(
+          userId,
+          collectionId,
+          (CombinedProcessReportDefinitionExportDto) exportedDto,
+          originalIdToNewIdMap
+        );
+        break;
       default:
-        throw new OptimizeRuntimeException("Unknown entity type: " + exportedDto.getExportEntityType());
+        throw new OptimizeRuntimeException("Unknown single report entity type: " + exportedDto.getExportEntityType());
     }
   }
 
@@ -135,14 +231,21 @@ public class ReportImportService {
                                                  final String collectionId,
                                                  final SingleProcessReportDefinitionExportDto exportedDto,
                                                  final Map<String, IdResponseDto> originalIdToNewIdMap) {
-    validateIndexVersionOrFail(new SingleProcessReportIndex(), exportedDto);
-    removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
-    validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
-    populateDefinitionXml(exportedDto);
-
-    final IdResponseDto newId = reportService.importReport(
+    final IdResponseDto newId = importReport(
       userId,
       createProcessReportDefinition(exportedDto),
+      collectionId
+    );
+    originalIdToNewIdMap.put(exportedDto.getId(), newId);
+  }
+
+  private void importCombinedProcessReportIntoCollection(final String userId,
+                                                         final String collectionId,
+                                                         final CombinedProcessReportDefinitionExportDto exportedDto,
+                                                         final Map<String, IdResponseDto> originalIdToNewIdMap) {
+    final IdResponseDto newId = importReport(
+      userId,
+      createCombinedReportDefinition(exportedDto, originalIdToNewIdMap),
       collectionId
     );
     originalIdToNewIdMap.put(exportedDto.getId(), newId);
@@ -152,17 +255,42 @@ public class ReportImportService {
                                                   final String collectionId,
                                                   final SingleDecisionReportDefinitionExportDto exportedDto,
                                                   final Map<String, IdResponseDto> originalIdToNewIdMap) {
-    validateIndexVersionOrFail(new SingleDecisionReportIndex(), exportedDto);
-    removeMissingVersionsOrFailIfNoVersionsExist(exportedDto);
-    validateAuthorizedToAccessDefinitionOrFail(userId, exportedDto);
-    populateDefinitionXml(exportedDto);
-
-    final IdResponseDto newId = reportService.importReport(
+    final IdResponseDto newId = importReport(
       userId,
       createDecisionReportDefinition(exportedDto),
       collectionId
     );
     originalIdToNewIdMap.put(exportedDto.getId(), newId);
+  }
+
+  public IdResponseDto importReport(final String userId,
+                                    final ReportDefinitionDto<?> reportDefinitionDto,
+                                    final String newCollectionId) {
+    reportDefinitionDto.setCollectionId(newCollectionId);
+    switch (reportDefinitionDto.getReportType()) {
+      case PROCESS:
+        if (reportDefinitionDto.isCombined()) {
+          return reportWriter.createNewCombinedReport(
+            userId,
+            (CombinedReportDataDto) reportDefinitionDto.getData(),
+            reportDefinitionDto.getName(),
+            newCollectionId
+          );
+        }
+        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+          (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
+        return reportWriter.createNewSingleProcessReport(
+          userId, singleProcessReportDefinitionDto.getData(), reportDefinitionDto.getName(), newCollectionId
+        );
+      case DECISION:
+        SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+          (SingleDecisionReportDefinitionRequestDto) reportDefinitionDto;
+        return reportWriter.createNewSingleDecisionReport(
+          userId, singleDecisionReportDefinitionDto.getData(), reportDefinitionDto.getName(), newCollectionId
+        );
+      default:
+        throw new IllegalStateException("Unsupported reportType: " + reportDefinitionDto.getReportType());
+    }
   }
 
   private SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
@@ -180,6 +308,28 @@ public class ReportImportService {
       new SingleDecisionReportDefinitionRequestDto(exportedDto.getData());
     reportDefinition.setName(exportedDto.getName());
     reportDefinition.setCreated(OffsetDateTime.now());
+    return reportDefinition;
+  }
+
+  private CombinedReportDefinitionRequestDto createCombinedReportDefinition(
+    final CombinedProcessReportDefinitionExportDto exportedDto,
+    final Map<String, IdResponseDto> originalIdToNewIdMap) {
+    final CombinedReportDefinitionRequestDto reportDefinition =
+      new CombinedReportDefinitionRequestDto(exportedDto.getData());
+
+    // Map single report items within combined report to new IDs
+    final List<CombinedReportItemDto> newSingleReportItems = exportedDto.getData()
+      .getReports()
+      .stream()
+      .map(reportItem -> new CombinedReportItemDto(
+        originalIdToNewIdMap.get(reportItem.getId()).getId(),
+        reportItem.getColor()
+      ))
+      .collect(toList());
+    reportDefinition.getData().setReports(newSingleReportItems);
+    reportDefinition.setName(exportedDto.getName());
+    reportDefinition.setCreated(OffsetDateTime.now());
+
     return reportDefinition;
   }
 
@@ -314,6 +464,30 @@ public class ReportImportService {
                           .key(definitionKey)
                           .tenantIds(tenantIds)
                           .build())
+      );
+    }
+  }
+
+  private void validateCollectionScopeOrFail(@Nullable final CollectionDefinitionDto collection,
+                                             final SingleProcessReportDefinitionExportDto exportedDto) {
+    if (collection != null) {
+      reportService.ensureCompliesWithCollectionScope(
+        exportedDto.getData().getProcessDefinitionKey(),
+        exportedDto.getData().getTenantIds(),
+        DefinitionType.PROCESS,
+        collection
+      );
+    }
+  }
+
+  private void validateCollectionScopeOrFail(@Nullable final CollectionDefinitionDto collection,
+                                             final SingleDecisionReportDefinitionExportDto exportedDto) {
+    if (collection != null) {
+      reportService.ensureCompliesWithCollectionScope(
+        exportedDto.getData().getDecisionDefinitionKey(),
+        exportedDto.getData().getTenantIds(),
+        DefinitionType.DECISION,
+        collection
       );
     }
   }

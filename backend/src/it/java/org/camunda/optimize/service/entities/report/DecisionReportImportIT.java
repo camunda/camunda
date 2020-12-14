@@ -22,11 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
@@ -45,14 +43,11 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
 
     // when
-    final Response response = importClient.importReport(createExportDto(reportDefToImport));
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
-    assertThat(importedIds).hasSize(1);
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
+      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -66,7 +61,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getData().getConfiguration())
       .usingRecursiveComparison()
       .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
+      .isEqualTo(reportDefToImport.getData().getConfiguration());
     assertThat(importedReport.getData().getConfiguration().getXml())
       .isEqualTo(DEFINITION_XML_STRING + "1");
   }
@@ -78,7 +73,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.setSourceIndexVersion(SingleDecisionReportIndex.VERSION + 1);
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -101,7 +96,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -126,7 +121,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setDecisionDefinitionVersion("5");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -156,14 +151,11 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then all non version related data is accurate
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
-    assertThat(importedIds).hasSize(1);
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
+      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -201,7 +193,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Collections.singletonList("tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -232,14 +224,11 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
-    assertThat(importedIds).hasSize(1);
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
+      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -271,14 +260,11 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
-    assertThat(importedIds).hasSize(1);
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
+      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -313,17 +299,14 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final IdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
       collectionId,
       exportedReportDto
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<IdResponseDto> importedIds = response.readEntity(new GenericType<List<IdResponseDto>>(){});
-    assertThat(importedIds).hasSize(1);
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedIds.get(0).getId());
+      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -350,7 +333,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
 
     // when
     final Response response =
-      importClient.importReportIntoCollection("fakeCollection", exportedReportDto);
+      importClient.importEntityIntoCollection("fakeCollection", exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -364,7 +347,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final Response response = importClient.importEntityIntoCollection(
       collectionId,
       exportedReportDto
     );

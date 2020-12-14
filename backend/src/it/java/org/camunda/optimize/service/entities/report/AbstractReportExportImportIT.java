@@ -12,7 +12,14 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportCountChartDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportDurationChartDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -181,6 +188,9 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .setGroupByDateInterval(AggregateByDateUnit.YEAR)
       .build();
     byStartDateData.setVisualization(ProcessVisualization.BAR);
+    final SingleProcessReportDefinitionRequestDto startDateReport = createProcessReportDefinition(byStartDateData);
+    startDateReport.setName("startDateReportName");
+    startDateReport.setId("startDateReportId");
 
     // a groupBy endDate report
     final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
@@ -191,6 +201,9 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .setGroupByDateInterval(AggregateByDateUnit.YEAR)
       .build();
     byEndDateData.setVisualization(ProcessVisualization.BAR);
+    final SingleProcessReportDefinitionRequestDto endDateReport = createProcessReportDefinition(byEndDateData);
+    endDateReport.setName("endDateReportName");
+    endDateReport.setId("endDateReportId");
 
     // a userTask duration report
     final ProcessReportDataDto userTaskDurData = TemplatedProcessReportDataBuilder
@@ -200,6 +213,9 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .build();
     userTaskDurData.setVisualization(ProcessVisualization.BAR);
+    final SingleProcessReportDefinitionRequestDto userTaskReport = createProcessReportDefinition(userTaskDurData);
+    userTaskReport.setName("userTaskReportName");
+    userTaskReport.setId("userTaskReportId");
 
     // a flownode duration report
     final ProcessReportDataDto flowNodeDurData = TemplatedProcessReportDataBuilder
@@ -209,12 +225,14 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .setVisualization(ProcessVisualization.BAR)
       .build();
-
     flowNodeDurData.setVisualization(ProcessVisualization.BAR);
+    final SingleProcessReportDefinitionRequestDto flowNodeReport = createProcessReportDefinition(flowNodeDurData);
+    flowNodeReport.setName("flowNodeReportName");
+    flowNodeReport.setId("flowNodeReportId");
 
     return Stream.of(
-      Arrays.asList(createProcessReportDefinition(byStartDateData), createProcessReportDefinition(byEndDateData)),
-      Arrays.asList(createProcessReportDefinition(userTaskDurData), createProcessReportDefinition(flowNodeDurData))
+      Arrays.asList(startDateReport, endDateReport),
+      Arrays.asList(userTaskReport, flowNodeReport)
     );
   }
 
@@ -224,6 +242,41 @@ public class AbstractReportExportImportIT extends AbstractIT {
 
   protected static SingleDecisionReportDefinitionRequestDto createSimpleDecisionReportDefinition() {
     return createDecisionReportDefinition(createSimpleDecisionReportData());
+  }
+
+  protected static CombinedReportDefinitionRequestDto createCombinedReportDefinition(
+    final SingleProcessReportDefinitionRequestDto singleReport1,
+    final SingleProcessReportDefinitionRequestDto singleReport2) {
+    final CombinedReportConfigurationDto combinedConfig = new CombinedReportConfigurationDto();
+    combinedConfig.setPointMarkers(false);
+    combinedConfig.setXLabel("some x label");
+    combinedConfig.setYLabel("some y label");
+    combinedConfig.setTargetValue(new CombinedReportTargetValueDto(
+      new CombinedReportCountChartDto(true, "500"),
+      true,
+      new CombinedReportDurationChartDto(TargetValueUnit.MINUTES, true, "5")
+    ));
+
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    combinedReportData.setReports(
+      Arrays.asList(
+        new CombinedReportItemDto(singleReport1.getId(), "#1991c8"),
+        new CombinedReportItemDto(singleReport2.getId(), "#1991c9")
+      )
+    );
+    combinedReportData.setVisualization(singleReport1.getData().getVisualization());
+    combinedReportData.setConfiguration(combinedConfig);
+
+    final CombinedReportDefinitionRequestDto combinedReportDef = new CombinedReportDefinitionRequestDto();
+    combinedReportDef.setData(combinedReportData);
+    combinedReportDef.setId("combinedReportId");
+    combinedReportDef.setName("combinedReportName");
+    combinedReportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    combinedReportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
+    combinedReportDef.setLastModifier("lastModifierId");
+    combinedReportDef.setOwner("ownerId");
+
+    return combinedReportDef;
   }
 
   protected String createSimpleReport(final ReportType reportType) {
@@ -267,6 +320,17 @@ public class AbstractReportExportImportIT extends AbstractIT {
     return new SingleDecisionReportDefinitionExportDto(createSimpleDecisionReportDefinition());
   }
 
+  protected static CombinedProcessReportDefinitionExportDto createSimpleCombinedExportDto() {
+    final SingleProcessReportDefinitionExportDto report1 = new SingleProcessReportDefinitionExportDto(
+      createSimpleProcessReportDefinition());
+    final CombinedReportDataDto combinedData = new CombinedReportDataDto();
+    combinedData.setReports(Collections.singletonList(new CombinedReportItemDto(report1.getId())));
+    final CombinedReportDefinitionRequestDto combinedReportDef = new CombinedReportDefinitionRequestDto();
+    combinedReportDef.setId("combinedReportId");
+    combinedReportDef.setData(combinedData);
+    return new CombinedProcessReportDefinitionExportDto(combinedReportDef);
+  }
+
   protected static SingleProcessReportDefinitionExportDto createExportDto(
     final SingleProcessReportDefinitionRequestDto reportDefToImport) {
     return new SingleProcessReportDefinitionExportDto(reportDefToImport);
@@ -277,7 +341,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
     return new SingleDecisionReportDefinitionExportDto(reportDefToImport);
   }
 
-  protected static CombinedProcessReportDefinitionExportDto createCombinedExportDto(
+  protected static CombinedProcessReportDefinitionExportDto createExportDto(
     final CombinedReportDefinitionRequestDto reportDefToImport) {
     return new CombinedProcessReportDefinitionExportDto(reportDefToImport);
   }

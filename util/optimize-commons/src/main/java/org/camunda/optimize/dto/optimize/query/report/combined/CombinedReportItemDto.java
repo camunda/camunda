@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_CONFIGURATION_COLOR;
 
@@ -17,6 +18,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_CONFIGUR
 @Builder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@FieldNameConstants
 public class CombinedReportItemDto {
 
   private String id;

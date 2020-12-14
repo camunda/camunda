@@ -35,7 +35,7 @@ public class AuthorizedCollectionService {
   private static final String EDIT_NOT_AUTHORIZED_MESSAGE =
     "User [%s] is not authorized to edit/delete collection [%s].";
   private static final String RESOURCE_EDIT_NOT_AUTHORIZED_MESSAGE =
-    "User %s does not have the role to add/edit collection [%s] resources.";
+    "User [%s] does not have the role to add/edit collection [%s] resources.";
 
   private final CollectionReader collectionReader;
   private final IdentityService identityService;

@@ -28,7 +28,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     createAndSaveDefinition(reportType.toDefinitionType(), null);
 
     // when
-    final Response response = importClient.importReport(createSimpleExportDto(reportType));
+    final Response response = importClient.importEntity(createSimpleExportDto(reportType));
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -43,7 +43,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     createAndSaveDefinition(reportType.toDefinitionType(), null);
 
     // when
-    final Response response = importClient.importReportAsUser(
+    final Response response = importClient.importEntityAsUser(
       KERMIT_USER,
       KERMIT_USER,
       createSimpleExportDto(reportType)
@@ -74,7 +74,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     createAndSaveDefinition(reportType.toDefinitionType(), "tenant1");
 
     // when
-    final Response response = importClient.importReportAsUser(
+    final Response response = importClient.importEntityAsUser(
       KERMIT_USER,
       KERMIT_USER,
       createSimpleExportDtoWithTenants(reportType, Collections.singletonList("tenant1"))
@@ -101,7 +101,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final Response response = importClient.importReportAsUser(
+    final Response response = importClient.importEntityAsUser(
       KERMIT_USER,
       KERMIT_USER,
       createSimpleExportDto(reportType)
@@ -125,7 +125,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     );
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final Response response = importClient.importEntityIntoCollection(
       collectionId,
       createSimpleExportDto(reportType)
     );
@@ -150,7 +150,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     );
 
     // when
-    final Response response = importClient.importReportIntoCollectionAsUser(
+    final Response response = importClient.importEntityIntoCollectionAsUser(
       KERMIT_USER,
       KERMIT_USER,
       collectionId,
@@ -186,7 +186,7 @@ public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
     );
 
     // when
-    final Response response = importClient.importReportIntoCollectionAsUser(
+    final Response response = importClient.importEntityIntoCollectionAsUser(
       KERMIT_USER,
       KERMIT_USER,
       collectionId,

@@ -28,8 +28,9 @@ public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExp
 
   public SingleDecisionReportDefinitionExportDto(final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(
-      SingleDecisionReportIndex.VERSION,
       reportDefinition.getId(),
+      SINGLE_DECISION_REPORT,
+      SingleDecisionReportIndex.VERSION,
       reportDefinition.getName(),
       reportDefinition.getCollectionId()
     );

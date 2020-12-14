@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Objects;
 
 @Setter
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CombinedReportTargetValueDto {
 
   private CombinedReportCountChartDto countChart = new CombinedReportCountChartDto();

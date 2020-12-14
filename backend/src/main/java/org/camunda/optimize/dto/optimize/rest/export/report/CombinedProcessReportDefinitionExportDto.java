@@ -28,8 +28,9 @@ public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionEx
 
   public CombinedProcessReportDefinitionExportDto(final CombinedReportDefinitionRequestDto reportDefinition) {
     super(
-      CombinedReportIndex.VERSION,
       reportDefinition.getId(),
+      COMBINED,
+      CombinedReportIndex.VERSION,
       reportDefinition.getName(),
       reportDefinition.getCollectionId()
     );

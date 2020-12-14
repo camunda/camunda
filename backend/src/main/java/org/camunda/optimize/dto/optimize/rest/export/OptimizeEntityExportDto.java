@@ -35,5 +35,10 @@ import static org.camunda.optimize.service.es.schema.index.report.AbstractReport
 })
 public abstract class OptimizeEntityExportDto {
   @NotNull
+  private String id;
+  @NotNull
   private ExportEntityType exportEntityType;
+  @NotNull
+  private String name;
+  private int sourceIndexVersion;
 }

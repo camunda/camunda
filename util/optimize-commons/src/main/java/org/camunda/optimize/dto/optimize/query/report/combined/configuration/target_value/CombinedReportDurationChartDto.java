@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
@@ -13,6 +15,8 @@ import java.util.Objects;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CombinedReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;

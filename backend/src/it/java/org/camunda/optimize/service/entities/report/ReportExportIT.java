@@ -107,7 +107,7 @@ public class ReportExportIT extends AbstractReportExportImportIT {
     final String reportId = reportClient.createCombinedReport(null, combinableReportIds);
     final CombinedReportDefinitionRequestDto combinedReport = reportClient.getCombinedProcessReportDefinitionDto(
       reportId);
-    final CombinedProcessReportDefinitionExportDto expectedCombinedReportDto = createCombinedExportDto(combinedReport);
+    final CombinedProcessReportDefinitionExportDto expectedCombinedReportDto = createExportDto(combinedReport);
     expectedCombinedReportDto.setId(reportId);
 
     // when
