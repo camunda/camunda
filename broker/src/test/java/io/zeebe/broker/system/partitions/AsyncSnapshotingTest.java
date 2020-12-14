@@ -84,7 +84,10 @@ public final class AsyncSnapshotingTest {
             l ->
                 Optional.of(
                     new Indexed(
-                        l + 100, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
+                        l + 100,
+                        new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null),
+                        0,
+                        -1)),
             db -> Long.MAX_VALUE);
 
     snapshotController.openDb();

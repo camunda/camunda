@@ -201,6 +201,6 @@ public class AtomixIndexTest {
   }
 
   private static Indexed asIndexedEntry(final long index) {
-    return new Indexed(index, new InitializeEntry(0, System.currentTimeMillis()), 0);
+    return new Indexed(index, new InitializeEntry(0, System.currentTimeMillis()), 0, -1);
   }
 }

@@ -64,6 +64,21 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   }
 
   @Override
+  public <T extends E> Indexed<T> append(final T entry, final long checksum) {
+    try {
+      return currentWriter.append(entry, checksum);
+    } catch (final BufferOverflowException e) {
+      if (currentSegment.index() == currentWriter.getNextIndex()) {
+        throw e;
+      }
+
+      journalMetrics.observeSegmentCreation(this::createNewSegment);
+
+      return currentWriter.append(entry, checksum);
+    }
+  }
+
+  @Override
   public void append(final Indexed<E> entry) {
     try {
       currentWriter.append(entry);

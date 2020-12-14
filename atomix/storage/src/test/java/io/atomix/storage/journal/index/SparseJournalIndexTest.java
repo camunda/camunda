@@ -38,7 +38,7 @@ public class SparseJournalIndexTest {
   }
 
   public static Indexed asIndexedEntry(final long index) {
-    return new Indexed(index, null, 0);
+    return new Indexed(index, null, 0, -1);
   }
 
   @Test
