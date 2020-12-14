@@ -13,7 +13,6 @@ import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.Loggers;
 import java.io.File;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -32,8 +31,14 @@ public final class DataCfg implements ConfigurationEntry {
   private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
   private static final double DISABLED_DISK_USAGE_WATERMARK = 1.0;
 
-  // Hint: do not use Collections.singletonList as this does not support replaceAll
-  private List<String> directories = Arrays.asList(DEFAULT_DIRECTORY);
+  /**
+   * @deprecated this field is deprecated in favour of {@code directory}, and will be removed in
+   *     0.27.0
+   */
+  @Deprecated(since = "0.26.0")
+  private List<String> directories;
+
+  private String directory = DEFAULT_DIRECTORY;
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
@@ -50,7 +55,17 @@ public final class DataCfg implements ConfigurationEntry {
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
-    directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
+    directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
+
+    // fallback to directories if it's still specified
+    if (directories != null) {
+      directories = LIST_SANITIZER.apply(directories);
+      if (!directories.isEmpty()) {
+        directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
+        directory = directories.get(0);
+      }
+    }
+
     if (!diskUsageMonitoringEnabled) {
       LOG.info(
           "Disk usage watermarks are disabled, setting all watermarks to {}",
@@ -61,12 +76,33 @@ public final class DataCfg implements ConfigurationEntry {
     rocksdb.init(globalConfig, brokerBase);
   }
 
+  /**
+   * @deprecated this method is deprecated in favour of {@link #getDirectory()}, and will be removed
+   *     in 0.27.0
+   */
+  @Deprecated(since = "0.26.0")
   public List<String> getDirectories() {
     return directories;
   }
 
+  /**
+   * @deprecated this method is deprecated in favour of {@link #setDirectory(String)}}, and will be
+   *     removed in 0.27.0
+   */
+  @Deprecated(since = "0.26.0")
   public void setDirectories(final List<String> directories) {
     this.directories = LIST_SANITIZER.apply(directories);
+    if (!this.directories.isEmpty()) {
+      directory = directories.get(0);
+    }
+  }
+
+  public String getDirectory() {
+    return directory;
+  }
+
+  public void setDirectory(final String directory) {
+    this.directory = directory;
   }
 
   public long getLogSegmentSizeInBytes() {
@@ -126,8 +162,8 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public long getFreeDiskSpaceCommandWatermark() {
-    final var directory = new File(getDirectories().get(0));
-    return Math.round(directory.getTotalSpace() * (1 - diskUsageCommandWatermark));
+    final var directoryFile = new File(getDirectory());
+    return Math.round(directoryFile.getTotalSpace() * (1 - diskUsageCommandWatermark));
   }
 
   public double getDiskUsageReplicationWatermark() {
@@ -139,8 +175,8 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public long getFreeDiskSpaceReplicationWatermark() {
-    final var directory = new File(getDirectories().get(0));
-    return Math.round(directory.getTotalSpace() * (1 - diskUsageReplicationWatermark));
+    final var directoryFile = new File(getDirectory());
+    return Math.round(directoryFile.getTotalSpace() * (1 - diskUsageReplicationWatermark));
   }
 
   public Duration getDiskUsageMonitoringInterval() {
@@ -162,8 +198,8 @@ public final class DataCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "DataCfg{"
-        + "directories="
-        + directories
+        + "directory="
+        + directory
         + ", logSegmentSize="
         + logSegmentSize
         + ", snapshotPeriod="

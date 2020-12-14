@@ -8,6 +8,7 @@
 package io.zeebe.logstreams.impl.log;
 
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 
 public class AppenderMetrics {
 
@@ -27,6 +28,21 @@ public class AppenderMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Histogram WRITE_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("log_appender_append_latency")
+          .help("Latency to append an event to the log in seconds")
+          .labelNames("partition")
+          .register();
+  private static final Histogram COMMIT_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("log_appender_commit_latency")
+          .help("Latency to commit an event to the log in seconds")
+          .labelNames("partition")
+          .register();
+
   private final String partitionLabel;
 
   public AppenderMetrics(final String partitionLabel) {
@@ -39,5 +55,13 @@ public class AppenderMetrics {
 
   public void setLastAppendedPosition(final long position) {
     LAST_APPENDED_POSITION.labels(partitionLabel).set(position);
+  }
+
+  public void appendLatency(final long startTime, final long currentTime) {
+    WRITE_LATENCY.labels(partitionLabel).observe((currentTime - startTime) / 1000f);
+  }
+
+  public void commitLatency(final long startTime, final long currentTime) {
+    COMMIT_LATENCY.labels(partitionLabel).observe((currentTime - startTime) / 1000f);
   }
 }

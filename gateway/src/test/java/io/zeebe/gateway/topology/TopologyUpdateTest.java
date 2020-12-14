@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.topology;
 
+import static io.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,6 +22,7 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -110,7 +112,8 @@ public final class TopologyUpdateTest {
     topologyManager.event(createMemberAddedEvent(broker));
     waitUntil(() -> !topologyManager.getTopology().getBrokers().isEmpty());
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isFalse();
+    assertThat(topologyManager.getTopology().getFollowersForPartition(1)).doesNotContain(0);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(NODE_ID_NULL);
   }
 
   @Test
@@ -189,6 +192,35 @@ public final class TopologyUpdateTest {
     topologyManager.event(createMemberUpdateEvent(updatedBroker));
     waitUntil(() -> !topologyManager.getTopology().isPartitionHealthy(brokerId, partition));
     assertThat(topologyManager.getTopology().isPartitionHealthy(brokerId, partition)).isFalse();
+  }
+
+  @Test
+  public void shouldUpdateTopologyOnLeaderRemoval() {
+    // given
+    final BrokerInfo broker = createBroker(0).setLeaderForPartition(1, 1);
+
+    // when
+    topologyManager.event(createMemberUpdateEvent(broker));
+    Awaitility.await("broker 0 is leader of partition 1")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isZero());
+
+    broker.setFollowerForPartition(1);
+    topologyManager.event(createMemberUpdateEvent(broker));
+
+    // then
+    Awaitility.await("broker 0 is follower of partition 1")
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> {
+              assertThat(topologyManager.getTopology().getFollowersForPartition(1))
+                  .containsExactlyInAnyOrder(0);
+              assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                  .isEqualTo(NODE_ID_NULL);
+            });
   }
 
   private BrokerInfo createBroker(final int brokerId) {

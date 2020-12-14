@@ -78,7 +78,7 @@ public final class AtomixFactory {
             .withMembershipProvider(discoveryProvider);
 
     final DataCfg dataConfiguration = configuration.getData();
-    final String rootDirectory = dataConfiguration.getDirectories().get(0);
+    final String rootDirectory = dataConfiguration.getDirectory();
     IoUtil.ensureDirectoryExists(new File(rootDirectory), "Zeebe data directory");
 
     final RaftPartitionGroup partitionGroup =

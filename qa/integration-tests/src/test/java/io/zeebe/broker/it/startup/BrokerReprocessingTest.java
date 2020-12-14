@@ -680,8 +680,6 @@ public final class BrokerReprocessingTest {
   }
 
   protected void deleteSnapshotsAndRestart() {
-    brokerRule.getBroker().getBrokerContext().getBrokerConfiguration().getData().getDirectories();
-
     brokerRule.stopBroker();
 
     // delete snapshot files to trigger recovery
