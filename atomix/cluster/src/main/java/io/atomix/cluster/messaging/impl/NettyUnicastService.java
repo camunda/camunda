@@ -25,8 +25,7 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.FallbackNamespace;
-import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.netty.bootstrap.Bootstrap;
@@ -57,12 +56,12 @@ public class NettyUnicastService implements ManagedUnicastService {
   private static final Logger LOGGER = LoggerFactory.getLogger(NettyUnicastService.class);
   private static final Serializer SERIALIZER =
       Serializer.using(
-          new FallbackNamespace(
-              new NamespaceImpl.Builder()
-                  .register(Namespaces.BASIC)
-                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-                  .register(Message.class)
-                  .register(new AddressSerializer(), Address.class)));
+          new Namespace.Builder()
+              .register(Namespaces.BASIC)
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+              .register(Message.class)
+              .register(new AddressSerializer(), Address.class)
+              .build());
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 

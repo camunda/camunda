@@ -20,7 +20,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import java.util.Arrays;
@@ -42,8 +41,6 @@ public class AppendRequest extends AbstractRaftRequest {
   private final long prevLogTerm;
   private final List<RaftLogEntry> entries;
   private final long commitIndex;
-
-  @Since(1)
   private final List<Long> checksums;
 
   public AppendRequest(
@@ -141,7 +138,7 @@ public class AppendRequest extends AbstractRaftRequest {
 
   @Override
   public boolean equals(final Object object) {
-    if (object instanceof AppendRequest) {
+    if (object != null && object.getClass() == this.getClass()) {
       final AppendRequest request = (AppendRequest) object;
       return request.term == term
           && request.leader.equals(leader)
@@ -170,6 +167,7 @@ public class AppendRequest extends AbstractRaftRequest {
   /** Append request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, AppendRequest> {
 
+    private static final String NULL_ENTRIES_ERR = "entries cannot be null";
     private long term;
     private String leader;
     private long logIndex;
@@ -237,7 +235,7 @@ public class AppendRequest extends AbstractRaftRequest {
      * @throws NullPointerException if {@code entries} is null
      */
     public Builder withEntries(final RaftLogEntry... entries) {
-      return withEntries(Arrays.asList(checkNotNull(entries, "entries cannot be null")));
+      return withEntries(Arrays.asList(checkNotNull(entries, NULL_ENTRIES_ERR)));
     }
 
     /**
@@ -249,7 +247,7 @@ public class AppendRequest extends AbstractRaftRequest {
      */
     @SuppressWarnings("unchecked")
     public Builder withEntries(final List<RaftLogEntry> entries) {
-      this.entries = checkNotNull(entries, "entries cannot be null");
+      this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
       return this;
     }
 
@@ -273,7 +271,7 @@ public class AppendRequest extends AbstractRaftRequest {
      * @throws NullPointerException if {@code entry} is {@code null}
      */
     public Builder addEntry(final RaftLogEntry entry) {
-      entries.add(checkNotNull(entry, "entry"));
+      entries.add(checkNotNull(entry, NULL_ENTRIES_ERR));
       return this;
     }
 
@@ -307,7 +305,7 @@ public class AppendRequest extends AbstractRaftRequest {
       checkNotNull(leader, "leader cannot be null");
       checkArgument(logIndex >= 0, "prevLogIndex must be positive");
       checkArgument(logTerm >= 0, "prevLogTerm must be positive");
-      checkNotNull(entries, "entries cannot be null");
+      checkNotNull(entries, NULL_ENTRIES_ERR);
       checkNotNull(checksums, "checksums cannot be null");
       checkArgument(commitIndex >= 0, "commitIndex must be positive");
     }

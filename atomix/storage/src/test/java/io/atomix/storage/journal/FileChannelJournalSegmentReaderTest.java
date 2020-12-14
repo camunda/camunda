@@ -21,9 +21,7 @@ import static org.junit.Assert.assertTrue;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.index.SparseJournalIndex;
-import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.NamespaceImpl;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FileChannelJournalSegmentReaderTest {
   private static final Namespace NAMESPACE =
-      new FallbackNamespace(new NamespaceImpl.Builder().register(Integer.class));
+      new Namespace.Builder().register(Integer.class).build();
   private static final Integer ENTRY = 1;
   private static final int ENTRY_SIZE =
       NAMESPACE.serialize(ENTRY).length + Integer.BYTES; // padding for checksum;

@@ -30,7 +30,8 @@ public class AtomicBooleanSerializer extends Serializer<AtomicBoolean> {
   }
 
   @Override
-  public AtomicBoolean read(final Kryo kryo, final Input input, final Class<AtomicBoolean> type) {
+  public AtomicBoolean read(
+      final Kryo kryo, final Input input, final Class<? extends AtomicBoolean> type) {
     return new AtomicBoolean(input.readBoolean());
   }
 }

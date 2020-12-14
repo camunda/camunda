@@ -10,8 +10,10 @@ package io.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
@@ -131,9 +133,10 @@ public final class AtomixLogDeletionServiceTest {
   private static RaftStorage.Builder builder(
       final RaftStorage.Builder builder, final TemporaryFolder folder) {
     try {
+      final int length = getEntrySize();
       return builder
           // hardcode max segment size to allow a single entry only
-          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 9 * Integer.BYTES)
+          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 2 * Integer.BYTES + length)
           .withSnapshotStore(
               new FileBasedSnapshotStore(
                   new SnapshotMetrics("1"),
@@ -142,6 +145,14 @@ public final class AtomixLogDeletionServiceTest {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private static int getEntrySize() {
+    final ZeebeEntry entry =
+        new ZeebeEntry(
+            Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, DATA);
+    final byte[] serialize = RaftNamespaces.RAFT_STORAGE.serialize(entry);
+    return serialize.length;
   }
 
   private List<Indexed<?>> readAllEntries(final RaftLogReader reader) {

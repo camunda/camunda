@@ -24,7 +24,7 @@ import org.springframework.util.unit.DataSize;
 
 public final class LargeMessageSizeTest {
 
-  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofMegabytes(5);
   // only use half of the max message size because some commands produce two events
   private static final long LARGE_SIZE = ByteValue.ofMegabytes(2);
   private static final long METADATA_SIZE = 512;

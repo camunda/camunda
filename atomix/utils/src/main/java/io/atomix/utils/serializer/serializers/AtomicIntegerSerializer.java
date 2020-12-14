@@ -30,7 +30,8 @@ public class AtomicIntegerSerializer extends Serializer<AtomicInteger> {
   }
 
   @Override
-  public AtomicInteger read(final Kryo kryo, final Input input, final Class<AtomicInteger> type) {
+  public AtomicInteger read(
+      final Kryo kryo, final Input input, final Class<? extends AtomicInteger> type) {
     return new AtomicInteger(input.readInt());
   }
 }

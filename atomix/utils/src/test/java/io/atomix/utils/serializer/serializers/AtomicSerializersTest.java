@@ -39,6 +39,7 @@ public class AtomicSerializersTest {
 
   private Output output;
   private Input input;
+  private ByteBuffer buffer;
 
   @BeforeClass
   public static void register() {
@@ -49,7 +50,7 @@ public class AtomicSerializersTest {
 
   @Before
   public void setUp() {
-    final ByteBuffer buffer = ByteBuffer.allocate(CAPACITY);
+    buffer = ByteBuffer.allocate(CAPACITY);
 
     output = new ByteBufferOutput(buffer);
     input = new ByteBufferInput(buffer);
@@ -69,6 +70,8 @@ public class AtomicSerializersTest {
     // when
     original.set(32L);
     KRYO.writeObject(output, original);
+    buffer.flip();
+
     final AtomicLong deserialized = KRYO.readObject(input, AtomicLong.class);
 
     // then
@@ -83,6 +86,7 @@ public class AtomicSerializersTest {
     // when
     original.set(1000);
     KRYO.writeObject(output, original);
+    buffer.flip();
     final AtomicInteger deserialized = KRYO.readObject(input, AtomicInteger.class);
 
     // then
@@ -97,6 +101,7 @@ public class AtomicSerializersTest {
     // when
     original.set(true);
     KRYO.writeObject(output, original);
+    buffer.flip();
     final AtomicBoolean deserialized = KRYO.readObject(input, AtomicBoolean.class);
 
     // then

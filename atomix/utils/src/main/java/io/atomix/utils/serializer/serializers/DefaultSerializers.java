@@ -22,8 +22,7 @@ import io.atomix.utils.serializer.Serializer;
 public final class DefaultSerializers {
 
   /** Basic serializer. */
-  public static final Serializer BASIC =
-      Serializer.builder().withCompatibleSerialization(true).build();
+  public static final Serializer BASIC = Serializer.builder().build();
 
   private DefaultSerializers() {}
 }

@@ -30,7 +30,7 @@ public class AddressSerializer extends com.esotericsoftware.kryo.Serializer<Addr
   }
 
   @Override
-  public Address read(final Kryo kryo, final Input input, final Class<Address> type) {
+  public Address read(final Kryo kryo, final Input input, final Class<? extends Address> type) {
     final String host = input.readString();
     final int port = input.readInt();
     return Address.from(host, port);

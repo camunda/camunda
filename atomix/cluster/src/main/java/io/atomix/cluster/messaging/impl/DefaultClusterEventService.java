@@ -32,8 +32,7 @@ import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.FallbackNamespace;
-import io.atomix.utils.serializer.NamespaceImpl.Builder;
+import io.atomix.utils.serializer.Namespace.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.time.LogicalTimestamp;
@@ -64,12 +63,12 @@ public class DefaultClusterEventService
 
   private static final Serializer SERIALIZER =
       Serializer.using(
-          new FallbackNamespace(
-              new Builder()
-                  .register(Namespaces.BASIC)
-                  .register(MemberId.class)
-                  .register(LogicalTimestamp.class)
-                  .register(WallClockTimestamp.class)));
+          new Builder()
+              .register(Namespaces.BASIC)
+              .register(MemberId.class)
+              .register(LogicalTimestamp.class)
+              .register(WallClockTimestamp.class)
+              .build());
 
   private static final String SUBSCRIPTION_PROPERTY_NAME = "event-service-topics-subscribed";
   private final ClusterMembershipService membershipService;

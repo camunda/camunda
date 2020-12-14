@@ -36,7 +36,7 @@ public final class ArraysAsListSerializer extends Serializer<List<?>> {
   }
 
   @Override
-  public List<?> read(final Kryo kryo, final Input input, final Class<List<?>> type) {
+  public List<?> read(final Kryo kryo, final Input input, final Class<? extends List<?>> type) {
     final int size = input.readInt(true);
     final List<Object> list = new ArrayList<>(size);
     for (int i = 0; i < size; ++i) {
