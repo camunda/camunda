@@ -102,10 +102,22 @@ var tests = []struct {
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{
-		name:       "activate job",
+		name:       "empty activate job",
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 0",
+		goldenFile: "testdata/empty_activate_job.golden",
+	},
+	{
+		name:       "single activate job",
 		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess"},
-		cmd:        "--insecure activate jobs jobType",
-		goldenFile: "testdata/activate_job.golden",
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 1",
+		goldenFile: "testdata/single_activate_job.golden",
+	},
+	{
+		name: "double activate job",
+		// we deploy on the end again to spent more time in setup phase to avoid a race condition, that we can activate more jobs then one
+		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess", "--insecure create instance jobProcess", "--insecure deploy testdata/job_model.bpmn"},
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 2",
+		goldenFile: "testdata/double_activate_job.golden",
 	},
 }
 
@@ -183,7 +195,7 @@ func cmpIgnoreNums(x, y string) bool {
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
 func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	args := append(strings.Fields(command), "--address", s.GatewayAddress)
