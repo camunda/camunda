@@ -44,6 +44,7 @@ pipeline {
     }
 
     parameters {
+        booleanParam(name: 'SKIP_VERIFY', defaultValue: false, description: "Skip 'Verify' Stage")
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
         string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
@@ -100,6 +101,7 @@ pipeline {
         }
 
         stage('Verify') {
+            when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
                     steps {
