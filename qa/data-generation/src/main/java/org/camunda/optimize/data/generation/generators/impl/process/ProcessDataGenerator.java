@@ -7,6 +7,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
@@ -19,8 +20,10 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
   private static final String CORRELATION_VARIABLE_NAME = "correlatingVariable";
   private static final String CORRELATION_VALUE_PREFIX = "correlationValue_";
 
-  public ProcessDataGenerator(final SimpleEngineClient engineClient, final Integer nVersions) {
-    super(engineClient, nVersions);
+  public ProcessDataGenerator(final SimpleEngineClient engineClient,
+                              final Integer nVersions,
+                              final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
   }
 
   @Override

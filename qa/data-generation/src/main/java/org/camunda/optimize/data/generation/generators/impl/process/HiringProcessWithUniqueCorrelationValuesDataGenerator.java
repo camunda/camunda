@@ -6,6 +6,7 @@
 package org.camunda.optimize.data.generation.generators.impl.process;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.Arrays;
@@ -25,8 +26,10 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
   private static String[] allVariableNames = {TASK_AUTOMATICALLY_ASSIGNED, TASK_SCREEN_PROCEED, TASK_PHONE_PROCEED,
     TASK_ONSITE_INTERVIEW, TASK_MAKE_OFFER, TASK_OFFER_ACCEPTED};
 
-  public HiringProcessWithUniqueCorrelationValuesDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
-    super(engineClient, nVersions);
+  public HiringProcessWithUniqueCorrelationValuesDataGenerator(final SimpleEngineClient engineClient,
+                                                               final Integer nVersions,
+                                                               final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

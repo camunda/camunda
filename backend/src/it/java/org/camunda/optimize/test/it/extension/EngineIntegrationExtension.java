@@ -410,7 +410,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return engineClient.startProcessInstance(procDefId, variables, businessKey);
   }
 
-  public void waitForAllProcessesToFinish() throws Exception {
+  public void waitForAllProcessesToFinish() {
     engineClient.waitForAllProcessesToFinish();
   }
 

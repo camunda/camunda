@@ -6,6 +6,7 @@
 package org.camunda.optimize.data.generation.generators.impl.process;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.Arrays;
@@ -24,8 +25,9 @@ public class DRIProcessWithLoadsOfVariablesDataGenerator extends ProcessDataGene
   private final String[] variableNames;
 
   public DRIProcessWithLoadsOfVariablesDataGenerator(final SimpleEngineClient engineClient,
-                                                     final Integer nVersions) {
-    super(engineClient, nVersions);
+                                                     final Integer nVersions,
+                                                     final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
     this.variableNames = IntStream.range(0, 100)
       .mapToObj(i -> random(15, true, false))
       .toArray(String[]::new);

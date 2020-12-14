@@ -16,9 +16,8 @@ import java.util.Map;
 
 public abstract class DecisionDataGenerator extends DataGenerator<DmnModelInstance> {
 
-
   public DecisionDataGenerator(final SimpleEngineClient engineClient, final Integer nVersions) {
-    super(engineClient, nVersions);
+    super(engineClient, nVersions, null);
   }
 
   @Override

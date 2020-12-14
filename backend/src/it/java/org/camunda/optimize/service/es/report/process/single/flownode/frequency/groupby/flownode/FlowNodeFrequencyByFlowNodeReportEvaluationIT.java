@@ -573,7 +573,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void importWithMi() throws Exception {
+  public void importWithMi() {
     // given
     final String subProcessKey = "testProcess";
     final String testMIProcess = "testMIProcess";

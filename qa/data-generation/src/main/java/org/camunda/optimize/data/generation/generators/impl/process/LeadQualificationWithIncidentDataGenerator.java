@@ -7,6 +7,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
@@ -16,8 +17,10 @@ public class LeadQualificationWithIncidentDataGenerator extends ProcessDataGener
 
   private static final String DIAGRAM = "/diagrams/process/lead-qualification-with-incidents.bpmn";
 
-  public LeadQualificationWithIncidentDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
-    super(engineClient, nVersions);
+  public LeadQualificationWithIncidentDataGenerator(final SimpleEngineClient engineClient,
+                                                    final Integer nVersions,
+                                                    final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
