@@ -9,14 +9,13 @@ zbctl="clients/go/cmd/zbctl/dist/zbctl"
 businessKey="${BUSINESS_KEY}"
 
 echo "Waiting for result of $businessKey"
+jobKey=""
 
 while true; do
+    "${zbctl}" activate jobs "$businessKey" > activationresponse.txt 2>/dev/null
+    jobKey=$(jq -r '.[0].key' < activationresponse.txt)
 
-    "${zbctl}"  activate jobs "$businessKey" > activationresponse.txt 2>/dev/null
-
-    key=$(jq -r '.key' < activationresponse.txt)
-
-    if [ -z "$key" ]; then
+    if [[ -z "$jobKey" || "$jobKey" == "null" ]]; then
         echo "Still waiting"
         sleep 5m
     else
@@ -25,19 +24,14 @@ while true; do
     fi
 done
 
-key=$(jq -r '.key' < activationresponse.txt)
-
-echo "Job key is: $key"
-
-variables=$(jq -r '.variables' < activationresponse.txt)
-
+echo "Job key is: $jobKey"
+variables=$(jq -r '.[0].variables' < activationresponse.txt)
 echo "Job variables are: $variables"
 
 testResult=$(echo "$variables" | jq -r '.aggregatedTestResult')
-
 echo "Test result is: $testResult"
 
-"${zbctl}"  complete job "$key"
+"${zbctl}" complete job "$jobKey"
 
 if [ "$testResult" == "FAILED" ]; then
   echo "Test failed"
