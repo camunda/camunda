@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.util.modelelement;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -12,13 +12,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -27,11 +23,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.addFlowNodeDurationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.findAllViewLevelFiltersOfType;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.nestedFieldBuilder;
 import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.addExecutionStateFilter;
-import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
@@ -42,11 +39,12 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class UserTaskFilterQueryUtil {
+public class UserTaskFilterQueryUtil implements ModelElementFilterQueryUtil {
+
+  private static final String NESTED_DOC = USER_TASKS;
 
   public static BoolQueryBuilder createUserTaskIdentityAggregationFilter(final ProcessReportDataDto reportDataDto,
                                                                          final Set<String> userTaskIds) {
@@ -55,7 +53,7 @@ public class UserTaskFilterQueryUtil {
     // it's possible to do report evaluations over several definitions versions. However, only the most recent
     // one is used to decide which user tasks should be taken into account. To make sure that we only fetch assignees
     // related to this definition version we filter for user tasks that only occur in the latest version.
-    filterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
+    filterBoolQuery.filter(QueryBuilders.termsQuery(nestedFieldReference(USER_TASK_ACTIVITY_ID), userTaskIds));
 
     return filterBoolQuery;
   }
@@ -66,11 +64,11 @@ public class UserTaskFilterQueryUtil {
     addExecutionStateFilter(
       filterBoolQuery,
       flowNodeExecutionState,
-      getExecutionStateFilterFieldForType(flowNodeExecutionState)
+      getExecutionStateFilterField(flowNodeExecutionState)
     );
     addAssigneeFilter(filterBoolQuery, reportDataDto);
     addCandidateGroupFilter(filterBoolQuery, reportDataDto);
-    addFlowNodeDurationFilter(filterBoolQuery, reportDataDto);
+    addFlowNodeDurationFilter(filterBoolQuery, reportDataDto, getFlowNodeDurationProperties());
     return filterBoolQuery;
   }
 
@@ -84,20 +82,6 @@ public class UserTaskFilterQueryUtil {
                                               final ProcessReportDataDto reportDataDto) {
     findAllViewLevelFiltersOfType(reportDataDto, CandidateGroupFilterDto.class).map(ProcessFilterDto::getData)
       .forEach(candidateFilterData -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(candidateFilterData)));
-  }
-
-  private static void addFlowNodeDurationFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                final ProcessReportDataDto reportDataDto) {
-    findAllViewLevelFiltersOfType(reportDataDto, FlowNodeDurationFilterDto.class).map(ProcessFilterDto::getData)
-      .forEach(durationFilterData -> userTaskFilterBoolQuery.filter(createFlowNodeDurationFilterQuery(durationFilterData)));
-  }
-
-  private static <T extends ProcessFilterDto<?>> Stream<T> findAllViewLevelFiltersOfType(final ProcessReportDataDto reportDataDto,
-                                                                                         final Class<T> filterClass) {
-    return reportDataDto.getFilter().stream()
-      .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-      .filter(filterClass::isInstance)
-      .map(filterClass::cast);
   }
 
   public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
@@ -127,12 +111,12 @@ public class UserTaskFilterQueryUtil {
     final BoolQueryBuilder innerBoolQueryBuilder = boolQuery().minimumShouldMatch(1);
     if (!nonNullValues.isEmpty()) {
       innerBoolQueryBuilder.should(
-        termsQuery(USER_TASKS + "." + valueField, nonNullValues)
+        termsQuery(nestedFieldReference(valueField), nonNullValues)
       );
     }
     if (includeNull.get()) {
       innerBoolQueryBuilder.should(
-        boolQuery().mustNot(existsQuery(USER_TASKS + "." + valueField))
+        boolQuery().mustNot(existsQuery(nestedFieldReference(valueField)))
       );
     }
 
@@ -143,31 +127,24 @@ public class UserTaskFilterQueryUtil {
     }
   }
 
-  private static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData) {
-    final BoolQueryBuilder disjunctMultiFlowNodeQuery = boolQuery().minimumShouldMatch(1);
-    durationFilterData.forEach((flowNodeId, durationFilter) -> {
-      final BoolQueryBuilder particularFlowNodeQuery = boolQuery()
-        .must(termQuery(nestedFieldReference(USER_TASK_ACTIVITY_ID), flowNodeId))
-        .must(QueryBuilders.scriptQuery(getDurationFilterScript(
-          LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-          nestedFieldReference(USER_TASK_TOTAL_DURATION),
-          nestedFieldReference(USER_TASK_START_DATE),
-          durationFilter
-        )));
-      disjunctMultiFlowNodeQuery.should(particularFlowNodeQuery);
-    });
-    return disjunctMultiFlowNodeQuery;
-  }
-
   private static String nestedFieldReference(final String nestedField) {
-    return USER_TASKS + "." + nestedField;
+    return nestedFieldBuilder(NESTED_DOC, nestedField);
   }
 
-  private static String getExecutionStateFilterFieldForType(final FlowNodeExecutionState flowNodeExecutionState) {
+  private static String getExecutionStateFilterField(final FlowNodeExecutionState flowNodeExecutionState) {
     if (FlowNodeExecutionState.CANCELED.equals(flowNodeExecutionState)) {
-      return USER_TASKS + "." + USER_TASK_CANCELED;
+      return nestedFieldReference(USER_TASK_CANCELED);
     }
-    return USER_TASKS + "." + USER_TASK_END_DATE;
+    return nestedFieldReference(USER_TASK_END_DATE);
+  }
+
+  private static FlowNodeDurationFilterProperties getFlowNodeDurationProperties() {
+    return FlowNodeDurationFilterProperties.builder()
+      .nestedDocRef(NESTED_DOC)
+      .idField(USER_TASK_ACTIVITY_ID)
+      .durationField(USER_TASK_TOTAL_DURATION)
+      .startDateField(USER_TASK_START_DATE)
+      .build();
   }
 
 }

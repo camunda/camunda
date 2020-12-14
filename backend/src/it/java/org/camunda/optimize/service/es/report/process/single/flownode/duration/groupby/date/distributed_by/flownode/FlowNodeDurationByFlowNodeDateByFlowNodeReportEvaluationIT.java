@@ -8,9 +8,11 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -25,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateByModelElementReportEvaluationIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +47,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -559,6 +563,46 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .distributedByContains(END_EVENT, 10., END_EVENT)
       .distributedByContains(START_EVENT, 10., START_EVENT)
       .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void viewLevelFlowNodeDurationFilterOnlyIncludesFlowNodesMatchingFilter() {
+    // given
+    final OffsetDateTime referenceDate = LocalDateUtil.getCurrentDateTime();
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    final ProcessInstanceEngineDto firstInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(firstInstance, USER_TASK_1, 5000.);
+    final ProcessInstanceEngineDto secondInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(secondInstance, USER_TASK_1, 10000.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .flowNodeDuration()
+        .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains(groupedByDayDateAsString(referenceDate))
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(USER_TASK_1, 5000., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }

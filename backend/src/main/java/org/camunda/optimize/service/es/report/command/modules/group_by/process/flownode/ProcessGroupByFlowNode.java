@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
@@ -48,10 +47,9 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     return Collections.singletonList(
       createExecutionStateFilteredFlowNodeAggregation(
-        flowNodeExecutionState,
+        context,
         terms(NESTED_EVENTS_AGGREGATION)
           .size(configurationService.getEsAggregationBucketLimit())
           .field(EVENTS + "." + ACTIVITY_ID)

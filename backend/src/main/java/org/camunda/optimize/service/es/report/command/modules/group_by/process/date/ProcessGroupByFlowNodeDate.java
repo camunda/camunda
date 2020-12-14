@@ -11,8 +11,8 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 
+import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createFlowNodeAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 
 @Slf4j
@@ -25,7 +25,7 @@ public abstract class ProcessGroupByFlowNodeDate extends AbstractProcessGroupByM
 
   @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    return QueryBuilders.matchAllQuery();
+    return createFlowNodeAggregationFilter(context.getReportData());
   }
 
   @Override

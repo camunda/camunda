@@ -13,7 +13,9 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -40,11 +42,12 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String TEST_ACTIVITY = "testActivity";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
@@ -639,6 +642,39 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   }
 
   @Test
+  public void viewLevelFlowNodeDurationFilterOnlyIncludesFlowNodesMatchingFilter() {
+    // given
+    ProcessInstanceEngineDto firstInstance = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), TEST_ACTIVITY, 5000);
+    ProcessInstanceEngineDto secondInstance =
+      engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
+    engineDatabaseExtension.changeActivityDuration(secondInstance.getId(), TEST_ACTIVITY, 10000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      firstInstance.getProcessDefinitionKey(),
+      firstInstance.getProcessDefinitionVersion()
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .flowNodeDuration()
+        .flowNode(TEST_ACTIVITY, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData()).isNotNull().hasSize(1);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+  }
+
+  @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
     ProcessReportDataDto dataDto = createReport("123", "1");
@@ -682,7 +718,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent("start")
-      .serviceTask(CountFlowNodeFrequencyByFlowNodeReportEvaluationIT.TEST_ACTIVITY)
+      .serviceTask(FlowNodeFrequencyByFlowNodeReportEvaluationIT.TEST_ACTIVITY)
         .camundaExpression("${true}")
       .serviceTask(TEST_ACTIVITY_2)
         .camundaExpression("${true}")

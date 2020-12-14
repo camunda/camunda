@@ -11,9 +11,12 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -247,12 +250,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
   }
 
-  protected void startProcessInstanceAndModifyActivityDuration(final String definitionId,
-                                                               final long activityDurationInMs) {
-    final ProcessInstanceEngineDto thirdProcessInstance = engineIntegrationExtension.startProcessInstance(definitionId);
-    engineDatabaseExtension.changeAllActivityDurations(thirdProcessInstance.getId(), activityDurationInMs);
-  }
-
   protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
                                         final Double durationInMs) {
     engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMs.longValue());
@@ -437,6 +434,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected String localDateTimeToString(ZonedDateTime time) {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
+  }
+
+  protected DurationFilterDataDto filterData(final DurationFilterUnit unit, final Long value,
+                                             final FilterOperator operator) {
+    return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 
 }

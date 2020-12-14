@@ -46,9 +46,9 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToDateHistogramInterval;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createModelElementDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.createModelElementDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -227,16 +227,11 @@ public class DateAggregationService {
          currentBucketStart = getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)) {
       // to use our correct date formatting we need to switch back to OffsetDateTime
       final String startAsString = dateTimeFormatter.format(currentBucketStart.toOffsetDateTime());
-      final String endAsString = dateTimeFormatter.format(getEndOfBucket(
-        currentBucketStart,
-        unit,
-        automaticIntervalDuration
-      ).toOffsetDateTime());
+      final String endAsString = dateTimeFormatter.format(
+        getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration).toOffsetDateTime());
 
       BoolQueryBuilder query = QueryBuilders.boolQuery()
-        .must(
-          QueryBuilders.rangeQuery(context.getDateField()).lt(endAsString)
-        )
+        .must(QueryBuilders.rangeQuery(context.getDateField()).lt(endAsString))
         .must(
           QueryBuilders.boolQuery()
             .should(QueryBuilders.rangeQuery(context.getRunningDateReportEndDateField()).gte(startAsString))

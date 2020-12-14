@@ -148,8 +148,8 @@ public class ProcessVariableUpdateWriter {
     return processInstanceIdToVariables;
   }
 
-  private List<SimpleProcessVariableDto> mapToSimpleVariables(final List<ProcessVariableDto> variablesWitAllInformation) {
-    return variablesWitAllInformation
+  private List<SimpleProcessVariableDto> mapToSimpleVariables(final List<ProcessVariableDto> variablesWithAllInformation) {
+    return variablesWithAllInformation
       .stream()
       .map(var -> new SimpleProcessVariableDto(
         var.getId(),

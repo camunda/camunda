@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -48,14 +47,12 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
-
     return durationAggregationService
       .createLimitedGroupByScriptedEventDurationAggregation(
         searchSourceBuilder, context, distributedByPart, getDurationScript()
       )
       .map(durationAggregation -> createExecutionStateFilteredFlowNodeAggregation(
-        flowNodeExecutionState,
+        context,
         durationAggregation
       ))
       .map(Collections::singletonList)

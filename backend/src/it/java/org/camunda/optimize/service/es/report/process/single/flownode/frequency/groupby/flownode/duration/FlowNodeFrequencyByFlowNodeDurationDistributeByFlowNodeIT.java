@@ -6,10 +6,16 @@
 package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode.duration;
 
 import com.google.common.collect.ImmutableList;
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -25,9 +31,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
 
-public class CountFlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
+public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
 
   private static final ImmutableList<String> FLOW_NODES = ImmutableList.of(END_EVENT, START_EVENT, USER_TASK_1);
@@ -108,6 +115,46 @@ public class CountFlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
       .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
       .doAssert(resultDto);
     // @formatter:on
+  }
+
+  @Test
+  public void viewLevelFlowNodeDurationFilterOnlyIncludesFlowNodesMatchingFilter() {
+    // given
+    final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 5000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 10000);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
+    final List<ProcessFilterDto<?>> filterYieldingNoResults = ProcessFilterBuilder.filter()
+      .flowNodeDuration()
+      .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add()
+      .buildList();
+    reportData.setFilter(filterYieldingNoResults);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(result.getDataEntryForKey(createDurationBucketKey(1000))).isPresent();
+    assertThat(result.getDataEntryForKey(createDurationBucketKey(5000))).isPresent();
+    assertThat(result.getDataEntryForKey(createDurationBucketKey(10000))).isNotPresent();
+    assertThat(result.getData()).allSatisfy(bucket -> {
+      if (bucket.getKey().equals(createDurationBucketKey(1000)) ||
+        bucket.getKey().equals(createDurationBucketKey(5000))) {
+        assertThat(bucket.getValue())
+          .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue).hasSize(3)
+          .contains(Tuple.tuple(START_EVENT, null), Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(END_EVENT, null));
+      } else {
+        assertThat(bucket.getValue())
+          .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue).hasSize(3)
+          .contains(Tuple.tuple(START_EVENT, null), Tuple.tuple(USER_TASK_1, null), Tuple.tuple(END_EVENT, null));
+      }
+    });
   }
 
 }
