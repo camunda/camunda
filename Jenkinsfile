@@ -16,8 +16,8 @@ def numToKeep = isDevelopBranch ? '-1' : '10'
 def shortTimeoutMinutes = 10
 def longTimeoutMinutes = 45
 
-//the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
-def cronTrigger = isDevelopBranch ? '@hourly' : ''
+//the develop branch should be run at midnight to do a nightly build including QA test run
+def cronTrigger = isDevelopBranch ? '0 0 * * *' : ''
 
 pipeline {
     agent {
@@ -45,7 +45,7 @@ pipeline {
 
     parameters {
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
-        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe SNAPSHOT', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
@@ -268,7 +268,7 @@ pipeline {
 
         stage('QA') {
             when {
-                expression { params.RUN_QA }
+                expression { runsQA() }
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
@@ -449,7 +449,7 @@ def isBorsStagingBranch() {
 }
 
 def runsQA() {
-    return params.RUN_QA
+    return params.RUN_QA || (env.isDevelopBranch && triggeredBy('TimerTrigger'))
 }
 
 def templatePodspec(String podspecPath, flags = [:]) {
