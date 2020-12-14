@@ -32,6 +32,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -189,19 +190,43 @@ public class SearchableIdentityCache implements AutoCloseable {
                                                                final IdentityType[] identityTypes,
                                                                final int resultLimit,
                                                                final IdentitySearchResultResponseDto searchAfter) {
+    return searchIdentitiesAfter(terms, null, identityTypes, resultLimit, searchAfter);
+  }
+
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(final String terms,
+                                                                      final Collection<String> identityIds,
+                                                                      final IdentityType[] identityTypes,
+                                                                      final int resultLimit) {
+    return searchIdentitiesAfter(
+      terms,
+      new TermInSetQuery(IdentityDto.Fields.id, identityIds.stream().map(BytesRef::new).collect(Collectors.toSet())),
+      identityTypes,
+      resultLimit,
+      null
+    );
+  }
+
+  public IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
+                                                               final Query additionalFilterQuery,
+                                                               final IdentityType[] identityTypes,
+                                                               final int resultLimit,
+                                                               final IdentitySearchResultResponseDto searchAfter) {
     final IdentitySearchResultResponseDto result = new IdentitySearchResultResponseDto();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);
 
-        final SortField nameSort = new SortField(
-          IdentityWithMetadataResponseDto.Fields.name, SortField.Type.STRING, false
-        );
-        nameSort.setMissingValue(STRING_LAST);
-        final Sort scoreThenNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
+        final BooleanQuery.Builder termsAndIdFilterQuery = new BooleanQuery.Builder();
+        if (additionalFilterQuery != null) {
+          termsAndIdFilterQuery.add(additionalFilterQuery, BooleanClause.Occur.FILTER);
+        }
+        termsAndIdFilterQuery.add(new BooleanClause(
+          createSearchIdentityQuery(terms, identityTypes), BooleanClause.Occur.MUST
+        ));
+
         final TopDocs topDocs = searcher.searchAfter(
           Optional.ofNullable(searchAfter).map(IdentitySearchResultResponseDto::getScoreDoc).orElse(null),
-          createSearchIdentityQuery(terms, identityTypes), resultLimit, scoreThenNameSort
+          termsAndIdFilterQuery.build(), resultLimit, createNameSorting()
         );
 
         result.setTotal(topDocs.totalHits.value);
@@ -245,6 +270,12 @@ public class SearchableIdentityCache implements AutoCloseable {
       }
     });
     return size.get();
+  }
+
+  private Sort createNameSorting() {
+    final SortField nameSort = new SortField(IdentityWithMetadataResponseDto.Fields.name, SortField.Type.STRING, false);
+    nameSort.setMissingValue(STRING_LAST);
+    return new Sort(SortField.FIELD_SCORE, nameSort);
   }
 
   private void enforceMaxEntryLimit(int newRecordCount) {

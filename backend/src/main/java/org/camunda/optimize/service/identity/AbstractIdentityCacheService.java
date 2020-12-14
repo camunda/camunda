@@ -226,6 +226,13 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     return activeIdentityCache.searchIdentitiesAfter(terms, identityTypes, resultLimit, searchAfter);
   }
 
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(final String terms,
+                                                                      final Collection<String> identityIds,
+                                                                      final IdentityType[] identityTypes,
+                                                                      final int resultLimit) {
+    return activeIdentityCache.searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
+  }
+
   protected abstract String getCacheLabel();
 
   protected abstract String createIncreaseCacheLimitErrorMessage();

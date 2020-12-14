@@ -8,6 +8,8 @@ package org.camunda.optimize.test.optimize;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -21,6 +23,12 @@ public class AssigneesClient {
     return getRequestExecutor()
       .buildGetAssigneesByIdRequest(ids)
       .executeAndReturnList(UserDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public IdentitySearchResultResponseDto searchForAssignees(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+    return getRequestExecutor()
+      .buildSearchForAssigneesRequest(requestDto)
+      .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

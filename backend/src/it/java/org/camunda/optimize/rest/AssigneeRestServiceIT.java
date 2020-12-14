@@ -10,6 +10,8 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.util.BpmnModels;
@@ -29,7 +31,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
   public static final String JOHN_LAST_NAME = "Imposter";
 
   public static final String ASSIGNEE_ID_JEAN = "jean";
-  public static final String JEAN_FIRST_NAME = "True";
+  public static final String JEAN_FIRST_NAME = "The";
   public static final String JEAN_LAST_NAME = "CrewMember";
 
   @Test
@@ -81,7 +83,9 @@ public class AssigneeRestServiceIT extends AbstractIT {
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
 
     // when
-    final List<UserDto> assignees = assigneesClient.getAssigneesByIdsWithoutAuthentication(ImmutableList.of(ASSIGNEE_ID_JOHN));
+    final List<UserDto> assignees = assigneesClient.getAssigneesByIdsWithoutAuthentication(
+      ImmutableList.of(ASSIGNEE_ID_JOHN)
+    );
 
     // then
     assertThat(assignees)
@@ -97,7 +101,9 @@ public class AssigneeRestServiceIT extends AbstractIT {
   @Test
   public void getAssigneeByIdNotExistingReflectsIdAsNameBack() {
     // when
-    final List<UserDto> assignees = assigneesClient.getAssigneesByIdsWithoutAuthentication(ImmutableList.of(ASSIGNEE_ID_JOHN));
+    final List<UserDto> assignees = assigneesClient.getAssigneesByIdsWithoutAuthentication(
+      ImmutableList.of(ASSIGNEE_ID_JOHN)
+    );
 
     // then
     assertThat(assignees)
@@ -176,14 +182,260 @@ public class AssigneeRestServiceIT extends AbstractIT {
       );
   }
 
+  @Test
+  public void searchForAssignees_unauthorized() {
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .withoutAuthentication()
+      .buildSearchForAssigneesRequest(AssigneeCandidateGroupSearchRequestDto.builder().build())
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void searchForAssignees_missingKeyIsRejected() {
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildSearchForAssigneesRequest(AssigneeCandidateGroupSearchRequestDto.builder().build())
+      .execute();
+
+    // then the status code is bad request
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void searchForAssigneesNoSearchTerm() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getResult())
+      .hasSize(2)
+      .containsExactlyInAnyOrder(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
+        new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
+  @Test
+  public void searchForAssigneesNoSearchTerm_otherProcessAssigneeIsFiltered() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final String definitionKey1 = "process";
+    startSimpleUserTaskProcessWithAssigneeAndImport(definitionKey1, ASSIGNEE_ID_JOHN);
+    final String definitionKey2 = "otherProcess";
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(definitionKey2, ASSIGNEE_ID_JEAN);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(definitionKey1)
+        .build()
+    );
+    final IdentitySearchResultResponseDto otherDefinitionSearchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(definitionKey2)
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(1);
+    assertThat(searchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
+      );
+
+    assertThat(otherDefinitionSearchResponse.getTotal()).isEqualTo(1);
+    assertThat(otherDefinitionSearchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
+  @Test
+  public void searchForAssigneesNoSearchTerm_tenantAssigneeIsFiltered() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    final String tenant1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenant1);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(
+      processInstanceEngineDto.getProcessDefinitionKey(), ASSIGNEE_ID_JEAN, tenant1
+    );
+
+    // when
+    final IdentitySearchResultResponseDto noTenantSearchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .build()
+    );
+    final IdentitySearchResultResponseDto tenant1SearchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .tenantIds(ImmutableList.of(tenant1))
+        .build()
+    );
+
+    //then
+    assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
+    assertThat(noTenantSearchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
+      );
+
+    assertThat(tenant1SearchResponse.getTotal()).isEqualTo(1);
+    assertThat(tenant1SearchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
+  @Test
+  public void searchForAssigneesWithSearchTerm() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
+
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .terms("John")
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(1);
+    assertThat(searchResponse.getResult())
+      .hasSize(1)
+      .containsExactlyInAnyOrder(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
+  @Test
+  public void searchForAssigneesWithSearchTermMultipleHits() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .terms("J")
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getResult())
+      .hasSize(2)
+      .containsExactlyInAnyOrder(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
+        new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
+  @Test
+  public void searchForAssigneesWithSearchTermMultipleHitsLimited() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .terms("J")
+        .limit(1)
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getResult()).hasSize(1);
+  }
+
+  @Test
+  public void searchForAssigneesWithSearchTerm_otherProcessAssigneeIsFiltered() {
+    // given
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport("otherProcess", ASSIGNEE_ID_JEAN);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .terms("The")
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(1);
+    assertThat(searchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
+      );
+  }
+
   private ProcessInstanceEngineDto startSimpleUserTaskProcessWithAssignee() {
     return engineIntegrationExtension.deployAndStartProcess(
       BpmnModels.getDoubleUserTaskDiagramWithAssignees("demo", "john")
     );
   }
 
-  private void startSimpleUserTaskProcessWithAssigneeAndImport(final String assignee) {
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithAssignee(assignee));
+  private ProcessInstanceEngineDto startSimpleUserTaskProcessWithAssigneeAndImport(final String assignee) {
+    return startSimpleUserTaskProcessWithAssigneeAndImport("key", assignee);
+  }
+
+  private ProcessInstanceEngineDto startSimpleUserTaskProcessWithAssigneeAndImport(final String definitionKey,
+                                                                                   final String assignee) {
+    return startSimpleUserTaskProcessWithAssigneeAndImport(definitionKey, assignee, null);
+  }
+
+  private ProcessInstanceEngineDto startSimpleUserTaskProcessWithAssigneeAndImport(final String definitionKey,
+                                                                                   final String assignee,
+                                                                                   final String tenantId) {
+    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getUserTaskDiagramWithAssignee(definitionKey, assignee), tenantId
+    );
     importAllEngineEntitiesFromScratch();
+    return processInstanceEngineDto;
   }
 }

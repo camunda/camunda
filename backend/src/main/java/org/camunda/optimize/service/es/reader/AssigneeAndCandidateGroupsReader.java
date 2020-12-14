@@ -26,7 +26,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
@@ -78,7 +80,33 @@ public class AssigneeAndCandidateGroupsReader {
     return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_ASSIGNEE);
   }
 
-  public List<String> getSearchResponse(@NonNull final AssigneeRequestDto requestDto, @NonNull final String field) {
+  public Set<String> getAssigneeIdsForProcess(@NonNull final String definitionKey,
+                                              final List<String> tenantIds) {
+    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKey, tenantIds);
+  }
+
+  public Set<String> getCandidateGroupIdsForProcess(@NonNull final String definitionKey,
+                                                    final List<String> tenantIds) {
+    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKey, tenantIds);
+  }
+
+  private Set<String> getUserTaskFieldTerms(final String userTaskFieldName,
+                                            final String definitionKey,
+                                            final List<String> tenantIds) {
+    log.debug(
+      "Fetching {} for process definition with key [{}] and tenants [{}]", userTaskFieldName, definitionKey, tenantIds
+    );
+
+    final BoolQueryBuilder definitionQuery = createDefinitionQuery(
+      definitionKey, tenantIds, new ProcessInstanceIndex()
+    );
+
+    final Set<String> result = new HashSet<>();
+    consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+    return result;
+  }
+
+  private List<String> getSearchResponse(@NonNull final AssigneeRequestDto requestDto, @NonNull final String field) {
     if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
       log.debug("Cannot fetch {} for process definition with missing versions.", field);
       return Collections.emptyList();
@@ -107,10 +135,10 @@ public class AssigneeAndCandidateGroupsReader {
                                                   final String fieldName,
                                                   final Consumer<List<String>> termBatchConsumer,
                                                   final int batchSize) {
-    final int resolvedLimit = Math.min(batchSize, MAX_RESPONSE_SIZE_LIMIT);
+    final int resolvedBatchSize = Math.min(batchSize, MAX_RESPONSE_SIZE_LIMIT);
     final CompositeAggregationBuilder assigneeCompositeAgg = new CompositeAggregationBuilder(
       COMPOSITE_AGG, ImmutableList.of(new TermsValuesSourceBuilder(TERMS_AGG).field(getUserTaskFieldPath(fieldName)))
-    ).size(resolvedLimit);
+    ).size(resolvedBatchSize);
     final NestedAggregationBuilder userTasksAgg = nested(NESTED_USER_TASKS_AGG, ProcessInstanceDto.Fields.userTasks)
       .subAggregation(assigneeCompositeAgg);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()

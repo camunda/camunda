@@ -104,7 +104,11 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getUserTaskDiagramWithAssignee(final String assignee) {
-    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+    return getUserTaskDiagramWithAssignee(DEFAULT_PROCESS_ID, assignee);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithAssignee(final String procDefKey, final String assignee) {
+    return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1).camundaAssignee(assignee)
@@ -124,11 +128,21 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getUserTaskDiagramWithCandidateGroup(final String candidateGroup) {
-    return getUserTaskDiagramWithMultipleCandidateGroups(ImmutableList.of(candidateGroup));
+    return getUserTaskDiagramWithCandidateGroup(DEFAULT_PROCESS_ID, candidateGroup);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithCandidateGroup(final String procDefKey,
+                                                                       final String candidateGroup) {
+    return getUserTaskDiagramWithMultipleCandidateGroups(procDefKey, ImmutableList.of(candidateGroup));
   }
 
   public static BpmnModelInstance getUserTaskDiagramWithMultipleCandidateGroups(final List<String> candidateGroups) {
-    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+    return getUserTaskDiagramWithMultipleCandidateGroups(DEFAULT_PROCESS_ID, candidateGroups);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithMultipleCandidateGroups(final String procDefKey,
+                                                                                final List<String> candidateGroups) {
+    return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1).camundaCandidateGroups(candidateGroups)

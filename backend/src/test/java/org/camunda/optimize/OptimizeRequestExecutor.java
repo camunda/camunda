@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
@@ -103,6 +104,10 @@ import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_SEARCH_SUB_PATH;
+import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_RESOURCE_PATH;
+import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
@@ -912,9 +917,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetAssigneesByIdRequest(List<String> ids) {
-    this.path = "/assignee";
+    this.path = ASSIGNEE_RESOURCE_PATH;
     this.method = GET;
     addSingleQueryParam("idIn", String.join(",", ids));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSearchForAssigneesRequest(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+    this.path = ASSIGNEE_RESOURCE_PATH + ASSIGNEE_SEARCH_SUB_PATH;
+    this.method = POST;
+    this.body = getBody(requestDto);
     return this;
   }
 
@@ -929,6 +941,13 @@ public class OptimizeRequestExecutor {
     this.path = "/candidateGroup";
     this.method = GET;
     addSingleQueryParam("idIn", String.join(",", ids));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSearchForCandidateGroupsRequest(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+    this.path = CANDIDATE_GROUP_RESOURCE_PATH + CANDIDATE_GROUP_SEARCH_SUB_PATH;
+    this.method = POST;
+    this.body = getBody(requestDto);
     return this;
   }
 
