@@ -868,7 +868,7 @@
       },
       "modalHeader": "Add {type} Filter",
       "addFilter": "Add Filter",
-      "editFilter": "Edit Filter",
+      "updateFilter": "Update Filter",
       "dateModal": {
         "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
         "info": {

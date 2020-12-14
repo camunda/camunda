@@ -97,7 +97,7 @@ export default class DurationFilter extends React.Component {
             {t('common.cancel')}
           </Button>
           <Button main primary disabled={!isValidInput} onClick={this.createFilter}>
-            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
+            {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

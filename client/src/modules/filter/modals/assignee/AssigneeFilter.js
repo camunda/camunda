@@ -114,7 +114,7 @@ export function AssigneeFilter({
           {t('common.cancel')}
         </Button>
         <Button main primary onClick={confirm} disabled={users.length === 0}>
-          {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
+          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
       </Modal.Actions>
     </Modal>

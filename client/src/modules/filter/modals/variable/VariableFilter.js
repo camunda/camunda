@@ -138,7 +138,7 @@ export default class VariableFilter extends React.Component {
             disabled={!valid && !forceEnabled?.(selectedVariable)}
             onClick={this.createFilter}
           >
-            {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
+            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

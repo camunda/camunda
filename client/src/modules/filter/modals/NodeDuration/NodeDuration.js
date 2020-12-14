@@ -152,7 +152,7 @@ export default class NodeDuration extends React.Component {
             {t('common.cancel')}
           </Button>
           <Button main primary onClick={this.confirmModal} disabled={empty || !this.validChanges()}>
-            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
+            {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

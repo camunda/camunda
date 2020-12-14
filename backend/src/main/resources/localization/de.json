@@ -868,7 +868,7 @@
       },
       "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",
-      "editFilter": "Filter bearbeiten",
+      "updateFilter": "Filter ändern",
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
