@@ -40,6 +40,17 @@ export default function InstanceFilters({
           {t('common.filter.types.nonSuspendedInstancesOnly')}
         </Dropdown.Option>
       </Dropdown.Submenu>
+      <Dropdown.Submenu label={t('common.filter.types.incident')}>
+        <Dropdown.Option onClick={filterByInstancesOnly('containsOpenIncidents')}>
+          {t('common.filter.types.containsOpenIncidents')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByInstancesOnly('containsResolvedIncidents')}>
+          {t('common.filter.types.containsResolvedIncidents')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByInstancesOnly('containsNoIncidents')}>
+          {t('common.filter.types.containsNoIncidents')}
+        </Dropdown.Option>
+      </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.date')}>
         <Dropdown.Option onClick={openNewFilterModal('startDate')}>
           {t('common.filter.types.startDate')}

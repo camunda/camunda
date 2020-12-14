@@ -840,7 +840,13 @@
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
-        "outputVariable": "Output Variable"
+        "outputVariable": "Output Variable",
+        "incident": "Incident",
+        "containsOpenIncidents": "Contains Open Incidents",
+        "containsResolvedIncidents": "Contains Resolved Incidents",
+        "containsNoIncidents": "Contains No Incidents",
+        "onlyOpenIncidents": "Only Open Incidents",
+        "onlyResolvedIncidents": "Only Resolved Incidents"
       },
       "list": {
         "operators": {

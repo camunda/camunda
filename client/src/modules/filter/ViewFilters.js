@@ -9,13 +9,25 @@ import React from 'react';
 import {Dropdown} from 'components';
 import {t} from 'translation';
 
-export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
+export default function ViewFilters({
+  filterByInstancesOnly,
+  openNewFilterModal,
+  processDefinitionIsNotSelected,
+}) {
   return (
     <Dropdown
       label={t('common.add')}
       id="ControlPanel__filters"
       className="ViewFilters Filter__dropdown"
     >
+      <Dropdown.Submenu label={t('common.filter.types.incident')}>
+        <Dropdown.Option onClick={filterByInstancesOnly('onlyOpenIncidents')}>
+          {t('common.filter.types.onlyOpenIncidents')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByInstancesOnly('onlyResolvedIncidents')}>
+          {t('common.filter.types.onlyResolvedIncidents')}
+        </Dropdown.Option>
+      </Dropdown.Submenu>
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('flowNodeDuration')}

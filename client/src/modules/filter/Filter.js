@@ -139,11 +139,11 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByInstancesOnly = (type) => (evt) => {
+  filterByInstancesOnly = (type) => () => {
     this.addFilter({
       type,
       data: null,
-      filterLevel: 'instance',
+      filterLevel: this.props.filterLevel,
     });
   };
 

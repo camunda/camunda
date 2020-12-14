@@ -840,7 +840,13 @@
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
-        "outputVariable": "Ausgabevariable"
+        "outputVariable": "Ausgabevariable",
+        "incident": "Zwischenfälle",
+        "containsOpenIncidents": "mit offenen Zwischenfällen",
+        "containsResolvedIncidents": "mit gelösten Zwischenfällen",
+        "containsNoIncidents": "ohne Zwischenfälle",
+        "onlyOpenIncidents": "nur offene Zwischenfälle",
+        "onlyResolvedIncidents": "nur gelöste Zwischenfälle"
       },
       "list": {
         "operators": {
