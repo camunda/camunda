@@ -138,12 +138,12 @@ public class UserTaskCompleter {
     try {
       engineClient.addOrRemoveCandidateGroupIdentityLinks(task, userAndGroupProvider.getRandomGroupId());
 
-      if (RandomUtils.nextDouble() > 0.95) {
+      if (randomDouble() > 0.95) {
         // no assignee
         engineClient.setAssignee(task, null);
       } else {
         engineClient.setAssignee(task, userAndGroupProvider.getRandomUserId());
-        if (RandomUtils.nextDouble() < 0.97) {
+        if (randomDouble() < 0.97) {
           boolean executionDelayed = engineClient
             .getProcessInstanceDelayVariable(task.getProcessInstanceId())
             .orElse(false);
@@ -156,6 +156,10 @@ public class UserTaskCompleter {
     } catch (Exception e) {
       log.error("Could not claim user task!", e);
     }
+  }
+
+  private double randomDouble() {
+    return RandomUtils.nextDouble(0.0D, 1.0D);
   }
 
   private void waitForOutlierDelay() {
