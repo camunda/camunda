@@ -171,12 +171,12 @@ export class Home extends React.Component {
                   );
                 }
 
-                if (user?.authorizations.includes('import_export') && entityType === 'report') {
+                if (user?.authorizations.includes('import_export') && entityType !== 'collection') {
                   actions.push({
                     icon: 'save',
                     text: t('common.export'),
                     action: () => {
-                      window.location.href = `api/export/report/json/${
+                      window.location.href = `api/export/${entityType}/json/${
                         entity.id
                       }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
                     },
