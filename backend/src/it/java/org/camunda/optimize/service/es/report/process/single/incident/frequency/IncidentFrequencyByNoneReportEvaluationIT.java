@@ -259,6 +259,34 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     assertThat(result.getData()).isEqualTo(2.);
   }
 
+  @ParameterizedTest
+  @MethodSource("identityFilters")
+  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    final ProcessInstanceEngineDto processInstanceEngineDto2 =
+      engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto2.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceEngineDto.getProcessDefinitionKey(),
+        processInstanceEngineDto.getProcessDefinitionVersion()
+      );
+    reportData.getFilter().addAll(filtersToApply);
+    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+  }
+
   private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
     return TemplatedProcessReportDataBuilder
       .createReportData()

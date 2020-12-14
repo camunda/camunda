@@ -21,6 +21,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -94,8 +96,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
-                                                   engineDto.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = createReport(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -131,8 +135,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
-                                                   processInstance.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion()
+    );
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -182,6 +188,26 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
+  @ParameterizedTest
+  @MethodSource("identityFilters")
+  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
+    reportData.getFilter().addAll(filtersToApply);
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+  }
+
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
@@ -219,8 +245,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstanceDto.getProcessDefinitionKey(),
-                                                   processInstanceDto.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion()
+    );
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =

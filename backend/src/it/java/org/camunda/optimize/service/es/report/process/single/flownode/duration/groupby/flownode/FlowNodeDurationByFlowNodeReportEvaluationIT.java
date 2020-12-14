@@ -33,6 +33,8 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -815,7 +817,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     Double[] durationSet = new Double[11];
     Arrays.fill(durationSet, 10.);
-    assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
+    assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(durationSet));
   }
 
@@ -856,8 +858,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, past.minusSeconds(1L)));
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
     ReportMapResultDto result = evaluationResponse.getResult();
@@ -892,6 +894,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
@@ -909,8 +912,22 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(5000.));
   }
 
-  private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+  @ParameterizedTest
+  @MethodSource("identityFilters")
+  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    reportData.setFilter(filtersToApply);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
   }
 
   @Test
@@ -1044,4 +1061,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     );
     return reportClient.evaluateMapReport(reportData).getResult();
   }
+
+  private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+  }
+
 }

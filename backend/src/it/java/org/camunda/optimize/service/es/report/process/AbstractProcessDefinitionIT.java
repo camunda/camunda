@@ -16,7 +16,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Du
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -49,6 +52,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
@@ -439,6 +443,40 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected DurationFilterDataDto filterData(final DurationFilterUnit unit, final Long value,
                                              final FilterOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
+  }
+
+  @SuppressWarnings(UNUSED)
+  protected static Stream<List<ProcessFilterDto<?>>> identityFilters() {
+    return Stream.of(
+      ProcessFilterBuilder
+        .filter()
+        .assignee()
+        .id(DEFAULT_USERNAME)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder
+        .filter()
+        .assignee()
+        .id(DEFAULT_USERNAME)
+        .filterLevel(FilterApplicationLevel.INSTANCE)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder
+        .filter()
+        .candidateGroups()
+        .id(FIRST_CANDIDATE_GROUP)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder
+        .filter()
+        .candidateGroups()
+        .id(FIRST_CANDIDATE_GROUP)
+        .filterLevel(FilterApplicationLevel.INSTANCE)
+        .add()
+        .buildList()
+    );
   }
 
 }

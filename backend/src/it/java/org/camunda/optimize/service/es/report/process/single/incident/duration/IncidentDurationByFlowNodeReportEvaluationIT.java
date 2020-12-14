@@ -452,13 +452,22 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     OffsetDateTime creationDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstanceEngineDto1 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId1);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto1.getId(), creationDate.minusSeconds(1L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto1.getId(),
+      creationDate.minusSeconds(1L)
+    );
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId2);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto2.getId(), creationDate.minusSeconds(2L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto2.getId(),
+      creationDate.minusSeconds(2L)
+    );
     final ProcessInstanceEngineDto processInstanceEngineDto3 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(DEFAULT_TENANT);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto3.getId(), creationDate.minusSeconds(3L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto3.getId(),
+      creationDate.minusSeconds(3L)
+    );
 
     importAllEngineEntitiesFromScratch();
 
@@ -528,6 +537,37 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
+      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+  }
+
+  @ParameterizedTest
+  @MethodSource("identityFilters")
+  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+      .withResolvedIncident()
+      .withIncidentDurationInSec(1L)
+      .startProcessInstance()
+      .withOpenIncident()
+      .withIncidentDurationInSec(3L)
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ReportConstants.ALL_VERSIONS);
+    reportData.setFilter(filtersToApply);
+    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    MapResultAsserter.asserter()
+      .processInstanceCount(0L)
+      .processInstanceCountWithoutFilters(2L)
+      .isComplete(true)
+      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+      .groupedByContains(SERVICE_TASK_ID_1, null, SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
   }
