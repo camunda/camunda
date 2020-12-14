@@ -11,9 +11,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
@@ -24,10 +26,15 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
@@ -44,11 +51,33 @@ public class AssigneeCandidateGroupService {
   private final AssigneeCandidateGroupIdentityCacheService identityCacheService;
   private final IdentityAuthorizationService identityAuthorizationService;
 
+  public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
+    final Map<String, UserDto> assigneesById = identityCacheService
+      .getAssigneesByIds(assigneeIds)
+      .stream()
+      .collect(toMap(IdentityDto::getId, Function.identity()));
+    return assigneeIds
+      .stream()
+      .map(id -> assigneesById.getOrDefault(id, new UserDto(id)))
+      .collect(Collectors.toList());
+  }
+
   public List<String> getAllAssigneeIdsForProcess(@NonNull final String userId,
                                                   @NonNull final AssigneeRequestDto requestDto) {
     ensureNotEmpty("process definition key", requestDto.getProcessDefinitionKey());
     validateDefinitionAccess(userId, requestDto);
     return assigneeAndCandidateGroupsReader.getAssignees(requestDto);
+  }
+
+  public List<GroupDto> getCandidateGroupsByIds(final Collection<String> assigneeIds) {
+    final Map<String, GroupDto> candidateGroupsById = identityCacheService
+      .getCandidateGroupIdentitiesById(assigneeIds)
+      .stream()
+      .collect(toMap(IdentityDto::getId, Function.identity()));
+    return assigneeIds
+      .stream()
+      .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
+      .collect(Collectors.toList());
   }
 
   public List<String> getAllCandidateGroups(@NonNull final String userId,

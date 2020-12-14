@@ -29,10 +29,13 @@ import org.springframework.scheduling.support.CronTrigger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public abstract class AbstractIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -50,7 +53,8 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     this.identitySyncConfigurationSupplier = identitySyncConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
-    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getIdentitySyncConfiguration().getMaxEntryLimit());
+    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getIdentitySyncConfiguration()
+      .getMaxEntryLimit());
   }
 
   public IdentitySyncConfiguration getIdentitySyncConfiguration() {
@@ -173,11 +177,29 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     return activeIdentityCache.getUserIdentityById(id);
   }
 
+  public List<UserDto> getUserIdentitiesById(final Collection<String> ids) {
+    return activeIdentityCache
+      .getIdentities(ids.stream().map(id -> new IdentityDto(id, IdentityType.USER)).collect(Collectors.toSet()))
+      .stream()
+      .filter(UserDto.class::isInstance)
+      .map(UserDto.class::cast)
+      .collect(toList());
+  }
+
   public Optional<GroupDto> getGroupIdentityById(final String id) {
     return activeIdentityCache.getGroupIdentityById(id);
   }
 
-  public Set<IdentityWithMetadataResponseDto> getIdentities(final Set<IdentityDto> identities) {
+  public List<GroupDto> getCandidateGroupIdentitiesById(final Collection<String> ids) {
+    return activeIdentityCache
+      .getIdentities(ids.stream().map(id -> new IdentityDto(id, IdentityType.GROUP)).collect(Collectors.toSet()))
+      .stream()
+      .filter(GroupDto.class::isInstance)
+      .map(GroupDto.class::cast)
+      .collect(toList());
+  }
+
+  public List<IdentityWithMetadataResponseDto> getIdentities(final Collection<IdentityDto> identities) {
     return activeIdentityCache.getIdentities(identities);
   }
 

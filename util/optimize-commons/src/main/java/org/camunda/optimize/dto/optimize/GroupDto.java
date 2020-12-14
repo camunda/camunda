@@ -9,8 +9,11 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,8 +31,8 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
     this(id, name, null);
   }
 
-  public GroupDto(final String id, final String name, final Long memberCount) {
-    super(id, IdentityType.GROUP, name);
+  public GroupDto(@NonNull final String id, final String name, final Long memberCount) {
+    super(id, IdentityType.GROUP, Optional.ofNullable(name).orElse(id));
     this.memberCount = memberCount;
   }
 }

@@ -52,10 +52,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -133,8 +132,8 @@ public class SearchableIdentityCache implements AutoCloseable {
     return getTypedIdentityDtoById(id, IdentityType.GROUP, SearchableIdentityCache::mapDocumentToGroupDto);
   }
 
-  public Set<IdentityWithMetadataResponseDto> getIdentities(final Set<IdentityDto> identities) {
-    final Set<IdentityWithMetadataResponseDto> result = new HashSet<>(identities.size());
+  public List<IdentityWithMetadataResponseDto> getIdentities(final Collection<IdentityDto> identities) {
+    final List<IdentityWithMetadataResponseDto> result = new ArrayList<>(identities.size());
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);

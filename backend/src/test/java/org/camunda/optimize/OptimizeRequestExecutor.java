@@ -911,10 +911,24 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetAssigneesByIdRequest(List<String> ids) {
+    this.path = "/assignee";
+    this.method = GET;
+    addSingleQueryParam("idIn", String.join(",", ids));
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetCandidateGroupsRequest(AssigneeRequestDto requestDto) {
     this.path = "/candidateGroup/values";
     this.method = POST;
     this.body = getBody(requestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetCandidateGroupsByIdRequest(List<String> ids) {
+    this.path = "/candidateGroup";
+    this.method = GET;
+    addSingleQueryParam("idIn", String.join(",", ids));
     return this;
   }
 

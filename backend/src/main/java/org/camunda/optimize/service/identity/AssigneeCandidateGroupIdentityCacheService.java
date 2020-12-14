@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.identity;
 
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
@@ -16,7 +18,9 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -77,6 +81,14 @@ public class AssigneeCandidateGroupIdentityCacheService extends AbstractIdentity
           log.error("Failed to sync {} identities from engine {}", getCacheLabel(), engineContext.getEngineAlias(), e);
         }
       });
+  }
+
+  public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
+    return getUserIdentitiesById(assigneeIds);
+  }
+
+  public List<GroupDto> getCandidateGroupsByIds(final Collection<String> candidateGroupIds) {
+    return getCandidateGroupIdentitiesById(candidateGroupIds);
   }
 
   public void resolveAndAddIdentities(final Set<IdentityDto> identities) {

@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,9 +50,13 @@ public class IdentityLinkLogImportJob extends ElasticsearchImportJob<IdentityLin
       .map(entry -> {
         switch (entry.getType()) {
           case ASSIGNEE:
-            return new IdentityDto(entry.getUserId(), IdentityType.USER);
+            return Optional.ofNullable(entry.getUserId())
+              .map(id -> new IdentityDto(id, IdentityType.USER))
+              .orElse(null);
           case CANDIDATE:
-            return new IdentityDto(entry.getGroupId(), IdentityType.GROUP);
+            return Optional.ofNullable(entry.getGroupId())
+              .map(id -> new IdentityDto(id, IdentityType.GROUP))
+              .orElse(null);
           default:
           case OWNER:
             log.debug("Skipping non identity identityLinkLog entry of type: {}.", entry.getType());

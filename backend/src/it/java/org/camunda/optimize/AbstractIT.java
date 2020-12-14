@@ -15,6 +15,8 @@ import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.AnalysisClient;
+import org.camunda.optimize.test.optimize.AssigneesClient;
+import org.camunda.optimize.test.optimize.CandidateGroupClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.DefinitionClient;
@@ -114,6 +116,8 @@ public abstract class AbstractIT {
   protected ImportClient importClient = new ImportClient(optimizeRequestExecutorSupplier);
   protected DefinitionClient definitionClient = new DefinitionClient(optimizeRequestExecutorSupplier);
   protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
+  protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
+  protected CandidateGroupClient candidateGroupClient = new CandidateGroupClient(optimizeRequestExecutorSupplier);
   protected FlowNodeNamesClient flowNodeNamesClient = new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
   protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
   protected LocalizationClient localizationClient = new LocalizationClient(optimizeRequestExecutorSupplier);
