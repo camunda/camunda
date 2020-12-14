@@ -116,6 +116,7 @@ export default class BranchControlPanel extends React.Component {
                         'variable',
                         'assignee',
                         'candidateGroup',
+                        'flowNodeDuration',
                       ].includes(type)
                   ),
                 })

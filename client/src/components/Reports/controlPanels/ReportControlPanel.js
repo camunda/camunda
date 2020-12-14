@@ -134,6 +134,7 @@ export default withErrorHandling(
                 'variable',
                 'assignee',
                 'candidateGroup',
+                'flowNodeDuration',
               ].includes(type)
           ),
         },
