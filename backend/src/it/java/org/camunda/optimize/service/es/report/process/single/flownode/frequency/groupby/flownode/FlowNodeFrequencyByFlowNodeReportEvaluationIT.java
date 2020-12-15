@@ -683,7 +683,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(TEST_ACTIVITY, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(TEST_ACTIVITY, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList());

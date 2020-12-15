@@ -130,7 +130,7 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
     final List<ProcessFilterDto<?>> filterYieldingNoResults = ProcessFilterBuilder.filter()
       .flowNodeDuration()
-      .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+      .flowNode(USER_TASK_1, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();

@@ -42,19 +42,20 @@ public class FlowNodeFilterQueryUtil implements ModelElementFilterQueryUtil {
   public static BoolQueryBuilder createFlowNodeAggregationFilter(final ProcessReportDataDto reportDataDto) {
     final BoolQueryBuilder filterBoolQuery = boolQuery();
     addFlowNodeExecutionStateFilter(filterBoolQuery, reportDataDto);
-    addFlowNodeDurationFilter(
-      filterBoolQuery, reportDataDto, getFlowNodeDurationProperties());
+    addFlowNodeDurationFilter(filterBoolQuery, reportDataDto, getFlowNodeDurationProperties());
     return filterBoolQuery;
   }
 
   private static void addFlowNodeExecutionStateFilter(final BoolQueryBuilder filterBoolQuery,
                                                       final ProcessReportDataDto reportDataDto) {
     final FlowNodeExecutionState flowNodeExecutionState = reportDataDto.getConfiguration().getFlowNodeExecutionState();
-    addExecutionStateFilter(
-      filterBoolQuery.mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY)),
-      flowNodeExecutionState,
-      getExecutionStateFilterField(flowNodeExecutionState)
-    );
+    if (!FlowNodeExecutionState.ALL.equals(flowNodeExecutionState)) {
+      addExecutionStateFilter(
+        filterBoolQuery.mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY)),
+        flowNodeExecutionState,
+        getExecutionStateFilterField(flowNodeExecutionState)
+      );
+    }
   }
 
   private static String getExecutionStateFilterField(final FlowNodeExecutionState flowNodeExecutionState) {

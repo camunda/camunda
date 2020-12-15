@@ -440,8 +440,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
-  protected DurationFilterDataDto filterData(final DurationFilterUnit unit, final Long value,
-                                             final FilterOperator operator) {
+  protected DurationFilterDataDto durationFilterData(final DurationFilterUnit unit, final Long value,
+                                                     final FilterOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 

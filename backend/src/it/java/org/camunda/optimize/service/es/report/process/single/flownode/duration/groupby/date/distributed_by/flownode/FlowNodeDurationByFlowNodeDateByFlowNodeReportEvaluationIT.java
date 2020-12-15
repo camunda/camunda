@@ -588,7 +588,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(USER_TASK_1, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList());

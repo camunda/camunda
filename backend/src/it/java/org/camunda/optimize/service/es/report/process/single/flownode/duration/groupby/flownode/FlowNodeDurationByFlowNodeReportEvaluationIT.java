@@ -898,7 +898,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(START_EVENT_ID, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(START_EVENT_ID, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList());

@@ -8,8 +8,11 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -26,6 +29,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -35,13 +39,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void simpleReportEvaluation_stringVariable() {
@@ -375,6 +381,55 @@ public class CountFlowNodeFrequencyByVariableReportEvaluationIT extends Abstract
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(7.);
+  }
+
+  private static Stream<Arguments> flowNodeDurationFiltersAndExpectedValues() {
+    return Stream.of(
+      Arguments.of(FilterApplicationLevel.INSTANCE, 3.),
+      Arguments.of(FilterApplicationLevel.VIEW, 1.)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("flowNodeDurationFiltersAndExpectedValues")
+  public void worksWithFlowNodeDurationFilter(final FilterApplicationLevel filterApplicationLevel,
+                                              final Double expectedCount) {
+    // given
+    final ProcessInstanceEngineDto firstInstance =
+      deployAndStartSimpleUserTaskProcess(Collections.singletonMap("doubleVar", 1.0));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_1, 10000);
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      firstInstance.getDefinitionId(), Collections.singletonMap("doubleVar", 2.0));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeActivityDuration(secondInstance.getId(), USER_TASK_1, 20000);
+    importAllEngineEntitiesFromScratch();
+
+    // when`
+    final ProcessReportDataDto reportData = createReport(
+      firstInstance.getProcessDefinitionKey(),
+      firstInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .flowNodeDuration()
+        .flowNode(USER_TASK_1, durationFilterData(DurationFilterUnit.SECONDS, 15L, LESS_THAN))
+        .filterLevel(filterApplicationLevel)
+        .add()
+        .buildList());
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData()).isNotNull().hasSize(1);
+    assertThat(result.getEntryForKey("1.00"))
+      .isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(expectedCount);
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey,
