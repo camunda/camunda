@@ -211,6 +211,11 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
