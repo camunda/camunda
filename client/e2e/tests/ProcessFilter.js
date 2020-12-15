@@ -245,7 +245,8 @@ test('add assignee filter', async (t) => {
   await t.click(Report.filterOption('Assignee'));
 
   await t.click(Filter.multiSelect);
-  await t.click(Filter.multiSelectOption('demo'));
+  await t.typeText(Filter.multiSelect, 'er', {replace: true});
+  await t.click(Filter.multiSelectOptionNumber(0));
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
 

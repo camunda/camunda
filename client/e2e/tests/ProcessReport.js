@@ -285,7 +285,7 @@ test('Disable absolute and relative values for table reports', async (t) => {
 
 test('select process instance count grouped by end date', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification');
+  await u.selectDefinition(t, 'Embedded Subprocess');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await u.selectGroupby(t, 'End Date', 'Automatic');
@@ -465,7 +465,7 @@ test('different visualizations', async (t) => {
 
 test('aggregators', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification');
+  await u.selectDefinition(t, 'Embedded Subprocess');
   await u.selectView(t, 'Process Instance', 'Duration');
 
   await t.click(e.filterButton);
