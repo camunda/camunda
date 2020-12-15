@@ -38,11 +38,13 @@ import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startables;
 
+@Ignore("https://github.com/zeebe-io/zeebe/issues/6007")
 public class RollingUpdateTest {
   private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
   private static final String NEW_VERSION = VersionUtil.getVersion();
