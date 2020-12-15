@@ -211,8 +211,8 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   private void correlateMessagesAndResolveIncidents(final IncidentResolver incidentResolver) {
     if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
       messageEventCorrelater.correlateMessages();
-      incidentResolver.resolveIncidents();
     }
+    incidentResolver.resolveIncidents();
   }
 
   private void startInstanceWithBackoff(final String definitionId, final Map<String, Object> variables) {
