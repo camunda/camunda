@@ -24,7 +24,7 @@
     "lodash": "^4.17.20",
     "mobx": "^6.0.4",
     "mobx-react": "^7.0.5",
-    "polished": "^4.0.3",
+    "polished": "^4.0.5",
     "react": "^16.14.0",
     "react-contenteditable": "^3.3.5",
     "react-dom": "^16.14.0",
