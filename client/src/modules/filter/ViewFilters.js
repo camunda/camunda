@@ -21,11 +21,11 @@ export default function ViewFilters({
       className="ViewFilters Filter__dropdown"
     >
       <Dropdown.Submenu label={t('common.filter.types.incident')}>
-        <Dropdown.Option onClick={filterByInstancesOnly('onlyOpenIncidents')}>
-          {t('common.filter.types.onlyOpenIncidents')}
+        <Dropdown.Option onClick={filterByInstancesOnly('includesOpenIncident')}>
+          {t('common.filter.types.includesOpenIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('onlyResolvedIncidents')}>
-          {t('common.filter.types.onlyResolvedIncidents')}
+        <Dropdown.Option onClick={filterByInstancesOnly('includesResolvedIncident')}>
+          {t('common.filter.types.includesResolvedIncident')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Option

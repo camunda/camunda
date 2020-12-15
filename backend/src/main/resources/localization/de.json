@@ -842,11 +842,9 @@
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable",
         "incident": "Zwischenfälle",
-        "containsOpenIncidents": "mit offenen Zwischenfällen",
-        "containsResolvedIncidents": "mit gelösten Zwischenfällen",
-        "containsNoIncidents": "ohne Zwischenfälle",
-        "onlyOpenIncidents": "nur offene Zwischenfälle",
-        "onlyResolvedIncidents": "nur gelöste Zwischenfälle"
+        "includesOpenIncident": "mit offenen Zwischenfällen",
+        "includesResolvedIncident": "mit gelösten Zwischenfällen",
+        "doesNotIncludeIncident": "ohne Zwischenfälle"
       },
       "list": {
         "operators": {

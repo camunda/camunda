@@ -22,11 +22,9 @@ const instanceFilters = [
   'nonCanceledInstancesOnly',
   'suspendedInstancesOnly',
   'nonSuspendedInstancesOnly',
-  'containsOpenIncidents',
-  'containsResolvedIncidents',
-  'containsNoIncidents',
-  'onlyOpenIncidents',
-  'onlyResolvedIncidents',
+  'includesOpenIncident',
+  'includesResolvedIncident',
+  'doesNotIncludeIncident',
 ];
 
 export default class FilterList extends React.Component {

@@ -41,14 +41,14 @@ export default function InstanceFilters({
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.incident')}>
-        <Dropdown.Option onClick={filterByInstancesOnly('containsOpenIncidents')}>
-          {t('common.filter.types.containsOpenIncidents')}
+        <Dropdown.Option onClick={filterByInstancesOnly('includesOpenIncident')}>
+          {t('common.filter.types.includesOpenIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('containsResolvedIncidents')}>
-          {t('common.filter.types.containsResolvedIncidents')}
+        <Dropdown.Option onClick={filterByInstancesOnly('includesResolvedIncident')}>
+          {t('common.filter.types.includesResolvedIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('containsNoIncidents')}>
-          {t('common.filter.types.containsNoIncidents')}
+        <Dropdown.Option onClick={filterByInstancesOnly('doesNotIncludeIncident')}>
+          {t('common.filter.types.doesNotIncludeIncident')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.date')}>
