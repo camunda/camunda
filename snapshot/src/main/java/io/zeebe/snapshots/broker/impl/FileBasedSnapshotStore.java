@@ -23,7 +23,9 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -69,9 +71,29 @@ public final class FileBasedSnapshotStore
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
+    final List<FileBasedSnapshot> snapshots = new ArrayList<>();
     try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
       for (final var path : stream) {
-        latestPersistedSnapshot = collectSnapshot(path);
+        final var snapshot = collectSnapshot(path);
+        if (snapshot != null) {
+          snapshots.add(snapshot);
+          if ((latestPersistedSnapshot == null)
+              || snapshot.getMetadata().compareTo(latestPersistedSnapshot.getMetadata()) >= 0) {
+            latestPersistedSnapshot = snapshot;
+          }
+        }
+      }
+      // Delete older snapshots
+      if (latestPersistedSnapshot != null) {
+        snapshots.remove(latestPersistedSnapshot);
+        if (!snapshots.isEmpty()) {
+          LOGGER.debug("Purging snapshots older than {}", latestPersistedSnapshot);
+          snapshots.forEach(
+              oldSnapshot -> {
+                LOGGER.debug("Deleting snapshot {}", oldSnapshot);
+                oldSnapshot.delete();
+              });
+        }
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -274,6 +296,18 @@ public final class FileBasedSnapshotStore
           destination,
           e);
     } catch (final IOException e) {
+      // If the snapshot was partially copied, we should delete it
+      try {
+        if (Files.exists(destination)) {
+          FileUtil.deleteFolder(destination);
+        }
+      } catch (final IOException ioException) {
+        // If delete fails, we can't do anything.
+        LOGGER.error(
+            "Failed to delete snapshot directory {} after atomic move failed.",
+            destination,
+            ioException);
+      }
       throw new UncheckedIOException(e);
     }
 
