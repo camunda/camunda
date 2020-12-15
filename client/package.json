@@ -30,7 +30,7 @@
     "react-dom": "^16.14.0",
     "react-final-form": "^6.5.1",
     "react-router-dom": "^5.2.0",
-    "react-textarea-autosize": "^8.2.0",
+    "react-textarea-autosize": "^8.3.0",
     "react-transition-group": "^4.4.1",
     "styled-components": "^5.2.1",
     "ts-migrate": "^0.1.7",
