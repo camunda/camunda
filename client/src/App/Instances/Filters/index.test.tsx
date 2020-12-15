@@ -49,9 +49,8 @@ describe('Filters', () => {
   const historyMock = createMemoryHistory();
   beforeEach(async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))

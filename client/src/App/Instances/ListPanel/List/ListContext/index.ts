@@ -10,9 +10,7 @@ type ContextProps = {
   data: WorkflowInstanceEntity[];
   onSort: (key: string) => void;
   rowsToDisplay: number;
-  isDataLoaded: boolean;
-  handleOperation: (instanceId: string) => void;
-  handleOperationFailure: (instanceId: string) => void;
+  isInitialDataLoaded: boolean;
 };
 
 // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.

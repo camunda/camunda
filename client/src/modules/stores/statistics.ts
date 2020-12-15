@@ -36,7 +36,6 @@ class Statistics {
   state: State = {...DEFAULT_STATE};
   intervalId: null | number = null;
   pollingDisposer: null | IReactionDisposer = null;
-  fetchStatisticsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -52,7 +51,7 @@ class Statistics {
     this.fetchStatistics();
 
     this.pollingDisposer = autorun(() => {
-      if (currentInstanceStore.state.instance != null) {
+      if (currentInstanceStore.state.instance !== null) {
         if (this.intervalId === null) {
           this.startPolling();
         }
@@ -61,11 +60,7 @@ class Statistics {
       }
     });
 
-    this.fetchStatisticsDisposer = autorun(() => {
-      if (instancesStore.state.instancesWithCompletedOperations.length > 0) {
-        this.fetchStatistics();
-      }
-    });
+    instancesStore.addCompletedOperationsHandler(() => this.fetchStatistics());
   }
 
   fetchStatistics = async () => {
@@ -139,7 +134,6 @@ class Statistics {
 
     this.stopPolling();
     this.pollingDisposer?.();
-    this.fetchStatisticsDisposer?.();
   };
 }
 

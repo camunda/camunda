@@ -98,7 +98,7 @@ const Operations = observer(
       return (
         <Styled.Operations>
           {(forceSpinner ||
-            instancesStore.state.instancesWithActiveOperations.includes(
+            instancesStore.instanceIdsWithActiveOperations.includes(
               instance.id
             )) && (
             <OperationSpinner

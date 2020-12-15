@@ -8,7 +8,6 @@ import {
   makeAutoObservable,
   reaction,
   observe,
-  autorun,
   IReactionDisposer,
   Lambda,
 } from 'mobx';
@@ -39,7 +38,6 @@ class WorkflowStatistics {
   state: State = {...DEFAULT_STATE};
   diagramReactionDisposer: null | IReactionDisposer = null;
   filterObserveDisposer: null | Lambda = null;
-  completedOperationsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -76,11 +74,9 @@ class WorkflowStatistics {
       }
     );
 
-    this.completedOperationsDisposer = autorun(() => {
-      if (instancesStore.state.instancesWithCompletedOperations.length > 0) {
-        if (filtersStore.isSingleWorkflowSelected) {
-          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
-        }
+    instancesStore.addCompletedOperationsHandler(() => {
+      if (filtersStore.isSingleWorkflowSelected) {
+        this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
       }
     });
   };
@@ -114,7 +110,6 @@ class WorkflowStatistics {
 
     this.diagramReactionDisposer?.();
     this.filterObserveDisposer?.();
-    this.completedOperationsDisposer?.();
   };
 }
 

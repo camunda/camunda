@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
@@ -24,24 +24,27 @@ import * as Styled from './styled';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
-import {instancesStore} from 'modules/stores/instances';
+import {instancesStore, MAX_INSTANCES_STORED} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 import usePrevious from 'modules/hooks/usePrevious';
+import {autorun} from 'mobx';
 
-const {THead, TBody, TH, TR, TD} = Table;
+const {TBody, TD} = Table;
+const ROW_HEIGHT = 38;
 
 type ListProps = {
   data: WorkflowInstanceEntity[];
   Overlay?: any;
-  isDataLoaded: boolean;
+  isInitialDataLoaded: boolean;
   onSort?: () => void;
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
   children: React.ReactNode;
 };
 const List: React.FC<ListProps> = observer((props) => {
   let containerRef: any = React.createRef();
+  let listRef: any = useRef();
   const prevExpandState = usePrevious(props.expandState);
-  const notifications = useNotifications();
+  const [entriesPerPage, setEntriesPerPage] = useState(0);
 
   useEffect(() => {
     if (
@@ -49,11 +52,25 @@ const List: React.FC<ListProps> = observer((props) => {
       props.expandState !== EXPAND_STATE.COLLAPSED
     ) {
       if (containerRef.current?.clientHeight > 0) {
-        const rows = ~~(containerRef.current.clientHeight / 38) - 1;
-        filtersStore.setEntriesPerPage(rows);
+        const rows = ~~(containerRef.current.clientHeight / ROW_HEIGHT) - 1;
+        setEntriesPerPage(rows);
       }
     }
   }, [props.expandState, prevExpandState, containerRef]);
+
+  useEffect(() => {
+    let disposer = autorun(() => {
+      if (instancesStore.state.status === 'fetching') {
+        listRef.current.scrollTo?.(0, 0);
+      }
+    });
+
+    return () => {
+      if (disposer !== undefined) {
+        disposer();
+      }
+    };
+  }, []);
 
   const shouldResetSorting = ({
     filter = filtersStore.state.filter,
@@ -86,7 +103,59 @@ const List: React.FC<ListProps> = observer((props) => {
   };
 
   return (
-    <Styled.List>
+    <Styled.List
+      id="scrollable-list"
+      ref={listRef}
+      onScroll={async (event) => {
+        const target = event.target as HTMLDivElement;
+        const shouldFetchPreviousInstances =
+          target.scrollTop === 0 &&
+          instancesStore.shouldFetchPreviousInstances();
+        const shouldFetchNextInstances =
+          target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
+          instancesStore.shouldFetchNextInstances();
+
+        if (shouldFetchNextInstances) {
+          // scroll positioning works well automatically but since we remove items manually after `max instances stored` limit is reached, it fails. so we need to position scroll by ourselves according to the previous state before next fetch.
+          const shouldScrollUp =
+            instancesStore.state.workflowInstances.length ===
+            MAX_INSTANCES_STORED;
+
+          await instancesStore.fetchNextInstances();
+
+          if (shouldScrollUp) {
+            if (instancesStore.state.latestFetch !== null) {
+              target.scrollTo(
+                0,
+                target.scrollTop -
+                  instancesStore.state.latestFetch.workflowInstancesCount *
+                    ROW_HEIGHT
+              );
+            }
+          }
+        }
+        if (shouldFetchPreviousInstances) {
+          // scroll positioning works well automatically but since we remove items manually after `max instances stored` limit is reached, it fails. so we need to position scroll by ourselves according to the previous state before next fetch.
+          const shouldScrollDown =
+            instancesStore.state.workflowInstances.length ===
+            MAX_INSTANCES_STORED;
+          await instancesStore.fetchPreviousInstances();
+          if (
+            shouldScrollDown &&
+            instancesStore.state.latestFetch?.workflowInstancesCount !== 0
+          ) {
+            if (instancesStore.state.latestFetch !== null) {
+              target.scrollTo(
+                0,
+                target.scrollTop +
+                  instancesStore.state.latestFetch.workflowInstancesCount *
+                    ROW_HEIGHT
+              );
+            }
+          }
+        }
+      }}
+    >
       <Styled.TableContainer ref={containerRef}>
         {props.Overlay && props.Overlay()}
 
@@ -94,21 +163,8 @@ const List: React.FC<ListProps> = observer((props) => {
           value={{
             data: props.data,
             onSort: handleSortingChange,
-            rowsToDisplay: filtersStore.state.entriesPerPage,
-            isDataLoaded: props.isDataLoaded,
-            handleOperation: (instanceId: string) => {
-              instancesStore.addInstancesWithActiveOperations({
-                ids: [instanceId],
-              });
-            },
-            handleOperationFailure: (instanceId: string) => {
-              instancesStore.removeInstanceFromInstancesWithActiveOperations({
-                ids: [instanceId],
-              });
-              notifications.displayNotification('error', {
-                headline: 'Operation could not be created',
-              });
-            },
+            rowsToDisplay: entriesPerPage,
+            isInitialDataLoaded: props.isInitialDataLoaded,
           }}
         >
           <Table>{props.children}</Table>
@@ -145,21 +201,17 @@ const Message: React.FC<MessageProps> = function ({message}) {
 };
 
 const Body = observer(function (props: any) {
-  const {
-    data,
-    rowsToDisplay,
-    handleOperation,
-    handleOperationFailure,
-  } = useListContext();
+  const {data} = useListContext();
+  const notifications = useNotifications();
 
   return (
     <TBody {...props} data-testid="instances-list">
-      {data.slice(0, rowsToDisplay).map((instance: any, idx: any) => {
+      {data.map((instance: any, idx: any) => {
         const isSelected = instanceSelectionStore.isInstanceChecked(
           instance.id
         );
         return (
-          <TR key={idx} selected={isSelected}>
+          <Styled.TR key={idx} selected={isSelected}>
             <TD>
               <Styled.Cell>
                 <Styled.SelectionStatusIndicator selected={isSelected} />
@@ -197,11 +249,22 @@ const Body = observer(function (props: any) {
               <Operations
                 instance={instance}
                 selected={isSelected}
-                onOperation={() => handleOperation(instance.id)}
-                onFailure={() => handleOperationFailure(instance.id)}
+                onOperation={() =>
+                  instancesStore.markInstancesWithActiveOperations({
+                    ids: [instance.id],
+                  })
+                }
+                onFailure={() => {
+                  instancesStore.unmarkInstancesWithActiveOperations({
+                    instanceIds: [instance.id],
+                  });
+                  notifications.displayNotification('error', {
+                    headline: 'Operation could not be created',
+                  });
+                }}
               />
             </TD>
-          </TR>
+          </Styled.TR>
         );
       })}
     </TBody>
@@ -209,19 +272,19 @@ const Body = observer(function (props: any) {
 });
 
 const Header = observer(function (props: any) {
-  const {data, onSort, isDataLoaded} = useListContext();
+  const {data, onSort, isInitialDataLoaded} = useListContext();
   const {isAllChecked} = instanceSelectionStore.state;
   const {filter, sorting} = filtersStore.state;
 
-  const isListEmpty = !isDataLoaded || data.length === 0;
+  const isListEmpty = !isInitialDataLoaded || data.length === 0;
   // @ts-expect-error ts-migrate(2339) FIXME: Property 'canceled' does not exist on type '{}'.
   const listHasFinishedInstances = filter.canceled || filter.completed;
   return (
-    <THead {...props}>
-      <Styled.TR>
-        <TH>
-          <Styled.CheckAll shouldShowOffset={!isDataLoaded}>
-            {isDataLoaded ? (
+    <Styled.THead {...props}>
+      <Styled.TRHeader>
+        <Styled.TH>
+          <Styled.CheckAll shouldShowOffset={!isInitialDataLoaded}>
+            {isInitialDataLoaded ? (
               <Checkbox
                 // @ts-expect-error ts-migrate(2322) FIXME: Property 'disabled' does not exist on type 'Intrin... Remove this comment to see the full error message
                 disabled={isListEmpty}
@@ -240,8 +303,8 @@ const Header = observer(function (props: any) {
             sortKey="workflowName"
             sorting={sorting}
           />
-        </TH>
-        <TH>
+        </Styled.TH>
+        <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Instance Id"
@@ -249,8 +312,8 @@ const Header = observer(function (props: any) {
             sortKey="id"
             sorting={sorting}
           />
-        </TH>
-        <TH>
+        </Styled.TH>
+        <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Version"
@@ -258,8 +321,8 @@ const Header = observer(function (props: any) {
             sortKey="workflowVersion"
             sorting={sorting}
           />
-        </TH>
-        <TH>
+        </Styled.TH>
+        <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Start Time"
@@ -267,8 +330,8 @@ const Header = observer(function (props: any) {
             sortKey="startDate"
             sorting={sorting}
           />
-        </TH>
-        <TH>
+        </Styled.TH>
+        <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty || !listHasFinishedInstances}
             label="End Time"
@@ -276,12 +339,12 @@ const Header = observer(function (props: any) {
             sortKey="endDate"
             sorting={sorting}
           />
-        </TH>
+        </Styled.TH>
         <Styled.OperationsTH>
           <ColumnHeader disabled={isListEmpty} label="Operations" />
         </Styled.OperationsTH>
-      </Styled.TR>
-    </THead>
+      </Styled.TRHeader>
+    </Styled.THead>
   );
 });
 

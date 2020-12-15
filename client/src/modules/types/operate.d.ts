@@ -55,4 +55,5 @@ interface WorkflowInstanceEntity {
   bpmnProcessId: string;
   hasActiveOperation: boolean;
   operations: ReadonlyArray<InstanceOperationEntity>;
+  sortValues: ReadonlyArray<string>;
 }

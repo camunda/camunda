@@ -18,24 +18,35 @@ import {
   fetchWorkflowInstancesByIds,
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
-import {DEFAULT_MAX_RESULTS} from 'modules/constants';
 import {logger} from 'modules/logger';
 
 type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 
+type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   filteredInstancesCount: null | number;
   workflowInstances: WorkflowInstanceEntity[];
-  instancesWithActiveOperations: WorkflowInstanceEntity['id'][];
-  instancesWithCompletedOperations: WorkflowInstanceEntity['id'][];
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  latestFetch: {
+    fetchType: FetchType;
+    workflowInstancesCount: number;
+  } | null;
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetching-next'
+    | 'fetching-prev'
+    | 'fetched'
+    | 'error';
 };
+
+const MAX_INSTANCES_STORED = 200;
+const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   filteredInstancesCount: null,
   workflowInstances: [],
-  instancesWithActiveOperations: [],
-  instancesWithCompletedOperations: [],
+  latestFetch: null,
   status: 'initial',
 };
 
@@ -47,83 +58,190 @@ class Instances {
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
   instancesPollingDisposer: null | IReactionDisposer = null;
+  completedOperationsHandlers: Array<() => void> = [];
 
   constructor() {
     makeObservable(this, {
       state: observable,
       reset: action,
       startFetching: action,
+      startFetchingNext: action,
+      startFetchingPrev: action,
       handleFetchSuccess: action,
       handleFetchError: action,
       setInstances: action,
-      addInstancesWithActiveOperations: action,
-      resetInstancesWithCompletedOperations: action,
-      setInstancesWithActiveOperations: action,
-      setInstancesWithCompletedOperations: action,
-      removeInstanceFromInstancesWithActiveOperations: action,
+      markInstancesWithActiveOperations: action,
+      unmarkInstancesWithActiveOperations: action,
       visibleIdsInListPanel: computed,
       areWorkflowInstancesEmpty: computed,
+      instanceIdsWithActiveOperations: computed,
+      setLatestFetchDetails: action,
     });
 
     this.state.filteredInstancesCount =
       getStateLocally().filteredInstancesCount || null;
   }
 
+  addCompletedOperationsHandler(handler: () => void) {
+    this.completedOperationsHandlers.push(handler);
+  }
+
   init() {
     this.fetchInstancesDisposer = autorun(() => {
       // we should wait for initial load to complete so we are sure both groupedWorkflows and filters are initially loaded and this fetch won't run a couple of times on first page landing
       if (filtersStore.state.isInitialLoadComplete) {
-        this.fetchInstances({
-          ...filtersStore.getFiltersPayload(),
+        this.fetchInitialInstances({
+          query: filtersStore.getFiltersPayload(),
           sorting: filtersStore.state.sorting,
-          firstResult: filtersStore.firstElement,
-          maxResults: DEFAULT_MAX_RESULTS,
         });
-      }
-    });
-
-    this.completedOperationActionsDisposer = autorun(() => {
-      if (this.state.instancesWithCompletedOperations.length > 0) {
-        this.refreshInstances({
-          ...filtersStore.getFiltersPayload(),
-          sorting: filtersStore.state.sorting,
-          firstResult: filtersStore.firstElement,
-          maxResults: DEFAULT_MAX_RESULTS,
-        });
-
-        this.resetInstancesWithCompletedOperations();
       }
     });
 
     this.instancesPollingDisposer = autorun(() => {
-      if (this.state.instancesWithActiveOperations.length > 0) {
+      if (this.instanceIdsWithActiveOperations.length > 0) {
         if (this.intervalId === null) {
-          this.startPollingInstancesById();
+          this.startPollingActiveInstances();
         }
       } else {
-        this.stopPollingInstancesById();
+        this.stopPollingActiveInstances();
       }
     });
   }
 
-  resetInstancesWithCompletedOperations = () => {
-    this.state.instancesWithCompletedOperations = [];
+  get instanceIdsWithActiveOperations() {
+    return this.state.workflowInstances
+      .filter((instance) => instance.hasActiveOperation)
+      .map((instance) => instance.id);
+  }
+
+  setLatestFetchDetails = (
+    fetchType: FetchType,
+    workflowInstancesCount: number
+  ) => {
+    this.state.latestFetch = {
+      fetchType,
+      workflowInstancesCount,
+    };
   };
 
-  fetchInstances = async (payload: Payload) => {
-    this.startFetching();
+  getWorkflowInstances = (
+    fetchType: FetchType,
+    workflowInstances: WorkflowInstanceEntity[]
+  ) => {
+    switch (fetchType) {
+      case 'next':
+        const allWorkflowInstances = [
+          ...this.state.workflowInstances,
+          ...workflowInstances,
+        ];
 
+        return allWorkflowInstances.slice(
+          Math.max(allWorkflowInstances.length - MAX_INSTANCES_STORED, 0)
+        );
+      case 'prev':
+        return [...workflowInstances, ...this.state.workflowInstances].slice(
+          0,
+          MAX_INSTANCES_STORED
+        );
+      case 'initial':
+      default:
+        return workflowInstances;
+    }
+  };
+
+  shouldFetchPreviousInstances = () => {
+    const {latestFetch, workflowInstances, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return (
+      (latestFetch?.fetchType === 'next' &&
+        workflowInstances.length === MAX_INSTANCES_STORED) ||
+      (latestFetch?.fetchType === 'prev' &&
+        latestFetch?.workflowInstancesCount === MAX_INSTANCES_PER_REQUEST)
+    );
+  };
+
+  shouldFetchNextInstances = () => {
+    const {latestFetch, workflowInstances, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return (
+      (latestFetch?.fetchType === 'next' &&
+        latestFetch?.workflowInstancesCount === MAX_INSTANCES_PER_REQUEST) ||
+      (latestFetch?.fetchType === 'prev' &&
+        workflowInstances.length === MAX_INSTANCES_STORED) ||
+      latestFetch?.fetchType === 'initial'
+    );
+  };
+
+  fetchPreviousInstances = async () => {
+    this.startFetchingPrev();
+
+    return this.fetchInstances({
+      fetchType: 'prev',
+      payload: {
+        query: filtersStore.getFiltersPayload(),
+        sorting: filtersStore.state.sorting,
+        searchBefore: instancesStore.state.workflowInstances[0]?.sortValues,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+      },
+    });
+  };
+
+  fetchNextInstances = async () => {
+    this.startFetchingNext();
+
+    return this.fetchInstances({
+      fetchType: 'next',
+      payload: {
+        query: filtersStore.getFiltersPayload(),
+        sorting: filtersStore.state.sorting,
+        searchAfter: this.state.workflowInstances[
+          this.state.workflowInstances.length - 1
+        ]?.sortValues,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+      },
+    });
+  };
+
+  fetchInitialInstances = async (payload: Payload) => {
+    this.startFetching();
+    this.fetchInstances({
+      fetchType: 'initial',
+      payload: {
+        ...payload,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+        searchBefore: undefined,
+        searchAfter: undefined,
+      },
+    });
+  };
+
+  fetchInstances = async ({
+    fetchType,
+    payload,
+  }: {
+    fetchType: FetchType;
+    payload: Payload;
+  }) => {
     try {
       const response = await fetchWorkflowInstances(payload);
 
       if (response.ok) {
         const {workflowInstances, totalCount} = await response.json();
-
         this.setInstances({
           filteredInstancesCount: totalCount,
-          workflowInstances,
+          workflowInstances: this.getWorkflowInstances(
+            fetchType,
+            workflowInstances
+          ),
         });
-        this.setInstancesWithActiveOperations(this.state.workflowInstances);
+
+        this.setLatestFetchDetails(fetchType, workflowInstances.length);
         this.handleFetchSuccess();
       } else {
         this.handleFetchError();
@@ -133,7 +251,7 @@ class Instances {
     }
   };
 
-  refreshInstances = async (payload: Payload) => {
+  refreshAllInstances = async (payload: Payload) => {
     try {
       const response = await fetchWorkflowInstances(payload);
 
@@ -158,6 +276,14 @@ class Instances {
     } else {
       this.state.status = 'fetching';
     }
+  };
+
+  startFetchingNext = () => {
+    this.state.status = 'fetching-next';
+  };
+
+  startFetchingPrev = () => {
+    this.state.status = 'fetching-prev';
   };
 
   handleFetchSuccess = () => {
@@ -196,7 +322,7 @@ class Instances {
     return this.state.workflowInstances.length === 0;
   }
 
-  addInstancesWithActiveOperations = ({
+  markInstancesWithActiveOperations = ({
     ids,
     shouldPollAllVisibleIds = false,
   }: {
@@ -204,40 +330,52 @@ class Instances {
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
-      this.state.instancesWithActiveOperations = this.visibleIdsInListPanel.filter(
-        (id) => !ids.includes(id)
-      );
+      this.state.workflowInstances
+        .filter((instance) => !ids.includes(instance.id))
+        .forEach((instance) => {
+          instance.hasActiveOperation = true;
+        });
     } else {
-      this.state.instancesWithActiveOperations = this.state.instancesWithActiveOperations
-        .concat(ids)
-        .filter((id) => this.visibleIdsInListPanel.includes(id));
+      this.state.workflowInstances
+        .filter((instance) => ids.includes(instance.id))
+        .forEach((instance) => {
+          instance.hasActiveOperation = true;
+        });
     }
   };
 
-  setInstancesWithActiveOperations = (instances: WorkflowInstanceEntity[]) => {
-    this.state.instancesWithActiveOperations = instances
-      .filter(({hasActiveOperation}) => hasActiveOperation)
-      .map(({id}) => id);
-  };
-
-  setInstancesWithCompletedOperations = (
-    instances: WorkflowInstanceEntity[]
-  ) => {
-    this.state.instancesWithCompletedOperations = instances
-      .filter(({hasActiveOperation}) => !hasActiveOperation)
-      .map(({id}) => id);
-  };
-
-  handlePollingInstancesByIds = async (instanceIds: string[]) => {
+  handlePollingActiveInstances = async () => {
     try {
-      const response = await fetchWorkflowInstancesByIds(instanceIds);
+      const response = await fetchWorkflowInstancesByIds(
+        this.instanceIdsWithActiveOperations
+      );
 
       if (response.ok) {
         if (this.intervalId !== null) {
-          const {workflowInstances} = await response.json();
+          const {
+            workflowInstances,
+          }: {
+            workflowInstances: WorkflowInstanceEntity[];
+          } = await response.json();
 
-          this.setInstancesWithActiveOperations(workflowInstances);
-          this.setInstancesWithCompletedOperations(workflowInstances);
+          if (
+            workflowInstances.some(
+              ({hasActiveOperation}) => !hasActiveOperation
+            )
+          ) {
+            this.completedOperationsHandlers.forEach((handler: () => void) => {
+              handler();
+            });
+
+            this.refreshAllInstances({
+              query: filtersStore.getFiltersPayload(),
+              sorting: filtersStore.state.sorting,
+              pageSize:
+                this.state.workflowInstances.length > 0
+                  ? this.state.workflowInstances.length
+                  : MAX_INSTANCES_PER_REQUEST,
+            });
+          }
         }
       } else {
         logger.error('Failed to poll instances');
@@ -248,36 +386,38 @@ class Instances {
     }
   };
 
-  removeInstanceFromInstancesWithActiveOperations = ({
-    ids,
+  unmarkInstancesWithActiveOperations = ({
+    instanceIds,
     shouldPollAllVisibleIds,
   }: {
-    ids: string[];
+    instanceIds: string[];
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
-      this.fetchInstances({
-        ...filtersStore.getFiltersPayload(),
+      this.refreshAllInstances({
+        query: filtersStore.getFiltersPayload(),
         sorting: filtersStore.state.sorting,
-        firstResult: filtersStore.firstElement,
-        maxResults: DEFAULT_MAX_RESULTS,
+        pageSize:
+          this.state.workflowInstances.length > 0
+            ? this.state.workflowInstances.length
+            : MAX_INSTANCES_PER_REQUEST,
       });
     } else {
-      this.state.instancesWithActiveOperations = this.state.instancesWithActiveOperations.filter(
-        (id) => !ids.includes(id)
-      );
+      this.state.workflowInstances
+        .filter((instance) => instanceIds.includes(instance.id))
+        .forEach((instance) => {
+          instance.hasActiveOperation = false;
+        });
     }
   };
 
-  startPollingInstancesById = async () => {
+  startPollingActiveInstances = async () => {
     this.intervalId = setInterval(() => {
-      this.handlePollingInstancesByIds(
-        this.state.instancesWithActiveOperations
-      );
+      this.handlePollingActiveInstances();
     }, 5000);
   };
 
-  stopPollingInstancesById = () => {
+  stopPollingActiveInstances = () => {
     const {intervalId} = this;
 
     if (intervalId !== null) {
@@ -291,11 +431,13 @@ class Instances {
       ...DEFAULT_STATE,
       filteredInstancesCount: this.state.filteredInstancesCount,
     };
-    this.stopPollingInstancesById();
+    this.stopPollingActiveInstances();
     this.fetchInstancesDisposer?.();
     this.completedOperationActionsDisposer?.();
     this.instancesPollingDisposer?.();
+    this.completedOperationsHandlers = [];
   };
 }
 
 export const instancesStore = new Instances();
+export {MAX_INSTANCES_STORED};

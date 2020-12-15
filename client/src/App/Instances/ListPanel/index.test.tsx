@@ -13,29 +13,20 @@ import {
   within,
   waitFor,
 } from '@testing-library/react';
-import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {
-  groupedWorkflowsMock,
-  mockWorkflowStatistics,
-  mockWorkflowInstances,
-} from 'modules/testUtils';
+import {mockWorkflowInstances} from 'modules/testUtils';
 import {filtersStore} from 'modules/stores/filters';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
-import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
+import {DEFAULT_FILTER} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-
-const locationMock = {pathname: '/instances'};
-const historyMock = createMemoryHistory();
 
 function createWrapper(expandOperationsMock = jest.fn()) {
   const Wrapper: React.FC = ({children}) => {
@@ -66,18 +57,13 @@ describe('ListPanel', () => {
   describe('messages', () => {
     it('should display a message for empty list when no filter is selected', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
 
       filtersStore.setFilter({});
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -97,19 +83,14 @@ describe('ListPanel', () => {
 
     it('should display a message for empty list when at least one filter is selected', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
 
       filtersStore.setFilter(DEFAULT_FILTER);
 
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -131,16 +112,11 @@ describe('ListPanel', () => {
   describe('display instances List', () => {
     it('should render a skeleton', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -152,23 +128,17 @@ describe('ListPanel', () => {
 
     it('should render table body and footer', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                workflowInstances: [INSTANCE, ACTIVE_INSTANCE],
-                totalCount: 0,
-              })
-            )
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [INSTANCE, ACTIVE_INSTANCE],
+              totalCount: 0,
+            })
+          )
         )
       );
 
-      filtersStore.setEntriesPerPage(10);
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {wrapper: createWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
@@ -187,17 +157,12 @@ describe('ListPanel', () => {
 
     it('should render Footer when list is empty', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
 
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -215,10 +180,8 @@ describe('ListPanel', () => {
     jest.useFakeTimers();
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
       ),
       rest.post(
         '/api/workflow-instances/:instanceId/operation',
@@ -239,11 +202,7 @@ describe('ListPanel', () => {
       )
     );
 
-    filtersStore.setEntriesPerPage(10);
-    instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
+    instancesStore.fetchInitialInstances({query: {}});
     instancesStore.init();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
@@ -262,20 +221,16 @@ describe('ListPanel', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
       ),
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [INSTANCE],
-              totalCount: 2,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [INSTANCE],
+            totalCount: 2,
+          })
+        )
       )
     );
     jest.runOnlyPendingTimers();
@@ -293,20 +248,15 @@ describe('ListPanel', () => {
   describe('spinner', () => {
     it('should display spinners on batch operation', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.json({}))
         )
       );
 
-      filtersStore.setEntriesPerPage(10);
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       const mockExpandOperations = jest.fn();
 
@@ -325,16 +275,12 @@ describe('ListPanel', () => {
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
 
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json(mockWorkflowInstances))
         )
       );
 
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
       expect(screen.queryAllByTestId('operation-spinner').length).toBe(0);
@@ -343,25 +289,18 @@ describe('ListPanel', () => {
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.status(500), ctx.json({}))
         ),
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
 
-      filtersStore.setEntriesPerPage(10);
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       const mockExpandOperations = jest.fn();
       render(<ListPanel />, {
@@ -391,25 +330,18 @@ describe('ListPanel', () => {
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json(mockWorkflowInstances))
         ),
-        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+        rest.post('/api/workflow-instances/batch-operation', (_, res) =>
           res.networkError('A network error')
         ),
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
 
-      filtersStore.setEntriesPerPage(10);
-      instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
+      instancesStore.fetchInitialInstances({query: {}});
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -437,17 +369,12 @@ describe('ListPanel', () => {
 
   it('should show an error message', async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json({}), ctx.status(500))
       )
     );
 
-    filtersStore.setEntriesPerPage(10);
-    instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
+    instancesStore.fetchInitialInstances({query: {}});
 
     const {unmount} = render(<ListPanel />, {
       wrapper: createWrapper(),
@@ -461,16 +388,13 @@ describe('ListPanel', () => {
     instancesStore.reset();
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.networkError('A network error')
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.networkError('A network error')
       )
     );
 
-    await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
+    instancesStore.fetchInitialInstances({query: {}});
+
     render(<ListPanel />, {
       wrapper: createWrapper(),
     });

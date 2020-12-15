@@ -30,6 +30,7 @@ const mockInstances = [
     bpmnProcessId: 'withoutIncidentsProcess',
     hasActiveOperation: false,
     operations: [],
+    sortValues: ['withoutIncidentsProcess', '2251799813685625'],
   } as const,
   {
     id: '2251799813685627',
@@ -42,6 +43,7 @@ const mockInstances = [
     bpmnProcessId: 'withoutIncidentsProcess',
     hasActiveOperation: false,
     operations: [],
+    sortValues: ['withoutIncidentsProcess', '2251799813685627'],
   } as const,
 ];
 
@@ -49,6 +51,7 @@ describe('stores/workflowStatistics', () => {
   afterEach(() => {
     workflowStatisticsStore.reset();
     filtersStore.reset();
+    instancesStore.reset();
   });
 
   beforeEach(() => {
@@ -236,20 +239,52 @@ describe('stores/workflowStatistics', () => {
 
     filtersStore.setFilter({workflow: 'bigVarProcess', version: '1'});
 
+    jest.useFakeTimers();
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              {...mockInstances[0], hasActiveOperation: true},
+            ],
+            totalCount: 1,
+          })
+        )
+      )
+    );
+    instancesStore.init();
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
+        )
+      ),
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
+        )
+      )
+    );
 
     mockServer.use(
       rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
-    instancesStore.setInstancesWithCompletedOperations(mockInstances);
+
+    jest.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
       )
     );
+
+    jest.useRealTimers();
   });
 
   it('should not fetch workflow statistics depending on completed operations if workflow and version filter does not exist', async () => {
@@ -259,12 +294,45 @@ describe('stores/workflowStatistics', () => {
     await filtersStore.init();
     workflowStatisticsStore.init();
 
+    jest.useFakeTimers();
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              {...mockInstances[0], hasActiveOperation: true},
+            ],
+            totalCount: 1,
+          })
+        )
+      )
+    );
+    instancesStore.init();
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
-    instancesStore.setInstancesWithCompletedOperations(mockInstances);
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
+        )
+      ),
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 2})
+        )
+      )
+    );
+
+    jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual([])
+      expect(instancesStore.state.filteredInstancesCount).toBe(2)
     );
+
+    expect(workflowStatisticsStore.state.statistics).toEqual([]);
+
+    jest.useRealTimers();
   });
 });

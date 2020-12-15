@@ -27,6 +27,7 @@ const instanceMock: WorkflowInstanceEntity = {
   workflowId: '',
   workflowName: '',
   workflowVersion: 1,
+  sortValues: ['', 'instance_1'],
 };
 
 describe('Operations', () => {
@@ -125,12 +126,10 @@ describe('Operations', () => {
       jest.useFakeTimers();
 
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({workflowInstances: [ACTIVE_INSTANCE], totalCount: 1})
-            )
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(
+            ctx.json({workflowInstances: [ACTIVE_INSTANCE], totalCount: 1})
+          )
         ),
         rest.get('/api/workflows/grouped', (_, res, ctx) =>
           res.once(ctx.json(groupedWorkflowsMock))
@@ -140,7 +139,12 @@ describe('Operations', () => {
       filtersStore.setUrlParameters(createMemoryHistory(), {
         pathname: '/instances',
       });
-      await filtersStore.init();
+      filtersStore.init();
+
+      await waitFor(() =>
+        expect(filtersStore.state.isInitialLoadComplete).toBe(true)
+      );
+      instancesStore.init();
 
       render(
         <Operations
@@ -156,20 +160,15 @@ describe('Operations', () => {
 
       instancesStore.init();
 
-      await waitFor(() =>
-        expect(screen.getByTestId('operation-spinner')).toBeInTheDocument()
-      );
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
       mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
         ),
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 2}))
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 2}))
         )
       );
 

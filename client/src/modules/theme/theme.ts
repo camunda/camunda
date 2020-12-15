@@ -340,22 +340,6 @@ const theme = Object.freeze({
           color: LIGHT_COLORS.ui04,
         },
       },
-      paginator: {
-        page: {
-          color: SEMANTIC_COLORS.white,
-          backgroundColor: DARK_COLORS.ui04,
-          borderColor: DARK_COLORS.ui05,
-          active: {
-            color: SEMANTIC_COLORS.white,
-            backgroundColor: rgba(SEMANTIC_COLORS.selections, 0.9),
-            borderColor: '#007dff',
-          },
-          disabled: {
-            backgroundColor: DARK_COLORS.button03,
-            color: rgba(SEMANTIC_COLORS.white, 0.4),
-          },
-        },
-      },
       operationsEntry: {
         entry: {
           color: rgba(SEMANTIC_COLORS.white, 0.9),
@@ -1351,22 +1335,6 @@ const theme = Object.freeze({
       createOperationDropdown: {
         dropdownButtonStyles: {
           color: LIGHT_COLORS.ui04,
-        },
-      },
-      paginator: {
-        page: {
-          color: DARK_COLORS.ui02,
-          backgroundColor: LIGHT_COLORS.ui05,
-          borderColor: LIGHT_COLORS.ui03,
-          active: {
-            color: SEMANTIC_COLORS.white,
-            backgroundColor: rgba(SEMANTIC_COLORS.selections, 0.9),
-            borderColor: '#007dff',
-          },
-          disabled: {
-            backgroundColor: LIGHT_COLORS.button04,
-            color: LIGHT_COLORS.ui03,
-          },
         },
       },
       operationsEntry: {

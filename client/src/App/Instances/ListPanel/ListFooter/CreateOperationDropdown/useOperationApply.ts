@@ -42,11 +42,11 @@ export default function useOperationApply() {
         selectedInstanceIds.length > 0 ? selectedInstanceIds : filterIds;
 
       if (selectedInstanceIds.length > 0) {
-        instancesStore.addInstancesWithActiveOperations({
+        instancesStore.markInstancesWithActiveOperations({
           ids: selectedInstanceIds,
         });
       } else {
-        instancesStore.addInstancesWithActiveOperations({
+        instancesStore.markInstancesWithActiveOperations({
           ids: excludedInstanceIds,
           shouldPollAllVisibleIds: true,
         });
@@ -61,8 +61,8 @@ export default function useOperationApply() {
         },
         onSuccess,
         onError: () => {
-          instancesStore.removeInstanceFromInstancesWithActiveOperations({
-            ids,
+          instancesStore.unmarkInstancesWithActiveOperations({
+            instanceIds: ids,
             shouldPollAllVisibleIds: selectedInstanceIds.length === 0,
           });
           notifications.displayNotification('error', {

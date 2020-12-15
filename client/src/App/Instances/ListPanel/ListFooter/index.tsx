@@ -8,32 +8,16 @@ import React from 'react';
 import {observer} from 'mobx-react';
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {instancesStore} from 'modules/stores/instances';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
-
-import {Paginator} from './Paginator';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
-import {filtersStore} from 'modules/stores/filters';
 
 type Props = {
   hasContent: boolean;
 };
 
 const ListFooter: React.FC<Props> = observer(({hasContent}) => {
-  const {filteredInstancesCount} = instancesStore.state;
   const selectedCount = instanceSelectionStore.getSelectedInstanceCount();
-
-  const getMaxPage = () => {
-    return Math.ceil(
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      filteredInstancesCount / filtersStore.state.entriesPerPage
-    );
-  };
-
-  const isPaginationRequired = () => {
-    return !(getMaxPage() === 1 || filteredInstancesCount === 0);
-  };
 
   return (
     <Styled.Footer>
@@ -52,11 +36,6 @@ const ListFooter: React.FC<Props> = observer(({hasContent}) => {
               />
             )}
           </Styled.OperationButtonContainer>
-          <div>
-            {isPaginationRequired() ? (
-              <Paginator maxPage={getMaxPage()} />
-            ) : null}
-          </div>
         </>
       )}
       <Styled.Copyright />

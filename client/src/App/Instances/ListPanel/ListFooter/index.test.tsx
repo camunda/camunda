@@ -38,6 +38,7 @@ const mockInstances = [
     bpmnProcessId: 'withoutIncidentsProcess',
     hasActiveOperation: false,
     operations: [],
+    sortValues: ['withoutIncidentsProcess', '2251799813685625'],
   } as const,
   {
     id: '2251799813685627',
@@ -50,48 +51,24 @@ const mockInstances = [
     bpmnProcessId: 'withoutIncidentsProcess',
     hasActiveOperation: false,
     operations: [],
+    sortValues: ['withoutIncidentsProcess', '2251799813685627'],
   } as const,
 ];
 
 describe('ListFooter', () => {
-  beforeAll(() => {
-    filtersStore.setEntriesPerPage(10);
-  });
   afterAll(() => {
     filtersStore.reset();
   });
   afterEach(() => {
     instanceSelectionStore.reset();
   });
-  it('should show pagination, copyright, no dropdown', () => {
+  it('should show copyright, no dropdown', () => {
     instancesStore.setInstances({
       filteredInstancesCount: 11,
       workflowInstances: mockInstances,
     });
 
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
-
-    const pageOneButton = screen.getByText(/^1$/i);
-    const pageTwoButton = screen.getByText(/^2$/i);
-    expect(pageOneButton).toBeInTheDocument();
-    expect(pageTwoButton).toBeInTheDocument();
-
-    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
-    expect(copyrightText).toBeInTheDocument();
-
-    const dropdownButton = screen.queryByText(DROPDOWN_REGEX);
-    expect(dropdownButton).toBeNull();
-  });
-
-  it('should show copyright, no dropdown, no pagination', () => {
-    instancesStore.setInstances({
-      filteredInstancesCount: 9,
-      workflowInstances: mockInstances,
-    });
-    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
-
-    expect(screen.queryByText(/^1$/i)).toBeNull();
-    expect(screen.queryByText(/^2$/i)).toBeNull();
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
@@ -112,27 +89,6 @@ describe('ListFooter', () => {
       'Apply Operation on 2 Instances...'
     );
     expect(dropdownButton).toBeInTheDocument();
-
-    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
-    expect(copyrightText).toBeInTheDocument();
-  });
-
-  it('should not show the pagination buttons when there is no content', () => {
-    instancesStore.setInstances({
-      filteredInstancesCount: 11,
-      workflowInstances: mockInstances,
-    });
-    render(<ListFooter {...defaultProps} hasContent={false} />, {
-      wrapper: ThemeProvider,
-    });
-
-    const pageOneButton = screen.queryByText(/^1$/i);
-    const pageTwoButton = screen.queryByText(/^2$/i);
-    expect(pageOneButton).toBeNull();
-    expect(pageTwoButton).toBeNull();
-
-    const dropdownButton = screen.queryByText(DROPDOWN_REGEX);
-    expect(dropdownButton).toBeNull();
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();

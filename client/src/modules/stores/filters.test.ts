@@ -27,9 +27,8 @@ describe('stores/filters', () => {
     const locationMock = {pathname: '/instances'};
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockWorkflowXML))
@@ -54,19 +53,6 @@ describe('stores/filters', () => {
     workflowStatisticsStore.reset();
     instanceSelectionStore.reset();
     jest.clearAllMocks();
-  });
-
-  describe('filter observer', () => {
-    it('should go to first page every time filter changes', () => {
-      filtersStore.setPage(3);
-      expect(filtersStore.state.page).toBe(3);
-      filtersStore.setFilter({
-        // @ts-expect-error
-        ...filtersStore.state.filter,
-        errorMessage: 'test',
-      });
-      expect(filtersStore.state.page).toBe(1);
-    });
   });
 
   it('should reset sorting if endDate filter was active and finished instances filter is not set anymore', () => {
@@ -120,14 +106,6 @@ describe('stores/filters', () => {
   });
 
   describe('computed values', () => {
-    it('should get firstElement', () => {
-      expect(filtersStore.firstElement).toBe(0);
-      filtersStore.setEntriesPerPage(10);
-      expect(filtersStore.firstElement).toBe(0);
-      filtersStore.setPage(2);
-      expect(filtersStore.firstElement).toBe(10);
-    });
-
     it('should get isNoVersionSelected', () => {
       expect(filtersStore.isNoVersionSelected).toBe(false);
       filtersStore.setFilter({
@@ -203,18 +181,10 @@ describe('stores/filters', () => {
       canceled: true,
       completed: true,
     });
-    filtersStore.setEntriesPerPage(10);
-    filtersStore.setPage(3);
     filtersStore.setSorting(sortByEndDate);
-    expect(filtersStore.state.page).toBe(3);
-    expect(filtersStore.state.entriesPerPage).toBe(10);
-    expect(filtersStore.state.prevEntriesPerPage).toBe(0);
     expect(filtersStore.state.sorting).toEqual(sortByEndDate);
     expect(filtersStore.state.groupedWorkflows).not.toEqual({});
     filtersStore.reset();
-    expect(filtersStore.state.page).toBe(1);
-    expect(filtersStore.state.entriesPerPage).toBe(0);
-    expect(filtersStore.state.prevEntriesPerPage).toBe(0);
     expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
     expect(filtersStore.state.groupedWorkflows).toEqual({});
   });

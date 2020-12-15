@@ -12,7 +12,7 @@ import {
   Lambda,
   IReactionDisposer,
 } from 'mobx';
-import {DEFAULT_FIRST_ELEMENT, DEFAULT_SORTING} from 'modules/constants';
+import {DEFAULT_SORTING} from 'modules/constants';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {
   parseFilterForRequest,
@@ -28,10 +28,6 @@ import {setBrowserUrl} from './utils/setBrowserUrl';
 
 type State = {
   filter: unknown;
-  page: number;
-  entriesPerPage: number;
-  prevEntriesPerPage: number;
-  firstElement: number;
   sorting: {
     sortBy: string;
     sortOrder: 'desc' | 'asc';
@@ -45,10 +41,6 @@ type State = {
 
 const DEFAULT_STATE: State = {
   filter: {},
-  page: 1,
-  entriesPerPage: 0,
-  prevEntriesPerPage: 0,
-  firstElement: DEFAULT_FIRST_ELEMENT,
   sorting: DEFAULT_SORTING,
   groupedWorkflows: {},
   batchOperationId: '',
@@ -118,7 +110,6 @@ class Filters {
         this.state.filter,
         this.state.groupedWorkflows
       );
-      this.setPage(1);
     });
   }
 
@@ -159,17 +150,8 @@ class Filters {
     }
   }
 
-  setPage(page: any) {
-    this.state.page = page;
-  }
-
   setSorting(sorting: any) {
     this.state.sorting = sorting;
-  }
-
-  setEntriesPerPage(entriesPerPage: any) {
-    this.state.prevEntriesPerPage = this.state.entriesPerPage;
-    this.state.entriesPerPage = entriesPerPage;
   }
 
   getFiltersPayload() {
@@ -181,10 +163,6 @@ class Filters {
 
   get decodedFilters() {
     return decodeFields(this.state.filter);
-  }
-
-  get firstElement() {
-    return (this.state.page - 1) * this.state.entriesPerPage;
   }
 
   get isNoVersionSelected() {

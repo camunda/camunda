@@ -22,31 +22,34 @@ type BatchOperationQuery = {
 };
 
 type WorkflowInstancesQuery = {
-  firstResult: number;
-  maxResults: number;
-  active?: boolean;
-  batchOperationId?: string;
-  canceled?: boolean;
-  completed?: boolean;
-  endDateAfter?: string;
-  endDateBefore?: string;
-  errorMessage?: string;
-  finished?: boolean;
-  ids?: string[];
-  excludeIds?: string[];
-  incidents?: boolean;
-  running?: boolean;
-  startDateAfter?: string;
-  startDateBefore?: string;
-  variable?: {
-    name: string;
-    value: string;
+  query: {
+    active?: boolean;
+    batchOperationId?: string;
+    canceled?: boolean;
+    completed?: boolean;
+    endDateAfter?: string;
+    endDateBefore?: string;
+    errorMessage?: string;
+    excludeIds?: string[];
+    finished?: boolean;
+    ids?: string[];
+    incidents?: boolean;
+    running?: boolean;
+    startDateAfter?: string;
+    startDateBefore?: string;
+    variable?: {
+      name: string;
+      value: string;
+    };
+    workflowIds?: string[];
   };
-  workflowIds?: string[];
   sorting?: {
     sortBy: string;
     sortOrder: 'desc' | 'asc';
   };
+  searchAfter?: ReadonlyArray<string>;
+  searchBefore?: ReadonlyArray<string>;
+  pageSize?: number;
 };
 
 type OperationPayload = {
@@ -67,15 +70,8 @@ async function fetchWorkflowInstanceIncidents(
   return get(`${URL}/${id}/incidents`);
 }
 
-async function fetchWorkflowInstances({
-  firstResult,
-  maxResults,
-  ...payload
-}: WorkflowInstancesQuery) {
-  return await post(
-    `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`,
-    payload
-  );
+async function fetchWorkflowInstances(payload: WorkflowInstancesQuery) {
+  return await post(`${URL}/new`, payload);
 }
 
 async function fetchSequenceFlows(
@@ -102,9 +98,8 @@ async function fetchWorkflowInstancesByIds(
   });
 
   const options = {
-    firstResult: 0,
-    maxResults: ids.length,
-    ...payload,
+    pageSize: ids.length,
+    query: {...payload},
   };
 
   return fetchWorkflowInstances(options);

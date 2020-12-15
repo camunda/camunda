@@ -38,7 +38,7 @@ const Authentication: React.FC<Props> = (props) => {
         if ((status === 401 || status === 403) && !url.includes(logoutUrl)) {
           setForceRedirect(true);
         }
-        
+
         return Promise.resolve();
       });
     });

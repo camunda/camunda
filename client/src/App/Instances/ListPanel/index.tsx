@@ -62,7 +62,9 @@ const ListPanel = observer((props: any) => {
   };
 
   const renderSpinner = () => {
-    return status === 'fetching' && (() => <Spinner />);
+    return (
+      status === 'fetching' && (() => <Spinner data-test="instances-loader" />)
+    );
   };
 
   return (
@@ -73,7 +75,11 @@ const ListPanel = observer((props: any) => {
         <List
           data={workflowInstances}
           expandState={props.expandState}
-          isDataLoaded={status === 'fetched'}
+          isInitialDataLoaded={[
+            'fetched',
+            'fetching-next',
+            'fetching-prev',
+          ].includes(status)}
           Overlay={renderSpinner()}
         >
           {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Header' does not exist on type 'typeof L... Remove this comment to see the full error message */}

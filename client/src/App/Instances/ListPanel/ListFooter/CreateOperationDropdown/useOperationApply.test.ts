@@ -37,9 +37,8 @@ describe('useOperationApply', () => {
 
   beforeEach(async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
@@ -102,9 +101,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
 
@@ -143,9 +141,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
     filtersStore.setFilter({
@@ -186,9 +183,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
 
@@ -231,9 +227,8 @@ describe('useOperationApply', () => {
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
     filtersStore.setFilter({
@@ -268,31 +263,28 @@ describe('useOperationApply', () => {
     );
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=2',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              totalCount: 100,
-              workflowInstances: mockWorkflowInstances.workflowInstances,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: mockWorkflowInstances.workflowInstances,
+          })
+        )
       ),
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              totalCount: 200,
-              workflowInstances: mockWorkflowInstances.workflowInstances,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 200,
+            workflowInstances: mockWorkflowInstances.workflowInstances,
+          })
+        )
       )
     );
+
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
 
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685594',
       '2251799813685596',
     ]);
@@ -300,7 +292,7 @@ describe('useOperationApply', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.instanceIdsWithActiveOperations).toEqual([]);
       expect(instancesStore.state.filteredInstancesCount).toBe(200); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
@@ -321,36 +313,32 @@ describe('useOperationApply', () => {
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
 
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685594',
     ]);
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=0&maxResults=1',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              totalCount: 100,
-              workflowInstances: mockWorkflowInstances.workflowInstances,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: mockWorkflowInstances.workflowInstances,
+          })
+        )
       ),
-      rest.post(
-        '/api/workflow-instances?firstResult=0&maxResults=50',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              totalCount: 200,
-              workflowInstances: mockWorkflowInstances.workflowInstances,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 200,
+            workflowInstances: mockWorkflowInstances.workflowInstances,
+          })
+        )
       )
     );
 
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
+      expect(instancesStore.instanceIdsWithActiveOperations).toEqual([]);
       expect(instancesStore.state.filteredInstancesCount).toBe(200); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 

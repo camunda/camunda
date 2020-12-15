@@ -63,12 +63,3 @@ export function formatGroupedWorkflows(workflows = []) {
     return obj;
   }, {});
 }
-
-/**
- * @returns the instances with active operations from a given instances list
- * @param {Array} instances array of instance objects
- */
-export function getInstancesWithActiveOperations(instances = []) {
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'hasActiveOperation' does not exist on ty... Remove this comment to see the full error message
-  return instances.filter((instance) => instance.hasActiveOperation);
-}

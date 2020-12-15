@@ -66,13 +66,13 @@ class CurrentInstance {
   };
 
   activateOperation = () => {
-    if (this.state.instance != null) {
+    if (this.state.instance !== null) {
       this.state.instance.hasActiveOperation = true;
     }
   };
 
   deactivateOperation = () => {
-    if (this.state.instance != null) {
+    if (this.state.instance !== null) {
       this.state.instance.hasActiveOperation = false;
     }
   };

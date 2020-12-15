@@ -9,6 +9,22 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './InstancesTable.setup';
+import {ClientFunction} from 'testcafe';
+
+const scrollDown = ClientFunction((totalInstancesDisplayed) => {
+  const instancesList = document.getElementById('scrollable-list');
+
+  const rowHeight =
+    instancesList?.getElementsByTagName('tr')[0]?.clientHeight ?? 0;
+
+  instancesList?.scrollTo(0, rowHeight * totalInstancesDisplayed);
+});
+
+const scrollUp = ClientFunction(() => {
+  const instancesList = document.getElementById('scrollable-list');
+
+  instancesList?.scrollTo(0, 0);
+});
 
 fixture('InstancesTable')
   .page(config.endpoint)
@@ -22,78 +38,6 @@ fixture('InstancesTable')
     await t.maximizeWindow();
     await t.navigateTo(`${config.endpoint}/#/instances`);
   });
-
-const isButtonDisabled = (name: string) => {
-  return screen.getByRole('button', {name}).hasAttribute('disabled');
-};
-
-test('Pagination ', async (t) => {
-  const {initialData} = t.fixtureCtx;
-  const {instances} = initialData;
-
-  // filter by instance ids
-  await t.typeText(
-    screen.getByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instances.processA
-      // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
-      .map(({workflowInstanceKey}) => workflowInstanceKey)
-      .join(),
-    {paste: true}
-  );
-
-  await t
-    .expect(
-      within(screen.getByTestId('header-link-filters')).getByTestId('badge')
-        .innerText
-    )
-    .eql(instances.processA.length.toString());
-
-  const instancesPerPage = await within(
-    screen.getByTestId('instances-list')
-  ).getAllByRole('row').count;
-
-  const pageCount = Math.ceil(instances.processA.length / instancesPerPage);
-
-  await t
-    .expect(screen.getAllByRole('button', {name: /^Page/}).count)
-    .eql(pageCount);
-
-  await t
-    .expect(isButtonDisabled('First page'))
-    .ok()
-    .expect(isButtonDisabled('Previous page'))
-    .ok()
-    .expect(isButtonDisabled('Next page'))
-    .notOk()
-    .expect(isButtonDisabled('Last page'))
-    .notOk();
-
-  // go to page with preceding and following page(s)
-  await t
-    .click(screen.getByRole('button', {name: 'Page 2'}))
-    .expect(isButtonDisabled('First page'))
-    .notOk()
-    .expect(isButtonDisabled('Previous page'))
-    .notOk()
-    .expect(isButtonDisabled('Next page'))
-    .notOk()
-    .expect(isButtonDisabled('Last page'))
-    .notOk();
-
-  // go to last page
-  await t
-    .click(screen.getByRole('button', {name: `Page ${pageCount}`}))
-    .expect(isButtonDisabled('First page'))
-    .notOk()
-    .expect(isButtonDisabled('Previous page'))
-    .notOk()
-    .expect(isButtonDisabled('Next page'))
-    .ok()
-    .expect(isButtonDisabled('Last page'))
-    .ok();
-});
 
 test('Sorting', async (t) => {
   const {initialData} = t.fixtureCtx;
@@ -204,4 +148,94 @@ test('Sorting', async (t) => {
     .contains(instanceIds[1])
     .expect(instanceRows.nth(2).innerText)
     .contains(instanceIds[2]);
+});
+
+test('Scrolling', async (t) => {
+  let totalInstancesDisplayed = 50;
+
+  const {initialData} = t.fixtureCtx;
+  const {instancesForInfiniteScroll} = initialData.instances;
+
+  const descendingInstanceIds = instancesForInfiniteScroll
+    .map((instance: any) => instance.workflowInstanceKey)
+    .sort((instanceId1: number, instanceId2: number) => {
+      return instanceId2 - instanceId1;
+    });
+
+  const workflowCombobox = screen.getByRole('combobox', {
+    name: 'Workflow',
+  });
+
+  await t.click(workflowCombobox).click(
+    within(workflowCombobox).getByRole('option', {
+      name: 'Process For Infinite Scroll',
+    })
+  );
+
+  await t.click(screen.getByRole('button', {name: /Sort by id/}));
+
+  const instanceRows = within(
+    screen.getByTestId('instances-list')
+  ).getAllByRole('row');
+
+  let totalRowCount = await instanceRows.count;
+  let firstVisibleRow = await instanceRows.nth(0).innerText;
+  let lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
+
+  await t
+    .expect(totalRowCount)
+    .eql(50)
+    .expect(firstVisibleRow)
+    .contains(descendingInstanceIds[0])
+    .expect(lastVisibleRow)
+    .contains(descendingInstanceIds[49]);
+
+  // scroll until max stored instances is reached (200)
+  await scrollDown(totalInstancesDisplayed);
+  totalInstancesDisplayed += 50;
+
+  await scrollDown(totalInstancesDisplayed);
+  totalInstancesDisplayed += 50;
+
+  await scrollDown(totalInstancesDisplayed);
+  totalInstancesDisplayed += 50;
+
+  totalRowCount = await instanceRows.count;
+  firstVisibleRow = await instanceRows.nth(0).innerText;
+  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
+
+  await t
+    .expect(totalRowCount)
+    .eql(200)
+    .expect(firstVisibleRow)
+    .contains(descendingInstanceIds[0])
+    .expect(lastVisibleRow)
+    .contains(descendingInstanceIds[199]);
+
+  await scrollDown(totalInstancesDisplayed);
+  totalInstancesDisplayed += 50;
+
+  totalRowCount = await instanceRows.count;
+  firstVisibleRow = await instanceRows.nth(0).innerText;
+  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
+  await t
+    .expect(totalRowCount)
+    .eql(200)
+    .expect(firstVisibleRow)
+    .contains(descendingInstanceIds[50])
+    .expect(lastVisibleRow)
+    .contains(descendingInstanceIds[249]);
+
+  await scrollUp();
+
+  totalRowCount = await instanceRows.count;
+  firstVisibleRow = await instanceRows.nth(0).innerText;
+  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
+  await t
+    .expect(totalRowCount)
+    .eql(200)
+    .expect(firstVisibleRow)
+    .contains(descendingInstanceIds[0])
+    .expect(lastVisibleRow)
+    .contains(descendingInstanceIds[199]);
 });

@@ -14,6 +14,7 @@ async function setup() {
   await deploy([
     './e2e/tests/resources/instancesTableProcessA.bpmn',
     './e2e/tests/resources/instancesTableProcessB_v_1.bpmn',
+    './e2e/tests/resources/instancesTableProcessForInfiniteScroll.bpmn',
   ]);
   await deploy(['./e2e/tests/resources/instancesTableProcessB_v_2.bpmn']);
 
@@ -30,7 +31,21 @@ async function setup() {
   const processB_v_2 = [
     await createSingleInstance('instancesTableProcessB', 2),
   ];
-  return {instances: {processA, processB_v_1, processB_v_2}};
+
+  const instancesForInfiniteScroll = await createInstances(
+    'instancesTableProcessForInfiniteScroll',
+    1,
+    300
+  );
+
+  return {
+    instances: {
+      processA,
+      processB_v_1,
+      processB_v_2,
+      instancesForInfiniteScroll,
+    },
+  };
 }
 
 export {setup};

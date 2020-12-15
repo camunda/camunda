@@ -25,6 +25,7 @@ const instance: WorkflowInstanceEntity = {
   bpmnProcessId: 'withoutIncidentsProcess',
   hasActiveOperation: false,
   operations: [],
+  sortValues: ['', ''],
 };
 
 const instanceWithActiveOperation: WorkflowInstanceEntity = {
@@ -38,6 +39,7 @@ const instanceWithActiveOperation: WorkflowInstanceEntity = {
   bpmnProcessId: 'withoutIncidentsProcess',
   hasActiveOperation: true,
   operations: [],
+  sortValues: ['', ''],
 };
 
 const mockInstances = [instance, instanceWithActiveOperation];
@@ -54,10 +56,6 @@ describe('stores/instances', () => {
 
   beforeEach(async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
-      ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
@@ -77,45 +75,50 @@ describe('stores/instances', () => {
     filtersStore.reset();
   });
 
-  it('should return null by default', () => {
-    expect(instancesStore.state.filteredInstancesCount).toBe(null);
-  });
-
-  // This test is skipped, because setting the local storage inside
-  // the test has no effect. See https://jira.camunda.com/browse/OPE-1004
-  it.skip('should return state from local storage', () => {
-    instancesStore.reset();
-    storeStateLocally({filteredInstancesCount: 312});
-
-    expect(instancesStore.state.filteredInstancesCount).toBe(312);
-  });
-
-  it('should return store state', () => {
-    instancesStore.setInstances({
-      filteredInstancesCount: 654,
-      workflowInstances: [],
+  describe('filtered instances count', () => {
+    it('should return null by default', () => {
+      expect(instancesStore.state.filteredInstancesCount).toBe(null);
     });
 
-    expect(instancesStore.state.filteredInstancesCount).toBe(654);
-  });
+    // This test is skipped, because setting the local storage inside
+    // the test has no effect. See https://jira.camunda.com/browse/OPE-1004
+    it.skip('should return from local storage', () => {
+      instancesStore.reset();
+      storeStateLocally({filteredInstancesCount: 312});
 
-  it('should return store state when both is set', () => {
-    storeStateLocally({filteredInstancesCount: 101});
-    instancesStore.setInstances({
-      filteredInstancesCount: 202,
-      workflowInstances: [],
+      expect(instancesStore.state.filteredInstancesCount).toBe(312);
     });
 
-    expect(instancesStore.state.filteredInstancesCount).toBe(202);
+    it('should return store state', () => {
+      instancesStore.setInstances({
+        filteredInstancesCount: 654,
+        workflowInstances: [],
+      });
+
+      expect(instancesStore.state.filteredInstancesCount).toBe(654);
+    });
+
+    it('should return store state when both is set', () => {
+      storeStateLocally({filteredInstancesCount: 101});
+      instancesStore.setInstances({
+        filteredInstancesCount: 202,
+        workflowInstances: [],
+      });
+
+      expect(instancesStore.state.filteredInstancesCount).toBe(202);
+    });
   });
 
-  it('should fetch instances', async () => {
+  it('should fetch initial instances', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     expect(instancesStore.state.status).toBe('initial');
 
-    instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
+    instancesStore.fetchInitialInstances({query: {}});
 
     expect(instancesStore.state.status).toBe('first-fetch');
 
@@ -125,30 +128,210 @@ describe('stores/instances', () => {
     expect(instancesStore.state.workflowInstances).toEqual(
       mockWorkflowInstances.workflowInstances
     );
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '2251799813685627',
+    ]);
   });
 
-  it('should refresh instances', async () => {
-    expect(instancesStore.state.status).toBe('initial');
-
-    instancesStore.refreshInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
-
-    expect(instancesStore.state.status).toBe('initial');
-
-    await waitFor(() =>
-      expect(instancesStore.state.workflowInstances).toEqual(
-        mockWorkflowInstances.workflowInstances
+  it('should fetch next instances', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    expect(instancesStore.state.filteredInstancesCount).toBe(
-      mockWorkflowInstances.totalCount
+
+    expect(instancesStore.state.status).toBe('initial');
+
+    instancesStore.fetchInitialInstances({query: {}});
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockWorkflowInstances,
+            workflowInstances: [
+              {...instance, id: '100'},
+              {...instance, hasActiveOperation: true, id: '101'},
+            ],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchNextInstances();
+
+    expect(instancesStore.state.status).toBe('fetching-next');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    expect(instancesStore.state.workflowInstances.length).toBe(4);
+    expect(instancesStore.state.workflowInstances[2].id).toBe('100');
+    expect(instancesStore.state.workflowInstances[3].id).toBe('101');
+    expect(instancesStore.state.latestFetch).toEqual({
+      fetchType: 'next',
+      workflowInstancesCount: 2,
+    });
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockWorkflowInstances,
+            workflowInstances: [{...instance, id: '200'}],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchNextInstances();
+
+    expect(instancesStore.state.status).toBe('fetching-next');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    expect(instancesStore.state.workflowInstances.length).toBe(5);
+    expect(instancesStore.state.workflowInstances[4].id).toBe('200');
+    expect(instancesStore.state.latestFetch).toEqual({
+      fetchType: 'next',
+      workflowInstancesCount: 1,
+    });
+
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '2251799813685627',
+      '101',
+    ]);
+  });
+
+  it('should fetch previous instances', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
+    expect(instancesStore.state.status).toBe('initial');
+
+    instancesStore.fetchInitialInstances({query: {}});
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockWorkflowInstances,
+            workflowInstances: [{...instance, id: '100'}],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchPreviousInstances();
+
+    expect(instancesStore.state.status).toBe('fetching-prev');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    expect(instancesStore.state.workflowInstances.length).toBe(3);
+    expect(instancesStore.state.workflowInstances[0].id).toBe('100');
+    expect(instancesStore.state.latestFetch).toEqual({
+      fetchType: 'prev',
+      workflowInstancesCount: 1,
+    });
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockWorkflowInstances,
+            workflowInstances: [{...instance, id: '200'}],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchPreviousInstances();
+
+    expect(instancesStore.state.status).toBe('fetching-prev');
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    expect(instancesStore.state.workflowInstances.length).toBe(4);
+    expect(instancesStore.state.workflowInstances[0].id).toBe('200');
+    expect(instancesStore.state.workflowInstances[1].id).toBe('100');
+    expect(instancesStore.state.latestFetch).toEqual({
+      fetchType: 'prev',
+      workflowInstancesCount: 1,
+    });
+
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '2251799813685627',
+    ]);
+  });
+
+  it('should refresh all instances', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
+    instancesStore.fetchInitialInstances({query: {}});
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '2251799813685627',
+    ]);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 100,
+          })
+        )
+      )
+    );
+
+    instancesStore.refreshAllInstances({query: {}});
+    await waitFor(() =>
+      expect(instancesStore.instanceIdsWithActiveOperations).toEqual([])
+    );
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              {...instance, hasActiveOperation: true},
+              {...instanceWithActiveOperation},
+            ],
+            totalCount: 100,
+          })
+        )
+      )
+    );
+
+    instancesStore.refreshAllInstances({query: {}});
+    await waitFor(() =>
+      expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+        '2251799813685625',
+        '2251799813685627',
+      ])
     );
   });
 
   it('should reset store (keep the filteredInstancesCount value)', async () => {
-    await instancesStore.fetchInstances({firstResult: 0, maxResults: 50});
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
+    await instancesStore.fetchInstances({
+      fetchType: 'initial',
+      payload: {query: {}},
+    });
 
     expect(instancesStore.state.workflowInstances).toEqual(
       mockWorkflowInstances.workflowInstances
@@ -159,15 +342,20 @@ describe('stores/instances', () => {
       filteredInstancesCount: filteredInstancesCount,
       workflowInstances: [],
       status: 'initial',
-      instancesWithActiveOperations: [],
-      instancesWithCompletedOperations: [],
+      latestFetch: null,
     });
   });
 
   it('should get visible ids in list panel', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
+      fetchType: 'initial',
+      payload: {query: {}},
     });
 
     expect(instancesStore.visibleIdsInListPanel).toEqual(
@@ -176,551 +364,356 @@ describe('stores/instances', () => {
   });
 
   it('should get areWorkflowInstancesEmpty', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
+      fetchType: 'initial',
+      payload: {query: {}},
     });
+
     expect(instancesStore.areWorkflowInstancesEmpty).toBe(false);
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json({workflowInstances: [], totalCount: 0}))
       )
     );
 
     await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
+      fetchType: 'initial',
+      payload: {query: {}},
     });
+
     expect(instancesStore.areWorkflowInstancesEmpty).toBe(true);
   });
 
-  it('should add instances with active operations', async () => {
+  it('should mark instances with active operations', async () => {
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instance, id: '1'},
+              {...instance, id: '2'},
+              {...instance, id: '3'},
+            ],
+          })
+        )
+      )
+    );
+
     await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
+      fetchType: 'initial',
+      payload: {query: {}},
     });
 
-    instancesStore.addInstancesWithActiveOperations({ids: [instance.id]});
+    instancesStore.markInstancesWithActiveOperations({ids: ['1', '2']});
 
-    expect(instancesStore.state.instancesWithActiveOperations).toHaveLength(
-      mockInstances.length
-    );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-      expect.arrayContaining(mockInstances.map(({id}) => id))
-    );
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1', hasActiveOperation: true},
+      {...instance, id: '2', hasActiveOperation: true},
+      {...instance, id: '3'},
+    ]);
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
 
-    instancesStore.addInstancesWithActiveOperations({
+    instancesStore.markInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
     });
-    expect(instancesStore.state.instancesWithActiveOperations).toHaveLength(
-      mockInstances.length
-    );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-      expect.arrayContaining(mockInstances.map(({id}) => id))
-    );
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1', hasActiveOperation: true},
+      {...instance, id: '2', hasActiveOperation: true},
+      {...instance, id: '3'},
+    ]);
 
-    instancesStore.addInstancesWithActiveOperations({
+    instancesStore.markInstancesWithActiveOperations({
       ids: [],
       shouldPollAllVisibleIds: true,
     });
-
-    expect(instancesStore.state.instancesWithActiveOperations).toHaveLength(
-      mockInstances.length
-    );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-      expect.arrayContaining(mockInstances.map(({id}) => id))
-    );
-
-    instancesStore.addInstancesWithActiveOperations({
-      ids: [instance.id],
-      shouldPollAllVisibleIds: true,
-    });
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-      instanceWithActiveOperation.id,
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '1',
+      '2',
+      '3',
     ]);
 
-    instancesStore.addInstancesWithActiveOperations({
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1', hasActiveOperation: true},
+      {...instance, id: '2', hasActiveOperation: true},
+      {...instance, id: '3', hasActiveOperation: true},
+    ]);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instance, id: '1'},
+              {...instance, id: '2'},
+              {...instance, id: '3'},
+            ],
+          })
+        )
+      )
+    );
+
+    await instancesStore.fetchInstances({
+      fetchType: 'initial',
+      payload: {query: {}},
+    });
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([]);
+
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1'},
+      {...instance, id: '2'},
+      {...instance, id: '3'},
+    ]);
+
+    instancesStore.markInstancesWithActiveOperations({
+      ids: ['2'],
+      shouldPollAllVisibleIds: true,
+    });
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1', hasActiveOperation: true},
+      {...instance, id: '2'},
+      {...instance, id: '3', hasActiveOperation: true},
+    ]);
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '3']);
+
+    instancesStore.markInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
       shouldPollAllVisibleIds: true,
     });
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '1',
+      '2',
+      '3',
+    ]);
 
-    expect(instancesStore.state.instancesWithActiveOperations).toHaveLength(
-      mockInstances.length
-    );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-      expect.arrayContaining(mockInstances.map(({id}) => id))
-    );
-  });
-
-  it('should set instances with active operations', () => {
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
-
-    instancesStore.setInstancesWithActiveOperations(mockInstances);
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-      instanceWithActiveOperation.id,
+    expect(instancesStore.state.workflowInstances).toEqual([
+      {...instance, id: '1', hasActiveOperation: true},
+      {...instance, id: '2', hasActiveOperation: true},
+      {...instance, id: '3', hasActiveOperation: true},
     ]);
   });
 
-  it('should set/reset instances with completed operations', () => {
-    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
-    instancesStore.setInstancesWithCompletedOperations(mockInstances);
-    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([
-      instance.id,
-    ]);
-    instancesStore.resetInstancesWithCompletedOperations();
-    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
-  });
-
-  it('should refresh instances and reset instances with completed operations every time there is an instance with completed operation', async () => {
-    instancesStore.init();
-
-    await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
-    );
-    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
+  it('should unmark instances with active operations', async () => {
+    // when polling all visible instances
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {
-                  id: 'instance_id_1',
-                  state: 'ACTIVE',
-                },
-                {
-                  id: 'instance_id_2',
-                  state: 'ACTIVE',
-                },
-                {
-                  id: 'instance_id_3',
-                  state: 'ACTIVE',
-                },
-              ],
-              totalCount: 100,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instanceWithActiveOperation, id: '1'},
+              {...instanceWithActiveOperation, id: '2'},
+              {...instanceWithActiveOperation, id: '3'},
+            ],
+          })
+        )
       )
     );
-    instancesStore.setInstancesWithCompletedOperations(mockInstances);
-    await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(3)
+
+    instancesStore.fetchInitialInstances({query: {}});
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '1',
+      '2',
+      '3',
+    ]);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instance, id: '1'},
+              {...instance, id: '2'},
+              {...instance, id: '3'},
+            ],
+          })
+        )
+      )
     );
 
-    expect(instancesStore.state.instancesWithCompletedOperations).toEqual([]);
+    instancesStore.unmarkInstancesWithActiveOperations({
+      instanceIds: ['1', '2', '3'],
+      shouldPollAllVisibleIds: true,
+    });
+
+    await waitFor(() =>
+      expect(instancesStore.instanceIdsWithActiveOperations).toEqual([])
+    );
+
+    // when not polling all visible instances
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instanceWithActiveOperation, id: '1'},
+              {...instanceWithActiveOperation, id: '2'},
+              {...instanceWithActiveOperation, id: '3'},
+            ],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchInitialInstances({query: {}});
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '1',
+      '2',
+      '3',
+    ]);
+
+    instancesStore.unmarkInstancesWithActiveOperations({
+      instanceIds: ['3'],
+      shouldPollAllVisibleIds: false,
+    });
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
   });
 
-  it('should poll instances by id when there are instances with active operations', async () => {
-    instancesStore.init();
-
-    await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
-    );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-      instanceWithActiveOperation.id,
-    ]);
+  it('should refresh instances and and call handlers every time there is an instance with completed operation', async () => {
     jest.useFakeTimers();
+    const handlerMock = jest.fn();
+    instancesStore.addCompletedOperationsHandler(handlerMock);
+
     mockServer.use(
-      // mock for fetching instances when there is an active operation
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=2',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: true},
-                {id: 'instance_id_2', hasActiveOperation: false},
-              ],
-              totalCount: 100,
-            })
-          )
-      ),
-      // mock for refreshing instances when an instance operation is completed
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: true},
-                {id: 'instance_id_2', hasActiveOperation: false},
-              ],
-              totalCount: 100,
-            })
-          )
-      ),
-      // mock for fetching instances when there is an active operation
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=1',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: false},
-              ],
-              totalCount: 100,
-            })
-          )
-      ),
-      // mock for refreshing instances when an instance operation is completed
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
-        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    instancesStore.setInstancesWithActiveOperations(mockInstances);
+
+    instancesStore.init();
+
+    await waitFor(() =>
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
+    );
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
+      '2251799813685627',
+    ]);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 2,
+          })
+        )
+      ),
+      //refresh
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 3,
+          })
+        )
+      )
+    );
+
     jest.runOnlyPendingTimers();
-    await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        instanceWithActiveOperation.id,
-      ]);
-    });
-    jest.runOnlyPendingTimers();
-    await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        instanceWithActiveOperation.id,
-      ]);
-      expect(instancesStore.state.workflowInstances).toEqual(
-        mockWorkflowInstances.workflowInstances
-      );
-    });
+    await waitFor(() =>
+      expect(instancesStore.state.filteredInstancesCount).toBe(3)
+    );
+
+    expect(handlerMock).toHaveBeenCalledTimes(1);
 
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  it('should set instances with active operations every time instances are fetched', async () => {
+  it('should poll instances by id when there are instances with active operations', async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [instance],
-              totalCount: 100,
-            })
-          )
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            workflowInstances: [
+              {...instance, id: '1'},
+              {...instanceWithActiveOperation, id: '2'},
+            ],
+          })
+        )
       )
     );
+
+    jest.useFakeTimers();
+
     instancesStore.init();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances).toEqual([instance])
+      expect(instancesStore.state.workflowInstances.length).toBe(2)
     );
-    expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
-
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['2']);
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: true},
-                {id: 'instance_id_2', hasActiveOperation: false},
-              ],
-              totalCount: 100,
-            })
-          )
+      // mock for fetching instances when there is an active operation
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              {
+                ...instanceWithActiveOperation,
+                hasActiveOperation: false,
+                id: '2',
+              },
+            ],
+            totalCount: 100,
+          })
+        )
       ),
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: false},
-                {id: 'instance_id_2', hasActiveOperation: true},
-              ],
-              totalCount: 100,
-            })
-          )
-      ),
-
-      rest.post(
-        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              workflowInstances: [
-                {id: 'instance_id_1', hasActiveOperation: false},
-                {id: 'instance_id_2', hasActiveOperation: false},
-              ],
-              totalCount: 100,
-            })
-          )
+      // mock for refreshing instances when an instance operation is completed
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [
+              {...instance, id: '1'},
+              {
+                ...instanceWithActiveOperation,
+                id: '2',
+                hasActiveOperation: false,
+              },
+            ],
+            totalCount: 2,
+          })
+        )
       )
     );
 
-    await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
-
+    jest.runOnlyPendingTimers();
     await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        'instance_id_1',
-      ]);
+      expect(instancesStore.state.filteredInstancesCount).toEqual(2);
     });
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual([]);
 
-    await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
-
-    await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        'instance_id_2',
-      ]);
-    });
-
-    await instancesStore.fetchInstances({
-      firstResult: 0,
-      maxResults: 50,
-    });
-
-    await waitFor(() => {
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([]);
-    });
-  });
-
-  describe('Remove instances from instances with active operations list', () => {
-    it('should remove multiple instances', async () => {
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                workflowInstances: [
-                  {
-                    id: 'instance_id_1',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_2',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_3',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_4',
-                    state: 'ACTIVE',
-                  },
-                ],
-                totalCount: 100,
-              })
-            )
-        )
-      );
-      await instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
-
-      instancesStore.addInstancesWithActiveOperations({
-        ids: ['instance_id_1', 'instance_id_2', 'instance_id_3'],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        'instance_id_1',
-        'instance_id_2',
-        'instance_id_3',
-      ]);
-
-      instancesStore.removeInstanceFromInstancesWithActiveOperations({
-        ids: ['instance_id_1', 'instance_id_3'],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        'instance_id_2',
-      ]);
-    });
-
-    it('should remove single instance', async () => {
-      await instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
-
-      instancesStore.addInstancesWithActiveOperations({
-        ids: [instance.id],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        instanceWithActiveOperation.id,
-        instance.id,
-      ]);
-
-      instancesStore.removeInstanceFromInstancesWithActiveOperations({
-        ids: [instanceWithActiveOperation.id],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        instance.id,
-      ]);
-    });
-
-    it('should remove instances when polling all visible ids', async () => {
-      await instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
-
-      instancesStore.addInstancesWithActiveOperations({
-        ids: [],
-        shouldPollAllVisibleIds: true,
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-        mockInstances.map(({id}) => id)
-      );
-
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
-        )
-      );
-
-      instancesStore.removeInstanceFromInstancesWithActiveOperations({
-        ids: [],
-        shouldPollAllVisibleIds: true,
-      });
-
-      await waitFor(() =>
-        expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-          instanceWithActiveOperation.id,
-        ])
-      );
-    });
-
-    it('should keep polling existing instances with active operations after removing instances when polling all visible ids', async () => {
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                workflowInstances: [
-                  {
-                    id: 'instance_id_1',
-                    state: 'ACTIVE',
-                    hasActiveOperation: true,
-                  },
-                  {
-                    id: 'instance_id_2',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_3',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_4',
-                    state: 'ACTIVE',
-                  },
-                ],
-                totalCount: 100,
-              })
-            )
-        )
-      );
-
-      await instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
-
-      instancesStore.addInstancesWithActiveOperations({
-        ids: ['instance_id_3'],
-        shouldPollAllVisibleIds: true,
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        'instance_id_1',
-        'instance_id_2',
-        'instance_id_4',
-      ]);
-
-      mockServer.use(
-        rest.post(
-          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                workflowInstances: [
-                  {
-                    id: 'instance_id_1',
-                    state: 'ACTIVE',
-                    hasActiveOperation: true,
-                  },
-                  {
-                    id: 'instance_id_2',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_3',
-                    state: 'ACTIVE',
-                  },
-                  {
-                    id: 'instance_id_4',
-                    state: 'ACTIVE',
-                  },
-                ],
-                totalCount: 100,
-              })
-            )
-        )
-      );
-
-      instancesStore.removeInstanceFromInstancesWithActiveOperations({
-        ids: [],
-        shouldPollAllVisibleIds: true,
-      });
-
-      await waitFor(() =>
-        expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-          'instance_id_1',
-        ])
-      );
-    });
-
-    it('should remove a single instance from instances with active operations list', async () => {
-      await instancesStore.fetchInstances({
-        firstResult: 0,
-        maxResults: 50,
-      });
-
-      instancesStore.addInstancesWithActiveOperations({
-        ids: [instance.id],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toHaveLength(
-        mockInstances.length
-      );
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual(
-        expect.arrayContaining(mockInstances.map(({id}) => id))
-      );
-
-      instancesStore.removeInstanceFromInstancesWithActiveOperations({
-        ids: [instance.id],
-      });
-
-      expect(instancesStore.state.instancesWithActiveOperations).toEqual([
-        instanceWithActiveOperation.id,
-      ]);
-    });
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   describe('fetch instances autorun', () => {
     beforeEach(() => {
+      mockServer.use(
+        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+          res.once(ctx.json(mockWorkflowInstances))
+        )
+      );
       instancesStore.init();
       fetchInstancesSpy.mockReset();
     });
@@ -741,34 +734,6 @@ describe('stores/instances', () => {
       expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
 
       expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('should fetch instances every time page or entries per page changes', () => {
-      filtersStore.setEntriesPerPage(10);
-
-      expect(filtersStore.state.page).toEqual(1);
-      expect(filtersStore.state.prevEntriesPerPage).toEqual(0);
-      expect(filtersStore.state.entriesPerPage).toEqual(10);
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
-
-      filtersStore.setPage(2);
-
-      expect(filtersStore.state.page).toEqual(2);
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
-
-      filtersStore.setEntriesPerPage(5);
-
-      expect(filtersStore.state.page).toEqual(2);
-      expect(filtersStore.state.prevEntriesPerPage).toEqual(10);
-      expect(filtersStore.state.entriesPerPage).toEqual(5);
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
-
-      filtersStore.setEntriesPerPage(10);
-
-      expect(filtersStore.state.page).toEqual(2);
-      expect(filtersStore.state.prevEntriesPerPage).toEqual(5);
-      expect(filtersStore.state.entriesPerPage).toEqual(10);
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(3);
     });
 
     it('should fetch instances every time filter changes', () => {

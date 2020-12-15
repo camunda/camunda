@@ -10,6 +10,9 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
+import {filtersStore} from './filters';
+import {mockWorkflowXML, groupedWorkflowsMock} from 'modules/testUtils';
+import {createMemoryHistory} from 'history';
 
 const mockInstance = {
   id: '2251799813685625',
@@ -22,6 +25,7 @@ const mockInstance = {
   bpmnProcessId: 'withoutIncidentsProcess',
   hasActiveOperation: false,
   operations: [],
+  sortValues: ['withoutIncidentsProcess', '2251799813685625'],
 } as const;
 
 describe('stores/statistics', () => {
@@ -40,8 +44,10 @@ describe('stores/statistics', () => {
     );
   });
   afterEach(() => {
-    statisticsStore.reset();
     currentInstanceStore.reset();
+    statisticsStore.reset();
+    instancesStore.reset();
+    filtersStore.reset();
   });
 
   it('should reset state', async () => {
@@ -139,10 +145,53 @@ describe('stores/statistics', () => {
   });
 
   it('should fetch statistics depending on completed operations', async () => {
+    jest.useFakeTimers();
+
     statisticsStore.init();
+
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
+    expect(statisticsStore.state.running).toBe(936);
+    expect(statisticsStore.state.active).toBe(725);
+    expect(statisticsStore.state.withIncidents).toBe(211);
+
     mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockWorkflowXML))
+      ),
+      rest.get('/api/workflows/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedWorkflowsMock))
+      ),
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [{...mockInstance, hasActiveOperation: true}],
+            totalCount: 1,
+          })
+        )
+      )
+    );
+    filtersStore.setUrlParameters(createMemoryHistory(), {
+      pathname: '/instances',
+    });
+    await filtersStore.init();
+    instancesStore.init();
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+
+    expect(statisticsStore.state.running).toBe(936);
+    expect(statisticsStore.state.active).toBe(725);
+    expect(statisticsStore.state.withIncidents).toBe(211);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [{...mockInstance}],
+            totalCount: 1,
+          })
+        )
+      ),
       // mock for when there are completed operations
       rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
         res.once(
@@ -152,17 +201,28 @@ describe('stores/statistics', () => {
             withIncidents: 40,
           })
         )
+      ),
+      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            workflowInstances: [{...mockInstance}],
+            totalCount: 2,
+          })
+        )
       )
     );
 
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    jest.runOnlyPendingTimers();
 
-    instancesStore.setInstancesWithCompletedOperations([mockInstance]);
+    await waitFor(() =>
+      expect(instancesStore.state.filteredInstancesCount).toBe(2)
+    );
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(100));
     expect(statisticsStore.state.active).toBe(60);
     expect(statisticsStore.state.withIncidents).toBe(40);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

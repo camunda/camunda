@@ -124,16 +124,9 @@ test('Selection of instances are removed on filter selection', async (t) => {
     .notOk();
 });
 
-test('Selection of instances are not removed on pagination', async (t) => {
+test('Selection of instances are not removed on sort', async (t) => {
   await t
     .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
-    .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
-    )
-    .ok();
-
-  await t
-    .click(screen.getByRole('button', {name: 'Next page'}))
     .expect(
       screen.getByRole('checkbox', {name: 'Select all instances'}).checked
     )

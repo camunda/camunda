@@ -11,10 +11,18 @@ import Table from 'modules/components/Table';
 const List = styled.div`
   flex-grow: 1;
   position: relative;
+  overflow: auto;
+`;
+
+const TRHeader = styled(Table.TR)`
+  border-top: none;
+  height: 38px;
 `;
 
 const TR = styled(Table.TR)`
-  border-top: none;
+  &:first-child {
+    border-top-style: hidden;
+  }
 `;
 
 const TableContainer = styled.div`
@@ -26,8 +34,38 @@ const TableContainer = styled.div`
   top: 0;
 `;
 
+const THPositionStyles = css`
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+`;
+
 const OperationsTH = styled(Table.TH)`
-  width: 90px;
+  ${({theme}) => {
+    return css`
+      ${THPositionStyles}
+      width: 90px;
+      background-color: ${theme.colors.ui02};
+      box-shadow: inset 0 -1px 0 ${theme.colors.ui05};
+    `;
+  }}
+`;
+
+const THead = styled(Table.THead)`
+  height: 37px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+`;
+
+const TH = styled(Table.TH)`
+  ${({theme}) => {
+    return css`
+      ${THPositionStyles}
+      background-color: ${theme.colors.ui02};
+      box-shadow: inset 0 -1px 0 ${theme.colors.ui05};
+    `;
+  }}
 `;
 
 type SelectionStatusIndicatorProps = {
@@ -118,7 +156,7 @@ const EmptyTD = styled(Table.TD)`
 
 export {
   List,
-  TR,
+  TRHeader,
   TableContainer,
   OperationsTH,
   SelectionStatusIndicator,
@@ -128,4 +166,7 @@ export {
   WorkflowName,
   EmptyTR,
   EmptyTD,
+  THead,
+  TH,
+  TR,
 };
