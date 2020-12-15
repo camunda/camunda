@@ -542,8 +542,8 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @ParameterizedTest
-  @MethodSource("identityFilters")
-  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFiltersAtBothLevels")
+  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(ONE_TASK)
       .startProcessInstance()

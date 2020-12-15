@@ -260,8 +260,8 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   }
 
   @ParameterizedTest
-  @MethodSource("identityFilters")
-  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFiltersAtBothLevels")
+  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
     engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());

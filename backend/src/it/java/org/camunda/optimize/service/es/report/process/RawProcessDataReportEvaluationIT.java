@@ -595,8 +595,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @ParameterizedTest
-  @MethodSource("identityFilters")
-  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFiltersAtBothLevels")
+  public void multiLevelFiltersAllAppliedOnlyToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());

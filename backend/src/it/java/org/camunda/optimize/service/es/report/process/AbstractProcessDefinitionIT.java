@@ -445,8 +445,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 
+  // This is a stream of all the filters that are available at view level, but also includes each of those set to
+  // instance level
   @SuppressWarnings(UNUSED)
-  protected static Stream<List<ProcessFilterDto<?>>> identityFilters() {
+  protected static Stream<List<ProcessFilterDto<?>>> viewLevelFiltersAtBothLevels() {
     return Stream.of(
       ProcessFilterBuilder
         .filter()
@@ -473,6 +475,34 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .filter()
         .candidateGroups()
         .id(FIRST_CANDIDATE_GROUP)
+        .filterLevel(FilterApplicationLevel.INSTANCE)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder
+        .filter()
+        .flowNodeDuration()
+        .flowNode(
+          START_EVENT,
+          DurationFilterDataDto.builder()
+            .operator(FilterOperator.GREATER_THAN)
+            .unit(DurationFilterUnit.HOURS)
+            .value(1L)
+            .build()
+        )
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList(),
+      ProcessFilterBuilder
+        .filter()
+        .flowNodeDuration()
+        .flowNode(
+          START_EVENT,
+          DurationFilterDataDto.builder()
+            .operator(FilterOperator.GREATER_THAN)
+            .unit(DurationFilterUnit.HOURS)
+            .value(1L)
+            .build()
+        )
         .filterLevel(FilterApplicationLevel.INSTANCE)
         .add()
         .buildList()

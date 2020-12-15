@@ -645,8 +645,8 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @ParameterizedTest
-  @MethodSource("identityFilters")
-  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFiltersAtBothLevels")
+  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();

@@ -189,8 +189,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
   }
 
   @ParameterizedTest
-  @MethodSource("identityFilters")
-  public void identityFilterAppliesToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFiltersAtBothLevels")
+  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
