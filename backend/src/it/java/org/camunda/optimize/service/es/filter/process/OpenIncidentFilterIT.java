@@ -19,10 +19,10 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
-public class WithOpenIncidentsOnlyFilterIT extends AbstractFilterIT {
+public class OpenIncidentFilterIT extends AbstractFilterIT {
 
   @Test
-  public void filterByWithOpenIncidentsOnly() {
+  public void filterByOpenIncident() {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)

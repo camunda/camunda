@@ -20,10 +20,10 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
-public class WithResolvedIncidentsOnlyFilterIT extends AbstractFilterIT {
+public class ResolvedIncidentFilterIT extends AbstractFilterIT {
 
   @Test
-  public void filterByWithResolvedIncidentsOnly() {
+  public void filterByResolvedIncident() {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -47,7 +47,7 @@ public class WithResolvedIncidentsOnlyFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncidentsOnly().add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncident().add().buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
@@ -61,7 +61,7 @@ public class WithResolvedIncidentsOnlyFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
-    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncidentsOnly().add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncident().add().buildList());
     NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -98,7 +98,7 @@ public class WithResolvedIncidentsOnlyFilterIT extends AbstractFilterIT {
       .build();
     reportData.setFilter(
       ProcessFilterBuilder.filter()
-        .withResolvedIncidentsOnly()
+        .withResolvedIncident()
         .add()
         .buildList());
     NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
@@ -111,7 +111,7 @@ public class WithResolvedIncidentsOnlyFilterIT extends AbstractFilterIT {
     // when I add the flow node filter as well
     reportData.setFilter(
       ProcessFilterBuilder.filter()
-        .withResolvedIncidentsOnly()
+        .withResolvedIncident()
         .add()
         .executingFlowNodes()
           .id(SERVICE_TASK_ID_2)

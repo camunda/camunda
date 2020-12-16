@@ -202,7 +202,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         .withOpenIncidentsOnly()
         .add()
-        .withResolvedIncidentsOnly()
+        .withResolvedIncident()
         .add()
         .buildList());
     numberResult = reportClient.evaluateNumberReport(reportData).getResult();
@@ -328,7 +328,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter().completedInstancesOnly().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().runningInstancesOnly().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(levelToApply).add().buildList(),
-      ProcessFilterBuilder.filter().withResolvedIncidentsOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .rollingStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()

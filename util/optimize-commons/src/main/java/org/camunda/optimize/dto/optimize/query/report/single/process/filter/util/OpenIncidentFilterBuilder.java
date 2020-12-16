@@ -6,28 +6,28 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.WithResolvedIncidentsOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
 
-public class WithResolvedIncidentsOnlyFilterBuilder {
+public class OpenIncidentFilterBuilder {
 
   private ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private WithResolvedIncidentsOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private OpenIncidentFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static WithResolvedIncidentsOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
-    return new WithResolvedIncidentsOnlyFilterBuilder(filterBuilder);
+  static OpenIncidentFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+    return new OpenIncidentFilterBuilder(filterBuilder);
   }
 
-  public WithResolvedIncidentsOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public OpenIncidentFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    final WithResolvedIncidentsOnlyFilterDto filter = new WithResolvedIncidentsOnlyFilterDto();
+    final OpenIncidentFilterDto filter = new OpenIncidentFilterDto();
     filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
     return filterBuilder;

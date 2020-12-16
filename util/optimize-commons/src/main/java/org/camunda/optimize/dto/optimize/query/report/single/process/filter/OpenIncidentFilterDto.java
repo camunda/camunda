@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.WithResolvedIncidentsOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.OpenIncidentFilterDataDto;
 
 import java.util.Collections;
 import java.util.List;
 
-public class WithResolvedIncidentsOnlyFilterDto extends ProcessFilterDto<WithResolvedIncidentsOnlyFilterDataDto> {
+public class OpenIncidentFilterDto extends ProcessFilterDto<OpenIncidentFilterDataDto> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);

@@ -36,8 +36,8 @@ import java.util.List;
   @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
   @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
   @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
-  @JsonSubTypes.Type(value = WithOpenIncidentsOnlyFilterDto.class, name = "includesOpenIncident"),
-  @JsonSubTypes.Type(value = WithResolvedIncidentsOnlyFilterDto.class, name = "includesResolvedIncident"),
+  @JsonSubTypes.Type(value = OpenIncidentFilterDto.class, name = "includesOpenIncident"),
+  @JsonSubTypes.Type(value = ResolvedIncidentFilterDto.class, name = "includesResolvedIncident"),
   @JsonSubTypes.Type(value = NoIncidentFilterDto.class, name = "doesNotIncludeIncident")
 })
 @Data
