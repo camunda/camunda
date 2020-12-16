@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {IS_NEXT_FLOW_NODE_INSTANCES, TYPE} from 'modules/constants';
+import {TYPE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -17,7 +17,6 @@ import {
 import {Bar} from './Bar';
 import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
-import {FlowNodeInstancesTree as FlowNodeInstancesTreeLegacy} from './index.legacy';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -28,14 +27,19 @@ type Props = {
 
 const FlowNodeInstancesTree = observer(
   ({isSelected, flowNodeInstance, treeDepth, isLastChild = true}: Props) => {
-    const children =
-      // @ts-expect-error this comment will be removed, when legacy flowNodeInstanceStore is removed
-      flowNodeInstanceStore.state.flowNodeInstances[
-        flowNodeInstance.treePath || flowNodeInstance.id
-      ];
+    const {
+      // @ts-expect-error
+      state: {flowNodeInstances},
+      // @ts-expect-error
+      fetchSubTree,
+      // @ts-expect-error
+      removeSubTree,
+    } = flowNodeInstanceStore;
+    const visibleChildNodes =
+      flowNodeInstances[flowNodeInstance.treePath || flowNodeInstance.id];
 
     const metaData = singleInstanceDiagramStore.getMetaData(
-      flowNodeInstance.flowNodeId
+      flowNodeInstance.flowNodeId || null
     ) || {
       name:
         currentInstanceStore.state.instance !== null
@@ -44,9 +48,9 @@ const FlowNodeInstancesTree = observer(
       type: {elementType: 'WORKFLOW'},
     };
 
-    const isFoldable = ['SUB_PROCESS', 'MULTI_INSTANCE_BODY'].includes(
-      flowNodeInstance.type
-    );
+    const isFoldable =
+      flowNodeInstance?.type !== undefined &&
+      ['SUB_PROCESS', TYPE.MULTI_INSTANCE_BODY].includes(flowNodeInstance.type);
 
     return (
       <Li
@@ -62,7 +66,21 @@ const FlowNodeInstancesTree = observer(
             $indentationMultiplier={treeDepth}
           />
         </NodeDetails>
-        <Foldable isFolded={treeDepth >= 2} isFoldable={isFoldable}>
+        <Foldable
+          isFolded={visibleChildNodes === undefined}
+          isFoldable={isFoldable}
+          onToggle={
+            isFoldable
+              ? () => {
+                  visibleChildNodes === undefined
+                    ? fetchSubTree({parentTreePath: flowNodeInstance.treePath})
+                    : removeSubTree({
+                        parentTreePath: flowNodeInstance.treePath,
+                      });
+                }
+              : undefined
+          }
+        >
           {metaData !== undefined && (
             <Foldable.Summary
               data-testid={flowNodeInstance.id}
@@ -75,7 +93,7 @@ const FlowNodeInstancesTree = observer(
                   : ''
               }`}
             >
-              {/* @ts-expect-error this comment will be removed when legacy Bar component is removed*/}
+              {/* @ts-expect-error */}
               <Bar
                 flowNodeInstance={flowNodeInstance}
                 metaData={metaData}
@@ -84,23 +102,21 @@ const FlowNodeInstancesTree = observer(
               />
             </Foldable.Summary>
           )}
-          {children !== undefined && children.length > 0 && (
+          {visibleChildNodes !== undefined && visibleChildNodes.length > 0 && (
             <Foldable.Details>
               <Ul
                 showConnectionLine={treeDepth >= 2}
                 data-testid={`treeDepth:${treeDepth}`}
               >
-                {children.map(
-                  (flowNodeInstanceChild: FlowNodeInstance, index: number) => {
-                    const isLastChild =
-                      flowNodeInstance.children?.length === index + 1;
+                {visibleChildNodes.map(
+                  (childNode: FlowNodeInstance, index: number) => {
                     return (
                       <FlowNodeInstancesTree
                         isSelected={false}
-                        flowNodeInstance={flowNodeInstanceChild}
+                        flowNodeInstance={childNode}
                         treeDepth={treeDepth + 1}
-                        isLastChild={isLastChild}
-                        key={flowNodeInstanceChild.id}
+                        isLastChild={visibleChildNodes.length === index + 1}
+                        key={childNode.id}
                       />
                     );
                   }
@@ -114,7 +130,4 @@ const FlowNodeInstancesTree = observer(
   }
 );
 
-const CurrentFlowNodeInstancesTree = IS_NEXT_FLOW_NODE_INSTANCES
-  ? FlowNodeInstancesTree
-  : FlowNodeInstancesTreeLegacy;
-export {CurrentFlowNodeInstancesTree as FlowNodeInstancesTree};
+export {FlowNodeInstancesTree};

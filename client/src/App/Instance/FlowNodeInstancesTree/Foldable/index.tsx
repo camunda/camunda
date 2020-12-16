@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Children, cloneElement, useState, isValidElement} from 'react';
+import React, {Children, cloneElement, isValidElement} from 'react';
 
 import {
   SummaryContainer,
@@ -15,24 +15,23 @@ import {
 
 type Props = {
   children?: React.ReactNode;
-  isFoldable?: boolean;
-  isFolded?: boolean;
+  isFoldable: boolean;
+  isFolded: boolean;
+  onToggle?: () => void;
 };
 
-const Foldable = ({children, isFoldable, ...props}: Props) => {
-  const [isFolded, setIsFolded] = useState(props.isFolded);
-
+const Foldable = ({
+  children,
+  isFoldable,
+  onToggle,
+  isFolded,
+  ...props
+}: Props) => {
   return (
     <>
       {Children.map(children, (child) => {
         if (isValidElement(child)) {
-          return cloneElement(child, {
-            isFoldable: isFoldable,
-            isFolded: isFolded,
-            toggleFold: () => {
-              setIsFolded((isFolded) => !isFolded);
-            },
-          });
+          return cloneElement(child, {isFoldable, isFolded, onToggle});
         } else {
           return null;
         }
@@ -42,7 +41,7 @@ const Foldable = ({children, isFoldable, ...props}: Props) => {
 };
 
 type SummaryProps = {
-  toggleFold?: () => void;
+  onToggle?: () => void;
   isFoldable?: boolean;
   isFolded?: boolean;
   indentation?: number;
@@ -55,7 +54,7 @@ type SummaryProps = {
 };
 
 const Summary: React.FC<SummaryProps> = ({
-  toggleFold,
+  onToggle,
   isFoldable = true,
   isFolded,
   indentation = 0,
@@ -71,7 +70,7 @@ const Summary: React.FC<SummaryProps> = ({
       {isFoldable ? (
         <ExpandButton
           // @ts-expect-error ts-migrate(2769) FIXME: Property 'onClick' does not exist on type 'Intrins... Remove this comment to see the full error message
-          onClick={toggleFold}
+          onClick={onToggle}
           isExpanded={!isFolded}
           iconButtonTheme="foldable"
           aria-label={isFolded ? `Unfold ${nodeName}` : `Fold ${nodeName}`}

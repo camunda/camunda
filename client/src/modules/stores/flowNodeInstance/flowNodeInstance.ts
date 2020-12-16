@@ -28,7 +28,6 @@ type FlowNodeInstanceType = {
   endDate: null | string;
   treePath: string;
   sortValues: any[];
-  children: FlowNodeInstanceType[] | undefined;
 };
 
 type Selection = {
@@ -61,6 +60,7 @@ class FlowNodeInstance {
       state: observable,
       handleFetchSuccess: action,
       handleFetchFailure: action,
+      removeSubTree: action,
       startFetch: action,
       reset: action,
       isInstanceExecutionHistoryAvailable: computed,
@@ -79,6 +79,37 @@ class FlowNodeInstance {
       }
     );
   }
+
+  fetchSubTree = async ({parentTreePath}: {parentTreePath: string}) => {
+    const workflowInstanceId = currentInstanceStore.state.instance?.id;
+    if (workflowInstanceId === undefined) {
+      return;
+    }
+
+    const response = await fetchFlowNodeInstances({
+      workflowInstanceId: workflowInstanceId,
+      pageSize: PAGE_SIZE,
+      parentTreePath,
+    });
+
+    this.handleFetchSuccess({
+      parentTreePath,
+      flowNodeInstances: await response.json(),
+    });
+  };
+
+  removeSubTree = ({parentTreePath}: {parentTreePath: string}) => {
+    // remove all nested sub trees first
+    Object.keys(this.state.flowNodeInstances)
+      .filter((treePath) => {
+        return treePath.match(new RegExp(`^${parentTreePath}/`));
+      })
+      .forEach((treePath) => {
+        delete this.state.flowNodeInstances[treePath];
+      });
+
+    delete this.state.flowNodeInstances[parentTreePath];
+  };
 
   fetchInstanceExecutionHistory = async (id: WorkflowInstanceEntity['id']) => {
     this.startFetch();
@@ -113,7 +144,6 @@ class FlowNodeInstance {
 
   handleFetchFailure = (error?: Error) => {
     this.state.status = 'error';
-
     logger.error('Failed to fetch Instances activity');
     if (error !== undefined) {
       logger.error(error);
@@ -146,9 +176,9 @@ class FlowNodeInstance {
     );
   }
 
-  get instanceExecutionHistory() {
+  get instanceExecutionHistory(): FlowNodeInstanceType | null {
     const {instance: workflowInstance} = currentInstanceStore.state;
-    const {flowNodeInstances, status} = this.state;
+    const {status} = this.state;
 
     if (
       workflowInstance === null ||
@@ -161,7 +191,11 @@ class FlowNodeInstance {
       id: workflowInstance.id,
       type: 'WORKFLOW',
       state: workflowInstance.state,
-      children: flowNodeInstances[workflowInstance.id],
+      treePath: workflowInstance.id,
+      endDate: null,
+      startDate: '',
+      sortValues: [],
+      flowNodeId: workflowInstance.workflowId,
     };
   }
 }

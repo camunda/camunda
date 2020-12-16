@@ -7,6 +7,7 @@
 import React from 'react';
 import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
+// @ts-expect-error
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
@@ -33,9 +34,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           <Styled.NodeContainer>
             <ul>
               <FlowNodeInstancesTree
-                // @ts-expect-error this comment and next line will be removed when legacy flowNodeInstanceStore is removed
                 node={instanceExecutionHistory}
-                // @ts-expect-error this comment will be removed when legacy flowNodeInstanceStore is removed
                 flowNodeInstance={instanceExecutionHistory}
                 treeDepth={1}
               />

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 
 import {Bar} from './Bar';
 import {Foldable} from './Foldable';
@@ -37,6 +37,9 @@ type Props = {
 
 function Node({isSelected, node, treeDepth}: Props) {
   const hasChildren = node.children.length > 0;
+  const [isFolded, setIsFolded] = useState(treeDepth >= 2);
+  const toggleFolded = () => setIsFolded(!isFolded);
+
   return (
     <Li treeDepth={treeDepth} data-testid={`tree-node-${node.id}`}>
       <NodeDetails
@@ -46,8 +49,9 @@ function Node({isSelected, node, treeDepth}: Props) {
         <NodeStateIcon state={node.state} $indentationMultiplier={treeDepth} />
       </NodeDetails>
       <Foldable
-        isFolded={treeDepth >= 2}
+        isFolded={isFolded}
         isFoldable={hasChildren && treeDepth >= 2}
+        onToggle={toggleFolded}
       >
         <Foldable.Summary
           data-testid={node.id}

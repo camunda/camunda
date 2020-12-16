@@ -55,13 +55,13 @@ describe('<Foldable />', () => {
     expect(mockOnSelection).toHaveBeenCalled();
   });
 
-  it('should unfold the details', () => {
+  it('should show details', () => {
     const mockContent = 'mock-content';
     const mockDetails = 'mock-details';
     const mockNodeName = 'node-name';
 
     render(
-      <Foldable isFoldable={true} isFolded={true}>
+      <Foldable isFoldable={true} isFolded={false}>
         <Foldable.Summary
           onSelection={noop}
           isSelected={false}
@@ -76,19 +76,7 @@ describe('<Foldable />', () => {
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();
-    expect(screen.queryByText(mockDetails)).not.toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole('button', {name: `Unfold ${mockNodeName}`})
-    );
-
-    expect(screen.getByText(mockContent)).toBeInTheDocument();
     expect(screen.getByText(mockDetails)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', {name: `Fold ${mockNodeName}`}));
-
-    expect(screen.getByText(mockContent)).toBeInTheDocument();
-    expect(screen.queryByText(mockDetails)).not.toBeInTheDocument();
   });
 
   it('should handle unfolded details', () => {
