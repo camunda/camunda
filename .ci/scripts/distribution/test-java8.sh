@@ -1,29 +1,28 @@
 #!/bin/bash -eux
 
-export JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))"
+source "${BASH_SOURCE%/*}/../lib/flaky-tests.sh"
 
-mvn -v
-
+# getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
+LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
+MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
+SUREFIRE_FORK_COUNT=${SUREFIRE_FORK_COUNT:-}
+MAVEN_PROPERTIES=(
+  -DtestMavenId=3
+  -Dsurefire.rerunFailingTestsCount=7
+)
 tmpfile=$(mktemp)
 
-mvn -o -B --fail-never -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} verify -pl clients/java -DtestMavenId=3 -Dsurefire.rerunFailingTestsCount=7 | tee ${tmpfile}
-
-status=${PIPESTATUS[0]}
-
-
-if grep -q "\[WARNING\] Flakes:" ${tmpfile}; then
-
-  tmpfile2=$(mktemp)
-
-  awk '/^\[WARNING\] Flakes:.*$/{flag=1}/^\[ERROR\] Tests run:.*Flakes: [0-9]*$/{print;flag=0}flag' ${tmpfile} > ${tmpfile2}
-
-  grep "\[ERROR\]   Run 1: " ${tmpfile2} | awk '{print $4}' >> ./target/FlakyTests.txt
-
-  echo ERROR: Flaky Tests detected>&2
-
-  exit 1
+if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
+  MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
+  # if we know the fork count, we can limit the max heap for each fork to ensure we're not OOM killed
+  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMPercentage=$((100 / ($MAVEN_PARALLELISM * $SUREFIRE_FORK_COUNT)))"
 fi
 
+mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -pl clients/java "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
+status=${PIPESTATUS[0]}
+
+# delay checking the maven status after we've analysed flaky tests
+analyseFlakyTests "${tmpfile}" "./FlakyTests.txt" || exit $?
 
 if [[ $status != 0 ]]; then
   exit $status;

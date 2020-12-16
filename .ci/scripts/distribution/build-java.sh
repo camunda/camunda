@@ -1,6 +1,7 @@
 #!/bin/sh -eux
 
+# getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
+LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
+MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 
-export JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))"
-
-mvn -B -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pchecks,spotbugs,prepare-offline
+mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pchecks,spotbugs,prepare-offline
