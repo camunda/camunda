@@ -24,22 +24,22 @@
   dependencies:
     tunnel "0.0.6"
 
-"@apollo/client@^3.2.9":
-  version "3.2.9"
-  resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.2.9.tgz#a24a7792519adb3af8a74a60d9e83732238d0afd"
-  integrity sha512-AUvYITKhJNfRNU/Cf8t/N628ADdVah1+l9Qtjd09IwScRfDGvbBTkHMAgcb6hl7vuBVqGwQRq6fPKzHgWRlisg==
+"@apollo/client@^3.3.6":
+  version "3.3.6"
+  resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.3.6.tgz#f359646308167f38d5bc498dfc2344c888400093"
+  integrity sha512-XSm/STyNS8aHdDigLLACKNMHwI0qaQmEHWHtTP+jHe/E1wZRnn66VZMMgwKLy2V4uHISHfmiZ4KpUKDPeJAKqg==
   dependencies:
     "@graphql-typed-document-node/core" "^3.0.0"
     "@types/zen-observable" "^0.8.0"
     "@wry/context" "^0.5.2"
-    "@wry/equality" "^0.2.0"
+    "@wry/equality" "^0.3.0"
     fast-json-stable-stringify "^2.0.0"
     graphql-tag "^2.11.0"
     hoist-non-react-statics "^3.3.2"
-    optimism "^0.13.0"
+    optimism "^0.13.1"
     prop-types "^15.7.2"
     symbol-observable "^2.0.0"
-    ts-invariant "^0.5.0"
+    ts-invariant "^0.6.0"
     tslib "^1.10.0"
     zen-observable "^0.8.14"
 
@@ -3140,6 +3140,11 @@
   dependencies:
     source-map "^0.6.1"
 
+"@types/ungap__global-this@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@types/ungap__global-this/-/ungap__global-this-0.3.1.tgz#18ce9f657da556037a29d50604335614ce703f4c"
+  integrity sha512-+/DsiV4CxXl6ZWefwHZDXSe1Slitz21tom38qPCaG0DYCS1NnDPIQDTKcmQ/tvK/edJUKkmuIDBJbmKDiB0r/g==
+
 "@types/unist@*":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@types/unist/-/unist-2.0.3.tgz#9c088679876f374eb5983f150d4787aa6fb32d7e"
@@ -3301,6 +3306,11 @@
   dependencies:
     "@typescript-eslint/types" "4.6.0"
     eslint-visitor-keys "^2.0.0"
+
+"@ungap/global-this@^0.4.2":
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/@ungap/global-this/-/global-this-0.4.3.tgz#44cb668b03e7c4bc88cb6e6f9329d381131878ee"
+  integrity sha512-MuHEpDBurNVeD6mV9xBcAN2wfTwuaFQhHuhWkJuXmyVJ5P5sBCw+nnFpdfb0tAvgWkfefWCsAoAsh7MTUr3LPg==
 
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
@@ -3466,10 +3476,10 @@
   dependencies:
     tslib "^1.9.3"
 
-"@wry/equality@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@wry/equality/-/equality-0.2.0.tgz#a312d1b6a682d0909904c2bcd355b02303104fb7"
-  integrity sha512-Y4d+WH6hs+KZJUC8YKLYGarjGekBrhslDbf/R20oV+AakHPINSitHfDRQz3EGcEWc1luXYNUvMhawWtZVWNGvQ==
+"@wry/equality@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@wry/equality/-/equality-0.3.0.tgz#4b022a0907f01f32c07a1a665d9430155a59ea06"
+  integrity sha512-DRDAu/e3oWBj826OWNV/GCmSdHD248mASXImgNoLE/3SDvpgb+k6G/+TAmdpIB35ju264+kB22Rx92eXg52DnA==
   dependencies:
     tslib "^1.9.3"
 
@@ -12367,10 +12377,10 @@ opn@^5.5.0:
   dependencies:
     is-wsl "^1.1.0"
 
-optimism@^0.13.0:
-  version "0.13.0"
-  resolved "https://registry.yarnpkg.com/optimism/-/optimism-0.13.0.tgz#c08904e1439a0eb9e7f86183dafa06cc715ff351"
-  integrity sha512-6JAh3dH+YUE4QUdsgUw8nUQyrNeBKfAEKOHMlLkQ168KhIYFIxzPsHakWrRXDnTO+x61RJrS3/2uEt6W0xlocA==
+optimism@^0.13.1:
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/optimism/-/optimism-0.13.1.tgz#df2e6102c973f870d6071712fffe4866bb240384"
+  integrity sha512-16RRVYZe8ODcUqpabpY7Gb91vCAbdhn8FHjlUb2Hqnjjow1j8Z1dlppds+yAsLbreNTVylLC+tNX6DuC2vt3Kw==
   dependencies:
     "@wry/context" "^0.5.2"
 
@@ -16750,11 +16760,13 @@ ts-essentials@^2.0.3:
   resolved "https://registry.yarnpkg.com/ts-essentials/-/ts-essentials-2.0.12.tgz#c9303f3d74f75fa7528c3d49b80e089ab09d8745"
   integrity sha512-3IVX4nI6B5cc31/GFFE+i8ey/N2eA0CZDbo6n0yrz0zDX8ZJ8djmU1p+XRz7G3is0F3bB3pu2pAroFdAWQKU3w==
 
-ts-invariant@^0.5.0:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/ts-invariant/-/ts-invariant-0.5.1.tgz#4171fdb85f72a40381c147afd97c12154ada2abc"
-  integrity sha512-k3UpDNrBZpqJFnAAkAHNmSHtNuCxcU6xLiziPgalHRKZHme6T6jnKC8CcXDmk1zbHLQM8pc+rNC1Q6FvXMAl+g==
+ts-invariant@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/ts-invariant/-/ts-invariant-0.6.0.tgz#44066ecfeb7a806ff1c3b0b283408a337a885412"
+  integrity sha512-caoafsfgb8QxdrKzFfjKt627m4i8KTtfAiji0DYJfWI4A/S9ORNNpzYuD9br64kyKFgxn9UNaLLbSupam84mCA==
   dependencies:
+    "@types/ungap__global-this" "^0.3.1"
+    "@ungap/global-this" "^0.4.2"
     tslib "^1.9.3"
 
 ts-pnp@1.2.0, ts-pnp@^1.1.6:
