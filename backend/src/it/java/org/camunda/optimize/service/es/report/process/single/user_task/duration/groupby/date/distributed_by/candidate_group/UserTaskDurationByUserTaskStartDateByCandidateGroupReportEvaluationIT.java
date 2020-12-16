@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 
 public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT
@@ -41,7 +42,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
@@ -56,7 +57,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
       .flatMap(entry -> entry.getValue().stream())
       .map(MapResultEntryDto::getKey)
       .collect(Collectors.toList());
-    assertThat(collect).contains(getLocalisedUnassignedLabel());
+    assertThat(collect).contains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     // @formatter:on
   }
 
@@ -73,10 +74,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
     changeDuration(processInstance1, USER_TASK_1, 100.);
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance1.getId());
     if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
       engineIntegrationExtension.cancelActivityInstance(processInstance1.getId(), USER_TASK_2);
@@ -89,7 +90,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(processInstance2.getId(), FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(
+      processInstance2.getId(),
+      FIRST_CANDIDATE_GROUP_ID
+    );
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
     if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
       engineIntegrationExtension.cancelActivityInstance(processInstance2.getId(), USER_TASK_1);
@@ -107,15 +111,19 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter.GroupByAdder groupByAsserter =     HyperMapAsserter.asserter()
+    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
-      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup1Count));
+      groupByAsserter.distributedByContains(
+        FIRST_CANDIDATE_GROUP_ID, getCorrectTestExecutionValue(candidateGroup1Count), FIRST_CANDIDATE_GROUP_NAME
+      );
     }
     if (candidateGroup2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count));
+      groupByAsserter.distributedByContains(
+        SECOND_CANDIDATE_GROUP_ID, getCorrectTestExecutionValue(candidateGroup2Count), SECOND_CANDIDATE_GROUP_NAME
+      );
     }
     groupByAsserter.doAssert(result);
   }

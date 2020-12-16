@@ -726,17 +726,17 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Collections.singletonList(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
         Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(10.))
       )),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L, Arrays.asList(
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(10.)),
         Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(10.))
       )),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Collections.singletonList(
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
         Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(10.))
       )),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -747,15 +747,15 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
                                                                                          final Long expectedInstanceCount,
                                                                                          final List<Tuple> expectedResult) {
     // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     changeDuration(processInstanceDto, USER_TASK_1, 10.);
@@ -780,19 +780,19 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Arrays.asList(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(10.)),
         Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(10.))
       )),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L, Arrays.asList(
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(15.)),
         Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(20.))
       )),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 2L, Arrays.asList(
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(15.)),
         Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(20.))
       )),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Arrays.asList(
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, null),
         Tuple.tuple(USER_TASK_2, null)
       ))
@@ -807,21 +807,21 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final Long expectedInstanceCount,
     final List<Tuple> expectedResult) {
     // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     changeDuration(firstInstance, USER_TASK_1, 10.);

@@ -60,6 +60,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -71,7 +72,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
@@ -111,8 +112,39 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .groupByContains(localDateTimeToString(startOfToday))
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_USERNAME)
+      .doAssert(actualResult);
     // @formatter:on
   }
 
@@ -147,17 +179,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -194,17 +226,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1.)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_USER, 1.)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -248,14 +280,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1.)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, 2.)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -294,11 +326,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -334,11 +366,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, 2.)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 2.)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 2., SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -367,14 +399,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -413,12 +445,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(DEFAULT_USERNAME, 1.);
+      .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(DEFAULT_USERNAME, 1.);
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME);
     }
     groupByAdder.doAssert(result);
   }
@@ -451,7 +483,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -474,7 +506,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -501,7 +533,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -606,18 +638,18 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Collections.singletonList(Tuple.tuple(SECOND_USER, 1.))
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
         IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -632,11 +664,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
     );
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
@@ -662,18 +694,18 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L,
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 2L,
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -688,15 +720,15 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
     importAllEngineEntitiesFromScratch();
@@ -853,8 +885,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, 2.)
-        .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -885,7 +917,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, 2.)
+        .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -1013,4 +1045,5 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   protected abstract void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
                                              final String userTaskKey,
                                              final OffsetDateTime dateToChangeTo);
+
 }

@@ -15,9 +15,13 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.elasticsearch.index.query.QueryBuilder;
 
 import java.time.ZoneId;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
 
 @Data
 public class ExecutionContext<ReportData extends SingleReportDataDto> {
@@ -39,7 +43,7 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
   // a user has been assigned to one userTask but not another, yet we want the userId to appear
   // in all groupByResults (with 0 if they have not been assigned to said task)
-  private Set<String> allDistributedByKeys = new HashSet<>();
+  private Map<String, String> allDistributedByKeysAndLabels = new HashMap<>();
 
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();
@@ -55,6 +59,12 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
     return Optional.ofNullable(combinedRangeMinMaxStats);
+  }
+
+  public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {
+    this.allDistributedByKeysAndLabels = allDistributedByKeys
+      .stream()
+      .collect(toMap(Function.identity(), Function.identity()));
   }
 
 }

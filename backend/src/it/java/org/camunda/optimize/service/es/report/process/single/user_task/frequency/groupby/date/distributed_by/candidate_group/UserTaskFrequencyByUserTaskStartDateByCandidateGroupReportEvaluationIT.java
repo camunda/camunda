@@ -23,6 +23,8 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+
 public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluationIT
   extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
 
@@ -32,7 +34,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
@@ -46,8 +48,8 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
-      .distributedByContains(getLocalisedUnassignedLabel(), 1.)
+      .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+      .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(result);
   }
 
@@ -62,7 +64,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     finishTwoUserTasksWithDifferentCandidateGroups();
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
 
     importAllEngineEntitiesFromScratch();
 
@@ -77,10 +79,12 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
-      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP, candidateGroup1Count);
+      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP_ID, candidateGroup1Count, FIRST_CANDIDATE_GROUP_NAME);
     }
     if (candidateGroup2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, candidateGroup2Count);
+      groupByAsserter.distributedByContains(
+        SECOND_CANDIDATE_GROUP_ID, candidateGroup2Count, SECOND_CANDIDATE_GROUP_NAME
+      );
     }
     groupByAsserter.doAssert(result);
   }
@@ -94,7 +98,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
 
     final ProcessInstanceEngineDto secondInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
 
     importAllEngineEntitiesFromScratch();
@@ -109,7 +113,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
+      .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
   }
 

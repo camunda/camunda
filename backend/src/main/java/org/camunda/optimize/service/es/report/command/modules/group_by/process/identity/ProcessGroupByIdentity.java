@@ -98,8 +98,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
 
-    final List<GroupByResult> groupedData =
-      getGroupedDataFromAggregations(response, filteredUserTasks, context);
+    final List<GroupByResult> groupedData = getByIdentityAggregationResults(response, filteredUserTasks, context);
 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byIdentityAggregation.getSumOfOtherDocCounts() == 0L);
@@ -107,18 +106,6 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC))
-    );
-  }
-
-  private List<CompositeCommandResult.GroupByResult> getGroupedDataFromAggregations(final SearchResponse response,
-                                                                                    final Filter filteredUserTasks,
-                                                                                    final ExecutionContext<ProcessReportDataDto> context) {
-    return new ArrayList<>(
-      getByIdentityAggregationResults(
-        response,
-        filteredUserTasks,
-        context
-      )
     );
   }
 

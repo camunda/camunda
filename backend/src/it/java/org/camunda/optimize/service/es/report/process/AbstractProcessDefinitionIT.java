@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.tuple.Triple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
@@ -52,6 +53,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
@@ -70,10 +72,15 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String USER_TASK_1_NAME = "userTask1Name";
   protected static final String USER_TASK_2_NAME = "userTask2Name";
 
-  protected static final String FIRST_CANDIDATE_GROUP = "firstGroup";
-  protected static final String SECOND_CANDIDATE_GROUP = "secondGroup";
+  protected static final String FIRST_CANDIDATE_GROUP_ID = "firstGroup";
+  protected static final String FIRST_CANDIDATE_GROUP_NAME = "The Crew";
+  protected static final String SECOND_CANDIDATE_GROUP_ID = "secondGroup";
+  protected static final String SECOND_CANDIDATE_GROUP_NAME = "The Imposters";
   protected static final String SECOND_USER = "secondUser";
-  protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
+  protected static final String SECOND_USERS_PASSWORD = SECOND_USER;
+  protected static final String SECOND_USER_FIRST_NAME = "the";
+  protected static final String SECOND_USER_LAST_NAME = "other";
+  protected static final String SECOND_USER_FULLNAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
   protected static final String TEST_PROCESS = "aProcess";
 
@@ -467,14 +474,14 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       ProcessFilterBuilder
         .filter()
         .candidateGroups()
-        .id(FIRST_CANDIDATE_GROUP)
+        .id(FIRST_CANDIDATE_GROUP_ID)
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList(),
       ProcessFilterBuilder
         .filter()
         .candidateGroups()
-        .id(FIRST_CANDIDATE_GROUP)
+        .id(FIRST_CANDIDATE_GROUP_ID)
         .filterLevel(FilterApplicationLevel.INSTANCE)
         .add()
         .buildList(),
@@ -507,6 +514,22 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .add()
         .buildList()
     );
+  }
+
+  protected static Triple<String, Double, String> createDefaultUserTriple(final Double value) {
+    return Triple.of(DEFAULT_USERNAME, value, DEFAULT_FULLNAME);
+  }
+
+  protected static Triple<String, Double, String> createSecondUserTriple(final Double value) {
+    return Triple.of(SECOND_USER, value, SECOND_USER_FULLNAME);
+  }
+
+  protected static Triple<String, Double, String> createFirstGroupTriple(final Double value) {
+    return Triple.of(FIRST_CANDIDATE_GROUP_ID, value, FIRST_CANDIDATE_GROUP_NAME);
+  }
+
+  protected static Triple<String, Double, String> createSecondGroupTriple(final Double value) {
+    return Triple.of(SECOND_CANDIDATE_GROUP_ID, value, SECOND_CANDIDATE_GROUP_NAME);
   }
 
 }

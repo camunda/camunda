@@ -23,6 +23,8 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
@@ -49,8 +51,8 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(DEFAULT_USERNAME, 1.)
-      .distributedByContains(getLocalisedUnassignedLabel(), 1.)
+      .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+      .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -87,10 +89,10 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (assignee1Count != null) {
-      groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count);
+      groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count, DEFAULT_FULLNAME);
     }
     if (assignee2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count);
+      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count, SECOND_USER_FULLNAME);
     }
     groupByAsserter.doAssert(result);
   }
@@ -124,7 +126,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(DEFAULT_USERNAME, 1.)
+      .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);
   }
 

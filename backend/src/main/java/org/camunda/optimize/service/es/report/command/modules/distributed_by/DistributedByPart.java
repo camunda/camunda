@@ -18,7 +18,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,7 +54,7 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   public void enrichContextWithAllExpectedDistributedByKeys(
     final ExecutionContext<Data> context,
     final Aggregations aggregations) {
-    context.setAllDistributedByKeys(new HashSet<>());
+    context.setAllDistributedByKeysAndLabels(new HashMap<>());
   }
 
   protected abstract void addAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);

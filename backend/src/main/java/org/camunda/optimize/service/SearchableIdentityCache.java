@@ -125,6 +125,10 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type) {
+    return getTypedIdentityDtoById(id, type, SearchableIdentityCache::mapDocumentToIdentityDto);
+  }
+
   public Optional<UserDto> getUserIdentityById(final String id) {
     return getTypedIdentityDtoById(id, IdentityType.USER, SearchableIdentityCache::mapDocumentToUserDto);
   }

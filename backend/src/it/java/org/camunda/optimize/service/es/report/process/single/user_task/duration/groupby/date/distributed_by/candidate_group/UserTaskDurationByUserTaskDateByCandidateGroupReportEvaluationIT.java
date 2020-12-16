@@ -72,8 +72,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
   @BeforeEach
   public void init() {
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
   }
 
   @Test
@@ -82,7 +82,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     final Double expectedDuration = 20.;
@@ -117,8 +117,42 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, expectedDuration)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, expectedDuration, FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForOneProcess_whenCandidateGroupCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    final ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    changeDuration(processInstance, 1.);
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .groupByContains(localDateTimeToString(startOfToday))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_ID)
+      .doAssert(actualResult);
     // @formatter:on
   }
 
@@ -155,17 +189,17 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 10.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 10., SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 20.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 30.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 30., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 40.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 40., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -204,17 +238,17 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 10.)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 10., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 20.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 30.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 30., FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 40.)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 40., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -261,14 +295,14 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 10.)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 10., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 50.)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 20.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 50., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 30.)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 20.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 30., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -307,11 +341,11 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 10.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 10., SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 20.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -349,11 +383,11 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 10.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 200.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 200., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -383,14 +417,14 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 10.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 30.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 30., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -413,7 +447,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
         return processInstanceEngineDto;
       })
       .collect(Collectors.toList());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     updateUserTaskDateAndDuration(processInstanceDtos, referenceDate, groupByUnitAsChrono);
 
@@ -430,12 +464,12 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(FIRST_CANDIDATE_GROUP, 10.);
+      .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 10.);
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME);
     }
     groupByAdder.doAssert(result);
   }
@@ -447,7 +481,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 10.);
@@ -455,7 +489,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
     changeDuration(processInstance2, USER_TASK_1, 200.);
@@ -472,7 +506,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 10.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -505,7 +539,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance, USER_TASK_1, 10.);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -525,7 +559,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 10.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -534,15 +568,15 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     return Stream.of(
       Arguments.of(
         IN, new String[]{SECOND_USER}, 1L,
-        Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
         IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
         NOT_IN, new String[]{SECOND_USER}, 1L,
-        Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.))
+        Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
@@ -562,11 +596,11 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
     );
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
@@ -595,15 +629,15 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     return Stream.of(
       Arguments.of(
         IN, new String[]{SECOND_USER}, 1L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
         IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
         NOT_IN, new String[]{SECOND_USER}, 2L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
@@ -623,15 +657,15 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
     changeDuration(firstInstance, USER_TASK_1, 10.);
@@ -660,18 +694,18 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
-        Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+        Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
-        Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.))
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+        Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -686,9 +720,9 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstanceDto, USER_TASK_1, 10.);
     changeDuration(processInstanceDto, USER_TASK_2, 10.);
@@ -714,18 +748,18 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
       Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 2L,
-        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10.))
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
+        Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -740,15 +774,15 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     changeDuration(firstInstance, USER_TASK_1, 10.);
@@ -784,7 +818,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
@@ -820,7 +854,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
@@ -899,7 +933,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto firstDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance1, USER_TASK_1, 10.);
 
@@ -923,8 +957,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 15.)
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 30.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 15., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 30., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -942,7 +976,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     ProcessDefinitionEngineDto latestDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance2, USER_TASK_1, 20.);
     changeDuration(processInstance2, USER_TASK_2, 30.);
@@ -960,7 +994,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 15.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 15., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -1075,10 +1109,10 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
   private void finishTwoUserTasksWithDifferentCandidateGroups() {
     // finish user task 1 with first candidate group
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     // finish user task 2 with second candidate group
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
   }
 

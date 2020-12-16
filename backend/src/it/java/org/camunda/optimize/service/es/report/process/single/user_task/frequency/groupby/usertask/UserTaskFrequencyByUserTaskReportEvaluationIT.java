@@ -770,14 +770,14 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Collections.singletonList(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
         Tuple.tuple(USER_TASK_2, 1.))),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L, Arrays.asList(
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Collections.singletonList(
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
         Tuple.tuple(USER_TASK_1, 1.))),
       Arguments.of(
-        NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Collections.emptyList())
+        NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
     );
   }
 
@@ -788,14 +788,14 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
                                                                                        final Long expectedInstanceCount,
                                                                                        final List<Tuple> expectedResults) {
     // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
@@ -817,13 +817,13 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, Arrays.asList(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L, Arrays.asList(
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, 2.), Tuple.tuple(USER_TASK_2, 2.))),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 2L, Arrays.asList(
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, 2.), Tuple.tuple(USER_TASK_2, 2.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 0L, Arrays.asList(
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Arrays.asList(
         Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, null)))
     );
   }
@@ -836,19 +836,19 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final Long expectedInstanceCount,
     final List<Tuple> expectedResults) {
     // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();

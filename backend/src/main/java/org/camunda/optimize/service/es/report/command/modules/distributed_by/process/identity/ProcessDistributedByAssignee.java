@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity;
 
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
+import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,13 +25,19 @@ public class ProcessDistributedByAssignee extends ProcessDistributedByIdentity {
 
   public ProcessDistributedByAssignee(final ConfigurationService configurationService,
                                       final LocalizationService localizationService,
-                                      final DefinitionService definitionService) {
-    super(configurationService, localizationService, definitionService);
+                                      final DefinitionService definitionService,
+                                      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    super(configurationService, localizationService, definitionService, assigneeCandidateGroupService);
   }
 
   @Override
   protected String getIdentityField() {
     return USER_TASK_ASSIGNEE;
+  }
+
+  @Override
+  protected IdentityType getIdentityType() {
+    return IdentityType.USER;
   }
 
   @Override

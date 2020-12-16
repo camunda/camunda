@@ -173,6 +173,10 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     }
   }
 
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type) {
+    return activeIdentityCache.getIdentityByIdAndType(id, type);
+  }
+
   public Optional<UserDto> getUserIdentityById(final String id) {
     return activeIdentityCache.getUserIdentityById(id);
   }
@@ -245,7 +249,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     previousIdentityCache.close();
   }
 
-  synchronized void resetCache() {
+  public synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
       activeIdentityCache = new SearchableIdentityCache(() -> getIdentitySyncConfiguration().getMaxEntryLimit());
