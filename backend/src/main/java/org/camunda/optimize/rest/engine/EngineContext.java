@@ -253,7 +253,7 @@ public class EngineContext {
   }
 
   private UserDto mapEngineUser(EngineListUserDto engineUser) {
-    if (this.configurationService.getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+    if (this.configurationService.getUserIdentityCacheConfiguration().isIncludeUserMetaData()) {
       return new UserDto(
         engineUser.getId(),
         engineUser.getFirstName(),

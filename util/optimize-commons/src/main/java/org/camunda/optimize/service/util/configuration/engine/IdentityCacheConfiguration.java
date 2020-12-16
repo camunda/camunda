@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util.configuration.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -12,11 +13,9 @@ import org.camunda.optimize.service.util.CronNormalizerUtil;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
-
 @Data
-@FieldNameConstants(asEnum = true)
-public class IdentitySyncConfiguration {
+@FieldNameConstants
+public abstract class IdentityCacheConfiguration {
   private boolean includeUserMetaData;
   private String cronTrigger;
   private int maxPageSize;
@@ -24,11 +23,14 @@ public class IdentitySyncConfiguration {
 
   public void validate() {
     if (cronTrigger == null || cronTrigger.isEmpty()) {
-      throw new OptimizeConfigurationException(IDENTITY_SYNC_CONFIGURATION + ".cronTrigger must be set and not empty");
+      throw new OptimizeConfigurationException(getConfigName() + ".cronTrigger must be set and not empty");
     }
   }
 
   public final void setCronTrigger(String cronTrigger) {
     this.cronTrigger = Optional.ofNullable(cronTrigger).map(CronNormalizerUtil::normalizeToSixParts).orElse(null);
   }
+
+  @JsonIgnore
+  public abstract String getConfigName();
 }

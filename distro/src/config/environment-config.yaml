@@ -141,9 +141,18 @@ import:
       # should be imported.
       enabled: true
     user-task-worker:
-      # Determines if the user task worker data, such as assignee or candidate group of
-      # a user task, should be imported.
+      # Determines if the user task worker data, such as assignee or candidate group id of a user task, should be imported.
       enabled: true
+      # This sub-section controls to what extent and how Optimize fetches and displays metadata of user task workers.
+      # The particular metadata is first-, last name and the email of the users or the names of the candidate groups.
+      # The data is displayed in the context of reports when grouping/distributing by assignees/candidateGroups or
+      # when filtering on them.
+      metadata:
+        # Determines whether Optimize imports and displays assignee user metadata, otherwise only the user id is shown.
+        includeUserMetaData: true
+        # Cron expression for when to fully refresh the internal metadata cache, it defaults to every third hour.
+        # Otherwise deleted assignees/candidateGroups or metadata changes are not reflected in Optimize.
+        cronTrigger: '0 */3 * * *'
   # The identity sync enables Optimize to build up a in memory cache containing Optimize authorized users & groups.
   # This data is used in the collection permissions to allow convenient search capabilities
   # and to display member meta-data such as first name, last name or email.

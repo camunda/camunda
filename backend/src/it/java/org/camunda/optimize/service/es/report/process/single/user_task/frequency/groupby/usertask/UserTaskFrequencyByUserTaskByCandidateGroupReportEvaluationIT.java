@@ -126,7 +126,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     importAndRefresh();
 
     // cache is empty
-    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+    embeddedOptimizeExtension.getUserTaskIdentityCacheService().resetCache();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 

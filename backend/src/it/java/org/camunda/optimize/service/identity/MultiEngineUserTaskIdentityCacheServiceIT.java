@@ -19,7 +19,7 @@ import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class MultiEngineAssigneeCandidateGroupIdentityCacheServiceIT extends AbstractMultiEngineIT {
+public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngineIT {
   public static final String ASSIGNEE_ID_JOHN = "john";
   public static final String JOHN_FIRST_NAME = "The";
   public static final String JOHN_LAST_NAME = "Imposter";
@@ -146,8 +146,8 @@ public class MultiEngineAssigneeCandidateGroupIdentityCacheServiceIT extends Abs
     importAllEngineEntitiesFromScratch();
   }
 
-  private AssigneeCandidateGroupIdentityCacheService getIdentityCacheService() {
-    return embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService();
+  private UserTaskIdentityCacheService getIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
   }
 
 }

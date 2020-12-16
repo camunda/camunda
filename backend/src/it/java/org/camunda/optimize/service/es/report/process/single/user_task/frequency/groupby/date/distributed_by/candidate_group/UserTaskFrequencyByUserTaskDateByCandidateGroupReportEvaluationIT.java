@@ -127,7 +127,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     importAllEngineEntitiesFromScratch();
 
     // cache is empty
-    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+    embeddedOptimizeExtension.getUserTaskIdentityCacheService().resetCache();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
 

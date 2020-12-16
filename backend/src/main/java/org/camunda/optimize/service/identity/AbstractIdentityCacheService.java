@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
@@ -18,7 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.IdentityCacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -40,25 +41,23 @@ import static java.util.stream.Collectors.toList;
 public abstract class AbstractIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-  private final Supplier<IdentitySyncConfiguration> identitySyncConfigurationSupplier;
+  private final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier;
   private final BackoffCalculator backoffCalculator;
   private final List<IdentityCacheSyncListener> identityCacheSyncListeners;
-
   private SearchableIdentityCache activeIdentityCache;
   private CronExpression cronExpression;
 
-  protected AbstractIdentityCacheService(final Supplier<IdentitySyncConfiguration> identitySyncConfigurationSupplier,
+  protected AbstractIdentityCacheService(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
                                          final List<IdentityCacheSyncListener> identityCacheSyncListeners,
                                          final BackoffCalculator backoffCalculator) {
-    this.identitySyncConfigurationSupplier = identitySyncConfigurationSupplier;
+    this.cacheConfigurationSupplier = cacheConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
-    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getIdentitySyncConfiguration()
-      .getMaxEntryLimit());
+    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getCacheConfiguration().getMaxEntryLimit());
   }
 
-  public IdentitySyncConfiguration getIdentitySyncConfiguration() {
-    return identitySyncConfigurationSupplier.get();
+  public IdentityCacheConfiguration getCacheConfiguration() {
+    return cacheConfigurationSupplier.get();
   }
 
   @Override
@@ -68,13 +67,13 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   }
 
   private void initCronExpression() {
-    this.cronExpression = CronExpression.parse(getIdentitySyncConfiguration().getCronTrigger());
+    this.cronExpression = CronExpression.parse(getCacheConfiguration().getCronTrigger());
   }
 
   @PostConstruct
   public void init() {
     log.info("Initializing {} identity sync.", getCacheLabel());
-    getIdentitySyncConfiguration().validate();
+    getCacheConfiguration().validate();
     initCronExpression();
     startScheduledSync();
   }
@@ -143,7 +142,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   public synchronized void synchronizeIdentities() {
     try {
       final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache(
-        () -> getIdentitySyncConfiguration().getMaxEntryLimit()
+        () -> getCacheConfiguration().getMaxEntryLimit()
       );
       populateCache(newIdentityCache);
       replaceActiveCache(newIdentityCache);
@@ -152,7 +151,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       log.error(
         "Could not synchronize {} identity cache as the limit of {} records was reached on refresh.\n {}",
         getCacheLabel(),
-        IdentitySyncConfiguration.Fields.maxEntryLimit.name(),
+        IdentityCacheConfiguration.Fields.maxEntryLimit,
         createIncreaseCacheLimitErrorMessage()
       );
       throw e;
@@ -167,7 +166,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
         "Identity [{}] could not be added to active {} identity cache as the limit of {} records was reached.\n {}",
         identity,
         getCacheLabel(),
-        getIdentitySyncConfiguration().getMaxEntryLimit(),
+        getCacheConfiguration().getMaxEntryLimit(),
         createIncreaseCacheLimitErrorMessage()
       );
     }
@@ -239,8 +238,6 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   protected abstract String getCacheLabel();
 
-  protected abstract String createIncreaseCacheLimitErrorMessage();
-
   protected abstract void populateCache(final SearchableIdentityCache newIdentityCache);
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
@@ -252,12 +249,29 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   public synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
-      activeIdentityCache = new SearchableIdentityCache(() -> getIdentitySyncConfiguration().getMaxEntryLimit());
+      activeIdentityCache = new SearchableIdentityCache(() -> getCacheConfiguration().getMaxEntryLimit());
     }
   }
 
   protected SearchableIdentityCache getActiveIdentityCache() {
     return activeIdentityCache;
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new CronTrigger(getCacheConfiguration().getCronTrigger());
+  }
+
+  protected List<UserDto> fetchUsersById(final EngineContext engineContext, final Collection<String> userIdBatch) {
+    if (getCacheConfiguration().isIncludeUserMetaData()) {
+      return engineContext.getUsersById(userIdBatch);
+    } else {
+      return userIdBatch.stream().map(UserDto::new).collect(Collectors.toList());
+    }
+  }
+
+  protected List<GroupDto> fetchGroupsById(final EngineContext engineContext, final Collection<String> groupIdBatch) {
+    return engineContext.getGroupsById(groupIdBatch);
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
@@ -272,9 +286,12 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     }
   }
 
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new CronTrigger(getIdentitySyncConfiguration().getCronTrigger());
+  private String createIncreaseCacheLimitErrorMessage() {
+    return String.format(
+      "Please increase %s.%s in the configuration.",
+      getCacheConfiguration().getConfigName(),
+      IdentityCacheConfiguration.Fields.maxEntryLimit
+    );
   }
 
 }

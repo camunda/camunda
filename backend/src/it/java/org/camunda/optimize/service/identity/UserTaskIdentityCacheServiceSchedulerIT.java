@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AssigneeCandidateGroupServiceSchedulerIT extends AbstractIT {
+public class UserTaskIdentityCacheServiceSchedulerIT extends AbstractIT {
 
   @Test
   public void verifySyncEnabledByDefault() {
@@ -27,7 +27,7 @@ public class AssigneeCandidateGroupServiceSchedulerIT extends AbstractIT {
     }
   }
 
-  private AssigneeCandidateGroupIdentityCacheService getIdentityCacheService() {
-    return embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService();
+  private UserTaskIdentityCacheService getIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
   }
 }

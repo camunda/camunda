@@ -16,8 +16,9 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
@@ -180,9 +182,8 @@ public class ConfigurationService {
   // ui customization
   private UIConfiguration uiConfiguration;
 
-  private IdentitySyncConfiguration identitySyncConfiguration;
-
-  private EventIndexRolloverConfiguration eventIndexRolloverConfiguration;
+  private UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration;
+  private UserIdentityCacheConfiguration userIdentityCacheConfiguration;
 
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
@@ -989,13 +990,23 @@ public class ConfigurationService {
     return uiConfiguration;
   }
 
-  public IdentitySyncConfiguration getIdentitySyncConfiguration() {
-    if (identitySyncConfiguration == null) {
-      identitySyncConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, IdentitySyncConfiguration.class);
+  public UserIdentityCacheConfiguration getUserIdentityCacheConfiguration() {
+    if (userIdentityCacheConfiguration == null) {
+      userIdentityCacheConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, UserIdentityCacheConfiguration.class);
     }
-    return identitySyncConfiguration;
+    return userIdentityCacheConfiguration;
   }
 
+  public UserTaskIdentityCacheConfiguration getUserTaskIdentityCacheConfiguration() {
+    if (userTaskIdentityCacheConfiguration == null) {
+      userTaskIdentityCacheConfiguration = configJsonContext.read(
+        IMPORT_USER_TASK_IDENTITY_META_DATA, UserTaskIdentityCacheConfiguration.class
+      );
+    }
+    return userTaskIdentityCacheConfiguration;
+  }
+
+  @JsonIgnore
   public EventIndexRolloverConfiguration getEventIndexRolloverConfiguration() {
     return getEventBasedProcessConfiguration().getEventIndexRollover();
   }

@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.identity.AssigneeCandidateGroupIdentityCacheService;
+import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +48,7 @@ public class AssigneeCandidateGroupService {
 
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
-  private final AssigneeCandidateGroupIdentityCacheService identityCacheService;
+  private final UserTaskIdentityCacheService identityCacheService;
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type ){
     return identityCacheService.getIdentityByIdAndType(id, type);

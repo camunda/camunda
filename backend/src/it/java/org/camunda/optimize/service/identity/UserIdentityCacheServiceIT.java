@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
-import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
@@ -104,11 +104,13 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void testGrantedUserIsImportedMetaDataAvailable() {
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
     assertThat(userIdentityById.get().getName()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
@@ -118,13 +120,15 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
   }
 
   @Test
-  public void testGrantedUserIsImportedMetaNotAvailable() {
+  public void testGrantedUserIsImportedMetaNotAvailableIfDisabled() {
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     getIdentitySyncConfiguration().setIncludeUserMetaData(false);
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
     assertThat(userIdentityById.get().getName()).isEqualTo(KERMIT_USER);
@@ -135,23 +139,27 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void testNotGrantedUserIsNotImported() {
+    // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
   public void testGrantedGroupIsImported() {
+    // given
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     final Optional<GroupDto> groupIdentityById = getUserIdentityCacheService().getGroupIdentityById(GROUP_ID);
     assertThat(groupIdentityById).isPresent();
     assertThat(groupIdentityById.get().getName()).isEqualTo(KERMIT_GROUP_NAME);
@@ -160,40 +168,47 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void testNotGrantedGroupIsNotImported() {
+    // given
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
   public void testGrantedGroupMemberIsImported() {
+    // given
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
   public void testNotGrantedGroupMemberIsNotImported() {
+    // given
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
   public void testGrantedGroupMemberIsImportedAlthoughAlsoMemberOfNotGrantedGroup() {
+    // given
     // https://docs.camunda.org/manual/7.11/user-guide/process-engine/authorization-service/#authorization-precedence
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -204,14 +219,16 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
       revokedGroupId, OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
   public void testRevokedUserIsNotImportedAlthoughMemberOfGrantedGroup() {
+    // given
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
@@ -219,51 +236,59 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
   public void testGlobalAuthNoExplicitGrantUserIsImported() {
+    // given
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
   public void testGlobalAuthRevokedAuthUserIsNotImported() {
+    // given
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
   public void testGlobalAuthNoExplicitGrantGroupIsImported() {
+    // given
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isPresent();
   }
 
   @Test
   public void testGlobalAuthRevokedAuthGroupIsNotImported() {
+    // given
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -271,14 +296,16 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
   public void testGlobalAuthRevokedAuthGroupMemberIsNotImported() {
+    // given
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -286,9 +313,10 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
-    userIdentityCacheService.synchronizeIdentities();
+    // when
+    getUserIdentityCacheService().synchronizeIdentities();
 
+    // then
     assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
@@ -398,7 +426,7 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
     return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
-  private IdentitySyncConfiguration getIdentitySyncConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration();
+  private UserIdentityCacheConfiguration getIdentitySyncConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration();
   }
 }

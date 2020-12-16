@@ -189,9 +189,24 @@ import:
       # should be imported.
       enabled: true
     user-task-worker:
-      # Determines if the user task worker data, such as assignee or candidate group of
-      # a user task, should be imported.
+      # Determines if the user task worker data, such as assignee or candidate group id of a user task, should be imported.
       enabled: true
+      # This sub-section controls to what extent and how Optimize fetches and displays metadata of user task workers.
+      # The particular metadata is first-, last name and the email of the users or the names of the candidate groups.
+      # The data is displayed in the context of reports when grouping/distributing by assignees/candidateGroups or
+      # when filtering on them.
+      metadata:
+        # Determines whether Optimize imports and displays assignee user metadata, otherwise only the user id is shown.
+        includeUserMetaData: true
+        # Cron expression for when to fully refresh the internal metadata cache, it defaults to every third hour.
+        # Otherwise deleted assignees/candidateGroups or metadata changes are not reflected in Optimize.
+        cronTrigger: '0 */3 * * *'
+        # The max page size when multiple users or groups are iterated during the metadata refresh.
+        maxPageSize: 10000
+        # The entry limit of the cache that holds the metadata, if you need more entries you can increase that limit.
+        # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
+        # Please refer to the technical guide on how to configure the heap size.
+        maxEntryLimit: 100000
   # Number of threads being used to process the import jobs per data type that are writing data to elasticsearch.
   elasticsearchJobExecutorThreadCount: 1
   # Adjust the queue size of the import jobs per data type that store data to elasticsearch.
