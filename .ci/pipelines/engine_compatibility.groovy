@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }

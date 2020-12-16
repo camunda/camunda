@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
@@ -296,7 +296,7 @@ pipeline {
         }
       }
       steps {
-        cloneGitRepo()
+        optimizeCloneGitRepo(params.BRANCH)
         script {
           def mavenProps = readMavenPom().getProperties()
           env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
@@ -317,7 +317,7 @@ pipeline {
       stages {
         stage('Build') {
           steps {
-            cloneGitRepo()
+            optimizeCloneGitRepo(params.BRANCH)
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
                 sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
@@ -385,11 +385,4 @@ pipeline {
       }
     }
   }
-}
-
-private void cloneGitRepo() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
 }

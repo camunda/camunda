@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 

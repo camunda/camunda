@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
@@ -161,18 +161,12 @@ void runMaven(String cmd) {
 }
 
 void integrationTestSteps() {
-  cloneGitRepo()
+  optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
     runMaven("verify sonar:sonar -Dskip.unit.tests=false -Dskip.docker -Pit,coverage -pl backend,upgrade,util/optimize-reimport-preparation,test-coverage -am -Dsonar.projectKey=camunda_camunda-optimize -Dsonar.login=${SONARCLOUD_TOKEN}")
   }
 }
 
-private void cloneGitRepo() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
-}
 
 pipeline {
   agent none
@@ -197,7 +191,7 @@ pipeline {
         }
       }
       steps {
-        cloneGitRepo()
+        optimizeCloneGitRepo(params.BRANCH)
         script {
           def mavenProps = readMavenPom().getProperties()
           env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)

@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
@@ -102,7 +102,7 @@ pipeline {
     stage('Retrieve CamBPM and Elasticsearch version') {
       steps {
         container('maven') {
-          cloneGitRepo()
+          optimizeCloneGitRepo(params.BRANCH)
           script {
             def mavenProps = readMavenPom().getProperties()
             env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
@@ -273,9 +273,3 @@ pipeline {
   }
 }
 
-private void cloneGitRepo() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
-}
