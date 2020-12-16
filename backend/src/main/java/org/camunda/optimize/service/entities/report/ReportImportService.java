@@ -57,7 +57,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
 
@@ -82,7 +82,7 @@ public class ReportImportService {
         || SINGLE_DECISION_REPORT.equals(entity.getExportEntityType()))
       .collect(toList());
     final List<OptimizeEntityExportDto> combinedReportsToImport = exportedDtos.stream()
-      .filter(entity -> COMBINED.equals(entity.getExportEntityType()))
+      .filter(entity -> COMBINED_REPORT.equals(entity.getExportEntityType()))
       .collect(toList());
 
     singleReportsToImport.forEach(
@@ -183,7 +183,7 @@ public class ReportImportService {
         validateCollectionScopeOrFail(collection, decisionExport);
         populateDefinitionXml(decisionExport);
         break;
-      case COMBINED:
+      case COMBINED_REPORT:
         final CombinedProcessReportDefinitionExportDto combinedExport =
           (CombinedProcessReportDefinitionExportDto) exportedDto;
         validateIndexVersionOrFail(new CombinedReportIndex(), combinedExport);
@@ -214,7 +214,7 @@ public class ReportImportService {
           originalIdToNewIdMap
         );
         break;
-      case COMBINED:
+      case COMBINED_REPORT:
         importCombinedProcessReportIntoCollection(
           userId,
           collectionId,

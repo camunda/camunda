@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneG
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityExportService;
@@ -60,9 +61,23 @@ public class ExportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<ReportDefinitionExportDto> jsonReports =
-      entityExportService.getJsonReportExportDtos(userId, Sets.newHashSet(reportId));
+      entityExportService.getReportExportDtos(userId, Sets.newHashSet(reportId));
 
     return createJsonResponse(fileName, jsonReports);
+  }
+
+  @GET
+  @Produces(value = {MediaType.APPLICATION_JSON})
+  @Path("dashboard/json/{dashboardId}/{fileName}")
+  public Response getJsonDashboard(@Context ContainerRequestContext requestContext,
+                                   @PathParam("dashboardId") String dashboardId,
+                                   @PathParam("fileName") String fileName) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    final List<OptimizeEntityExportDto> jsonDashboards =
+      entityExportService.getDashboardExportDtos(userId, Sets.newHashSet(dashboardId));
+
+    return createJsonResponse(fileName, jsonDashboards);
   }
 
   @GET
@@ -146,10 +161,10 @@ public class ExportRestService {
   }
 
   private Response createJsonResponse(final String fileName,
-                                      final List<ReportDefinitionExportDto> jsonReports) {
+                                      final List<? extends OptimizeEntityExportDto> jsonEntities) {
     return Response
       .ok(
-        jsonReports,
+        jsonEntities,
         MediaType.APPLICATION_JSON
       )
       .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))

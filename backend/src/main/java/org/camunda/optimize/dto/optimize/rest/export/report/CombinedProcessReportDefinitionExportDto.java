@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 
 import javax.validation.constraints.NotNull;
 
-import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -29,7 +29,7 @@ public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionEx
   public CombinedProcessReportDefinitionExportDto(final CombinedReportDefinitionRequestDto reportDefinition) {
     super(
       reportDefinition.getId(),
-      COMBINED,
+      COMBINED_REPORT,
       CombinedReportIndex.VERSION,
       reportDefinition.getName(),
       reportDefinition.getCollectionId()
@@ -39,6 +39,6 @@ public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionEx
 
   @Override
   public ExportEntityType getExportEntityType() {
-    return COMBINED;
+    return COMBINED_REPORT;
   }
 }

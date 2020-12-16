@@ -78,9 +78,7 @@ public class ImportRestService {
       //@formatter:on
       final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
       Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
-      exportDtos.forEach(exportDto -> {
-        violations.addAll(validator.validate(exportDto));
-      });
+      exportDtos.forEach(exportDto -> violations.addAll(validator.validate(exportDto)));
       if (!violations.isEmpty()) {
         throw new OptimizeImportFileInvalidException(
           String.format(

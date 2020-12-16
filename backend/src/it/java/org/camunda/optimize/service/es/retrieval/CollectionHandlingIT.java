@@ -657,7 +657,7 @@ public class CollectionHandlingIT extends AbstractIT {
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     DashboardDefinitionRestDto dashboardDefinition = dashboardClient.getDashboard(dashboardId);
-    CombinedReportDefinitionRequestDto combinedReportDefinition = reportClient.getCombinedProcessReportDefinitionDto(
+    CombinedReportDefinitionRequestDto combinedReportDefinition = reportClient.getCombinedProcessReportById(
       combinedReportId);
 
     reportClient.updateCombinedReport(combinedReportId, Lists.newArrayList(originalReportId));

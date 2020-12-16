@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class ExportConstants {
   public static final String SINGLE_PROCESS_REPORT_STRING = "single_process_report";
   public static final String SINGLE_DECISION_REPORT_STRING = "single_decision_report";
+  public static final String COMBINED_REPORT = "combined_report";
+  public static final String DASHBOARD = "dashboard";
 }

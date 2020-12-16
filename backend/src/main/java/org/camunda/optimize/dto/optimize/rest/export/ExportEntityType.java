@@ -10,7 +10,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum ExportEntityType {
   SINGLE_PROCESS_REPORT,
   SINGLE_DECISION_REPORT,
-  COMBINED;
+  COMBINED_REPORT,
+  DASHBOARD;
 
   @JsonValue
   public String getId() {

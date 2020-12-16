@@ -7,7 +7,9 @@ package org.camunda.optimize.service.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.dashboard.DashboardExportService;
 import org.camunda.optimize.service.entities.report.ReportExportService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.springframework.stereotype.Component;
@@ -23,11 +25,18 @@ public class EntityExportService {
 
   private final IdentityService identityService;
   private final ReportExportService reportExportService;
+  private final DashboardExportService dashboardExportService;
 
-  public List<ReportDefinitionExportDto> getJsonReportExportDtos(final String userId,
-                                                                 final Set<String> reportIds) {
+  public List<ReportDefinitionExportDto> getReportExportDtos(final String userId,
+                                                             final Set<String> reportIds) {
     validateUserAuthorizedToExportOrFail(userId);
-    return reportExportService.getJsonReportExportDtos(userId, reportIds);
+    return reportExportService.getReportExportDtos(userId, reportIds);
+  }
+
+  public List<OptimizeEntityExportDto> getDashboardExportDtos(final String userId,
+                                                              final Set<String> reportIds) {
+    validateUserAuthorizedToExportOrFail(userId);
+    return dashboardExportService.getDashboardExportDtos(userId, reportIds);
   }
 
   private void validateUserAuthorizedToExportOrFail(final String userId) {

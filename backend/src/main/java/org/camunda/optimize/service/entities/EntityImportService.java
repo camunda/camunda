@@ -24,7 +24,7 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
 
@@ -47,7 +47,7 @@ public class EntityImportService {
     final List<OptimizeEntityExportDto> reportsToImport = entitiesToImport.stream()
       .filter(exportDto -> SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType())
         || SINGLE_DECISION_REPORT.equals(exportDto.getExportEntityType())
-        || COMBINED.equals(exportDto.getExportEntityType()))
+        || COMBINED_REPORT.equals(exportDto.getExportEntityType()))
       .collect(toList());
 
     reportImportService.validateAllReportsOrFail(userId, collectionId, reportsToImport);
@@ -70,7 +70,7 @@ public class EntityImportService {
       entitiesToImport.stream().map(OptimizeEntityExportDto::getId).collect(toSet());
 
     entitiesToImport.forEach(entity -> {
-      if (COMBINED.equals(entity.getExportEntityType())) {
+      if (COMBINED_REPORT.equals(entity.getExportEntityType())) {
         final List<String> requiredSingleReports =
           ((CombinedProcessReportDefinitionExportDto) entity).getData().getReportIds();
         if (!importEntityIds.containsAll(requiredSingleReports)) {

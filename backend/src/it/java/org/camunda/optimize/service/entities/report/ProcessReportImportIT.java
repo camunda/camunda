@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class ProcessReportImportIT extends AbstractReportExportImportIT {
+public class ProcessReportImportIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("getTestProcessReports")
@@ -367,8 +368,7 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     createAndSaveDefinition(DefinitionType.PROCESS, null);
     dateFreezer().freezeDateAndReturn();
 
-    final CombinedReportDefinitionRequestDto combinedReportDef =
-      createCombinedReportDefinition(combinableReports.get(0), combinableReports.get(1));
+    final CombinedReportDefinitionRequestDto combinedReportDef = createCombinedReportDefinition(combinableReports);
 
     final Set<OptimizeEntityExportDto> reportsToImport = Sets.newHashSet(
       createExportDto(combinedReportDef),
@@ -436,8 +436,7 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
       Collections.singletonList(null)
     );
 
-    final CombinedReportDefinitionRequestDto combinedReportDef =
-      createCombinedReportDefinition(combinableReports.get(0), combinableReports.get(1));
+    final CombinedReportDefinitionRequestDto combinedReportDef = createCombinedReportDefinition(combinableReports);
 
     final Set<OptimizeEntityExportDto> reportsToImport = Sets.newHashSet(
       createExportDto(combinedReportDef),

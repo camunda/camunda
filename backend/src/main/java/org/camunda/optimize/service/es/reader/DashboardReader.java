@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -67,6 +68,27 @@ public class DashboardReader {
       );
       throw new OptimizeRuntimeException(reason, e);
     }
+  }
+
+  public List<DashboardDefinitionRestDto> getDashboards(Set<String> dashboardIds) {
+    log.debug("Fetching dashboards with IDs {}", dashboardIds);
+    final String[] dashboardIdsAsArray = dashboardIds.toArray(new String[0]);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(QueryBuilders.idsQuery().addIds(dashboardIdsAsArray));
+    searchSourceBuilder.size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
 
   public List<DashboardDefinitionRestDto> getDashboardsForCollection(String collectionId) {

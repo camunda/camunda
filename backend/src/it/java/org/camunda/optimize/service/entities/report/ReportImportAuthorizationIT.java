@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities.report;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -19,7 +20,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class ReportImportAuthorizationIT extends AbstractReportExportImportIT {
+public class ReportImportAuthorizationIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("reportTypes")

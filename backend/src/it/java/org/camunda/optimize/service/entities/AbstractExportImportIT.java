@@ -3,15 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.entities.report;
+package org.camunda.optimize.service.entities;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -38,6 +44,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
@@ -54,6 +61,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty.FREQUENCY;
 import static org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty.RAW_DATA;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -68,7 +76,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public class AbstractReportExportImportIT extends AbstractIT {
+public abstract class AbstractExportImportIT extends AbstractIT {
   protected static final String DEFINITION_KEY = "aKey";
   protected static final String DEFINITION_NAME = "aDefinitionName";
   protected static final String DEFINITION_VERSION = "1";
@@ -236,6 +244,49 @@ public class AbstractReportExportImportIT extends AbstractIT {
     );
   }
 
+  protected String createSimpleReport(final ReportType reportType) {
+    switch (reportType) {
+      case PROCESS:
+        final ProcessReportDataDto processReportData = createSimpleProcessReportData();
+        return reportClient.createSingleProcessReport(processReportData);
+      case DECISION:
+        final DecisionReportDataDto decisionReportData = createSimpleDecisionReportData();
+        return reportClient.createSingleDecisionReport(decisionReportData);
+      default:
+        throw new OptimizeIntegrationTestException("Unknown report type: " + reportType);
+    }
+  }
+
+  protected void createAndSaveDefinition(final DefinitionType definitionType,
+                                         final String tenantId) {
+    createAndSaveDefinition(definitionType, tenantId, DEFINITION_VERSION);
+  }
+
+  protected void createAndSaveDefinition(final DefinitionType definitionType,
+                                         final String tenantId,
+                                         final String version) {
+    switch (definitionType) {
+      case PROCESS:
+        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(tenantId, version);
+        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+          PROCESS_DEFINITION_INDEX_NAME,
+          processDefinition.getId(),
+          processDefinition
+        );
+        break;
+      case DECISION:
+        final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(tenantId, version);
+        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+          DECISION_DEFINITION_INDEX_NAME,
+          decisionDefinition.getId(),
+          decisionDefinition
+        );
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unknown definition type: " + definitionType);
+    }
+  }
+
   protected static SingleProcessReportDefinitionRequestDto createSimpleProcessReportDefinition() {
     return createProcessReportDefinition(createSimpleProcessReportData());
   }
@@ -245,8 +296,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
   }
 
   protected static CombinedReportDefinitionRequestDto createCombinedReportDefinition(
-    final SingleProcessReportDefinitionRequestDto singleReport1,
-    final SingleProcessReportDefinitionRequestDto singleReport2) {
+    final List<SingleProcessReportDefinitionRequestDto> singleReports) {
     final CombinedReportConfigurationDto combinedConfig = new CombinedReportConfigurationDto();
     combinedConfig.setPointMarkers(false);
     combinedConfig.setXLabel("some x label");
@@ -259,12 +309,11 @@ public class AbstractReportExportImportIT extends AbstractIT {
 
     final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
     combinedReportData.setReports(
-      Arrays.asList(
-        new CombinedReportItemDto(singleReport1.getId(), "#1991c8"),
-        new CombinedReportItemDto(singleReport2.getId(), "#1991c9")
-      )
+      singleReports.stream()
+        .map(report -> new CombinedReportItemDto(report.getId(), "#1991c8"))
+        .collect(toList())
     );
-    combinedReportData.setVisualization(singleReport1.getData().getVisualization());
+    combinedReportData.setVisualization(singleReports.get(0).getData().getVisualization());
     combinedReportData.setConfiguration(combinedConfig);
 
     final CombinedReportDefinitionRequestDto combinedReportDef = new CombinedReportDefinitionRequestDto();
@@ -279,17 +328,35 @@ public class AbstractReportExportImportIT extends AbstractIT {
     return combinedReportDef;
   }
 
-  protected String createSimpleReport(final ReportType reportType) {
-    switch (reportType) {
-      case PROCESS:
-        final ProcessReportDataDto processReportData = createSimpleProcessReportData();
-        return reportClient.createSingleProcessReport(processReportData);
-      case DECISION:
-        final DecisionReportDataDto decisionReportData = createSimpleDecisionReportData();
-        return reportClient.createSingleDecisionReport(decisionReportData);
-      default:
-        throw new OptimizeIntegrationTestException("Unknown report type: " + reportType);
-    }
+  protected static DashboardDefinitionRestDto createDashboard(
+    final String reportId1,
+    final String reportId2) {
+    final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
+    dashboard.setName("A Dashboard Name");
+    dashboard.setReports(
+      Arrays.asList(
+        ReportLocationDto.builder()
+          .id(reportId1)
+          .dimensions(new DimensionDto(5, 15))
+          .position(new PositionDto(20, 25))
+          .build(),
+        ReportLocationDto.builder()
+          .id(reportId2)
+          .dimensions(new DimensionDto(30, 35))
+          .position(new PositionDto(40, 45))
+          .build()
+      )
+    );
+    dashboard.setLastModifier("lastModifier");
+    dashboard.setOwner("owner");
+    dashboard.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    dashboard.setLastModified(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    dashboard.setAvailableFilters(Arrays.asList(
+      new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+      new DashboardFilterDto(DashboardFilterType.END_DATE, null)
+    ));
+
+    return dashboard;
   }
 
   protected static ReportDefinitionExportDto createSimpleExportDto(final ReportType type) {
@@ -346,37 +413,12 @@ public class AbstractReportExportImportIT extends AbstractIT {
     return new CombinedProcessReportDefinitionExportDto(reportDefToImport);
   }
 
-  protected void createAndSaveDefinition(final DefinitionType definitionType,
-                                         final String tenantId) {
-    createAndSaveDefinition(definitionType, tenantId, DEFINITION_VERSION);
+  protected static DashboardDefinitionExportDto createExportDto(
+    final DashboardDefinitionRestDto reportDefToImport) {
+    return new DashboardDefinitionExportDto(reportDefToImport);
   }
 
-  protected void createAndSaveDefinition(final DefinitionType definitionType,
-                                         final String tenantId,
-                                         final String version) {
-    switch (definitionType) {
-      case PROCESS:
-        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(tenantId, version);
-        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-          PROCESS_DEFINITION_INDEX_NAME,
-          processDefinition.getId(),
-          processDefinition
-        );
-        break;
-      case DECISION:
-        final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(tenantId, version);
-        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-          DECISION_DEFINITION_INDEX_NAME,
-          decisionDefinition.getId(),
-          decisionDefinition
-        );
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unknown definition type: " + definitionType);
-    }
-  }
-
-  private ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
       .key(DEFINITION_KEY)
@@ -389,7 +431,7 @@ public class AbstractReportExportImportIT extends AbstractIT {
       .build();
   }
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinition(final String tenantId, final String version) {
+  private static DecisionDefinitionOptimizeDto createDecisionDefinition(final String tenantId, final String version) {
     return DecisionDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
       .key(DEFINITION_KEY)

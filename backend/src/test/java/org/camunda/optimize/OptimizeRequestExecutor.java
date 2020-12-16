@@ -965,6 +965,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildExportDashboardRequest(final String dashboardId,
+                                                             final String fileName) {
+    this.path = "export/dashboard/json/" + dashboardId + "/" + fileName;
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildImportEntityRequest(final String collectionId,
                                                           final Set<OptimizeEntityExportDto> exportedDtos) {
     this.path = "import/";

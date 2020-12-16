@@ -280,6 +280,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return dashboard.get();
   }
 
+  public List<DashboardDefinitionRestDto> getDashboardDefinitionsAsService(final Set<String> dashboardIds) {
+    return dashboardReader.getDashboards(dashboardIds);
+  }
+
   public void updateDashboard(final DashboardDefinitionRestDto updatedDashboard, final String userId) {
     final String dashboardId = updatedDashboard.getId();
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =

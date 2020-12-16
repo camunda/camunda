@@ -14,12 +14,12 @@ import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessRepor
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +27,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReportExportIT extends AbstractReportExportImportIT {
+public class ReportExportIT extends AbstractExportImportIT {
 
   @Test
   public void exportReportAsJsonFile_reportDoesNotExist() {
@@ -48,16 +48,10 @@ public class ReportExportIT extends AbstractReportExportImportIT {
     expectedReportExportDto.setId(reportId);
 
     // when
-    Response response = exportClient.exportReportAsJson(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos =
+      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-    // @formatter:off
-    final List<SingleProcessReportDefinitionExportDto> actualExportDtos =
-      response.readEntity(new GenericType<List<SingleProcessReportDefinitionExportDto>>(){});
-    // @formatter:on
-
     assertThat(actualExportDtos)
       .singleElement()
       .usingRecursiveComparison()
@@ -74,16 +68,10 @@ public class ReportExportIT extends AbstractReportExportImportIT {
     expectedReportExportDto.setId(reportId);
 
     // when
-    Response response = exportClient.exportReportAsJson(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos =
+      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-    // @formatter:off
-    final List<SingleDecisionReportDefinitionExportDto> actualExportDtos =
-      response.readEntity(new GenericType<List<SingleDecisionReportDefinitionExportDto>>() {});
-    // @formatter:off
-
     assertThat(actualExportDtos)
       .singleElement()
       .usingRecursiveComparison()
@@ -105,25 +93,19 @@ public class ReportExportIT extends AbstractReportExportImportIT {
         expectedSingleReportExportDtos.add(singleReportExportDto);
       });
     final String reportId = reportClient.createCombinedReport(null, combinableReportIds);
-    final CombinedReportDefinitionRequestDto combinedReport = reportClient.getCombinedProcessReportDefinitionDto(
+    final CombinedReportDefinitionRequestDto combinedReport = reportClient.getCombinedProcessReportById(
       reportId);
     final CombinedProcessReportDefinitionExportDto expectedCombinedReportDto = createExportDto(combinedReport);
     expectedCombinedReportDto.setId(reportId);
 
     // when
-    Response response = exportClient.exportReportAsJson(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos =
+      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-    // @formatter:off
-    final List<ReportDefinitionExportDto> actualExportDtos =
-      response.readEntity(new GenericType<List<ReportDefinitionExportDto>>(){});
-    // @formatter:on
-
     assertThat(actualExportDtos)
       .hasSize(3)
-      .filteredOn(exportDto -> ExportEntityType.COMBINED.equals(exportDto.getExportEntityType()))
+      .filteredOn(exportDto -> ExportEntityType.COMBINED_REPORT.equals(exportDto.getExportEntityType()))
       .singleElement()
       .usingRecursiveComparison()
       .isEqualTo(expectedCombinedReportDto);

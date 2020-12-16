@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.entities.report;
 
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -13,15 +14,13 @@ import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class ReportExportAuthorizationIT extends AbstractReportExportImportIT {
+public class ReportExportAuthorizationIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("reportTypes")
   public void exportReportAsJson_asSuperuser(final ReportType reportType) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
     final String reportId = createSimpleReport(reportType);
 
     // when

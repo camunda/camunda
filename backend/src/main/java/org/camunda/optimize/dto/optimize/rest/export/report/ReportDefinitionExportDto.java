@@ -9,6 +9,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 
@@ -24,5 +29,16 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
                                       final String collectionId) {
     super(id, exportEntityType, name, sourceIndexVersion);
     this.collectionId = collectionId;
+  }
+
+  public static ReportDefinitionExportDto mapReportDefinitionToExportDto(final ReportDefinitionDto<?> reportDef) {
+    if (ReportType.PROCESS.equals(reportDef.getReportType())) {
+      if (reportDef.isCombined()) {
+        return new CombinedProcessReportDefinitionExportDto((CombinedReportDefinitionRequestDto) reportDef);
+      }
+      return new SingleProcessReportDefinitionExportDto((SingleProcessReportDefinitionRequestDto) reportDef);
+    } else {
+      return new SingleDecisionReportDefinitionExportDto((SingleDecisionReportDefinitionRequestDto) reportDef);
+    }
   }
 }
