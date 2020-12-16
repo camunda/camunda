@@ -45,6 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
@@ -58,7 +60,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
@@ -91,17 +93,47 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 1.)
         .distributedByContains(USER_TASK_B, null)
-      .groupByContains(SECOND_USER)
+      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1.)
+      .doAssert(result);
     // @formatter:on
   }
 
@@ -134,12 +166,12 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 1.)
         .distributedByContains(USER_TASK_B, null)
-      .groupByContains(getLocalisedUnassignedLabel())
+      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
@@ -171,17 +203,17 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 2.)
         .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 2.)
         .distributedByContains(USER_TASK_B, null)
-      .groupByContains(SECOND_USER)
+      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 1.)
-      .groupByContains(getLocalisedUnassignedLabel())
+      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
@@ -217,7 +249,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 2.)
         .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, null)
@@ -257,10 +289,10 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(SECOND_USER)
+      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
@@ -310,10 +342,10 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .groupByContains(SECOND_USER)
+      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -363,10 +395,10 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .groupByContains(SECOND_USER)
+      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -411,10 +443,10 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-      .groupByContains(getLocalisedUnassignedLabel())
+      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -451,17 +483,17 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(getLocalisedUnassignedLabel())
+      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult2);
@@ -514,7 +546,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     groupByResults.add(firstUserTask);
     MapResultEntryDto secondUserTask = new MapResultEntryDto(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
     groupByResults.add(secondUserTask);
-    return new HyperMapResultEntryDto(DEFAULT_USERNAME, groupByResults);
+    return new HyperMapResultEntryDto(DEFAULT_USERNAME, groupByResults, DEFAULT_FULLNAME);
   }
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
@@ -620,7 +652,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
       .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult);
   }
@@ -646,7 +678,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
       .processInstanceCountWithoutFilters(11L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
       .distributedByContains(USER_TASK_1, 11.)
       .doAssert(actualResult);
   }
@@ -685,7 +717,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(DEFAULT_USERNAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
       .distributedByContains(USER_TASK_1, 1.)
       .doAssert(actualResult);
   }

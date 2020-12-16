@@ -13,13 +13,11 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskIdleDurationByCandidateGroupByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByCandidateGroupByUserTaskReportEvaluationIT {
-
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -52,9 +50,7 @@ public class UserTaskIdleDurationByCandidateGroupByUserTaskReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get(),
-      is(expectedValues.getExpectedIdleDurationValues())
-    );
+    assertThat(result.getDataEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .isEqualTo(expectedValues.getExpectedIdleDurationValues());
   }
 }

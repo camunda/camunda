@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,8 +55,10 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -65,11 +68,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @BeforeEach
   public void init() {
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -97,9 +101,43 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., FIRST_CANDIDATE_GROUP_NAME);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., SECOND_CANDIDATE_GROUP_NAME);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
+  }
+
+  @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void reportEvaluationForOneProcess_whenCandidateCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(1.), FIRST_CANDIDATE_GROUP_ID);
   }
 
   @Test
@@ -130,8 +168,14 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
@@ -162,8 +206,14 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(2.);
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
@@ -188,9 +238,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(2.);
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
@@ -338,13 +394,25 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     assertThat(result1.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result1)).isEqualTo(2L);
-    assertThat(result1.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(2.);
-    assertThat(result1.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(2.);
+    assertThat(result1.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
+    assertThat(result1.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
 
     assertThat(result2.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result2)).isEqualTo(2L);
-    assertThat(result2.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
-    assertThat(result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
+    assertThat(result2.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
+    assertThat(result2.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
   }
 
   @Test
@@ -498,7 +566,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
+        IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        1L,
+        Collections.singletonList(Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
       ),
       Arguments.of(
         IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
@@ -508,7 +579,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -558,7 +634,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -654,8 +735,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     assertThat((long) result.getData().size()).isEqualTo(
       executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(
-      executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(
+        executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
     assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP_ID));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -730,7 +814,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(2.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
   }
 
   @Test
@@ -754,7 +841,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(11.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(11.);
   }
 
   @Test
@@ -790,7 +880,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
   }
 
   @Test

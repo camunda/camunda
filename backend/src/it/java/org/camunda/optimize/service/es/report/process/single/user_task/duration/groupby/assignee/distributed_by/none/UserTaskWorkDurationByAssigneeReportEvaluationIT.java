@@ -57,9 +57,9 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(result.getEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto("foo", null)).getValue())
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(DEFAULT_USERNAME));
-    assertThat(result.getEntryForKey(SECOND_USER).orElse(new MapResultEntryDto("foo", null)).getValue())
+    assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(SECOND_USER));
   }
 
@@ -70,7 +70,8 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
-        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(setDuration)));
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+      );
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
@@ -79,12 +80,14 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS)));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
+      );
     assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
 
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
@@ -107,12 +110,14 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
     assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+      );
   }
 
   @Override
@@ -133,14 +138,16 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertThat(result1.getData()).hasSize(1);
     assertThat(result1.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 1")
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 1")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
 
     assertThat(result2.getData()).hasSize(1);
     assertThat(result2.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-      .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 2")
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 2")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+      );
   }
 
   @Override

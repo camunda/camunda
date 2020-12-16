@@ -14,9 +14,8 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_CANDIDATE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskTotalDurationByCandidateGroupReportEvaluationIT
   extends AbstractUserTaskDurationByCandidateGroupReportEvaluationIT {
@@ -52,14 +51,10 @@ public class UserTaskTotalDurationByCandidateGroupReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(expectedValues.getExpectedTotalDurationValues().get(FIRST_CANDIDATE_GROUP))
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(expectedValues.getExpectedTotalDurationValues().get(SECOND_CANDIDATE_GROUP))
-    );
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedTotalDurationValues().get(FIRST_CANDIDATE_GROUP_ID));
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedTotalDurationValues().get(SECOND_CANDIDATE_GROUP_ID));
   }
 
 }

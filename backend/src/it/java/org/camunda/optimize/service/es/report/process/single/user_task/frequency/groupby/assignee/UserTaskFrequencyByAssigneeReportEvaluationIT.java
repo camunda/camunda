@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,8 +57,11 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -68,11 +72,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -100,14 +105,46 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., DEFAULT_FULLNAME);
+    assertThat(result.getEntryForKey(SECOND_USER))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., SECOND_USER_FULLNAME);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getAssigneeCandidateGroupIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(1.), DEFAULT_USERNAME);
+  }
+
+  @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForOneProcessWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -135,15 +172,18 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
-      .containsExactlyInAnyOrder(DEFAULT_USERNAME, getLocalisedUnassignedLabel());
+      .containsExactlyInAnyOrder(DEFAULT_USERNAME, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., DEFAULT_FULLNAME);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., getLocalisedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -165,13 +205,16 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
-      .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, getLocalisedUnassignedLabel());
+      .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(2., DEFAULT_FULLNAME);
     assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., SECOND_USER_FULLNAME);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., getLocalisedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
