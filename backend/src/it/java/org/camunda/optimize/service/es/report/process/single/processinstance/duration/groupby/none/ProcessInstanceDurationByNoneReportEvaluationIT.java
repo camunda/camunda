@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,7 +77,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
-    assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isEqualTo(Optional.empty());
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isNotPresent();
 
     assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
     Double calculatedResult = evaluationResponse.getResult().getData();
@@ -144,9 +143,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // then
     assertThat(resultDto.getData()).isNotNull();
-    Double calculatedResult = resultDto.getData();
-    assertThat(calculatedResult).isNotNull();
-    assertThat(calculatedResult).isEqualTo(4000.);
+    assertThat(resultDto.getData()).isNotNull().isEqualTo(4000.);
   }
 
   @Test
@@ -357,9 +354,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    final Double resultData = result.getData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
+    assertThat(result.getData()).isNotNull().isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
   }
 
   @Test

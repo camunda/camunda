@@ -64,6 +64,10 @@ public class ProcessFilterBuilder {
     return WithResolvedIncidentsOnlyFilterBuilder.construct(this);
   }
 
+  public NoIncidentFilterBuilder noIncidents() {
+    return NoIncidentFilterBuilder.construct(this);
+  }
+
   public RollingDateFilterBuilder rollingEndDate() {
     return RollingDateFilterBuilder.endDate(this);
   }

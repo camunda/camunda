@@ -33,30 +33,30 @@ public class FilterApplicationLevelMigrationIT extends AbstractUpgrade32IT {
     final SingleDecisionReportDefinitionRequestDto decisionReportBeforeUpdate = getDecisionReportWithId("decision-1");
 
     assertThat(getProcessReportWithId("non-user-task-process-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-other-thing-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-user-task-report-no-filters")).isPresent()
       .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).isEmpty());
     assertThat(getProcessReportWithId("user-task-view-by-user-task-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-user-task-start-date-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-user-task-end-date-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-duration-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-candidateGroup-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
     assertThat(getProcessReportWithId("user-task-view-by-assignee-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(filter.getFilterLevel()).isNull()));
 
     final UpgradePlan upgradePlan = UpgradeFrom32To33Factory.createUpgradePlan();
@@ -68,10 +68,10 @@ public class FilterApplicationLevelMigrationIT extends AbstractUpgrade32IT {
     assertThat(getDecisionReportWithId("decision-1").getData().getFilter())
       .satisfies(filters -> assertThat(filters).hasSameSizeAs(decisionReportBeforeUpdate.getData().getFilter()));
     assertThat(getProcessReportWithId("non-user-task-process-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(FilterApplicationLevel.INSTANCE.equals(filter.getFilterLevel()))));
     assertThat(getProcessReportWithId("user-task-view-by-other-thing-report")).isPresent()
-      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(20)
+      .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).hasSize(18)
         .allSatisfy(filter -> assertThat(FilterApplicationLevel.INSTANCE.equals(filter.getFilterLevel()))));
     assertThat(getProcessReportWithId("user-task-view-by-user-task-report-no-filters")).isPresent()
       .hasValueSatisfying(report -> assertThat(report.getData().getFilter()).isEmpty());
@@ -94,9 +94,9 @@ public class FilterApplicationLevelMigrationIT extends AbstractUpgrade32IT {
     assertThat(getProcessReportWithId(reportId)).isPresent()
       .hasValueSatisfying(report -> {
         final List<ProcessFilterDto<?>> filters = report.getData().getFilter();
-        assertThat(filters).hasSize(20);
+        assertThat(filters).hasSize(18);
         assertThat(filters)
-          .filteredOn(filter -> FilterApplicationLevel.INSTANCE.equals(filter.getFilterLevel())).hasSize(18);
+          .filteredOn(filter -> FilterApplicationLevel.INSTANCE.equals(filter.getFilterLevel())).hasSize(16);
         assertThat(filters)
           .filteredOn(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel())).hasSize(2);
       });

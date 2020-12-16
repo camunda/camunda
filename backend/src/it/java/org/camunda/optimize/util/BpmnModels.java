@@ -23,7 +23,6 @@ public class BpmnModels {
   public static final String USER_TASK_1 = "userTask1";
   public static final String USER_TASK_2 = "userTask2";
   public static final String SERVICE_TASK = "serviceTask";
-  public static final String SERVICE_TASK_NAME = "serviceTaskName";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
   public static final String VERSION_TAG = "aVersionTag";

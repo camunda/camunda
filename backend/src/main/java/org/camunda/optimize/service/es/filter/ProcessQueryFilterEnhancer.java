@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -58,6 +59,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CandidateGroupQueryFilter candidateGroupQueryFilter;
   private final WithOpenIncidentsOnlyQueryFilter withOpenIncidentsOnlyQueryFilter;
   private final WithResolvedIncidentsOnlyQueryFilter withResolvedIncidentsOnlyQueryFilter;
+  private final NoIncidentQueryFilter noIncidentQueryFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
@@ -112,6 +114,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         extractFilters(filters, WithResolvedIncidentsOnlyFilterDto.class),
         timezone
       );
+      noIncidentQueryFilter.addFilters(query, extractFilters(filters, NoIncidentFilterDto.class), timezone);
     }
   }
 
