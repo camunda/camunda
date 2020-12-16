@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ZBClient, WorkflowVariables} from 'zeebe-node';
+import {ZBClient, IWorkflowVariables} from 'zeebe-node';
 const zbc = new ZBClient({
   onReady: () => console.log(`Connected!`),
   onConnectionError: () => console.log(`Disconnected!`),
@@ -14,7 +14,7 @@ const deploy: typeof zbc.deployWorkflow = (processNames) => {
   return zbc.deployWorkflow(processNames);
 };
 
-const createInstances = <Variables = WorkflowVariables>(
+const createInstances = <Variables = IWorkflowVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,

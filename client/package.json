@@ -88,7 +88,7 @@
     "msw": "^0.24.2",
     "prettier": "^2.2.1",
     "testcafe": "^1.10.0",
-    "zeebe-node": "0.25.0"
+    "zeebe-node": "0.25.1"
   },
   "lint-staged": {
     "*": [

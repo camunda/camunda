@@ -14155,13 +14155,6 @@ react-docgen-typescript-plugin@^0.6.2:
   version "0.6.2"
   resolved "https://registry.yarnpkg.com/react-docgen-typescript-plugin/-/react-docgen-typescript-plugin-0.6.2.tgz#c83305206c61d5c7e004eaf2dc4661367ddc105d"
   integrity sha512-Orw0WKdJGAg5eMZGbEMw/rKonoxbi8epU6RJWTW3ukWuTarxckFXTltGvm8XADAWlBHak30KD71XThtJruxfTg==
-  dependencies:
-    debug "^4.1.1"
-    endent "^2.0.1"
-    micromatch "^4.0.2"
-    react-docgen-typescript "^1.20.1"
-    react-docgen-typescript-loader "^3.7.2"
-    tslib "^2.0.0"
 
 react-docgen-typescript@^1.15.0, react-docgen-typescript@^1.20.1:
   version "1.20.5"
@@ -17957,10 +17950,10 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@0.25.0:
-  version "0.25.0"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-0.25.0.tgz#fe8b50cd24cdb48f27c57f7da8d3c09e0a09f7e6"
-  integrity sha512-rk1vOOYYybYvV2GzYbFT6qFMUnXvdEZULt+CW9Pr6LCgzQCkBmq/noXLsSzOX05jIrZRIrKUhljd5AceM+0OGw==
+zeebe-node@0.25.1:
+  version "0.25.1"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-0.25.1.tgz#cad64cbe1891b92a25cfc091d510c566b87f6254"
+  integrity sha512-eYLwN32+ms8Vufse+LC8jmzWd5OC8SZxudzxacBPE4lhVIje8gkT8ssYFKZxXTZUUOl31EqAGtVbquk/9uamjg==
   dependencies:
     "@grpc/grpc-js" "^1.1.7"
     "@grpc/proto-loader" "^0.5.5"
