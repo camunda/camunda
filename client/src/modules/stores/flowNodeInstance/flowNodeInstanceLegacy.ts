@@ -176,7 +176,10 @@ class FlowNodeInstance {
   get flowNodeIdToFlowNodeInstanceMap() {
     const {response, status} = this.state;
 
-    if (['initial', 'first-fetch', 'error'].includes(status)) {
+    if (
+      ['initial', 'first-fetch', 'error'].includes(status) ||
+      response === null
+    ) {
       return new Map();
     }
 
