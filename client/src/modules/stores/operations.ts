@@ -33,17 +33,19 @@ type Operation = {
 };
 type State = {
   operations: Operation[];
+  hasMoreOperations: boolean;
   page: number;
   status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   operations: [],
+  hasMoreOperations: true,
   page: 1,
   status: 'initial',
 };
 
-const PAGE_SIZE = 20;
+const MAX_OPERATIONS_PER_REQUEST = 20;
 
 class Operations {
   state: State = {...DEFAULT_STATE};
@@ -57,6 +59,7 @@ class Operations {
       setOperations: action,
       increasePage: action,
       prependOperations: action,
+      setHasMoreOperations: action,
       hasRunningOperations: computed,
       startFetching: action,
       handleFetchSuccess: action,
@@ -79,20 +82,18 @@ class Operations {
   }
 
   fetchOperations = async (searchAfter?: string) => {
-    if (searchAfter !== undefined) {
-      this.increasePage();
-    }
-
     this.startFetching();
 
     try {
       const response = await operationsApi.fetchOperations({
-        pageSize: PAGE_SIZE * this.state.page,
+        pageSize: MAX_OPERATIONS_PER_REQUEST,
         searchAfter,
       });
 
       if (response.ok) {
-        this.setOperations(await response.json());
+        const operations = await response.json();
+        this.setOperations(operations);
+        this.setHasMoreOperations(operations.length);
         this.handleFetchSuccess();
       } else {
         this.handleFetchError();
@@ -100,6 +101,11 @@ class Operations {
     } catch (error) {
       this.handleFetchError(error);
     }
+  };
+
+  fetchNextOperations = async (searchAfter: string) => {
+    this.increasePage();
+    this.fetchOperations(searchAfter);
   };
 
   applyBatchOperation = async ({
@@ -152,7 +158,7 @@ class Operations {
   handlePolling = async () => {
     try {
       const response = await operationsApi.fetchOperations({
-        pageSize: PAGE_SIZE * this.state.page,
+        pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
       });
 
       if (this.intervalId !== null && response.ok) {
@@ -214,6 +220,11 @@ class Operations {
     );
 
     this.state.operations = sortOperations(Object.values(operations));
+  }
+
+  setHasMoreOperations(operationCount: number) {
+    this.state.hasMoreOperations =
+      operationCount === MAX_OPERATIONS_PER_REQUEST;
   }
 
   increasePage() {

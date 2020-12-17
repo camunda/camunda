@@ -25,7 +25,7 @@ type Props = {
 
 const OperationsPanel: React.FC<Props> = observer(
   ({isOperationsCollapsed, toggleOperations}) => {
-    const {operations, status} = operationsStore.state;
+    const {operations, status, hasMoreOperations} = operationsStore.state;
 
     useEffect(() => {
       operationsStore.init();
@@ -48,9 +48,10 @@ const OperationsPanel: React.FC<Props> = observer(
 
           if (
             target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
-            operations.length > 0
+            hasMoreOperations &&
+            status !== 'fetching'
           ) {
-            operationsStore.fetchOperations(
+            operationsStore.fetchNextOperations(
               // @ts-expect-error ts-migrate(2339) FIXME: Property 'sortValues' does not exist on type 'neve... Remove this comment to see the full error message
               operations[operations.length - 1].sortValues
             );

@@ -30,7 +30,15 @@ describe('stores/operations', () => {
     expect(operationsStore.state.status).toEqual('initial');
   });
 
-  it('should increase page if operations are requested with searchAfter parameter', async () => {
+  it('should set hasMoreOperations', async () => {
+    expect(operationsStore.state.hasMoreOperations).toBe(true);
+    operationsStore.setHasMoreOperations(10);
+    expect(operationsStore.state.hasMoreOperations).toBe(false);
+    operationsStore.setHasMoreOperations(20);
+    expect(operationsStore.state.hasMoreOperations).toBe(true);
+  });
+
+  it('should increase page if next operations are requested', async () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
@@ -38,7 +46,7 @@ describe('stores/operations', () => {
     );
 
     expect(operationsStore.state.page).toBe(1);
-    await operationsStore.fetchOperations('20');
+    await operationsStore.fetchNextOperations('20');
 
     expect(operationsStore.state.page).toBe(2);
   });
