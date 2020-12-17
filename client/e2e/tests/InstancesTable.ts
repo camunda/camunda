@@ -150,6 +150,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[2]);
 });
 
+//  TODO: If we have loading indicators for prev/next fetches in the future, we can remove the manual awaits after scrolls
 test('Scrolling', async (t) => {
   let totalInstancesDisplayed = 50;
 
@@ -193,12 +194,15 @@ test('Scrolling', async (t) => {
   // scroll until max stored instances is reached (200)
   await scrollDown(totalInstancesDisplayed);
   totalInstancesDisplayed += 50;
+  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
 
   await scrollDown(totalInstancesDisplayed);
   totalInstancesDisplayed += 50;
+  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
 
   await scrollDown(totalInstancesDisplayed);
   totalInstancesDisplayed += 50;
+  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
 
   totalRowCount = await instanceRows.count;
   firstVisibleRow = await instanceRows.nth(0).innerText;
@@ -214,6 +218,7 @@ test('Scrolling', async (t) => {
 
   await scrollDown(totalInstancesDisplayed);
   totalInstancesDisplayed += 50;
+  await t.wait(2000);
 
   totalRowCount = await instanceRows.count;
   firstVisibleRow = await instanceRows.nth(0).innerText;
@@ -227,6 +232,7 @@ test('Scrolling', async (t) => {
     .contains(descendingInstanceIds[249]);
 
   await scrollUp();
+  await t.wait(2000);
 
   totalRowCount = await instanceRows.count;
   firstVisibleRow = await instanceRows.nth(0).innerText;
