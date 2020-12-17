@@ -20,7 +20,7 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COM
 
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
   @NotNull
