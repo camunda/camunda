@@ -2,6 +2,8 @@
 
 @Library(["camunda-ci", "zeebe-jenkins-shared-library"]) _
 
+// the build name will be used as a kubernetes label, and kubernetes has strict syntax rules - see
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
 def masterBranchName = 'master'
@@ -12,6 +14,11 @@ def isDevelopBranch = env.BRANCH_NAME == developBranchName
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
 def numToKeep = isDevelopBranch ? '-1' : '10'
+
+// the IT agent needs to share some files for post analysis, and since they share the same name as
+// those in the main agent, we unstash them in a separate directory
+itAgentUnstashDirectory = '.tmp/it'
+itFlakyTestStashName = 'it-flakyTests'
 
 //the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
 def cronTrigger = isDevelopBranch ? '@hourly' : ''
@@ -51,6 +58,12 @@ pipeline {
                 container('golang') {
                     sh '.ci/scripts/distribution/prepare-go.sh'
                 }
+
+                // prepare unstash directory for IT files - required since the file names will
+                // be the same as in the other stages. it's necessary to set the permissions to
+                // 0777 has shell scripts are executed as root, whereas Jenkins directives such
+                // as unstash are executed as jenkins
+                runMavenContainerCommand("mkdir -m 0777 -p ${itAgentUnstashDirectory}")
             }
         }
 
@@ -143,6 +156,13 @@ pipeline {
                 }
 
                 stage('IT') {
+                    // NOTE: all nested stages in the IT stage will be run on the following agent,
+                    // identified by its label. Keep in mind that any artefacts produced in this
+                    // agent will be unavailable in other agents, so you will need to copy them
+                    // NOTE: agents (except the main one) are terminated once their stage is
+                    // finished, so if you want to run several steps/stages in that agent they have
+                    // to be sequential (since you cannot nest parallels/matrixes). if you need
+                    // parallelism, consider spawning a sub-job
                     agent {
                         kubernetes {
                             cloud 'zeebe-ci'
@@ -191,6 +211,12 @@ pipeline {
                                 always {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                                 }
+
+                                failure {
+                                    zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/surefire-reports/**"
+                                    zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
+                                    stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
+                                }
                             }
                         }
                     }
@@ -212,25 +238,22 @@ pipeline {
 
             post {
                 always {
-                    jacoco(
-                        execPattern: '**/*.exec',
-                        classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
-                        exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
-                            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
-                            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
-                        runAlways: true
-                    )
-                    zip zipFile: 'test-coverage-reports.zip', archive: true, glob: "**/target/site/jacoco/**"
+                    checkCodeCoverage()
                 }
 
                 failure {
                     zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
-                    archive "**/hs_err_*.log"
+                    zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
+                    dir(itAgentUnstashDirectory) {
+                        unstash name: itFlakyTestStashName
+                    }
 
                     script {
-                        if (fileExists('./FlakyTests.txt')) {
-                            currentBuild.description = "Flaky Tests: <br>" + readFile('./FlakyTests.txt').split('\n').join('<br>')
+                        def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
+                        def flakes = combineFlakeResults(flakeFiles)
+
+                        if (flakes) {
+                            currentBuild.description = "Flaky Tests: <br>" + flakes.join('<br>')
                         }
                     }
                 }
@@ -397,4 +420,29 @@ def templatePodspec(String podspecPath, flags = [:]) {
     templateString = templateString.replaceAll('PODSPEC_TEMPLATE_NODE_POOL', nodePoolName)
 
     templateString
+}
+
+def combineFlakeResults(flakeFiles = []) {
+    def flakes = []
+
+    for (flakeFile in flakeFiles) {
+        if (fileExists(flakeFile)) {
+            flakes += readFile(flakeFile).split('\n')
+        }
+    }
+
+    return flakes
+}
+
+def checkCodeCoverage() {
+    jacoco(
+        execPattern: '**/*.exec',
+        classPattern: '**/target/classes',
+        sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
+        exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
+            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
+            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
+        runAlways: true
+    )
+    zip zipFile: "test-coverage-reports.zip", archive: true, glob: '**/target/site/jacoco/**'
 }
