@@ -5,6 +5,7 @@
  */
 
 import {post} from 'modules/request';
+import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 const URL = '/api/flow-node-instances';
 
@@ -12,15 +13,21 @@ async function fetchFlowNodeInstances({
   workflowInstanceId,
   pageSize,
   parentTreePath,
+  searchAfter,
+  searchBefore,
 }: {
   workflowInstanceId: WorkflowInstanceEntity['id'];
   pageSize: number;
   parentTreePath: string;
+  searchAfter?: FlowNodeInstance['sortValues'];
+  searchBefore?: FlowNodeInstance['sortValues'];
 }) {
   return post(URL, {
     workflowInstanceId,
     pageSize,
     parentTreePath,
+    searchAfter,
+    searchBefore,
   });
 }
 

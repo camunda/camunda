@@ -15,11 +15,23 @@ import * as Styled from './styled';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
+const ROW_HEIGHT = 27;
+
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
     instanceExecutionHistory,
     isInstanceExecutionHistoryAvailable,
-    state: {status: flowNodeInstanceStatus},
+    // @ts-expect-error
+    fetchNextInstances,
+    // @ts-expect-error
+    fetchPreviousInstances,
+    state: {
+      status: flowNodeInstanceStatus,
+      // @ts-expect-error
+      shouldFetchPreviousInstances,
+      // @ts-expect-error
+      shouldFetchNextInstances,
+    },
   } = flowNodeInstanceStore;
   const {
     areDiagramDefinitionsAvailable,
@@ -30,7 +42,25 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   return (
     <Styled.Panel>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
-        <Styled.FlowNodeInstanceLog data-testid="instance-history">
+        <Styled.FlowNodeInstanceLog
+          data-testid="instance-history"
+          onScroll={async (event) => {
+            const target = event.target as HTMLDivElement;
+
+            if (
+              target.scrollHeight - target.clientHeight - target.scrollTop <=
+                0 &&
+              shouldFetchNextInstances
+            ) {
+              fetchNextInstances();
+            }
+
+            if (target.scrollTop === 0 && shouldFetchPreviousInstances) {
+              const newInstances = await fetchPreviousInstances();
+              target.scrollTop = ROW_HEIGHT * newInstances.length;
+            }
+          }}
+        >
           <Styled.NodeContainer>
             <ul>
               <FlowNodeInstancesTree

@@ -12,12 +12,14 @@ import {
   computed,
   when,
   IReactionDisposer,
+  runInAction,
 } from 'mobx';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 
-const PAGE_SIZE = 50;
+const MAX_INSTANCES_PER_REQUEST = 50;
+const MAX_INSTANCES_STORED = 200;
 
 type FlowNodeInstanceType = {
   id: string;
@@ -37,8 +39,17 @@ type Selection = {
 
 type State = {
   selection: Selection;
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetching-next'
+    | 'fetching-prev'
+    | 'fetched'
+    | 'error';
   flowNodeInstances: {[key: string]: FlowNodeInstanceType[]};
+  shouldFetchNextInstances: boolean;
+  shouldFetchPreviousInstances: boolean;
 };
 
 const DEFAULT_STATE: State = {
@@ -48,6 +59,8 @@ const DEFAULT_STATE: State = {
   },
   status: 'initial',
   flowNodeInstances: {},
+  shouldFetchNextInstances: true,
+  shouldFetchPreviousInstances: false,
 };
 
 class FlowNodeInstance {
@@ -62,6 +75,8 @@ class FlowNodeInstance {
       handleFetchFailure: action,
       removeSubTree: action,
       startFetch: action,
+      startFetchNext: action,
+      startFetchPrevious: action,
       reset: action,
       isInstanceExecutionHistoryAvailable: computed,
       instanceExecutionHistory: computed,
@@ -88,7 +103,7 @@ class FlowNodeInstance {
 
     const response = await fetchFlowNodeInstances({
       workflowInstanceId: workflowInstanceId,
-      pageSize: PAGE_SIZE,
+      pageSize: MAX_INSTANCES_PER_REQUEST,
       parentTreePath,
     });
 
@@ -117,7 +132,7 @@ class FlowNodeInstance {
     try {
       const response = await fetchFlowNodeInstances({
         workflowInstanceId: id,
-        pageSize: PAGE_SIZE,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
         parentTreePath: id,
       });
 
@@ -132,6 +147,107 @@ class FlowNodeInstance {
     } catch (error) {
       this.handleFetchFailure(error);
     }
+  };
+
+  fetchPreviousInstances = async () => {
+    const workflowInstanceId = currentInstanceStore.state.instance?.id;
+    if (
+      workflowInstanceId === undefined ||
+      this.state.status === 'fetching-prev'
+    ) {
+      return;
+    }
+
+    const flowNodeInstances = this.state.flowNodeInstances[workflowInstanceId];
+
+    this.startFetchPrevious();
+
+    try {
+      const response = await fetchFlowNodeInstances({
+        workflowInstanceId: workflowInstanceId,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+        parentTreePath: workflowInstanceId,
+        searchBefore: flowNodeInstances[0].sortValues,
+      });
+
+      if (response.ok) {
+        const fetchedFlowNodeInstances = await response.json();
+
+        this.handleFetchSuccess({
+          parentTreePath: workflowInstanceId,
+          flowNodeInstances: [
+            ...fetchedFlowNodeInstances,
+            ...flowNodeInstances,
+          ].slice(0, MAX_INSTANCES_STORED),
+        });
+
+        runInAction(() => {
+          this.state.shouldFetchNextInstances = true;
+          if (fetchedFlowNodeInstances.length !== MAX_INSTANCES_PER_REQUEST) {
+            this.state.shouldFetchPreviousInstances = false;
+          }
+        });
+
+        return fetchedFlowNodeInstances;
+      } else {
+        this.handleFetchFailure();
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
+    }
+  };
+
+  fetchNextInstances = async () => {
+    const workflowInstanceId = currentInstanceStore.state.instance?.id;
+    if (
+      workflowInstanceId === undefined ||
+      this.state.status === 'fetching-next'
+    ) {
+      return;
+    }
+
+    const flowNodeInstances = this.state.flowNodeInstances[workflowInstanceId];
+
+    this.startFetchNext();
+
+    try {
+      const response = await fetchFlowNodeInstances({
+        workflowInstanceId: workflowInstanceId,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+        parentTreePath: workflowInstanceId,
+        searchAfter: flowNodeInstances[flowNodeInstances.length - 1].sortValues,
+      });
+
+      if (response.ok) {
+        const fetchedFlowNodeInstances = await response.json();
+        this.handleFetchSuccess({
+          parentTreePath: workflowInstanceId,
+          flowNodeInstances: [
+            ...flowNodeInstances,
+            ...fetchedFlowNodeInstances,
+          ].slice(-MAX_INSTANCES_STORED),
+        });
+
+        runInAction(() => {
+          this.state.shouldFetchPreviousInstances = true;
+          if (fetchedFlowNodeInstances.length !== MAX_INSTANCES_PER_REQUEST) {
+            this.state.shouldFetchNextInstances = false;
+          }
+        });
+      } else {
+        this.handleFetchFailure();
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
+    }
+  };
+
+  startFetchNext = () => {
+    this.state.status = 'fetching-next';
+  };
+
+  startFetchPrevious = () => {
+    this.state.status = 'fetching-prev';
   };
 
   startFetch = () => {
@@ -170,7 +286,7 @@ class FlowNodeInstance {
     const {status} = this.state;
 
     return (
-      status === 'fetched' &&
+      ['fetched', 'fetching-next', 'fetching-prev'].includes(status) &&
       this.instanceExecutionHistory !== null &&
       Object.keys(this.instanceExecutionHistory).length > 0
     );
