@@ -31,7 +31,9 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -65,9 +67,9 @@ public final class FileBasedSnapshotStore implements PersistedSnapshotStore {
     this.snapshotsDirectory = snapshotsDirectory;
     this.pendingDirectory = pendingDirectory;
     this.snapshotMetrics = snapshotMetrics;
-    this.receivingSnapshotStartCount = new AtomicLong();
+    receivingSnapshotStartCount = new AtomicLong();
 
-    this.listeners = new CopyOnWriteArraySet<>();
+    listeners = new CopyOnWriteArraySet<>();
 
     // load previous snapshots
     currentPersistedSnapshotRef = new AtomicReference<>(loadLatestSnapshot(snapshotsDirectory));
@@ -75,9 +77,29 @@ public final class FileBasedSnapshotStore implements PersistedSnapshotStore {
 
   private PersistedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     PersistedSnapshot latestPersistedSnapshot = null;
+    final List<PersistedSnapshot> snapshots = new ArrayList<>();
     try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
       for (final var path : stream) {
-        latestPersistedSnapshot = collectSnapshot(path);
+        final var snapshot = collectSnapshot(path);
+        if (snapshot != null) {
+          snapshots.add(snapshot);
+          if ((latestPersistedSnapshot == null)
+              || snapshot.getId().compareTo(latestPersistedSnapshot.getId()) >= 0) {
+            latestPersistedSnapshot = snapshot;
+          }
+        }
+      }
+      // Delete older snapshots
+      if (latestPersistedSnapshot != null) {
+        snapshots.remove(latestPersistedSnapshot);
+        if (!snapshots.isEmpty()) {
+          LOGGER.debug("Purging snapshots older than {}", latestPersistedSnapshot);
+          snapshots.forEach(
+              oldSnapshot -> {
+                LOGGER.debug("Deleting snapshot {}", oldSnapshot);
+                oldSnapshot.delete();
+              });
+        }
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
