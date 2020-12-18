@@ -12,7 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.operate.util.CollectionUtil.*;
-import org.camunda.operate.exceptions.OperateRuntimeException;
+
+import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.ingest.DeletePipelineRequest;
 import org.elasticsearch.action.ingest.PutPipelineRequest;
@@ -37,12 +38,12 @@ public class ReindexPlan implements Plan {
 
   private static final Logger logger = LoggerFactory.getLogger(ReindexPlan.class);
 
+  private static final String DEFAULT_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
+
   private final List<Step> steps;
   private Script script;
   private final String srcIndex;
   private final String dstIndex;
- 
-  private final static String DEFAULT_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
 
   public ReindexPlan(final String srcIndex,final String dstIndex,final List<Step> steps) {
     this(srcIndex,dstIndex,steps,true);
@@ -56,7 +57,7 @@ public class ReindexPlan implements Plan {
       setScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
     }
   }
-  
+
   public ReindexPlan setScript(final String scriptContent,final Map<String,Object> params) {
     script = new Script(ScriptType.INLINE, "painless", scriptContent, params);
     return this;
@@ -68,25 +69,20 @@ public class ReindexPlan implements Plan {
   }
 
   @Override
-  public void executeOn(final RestHighLevelClient esClient) {
+  public void executeOn(final RestHighLevelClient esClient) throws MigrationException, IOException {
     final ReindexRequest reindexRequest = new ReindexRequest()
           .setSourceIndices(srcIndex + "_*")
           .setDestIndex(dstIndex + "_");
 
     final Optional<String> pipelineName = createPipelineFromSteps(esClient);
 
-    if(pipelineName.isPresent()) {
-      reindexRequest.setDestPipeline(pipelineName.get());
-    }
+    pipelineName.ifPresent(reindexRequest::setDestPipeline);
     if (script != null) {
       reindexRequest.setScript(script);
     }
 
     try {
       ElasticsearchUtil.reindex(reindexRequest, srcIndex, esClient);
-    } catch (Exception e) {
-      throw new OperateRuntimeException(
-          String.format("Reindex from %s to %s failed: ", srcIndex, dstIndex), e);
     } finally {
       if (pipelineName.isPresent()) {
         deletePipeline(esClient, pipelineName.get());
@@ -95,37 +91,28 @@ public class ReindexPlan implements Plan {
 
   }
 
-  private boolean deletePipeline(final RestHighLevelClient esClient,final String pipelineName) {
-    try {
+  private boolean deletePipeline(final RestHighLevelClient esClient,final String pipelineName) throws IOException {
       return esClient.ingest()
           .deletePipeline(new DeletePipelineRequest(pipelineName), RequestOptions.DEFAULT)
           .isAcknowledged();
-    } catch (IOException e) {
-      logger.error("Delete pipeline '{}' failed: ", pipelineName, e);
-    }
-    return false;
   }
 
-  private Optional<String> createPipelineFromSteps(final RestHighLevelClient esClient) {
+  private Optional<String> createPipelineFromSteps(final RestHighLevelClient esClient) throws IOException, MigrationException {
     if (steps.isEmpty()) {
       return Optional.empty();
     }
     final String pipelineDefinition = getPipelineDefinition();
     final BytesReference content = new ByteBufferReference(ByteBuffer.wrap(pipelineDefinition.getBytes()));
-    
+
     String pipelineName = srcIndex + "-to-" + dstIndex + "-pipeline";
     AcknowledgedResponse response;
-    try {
-       response = esClient.ingest()
+    response = esClient.ingest()
             .putPipeline(new PutPipelineRequest(pipelineName, content, XContentType.JSON),RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Create pipeline '%s' failed: ", pipelineName), e);
-    }
-    
+
     if (response.isAcknowledged()) {
-        return Optional.of(pipelineName);
+      return Optional.of(pipelineName);
     } else {
-      throw new OperateRuntimeException(String.format("Create pipeline '%s' wasn't acknowledged.", pipelineName));
+      throw new MigrationException(String.format("Create pipeline '%s' wasn't acknowledged.", pipelineName));
     }
   }
 

@@ -5,8 +5,10 @@
  */
 package org.camunda.operate.schema.migration;
 
+import java.io.IOException;
 import java.util.List;
 
+import org.camunda.operate.exceptions.MigrationException;
 import org.elasticsearch.client.RestHighLevelClient;
 /**
  * A plan consists of executable Steps.
@@ -14,8 +16,8 @@ import org.elasticsearch.client.RestHighLevelClient;
  */
 public interface Plan {
 
-  public List<Step> getSteps();
+  List<Step> getSteps();
 
-  public void executeOn(final RestHighLevelClient esClient);
+  void executeOn(final RestHighLevelClient esClient) throws IOException, MigrationException;
 
 }

@@ -14,7 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
-import org.camunda.operate.exceptions.OperateRuntimeException;
+
+import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -67,7 +68,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    * If there are any new steps then they will be saved in index.
    */
   @PostConstruct
-  public void updateStepsInRepository(){
+  public void updateStepsInRepository() throws IOException, MigrationException {
     final List<Step> stepsFromFiles = readStepsFromClasspath();
     final List<Step> stepsFromRepository = findAll();
     for (final Step step : stepsFromFiles) {
@@ -79,30 +80,21 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     }
   }
 
-  private List<Step> readStepsFromClasspath(){
+  private List<Step> readStepsFromClasspath() throws IOException {
     List<Step> steps = new ArrayList<>();
-    try {
-      PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-      Resource[] resources = resolver.getResources(ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
+    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    Resource[] resources = resolver.getResources(ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
 
-      for(Resource resource: resources) {
-        logger.info("Read step {} ", resource.getFilename());
-        steps.add(readStepFromFile(resource.getFilename(), resource.getInputStream()));
-      }
-    } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s", ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER), e);
+    for(Resource resource: resources) {
+      logger.info("Read step {} ", resource.getFilename());
+      steps.add(readStepFromFile(resource.getInputStream()));
     }
-
     steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
     return steps;
   }
 
-  private Step readStepFromFile(final String name,final InputStream is) {
-    try {
-      return objectMapper.readValue(is, Step.class);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Error in reading step from file %s",name), e);
-    }
+  private Step readStepFromFile(final InputStream is) throws IOException {
+    return objectMapper.readValue(is, Step.class);
   }
 
   /**
@@ -118,42 +110,33 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   }
 
   @Override
-  public void save(final Step step){
-    final IndexResponse response;
-    try {
-      response = esClient
+  public void save(final Step step) throws MigrationException,IOException {
+    final IndexResponse response = esClient
           .index(new IndexRequest(getName(), ElasticsearchUtil.ES_INDEX_TYPE, idFromStep(step))
               .source(objectMapper.writeValueAsString(step), XContentType.JSON), RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Error in save step %s", step), e);
-    }
     Result result = response.getResult();
     if (result.equals(Result.CREATED) || result.equals(Result.UPDATED)) {
       logger.info("Step {}  saved.", step);
     } else {
-      throw new OperateRuntimeException(String.format("Error in save step %s:  document wasn't created/updated.", step));
+      throw new MigrationException(String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
   }
 
-  protected List<Step> findBy(final Optional<QueryBuilder> query){
-    try {
-      final SearchSourceBuilder searchSpec = new SearchSourceBuilder()
-          .sort(Step.VERSION+ ".keyword", SortOrder.ASC);
-      query.ifPresent(searchSpec::query);
-      SearchRequest request = new SearchRequest(getName())
-          .source(searchSpec)
-          .indicesOptions(IndicesOptions.lenientExpandOpen());
-      return ElasticsearchUtil.scroll(request, Step.class, objectMapper, esClient);
-    } catch (IOException e) {
-      throw new OperateRuntimeException("Failed finding migration steps.", e);
-    }
+  protected List<Step> findBy(final Optional<QueryBuilder> query) throws IOException {
+    final SearchSourceBuilder searchSpec = new SearchSourceBuilder()
+        .sort(Step.VERSION+ ".keyword", SortOrder.ASC);
+    query.ifPresent(searchSpec::query);
+    SearchRequest request = new SearchRequest(getName())
+        .source(searchSpec)
+        .indicesOptions(IndicesOptions.lenientExpandOpen());
+    return ElasticsearchUtil.scroll(request, Step.class, objectMapper, esClient);
   }
 
   /**
    * Returns all stored steps in repository index
    */
   @Override
-  public List<Step> findAll() {
+  public List<Step> findAll() throws IOException {
     logger.debug("Find all steps from Elasticsearch at {}:{} ", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
 
     return findBy(Optional.empty());
@@ -162,7 +145,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    * Returns all steps for an index that are not applied yet.
    */
   @Override
-  public List<Step> findNotAppliedFor(final String indexName) {
+  public List<Step> findNotAppliedFor(final String indexName) throws IOException {
     logger.debug("Find 'not applied steps' for index {} from Elasticsearch at {}:{} ", indexName,
         operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
 

@@ -5,15 +5,18 @@
  */
 package org.camunda.operate.schema.migration;
 
+import org.camunda.operate.exceptions.MigrationException;
+
+import java.io.IOException;
 import java.util.List;
 
 public interface StepsRepository {
 
-  public void save(final Step step);
+  void save(final Step step) throws MigrationException, IOException;
 
-  public List<Step> findAll();
+  List<Step> findAll() throws IOException;
 
-  public List<Step> findNotAppliedFor(final String indexName);
+  List<Step> findNotAppliedFor(final String indexName) throws IOException;
 
-  public String getName();
+  String getName();
 }
