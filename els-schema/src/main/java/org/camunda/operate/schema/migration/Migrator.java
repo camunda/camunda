@@ -5,32 +5,39 @@
  */
 package org.camunda.operate.schema.migration;
 
-import static org.camunda.operate.util.CollectionUtil.filter;
-import static org.camunda.operate.util.CollectionUtil.map;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.annotation.PostConstruct;
-
 import org.camunda.operate.exceptions.MigrationException;
-import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.property.MigrationProperties;
+import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
+import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.camunda.operate.util.CollectionUtil.filter;
+import static org.camunda.operate.util.CollectionUtil.map;
+
 /**
  * Migrates an operate schema from one version to another.
  * Requires an already created destination schema  provided by a schema manager.
@@ -47,6 +54,9 @@ public class Migrator{
    * Pattern that will be used for schema version detection.
    */
   public static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
+
+  private static final String REFRESH_INTERVAL = "index.refresh_interval";
+  private static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
 
   @Autowired
   private List<IndexDescriptor> indexDescriptors;
@@ -66,8 +76,6 @@ public class Migrator{
   @Autowired
   private MigrationProperties migrationProperties;
 
-  private boolean shouldDeleteSrcSchema = true;
-
   @PostConstruct
   private void init() {
     logger.debug("Created Migrator for elasticsearch at {}:{} ",operateProperties.getElasticsearch().getHost(),operateProperties.getElasticsearch().getPort());
@@ -83,8 +91,8 @@ public class Migrator{
    * If source version is omitted than the the previous schema will be detected
    * If destination version is omitted than the schema version from operate configuration will be used.
    *
-   * @param sourceVersion
-   * @param destinationVersion
+   * @param sourceVersion - migrate from version
+   * @param destinationVersion - migrate to version
    */
   public void migrate(final String sourceVersion,final String destinationVersion) {
     logger.info("Check whether migration is needed ...");
@@ -142,13 +150,22 @@ public class Migrator{
   }
 
   private void migrateFromTo(final String srcVersion,final String dstVersion) throws IOException, MigrationException {
+    // Retrieve index settings for old schema
+    Map<String,String> srcSettings = getIndexSettings(
+        getIndexNameFor(indexDescriptors.get(0).getMainIndexName(), srcVersion),
+        NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+    // Set settings for Reindex
+    setSettingsForReindex(dstVersion);
+
     List<String> indexNames = map(indexDescriptors, IndexDescriptor::getMainIndexName);
     indexNames.addAll(map(templateDescriptors, TemplateDescriptor::getIndexNameFormat));
     for (final String indexName : indexNames) {
       final List<Step> stepsForIndex = stepsRepository.findNotAppliedFor(indexName);
-      final Plan plan = createPlanFor(indexName,srcVersion,  dstVersion, stepsForIndex);
+      final Plan plan = createPlanFor(indexName, srcVersion, dstVersion, stepsForIndex);
       migrateIndex(plan);
     }
+
+    resetSettingsFromReindex(dstVersion, srcSettings);
     deleteSrcSchema(srcVersion);
   }
 
@@ -165,9 +182,46 @@ public class Migrator{
   }
 
   protected void deleteSrcSchema(final String srcVersion) throws IOException {
-    if (shouldDeleteSrcSchema) {
+    if (migrationProperties.isDeleteSrcSchema()) {
       deleteSchema(srcVersion);
     }
+  }
+
+  private void resetSettingsFromReindex(String version, Map<String, String> previousSettings) throws IOException {
+    OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    String indexPattern = getIndexPatternFor(version);
+    String numberOfReplicas = previousSettings.getOrDefault(NUMBERS_OF_REPLICA, "" + elsConfig.getNumberOfReplicas());
+    String refreshInterval = previousSettings.getOrDefault(REFRESH_INTERVAL, elsConfig.getRefreshInterval());
+    updateSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, numberOfReplicas).put(REFRESH_INTERVAL, refreshInterval).build(), indexPattern);
+  }
+
+  private void setSettingsForReindex(String version) throws IOException {
+    String indexPattern = getIndexPatternFor(version);
+    updateSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, "0").put(REFRESH_INTERVAL, "-1").build(), indexPattern);
+  }
+
+  private void updateSettingsFor(Settings settings, String indexPattern) throws IOException {
+    esClient.indices().putSettings(new UpdateSettingsRequest(indexPattern).settings(settings), RequestOptions.DEFAULT);
+  }
+
+  private String getIndexNameFor(String indexMainName, String version) {
+    return String.format("%s-%s-%s_", getIndexPrefix(), indexMainName, version);
+  }
+
+  private String getIndexPatternFor(String version) {
+    // _ to match versions correct
+    // first * to match index names
+    // second * to match archive index names
+    return String.format("%s-*-%s_*", getIndexPrefix(), version);
+  }
+
+  private Map<String, String> getIndexSettings(String indexName, String... fields) throws IOException {
+    Map<String, String> settings = new HashMap<>();
+    GetSettingsResponse response = esClient.indices().getSettings(new GetSettingsRequest().indices(indexName), RequestOptions.DEFAULT);
+    for (String field : fields) {
+      settings.put(field, response.getSetting(indexName, field));
+    }
+    return settings;
   }
 
   private void deleteSchema(final String version) throws IOException {
@@ -193,7 +247,7 @@ public class Migrator{
   }
 
   protected void deleteIndices(final String version) throws IOException {
-    final String indexPattern = getIndexPrefix() + "-*-" + version + "_*";
+    final String indexPattern = getIndexPatternFor(version);
 
     if (!indicesExist(indexPattern)) {
       return;

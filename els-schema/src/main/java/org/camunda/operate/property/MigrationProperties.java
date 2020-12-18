@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 public class MigrationProperties {
 
   private boolean migrationEnabled = true;
+  private boolean deleteSrcSchema = true;
+
   private String sourceVersion;
   private String destinationVersion;
 
@@ -43,5 +45,14 @@ public class MigrationProperties {
   public MigrationProperties setDestinationVersion(String destinationVersion) {
     this.destinationVersion = destinationVersion;
     return this;
+  }
+
+  public MigrationProperties setDeleteSrcSchema(boolean deleteSrcSchema){
+    this.deleteSrcSchema = deleteSrcSchema;
+    return this;
+  }
+
+  public boolean isDeleteSrcSchema() {
+    return deleteSrcSchema;
   }
 }

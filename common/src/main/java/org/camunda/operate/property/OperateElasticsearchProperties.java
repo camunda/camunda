@@ -10,10 +10,12 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   public static final String DEFAULT_INDEX_PREFIX = "operate";
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
   private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
+  private static final String DEFAULT_REFRESH_INTERVAL = "1s";
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
+  private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -43,4 +45,10 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.numberOfReplicas = numberOfReplicas;
   }
 
+  public void setRefreshInterval(String refreshInterval){
+    this.refreshInterval = refreshInterval;
+  }
+  public String getRefreshInterval() {
+    return refreshInterval;
+  }
 }
