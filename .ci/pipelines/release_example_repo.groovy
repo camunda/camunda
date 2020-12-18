@@ -118,9 +118,11 @@ void runRelease(params) {
 
     # update the optimize version in pom to the release version
     sed -i "s/optimize.version>.*</optimize.version>${params.RELEASE_VERSION}</g" pom.xml
+    # update the optimize-examples version in pom to release version
+    mvn versions:set versions:commit -DnewVersion=${params.RELEASE_VERSION}
 
     git add -u
-    git commit -m \"chore(release): add version ${params.RELEASE_VERSION} to release version overview\"
+    git commit -m \"chore(release): ${params.RELEASE_VERSION}\"
 
     # create tag for the new Optimize version
     git tag -a ${params.RELEASE_VERSION} -m "Tag for version Optimize ${params.RELEASE_VERSION}"
@@ -128,13 +130,12 @@ void runRelease(params) {
 
     # update the optimize version in pom to development version
     sed -i "s/optimize.version>.*</optimize.version>${params.DEVELOPMENT_VERSION}</g" pom.xml
-
     # update the optimize-examples version in pom to development version
-    sed -i "s/version>.*</version>${params.DEVELOPMENT_VERSION}</g" pom.xml
+    mvn versions:set versions:commit -DnewVersion=${params.DEVELOPMENT_VERSION}
 
     # push the changes
     git add -u
-    git commit -m \"chore(release): update pom to snapshot for development version\"
+    git commit -m \"chore(release): update pom to snapshot for next development version\"
     git push origin ${params.BRANCH}
   """)
 }
