@@ -8,8 +8,10 @@ package org.camunda.optimize.data.generation;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.data.generation.generators.DBConnector;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
 import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
@@ -17,25 +19,39 @@ import org.camunda.optimize.data.generation.generators.impl.process.ProcessDataG
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-@AllArgsConstructor
+@Slf4j
+@RequiredArgsConstructor
 public class DataGenerationMain {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(DataGenerationMain.class);
 
   private final DataGenerationInformation dataGenerationInformation;
 
-  public static void main(String[] args) {
-    DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(args);
+  private static final String DB_URL_H2_TEMPLATE = "jdbc:h2:tcp://localhost:9092/./camunda-h2-dbs/process-engine";
+  private static final String JDBC_DRIVER = "org.h2.Driver";
+  private static final String USER_H2 = "sa";
+  private static final String PASS_H2 = "sa";
+
+
+  public static void main(String[] args) throws ParseException {
+    final Map<String, String> arguments = extractArguments(args);
+    DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(arguments);
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
+    String startDate = arguments.get("startDate");
+    String endDate = arguments.get("endDate");
+    checkDateSprectrum(startDate, endDate);
     main.generateData();
+    String dbUser = "dbUser";
+    String dbUrl = arguments.get("dbUrl");
+    update(startDate, endDate, arguments.get("jdbcDriver"), arguments.get("dbUrl"), arguments.get("dbUser"), arguments.get("dbPassword"));
   }
 
-  private static DataGenerationInformation extractDataGenerationInformation(final String[] args) {
-    final Map<String, String> arguments = extractArguments(args);
-
+  private static DataGenerationInformation extractDataGenerationInformation(Map<String, String> arguments) {
     // argument is being adjusted
     long processInstanceCountToGenerate =
       Long.parseLong(arguments.get("numberOfProcessInstances"));
@@ -87,6 +103,20 @@ public class DataGenerationMain {
     return arguments;
   }
 
+  public static void checkDateSprectrum(String startDate, String endDate) throws ParseException {
+    SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+    try {
+      Date startDateObject = format.parse(startDate);
+      Date endDateObject = format.parse(endDate);
+
+      if (startDateObject.compareTo(endDateObject) >= 0) {
+        throw new IllegalArgumentException("startDate argument cannot be greater than endDate");
+      }
+    } catch (ParseException e) {
+      throw new ParseException("There was an error while parsing the dates", e.getErrorOffset());
+    }
+  }
+
   private static void ensureIdentifierIsKnown(Map<String, String> arguments, String identifier) {
     if (!arguments.containsKey(identifier)) {
       throw new RuntimeException("Unknown argument [" + identifier + "]!");
@@ -98,6 +128,12 @@ public class DataGenerationMain {
     arguments.put("numberOfDecisionInstances", String.valueOf(10_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
     arguments.put("removeDeployments", "true");
+    arguments.put("startDate", "01/01/2018");
+    arguments.put("endDate", "01/01/2020");
+    arguments.put("jdbcDriver", JDBC_DRIVER);
+    arguments.put("dbUrl", DB_URL_H2_TEMPLATE);
+    arguments.put("dbUser", USER_H2);
+    arguments.put("dbPassword", PASS_H2);
     arguments.put("processDefinitions", getDefaultDefinitionsOfClass(ProcessDataGenerator.class));
     arguments.put("decisionDefinitions", getDefaultDefinitionsOfClass(DecisionDataGenerator.class));
   }
@@ -130,5 +166,12 @@ public class DataGenerationMain {
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     logger.info("Finished data generation!");
+  }
+
+  public static void update(String startDate, String endDate, String driver, String url, String user,
+                            String userPassword) {
+    DBConnector dbConnector = new DBConnector(driver, url, user, userPassword);
+    dbConnector.updateProcessInstances(startDate, endDate);
+    logger.info("Updated endDate and startDate of process instances in db!");
   }
 }
