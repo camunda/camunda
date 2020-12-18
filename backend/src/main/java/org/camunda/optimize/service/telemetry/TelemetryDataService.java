@@ -93,17 +93,12 @@ public class TelemetryDataService {
     String esVersion = INFORMATION_UNAVAILABLE_STRING;
 
     try {
-      esVersion = esClient.getHighLevelClient()
-        .info(RequestOptions.DEFAULT)
-        .getVersion()
-        .toString();
+      esVersion = esClient.getHighLevelClient().info(RequestOptions.DEFAULT).getVersion().getNumber();
     } catch (IOException e) {
       log.info("Failed to retrieve Elasticsearch version for telemetry data.");
     }
 
-    return DatabaseDto.builder()
-      .version(esVersion)
-      .build();
+    return DatabaseDto.builder().version(esVersion).build();
   }
 
   private LicenseKeyDto getLicenseKeyData() {

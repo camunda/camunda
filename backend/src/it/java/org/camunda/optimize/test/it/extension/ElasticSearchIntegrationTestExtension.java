@@ -508,7 +508,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteAllDocsInIndex(final IndexMappingCreator index) {
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getOptimizeIndexAliasForIndex(index))
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getOptimizeIndexAliasForIndex(
+      index))
       .setQuery(matchAllQuery())
       .setRefresh(true);
 
@@ -769,10 +770,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public String getEsVersion() {
     try {
-      return prefixAwareRestHighLevelClient.getHighLevelClient()
-        .info(RequestOptions.DEFAULT)
-        .getVersion()
-        .toString();
+      return prefixAwareRestHighLevelClient.getHighLevelClient().info(RequestOptions.DEFAULT).getVersion().getNumber();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
     }
