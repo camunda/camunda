@@ -331,7 +331,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   private void validateDashboardFilters(final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    final List<DashboardFilterDto> availableFilters = dashboardDefinitionDto.getAvailableFilters();
+    validateDashboardFilters(userId, dashboardDefinitionDto.getAvailableFilters(), dashboardDefinitionDto.getReports());
+  }
+
+  public void validateDashboardFilters(final String userId,
+                                       final List<DashboardFilterDto> availableFilters,
+                                       final List<ReportLocationDto> reportsInDashboard) {
     if (!CollectionUtils.isEmpty(availableFilters)) {
       if (availableFilters.stream().anyMatch(filter -> filter.getType() == null)) {
         throw new BadRequestException("Dashboard Filters cannot have a null type");
@@ -341,14 +346,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         .collect(Collectors.groupingBy(DashboardFilterDto::getType));
       validateNonVariableTypeFilters(filtersByType);
       validateVariableFilters(filtersByType);
-      validateVariableFiltersExistInReports(userId, dashboardDefinitionDto, availableFilters);
+      validateVariableFiltersExistInReports(userId, reportsInDashboard, availableFilters);
     }
   }
 
   private void validateVariableFiltersExistInReports(final String userId,
-                                                     final DashboardDefinitionRestDto dashboardDefinitionDto,
+                                                     final List<ReportLocationDto> reportsInDashboard,
                                                      final List<DashboardFilterDto> availableFilters) {
-    final List<String> reportIdsInDashboard = dashboardDefinitionDto.getReports().stream()
+    final List<String> reportIdsInDashboard = reportsInDashboard.stream()
       .map(ReportLocationDto::getId)
       .filter(IdGenerator::isValidId)
       .collect(Collectors.toList());

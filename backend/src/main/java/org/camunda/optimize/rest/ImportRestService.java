@@ -83,7 +83,7 @@ public class ImportRestService {
         throw new OptimizeImportFileInvalidException(
           String.format(
             "Could not import entities because the provided file contains invalid OptimizeExportDtos. " +
-              "Errors: %n%s",
+              "Errors: %s",
             violations.stream()
             .map(c -> c.getPropertyPath() + " " + c.getMessage())
             .collect(joining(","))

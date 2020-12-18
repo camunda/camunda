@@ -81,6 +81,9 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   protected static final String DEFINITION_NAME = "aDefinitionName";
   protected static final String DEFINITION_VERSION = "1";
   protected static final String DEFINITION_XML_STRING = "xmlString";
+  protected static final String VALID_DECISION_REPORT_ID = "11111111-0000-0000-0000-000000000000";
+  protected static final String VALID_PROCESS_REPORT_ID = "22222222-0000-0000-0000-000000000000";
+  protected static final String VALID_COMBINED_REPORT_ID = "33333333-0000-0000-0000-000000000000";
 
   @BeforeEach
   public void setUp() {
@@ -328,24 +331,19 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     return combinedReportDef;
   }
 
-  protected static DashboardDefinitionRestDto createDashboard(
-    final String reportId1,
-    final String reportId2) {
+  protected static DashboardDefinitionRestDto createDashboardDefinition(
+    final List<String> reportIds) {
     final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setName("A Dashboard Name");
+    dashboard.setId("dashboardId");
     dashboard.setReports(
-      Arrays.asList(
-        ReportLocationDto.builder()
-          .id(reportId1)
+      reportIds.stream()
+        .map(reportId -> ReportLocationDto.builder()
+          .id(reportId)
           .dimensions(new DimensionDto(5, 15))
           .position(new PositionDto(20, 25))
-          .build(),
-        ReportLocationDto.builder()
-          .id(reportId2)
-          .dimensions(new DimensionDto(30, 35))
-          .position(new PositionDto(40, 45))
-          .build()
-      )
+          .build())
+        .collect(toList())
     );
     dashboard.setLastModifier("lastModifier");
     dashboard.setOwner("owner");
@@ -388,14 +386,22 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   }
 
   protected static CombinedProcessReportDefinitionExportDto createSimpleCombinedExportDto() {
-    final SingleProcessReportDefinitionExportDto report1 = new SingleProcessReportDefinitionExportDto(
-      createSimpleProcessReportDefinition());
+    final SingleProcessReportDefinitionExportDto report = createSimpleProcessExportDto();
     final CombinedReportDataDto combinedData = new CombinedReportDataDto();
-    combinedData.setReports(Collections.singletonList(new CombinedReportItemDto(report1.getId())));
+    combinedData.setReports(Collections.singletonList(new CombinedReportItemDto(report.getId())));
     final CombinedReportDefinitionRequestDto combinedReportDef = new CombinedReportDefinitionRequestDto();
-    combinedReportDef.setId("combinedReportId");
+    combinedReportDef.setId(VALID_COMBINED_REPORT_ID);
     combinedReportDef.setData(combinedData);
+    combinedReportDef.setName("A combined report");
     return new CombinedProcessReportDefinitionExportDto(combinedReportDef);
+  }
+
+  protected static DashboardDefinitionExportDto createSimpleDashboardExportDto() {
+    final DashboardDefinitionRestDto dashboardDef = new DashboardDefinitionRestDto();
+    dashboardDef.setName("Test Dashboard");
+    dashboardDef.setId("dashboardId");
+
+    return new DashboardDefinitionExportDto(dashboardDef);
   }
 
   protected static SingleProcessReportDefinitionExportDto createExportDto(
@@ -416,6 +422,12 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   protected static DashboardDefinitionExportDto createExportDto(
     final DashboardDefinitionRestDto reportDefToImport) {
     return new DashboardDefinitionExportDto(reportDefToImport);
+  }
+
+  protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(
+    final List<String> resourceIds) {
+    final DashboardDefinitionRestDto dashboard = createDashboardDefinition(resourceIds);
+    return new DashboardDefinitionExportDto(dashboard);
   }
 
   private static ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
@@ -463,8 +475,8 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   private static SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
     final ProcessReportDataDto reportData) {
     final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
-    reportDef.setId("someId");
-    reportDef.setName("Test Report");
+    reportDef.setId(VALID_PROCESS_REPORT_ID);
+    reportDef.setName("Test Process Report");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
@@ -476,8 +488,8 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   private static SingleDecisionReportDefinitionRequestDto createDecisionReportDefinition(
     final DecisionReportDataDto reportData) {
     final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
-    reportDef.setId("someId");
-    reportDef.setName("Test Report");
+    reportDef.setId(VALID_DECISION_REPORT_ID);
+    reportDef.setName("Test Decision Report");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));

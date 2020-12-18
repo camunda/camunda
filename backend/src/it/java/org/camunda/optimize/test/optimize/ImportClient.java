@@ -47,6 +47,12 @@ public class ImportClient {
     return importEntityIntoCollectionAsUser(userId, password, null, exportedDto);
   }
 
+  public Response importEntitiesAsUser(final String userId,
+                                       final String password,
+                                       final Set<OptimizeEntityExportDto> exportedDto) {
+    return importEntitiesIntoCollectionAsUser(userId, password, null, exportedDto);
+  }
+
   public Response importEntityIntoCollection(final String collectionId,
                                              final OptimizeEntityExportDto exportedDto) {
     return importEntityIntoCollectionAsUser(

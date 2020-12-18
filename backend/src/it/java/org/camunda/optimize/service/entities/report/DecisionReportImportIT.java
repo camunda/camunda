@@ -327,7 +327,7 @@ public class DecisionReportImportIT extends AbstractExportImportIT {
   }
 
   @Test
-  public void importReportIntoNonExistentCollection() {
+  public void importReportIntoCollection_collectionDoesNotExist() {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();

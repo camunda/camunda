@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.dashboard;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -15,10 +16,14 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 @NoArgsConstructor
 @FieldNameConstants
@@ -37,9 +42,19 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
       ExportEntityType.DASHBOARD,
       dashboardDefinition.getName(),
       DashboardIndex.VERSION
-      );
+    );
     this.reports = dashboardDefinition.getReports();
     this.availableFilters = dashboardDefinition.getAvailableFilters();
     this.collectionId = dashboardDefinition.getCollectionId();
+  }
+
+  @JsonIgnore
+  public Set<String> getReportIds() {
+    return reports.stream().map(ReportLocationDto::getId).filter(IdGenerator::isValidId).collect(toSet());
+  }
+
+  @JsonIgnore
+  public Set<String> getExternalResourceUrls() {
+    return reports.stream().map(ReportLocationDto::getId).filter(id -> !IdGenerator.isValidId(id)).collect(toSet());
   }
 }

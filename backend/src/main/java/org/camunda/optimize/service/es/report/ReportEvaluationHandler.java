@@ -145,7 +145,7 @@ public abstract class ReportEvaluationHandler {
 
     if (foundSingleReports.size() != singleReportIds.size()) {
       throw new OptimizeValidationException("Some of the single reports contained in the combined report with id ["
-                                              + combinedReportDefinitionDto.getId() + "]could not be found");
+                                              + combinedReportDefinitionDto.getId() + "] could not be found");
     }
     return foundSingleReports;
   }

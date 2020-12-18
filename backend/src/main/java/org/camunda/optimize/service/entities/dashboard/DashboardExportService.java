@@ -8,7 +8,6 @@ package org.camunda.optimize.service.entities.dashboard;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
@@ -37,8 +36,8 @@ public class DashboardExportService {
   private final ReportExportService reportExportService;
   private final AuthorizedCollectionService collectionService;
 
-  public List<OptimizeEntityExportDto> getDashboardExportDtos(final String userId,
-                                                              final Set<String> dashboardIds) {
+  public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,
+                                                                  final Set<String> dashboardIds) {
     log.debug("Exporting dashboards with IDs {}.", dashboardIds);
     final List<DashboardDefinitionRestDto> dashboards = retrieveDashboardDefinitionsOrFailIfMissing(dashboardIds);
     validateUserAuthorizedToAccessDashboardsOrFail(userId, dashboards);
@@ -73,8 +72,7 @@ public class DashboardExportService {
   private List<ReportDefinitionDto<?>> retrieveRelevantReportDefinitionsOrFailIfMissing(
     final List<DashboardDefinitionRestDto> dashboards) {
     final Set<String> reportIds = dashboards.stream()
-      .flatMap(d -> d.getReports().stream())
-      .map(ReportLocationDto::getId)
+      .flatMap(d -> d.getReportIds().stream())
       .collect(toSet());
     try {
       return reportExportService.retrieveReportDefinitionsOrFailIfMissing(reportIds);

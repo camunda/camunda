@@ -9,11 +9,13 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -32,21 +34,32 @@ public class DashboardExportIT extends AbstractExportImportIT {
   @Test
   public void exportDashboard() {
     // given
-    final String singleReportId1 = createSimpleReport(ReportType.PROCESS);
-    final SingleProcessReportDefinitionRequestDto singleDef1 = reportClient.getSingleProcessReportById(singleReportId1);
-    final SingleProcessReportDefinitionExportDto expectedSingle1 = createExportDto(singleDef1);
+    final String processReportId1 = createSimpleReport(ReportType.PROCESS);
+    final SingleProcessReportDefinitionRequestDto processReport1 = reportClient.getSingleProcessReportById(
+      processReportId1);
+    final SingleProcessReportDefinitionExportDto expectedProcess1 = createExportDto(processReport1);
 
-    final String singleReportId2 =  createSimpleReport(ReportType.PROCESS);
-    final SingleProcessReportDefinitionRequestDto singleDef2 = reportClient.getSingleProcessReportById(singleReportId2);
-    final SingleProcessReportDefinitionExportDto expectedSingle2 = createExportDto(singleDef2);
+    final String processReportId2 = createSimpleReport(ReportType.PROCESS);
+    final SingleProcessReportDefinitionRequestDto processReport2 = reportClient.getSingleProcessReportById(
+      processReportId2);
+    final SingleProcessReportDefinitionExportDto expectedProcess2 = createExportDto(processReport2);
+
+    final String decisionReportId = createSimpleReport(ReportType.DECISION);
+    final SingleDecisionReportDefinitionRequestDto decisionReport =
+      reportClient.getDecisionReportById(decisionReportId);
+    final SingleDecisionReportDefinitionExportDto expectedDecision = createExportDto(decisionReport);
 
     final CombinedReportDefinitionRequestDto combinedDef =
-      createCombinedReportDefinition(Collections.singletonList(singleDef1));
+      createCombinedReportDefinition(Collections.singletonList(processReport1));
     final String combinedReportId = reportClient.createNewCombinedReport(combinedDef);
     combinedDef.setId(combinedReportId);
     final CombinedProcessReportDefinitionExportDto expectedCombined = createExportDto(combinedDef);
 
-    final DashboardDefinitionRestDto dashboardDef = createDashboard(combinedReportId, singleReportId2);
+    final DashboardDefinitionRestDto dashboardDef = createDashboardDefinition(Arrays.asList(
+      combinedReportId,
+      processReportId2,
+      decisionReportId
+    ));
     final String dashboardId = dashboardClient.createDashboard(dashboardDef);
     dashboardDef.setId(dashboardId);
     final DashboardDefinitionExportDto expectedDashboard = createExportDto(dashboardDef);
@@ -56,7 +69,7 @@ public class DashboardExportIT extends AbstractExportImportIT {
       exportClient.exportDashboardAndReturnExportDtos(dashboardId, "my_file.json");
 
     // then
-    assertThat(exportedDtos).hasSize(4);
+    assertThat(exportedDtos).hasSize(5);
 
     assertThat(exportedDtos)
       .filteredOn(dto -> ExportEntityType.DASHBOARD.equals(dto.getExportEntityType()))
@@ -73,7 +86,30 @@ public class DashboardExportIT extends AbstractExportImportIT {
     assertThat(exportedDtos)
       .filteredOn(dto -> ExportEntityType.SINGLE_PROCESS_REPORT.equals(dto.getExportEntityType()))
       .hasSize(2)
-      .containsExactlyInAnyOrder(expectedSingle1, expectedSingle2);
+      .containsExactlyInAnyOrder(expectedProcess1, expectedProcess2);
+
+    assertThat(exportedDtos)
+      .filteredOn(dto -> ExportEntityType.SINGLE_DECISION_REPORT.equals(dto.getExportEntityType()))
+      .singleElement()
+      .isEqualTo(expectedDecision);
+  }
+
+  @Test
+  public void exportDashboard_withExternalResource() {
+    // given
+    final String externalResourceId = "my.external-resource.com";
+    final String dashboardId =
+      dashboardClient.createDashboard(null, Collections.singletonList(externalResourceId));
+
+    // when
+    final List<OptimizeEntityExportDto> exportedDtos =
+      exportClient.exportDashboardAndReturnExportDtos(dashboardId, "my_file.json");
+
+    // then
+    assertThat(exportedDtos)
+      .flatExtracting(dto -> ((DashboardDefinitionExportDto) dto).getExternalResourceUrls())
+      .singleElement()
+      .isEqualTo(externalResourceId);
   }
 
   @Test

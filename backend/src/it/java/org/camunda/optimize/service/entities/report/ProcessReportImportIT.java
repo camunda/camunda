@@ -331,7 +331,7 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
   }
 
   @Test
-  public void importReportIntoNonExistentCollection() {
+  public void importReportIntoCollection_collectionDoesNotExist() {
     // given
     createAndSaveDefinition(DefinitionType.PROCESS, null);
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
