@@ -7,13 +7,22 @@ package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
@@ -23,7 +32,56 @@ import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 public class ResolvedIncidentFilterIT extends AbstractFilterIT {
 
   @Test
-  public void filterByResolvedIncident() {
+  public void instanceLevelFilterByResolvedIncident() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withoutIncident()
+      .startProcessInstance()
+        .withResolvedIncident()
+      .startProcessInstance()
+        .withDeletedIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+    final List<ProcessFilterDto<?>> filter = resolvedIncidentFilter(FilterApplicationLevel.INSTANCE);
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    reportData.setFilter(filter);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getData()).hasSize(1);
+
+    // when
+    reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .build();
+    reportData.setFilter(filter);
+    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
+    assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(4L);
+    assertThat(numberResult.getData()).isEqualTo(1.);
+  }
+
+  @Test
+  public void viewLevelFilterByResolvedIncident() {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -40,38 +98,35 @@ public class ResolvedIncidentFilterIT extends AbstractFilterIT {
     // @formatter:on
     importAllEngineEntitiesFromScratch();
 
+    final List<ProcessFilterDto<?>> filter = resolvedIncidentFilter(FilterApplicationLevel.VIEW);
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
-    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncident().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    reportData.setFilter(filter);
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
-
-    // when
-    reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
-      .build();
-    reportData.setFilter(ProcessFilterBuilder.filter().withResolvedIncident().add().buildList());
-    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
-
-    // then
-    assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
-    assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(4L);
-    assertThat(numberResult.getData()).isEqualTo(1.);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(4L);
+    assertThat(result.getData()).hasSize(3);
   }
 
-  @Test
-  public void canBeMixedWithOtherFilters() {
+  private static Stream<Arguments> filterLevelAndExpectedResult() {
+    return Stream.of(
+      Arguments.of(FilterApplicationLevel.INSTANCE, 3., 2.),
+      Arguments.of(FilterApplicationLevel.VIEW, 2., 1.)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("filterLevelAndExpectedResult")
+  public void canBeMixedWithOtherFilters(final FilterApplicationLevel filterLevel,
+                                         final Double firstExpectedResult,
+                                         final Double secondExpectedResult) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -96,25 +151,22 @@ public class ResolvedIncidentFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
-    reportData.setFilter(
-      ProcessFilterBuilder.filter()
-        .withResolvedIncident()
-        .add()
-        .buildList());
+    reportData.setFilter(resolvedIncidentFilter(filterLevel));
+
     NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(2L);
-    // process instance (pi) with resolved incident + pi with resolved and open incident
-    assertThat(numberResult.getData()).isEqualTo(3.);
+    assertThat(numberResult.getData()).isEqualTo(firstExpectedResult);
 
     // when I add the flow node filter as well
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .withResolvedIncident()
+        .filterLevel(filterLevel)
         .add()
         .executingFlowNodes()
-          .id(SERVICE_TASK_ID_2)
+        .id(SERVICE_TASK_ID_2)
         .add()
         .buildList());
     numberResult = reportClient.evaluateNumberReport(reportData).getResult();
@@ -122,7 +174,15 @@ public class ResolvedIncidentFilterIT extends AbstractFilterIT {
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(numberResult.getData()).isEqualTo(2.);
+    assertThat(numberResult.getData()).isEqualTo(secondExpectedResult);
+  }
+
+  private List<ProcessFilterDto<?>> resolvedIncidentFilter(final FilterApplicationLevel filterLevel) {
+    return ProcessFilterBuilder.filter()
+      .withResolvedIncident()
+      .filterLevel(filterLevel)
+      .add()
+      .buildList();
   }
 
 }

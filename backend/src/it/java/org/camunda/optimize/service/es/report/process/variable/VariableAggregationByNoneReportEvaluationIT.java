@@ -254,8 +254,8 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
   }
 
   @ParameterizedTest
-  @MethodSource("viewLevelFiltersAtBothLevels")
-  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFilters")
+  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcessAndGetDefinition();
     engineIntegrationExtension.startProcessInstance(definition.getId());

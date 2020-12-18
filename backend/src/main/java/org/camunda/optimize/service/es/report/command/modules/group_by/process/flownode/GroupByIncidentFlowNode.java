@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -77,17 +78,30 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
         flowNodeNames.remove(flowNodeKey);
       }
     }
-
-    // enrich data with flow nodes that haven't been executed, but should still show up in the result
-    flowNodeNames.keySet().forEach(flowNodeKey -> {
-      CompositeCommandResult.GroupByResult emptyResult =
-        CompositeCommandResult.GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
-      emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
-      groupedData.add(emptyResult);
-    });
+    addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
 
     compositeCommandResult.setGroups(groupedData);
-      compositeCommandResult.setIsComplete(groupedByFlowNodeId.getSumOfOtherDocCounts() == 0L);
+    compositeCommandResult.setIsComplete(groupedByFlowNodeId.getSumOfOtherDocCounts() == 0L);
+  }
+
+  private void addMissingGroupByIncidentKeys(final Map<String, String> flowNodeNames,
+                                             final List<CompositeCommandResult.GroupByResult> groupedData,
+                                             final ExecutionContext<ProcessReportDataDto> context) {
+    final boolean viewLevelFilterExists = context.getReportData()
+      .getFilter()
+      .stream()
+      .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
+    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // omitted by the filters
+    if (!viewLevelFilterExists) {
+      // enrich data with flow nodes that haven't been executed, but should still show up in the result
+      flowNodeNames.keySet().forEach(flowNodeKey -> {
+        CompositeCommandResult.GroupByResult emptyResult =
+          CompositeCommandResult.GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
+        emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
+        groupedData.add(emptyResult);
+      });
+    }
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {

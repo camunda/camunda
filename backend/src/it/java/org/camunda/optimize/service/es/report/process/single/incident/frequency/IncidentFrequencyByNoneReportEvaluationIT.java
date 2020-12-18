@@ -7,7 +7,9 @@ package org.camunda.optimize.service.es.report.process.single.incident.frequency
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -21,6 +23,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collections;
@@ -29,6 +32,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE;
@@ -259,8 +264,53 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     assertThat(result.getData()).isEqualTo(2.);
   }
 
+  private Stream<Arguments> filterAndExpectedResult() {
+    return Stream.of(
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 2.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 2.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), 0.)
+    );
+  }
+
   @ParameterizedTest
-  @MethodSource("viewLevelFiltersAtBothLevels")
+  @MethodSource("filterAndExpectedResult")
+  public void incidentFilterIsAppliedAtCorrectLevel(final List<ProcessFilterDto<?>> filter,
+                                                    final Double expectedResult) {
+    // given
+    final ProcessInstanceEngineDto firstInstance =
+      engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(firstInstance.getId());
+    engineIntegrationExtension.completeExternalTasks(firstInstance.getId());
+    engineIntegrationExtension.failExternalTasks(firstInstance.getId());
+    // the second instance has no incidents
+    engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReport(firstInstance.getProcessDefinitionKey(), firstInstance.getProcessDefinitionVersion());
+    reportData.setFilter(filter);
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData()).isEqualTo(expectedResult);
+  }
+
+  private static Stream<List<ProcessFilterDto<?>>> nonIncidentViewLevelFilters() {
+    return viewLevelFilters()
+      .filter(filters -> {
+        final ProcessFilterDto<?> filter = filters.get(0);
+        return !(filter instanceof OpenIncidentFilterDto) && !(filter instanceof ResolvedIncidentFilterDto);
+      });
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonIncidentViewLevelFilters")
   public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());

@@ -26,7 +26,7 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
   private static final String FLOW_NODES_AGGREGATION = "flowNodes";
   private static final String FILTERED_FLOW_NODES_AGGREGATION = "filteredFlowNodes";
 
-  protected AggregationBuilder createExecutionStateFilteredFlowNodeAggregation(
+  protected AggregationBuilder createFilteredFlowNodeAggregation(
     final ExecutionContext<ProcessReportDataDto> context,
     final AggregationBuilder subAggregation) {
     return nested(FLOW_NODES_AGGREGATION, EVENTS)
@@ -38,7 +38,7 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
       );
   }
 
-  protected Optional<Filter> getExecutionStateFilteredFlowNodesAggregation(final SearchResponse response) {
+  protected Optional<Filter> getFilteredFlowNodesAggregation(final SearchResponse response) {
     return getFlowNodesAggregation(response)
       .map(SingleBucketAggregation::getAggregations)
       .map(aggs -> aggs.get(FILTERED_FLOW_NODES_AGGREGATION));

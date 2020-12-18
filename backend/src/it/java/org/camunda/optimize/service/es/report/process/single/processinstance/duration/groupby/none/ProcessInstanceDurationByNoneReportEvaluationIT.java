@@ -287,8 +287,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @ParameterizedTest
-  @MethodSource("viewLevelFiltersAtBothLevels")
-  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  @MethodSource("viewLevelFilters")
+  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     deployAndStartSimpleServiceTaskProcess();

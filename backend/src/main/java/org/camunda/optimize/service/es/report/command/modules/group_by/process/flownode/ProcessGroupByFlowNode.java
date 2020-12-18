@@ -48,7 +48,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     return Collections.singletonList(
-      createExecutionStateFilteredFlowNodeAggregation(
+      createFilteredFlowNodeAggregation(
         context,
         terms(NESTED_EVENTS_AGGREGATION)
           .size(configurationService.getEsAggregationBucketLimit())
@@ -62,7 +62,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    getExecutionStateFilteredFlowNodesAggregation(response)
+    getFilteredFlowNodesAggregation(response)
       .map(filteredFlowNodes -> (Terms) filteredFlowNodes.getAggregations().get(NESTED_EVENTS_AGGREGATION))
       .ifPresent(byFlowNodeIdAggregation -> {
         final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());

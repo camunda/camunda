@@ -51,7 +51,7 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
       .createLimitedGroupByScriptedEventDurationAggregation(
         searchSourceBuilder, context, distributedByPart, getDurationScript()
       )
-      .map(durationAggregation -> createExecutionStateFilteredFlowNodeAggregation(
+      .map(durationAggregation -> createFilteredFlowNodeAggregation(
         context,
         durationAggregation
       ))
@@ -64,7 +64,7 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
-    getExecutionStateFilteredFlowNodesAggregation(response)
+    getFilteredFlowNodesAggregation(response)
       .ifPresent(filteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =
           durationAggregationService.mapGroupByDurationResults(

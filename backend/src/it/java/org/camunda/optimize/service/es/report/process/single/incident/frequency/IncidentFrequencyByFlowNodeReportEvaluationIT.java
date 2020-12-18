@@ -24,6 +24,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
@@ -33,6 +34,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
@@ -451,6 +454,87 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+  }
+
+  private Stream<Arguments> instanceLevelIncidentFilter() {
+    return Stream.of(
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("instanceLevelIncidentFilter")
+  public void instanceLevelIncidentFilterIsAppliedAtInstanceLevel(final List<ProcessFilterDto<?>> filter,
+                                                                  final Double expectedIncidentCount) {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withResolvedIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withoutIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
+    reportData.setFilter(filter);
+    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    MapResultAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(3L)
+      .isComplete(true)
+      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+      .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
+      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+  }
+
+  private Stream<Arguments> viewLevelIncidentFilter() {
+    return Stream.of(
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1.)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelIncidentFilter")
+  public void viewLevelIncidentFilterIsAppliedAtViewLevel(final List<ProcessFilterDto<?>> filter,
+                                                          final Double expectedIncidentCount) {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withResolvedIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withoutIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
+    reportData.setFilter(filter);
+    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    MapResultAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(3L)
+      .isComplete(true)
+      .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
       .doAssert(resultDto);
   }
 

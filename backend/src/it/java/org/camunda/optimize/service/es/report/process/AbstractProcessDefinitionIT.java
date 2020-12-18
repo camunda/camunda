@@ -452,10 +452,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 
-  // This is a stream of all the filters that are available at view level, but also includes each of those set to
-  // instance level
-  @SuppressWarnings(UNUSED)
-  protected static Stream<List<ProcessFilterDto<?>>> viewLevelFiltersAtBothLevels() {
+  protected static Stream<List<ProcessFilterDto<?>>> viewLevelFilters() {
     return Stream.of(
       ProcessFilterBuilder
         .filter()
@@ -466,23 +463,9 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .buildList(),
       ProcessFilterBuilder
         .filter()
-        .assignee()
-        .id(DEFAULT_USERNAME)
-        .filterLevel(FilterApplicationLevel.INSTANCE)
-        .add()
-        .buildList(),
-      ProcessFilterBuilder
-        .filter()
         .candidateGroups()
         .id(FIRST_CANDIDATE_GROUP_ID)
         .filterLevel(FilterApplicationLevel.VIEW)
-        .add()
-        .buildList(),
-      ProcessFilterBuilder
-        .filter()
-        .candidateGroups()
-        .id(FIRST_CANDIDATE_GROUP_ID)
-        .filterLevel(FilterApplicationLevel.INSTANCE)
         .add()
         .buildList(),
       ProcessFilterBuilder
@@ -500,19 +483,9 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .add()
         .buildList(),
       ProcessFilterBuilder
-        .filter()
-        .flowNodeDuration()
-        .flowNode(
-          START_EVENT,
-          DurationFilterDataDto.builder()
-            .operator(FilterOperator.GREATER_THAN)
-            .unit(DurationFilterUnit.HOURS)
-            .value(1L)
-            .build()
-        )
-        .filterLevel(FilterApplicationLevel.INSTANCE)
-        .add()
-        .buildList()
+        .filter().withOpenIncidentsOnly().filterLevel(FilterApplicationLevel.VIEW).add().buildList(),
+      ProcessFilterBuilder
+        .filter().withResolvedIncident().filterLevel(FilterApplicationLevel.VIEW).add().buildList()
     );
   }
 

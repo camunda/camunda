@@ -80,9 +80,7 @@ public class ProcessPartQueryUtil {
     NestedAggregationBuilder searchThroughTheEvents =
       nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
     return searchThroughTheEvents
-      .subAggregation(
-        findStartAndEndDatesForEvents
-      );
+      .subAggregation(findStartAndEndDatesForEvents);
   }
 
   private static Script createInitScript() {
