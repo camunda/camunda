@@ -24,12 +24,10 @@ RUN /tmp/download.sh
 
 FROM alpine:3.12.2
 
-ENV OPTIMIZE_CLASSPATH=/optimize/config:/optimize/*:/optimize/lib/*
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
 ENV TZ=UTC
 ENV CONTAINER_HOST=0.0.0.0
-ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8090 8091
 
