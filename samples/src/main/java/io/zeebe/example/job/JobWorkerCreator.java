@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.Scanner;
 
 /**
- * Sample application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
+ * Example application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
  *
  * <p>When connecting to a cluster in Camunda Cloud, this application assumes that the following
  * environment variables are set:

@@ -13,7 +13,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 
 /**
- * Sample application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
+ * Example application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
  *
  * <p>When connecting to a cluster in Camunda Cloud, this application assumes that the following
  * environment variables are set:
