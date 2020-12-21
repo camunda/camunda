@@ -43,6 +43,8 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -50,6 +52,10 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class ProcessReportImportIT extends AbstractExportImportIT {
+
+  private static Stream<String> specialVersionKeywords() {
+    return Stream.of(ALL_VERSIONS.toLowerCase(), LATEST_VERSION.toLowerCase()); // export results in lower case
+  }
 
   @ParameterizedTest
   @MethodSource("getTestProcessReports")
@@ -116,7 +122,7 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
   }
 
   @Test
-  public void importReport_missingVersion() {
+  public void importReport_missingAllRequiredVersions() {
     // given a definition that only exists with version 1 and a report that requires version 5 of this definition
     createAndSaveDefinition(DefinitionType.PROCESS, null);
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
@@ -136,6 +142,48 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
           .type(DefinitionType.PROCESS)
           .key(DEFINITION_KEY)
           .versions(Collections.singletonList("5"))
+          .tenantIds(Collections.singletonList(null))
+          .build());
+  }
+
+  @ParameterizedTest
+  @MethodSource("specialVersionKeywords")
+  public void importReport_allOrLatestVersion(final String versionString) {
+    // given
+    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    exportedReportDto.getData().setProcessDefinitionVersion(versionString);
+
+    // when
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+
+    // then
+    final SingleProcessReportDefinitionRequestDto importedReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+    assertThat(importedReport.getData().getDefinitionVersions()).containsExactly(versionString);
+  }
+
+  @ParameterizedTest
+  @MethodSource("specialVersionKeywords")
+  public void importReport_allOrLatestVersion_missingAllVersions(final String versionString) {
+    // given
+    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    exportedReportDto.getData().setProcessDefinitionVersion(versionString);
+
+    // when
+    final Response response = importClient.importEntity(exportedReportDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
+      .isEqualTo("importDefinitionDoesNotExist");
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+      .hasSize(1)
+      .containsExactly(
+        DefinitionExceptionItemDto.builder()
+          .type(DefinitionType.PROCESS)
+          .key(DEFINITION_KEY)
+          .versions(Collections.singletonList(versionString))
           .tenantIds(Collections.singletonList(null))
           .build());
   }

@@ -52,6 +52,7 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
 
 @AllArgsConstructor
 @Component
@@ -321,13 +322,18 @@ public class ReportImportService {
                                                       final List<String> definitionVersions,
                                                       final List<String> tenantIds) {
     final List<String> requiredVersions = new ArrayList<>(definitionVersions);
-    final List<String> defVersions = getExistingDefinitionVersions(
+    final boolean isAllOrLatest = isDefinitionVersionSetToAllOrLatest(requiredVersions);
+    final List<String> existingVersions = getExistingDefinitionVersions(
       definitionType,
       definitionKey,
       tenantIds
     );
-    definitionVersions.removeIf(version -> !defVersions.contains(version));
-    if (definitionVersions.isEmpty()) {
+    if (!isAllOrLatest) {
+      // if specific versions are required, remove all nonexistent versions
+      definitionVersions.removeIf(version -> !existingVersions.contains(version));
+    }
+    if (isAllOrLatest && existingVersions.isEmpty()
+      || !isAllOrLatest && definitionVersions.isEmpty()) {
       throw new OptimizeImportDefinitionDoesNotExistException(
         "Could not find the required definition for this report",
         Sets.newHashSet(DefinitionExceptionItemDto.builder()
