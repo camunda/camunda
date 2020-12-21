@@ -150,17 +150,20 @@ public class IncidentDataDeployer {
       return new IncidentStatusDeciderBuilder(incidentDataDeployer);
     }
 
-    public void executeDeployment() {
+    public List<ProcessInstanceEngineDto> executeDeployment() {
       final IncidentClient incidentClient = incidentDataDeployer.incidentClient;
       final String processId = incidentClient.deployProcessAndReturnId(incidentDataDeployer.process);
 
       assertThat(incidentDataDeployer.incidentCreationHandlers).hasSizeGreaterThanOrEqualTo(1);
       OffsetDateTime creationDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+      List<ProcessInstanceEngineDto> deployedInstances = new ArrayList<>();
       for (IncidentCreationHandler incidentCreationHandler : incidentDataDeployer.incidentCreationHandlers) {
         final ProcessInstanceEngineDto processInstanceEngineDto =
           incidentCreationHandler.startProcessInstanceAndCreateIncident(processId);
         incidentCreationHandler.adjustIncidentDate(processInstanceEngineDto.getId(), creationDate);
+        deployedInstances.add(processInstanceEngineDto);
       }
+      return deployedInstances;
     }
   }
 

@@ -9,9 +9,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -34,16 +36,16 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
   public void instanceLevelFilterByOpenIncident() {
     // given
     // @formatter:off
-    IncidentDataDeployer.dataDeployer(incidentClient)
+    final List<ProcessInstanceEngineDto> deployedInstances = IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(ONE_TASK)
       .startProcessInstance()
-        .withoutIncident()
+        .withOpenIncident()
       .startProcessInstance()
         .withResolvedIncident()
       .startProcessInstance()
         .withDeletedIncident()
       .startProcessInstance()
-        .withOpenIncident()
+        .withoutIncident()
       .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
@@ -59,9 +61,10 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     reportData.setFilter(filter);
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    // then
+    // then the result contains only the instance with an open incident
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getData()).hasSize(1)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId).containsExactly(deployedInstances.get(0).getId());
 
     // when
     reportData = TemplatedProcessReportDataBuilder

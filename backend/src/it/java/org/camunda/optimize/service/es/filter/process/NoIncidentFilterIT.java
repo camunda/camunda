@@ -18,6 +18,8 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
@@ -29,7 +31,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
   public void filterByDoesNotContainIncidentsOnly() {
     // given
     // @formatter:off
-    IncidentDataDeployer.dataDeployer(incidentClient)
+    final List<ProcessInstanceEngineDto> deployedInstances = IncidentDataDeployer.dataDeployer(incidentClient)
       .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withoutIncident()
@@ -55,7 +57,8 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getData()).hasSize(1)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId).containsExactly(deployedInstances.get(0).getId());
 
     // when
     reportData = TemplatedProcessReportDataBuilder
