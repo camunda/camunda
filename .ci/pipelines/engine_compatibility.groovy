@@ -221,6 +221,7 @@ pipeline {
           env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
           env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
+          env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
           env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
       }
@@ -257,6 +258,24 @@ pipeline {
           }
           steps {
             integrationTestSteps('7.13')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.14') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.14_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_14_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.14')
           }
           post {
             always {
