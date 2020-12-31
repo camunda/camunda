@@ -229,7 +229,7 @@ public class RollingUpdateTest {
     final var expectedOrderedJobs = List.of("firstTask", "secondTask");
     final JobHandler jobHandler =
         (jobClient, job) -> {
-          jobClient.newCompleteCommand(job.getKey()).send().join();
+          jobClient.newCompleteCommand(job).send().join();
           activatedJobs.compute(
               job.getWorkflowInstanceKey(),
               (ignored, list) -> {

@@ -18,6 +18,7 @@ package io.zeebe.client.api.worker;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.zeebe.client.api.response.ActivatedJob;
 
 /**
  * A client with access to all job-related operation:
@@ -44,8 +45,30 @@ public interface JobClient {
    *
    * @param jobKey the key which identifies the job
    * @return a builder for the command
+   * @deprecated Use {@link #newCompleteCommand(ActivatedJob)}
    */
+  @Deprecated
   CompleteJobCommandStep1 newCompleteCommand(long jobKey);
+
+  /**
+   * Command to complete a job.
+   *
+   * <pre>
+   * long job = ..;
+   *
+   * jobClient
+   *  .newCompleteCommand(job)
+   *  .variables(json)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the job is linked to a workflow instance then this command will complete the related
+   * activity and continue the flow.
+   *
+   * @param job the ActivatedJob
+   * @return a builder for the command
+   */
+  CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job);
 
   /**
    * Command to mark a job as failed.

@@ -82,7 +82,7 @@ public final class HandleVariablesAsPojo {
       // update the variables and complete the job
       order.setTotalPrice(46.50);
 
-      client.newCompleteCommand(job.getKey()).variables(order).send();
+      client.newCompleteCommand(job).variables(order).send();
     }
   }
 }

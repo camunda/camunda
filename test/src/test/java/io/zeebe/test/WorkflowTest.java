@@ -39,7 +39,7 @@ public class WorkflowTest {
     client
         .newWorker()
         .jobType("task")
-        .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
+        .handler((c, j) -> c.newCompleteCommand(j).send().join())
         .name("test")
         .open();
 
@@ -64,7 +64,7 @@ public class WorkflowTest {
     client
         .newWorker()
         .jobType("task")
-        .handler((c, j) -> c.newCompleteCommand(j.getKey()).variables(variables).send().join())
+        .handler((c, j) -> c.newCompleteCommand(j).variables(variables).send().join())
         .name("test")
         .open();
 

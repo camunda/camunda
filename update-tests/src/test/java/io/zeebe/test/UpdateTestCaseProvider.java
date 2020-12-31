@@ -133,11 +133,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                   assertThat(jobsResponse.getJobs()).hasSize(1);
 
                   awaitElementInState(state, JOB, "ACTIVATED");
-                  state
-                      .client()
-                      .newCompleteCommand(jobsResponse.getJobs().get(0).getKey())
-                      .send()
-                      .join();
+                  state.client().newCompleteCommand(jobsResponse.getJobs().get(0)).send().join();
 
                   awaitChildProcessCompleted(state, CHILD_PROCESS_ID);
                 })
@@ -263,7 +259,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     state.client().newResolveIncidentCommand(key).send().join();
     final ActivateJobsResponse job =
         state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
-    state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
+    state.client().newCompleteCommand(job.getJobs().get(0)).send().join();
   }
 
   private BpmnModelInstance parentWorkflow() {

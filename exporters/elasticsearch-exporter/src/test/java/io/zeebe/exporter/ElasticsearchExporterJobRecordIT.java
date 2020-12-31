@@ -112,7 +112,7 @@ public class ElasticsearchExporterJobRecordIT
 
     jobWorker =
         exporterBrokerRule.createJobWorker(
-            "test", ((client, job) -> client.newCompleteCommand(job.getKey()).send()));
+            "test", ((client, job) -> client.newCompleteCommand(job).send()));
 
     // then
     final var jobBatchActivated =

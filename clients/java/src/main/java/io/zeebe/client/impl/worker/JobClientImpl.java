@@ -19,6 +19,7 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.CompleteJobCommandImpl;
@@ -49,6 +50,12 @@ public final class JobClientImpl implements JobClient {
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
         asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+  }
+
+  @Override
+  public CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job) {
+    return new CompleteJobCommandImpl(
+        asyncStub, objectMapper, job.getKey(), config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override

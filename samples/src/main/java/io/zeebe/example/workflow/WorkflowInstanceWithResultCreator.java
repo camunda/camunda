@@ -50,10 +50,7 @@ public class WorkflowInstanceWithResultCreator {
         .jobType("foo")
         .handler(
             (jobClient, job) ->
-                jobClient
-                    .newCompleteCommand(job.getKey())
-                    .variables(Map.of("job", job.getKey()))
-                    .send())
+                jobClient.newCompleteCommand(job).variables(Map.of("job", job.getKey())).send())
         .timeout(Duration.ofSeconds(10))
         .open();
   }

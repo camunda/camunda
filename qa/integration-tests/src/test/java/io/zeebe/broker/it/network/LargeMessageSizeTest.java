@@ -118,7 +118,7 @@ public final class LargeMessageSizeTest {
         .jobType(jobType)
         .handler(
             ((client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(largeVariables).send().join()))
+                client.newCompleteCommand(job).variables(largeVariables).send().join()))
         .open();
 
     // then
