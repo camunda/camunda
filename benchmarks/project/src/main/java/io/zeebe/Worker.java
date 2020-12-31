@@ -54,8 +54,7 @@ public class Worker extends App {
             .jobType(jobType)
             .handler(
                 (jobClient, job) -> {
-                  final var command =
-                      jobClient.newCompleteCommand(job.getKey()).variables(variables);
+                  final var command = jobClient.newCompleteCommand(job).variables(variables);
                   if (workerCfg.isCompleteJobsAsync()) {
                     delayedCommands.addLast(
                         new DelayedCommand(Instant.now().plusMillis(completionDelay), command));

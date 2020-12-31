@@ -25,30 +25,11 @@ import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
-import io.zeebe.client.api.command.FailJobCommandStep1;
-import io.zeebe.client.api.command.PublishMessageCommandStep1;
-import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
-import io.zeebe.client.api.command.SetVariablesCommandStep1;
-import io.zeebe.client.api.command.ThrowErrorCommandStep1;
-import io.zeebe.client.api.command.TopologyRequestStep1;
-import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.zeebe.client.api.command.*;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.zeebe.client.impl.command.ActivateJobsCommandImpl;
-import io.zeebe.client.impl.command.CancelWorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.command.CreateWorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.command.DeployWorkflowCommandImpl;
-import io.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
-import io.zeebe.client.impl.command.PublishMessageCommandImpl;
-import io.zeebe.client.impl.command.ResolveIncidentCommandImpl;
-import io.zeebe.client.impl.command.SetVariablesCommandImpl;
-import io.zeebe.client.impl.command.TopologyRequestImpl;
+import io.zeebe.client.impl.command.*;
 import io.zeebe.client.impl.worker.JobClientImpl;
 import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.zeebe.client.util.VersionUtil;
@@ -313,6 +294,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return jobClient.newCompleteCommand(jobKey);
+  }
+
+  @Override
+  public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
+    return jobClient.newCompleteCommand(job);
   }
 
   @Override

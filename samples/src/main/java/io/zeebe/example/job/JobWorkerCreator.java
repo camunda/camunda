@@ -60,7 +60,7 @@ public final class JobWorkerCreator {
     public void handle(final JobClient client, final ActivatedJob job) {
       // here: business logic that is executed with every job
       System.out.println(job);
-      client.newCompleteCommand(job.getKey()).send().join();
+      client.newCompleteCommand(job).send().join();
     }
   }
 }

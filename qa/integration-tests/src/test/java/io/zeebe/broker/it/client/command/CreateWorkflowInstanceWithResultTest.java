@@ -203,7 +203,7 @@ public final class CreateWorkflowInstanceWithResultTest {
     // when
     CLIENT_RULE
         .getClient()
-        .newCompleteCommand(response.getJobs().iterator().next().getKey())
+        .newCompleteCommand(response.getJobs().iterator().next())
         .variables(variables)
         .send();
   }

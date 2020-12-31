@@ -177,9 +177,7 @@ public final class BrokerReprocessingTest {
         .getClient()
         .newWorker()
         .jobType("foo")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
+        .handler((client, job) -> client.newCompleteCommand(job).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -212,7 +210,7 @@ public final class BrokerReprocessingTest {
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
 
-    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
+    clientRule.getClient().newCompleteCommand(jobEvent).send().join();
 
     // then
     assertJobCompleted();
@@ -239,9 +237,7 @@ public final class BrokerReprocessingTest {
         .getClient()
         .newWorker()
         .jobType("foo")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
+        .handler((client, job) -> client.newCompleteCommand(job).variables(NULL_VARIABLES).send())
         .open();
 
     final CountDownLatch latch = new CountDownLatch(1);
@@ -266,9 +262,7 @@ public final class BrokerReprocessingTest {
         .getClient()
         .newWorker()
         .jobType("bar")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
+        .handler((client, job) -> client.newCompleteCommand(job).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -384,7 +378,7 @@ public final class BrokerReprocessingTest {
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
     final ActivatedJob jobEvent = jobHandler.getHandledJobs().get(0);
-    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
+    clientRule.getClient().newCompleteCommand(jobEvent).send().join();
 
     assertJobCompleted();
   }
