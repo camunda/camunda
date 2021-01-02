@@ -53,11 +53,7 @@ public final class JobRunnableFactory {
       final PrintWriter printWriter = new PrintWriter(stringWriter);
       e.printStackTrace(printWriter);
       final String message = stringWriter.toString();
-      jobClient
-          .newFailCommand(job.getKey())
-          .retries(job.getRetries() - 1)
-          .errorMessage(message)
-          .send();
+      jobClient.newFailCommand(job).retries(job.getRetries() - 1).errorMessage(message).send();
     } finally {
       doneCallback.run();
     }

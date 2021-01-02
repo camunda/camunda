@@ -307,7 +307,17 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
+    return jobClient.newFailCommand(job);
+  }
+
+  @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
     return jobClient.newThrowErrorCommand(jobKey);
+  }
+
+  @Override
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
+    return jobClient.newThrowErrorCommand(job);
   }
 }
