@@ -65,8 +65,20 @@ public final class JobClientImpl implements JobClient {
   }
 
   @Override
+  public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
+    return new FailJobCommandImpl(
+        asyncStub, job.getKey(), config.getDefaultRequestTimeout(), retryPredicate);
+  }
+
+  @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
     return new ThrowErrorCommandImpl(
         asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+  }
+
+  @Override
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
+    return new ThrowErrorCommandImpl(
+        asyncStub, job.getKey(), config.getDefaultRequestTimeout(), retryPredicate);
   }
 }
