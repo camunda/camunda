@@ -45,9 +45,7 @@ public interface JobClient {
    *
    * @param jobKey the key which identifies the job
    * @return a builder for the command
-   * @deprecated Use {@link #newCompleteCommand(ActivatedJob)}
    */
-  @Deprecated
   CompleteJobCommandStep1 newCompleteCommand(long jobKey);
 
   /**
@@ -91,6 +89,26 @@ public interface JobClient {
   FailJobCommandStep1 newFailCommand(long jobKey);
 
   /**
+   * Command to mark a job as failed.
+   *
+   * <pre>
+   * long job = ..;
+   *
+   * jobClient
+   *  .newFailCommand(job)
+   *  .retries(3)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * subscription. Otherwise, an incident is created for this job.
+   *
+   * @param job the key which identifies the job
+   * @return a builder for the command
+   */
+  FailJobCommandStep1 newFailCommand(ActivatedJob job);
+
+  /**
    * Command to report a business error (i.e. non-technical) that occurs while processing a job.
    *
    * <pre>
@@ -110,4 +128,25 @@ public interface JobClient {
    * @return a builder for the command
    */
   ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey);
+
+  /**
+   * Command to report a business error (i.e. non-technical) that occurs while processing a job.
+   *
+   * <pre>
+   * long job = ...;
+   * String code = ...;
+   *
+   * jobClient
+   *  .newThrowErrorCommand(job)
+   *  .errorCode(code)
+   *  .send();
+   * </pre>
+   *
+   * <p>The error is handled in the workflow by an error catch event. If there is no error catch
+   * event with the specified errorCode then an incident will be raised instead.
+   *
+   * @param job the job
+   * @return a builder for the command
+   */
+  ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job);
 }

@@ -272,7 +272,7 @@ public class ExporterIntegrationRule extends ExternalResource {
             (client, job) -> {
               if (fail.getAndSet(false)) {
                 // fail job
-                client.newFailCommand(job.getKey()).retries(0).errorMessage("failed").send().join();
+                client.newFailCommand(job).retries(0).errorMessage("failed").send().join();
               } else {
                 client.newCompleteCommand(job).send().join();
               }
