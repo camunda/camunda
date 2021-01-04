@@ -16,7 +16,7 @@ import {createBeautyfiedJSON} from 'modules/utils/variable';
 const codeElementRef = React.createRef();
 
 type Props = {
-  contentEditable?: boolean;
+  contentEditable: boolean;
   initialValue?: string;
 };
 
@@ -52,6 +52,7 @@ function CodeEditor({contentEditable, initialValue}: Props) {
       <Styled.Pre>
         <ContentEditable
           tagName="code"
+          data-testid="editable-content"
           html={codeHTML}
           // @ts-expect-error ts-migrate(2769) FIXME: Type 'RefObject<unknown>' is not assignable to typ... Remove this comment to see the full error message
           innerRef={codeElementRef}

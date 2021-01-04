@@ -5,72 +5,128 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {testData} from './index.setup';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
-import Modal from 'modules/components/Modal';
 import CodeModal from './index';
-import * as Styled from './styled';
 
-const elementMock = {
-  addEventListener: jest.fn((event, cb) => {
-    //
-  }),
-};
-
-// @ts-expect-error ts-migrate(2345) FIXME: Type '{ addEventListener: Mock<void, [event: any, ... Remove this comment to see the full error message
-jest.spyOn(document, 'getElementById').mockImplementation((id) => {
-  return elementMock;
-});
-
-function mountNode(props = {}) {
-  return mount(
-    <ThemeProvider>
-      {/* @ts-expect-error ts-migrate(2741) FIXME: Property 'mode' is missing in type '{}' but requir... Remove this comment to see the full error message */}
-      <CodeModal {...props} />
-    </ThemeProvider>
-  );
-}
+const validJSON = '{"firstname":"Max","lastname":"Muster","age":31}';
+const brokenJSON = '"firstname":"Bro","lastname":"Ken","age":31}';
 
 describe('CodeModal', () => {
-  it('should not render any modal UI initially', () => {
-    const node = mountNode(testData.pageMounts);
+  it('should render visible modal in view mode', () => {
+    render(
+      <CodeModal
+        handleModalClose={jest.fn()}
+        headline="Some Headline"
+        initialValue={validJSON}
+        isModalVisible={true}
+        mode="view"
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    expect(node.find(Modal.Header)).not.toExist();
-    expect(node.find(Styled.ModalBody)).not.toExist();
-    expect(node.find(Modal.Footer)).not.toExist();
+    expect(screen.getByText('Some Headline')).toBeInTheDocument();
+    expect(screen.getByText(/"firstname": "Max"/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /exit modal/i})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /close modal/i})
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('editable-content')).toHaveAttribute('disabled');
   });
 
-  it('should have a fallback, when incorrect mode property is passed', () => {
-    const originalConsoleError = global.console.error;
-    global.console.error = jest.fn();
+  it('should render visible modal in edit mode', () => {
+    render(
+      <CodeModal
+        handleModalClose={jest.fn()}
+        headline="Some Headline"
+        initialValue={validJSON}
+        isModalVisible={true}
+        mode="edit"
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    const node = mountNode(testData.userOpensModalWithUnknownMode);
-
-    expect(node.find(Modal.Header)).toExist();
-    expect(node.find(Styled.ModalBody)).toExist();
-    expect(node.find(Modal.Footer)).toExist();
-
-    global.console.error = originalConsoleError;
+    expect(screen.getByText('Some Headline')).toBeInTheDocument();
+    expect(screen.getByText(/"firstname": "Max"/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /exit modal/i})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /close modal/i})
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('editable-content')).not.toHaveAttribute(
+      'disabled'
+    );
   });
 
-  describe('view', () => {
-    it('should render not editable code editor', () => {
-      const node = mountNode(testData.userOpensViewModal);
+  it('should render non-visible modal', () => {
+    render(
+      <CodeModal
+        handleModalClose={jest.fn()}
+        headline="Some Headline"
+        initialValue={validJSON}
+        isModalVisible={false}
+        mode="view"
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-      expect(node.find('code').props().contentEditable).toBe(false);
-    });
+    expect(screen.queryByText('Some Headline')).not.toBeInTheDocument();
+    expect(screen.queryByText(/"firstname": "Max"/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /exit modal/i})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /close modal/i})
+    ).not.toBeInTheDocument();
+  });
 
-    it('should render close button', () => {
-      const node = mountNode(testData.userOpensViewModal);
-      const closebtn = node.find('button[data-testid="primary-close-btn"]');
+  it('should close modal', () => {
+    const mockHandleCloseModal = jest.fn();
+    render(
+      <CodeModal
+        handleModalClose={mockHandleCloseModal}
+        headline="Some Headline"
+        initialValue={validJSON}
+        isModalVisible={true}
+        mode="view"
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-      expect(closebtn).toExist();
+    fireEvent.click(screen.getByRole('button', {name: /exit modal/i}));
+    expect(mockHandleCloseModal).toHaveBeenCalledTimes(1);
 
-      closebtn.simulate('click');
-      expect(testData.userOpensViewModal.handleModalClose).toHaveBeenCalled();
-    });
+    fireEvent.click(screen.getByRole('button', {name: /close modal/i}));
+    expect(mockHandleCloseModal).toHaveBeenCalledTimes(2);
+  });
+
+  it('should still render modal data if initial value is an invalid json', () => {
+    const mockHandleCloseModal = jest.fn();
+    render(
+      <CodeModal
+        handleModalClose={mockHandleCloseModal}
+        headline="Some Headline"
+        initialValue={brokenJSON}
+        isModalVisible={true}
+        mode="view"
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    expect(screen.getByText('Some Headline')).toBeInTheDocument();
+    expect(screen.getByText(brokenJSON)).toBeInTheDocument();
   });
 });

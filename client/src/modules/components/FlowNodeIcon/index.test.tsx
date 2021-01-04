@@ -5,71 +5,95 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 import FlowNodeIcon from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {TYPE, MULTI_INSTANCE_TYPE} from 'modules/constants';
 
-function getName(node: any) {
-  return node.find('svg').text();
-}
-
-function mountIcon(types: any, flowNodeInstanceType: string) {
-  return mount(
-    <FlowNodeIcon types={types} flowNodeInstanceType={flowNodeInstanceType} />,
-    {
-      wrappingComponent: ThemeProvider,
-    }
-  );
-}
-
 describe('FlowNodeIcon', () => {
   it('should render default icon', () => {
-    const node = mountIcon({}, '');
-    expect(getName(node)).toMatchSnapshot();
+    render(<FlowNodeIcon types={{}} flowNodeInstanceType={''} />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(
+      screen.getByText('flow-node-task-undefined.svg')
+    ).toBeInTheDocument();
   });
 
   it('should render parallel multi instance body', () => {
-    const node = mountIcon(
+    render(
+      <FlowNodeIcon
+        types={{
+          elementType: TYPE.TASK_SUBPROCESS,
+          multiInstanceType: MULTI_INSTANCE_TYPE.PARALLEL,
+        }}
+        flowNodeInstanceType={TYPE.MULTI_INSTANCE_BODY}
+      />,
       {
-        elementType: TYPE.TASK_SUBPROCESS,
-        multiInstanceType: MULTI_INSTANCE_TYPE.PARALLEL,
-      },
-      TYPE.MULTI_INSTANCE_BODY
+        wrapper: ThemeProvider,
+      }
     );
-    expect(getName(node)).toMatchSnapshot();
+
+    expect(
+      screen.getByText('flow-node-multi-instance-sequential.svg')
+    ).toBeInTheDocument();
   });
 
   it('should render sequential multi instance body', () => {
-    const node = mountIcon(
+    render(
+      <FlowNodeIcon
+        types={{
+          elementType: TYPE.TASK_SUBPROCESS,
+          multiInstanceType: MULTI_INSTANCE_TYPE.SEQUENTIAL,
+        }}
+        flowNodeInstanceType={TYPE.MULTI_INSTANCE_BODY}
+      />,
       {
-        elementType: TYPE.TASK_SUBPROCESS,
-        multiInstanceType: MULTI_INSTANCE_TYPE.SEQUENTIAL,
-      },
-      TYPE.MULTI_INSTANCE_BODY
+        wrapper: ThemeProvider,
+      }
     );
-    expect(getName(node)).toMatchSnapshot();
+
+    expect(
+      screen.getByText('flow-node-multi-instance-parallel.svg')
+    ).toBeInTheDocument();
   });
 
   it('should render intermediate timer event', () => {
-    const node = mountIcon(
+    render(
+      <FlowNodeIcon
+        types={{
+          elementType: TYPE.EVENT_INTERMEDIATE_CATCH,
+          eventType: TYPE.EVENT_TIMER,
+        }}
+        flowNodeInstanceType={TYPE.EVENT_INTERMEDIATE_CATCH}
+      />,
       {
-        elementType: TYPE.EVENT_INTERMEDIATE_CATCH,
-        eventType: TYPE.EVENT_TIMER,
-      },
-      TYPE.EVENT_INTERMEDIATE_CATCH
+        wrapper: ThemeProvider,
+      }
     );
-    expect(getName(node)).toMatchSnapshot();
+
+    expect(
+      screen.getByText('flow-node-event-timer-interrupting.svg')
+    ).toBeInTheDocument();
   });
 
   it('should render message boundary event', () => {
-    const node = mountIcon(
+    render(
+      <FlowNodeIcon
+        types={{
+          elementType: TYPE.EVENT_BOUNDARY_NON_INTERRUPTING,
+          eventType: TYPE.EVENT_MESSAGE,
+        }}
+        flowNodeInstanceType={TYPE.EVENT_BOUNDARY_NON_INTERRUPTING}
+      />,
       {
-        elementType: TYPE.EVENT_BOUNDARY_NON_INTERRUPTING,
-        eventType: TYPE.EVENT_MESSAGE,
-      },
-      TYPE.EVENT_BOUNDARY_NON_INTERRUPTING
+        wrapper: ThemeProvider,
+      }
     );
-    expect(getName(node)).toMatchSnapshot();
+
+    expect(
+      screen.getByText('flow-node-event-message-non-interrupting.svg')
+    ).toBeInTheDocument();
   });
 });

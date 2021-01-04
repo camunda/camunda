@@ -5,46 +5,32 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 import ExpandButton from './index';
-import * as Styled from './styled';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('ExpandButton', () => {
   it('should render arrow icon', () => {
-    // given
-    const node = mount(
+    render(
       // @ts-expect-error ts-migrate(2322) FIXME: Property 'iconButtonTheme' does not exist on type ... Remove this comment to see the full error message
       <ExpandButton isExpanded={false} iconButtonTheme="default" />,
-      {wrappingComponent: ThemeProvider}
+      {wrapper: ThemeProvider}
     );
 
-    // when
-    const ArrowIconNode = node.find(Styled.ArrowIcon);
-
-    // then
-    expect(ArrowIconNode).toExist();
+    expect(screen.getByTestId('arrow-icon')).toBeInTheDocument();
   });
 
   it('should render provided children inside the button', () => {
-    // given
-    const node = mount(
+    render(
       // @ts-expect-error ts-migrate(2322) FIXME: Property 'iconButtonTheme' does not exist on type ... Remove this comment to see the full error message
       <ExpandButton iconButtonTheme="default">
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
       </ExpandButton>,
-      {wrappingComponent: ThemeProvider}
+      {wrapper: ThemeProvider}
     );
 
-    // when
-    const ArrowIconNode = node.find(Styled.ArrowIcon);
-    const ChildNode1 = node.find('#child1');
-    const ChildNode2 = node.find('#child2');
-
-    // then
-    expect(ArrowIconNode).toExist();
-    expect(ChildNode1).toExist();
-    expect(ChildNode2).toExist();
+    expect(screen.getByText('child node 1')).toBeInTheDocument();
+    expect(screen.getByText('child node 2')).toBeInTheDocument();
   });
 });

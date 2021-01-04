@@ -5,14 +5,13 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
 import Pane from './index';
-import * as Styled from './styled';
 
 const SplitPaneHeader = () => <div>Header Content</div>;
 const SplitPaneBody = () => <div>Body Content</div>;
@@ -21,115 +20,134 @@ const mockDefaultProps = {
   handleExpand: jest.fn(),
 };
 
-const mountNode = (mockCustomProps: any) => {
-  return mount(
-    <ThemeProvider>
-      <Pane {...mockDefaultProps} {...mockCustomProps}>
-        <SplitPaneHeader />
-        <SplitPaneBody />
-      </Pane>
-    </ThemeProvider>
-  );
-};
-
 describe('Pane', () => {
   describe('top pane', () => {
     it('should not render expand buttons', () => {
-      // given
-      const node = mountNode({
-        expandState: EXPAND_STATE.COLLAPSED,
-      });
+      render(
+        <Pane {...mockDefaultProps} expandState={EXPAND_STATE.COLLAPSED}>
+          <SplitPaneHeader />
+          <SplitPaneBody />
+        </Pane>,
+        {wrapper: ThemeProvider}
+      );
 
-      // then
-      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
-      expect(CollapseButtonNode).toHaveLength(0);
+      expect(
+        screen.queryByRole('button', {name: 'Expand Bottom'})
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Expand Top'})
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('bottom pane', () => {
     it('should render CollapseButton with UP icon if pane is collapsed', () => {
-      // given
-      const node = mountNode({
-        paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.COLLAPSED,
-      });
+      render(
+        <Pane
+          {...mockDefaultProps}
+          expandState={EXPAND_STATE.COLLAPSED}
+          paneId={'BOTTOM'}
+        >
+          <SplitPaneHeader />
+          <SplitPaneBody />
+        </Pane>,
+        {wrapper: ThemeProvider}
+      );
 
-      // then
-      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
-
-      expect(CollapseButtonNode).toHaveLength(1);
-      expect(CollapseButtonNode.prop('direction')).toBe(DIRECTION.UP);
+      expect(
+        screen.getByRole('button', {name: 'Expand Bottom'})
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Expand Top'})
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('icon-UP')).toBeInTheDocument();
     });
 
     it("'should render both CollapseButtons if pane is in default position", () => {
-      // given
-      const node = mountNode({
-        paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.DEFAULT,
-      });
+      render(
+        <Pane
+          {...mockDefaultProps}
+          expandState={EXPAND_STATE.DEFAULT}
+          paneId={'BOTTOM'}
+        >
+          <SplitPaneHeader />
+          <SplitPaneBody />
+        </Pane>,
+        {wrapper: ThemeProvider}
+      );
 
-      // then
-      const CollapseButtonNodes = node.find(Styled.PaneCollapseButton);
-      expect(CollapseButtonNodes).toHaveLength(2);
-      expect(CollapseButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
-      expect(CollapseButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
+      expect(
+        screen.getByRole('button', {name: 'Expand Top'})
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Expand Bottom'})
+      ).toBeInTheDocument();
+
+      expect(screen.getByTestId('icon-DOWN')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-UP')).toBeInTheDocument();
     });
 
     it("should render CollapseButton with DOWN icon if pane is expanded'", () => {
-      // given
-      const node = mountNode({
-        paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.EXPANDED,
-      });
+      render(
+        <Pane
+          {...mockDefaultProps}
+          expandState={EXPAND_STATE.EXPANDED}
+          paneId={'BOTTOM'}
+        >
+          <SplitPaneHeader />
+          <SplitPaneBody />
+        </Pane>,
+        {wrapper: ThemeProvider}
+      );
 
-      // then
-      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
-      expect(CollapseButtonNode).toHaveLength(1);
-      expect(CollapseButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
+      expect(
+        screen.getByRole('button', {name: 'Expand Top'})
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Expand Bottom'})
+      ).not.toBeInTheDocument();
+
+      expect(screen.getByTestId('icon-DOWN')).toBeInTheDocument();
+      expect(screen.queryByTestId('icon-UP')).not.toBeInTheDocument();
     });
   });
 
   describe('handleExpand', () => {
-    const mockDefaultProps = {
-      handleExpand: jest.fn(),
-      resetExpanded: jest.fn(),
-      paneId: PANE_ID.BOTTOM,
-    };
+    const mockHandleExpand = jest.fn();
 
-    beforeEach(() => {
-      mockDefaultProps.handleExpand.mockClear();
-      mockDefaultProps.resetExpanded.mockClear();
+    afterEach(() => {
+      mockHandleExpand.mockClear();
     });
 
     describe('handleTopExpand', () => {
       it('should call handleExpand with PANE_ID.TOP', () => {
-        // given
-        const node = mountNode(mockDefaultProps);
-        const PaneNode = node.find(Pane);
+        render(
+          <Pane handleExpand={mockHandleExpand} paneId="BOTTOM">
+            <SplitPaneHeader />
+            <SplitPaneBody />
+          </Pane>,
+          {wrapper: ThemeProvider}
+        );
 
-        // when
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'handleTopExpand' does not exist on type ... Remove this comment to see the full error message
-        expect(PaneNode.instance().handleTopExpand());
+        fireEvent.click(screen.getByRole('button', {name: 'Expand Top'}));
 
-        // then
-        expect(mockDefaultProps.handleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
+        expect(mockHandleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
       });
     });
 
     describe('handleBottomExpand', () => {
       it('should call handleExpand with PANE_ID.BOTTOM', () => {
-        // given
-        const node = mountNode(mockDefaultProps);
-        const PaneNode = node.find(Pane);
-
-        // when
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'handleBottomExpand' does not exist on ty... Remove this comment to see the full error message
-        expect(PaneNode.instance().handleBottomExpand());
-
-        // then
-        expect(mockDefaultProps.handleExpand).toHaveBeenCalledWith(
-          PANE_ID.BOTTOM
+        render(
+          <Pane handleExpand={mockHandleExpand} paneId="BOTTOM">
+            <SplitPaneHeader />
+            <SplitPaneBody />
+          </Pane>,
+          {wrapper: ThemeProvider}
         );
+
+        fireEvent.click(screen.getByRole('button', {name: 'Expand Bottom'}));
+
+        expect(mockHandleExpand).toHaveBeenCalledWith(PANE_ID.BOTTOM);
       });
     });
   });

@@ -5,10 +5,8 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
+import {fireEvent, render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {ReactComponent as CloseLarge} from 'modules/components/Icon/close-large.svg';
 
 import Modal from './index';
 
@@ -16,33 +14,27 @@ const HeaderContent = () => <div>Header Content</div>;
 const BodyContent = () => <div>Body Content</div>;
 const onModalClose = jest.fn();
 const primaryButtonClickHandler = jest.fn();
-const isVisible = true;
 
-const mountNode = (props = {}) => {
-  return mount(
-    <ThemeProvider value="dark">
-      <Modal
-        {...props}
-        onModalClose={onModalClose}
-        isVisible={isVisible}
-        className="modal-root"
-        size="BIG"
-      >
-        <Modal.Header>
-          <HeaderContent />
-        </Modal.Header>
-        <Modal.Body>
-          <BodyContent />
-        </Modal.Body>
-        <Modal.Footer>
-          <Modal.PrimaryButton onClick={primaryButtonClickHandler}>
-            Some Primary Button
-          </Modal.PrimaryButton>
-        </Modal.Footer>
-      </Modal>
-    </ThemeProvider>
-  );
-};
+const ModalComponent = (
+  <Modal
+    onModalClose={onModalClose}
+    isVisible={true}
+    className="modal-root"
+    size="BIG"
+  >
+    <Modal.Header>
+      <HeaderContent />
+    </Modal.Header>
+    <Modal.Body>
+      <BodyContent />
+    </Modal.Body>
+    <Modal.Footer>
+      <Modal.PrimaryButton onClick={primaryButtonClickHandler}>
+        Some Primary Button
+      </Modal.PrimaryButton>
+    </Modal.Footer>
+  </Modal>
+);
 
 describe('Modal', () => {
   beforeEach(() => {
@@ -50,61 +42,34 @@ describe('Modal', () => {
   });
 
   it('should render modal in a div in the document body', () => {
-    // given
-    const node = mountNode();
+    render(ModalComponent, {wrapper: ThemeProvider});
 
-    // then
-    expect(document.querySelector('.modal-root')).toBeDefined();
-
-    // Header
-    expect(node.find(Modal.Header).find(HeaderContent)).toHaveLength(1);
-    expect(
-      node
-        .find(Modal.Header)
-        .find("[data-testid='cross-button']")
-        .find(CloseLarge)
-    ).toHaveLength(1);
-
-    // Body
-    expect(node.find(Modal.Body).find(BodyContent)).toHaveLength(1);
-
-    // Footer
-    expect(node.find(Modal.Footer).find(Modal.PrimaryButton)).toHaveLength(1);
+    expect(screen.getByText('Header Content')).toBeInTheDocument();
+    expect(screen.getByText('Body Content')).toBeInTheDocument();
+    expect(screen.getByTestId('cross-button')).toBeInTheDocument();
+    expect(screen.getByText('Some Primary Button')).toBeInTheDocument();
   });
 
-  it('should render a cross close button in the header', () => {
-    // given
-    const node = mountNode();
+  it('should call on modal close', () => {
+    render(ModalComponent, {wrapper: ThemeProvider});
 
-    // when
-    // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-    node
-      .find(Modal.Header)
-      .find("button[data-testid='cross-button']")
-      .prop('onClick')();
+    fireEvent.click(screen.getByTestId('cross-button'));
 
-    // then
     expect(onModalClose).toBeCalled();
   });
 
   it('should respond to key presses', () => {
-    // given
-    mountNode();
-    // @ts-expect-error ts-migrate(2345) FIXME: Object literal may only specify known properties, ... Remove this comment to see the full error message
-    const espcapeKeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 27});
-    // @ts-expect-error ts-migrate(2345) FIXME: Object literal may only specify known properties, ... Remove this comment to see the full error message
-    const enterkeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 13});
+    render(ModalComponent, {wrapper: ThemeProvider});
 
-    // Pressing <ESC>
-    // when
+    //@ts-ignore
+    const espcapeKeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 27});
+    //@ts-ignore
+    const enterKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 13});
+
     document.dispatchEvent(espcapeKeKeyPressEvent);
-    // then
     expect(onModalClose).toBeCalled();
 
-    // Pressing <Enter>
-    // when
-    document.dispatchEvent(enterkeKeyPressEvent);
-    // then
+    document.dispatchEvent(enterKeyPressEvent);
     expect(primaryButtonClickHandler).toBeCalled();
   });
 });

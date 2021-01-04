@@ -14,8 +14,8 @@ import * as Styled from './styled';
 const MODE = {EDIT: 'edit', VIEW: 'view'};
 
 type Props = {
-  handleModalClose?: (...args: any[]) => any;
-  isModalVisible?: boolean;
+  handleModalClose: (...args: any[]) => any;
+  isModalVisible: boolean;
   headline?: string;
   initialValue?: string;
   mode: 'edit' | 'view';
@@ -29,14 +29,12 @@ function CodeModal({
   initialValue,
 }: Props) {
   function onModalClose() {
-    // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
     handleModalClose();
   }
 
   return (
     <Modal
       onModalClose={onModalClose}
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'undefined' is not assignable to type 'boolea... Remove this comment to see the full error message
       isVisible={isModalVisible}
       size={SIZES.BIG}
     >

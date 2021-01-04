@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {fireEvent, render, screen} from '@testing-library/react';
 
 import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from './index';
@@ -13,8 +13,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('CollapsablePanel', () => {
   it('should render children when expanded', () => {
-    // when
-    const node = mount(
+    render(
       <CollapsablePanel
         label="Cool Panel"
         panelPosition={PANEL_POSITION.RIGHT}
@@ -23,48 +22,46 @@ describe('CollapsablePanel', () => {
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrappingComponent: ThemeProvider}
+      {wrapper: ThemeProvider}
     );
 
-    // then
-    const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-    const collapsedPanel = node.find('[data-testid="collapsed-panel"]').first();
-    const content = expandedPanel.find('[data-testid="cool-panel-content"]');
-
-    expect(expandedPanel).toHaveStyleRule('visibility', 'visible');
-    expect(collapsedPanel).toHaveStyleRule('visibility', 'hidden');
-    expect(content).toExist();
-    expect(content.text()).toContain('Cool Panel Content');
+    expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
+      'visibility',
+      'visible'
+    );
+    expect(screen.getByTestId('collapsed-panel')).toHaveStyleRule(
+      'visibility',
+      'hidden'
+    );
   });
 
   it('should hide children when collapsed', () => {
-    // when
-    const node = mount(
+    render(
       <CollapsablePanel
         label="Cool Panel"
         panelPosition="RIGHT"
         isCollapsed={true}
         toggle={() => {}}
       >
-        <div data-testid="cool-panel-content">Cool Panel Content</div>
+        <div>Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrappingComponent: ThemeProvider}
+      {wrapper: ThemeProvider}
     );
 
-    // then
-    const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-    const collapsedPanel = node.find('[data-testid="collapsed-panel"]').first();
-
-    expect(collapsedPanel).toHaveStyleRule('visibility', 'visible');
-    expect(expandedPanel).toHaveStyleRule('visibility', 'hidden');
+    expect(screen.getByTestId('collapsed-panel')).toHaveStyleRule(
+      'visibility',
+      'visible'
+    );
+    expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
+      'visibility',
+      'hidden'
+    );
   });
 
   it('should trigger toggle on button clicks', () => {
-    // given
     const toggleMock = jest.fn();
 
-    // when
-    const node = mount(
+    render(
       <CollapsablePanel
         label="Cool Panel"
         panelPosition="RIGHT"
@@ -73,23 +70,18 @@ describe('CollapsablePanel', () => {
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrappingComponent: ThemeProvider}
+      {wrapper: ThemeProvider}
     );
 
-    // then
-    const collapseButton = node.find('[data-testid="collapse-button"]').first();
-    const expandButton = node.find('[data-testid="expand-button"]').first();
-
-    collapseButton.simulate('click');
-    expandButton.simulate('click');
+    fireEvent.click(screen.getByTestId('collapse-button'));
+    fireEvent.click(screen.getByTestId('expand-button'));
 
     expect(toggleMock).toHaveBeenCalledTimes(2);
   });
 });
 
 it('should have background color style rule when hasBackgroundColor is true', () => {
-  // when
-  const node = mount(
+  render(
     <CollapsablePanel
       label="Cool Panel"
       hasBackgroundColor
@@ -99,17 +91,17 @@ it('should have background color style rule when hasBackgroundColor is true', ()
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrappingComponent: ThemeProvider}
+    {wrapper: ThemeProvider}
   );
 
-  // then
-  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-  expect(expandedPanel).toHaveStyleRule('background-color', '#f7f8fa');
+  expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
+    'background-color',
+    '#f7f8fa'
+  );
 });
 
 it('should have border-right rule when panel position is RIGHT', () => {
-  // when
-  const node = mount(
+  render(
     <CollapsablePanel
       label="Cool Panel"
       panelPosition="RIGHT"
@@ -118,16 +110,17 @@ it('should have border-right rule when panel position is RIGHT', () => {
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrappingComponent: ThemeProvider}
+    {wrapper: ThemeProvider}
   );
 
-  // then
-  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-  expect(expandedPanel).toHaveStyleRule('border-right', 'none');
+  expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
+    'border-right',
+    'none'
+  );
 });
+
 it('should not have border-right rule when panel position is not RIGHT', () => {
-  // when
-  const node = mount(
+  render(
     <CollapsablePanel
       label="Cool Panel"
       panelPosition="LEFT"
@@ -136,10 +129,11 @@ it('should not have border-right rule when panel position is not RIGHT', () => {
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrappingComponent: ThemeProvider}
+    {wrapper: ThemeProvider}
   );
 
-  // then
-  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-  expect(expandedPanel).not.toHaveStyleRule('border-right', 'none');
+  expect(screen.getByTestId('expanded-panel')).not.toHaveStyleRule(
+    'border-right',
+    'none'
+  );
 });

@@ -19,7 +19,7 @@ const ExpandButton = React.forwardRef<any, Props>(function ExpandButton(
 ) {
   const renderIcon = () => (
     <Styled.Transition timeout={400} in={isExpanded} appear>
-      <Styled.ArrowIcon />
+      <Styled.ArrowIcon data-testid="arrow-icon" />
     </Styled.Transition>
   );
 

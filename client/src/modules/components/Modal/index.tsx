@@ -39,15 +39,10 @@ type ModalProps = {
 
 export default class Modal extends React.Component<ModalProps> {
   static Header: any;
-
   static Body = Styled.ModalBody;
-
   static BodyText = Styled.ModalBodyText;
-
   static Footer: any;
-
   static PrimaryButton: any;
-
   static SecondaryButton: any;
 
   eventListenerAdded: any;

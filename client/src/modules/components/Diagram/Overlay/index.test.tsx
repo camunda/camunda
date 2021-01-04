@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render} from '@testing-library/react';
 
 import Overlay from './index';
 
@@ -21,29 +21,25 @@ const mockProps = {
 const Child = () => <div>Child</div>;
 
 const mountNode = (customProps = {}) => {
-  return mount(
+  return render(
     <Overlay {...mockProps} {...customProps}>
       <Child />
     </Overlay>
   );
 };
 
-const mountNodeInContainer = (customProps = {}) => {
-  type ContainerProps = {
-    removeChild?: boolean;
-  };
-  const Container: React.FC<ContainerProps> = ({removeChild = false}) => (
-    <div>
-      {removeChild ? null : (
-        <Overlay {...mockProps} {...customProps}>
-          <Child />
-        </Overlay>
-      )}
-    </div>
-  );
-
-  return mount(<Container />);
+type ContainerProps = {
+  removeChild?: boolean;
 };
+const Container: React.FC<ContainerProps> = ({removeChild = false}) => (
+  <div>
+    {removeChild ? null : (
+      <Overlay {...mockProps}>
+        <Child />
+      </Overlay>
+    )}
+  </div>
+);
 
 // test overlay behavior
 describe('Overlay', () => {
@@ -51,18 +47,10 @@ describe('Overlay', () => {
     jest.clearAllMocks();
   });
 
-  it('should render overlay', () => {
-    // given
-    const node = mountNode();
-
-    // then
-    expect(node.find('Child')).toHaveLength(1);
-  });
-
   it('should add overlay on mount if the viewer is loaded', () => {
     // given
     mountNode();
-    const expectedHtml = mount(<Child />).html();
+    render(<Child />);
 
     // then
     expect(mockProps.onOverlayAdd).toBeCalled();
@@ -70,7 +58,6 @@ describe('Overlay', () => {
     expect(args[0]).toBe(mockProps.id);
     expect(args[1]).toBe(mockProps.type);
     expect(args[2].position).toEqual(mockProps.position);
-    expect(args[2].html.innerHTML).toEqual(expectedHtml);
   });
 
   it('should not add overlay on mount if the viewer is not loaded', () => {
@@ -83,10 +70,10 @@ describe('Overlay', () => {
 
   it('should clear overlay when component unmounts', () => {
     // given
-    const node = mountNodeInContainer();
+    const {rerender} = render(<Container />);
 
     // when
-    node.setProps({removeChild: true});
+    rerender(<Container removeChild={true} />);
 
     // then
     expect(mockProps.onOverlayClear).toBeCalled();
@@ -94,12 +81,16 @@ describe('Overlay', () => {
 
   it("should reattach to diagram when the viewer's load changes", () => {
     // given
-    const node = mountNode({isViewerLoaded: false});
+    const {rerender} = mountNode({isViewerLoaded: false});
     mockProps.onOverlayAdd.mockClear();
     mockProps.onOverlayClear.mockClear();
 
     // when
-    node.setProps({isViewerLoaded: true});
+    rerender(
+      <Overlay {...mockProps} isViewerLoaded={true}>
+        <Child />
+      </Overlay>
+    );
 
     // then
     expect(mockProps.onOverlayClear).toBeCalled();
@@ -108,12 +99,16 @@ describe('Overlay', () => {
 
   it('should reattach to diagram when id changes', () => {
     // given
-    const node = mountNode({isViewerLoaded: true});
+    const {rerender} = mountNode({isViewerLoaded: true});
     mockProps.onOverlayAdd.mockClear();
     mockProps.onOverlayClear.mockClear();
 
     // when
-    node.setProps({id: 'anotherId'});
+    rerender(
+      <Overlay {...mockProps} id={'anotherId'}>
+        <Child />
+      </Overlay>
+    );
 
     // then
     expect(mockProps.onOverlayClear).toBeCalled();

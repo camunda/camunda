@@ -29,7 +29,7 @@ const CollapseButton = React.forwardRef<any, Props>(function CollapseButton(
 
   return (
     <Styled.CollapseButton ref={ref} {...props} onClick={onClick}>
-      <TargetIcon />
+      <TargetIcon data-testid={`icon-${direction}`} />
     </Styled.CollapseButton>
   );
 });
