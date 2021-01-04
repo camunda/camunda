@@ -1,5 +1,7 @@
+@import 'shared-styles/shared-styles.scss';
+
 .OptionsList {
-  overflow-y: auto;
+  @include scrollable;
   overflow-x: hidden;
   border: 1px solid var(--silver-darken-80);
   border-radius: 3px;

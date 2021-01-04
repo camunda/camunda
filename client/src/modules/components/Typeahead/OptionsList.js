@@ -51,7 +51,7 @@ export default function OptionsList({
     React.cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
       onClick: (evt) => onSelect(option),
-      onMouseDown: (evt) => !option.props.disabled && onMouseDown(evt),
+      onMouseDown: (evt) => !option.props.disabled && onMouseDown?.(evt),
       children: highlightText(option.props.children, filter),
     })
   );

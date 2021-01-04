@@ -35,7 +35,6 @@ export default function MultiSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [optionClicked, setOptionClicked] = useState(false);
   const [insideClick, setInsideClick] = useState(false);
 
   const input = useRef();
@@ -57,8 +56,8 @@ export default function MultiSelect({
   }
 
   function hideList() {
-    if (!optionClicked) {
-      if (query && !insideClick) {
+    if (!insideClick) {
+      if (query) {
         setQuery('');
       }
       onClose();
@@ -71,7 +70,6 @@ export default function MultiSelect({
 
   function selectOption({props: {value}}) {
     onAdd(value);
-    setOptionClicked(false);
   }
 
   function getPlaceholderText() {
@@ -94,7 +92,11 @@ export default function MultiSelect({
   }
 
   return (
-    <div className={classnames('MultiSelect', className)} onMouseDown={() => setInsideClick(true)}>
+    <div
+      className={classnames('MultiSelect', className)}
+      onMouseDown={() => setInsideClick(true)}
+      onMouseUp={() => setInsideClick(false)}
+    >
       <UncontrolledMultiValueInput
         inputClassName="typeaheadInput"
         ref={input}
@@ -125,7 +127,6 @@ export default function MultiSelect({
         filter={query}
         onSelect={selectOption}
         input={input.current}
-        onMouseDown={() => setOptionClicked(true)}
         loading={loading}
         hasMore={hasMore}
         typedOption={typedOption}
