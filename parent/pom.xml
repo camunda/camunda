@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.8.0</version.agrona>
+    <version.agrona>1.9.0</version.agrona>
     <version.animal-sniffer>1.19</version.animal-sniffer>
     <version.assertj>3.18.1</version.assertj>
     <version.awaitility>4.0.3</version.awaitility>
@@ -66,7 +66,7 @@
     <version.mockito>3.6.28</version.mockito>
     <version.mockito-jupiter>3.6.28</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.8.21</version.msgpack>
+    <version.msgpack>0.8.22</version.msgpack>
     <version.netty-tcnative>2.0.35.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.9.0</version.prometheus>
