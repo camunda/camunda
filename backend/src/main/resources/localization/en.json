@@ -844,6 +844,8 @@
         "incident": "Incident",
         "includesOpenIncident": "With Open Incidents",
         "includesResolvedIncident": "With Resolved Incidents",
+        "openIncident": "Open Incidents",
+        "resolvedIncident": "Resolved Incidents",
         "doesNotIncludeIncident": "Without Incidents"
       },
       "list": {

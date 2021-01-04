@@ -844,6 +844,8 @@
         "incident": "Zwischenfälle",
         "includesOpenIncident": "mit offenen Zwischenfällen",
         "includesResolvedIncident": "mit gelösten Zwischenfällen",
+        "openIncident": "Offene Zwischenfälle",
+        "resolvedIncident": "Gelöste Zwischenfälle",
         "doesNotIncludeIncident": "ohne Zwischenfälle"
       },
       "list": {

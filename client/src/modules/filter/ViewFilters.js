@@ -22,10 +22,10 @@ export default function ViewFilters({
     >
       <Dropdown.Submenu label={t('common.filter.types.incident')}>
         <Dropdown.Option onClick={filterByInstancesOnly('includesOpenIncident')}>
-          {t('common.filter.types.includesOpenIncident')}
+          {t('common.filter.types.openIncident')}
         </Dropdown.Option>
         <Dropdown.Option onClick={filterByInstancesOnly('includesResolvedIncident')}>
-          {t('common.filter.types.includesResolvedIncident')}
+          {t('common.filter.types.resolvedIncident')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Option
