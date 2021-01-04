@@ -171,6 +171,10 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
