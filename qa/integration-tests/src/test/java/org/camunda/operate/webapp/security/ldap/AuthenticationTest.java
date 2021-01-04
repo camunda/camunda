@@ -10,6 +10,7 @@ import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 )
 @ActiveProfiles({"ldap-auth", "test"})
 @ContextConfiguration(initializers = {AuthenticationTest.Initializer.class})
+@Ignore("https://github.com/rroemhild/docker-test-openldap/issues/23")
 public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
