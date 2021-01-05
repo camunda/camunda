@@ -18,11 +18,18 @@ Enzyme.configure({adapter: new Adapter()});
 
 // mock date util
 jest.mock('modules/utils/date/formatDate');
-jest.mock('@camunda-cloud/common-ui-react', () => ({
-  CmNotificationContainer: () => {
-    return null;
-  },
-}));
+jest.mock('@camunda-cloud/common-ui-react', () => {
+  const React = require('react');
+
+  return {
+    CmNotificationContainer: React.forwardRef(
+      function CmNotificationContainer() {
+        return null;
+      }
+    ),
+  };
+});
+
 global.beforeEach(() => {
   localStorage.clear();
 
