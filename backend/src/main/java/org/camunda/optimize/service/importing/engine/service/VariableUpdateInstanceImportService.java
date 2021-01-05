@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,9 +78,6 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
     List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
-      if (dto != null && dto.getTimestamp() == null) {
-        dto.setTimestamp(OffsetDateTime.now());
-      }
       if (isValidVariable(dto)) {
         normalizeDateVariableFormats(dto);
         if (dto instanceof ProcessVariableDto) {

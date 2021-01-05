@@ -47,7 +47,9 @@ public class PluginDecisionOutputDto {
   /**
    * The value type of the variable.
    * Only simple variable types (i.e. Boolean, String, Date, Long, Short, Integer, Double) can be imported to optimize.
-   * Make sure to set the variable type to one of these values while adapting the outputs
+   * Make sure to set the variable type to one of these values while adapting the outputs.
+   *
+   * Note: This field is required in order to be imported to Optimize.
    */
   private String type;
 

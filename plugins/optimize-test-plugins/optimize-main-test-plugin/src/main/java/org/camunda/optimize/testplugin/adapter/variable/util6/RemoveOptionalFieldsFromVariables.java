@@ -11,12 +11,16 @@ import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RemoveTimestampFromVariables implements VariableImportAdapter {
+public class RemoveOptionalFieldsFromVariables implements VariableImportAdapter {
 
   @Override
   public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
     return list.stream()
-      .peek(pluginVariableDto -> pluginVariableDto.setTimestamp(null))
+      .peek(pluginVariableDto -> {
+        pluginVariableDto.setValue(null);
+        pluginVariableDto.setValueInfo(null);
+        pluginVariableDto.setTenantId(null);
+      })
       .collect(Collectors.toList());
   }
 }

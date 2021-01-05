@@ -118,17 +118,17 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
 
   @Test
   public void invalidPluginVariablesAreNotAddedToVariableImport() {
-    // given
+    // given a plugin that adds invalid variables
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util4");
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
+    importAllEngineEntitiesFromScratch();
 
-    // then only half the variables are added to Optimize
+    // then only the one valid variable instance is imported to Optimize
+    final List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
     assertThat(variablesResponseDtos)
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName)
@@ -169,8 +169,8 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
   }
 
   @Test
-  public void removeTimestampFromVariables() {
-    // given plugin that removes timestamps
+  public void removeOptionalFieldsFromVariables() {
+    // given plugin that clears optional fields
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util6");
 
     Map<String, Object> variables = new HashMap<>();

@@ -18,7 +18,7 @@ import java.util.Map;
 @Data
 public class PluginVariableDto {
 
-  /*
+  /**
    * The id of the variable.
    *
    * Note: This field is required in order to be imported to Optimize.
@@ -27,14 +27,14 @@ public class PluginVariableDto {
    */
   private String id;
 
-  /*
+  /**
    * The name of the variable.
    *
    * Note: This field is required in order to be imported to Optimize.
    */
   private String name;
 
-  /*
+  /**
    * The type of the variable. This can be all primitive types that are supported by the engine.
    * In particular, String, Integer, Long, Short, Double, Boolean, Date.
    *
@@ -42,13 +42,15 @@ public class PluginVariableDto {
    */
   private String type;
 
-  /*
+  /**
    * The value of the variable.
    */
   private String value;
 
-  /*
+  /**
    * The timestamp of the last update to the variable.
+   *
+   * Note: This field is required in order to be imported to Optimize.
    */
   private OffsetDateTime timestamp;
 
@@ -62,21 +64,21 @@ public class PluginVariableDto {
    */
   private Map<String, Object> valueInfo;
 
-  /*
+  /**
    * The process definition key of the process model, where the variable was created.
    *
    * Note: This field is required in order to be imported to Optimize.
    */
   private String processDefinitionKey;
 
-  /*
+  /**
    * The process definition id of the process model, where the variable was used.
    *
    * Note: This field is required in order to be imported to Optimize.
    */
   private String processDefinitionId;
 
-  /*
+  /**
    * The process instance id of the process instance, where the variable was used.
    *
    * Note: This field is required in order to be imported to Optimize.
