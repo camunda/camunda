@@ -161,7 +161,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     // when I add the flow node filter as well
     reportData.setFilter(
       ProcessFilterBuilder.filter()
-        .withOpenIncidentsOnly()
+        .withOpenIncident()
         .filterLevel(filterLevel)
         .add()
         .executedFlowNodes()
@@ -178,7 +178,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
 
   private List<ProcessFilterDto<?>> openIncidentFilter(final FilterApplicationLevel filterLevel) {
     return ProcessFilterBuilder.filter()
-      .withOpenIncidentsOnly()
+      .withOpenIncident()
       .filterLevel(filterLevel)
       .add()
       .buildList();

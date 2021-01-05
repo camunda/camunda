@@ -26,8 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.ZoneId;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -54,21 +53,23 @@ public class CsvExportServiceTest {
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionRequestDto());
+      new SingleProcessRawDataReportResult(
+        rawDataProcessReportResultDto,
+        new SingleProcessReportDefinitionRequestDto()
+      );
     when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));
 
     // when
-    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
+    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.of("+1"))
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
-      "/csv/process/single/raw_process_data.csv"
-    );
+      "/csv/process/single/raw_process_data.csv");
 
-    assertThat(actualContent, is(expectedContent));
+    assertThat(actualContent).isEqualTo(expectedContent);
   }
 
   @Test
@@ -77,19 +78,20 @@ public class CsvExportServiceTest {
     final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionRequestDto());
+      new SingleDecisionRawDataReportResult(
+        rawDataDecisionReportResultDto,
+        new SingleDecisionReportDefinitionRequestDto()
+      );
     when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));
 
     // when
-    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
+    byte[] csvContent = CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.of("+1"))
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
-    String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
-      "/csv/decision/raw_decision_data.csv"
-    );
-    assertThat(actualContent, is(expectedContent));
+    String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator("/csv/decision/raw_decision_data.csv");
+    assertThat(actualContent).isEqualTo(expectedContent);
   }
 }

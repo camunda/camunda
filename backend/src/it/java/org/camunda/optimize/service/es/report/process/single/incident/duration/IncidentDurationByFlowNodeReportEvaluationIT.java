@@ -35,6 +35,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -548,7 +549,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private Stream<Arguments> instanceLevelIncidentFilter() {
     return Stream.of(
       Arguments.of(
-        ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 3000.),
+        ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 3000.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 1000.),
       Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), null)
     );
@@ -591,24 +592,28 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   private Stream<Arguments> viewLevelIncidentFilter() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 3000.),
-      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1000.)
+      Arguments.of(
+        ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 1, null, 2000.),
+      Arguments.of(
+        ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 2, 1500., null)
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelIncidentFilter")
   public void viewLevelIncidentFilterIsAppliedAtViewLevel(final List<ProcessFilterDto<?>> filter,
-                                                          final Double expectedResult) {
+                                                          final Integer expectedInstanceCount,
+                                                          final Double firstExpectedResult,
+                                                          final Double secondExpectedResult) {
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(1L)
       .startProcessInstance()
-        .withOpenIncident()
-        .withIncidentDurationInSec(3L)
+        .withResolvedAndOpenIncident()
+        .withIncidentDurationInSec(2L)
       .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
@@ -619,12 +624,15 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    MapResultAsserter.asserter()
-      .processInstanceCount(1L)
+    final MapResultAsserter asserter = MapResultAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
-      .isComplete(true)
-      .groupedByContains(SERVICE_TASK_ID_1, expectedResult, SERVICE_TASK_NAME_1)
-      .doAssert(resultDto);
+      .isComplete(true);
+    Optional.ofNullable(firstExpectedResult)
+      .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1));
+    Optional.ofNullable(secondExpectedResult)
+      .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_2, result, SERVICE_TASK_NAME_2));
+    asserter.doAssert(resultDto);
   }
 
   private static Stream<List<ProcessFilterDto<?>>> nonIncidentViewLevelFilters() {

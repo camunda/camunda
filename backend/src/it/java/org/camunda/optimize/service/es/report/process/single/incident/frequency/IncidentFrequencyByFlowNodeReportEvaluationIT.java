@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -459,7 +460,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   private Stream<Arguments> instanceLevelIncidentFilter() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 1.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 1.),
       Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), null)
     );
@@ -501,23 +502,27 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
   private Stream<Arguments> viewLevelIncidentFilter() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 1.),
-      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1.)
+      Arguments.of(
+        ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 1, null, 1.),
+      Arguments.of(
+        ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 2, 2., null)
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelIncidentFilter")
   public void viewLevelIncidentFilterIsAppliedAtViewLevel(final List<ProcessFilterDto<?>> filter,
-                                                          final Double expectedIncidentCount) {
+                                                          final Integer expectedInstanceCount,
+                                                          final Double firstExpectedResult,
+                                                          final Double secondExpectedResult) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
       .startProcessInstance()
         .withResolvedIncident()
       .startProcessInstance()
-        .withOpenIncident()
+        .withResolvedAndOpenIncident()
       .startProcessInstance()
         .withoutIncident()
       .executeDeployment();
@@ -530,12 +535,15 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    MapResultAsserter.asserter()
-      .processInstanceCount(1L)
+    final MapResultAsserter asserter = MapResultAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(3L)
-      .isComplete(true)
-      .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
-      .doAssert(resultDto);
+      .isComplete(true);
+    Optional.ofNullable(firstExpectedResult)
+      .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1));
+    Optional.ofNullable(secondExpectedResult)
+      .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_2, result, SERVICE_TASK_NAME_2));
+    asserter.doAssert(resultDto);
   }
 
   @Test

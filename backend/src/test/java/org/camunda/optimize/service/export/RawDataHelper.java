@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 public class RawDataHelper {
-  public static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
-  public static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
+  private static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
+  private static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
   // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate, endDate, durationInMs,
   // engineName, tenantId, 3 variable fields
   public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 12;

@@ -266,8 +266,8 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
   private Stream<Arguments> filterAndExpectedResult() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 2.),
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 1.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 2.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 1.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 2.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1.),
       Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), 0.)
