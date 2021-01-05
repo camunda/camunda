@@ -9,7 +9,3 @@ Mit dem neuen Filter "Flow Node Data" können Sie nur die Flow Nodes anzeigen, d
 ## Incident Filter
 
 Probieren Sie den neuen Incident Filter aus, um aktuell geöffnete oder gelöste Incidents anzuzeigen oder Prozessinstanzen, bei denen in der Vergangenheit Incidents aufgetreten sind, von Ihrer Analyse auszuschließen.
-
-## Export und Import von Berichtsdefinitionen
-
-Berichts- und Dashboard-Definitionen können als JSON exportiert und in eine andere Umgebung importiert werden.
