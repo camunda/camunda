@@ -57,7 +57,7 @@ describe('ListPanel', () => {
   describe('messages', () => {
     it('should display a message for empty list when no filter is selected', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
@@ -83,7 +83,7 @@ describe('ListPanel', () => {
 
     it('should display a message for empty list when at least one filter is selected', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
@@ -112,7 +112,7 @@ describe('ListPanel', () => {
   describe('display instances List', () => {
     it('should render a skeleton', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
@@ -128,7 +128,7 @@ describe('ListPanel', () => {
 
     it('should render table body and footer', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(
             ctx.json({
               workflowInstances: [INSTANCE, ACTIVE_INSTANCE],
@@ -157,7 +157,7 @@ describe('ListPanel', () => {
 
     it('should render Footer when list is empty', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
@@ -180,7 +180,7 @@ describe('ListPanel', () => {
     jest.useFakeTimers();
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
       ),
       rest.post(
@@ -221,10 +221,10 @@ describe('ListPanel', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
       ),
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [INSTANCE],
@@ -248,7 +248,7 @@ describe('ListPanel', () => {
   describe('spinner', () => {
     it('should display spinners on batch operation', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
@@ -275,7 +275,7 @@ describe('ListPanel', () => {
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
 
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json(mockWorkflowInstances))
         )
       );
@@ -289,13 +289,13 @@ describe('ListPanel', () => {
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.status(500), ctx.json({}))
         ),
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
@@ -330,13 +330,13 @@ describe('ListPanel', () => {
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json(mockWorkflowInstances))
         ),
         rest.post('/api/workflow-instances/batch-operation', (_, res) =>
           res.networkError('A network error')
         ),
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
@@ -369,7 +369,7 @@ describe('ListPanel', () => {
 
   it('should show an error message', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json({}), ctx.status(500))
       )
     );
@@ -388,7 +388,7 @@ describe('ListPanel', () => {
     instancesStore.reset();
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.networkError('A network error')
       )
     );

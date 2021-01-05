@@ -370,7 +370,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   private String query() {
-    return WORKFLOW_INSTANCE_URL + "/new";
+    return WORKFLOW_INSTANCE_URL;
   }
 
 }

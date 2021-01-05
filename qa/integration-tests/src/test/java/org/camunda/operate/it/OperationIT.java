@@ -807,7 +807,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   private String query() {
-    return QUERY_INSTANCES_URL + "/new";
+    return QUERY_INSTANCES_URL;
   }
 
 }

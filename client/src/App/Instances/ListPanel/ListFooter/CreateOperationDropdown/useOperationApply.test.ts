@@ -37,7 +37,7 @@ describe('useOperationApply', () => {
 
   beforeEach(async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
@@ -101,7 +101,7 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -141,7 +141,7 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -183,7 +183,7 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -227,7 +227,7 @@ describe('useOperationApply', () => {
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -263,7 +263,7 @@ describe('useOperationApply', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -271,7 +271,7 @@ describe('useOperationApply', () => {
           })
         )
       ),
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 200,
@@ -317,7 +317,7 @@ describe('useOperationApply', () => {
       '2251799813685594',
     ]);
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -325,7 +325,7 @@ describe('useOperationApply', () => {
           })
         )
       ),
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 200,

@@ -1107,7 +1107,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private String query() {
-    return QUERY_INSTANCES_URL + "/new";
+    return QUERY_INSTANCES_URL;
   }
 
 }

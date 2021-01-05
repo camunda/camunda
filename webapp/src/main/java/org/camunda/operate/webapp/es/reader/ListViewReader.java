@@ -20,7 +20,6 @@ import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.ListViewTemplate;
-import org.camunda.operate.webapp.rest.dto.SortingDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -42,7 +41,6 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -217,85 +215,11 @@ public class ListViewReader {
     }
   }
 
-  /**
-   * Queries workflow instances by different criteria (with pagination).
-   * @param workflowInstanceRequest
-   * @param firstResult
-   * @param maxResults
-   * @return
-   */
-  public ListViewResponseDto queryWorkflowInstances_OLD(ListViewQueryDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
-    ListViewResponseDto result = new ListViewResponseDto();
-
-    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView_OLD(workflowInstanceRequest, firstResult, maxResults, result);
-    List<Long> workflowInstanceKeys = CollectionUtil.map(workflowInstanceEntities,workflowInstanceEntity -> Long.valueOf(workflowInstanceEntity.getId()));
-    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(workflowInstanceKeys);
-
-    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(workflowInstanceKeys);
-
-    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
-    result.setWorkflowInstances(workflowInstanceDtoList);
-    return result;
-  }
-
-  public List<WorkflowInstanceForListViewEntity> queryListView_OLD(
-      ListViewQueryDto workflowInstanceRequest,
-    Integer firstResult, Integer maxResults, ListViewResponseDto result) {
-    SearchSourceBuilder searchSourceBuilder = createSearchSourceBuilder_OLD(workflowInstanceRequest);
-    searchSourceBuilder
-      .from(firstResult)
-      .size(maxResults);
-
-    SearchRequest searchRequest = createSearchRequest(workflowInstanceRequest)
-        .source(searchSourceBuilder);
-
-    logger.debug("Search request will search in: \n{}", searchRequest.indices());
-
-    try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      result.setTotalCount(response.getHits().getTotalHits());
-      return ElasticsearchUtil
-        .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
   private SearchRequest createSearchRequest(ListViewQueryDto workflowInstanceRequest) {
     if (workflowInstanceRequest.isFinished()) {
       return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
     }
     return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
-  }
-
-  public SearchSourceBuilder createSearchSourceBuilder_OLD(ListViewQueryDto request) {
-
-    final QueryBuilder query = createRequestQuery(request);
-
-    logger.debug("Workflow instance search request: \n{}", query.toString());
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query);
-    applySorting_OLD(searchSourceBuilder, request.getSorting());
-    return searchSourceBuilder;
-  }
-
-  private void applySorting_OLD(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
-    FieldSortBuilder defaultSorting = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
-    if (sorting == null) {
-      //apply default sorting
-      searchSourceBuilder.sort(defaultSorting);
-    } else {
-      String sortBy = sorting.getSortBy();
-      if(sortBy.equals(ListViewTemplate.ID)) {
-        sorting.setSortBy(ListViewTemplate.KEY);
-      }
-      searchSourceBuilder
-        .sort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
-        .sort(defaultSorting);
-    }
   }
 
   private QueryBuilder createRequestQuery(ListViewQueryDto request) {

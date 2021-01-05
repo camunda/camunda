@@ -81,19 +81,6 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_WORKFLOWINSTANCES}, description = "How long does it take to retrieve the workflowinstances by query.")
-  public ListViewResponseDto queryWorkflowInstancesOld(
-      @RequestBody ListViewQueryDto workflowInstanceRequest,
-      @RequestParam("firstResult") Integer firstResult,   //required
-      @RequestParam("maxResults") Integer maxResults) {   //required
-    if (workflowInstanceRequest.getWorkflowVersion() != null && workflowInstanceRequest.getBpmnProcessId() == null) {
-      throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
-    }
-    return listViewReader.queryWorkflowInstances_OLD(workflowInstanceRequest, firstResult, maxResults);
-  }
-
-  @ApiOperation("Query workflow instances by different parameters")
-  @PostMapping("/new")
-  @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_WORKFLOWINSTANCES}, description = "How long does it take to retrieve the workflowinstances by query.")
   public ListViewResponseDto queryWorkflowInstances(
       @RequestBody ListViewRequestDto workflowInstanceRequest) {
     if (workflowInstanceRequest.getQuery() == null) {

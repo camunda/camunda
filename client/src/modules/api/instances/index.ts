@@ -71,7 +71,7 @@ async function fetchWorkflowInstanceIncidents(
 }
 
 async function fetchWorkflowInstances(payload: WorkflowInstancesQuery) {
-  return await post(`${URL}/new`, payload);
+  return await post(`${URL}`, payload);
 }
 
 async function fetchSequenceFlows(

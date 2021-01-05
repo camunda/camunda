@@ -45,7 +45,7 @@ describe('DiagramPanel', () => {
 
   beforeEach(() => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>

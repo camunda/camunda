@@ -111,7 +111,7 @@ describe('stores/instances', () => {
 
   it('should fetch initial instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -135,7 +135,7 @@ describe('stores/instances', () => {
 
   it('should fetch next instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -147,7 +147,7 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             ...mockWorkflowInstances,
@@ -173,7 +173,7 @@ describe('stores/instances', () => {
       workflowInstancesCount: 2,
     });
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             ...mockWorkflowInstances,
@@ -203,7 +203,7 @@ describe('stores/instances', () => {
 
   it('should fetch previous instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -215,7 +215,7 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             ...mockWorkflowInstances,
@@ -237,7 +237,7 @@ describe('stores/instances', () => {
       workflowInstancesCount: 1,
     });
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             ...mockWorkflowInstances,
@@ -267,7 +267,7 @@ describe('stores/instances', () => {
 
   it('should refresh all instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -280,7 +280,7 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -299,7 +299,7 @@ describe('stores/instances', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -323,7 +323,7 @@ describe('stores/instances', () => {
 
   it('should reset store (keep the filteredInstancesCount value)', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -348,7 +348,7 @@ describe('stores/instances', () => {
 
   it('should get visible ids in list panel', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -365,7 +365,7 @@ describe('stores/instances', () => {
 
   it('should get areWorkflowInstancesEmpty', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -378,7 +378,7 @@ describe('stores/instances', () => {
     expect(instancesStore.areWorkflowInstancesEmpty).toBe(false);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json({workflowInstances: [], totalCount: 0}))
       )
     );
@@ -393,7 +393,7 @@ describe('stores/instances', () => {
 
   it('should mark instances with active operations', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -448,7 +448,7 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -505,7 +505,7 @@ describe('stores/instances', () => {
   it('should unmark instances with active operations', async () => {
     // when polling all visible instances
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -529,7 +529,7 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -554,7 +554,7 @@ describe('stores/instances', () => {
 
     // when not polling all visible instances
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -589,7 +589,7 @@ describe('stores/instances', () => {
     instancesStore.addCompletedOperationsHandler(handlerMock);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
@@ -604,7 +604,7 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -616,7 +616,7 @@ describe('stores/instances', () => {
         )
       ),
       //refresh
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -642,7 +642,7 @@ describe('stores/instances', () => {
 
   it('should poll instances by id when there are instances with active operations', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
@@ -665,7 +665,7 @@ describe('stores/instances', () => {
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['2']);
     mockServer.use(
       // mock for fetching instances when there is an active operation
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -680,7 +680,7 @@ describe('stores/instances', () => {
         )
       ),
       // mock for refreshing instances when an instance operation is completed
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -710,7 +710,7 @@ describe('stores/instances', () => {
   describe('fetch instances autorun', () => {
     beforeEach(() => {
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json(mockWorkflowInstances))
         )
       );

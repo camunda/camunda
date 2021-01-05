@@ -241,7 +241,7 @@ describe('stores/workflowStatistics', () => {
 
     jest.useFakeTimers();
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -258,12 +258,12 @@ describe('stores/workflowStatistics', () => {
 
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
         )
       ),
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
         )
@@ -296,7 +296,7 @@ describe('stores/workflowStatistics', () => {
 
     jest.useFakeTimers();
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             workflowInstances: [
@@ -313,12 +313,12 @@ describe('stores/workflowStatistics', () => {
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
         )
       ),
-      rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 2})
         )

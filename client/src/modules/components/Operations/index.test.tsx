@@ -126,7 +126,7 @@ describe('Operations', () => {
       jest.useFakeTimers();
 
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(
             ctx.json({workflowInstances: [ACTIVE_INSTANCE], totalCount: 1})
           )
@@ -164,10 +164,10 @@ describe('Operations', () => {
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
       mockServer.use(
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
         ),
-        rest.post('/api/workflow-instances/new', (_, res, ctx) =>
+        rest.post('/api/workflow-instances', (_, res, ctx) =>
           res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 2}))
         )
       );

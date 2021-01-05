@@ -136,7 +136,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   }
 
   private String queryWorkflowInstances() {
-    return QUERY_LIST_VIEW_URL + "/new";
+    return QUERY_LIST_VIEW_URL;
   }
 
   private String queryIncidentsByWorkflowInstanceId(String workflowInstanceId) {

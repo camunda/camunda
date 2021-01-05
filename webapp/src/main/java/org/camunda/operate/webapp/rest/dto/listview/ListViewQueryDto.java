@@ -9,8 +9,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
-import org.camunda.operate.webapp.rest.dto.SortingDto;
-import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.Objects;
 
 @ApiModel("Workflow instance query")
 public class ListViewQueryDto {
@@ -54,9 +53,6 @@ public class ListViewQueryDto {
   private VariablesQueryDto variable;
 
   private String batchOperationId;
-
-  @Deprecated
-  private SortingDto sorting;
 
   public ListViewQueryDto() {
   }
@@ -231,92 +227,42 @@ public class ListViewQueryDto {
     this.batchOperationId = batchOperationId;
   }
 
-  @Deprecated
-  public SortingDto getSorting() {
-    return sorting;
-  }
-
-  @Deprecated
-  public void setSorting(SortingDto sorting) {
-    if (sorting != null && !ListViewRequestDto.VALID_SORT_BY_VALUES.contains(sorting.getSortBy())) {
-      throw new InvalidRequestException("SortBy parameter has invalid value: " + sorting.getSortBy());
-    }
-    this.sorting = sorting;
-  }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-
-    ListViewQueryDto that = (ListViewQueryDto) o;
-
-    if (running != that.running)
-      return false;
-    if (active != that.active)
-      return false;
-    if (incidents != that.incidents)
-      return false;
-    if (finished != that.finished)
-      return false;
-    if (completed != that.completed)
-      return false;
-    if (canceled != that.canceled)
-      return false;
-    if (ids != null ? !ids.equals(that.ids) : that.ids != null)
-      return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
-      return false;
-    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
-      return false;
-    if (startDateAfter != null ? !startDateAfter.equals(that.startDateAfter) : that.startDateAfter != null)
-      return false;
-    if (startDateBefore != null ? !startDateBefore.equals(that.startDateBefore) : that.startDateBefore != null)
-      return false;
-    if (endDateAfter != null ? !endDateAfter.equals(that.endDateAfter) : that.endDateAfter != null)
-      return false;
-    if (endDateBefore != null ? !endDateBefore.equals(that.endDateBefore) : that.endDateBefore != null)
-      return false;
-    if (workflowIds != null ? !workflowIds.equals(that.workflowIds) : that.workflowIds != null)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (workflowVersion != null ? !workflowVersion.equals(that.workflowVersion) : that.workflowVersion != null)
-      return false;
-    if (excludeIds != null ? !excludeIds.equals(that.excludeIds) : that.excludeIds != null)
-      return false;
-    if (variable != null ? !variable.equals(that.variable) : that.variable != null)
-      return false;
-    if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
-      return false;
-    return sorting != null ? sorting.equals(that.sorting) : that.sorting == null;
-
+    }
+    final ListViewQueryDto that = (ListViewQueryDto) o;
+    return running == that.running &&
+        active == that.active &&
+        incidents == that.incidents &&
+        finished == that.finished &&
+        completed == that.completed &&
+        canceled == that.canceled &&
+        Objects.equals(ids, that.ids) &&
+        Objects.equals(errorMessage, that.errorMessage) &&
+        Objects.equals(activityId, that.activityId) &&
+        Objects.equals(startDateAfter, that.startDateAfter) &&
+        Objects.equals(startDateBefore, that.startDateBefore) &&
+        Objects.equals(endDateAfter, that.endDateAfter) &&
+        Objects.equals(endDateBefore, that.endDateBefore) &&
+        Objects.equals(workflowIds, that.workflowIds) &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
+        Objects.equals(workflowVersion, that.workflowVersion) &&
+        Objects.equals(excludeIds, that.excludeIds) &&
+        Objects.equals(variable, that.variable) &&
+        Objects.equals(batchOperationId, that.batchOperationId);
   }
 
   @Override
   public int hashCode() {
-    int result = (running ? 1 : 0);
-    result = 31 * result + (active ? 1 : 0);
-    result = 31 * result + (incidents ? 1 : 0);
-    result = 31 * result + (finished ? 1 : 0);
-    result = 31 * result + (completed ? 1 : 0);
-    result = 31 * result + (canceled ? 1 : 0);
-    result = 31 * result + (ids != null ? ids.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    result = 31 * result + (startDateAfter != null ? startDateAfter.hashCode() : 0);
-    result = 31 * result + (startDateBefore != null ? startDateBefore.hashCode() : 0);
-    result = 31 * result + (endDateAfter != null ? endDateAfter.hashCode() : 0);
-    result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
-    result = 31 * result + (workflowIds != null ? workflowIds.hashCode() : 0);
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
-    result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
-    result = 31 * result + (variable != null ? variable.hashCode() : 0);
-    result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
-    result = 31 * result + (sorting != null ? sorting.hashCode() : 0);
-    return result;
+    return Objects
+        .hash(running, active, incidents, finished, completed, canceled, ids, errorMessage,
+            activityId, startDateAfter, startDateBefore, endDateAfter, endDateBefore, workflowIds,
+            bpmnProcessId, workflowVersion, excludeIds, variable, batchOperationId);
   }
 }
