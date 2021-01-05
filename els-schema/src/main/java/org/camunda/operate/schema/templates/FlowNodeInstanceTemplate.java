@@ -5,9 +5,11 @@
  */
 package org.camunda.operate.schema.templates;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(value = "camunda.operate.isNextFlowNodeInstances", havingValue = "true", matchIfMissing = false)
 public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
 
   public static final String INDEX_NAME = "flownode-instance";

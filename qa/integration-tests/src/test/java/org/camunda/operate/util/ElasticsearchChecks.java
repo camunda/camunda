@@ -66,10 +66,10 @@ public class ElasticsearchChecks {
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
 
-  @Autowired
+  @Autowired(required = false)
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @Autowired
+  @Autowired(required = false)
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired

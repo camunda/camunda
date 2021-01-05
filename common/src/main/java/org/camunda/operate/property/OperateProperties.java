@@ -32,8 +32,8 @@ public class OperateProperties {
    * Indicates, whether CSRF prevention is enabled.
    */
   private boolean csrfPreventionEnabled = true;
-  
-  /** 
+
+  /**
    * Standard user data
    */
   private String username = "demo";
@@ -48,6 +48,11 @@ public class OperateProperties {
 
   @Value("${camunda.operate.internal.schema.version}")
   private String schemaVersion;
+
+  /**
+   * Temporary flag to enable/disable new flow node instances functionality.
+   */
+  private boolean isNextFlowNodeInstances = false;
 
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
@@ -108,7 +113,7 @@ public class OperateProperties {
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
-  
+
   public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
@@ -202,6 +207,15 @@ public class OperateProperties {
 
   public void setSchemaVersion(String schemaVersion) {
     this.schemaVersion = schemaVersion;
+  }
+
+  public boolean isNextFlowNodeInstances() {
+    return isNextFlowNodeInstances;
+  }
+
+  public OperateProperties setNextFlowNodeInstances(final boolean nextFlowNodeInstances) {
+    isNextFlowNodeInstances = nextFlowNodeInstances;
+    return this;
   }
 
 }

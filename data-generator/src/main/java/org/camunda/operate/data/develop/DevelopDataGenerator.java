@@ -70,7 +70,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired
   private ObjectMapper objectMapper;
 
-  @Autowired
+  @Autowired(required = false)
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired

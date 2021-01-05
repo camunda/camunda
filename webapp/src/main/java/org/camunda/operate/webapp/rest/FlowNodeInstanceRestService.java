@@ -15,6 +15,7 @@ import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 })
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
+@ConditionalOnProperty(value = "camunda.operate.isNextFlowNodeInstances", havingValue = "true", matchIfMissing = false)
 public class FlowNodeInstanceRestService {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";
