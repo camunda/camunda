@@ -7,6 +7,8 @@ package org.camunda.optimize.upgrade;
 
 import com.google.common.collect.ImmutableList;
 import io.github.netmikey.logunit.api.LogCapturer;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
@@ -20,9 +22,11 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.matchers.MatchType;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpOverrideForwardedRequest;
@@ -37,50 +41,31 @@ import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT {
+  public static final String NEWEST_INDEX_SUFFIX = "-000002";
   @RegisterExtension
   protected final LogCapturer schemaUpdateClientLogs = LogCapturer.create().captureForType(SchemaUpgradeClient.class);
 
   @Test
-  public void detectRunningReindexAndWaitForIt() throws IOException {
+  public void singleIndexDetectRunningReindexAndWaitForIt() throws IOException {
     // given a prepared index with some data in it
-    upgradeProcedure.performUpgrade(
-      UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(FROM_VERSION)
-        .toVersion(INTERMEDIATE_VERSION)
-        .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(TEST_INDEX_V1)))
-        .build()
-    );
-
+    createIndex(TEST_INDEX_V1);
     insertTestDocuments(5);
-
     // and the update was run
     final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_V2);
-    final UpgradePlan upgradePlan =
-      UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(INTERMEDIATE_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(upgradeStep)
-        .build();
-
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // with a throttled reindex (so it is still pending later)
     final HttpRequest reindexRequest = forwardThrottledReindexRequestWithOneDocPerSecond(
       getVersionedIndexName(TEST_INDEX_V1.getIndexName(), 1),
       getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)
     );
-
     // and getting the reindex status immediately failed and aborted the upgrade
-    final HttpRequest getReindexStatusRequest = request().withPath("/_tasks/.*").withMethod(GET);
-    esMockServer
-      .when(getReindexStatusRequest, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
-    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(reindexRequest, atLeast(1));
-    esMockServer.verify(getReindexStatusRequest, exactly(1));
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
 
     // when it is retried and any new reindex operation would get rejected
     esMockServer
@@ -90,19 +75,13 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it succeeds
-    final List<UpgradeStepLogEntryDto> updateLogEntries = getAllDocumentsOfIndexAs(
-      UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class
-    );
-    assertThat(updateLogEntries)
-      .contains(
-        UpgradeStepLogEntryDto.builder()
-          .indexName(upgradeStep.getIndex().getIndexName())
-          .optimizeVersion(TO_VERSION)
-          .stepNumber(1)
-          .stepType(upgradeStep.getType())
-          .appliedDate(frozenDate.toInstant())
-          .build()
-      );
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
+    assertThat(newIndex.getAliases()).hasSize(1);
+    assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
+      .first()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
     schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
     schemaUpdateClientLogs.assertContains(
@@ -111,35 +90,100 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   }
 
   @Test
-  public void detectFinishedReindexAndSkipIt() throws IOException {
+  public void templatedIndexDetectRunningReindexAndWaitForIt() throws IOException {
     // given a prepared index with some data in it
-    upgradeProcedure.performUpgrade(
-      UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(FROM_VERSION)
-        .toVersion(INTERMEDIATE_VERSION)
-        .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(TEST_INDEX_V1)))
-        .build()
-    );
-
+    createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
     insertTestDocuments(5);
+    // and the update was run
+    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
+    // with a throttled reindex (so it is still pending later)
+    final HttpRequest firstIndexReindexRequest = forwardThrottledReindexRequestWithOneDocPerSecond(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 1) + INDEX_SUFFIX_PRE_ROLLOVER,
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    );
+    // and getting the reindex status immediately failed and aborted the upgrade
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, firstIndexReindexRequest);
 
+    // when it is retried and any new reindex operation would get rejected
+    esMockServer
+      .when(firstIndexReindexRequest, Times.unlimited())
+      .error(HttpError.error().withDropConnection(true));
+    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then it succeeds
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    ))
+      .first()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+
+    schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
+    schemaUpdateClientLogs.assertContains(
+      "from index [optimize-users_v1-000001] to [optimize-users_v2-000001], will wait for it to finish."
+    );
+  }
+
+  @Test
+  public void templatedRolledOverIndexDetectRunningReindexAndWaitForIt() throws IOException {
+    // given a prepared index with some data in it and being rolled over
+    createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
+    insertTestDocuments(5);
+    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    insertTestDocuments(5);
+    // and the update was run
+    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
+    // with a throttled reindex (so it is still pending later)
+    final HttpRequest reindexRequest = forwardThrottledReindexRequestWithOneDocPerSecond(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 1) + INDEX_SUFFIX_PRE_ROLLOVER,
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    );
+    // and getting the reindex status immediately failed and aborted the upgrade
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
+
+    // when it is retried and any new reindex operation would get rejected
+    esMockServer
+      .when(reindexRequest, Times.unlimited())
+      .error(HttpError.error().withDropConnection(true));
+    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then it succeeds
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    ))
+      .singleElement()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + NEWEST_INDEX_SUFFIX
+    ))
+      .singleElement()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+
+    schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
+    schemaUpdateClientLogs.assertContains(
+      "from index [optimize-users_v1-000001] to [optimize-users_v2-000001], will wait for it to finish."
+    );
+  }
+
+  @Test
+  public void singleIndexDetectFinishedReindexAndSkipIt() throws IOException {
+    // given a prepared index with some data in it
+    createIndex(TEST_INDEX_V1);
+    insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_V2);
-    final UpgradePlan upgradePlan =
-      UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(INTERMEDIATE_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(upgradeStep)
-        .build();
-
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // and getting the reindex status immediately failed and aborted the upgrade
-    final HttpRequest getReindexStatusRequest = request().withPath("/_tasks/.*").withMethod(GET);
-    esMockServer
-      .when(getReindexStatusRequest, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
-    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(createReindexRequestMatcher(), atLeast(1));
-    esMockServer.verify(getReindexStatusRequest, exactly(1));
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
 
     // when it is retried and any new reindex operation would get rejected
     esMockServer
@@ -149,6 +193,111 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it succeeds
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
+    assertThat(newIndex.getAliases()).hasSize(1);
+    assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
+      .first()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+
+    schemaUpdateClientLogs.assertContains(
+      "Found that index [optimize-users_v2] already contains " +
+        "the same amount of documents as [optimize-users_v1], will skip reindex."
+    );
+  }
+
+  @Test
+  public void templatedIndexDetectFinishedReindexAndSkipIt() throws IOException {
+    // given a prepared index with some data in it
+    createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
+    insertTestDocuments(5);
+    // and the update was run
+    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
+    // and getting the reindex status immediately failed and aborted the upgrade
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
+
+    // when it is retried and any new reindex operation would get rejected
+    esMockServer
+      .when(createReindexRequestMatcher(), Times.unlimited())
+      .error(HttpError.error().withDropConnection(true));
+    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then it succeeds
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    ))
+      .first()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+
+    schemaUpdateClientLogs.assertContains(
+      "Found that index [optimize-users_v2-000001] already contains " +
+        "the same amount of documents as [optimize-users_v1-000001], will skip reindex."
+    );
+  }
+
+  @Test
+  public void templatedRolledOverIndexDetectFinishedReindexAndSkipIt() throws IOException {
+    // given a prepared index with some data in it and being rolled over
+    createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
+    insertTestDocuments(5);
+    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    insertTestDocuments(5);
+    // and the update was run
+    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
+    // and getting the reindex status immediately failed and aborted the upgrade
+    final HttpRequest reindexRequest = createReindexRequestMatcher(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 1) + INDEX_SUFFIX_PRE_ROLLOVER,
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    );
+    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
+
+    // when it is retried and any new reindex operation would get rejected
+    esMockServer
+      .when(reindexRequest, Times.unlimited())
+      .error(HttpError.error().withDropConnection(true));
+    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then it succeeds
+    assertUpdateLogIsComplete(upgradeStep, frozenDate);
+
+    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
+    ))
+      .singleElement()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
+    assertThat(newIndex.getAliases().get(
+      getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + NEWEST_INDEX_SUFFIX
+    ))
+      .singleElement()
+      .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+
+    schemaUpdateClientLogs.assertContains(
+      "Found that index [optimize-users_v2-000001] already contains " +
+        "the same amount of documents as [optimize-users_v1-000001], will skip reindex."
+    );
+  }
+
+  private void performUpgradeAndLetReindexStatusCheckFail(final UpgradePlan upgradePlan,
+                                                          final HttpRequest reindexRequest) {
+    final HttpRequest getReindexStatusRequest = createTaskStatusRequestestMatcher();
+    esMockServer
+      .when(getReindexStatusRequest, Times.exactly(1))
+      .error(HttpError.error().withDropConnection(true));
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
+    esMockServer.verify(reindexRequest, atLeast(1));
+    esMockServer.verify(getReindexStatusRequest, exactly(1));
+  }
+
+  private void assertUpdateLogIsComplete(final UpdateIndexStep upgradeStep, final OffsetDateTime frozenDate) {
     final List<UpgradeStepLogEntryDto> updateLogEntries = getAllDocumentsOfIndexAs(
       UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class
     );
@@ -162,10 +311,23 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
           .appliedDate(frozenDate.toInstant())
           .build()
       );
+  }
 
-    schemaUpdateClientLogs.assertContains(
-      "Found that index [optimize-users_v2] already contains " +
-        "the same amount of documents as [optimize-users_v1], will skip reindex."
+  private UpgradePlan createUpdatePlan(final UpdateIndexStep upgradeStep) {
+    return UpgradePlanBuilder.createUpgradePlan()
+      .fromVersion(INTERMEDIATE_VERSION)
+      .toVersion(TO_VERSION)
+      .addUpgradeStep(upgradeStep)
+      .build();
+  }
+
+  private void createIndex(final IndexMappingCreator testIndexWithTemplateV1) {
+    upgradeProcedure.performUpgrade(
+      UpgradePlanBuilder.createUpgradePlan()
+        .fromVersion(FROM_VERSION)
+        .toVersion(INTERMEDIATE_VERSION)
+        .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(testIndexWithTemplateV1)))
+        .build()
     );
   }
 
@@ -184,7 +346,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
 
   private HttpRequest forwardThrottledReindexRequestWithOneDocPerSecond(final String sourceIndexName,
                                                                         final String targetIndexName) {
-    final HttpRequest reindexRequest = createReindexRequestMatcher();
+    final HttpRequest reindexRequest = createReindexRequestMatcher(sourceIndexName, targetIndexName);
     esMockServer
       .when(reindexRequest, Times.exactly(1))
       .forward(
@@ -202,8 +364,23 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     return reindexRequest;
   }
 
+  private HttpRequest createReindexRequestMatcher(final String sourceIndexName, final String targetIndexName) {
+    return createReindexRequestMatcher()
+      .withBody(JsonBody.json(
+        "{" +
+          "\"source\": {\"index\": [\"" + sourceIndexName + "\"]}," +
+          "\"dest\": {\"index\": \"" + targetIndexName + "\"}" +
+          "}",
+        MatchType.ONLY_MATCHING_FIELDS
+      ));
+  }
+
   private HttpRequest createReindexRequestMatcher() {
     return request().withPath("/_reindex").withMethod(POST);
+  }
+
+  private HttpRequest createTaskStatusRequestestMatcher() {
+    return request().withPath("/_tasks/.*").withMethod(GET);
   }
 
 }

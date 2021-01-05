@@ -92,6 +92,12 @@ public class UpdateIndexStep extends UpgradeStep {
       schemaUpgradeClient.createIndexFromTemplate(targetIndexName);
       schemaUpgradeClient.reindex(sourceIndex, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      // for rolled over indices only the last one is eligible as writeIndex
+      if (sortedIndices.indexOf(sourceIndex) == sortedIndices.size() - 1) {
+        // in case of retries it might happen that the default write index flag is overwritten as the source index
+        // was already set to be a read-only index for all associated indices
+        schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
+      }
       schemaUpgradeClient.deleteIndexIfExists(sourceIndex);
     }
   }
@@ -116,6 +122,9 @@ public class UpdateIndexStep extends UpgradeStep {
       schemaUpgradeClient.createOrUpdateIndex(index);
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      // in case of retries it might happen that the default write index flag is overwritten as the source index
+      // was already set to bo a read-only index for all associated indices
+      schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
       schemaUpgradeClient.deleteIndexIfExists(sourceIndexName);
     }
   }
