@@ -109,6 +109,7 @@ public class Workflow0240DataGenerator {
             Collectors.joining(",")) + "]}";
     ZeebeTestUtil
         .startWorkflowInstance(zeebeClient, WORKFLOW_BPMN_PROCESS_ID, payload);
+    logger.info("Started workflow instance with id {} ", WORKFLOW_BPMN_PROCESS_ID);
   }
 
   private String getAliasFor(String index) {

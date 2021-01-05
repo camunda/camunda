@@ -63,7 +63,7 @@ public class Workflow0230DataGenerator {
 
   @Autowired
   private RestHighLevelClient esClient;
-  
+
   private Random random = new Random();
 
   private List<Long> workflowInstanceKeys = new ArrayList<>();
@@ -89,7 +89,7 @@ public class Workflow0230DataGenerator {
       createIncidents("task0230_2", INCIDENT_COUNT);
 
       //TODO: How is it possible to to determine when to start create operations?
-      ThreadUtil.sleepFor(5000);
+      ThreadUtil.sleepFor(10_000);
 
       for (int i = 0; i < COUNT_OF_CANCEL_OPERATION; i++) {
         createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE, workflowInstanceKeys.size() * 10);
@@ -124,7 +124,7 @@ public class Workflow0230DataGenerator {
 
   private void waitTillSomeInstancesAreArchived() throws IOException {
     waitUntilAllDataAreImported();
-    
+
     int count = 0, maxWait=30;
     logger.info("Waiting for archived data (max: {} sec)",maxWait*10);
     while (!someInstancesAreArchived() && count < maxWait) {
@@ -185,7 +185,7 @@ public class Workflow0230DataGenerator {
     ResponseEntity<Map> operationResponse = operateRestClient.postForEntity(url, operationRequest, Map.class);
     return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
   }
-  
+
   private void createIncidents(String jobType, int numberOfIncidents) {
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
     logger.info("{} incidents in {} created", numberOfIncidents, jobType);
@@ -226,7 +226,7 @@ public class Workflow0230DataGenerator {
     .endEvent()
     .done();
   }
-  
+
   private Long chooseKey(List<Long> keys) {
     return keys.get(random.nextInt(keys.size()));
   }

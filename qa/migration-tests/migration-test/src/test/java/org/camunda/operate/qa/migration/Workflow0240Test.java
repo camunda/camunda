@@ -19,6 +19,7 @@ import org.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import org.camunda.operate.qa.migration.util.EntityReader;
 import org.camunda.operate.qa.migration.v0240.Workflow0240DataGenerator;
 import org.camunda.operate.schema.templates.ListViewTemplate;
+import org.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ public class Workflow0240Test extends AbstractMigrationTest {
   public void testBigInstanceIsCompleted() throws IOException {
     assumeThatWorkflowIsUnderTest(bpmnProcessId);
 
+    ThreadUtil.sleepFor(10_000);
     SearchRequest searchRequest = new SearchRequest(
         entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest.source()
