@@ -19,7 +19,7 @@ import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
 import org.camunda.operate.webapp.es.reader.EventReader;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.dto.EventDto;
+import org.camunda.operate.webapp.rest.dto.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.EventQueryDto;
 import org.camunda.operate.util.MockUtil;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @SpringBootTest(
   classes = {TestApplicationWithNoBeans.class, EventRestService.class, JacksonConfig.class, OperateProperties.class}
 )
+@Deprecated
 public class EventsRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
@@ -56,10 +57,10 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
     MvcResult mvcResult = postRequest(EventRestService.EVENTS_URL,eventQuery);
 
     //then
-    List<EventDto> eventDtos = mockMvcTestRule.listFromResponse(mvcResult, EventDto.class);
+    List<FlowNodeInstanceMetadataDto> eventDtos = mockMvcTestRule.listFromResponse(mvcResult, FlowNodeInstanceMetadataDto.class);
 
     assertThat(eventDtos.size()).isEqualTo(1);
-    final EventDto eventDto = eventDtos.get(0);
+    final FlowNodeInstanceMetadataDto eventDto = eventDtos.get(0);
     assertThat(eventDto.getId()).isNotEmpty();
     assertThat(eventDto.getWorkflowId()).isEqualTo(testWorkflowKey.toString());
     assertThat(eventDto.getWorkflowInstanceId()).isEqualTo(testWorkflowInstanceKey.toString());

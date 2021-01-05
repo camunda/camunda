@@ -10,20 +10,33 @@ import static org.camunda.operate.webapp.rest.ActivityInstanceRestService.ACTIVI
 import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
+import org.camunda.operate.entities.EventSourceType;
+import org.camunda.operate.entities.EventType;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.FlowNodeType;
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.rest.dto.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
 public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
+
+  @Autowired
+  private IncidentReader incidentReader;
 
   @Test
   public void testFlowNodeInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {
@@ -71,8 +84,6 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     List<FlowNodeInstanceDto> instances = getFlowNodeInstanceTreeFromRest(request);
 
     //then
-    assertThat(instances).hasSize(3);
-
     assertThat(instances).hasSize(3);
     assertChild(instances, 0, "startEvent", FlowNodeState.COMPLETED, workflowInstanceId, FlowNodeType.START_EVENT);
     assertChild(instances, 1, "taskA", FlowNodeState.COMPLETED, workflowInstanceId, FlowNodeType.SERVICE_TASK);
@@ -132,14 +143,14 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).hasSize(2);
     final FlowNodeInstanceDto taskBBeforeLast = assertChild(instances, 0, "taskB", FlowNodeState.COMPLETED,
         multiInstanceBody.getTreePath(), FlowNodeType.SERVICE_TASK);
-    final FlowNodeInstanceDto tasbBLast = assertChild(instances, 1, "taskB", FlowNodeState.COMPLETED,
+    final FlowNodeInstanceDto taskBLast = assertChild(instances, 1, "taskB", FlowNodeState.COMPLETED,
         multiInstanceBody.getTreePath(), FlowNodeType.SERVICE_TASK);
 
     //when - test level 3 - searchBefore
     request = new FlowNodeInstanceRequestDto(
         workflowInstanceId, multiInstanceBody.getTreePath());
     request.setPageSize(4);
-    request.setSearchBefore(tasbBLast.getSortValues());
+    request.setSearchBefore(taskBLast.getSortValues());
     instances = getFlowNodeInstanceTreeFromRest(request);
 
     //then
@@ -196,9 +207,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("subprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
 
     assertThat(instances).filteredOn("flowNodeId", "innerSubprocess").hasSize(1);
-    final FlowNodeInstanceDto innerSuprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("innerSubprocess"))
+    final FlowNodeInstanceDto innerSubprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("innerSubprocess"))
       .findFirst().get();
-    assertThat(innerSuprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
+    assertThat(innerSubprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
     assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("innerSubprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
 
     assertThat(instances).filteredOn("activityId", "taskB").allMatch(ai -> ai.getState().equals(
@@ -217,10 +228,192 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
   }
 
   protected List<FlowNodeInstanceDto> getFlowNodeInstanceTreeFromRest(FlowNodeInstanceRequestDto request) throws Exception {
-
-    MvcResult mvcResult =  postRequest(FLOW_NODE_INSTANCE_URL,request);
-
+    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL,request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
   }
+
+  protected FlowNodeInstanceMetadataDto getFlowNodeInstanceMetadataFromRest(String flowNodeInstanceId) throws Exception {
+    MvcResult mvcResult = getRequest(String.format(FLOW_NODE_INSTANCE_URL + "/%s/metadata", flowNodeInstanceId));
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+  }
+
+  @Test
+  public void testMetadataForFinishedWorkflow() throws Exception {
+    // having
+    final String processId = "processWithGateway";
+    final String taskA = "taskA";
+    final String taskC = "taskC";
+    final String errorMessage = "Some error";
+    final Long workflowKey = deployWorkflow("processWithGateway.bpmn");
+
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
+
+    //create an incident
+    /*final Long jobKey =*/ failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
+
+    //update retries
+    List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+    assertThat(allIncidents).hasSize(1);
+    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+
+    //complete task A
+    completeTask(workflowInstanceKey, taskA, "{\"goToTaskC\":true}");
+
+    //complete task C
+    completeTask(workflowInstanceKey, taskC, "{\"b\": \"d\"}");
+
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, workflowInstanceKey, taskC);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
+
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //get flow node instance tree
+    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(
+        workflowInstanceId, workflowInstanceId);
+    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceTreeFromRest(request);
+
+    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, processId, workflowKey, workflowInstanceKey, "start");
+    try {
+      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, processId, workflowKey, workflowInstanceKey, "taskA");
+    } catch (AssertionError ae) {
+      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, processId, workflowKey, workflowInstanceKey, "taskA");
+    }
+    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, processId, workflowKey, workflowInstanceKey, "gateway");
+    try {
+      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, processId, workflowKey, workflowInstanceKey, "taskC");
+    } catch (AssertionError ae) {
+      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, processId, workflowKey, workflowInstanceKey, "taskC");
+    }
+    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, processId, workflowKey, workflowInstanceKey, "end1");
+
+  }
+
+  @Test
+  public void testMetadataForCanceledOnIncident() throws Exception {
+    // having
+    String flowNodeId = "taskA";
+
+    String processId = "demoProcess";
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+
+    cancelWorkflowInstance(workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, workflowInstanceKey, flowNodeId);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //when
+    //get flow node instance tree
+    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(
+        workflowInstanceId, workflowInstanceId);
+    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceTreeFromRest(request);
+
+    //then
+    try {
+      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, processId, workflowKey, workflowInstanceKey, flowNodeId);
+    } catch (AssertionError ae) {
+      assertMetadata(instances, EventSourceType.INCIDENT, EventType.RESOLVED, processId, null, workflowInstanceKey, flowNodeId);
+    }
+
+  }
+
+  @Test
+  public void testMetadataIncidentOnInputMapping() throws Exception {
+    // having
+    String processId = "demoProcess";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+        .startEvent("start")
+        .serviceTask("task1").zeebeJobType("task1")
+        .zeebeInput("=var", "varIn")
+        .endEvent()
+        .done();
+
+    deployWorkflow(workflow, processId + ".bpmn");
+
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+
+    //when
+    //get flow node instance tree
+    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(
+        workflowInstanceId, workflowInstanceId);
+    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceTreeFromRest(request);
+
+    //then last event does not have a jobId
+    final FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = getFlowNodeInstanceMetadataFromRest(
+        instances.get(instances.size() - 1).getId());
+    try {
+      assertThat(flowNodeInstanceMetadata.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
+      assertThat(flowNodeInstanceMetadata.getEventType()).isEqualTo(EventType.CREATED);
+      assertThat(flowNodeInstanceMetadata.getMetadata().getJobId()).isNull();
+    } catch (AssertionError ae) {
+      assertThat(flowNodeInstanceMetadata.getEventSourceType()).isEqualTo(EventSourceType.WORKFLOW_INSTANCE);
+      assertThat(flowNodeInstanceMetadata.getEventType()).isEqualTo(EventType.ELEMENT_ACTIVATING);
+    }
+
+  }
+
+  public void assertMetadata(List<FlowNodeInstanceDto> flowNodes, EventSourceType eventSourceType, EventType eventType,
+      String processId, Long workflowKey, long workflowInstanceKey) throws Exception {
+    assertMetadata(flowNodes, eventSourceType, eventType, processId, workflowKey, workflowInstanceKey, null);
+  }
+
+  public void assertMetadata(List<FlowNodeInstanceDto> flowNodes, EventSourceType eventSourceType, EventType eventType,
+      String processId, Long workflowKey, Long workflowInstanceKey, String activityId)
+      throws Exception {
+    assertMetadata(flowNodes, eventSourceType, eventType, processId, workflowKey, workflowInstanceKey, activityId, null);
+  }
+
+  public void assertMetadata(List<FlowNodeInstanceDto> flowNodes, EventSourceType eventSourceType, EventType eventType,
+      String processId, Long workflowKey, Long workflowInstanceKey, String flowNodeId, String errorMessage)
+      throws Exception {
+
+    final Optional<FlowNodeInstanceDto> flowNodeInstance = flowNodes.stream()
+        .filter(fni -> fni.getFlowNodeId().equals(flowNodeId)).findFirst();
+    assertThat(flowNodeInstance).isNotEmpty();
+
+    //call REST API to get metadata
+    final FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = getFlowNodeInstanceMetadataFromRest(
+        flowNodeInstance.get().getId());
+
+    String assertionName = String.format("%s.%s", eventSourceType, eventType);
+
+    assertThat(flowNodeInstanceMetadata.getWorkflowInstanceId()).as(assertionName + ".workflowInstanceKey")
+        .isEqualTo(String.valueOf(workflowInstanceKey));
+    if (workflowKey != null) {
+      assertThat(flowNodeInstanceMetadata.getWorkflowId()).as(assertionName + ".workflowKey")
+          .isEqualTo(String.valueOf(workflowKey));
+    }
+    assertThat(flowNodeInstanceMetadata.getDateTime()).as(assertionName + ".dateTimeAfter")
+        .isAfterOrEqualTo(testStartTime);
+    assertThat(flowNodeInstanceMetadata.getDateTime()).as(assertionName + ".dateTimeBefore").isBeforeOrEqualTo(
+        OffsetDateTime.now());
+    assertThat(flowNodeInstanceMetadata.getBpmnProcessId()).as(assertionName + ".bpmnProcessId")
+        .isEqualTo(processId);
+    assertThat(flowNodeInstanceMetadata.getFlowNodeId()).as(assertionName + ".flowNodeId")
+          .isEqualTo(flowNodeId);
+    if (!flowNodeInstanceMetadata.getId().equals(flowNodeInstanceMetadata.getWorkflowInstanceId())) {
+      assertThat(flowNodeInstanceMetadata.getWorkflowInstanceId()).as(assertionName + ".flowNodeInstanceKey")
+          .isNotNull();
+    }
+    if (eventSourceType.equals(EventSourceType.INCIDENT)) {
+      if (errorMessage != null) {
+        assertThat(flowNodeInstanceMetadata.getMetadata().getIncidentErrorMessage())
+            .as(assertionName + ".incidentErrorMessage").isEqualTo(errorMessage);
+      } else {
+        assertThat(flowNodeInstanceMetadata.getMetadata().getIncidentErrorMessage())
+            .as(assertionName + ".incidentErrorMessage").isNotEmpty();
+      }
+      assertThat(flowNodeInstanceMetadata.getMetadata().getIncidentErrorType())
+          .as(assertionName + ".incidentErrorType").isNotNull();
+    }
+
+  }
+
 
 }

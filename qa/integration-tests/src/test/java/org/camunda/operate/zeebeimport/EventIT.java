@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
+@Deprecated
 public class EventIT extends OperateZeebeIntegrationTest {
 
   @Autowired
@@ -42,7 +43,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String taskC = "taskC";
     final String errorMessage = "Some error";
     final Long workflowKey = deployWorkflow("processWithGateway.bpmn");
-    
+
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
     //create an incident
@@ -175,9 +176,9 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;
       if (activityId != null) {
-        b = eventEntity.getActivityId().equals(activityId);
+        b = eventEntity.getFlowNodeId().equals(activityId);
       } else {
-        b = (eventEntity.getActivityId() == null) || eventEntity.getActivityId().isEmpty();
+        b = (eventEntity.getFlowNodeId() == null) || eventEntity.getFlowNodeId().isEmpty();
       }
       return b && eventEntity.getEventSourceType().equals(eventSourceType) && eventEntity.getEventType().equals(eventType);
     };
@@ -193,7 +194,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
         assertThat(eventEntity.getDateTime()).as(assertionName + ".dateTimeBefore").isBeforeOrEqualTo(OffsetDateTime.now());
         assertThat(eventEntity.getBpmnProcessId()).as(assertionName + ".bpmnProcessId").isEqualTo(processId);
         if (activityId != null) {
-          assertThat(eventEntity.getActivityId()).as(assertionName + ".activityId").isEqualTo(activityId);
+          assertThat(eventEntity.getFlowNodeId()).as(assertionName + ".activityId").isEqualTo(activityId);
           if (eventEntity.getKey() != eventEntity.getWorkflowInstanceKey()) {
             assertThat(eventEntity.getFlowNodeInstanceKey()).as(assertionName + ".flowNodeInstanceKey").isNotNull();
           }

@@ -11,14 +11,18 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.templates.EventTemplate;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
+import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -36,6 +40,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   @Autowired(required = false)
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired
+  private EventTemplate eventTemplate;
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(FlowNodeInstanceRequestDto flowNodeInstanceRequest) {
 
@@ -96,6 +103,33 @@ public class FlowNodeInstanceReader extends AbstractReader {
           .searchAfter(request.getSearchBefore());
     }
 
+  }
+
+  public EventEntity getFlowNodeInstanceMetadata(String flowNodeInstanceId) {
+    QueryBuilder query = constantScoreQuery(
+        termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
+
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(eventTemplate)
+        .source(new SearchSourceBuilder().query(query));
+
+    final SearchResponse response;
+    try {
+      response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().totalHits >= 1) {
+        final EventEntity eventEntity = ElasticsearchUtil
+            .fromSearchHit(response.getHits().getHits()[(int) (response.getHits().totalHits - 1)]
+                .getSourceAsString(), objectMapper, EventEntity.class);
+        return eventEntity;
+      } else {
+        throw new NotFoundException(
+            String.format("Could not find flow node instance with id '%s'.", flowNodeInstanceId));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining metadata for flow node instance instance: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
 }

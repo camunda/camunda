@@ -63,7 +63,7 @@
 			"eventType": {
 				"type": "keyword"
 			},
-			"activityId": {
+			"flowNodeId": {
 				"type": "keyword"
 			},
 			"flowNodeInstanceKey": {

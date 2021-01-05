@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
+@Deprecated
 public class EventQueryDto {
 
   private String workflowInstanceId;

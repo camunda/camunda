@@ -19,7 +19,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   /**
    * Activity data.
    */
-  private String activityId;
+  private String flowNodeId;
   private Long flowNodeInstanceKey;
 
   /**
@@ -50,12 +50,12 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public String getActivityId() {
-    return activityId;
+  public String getFlowNodeId() {
+    return flowNodeId;
   }
 
-  public void setActivityId(String activityId) {
-    this.activityId = activityId;
+  public void setFlowNodeId(String flowNodeId) {
+    this.flowNodeId = flowNodeId;
   }
 
   public Long getFlowNodeInstanceKey() {
@@ -123,7 +123,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
-    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
+    if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
       return false;
     if (flowNodeInstanceKey != null ? !flowNodeInstanceKey.equals(that.flowNodeInstanceKey) : that.flowNodeInstanceKey != null)
       return false;
@@ -142,7 +142,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
+    result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
     result = 31 * result + (eventSourceType != null ? eventSourceType.hashCode() : 0);
     result = 31 * result + (eventType != null ? eventType.hashCode() : 0);

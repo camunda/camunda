@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.operate.webapp.rest.dto;
 
 import java.time.OffsetDateTime;
@@ -9,8 +14,7 @@ import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
 import org.camunda.operate.util.ConversionUtils;
 
-@Deprecated
-public class EventDto {
+public class FlowNodeInstanceMetadataDto {
 
   private String id;
 
@@ -24,8 +28,8 @@ public class EventDto {
   /**
    * Activity data.
    */
-  private String activityId;
-  private String activityInstanceId;
+  private String flowNodeId;
+  private String flowNodeInstanceId;
 
   /**
    * Event data.
@@ -68,20 +72,20 @@ public class EventDto {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public String getActivityId() {
-    return activityId;
+  public String getFlowNodeId() {
+    return flowNodeId;
   }
 
-  public void setActivityId(String activityId) {
-    this.activityId = activityId;
+  public void setFlowNodeId(String flowNodeId) {
+    this.flowNodeId = flowNodeId;
   }
 
-  public String getActivityInstanceId() {
-    return activityInstanceId;
+  public String getFlowNodeInstanceId() {
+    return flowNodeInstanceId;
   }
 
-  public void setActivityInstanceId(String activityInstanceId) {
-    this.activityInstanceId = activityInstanceId;
+  public void setFlowNodeInstanceId(String flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
   public EventSourceType getEventSourceType() {
@@ -116,11 +120,11 @@ public class EventDto {
     this.metadata = metadata;
   }
 
-  public static EventDto createFrom(EventEntity eventEntity) {
-    EventDto eventDto = new EventDto();
+  public static FlowNodeInstanceMetadataDto createFrom(EventEntity eventEntity) {
+    FlowNodeInstanceMetadataDto eventDto = new FlowNodeInstanceMetadataDto();
     eventDto.setId(eventEntity.getId());
-    eventDto.setActivityId(eventEntity.getFlowNodeId());
-    eventDto.setActivityInstanceId(ConversionUtils.toStringOrNull(eventEntity.getFlowNodeInstanceKey()));
+    eventDto.setFlowNodeId(eventEntity.getFlowNodeId());
+    eventDto.setFlowNodeInstanceId(ConversionUtils.toStringOrNull(eventEntity.getFlowNodeInstanceKey()));
     eventDto.setBpmnProcessId(eventEntity.getBpmnProcessId());
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
@@ -137,8 +141,8 @@ public class EventDto {
     return eventDto;
   }
 
-  public static List<EventDto> createFrom(List<EventEntity> eventEntities) {
-    List<EventDto> result = new ArrayList<>();
+  public static List<FlowNodeInstanceMetadataDto> createFrom(List<EventEntity> eventEntities) {
+    List<FlowNodeInstanceMetadataDto> result = new ArrayList<>();
     if (eventEntities != null) {
       for (EventEntity eventEntity: eventEntities) {
         if (eventEntity != null) {

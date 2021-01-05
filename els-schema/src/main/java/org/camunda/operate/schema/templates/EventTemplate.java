@@ -19,7 +19,7 @@ public class EventTemplate extends AbstractTemplateDescriptor implements Workflo
   public static final String WORKFLOW_KEY = "workflowKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
-  public static final String ACTIVITY_ID = "activityId";
+  public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
 
   public static final String EVENT_SOURCE_TYPE = "eventSourceType";

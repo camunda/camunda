@@ -11,10 +11,13 @@ import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
 import java.util.List;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
+import org.camunda.operate.webapp.rest.dto.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,6 +45,12 @@ public class FlowNodeInstanceRestService {
       throw new InvalidRequestException("Workflow instance id must be provided when requesting for activity instance tree.");
     }
     return FlowNodeInstanceDto.createFrom(flowNodeInstanceReader.getFlowNodeInstances(request));
+  }
+
+  @ApiOperation("Get metadata by flow node instance id")
+  @GetMapping("/{flowNodeInstanceId}/metadata")
+  public FlowNodeInstanceMetadataDto queryFlowNodeInstanceMetadata(@PathVariable Long flowNodeInstanceId) {
+    return FlowNodeInstanceMetadataDto.createFrom(flowNodeInstanceReader.getFlowNodeInstanceMetadata(String.valueOf(flowNodeInstanceId)));
   }
 
 }

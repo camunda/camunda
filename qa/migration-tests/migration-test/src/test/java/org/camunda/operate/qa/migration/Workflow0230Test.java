@@ -74,7 +74,7 @@ public class Workflow0230Test extends AbstractMigrationTest {
   }
 
   @Test
-  public void testEvents() {
+  public void testFlowNodeInstanceMetadata() {
     SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(EventTemplate.INDEX_NAME));
     searchRequest.source().query(termsQuery(EventTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<EventEntity> events = entityReader.searchEntitiesFor(searchRequest, EventEntity.class);

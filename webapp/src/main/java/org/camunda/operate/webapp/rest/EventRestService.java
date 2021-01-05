@@ -27,6 +27,7 @@ import static org.camunda.operate.webapp.rest.EventRestService.EVENTS_URL;
 })
 @RestController
 @RequestMapping(value = EVENTS_URL)
+@Deprecated
 public class EventRestService {
 
   public static final String EVENTS_URL = "/api/events";
