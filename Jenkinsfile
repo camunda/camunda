@@ -295,7 +295,13 @@ pipeline {
 
         stage('QA') {
             when {
-                expression { runsQA() }
+                anyOf {
+                    expression { params.RUN_QA }
+                    allOf {
+                        branch developBranchName
+                        triggeredBy 'TimerTrigger'
+                    }
+                }
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
@@ -475,13 +481,14 @@ def isBorsStagingBranch() {
     env.BRANCH_NAME == 'staging'
 }
 
-def runsQA() {
-    return params.RUN_QA || (env.isDevelopBranch && triggeredBy('TimerTrigger'))
-}
-
 def templatePodspec(String podspecPath, flags = [:]) {
     def defaultFlags = [
-        useStableNodePool: isBorsStagingBranch() || runsQA()
+        /* Criteria for using stable node pools:
+         * - staging branch: to have smooth staging builds and avoid unnecessary retries
+         * - params.RUN_QA: during QA stage the node must wait for the result. This can take several hours. Therefore a stable node is needed
+         * - env.isDevelopBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
+         */
+        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isDevelopBranch
     ]
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
