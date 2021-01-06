@@ -3,5 +3,5 @@
 	"indexName": "event",
 	"version": "0.26.0",
 	"order": 1,
-	"content": "{\"rename\": {\"field\": \"activityId\",\"target_field\": \"flowNodeId\",\"ignore_missing\": \"true\"}}"
+	"content": "{\"rename\": {\"field\": \"activityId\",\"target_field\": \"flowNodeId\",\"ignore_missing\": true}}"
 }
