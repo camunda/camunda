@@ -80,7 +80,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
     assertThat(newIndex.getAliases()).hasSize(1);
     assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
-      .first()
+      .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
     schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
@@ -119,7 +119,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     assertThat(newIndex.getAliases().get(
       getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
     ))
-      .first()
+      .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
     schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
@@ -198,7 +198,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
     assertThat(newIndex.getAliases()).hasSize(1);
     assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
-      .first()
+      .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
     schemaUpdateClientLogs.assertContains(
@@ -232,7 +232,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     assertThat(newIndex.getAliases().get(
       getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2) + INDEX_SUFFIX_PRE_ROLLOVER
     ))
-      .first()
+      .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
     schemaUpdateClientLogs.assertContains(

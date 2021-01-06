@@ -123,7 +123,7 @@ public class UpdateIndexStep extends UpgradeStep {
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
       // in case of retries it might happen that the default write index flag is overwritten as the source index
-      // was already set to bo a read-only index for all associated indices
+      // was already set to be a read-only index for all associated indices
       schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
       schemaUpgradeClient.deleteIndexIfExists(sourceIndexName);
     }
