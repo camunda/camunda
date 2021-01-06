@@ -57,7 +57,7 @@
   }
 
   .StringInput {
-    & + .customValueCheckbox {
+    &:not(.containMode) + .customValueCheckbox {
       transform: translate(100px, -25px);
     }
     .customValueButtonRow .notification {
@@ -65,14 +65,17 @@
     }
   }
 
-  .NumberInput + .customValueCheckbox {
-    display: block;
-    &::before {
-      content: '';
-      width: 100%;
-      transform: translateY(-10px);
+  .NumberInput,
+  .StringInput.containMode {
+    & + .customValueCheckbox {
       display: block;
-      border-top: 1px solid var(--silver-darken-87);
+      &::before {
+        content: '';
+        width: 100%;
+        transform: translateY(-10px);
+        display: block;
+        border-top: 1px solid var(--silver-darken-87);
+      }
     }
   }
 }
