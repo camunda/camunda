@@ -19,7 +19,7 @@ import {
   ReportDetails,
 } from 'components';
 import {isSharingEnabled} from 'config';
-import {checkDeleteConflict} from 'services';
+import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
@@ -40,7 +40,7 @@ export default class ReportView extends React.Component {
 
   constructCSVDownloadLink = () => {
     return `api/export/csv/${this.props.report.id}/${encodeURIComponent(
-      this.props.report.name.replace(/\s/g, '_')
+      formatters.formatFileName(this.props.report.name)
     )}.csv`;
   };
 
