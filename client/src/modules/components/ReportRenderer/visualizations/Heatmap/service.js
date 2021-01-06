@@ -51,6 +51,7 @@ export function getConfig(data, flowNodeId) {
             unit,
           },
         },
+        filterLevel: 'instance',
       },
     ],
   };
