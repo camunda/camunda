@@ -13,7 +13,7 @@ import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
-import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 
 import {loadCollectionEntities, importEntity} from './service';
@@ -242,7 +242,7 @@ export class Collection extends React.Component {
                       action: () => {
                         window.location.href = `api/export/${entityType}/json/${
                           entity.id
-                        }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
+                        }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                       },
                     });
                   }

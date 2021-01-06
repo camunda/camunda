@@ -375,11 +375,11 @@ it('should show nice ticks for duration formats on the y axis', () => {
 });
 
 describe('File name formatting', () => {
-  const formattedFileName = formatFileName('/*File name:');
-  expect(formattedFileName).toBe('File-name');
+  const formattedFileName = formatFileName('/*File name,1:');
+  expect(formattedFileName).toBe('__file_name_1_');
 
   const anotherFileName = formatFileName('<another?|name>');
-  expect(anotherFileName).toBe('anothername');
+  expect(anotherFileName).toBe('_another__name_');
 });
 
 describe('getRelativeValue', () => {

@@ -13,7 +13,7 @@ import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {EntityList, Deleter} from 'components';
-import {createEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -178,7 +178,7 @@ export class Home extends React.Component {
                     action: () => {
                       window.location.href = `api/export/${entityType}/json/${
                         entity.id
-                      }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
+                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                     },
                   });
                 }
