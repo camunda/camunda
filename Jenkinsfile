@@ -85,13 +85,16 @@ pipeline {
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    // since zbctl is included in zeebe-distribution.tar.gz, which is produced by
+                    // maven, we have to build the go artifacts first
                     container('golang') {
                         sh '.ci/scripts/distribution/build-go.sh'
                     }
                     runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
-                    container('maven') {
-                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                    }
+
+                    // to simplify building the Docker image, we copy the distribution to a fixed
+                    // filename that doesn't include the version
+                    runMavenContainerCommand('cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz')
                     stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
                     stash name: "zeebe-distro", includes: "zeebe-distribution.tar.gz"
                 }
@@ -109,6 +112,11 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     container('docker') {
                         sh '.ci/scripts/docker/build.sh'
+
+                        // the hazelcast exporter is used by the BPMN TCK, and must therefore be
+                        // built beforehand - if this ever becomes too slow, we can move this to a
+                        // BPMN TCK agent and make this is a sequential stage prior to running the
+                        // TCK
                         sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
@@ -217,6 +225,9 @@ pipeline {
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     prepareMavenContainer()
+
+                                    unstash name: "zeebe-build"
+                                    runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
                                 }
                             }
                         }
@@ -248,7 +259,6 @@ pipeline {
 
                             steps {
                                 timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                                    unstash name: "zeebe-build"
                                     runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
                                 }
                             }
@@ -256,12 +266,12 @@ pipeline {
                             post {
                                 always {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                                    stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
 
                                 failure {
                                     zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/surefire-reports/**"
                                     zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
-                                    stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
                             }
                         }
