@@ -29,6 +29,8 @@ gateway:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
     - name: ZEEBE_GATEWAY_MONITORING_ENABLED
       value: "true"
     - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
@@ -74,6 +76,8 @@ env:
     value: "true"
   - name: ATOMIX_LOG_LEVEL
     value: INFO
+  - name: ZEEBE_LOG_LEVEL
+    value: DEBUG
   - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
     value: "0.8"
   - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
