@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -45,13 +46,16 @@ type integrationTestSuite struct {
 	*containersuite.ContainerSuite
 }
 
-var tests = []struct {
+type testCase struct {
 	name       string
 	setupCmds  []string
 	envVars    []string
 	cmd        string
 	goldenFile string
-}{
+	jsonOutput bool
+}
+
+var tests = []testCase{
 	{
 		name:       "print help",
 		cmd:        "help",
@@ -83,17 +87,20 @@ var tests = []struct {
 		// we need to set the path so it evaluates $HOME before we overwrite it
 		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
 		goldenFile: "testdata/topology_json.golden",
+		jsonOutput: true,
 	},
 	{
 		name:       "deploy workflow",
 		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
 		goldenFile: "testdata/deploy.golden",
+		jsonOutput: true,
 	},
 	{
 		name:       "create instance",
 		setupCmds:  []string{"--insecure deploy testdata/model.bpmn"},
 		cmd:        "--insecure create instance process",
 		goldenFile: "testdata/create_instance.golden",
+		jsonOutput: true,
 	},
 	{
 		name:       "create worker",
@@ -105,19 +112,21 @@ var tests = []struct {
 		name:       "empty activate job",
 		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 0",
 		goldenFile: "testdata/empty_activate_job.golden",
+		jsonOutput: true,
 	},
 	{
 		name:       "single activate job",
 		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess"},
 		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 1",
 		goldenFile: "testdata/single_activate_job.golden",
+		jsonOutput: true,
 	},
 	{
-		name: "double activate job",
-		// we deploy on the end again to spent more time in setup phase to avoid a race condition, that we can activate more jobs then one
-		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess", "--insecure create instance jobProcess", "--insecure deploy testdata/job_model.bpmn"},
+		name:       "double activate job",
+		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess", "--insecure create instance jobProcess"},
 		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 2",
 		goldenFile: "testdata/double_activate_job.golden",
+		jsonOutput: true,
 	},
 }
 
@@ -146,6 +155,11 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				}
 			}
 
+			if len(test.setupCmds) > 0 {
+				// mitigates race condition between setup commands and test command
+				<-time.After(time.Second)
+			}
+
 			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
 			if errors.Is(err, context.DeadlineExceeded) {
 				t.Fatal(fmt.Errorf("timed out while executing command '%s': %w", test.cmd, err))
@@ -155,14 +169,40 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := strings.Split(string(goldenOut), "\n")
-			got := strings.Split(string(cmdOut), "\n")
 
-			if diff := cmp.Diff(want, got, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
-				t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
+			if test.jsonOutput {
+				assertEqJSON(t, test, goldenOut, cmdOut)
+			} else {
+				assertEqText(t, test, goldenOut, cmdOut)
 			}
 		})
 	}
+}
+
+func assertEqText(t *testing.T, test testCase, golden, cmdOut []byte) {
+	wantLines := strings.Split(string(golden), "\n")
+	gotLines := strings.Split(string(cmdOut), "\n")
+
+	if diff := cmp.Diff(wantLines, gotLines, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
+		t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
+	}
+}
+
+func assertEqJSON(t *testing.T, test testCase, golden, cmdOut []byte) {
+	want := string(golden)
+	got := string(cmdOut)
+
+	// remove versions
+	ignorePattern := regexp.MustCompile(semVer)
+	want = ignorePattern.ReplaceAllString(want, "")
+	got = ignorePattern.ReplaceAllString(got, "")
+
+	// remove numbers
+	ignorePattern = regexp.MustCompile(`\d`)
+	want = ignorePattern.ReplaceAllString(want, "1")
+	got = ignorePattern.ReplaceAllString(got, "1")
+
+	require.JSONEqf(t, want, got, "expected JSON output from '%s' to match golden file '%s'", test.cmd, test.goldenFile)
 }
 
 func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool {
