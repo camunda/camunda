@@ -8,12 +8,18 @@ type Task {
     assignee: User
     variables: [Variable!]
     taskState: TaskState!
+    sortValues: [String!]
+    hasNext: Boolean!
+    hasPrevious: Boolean!
 }
 
 input TaskQuery {
     state: TaskState
     assigned: Boolean
     assignee: String
+    pageSize: Int
+    searchAfter: [String!]
+    searchBefore: [String!]
 }
 
 enum TaskState {
