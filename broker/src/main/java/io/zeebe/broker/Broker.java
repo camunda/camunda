@@ -210,6 +210,8 @@ public final class Broker implements AutoCloseable {
         "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
+    startContext.addStep("cluster services", () -> atomix.start().join());
+    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -218,8 +220,6 @@ public final class Broker implements AutoCloseable {
             return embeddedGatewayService;
           });
     }
-    startContext.addStep("cluster services", () -> atomix.start().join());
-    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
