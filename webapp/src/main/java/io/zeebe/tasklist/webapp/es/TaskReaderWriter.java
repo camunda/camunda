@@ -28,7 +28,6 @@ import io.zeebe.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,15 +53,16 @@ public class TaskReaderWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskReaderWriter.class);
 
-  private static final Map<TaskState, String> SORT_FIELD_PER_STATE =
+  private static final Map<TaskState, SortBuilder> SORT_BY_STATE =
       Map.of(
           TaskState.CREATED,
-          TaskTemplate.CREATION_TIME,
+          SortBuilders.fieldSort(TaskTemplate.CREATION_TIME).order(SortOrder.DESC),
           TaskState.COMPLETED,
-          TaskTemplate.COMPLETION_TIME,
+          SortBuilders.fieldSort(TaskTemplate.COMPLETION_TIME).order(SortOrder.DESC),
           TaskState.CANCELED,
-          TaskTemplate.COMPLETION_TIME);
-  private static final String DEFAULT_SORT_FIELD = TaskTemplate.CREATION_TIME;
+          SortBuilders.fieldSort(TaskTemplate.COMPLETION_TIME).order(SortOrder.DESC));
+  private static final SortBuilder DEFAULT_SORT =
+      SortBuilders.fieldSort(TaskTemplate.CREATION_TIME).order(SortOrder.DESC);
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -116,38 +116,22 @@ public class TaskReaderWriter {
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
     final QueryBuilder esQuery = buildQuery(query);
+    final SortBuilder sort = getOrDefaultFromMap(SORT_BY_STATE, query.getState(), DEFAULT_SORT);
     // TODO #104 define list of fields
 
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
     // active tasks
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(esQuery);
-    applySorting(sourceBuilder, query);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                sourceBuilder
+                new SearchSourceBuilder().query(esQuery).sort(sort)
                 //  .fetchSource(fieldNames.toArray(String[]::new), null)
                 );
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      final List<TaskDTO> tasks =
-          ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(),
-              (sh) -> {
-                final TaskDTO entity =
-                    TaskDTO.createFrom(
-                        ElasticsearchUtil.fromSearchHit(
-                            sh.getSourceAsString(), objectMapper, TaskEntity.class),
-                        sh.getSortValues(),
-                        objectMapper);
-                return entity;
-              });
-      if (query.getSearchBefore() != null) {
-        Collections.reverse(tasks);
-      }
-      return tasks;
+      final List<TaskEntity> taskEntities =
+          ElasticsearchUtil.scroll(searchRequest, TaskEntity.class, objectMapper, esClient);
+      return TaskDTO.createFrom(taskEntities, objectMapper);
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
@@ -177,37 +161,6 @@ public class TaskReaderWriter {
       jointQ = matchAllQuery();
     }
     return constantScoreQuery(jointQ);
-  }
-
-  private void applySorting(SearchSourceBuilder searchSourceBuilder, TaskQueryDTO query) {
-
-    final boolean directSorting = query.getSearchAfter() != null || query.getSearchBefore() == null;
-
-    final String sort1Field =
-        getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
-
-    final SortBuilder sort1;
-    if (directSorting) {
-      sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.DESC).missing("_last");
-    } else {
-      sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.ASC).missing("_first");
-    }
-
-    final SortBuilder sort2;
-    final Object[] querySearchAfter;
-    if (directSorting) { // this sorting is also the default one for 1st page
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.ASC);
-      querySearchAfter = query.getSearchAfter(); // may be null
-    } else { // searchBefore != null
-      // reverse sorting
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.DESC);
-      querySearchAfter = query.getSearchBefore();
-    }
-
-    searchSourceBuilder.sort(sort1).sort(sort2).size(query.getPageSize());
-    if (querySearchAfter != null) {
-      searchSourceBuilder.searchAfter(querySearchAfter);
-    }
   }
 
   /**

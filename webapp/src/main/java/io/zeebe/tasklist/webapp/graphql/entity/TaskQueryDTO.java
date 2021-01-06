@@ -6,20 +6,12 @@
 package io.zeebe.tasklist.webapp.graphql.entity;
 
 import io.zeebe.tasklist.entities.TaskState;
-import java.util.Arrays;
-import java.util.Objects;
 
 public class TaskQueryDTO {
-
-  private static final int DEFAULT_PAGE_SIZE = 50;
 
   private TaskState state;
   private Boolean assigned;
   private String assignee;
-
-  private int pageSize = DEFAULT_PAGE_SIZE;
-  private String[] searchAfter;
-  private String[] searchBefore;
 
   public TaskState getState() {
     return state;
@@ -48,55 +40,31 @@ public class TaskQueryDTO {
     return this;
   }
 
-  public int getPageSize() {
-    return pageSize;
-  }
-
-  public TaskQueryDTO setPageSize(final int pageSize) {
-    this.pageSize = pageSize;
-    return this;
-  }
-
-  public String[] getSearchAfter() {
-    return searchAfter;
-  }
-
-  public TaskQueryDTO setSearchAfter(final String[] searchAfter) {
-    this.searchAfter = searchAfter;
-    return this;
-  }
-
-  public String[] getSearchBefore() {
-    return searchBefore;
-  }
-
-  public TaskQueryDTO setSearchBefore(final String[] searchBefore) {
-    this.searchBefore = searchBefore;
-    return this;
+  @Override
+  public int hashCode() {
+    int result = state != null ? state.hashCode() : 0;
+    result = 31 * result + (assigned != null ? assigned.hashCode() : 0);
+    result = 31 * result + (assignee != null ? assignee.hashCode() : 0);
+    return result;
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final TaskQueryDTO that = (TaskQueryDTO) o;
-    return pageSize == that.pageSize
-        && state == that.state
-        && Objects.equals(assigned, that.assigned)
-        && Objects.equals(assignee, that.assignee)
-        && Arrays.equals(searchAfter, that.searchAfter)
-        && Arrays.equals(searchBefore, that.searchBefore);
-  }
 
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(state, assigned, assignee, pageSize);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    return result;
+    final TaskQueryDTO taskQuery = (TaskQueryDTO) o;
+
+    if (state != taskQuery.state) {
+      return false;
+    }
+    if (assigned != null ? !assigned.equals(taskQuery.assigned) : taskQuery.assigned != null) {
+      return false;
+    }
+    return assignee != null ? assignee.equals(taskQuery.assignee) : taskQuery.assignee == null;
   }
 }

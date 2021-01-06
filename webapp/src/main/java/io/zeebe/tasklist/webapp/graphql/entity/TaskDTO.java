@@ -5,10 +5,12 @@
  */
 package io.zeebe.tasklist.webapp.graphql.entity;
 
+import static io.zeebe.tasklist.util.CollectionUtil.map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public final class TaskDTO {
@@ -30,10 +32,6 @@ public final class TaskDTO {
   private String assigneeUsername;
 
   private TaskState taskState;
-
-  private String[] sortValues;
-  private boolean hasNext;
-  private boolean hasPrevious;
 
   public String getId() {
     return id;
@@ -125,57 +123,22 @@ public final class TaskDTO {
     return this;
   }
 
-  public String[] getSortValues() {
-    return sortValues;
-  }
-
-  public TaskDTO setSortValues(final String[] sortValues) {
-    this.sortValues = sortValues;
-    return this;
-  }
-
-  public boolean isHasNext() {
-    return hasNext;
-  }
-
-  public TaskDTO setHasNext(final boolean hasNext) {
-    this.hasNext = hasNext;
-    return this;
-  }
-
-  public boolean isHasPrevious() {
-    return hasPrevious;
-  }
-
-  public TaskDTO setHasPrevious(final boolean hasPrevious) {
-    this.hasPrevious = hasPrevious;
-    return this;
-  }
-
   public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
-    return createFrom(taskEntity, null, objectMapper);
+    return new TaskDTO()
+        .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
+        .setCompletionTime(objectMapper.convertValue(taskEntity.getCompletionTime(), String.class))
+        .setId(taskEntity.getId())
+        .setWorkflowInstanceId(taskEntity.getWorkflowInstanceId())
+        .setTaskState(taskEntity.getState())
+        .setAssigneeUsername(taskEntity.getAssignee())
+        .setBpmnProcessId(taskEntity.getBpmnProcessId())
+        .setWorkflowId(taskEntity.getWorkflowId())
+        .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
+        .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId());
   }
 
-  public static TaskDTO createFrom(
-      TaskEntity taskEntity, Object[] sortValues, ObjectMapper objectMapper) {
-    final TaskDTO taskDTO =
-        new TaskDTO()
-            .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
-            .setCompletionTime(
-                objectMapper.convertValue(taskEntity.getCompletionTime(), String.class))
-            .setId(taskEntity.getId())
-            .setWorkflowInstanceId(taskEntity.getWorkflowInstanceId())
-            .setTaskState(taskEntity.getState())
-            .setAssigneeUsername(taskEntity.getAssignee())
-            .setBpmnProcessId(taskEntity.getBpmnProcessId())
-            .setWorkflowId(taskEntity.getWorkflowId())
-            .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
-            .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId());
-    if (sortValues != null) {
-      taskDTO.setSortValues(
-          Arrays.stream(sortValues).map(sv -> String.valueOf(sv)).toArray(String[]::new));
-    }
-    return taskDTO;
+  public static List<TaskDTO> createFrom(List<TaskEntity> taskEntities, ObjectMapper objectMapper) {
+    return map(taskEntities, t -> createFrom(t, objectMapper));
   }
 
   @Override
