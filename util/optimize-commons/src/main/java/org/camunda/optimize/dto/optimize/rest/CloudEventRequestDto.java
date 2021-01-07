@@ -37,6 +37,7 @@ public class CloudEventRequestDto {
   @ToString.Include
   private String id;
   @NotBlank
+  @Pattern(regexp = "^(?!camunda$).*", flags = Pattern.Flag.CASE_INSENSITIVE, message = "field must not equal 'camunda'")
   @EqualsAndHashCode.Include
   @ToString.Include
   private String source;

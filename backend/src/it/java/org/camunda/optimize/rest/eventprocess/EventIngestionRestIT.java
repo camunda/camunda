@@ -305,14 +305,19 @@ public class EventIngestionRestIT extends AbstractIT {
     assertEventDtosArePersisted(Collections.emptyList());
   }
 
-  @Test
-  public void ingestEventBatch_rejectInvalidPropertyValues() {
+  private static Stream<String> invalidEventSource() {
+    return Stream.of("camunda", "Camunda", "");
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidEventSource")
+  public void ingestEventBatch_rejectInvalidPropertyValues(final String invalidSourceValue) {
     // given
     final CloudEventRequestDto eventDto = eventClient.createCloudEventDto();
     eventDto.setId("  ");
     eventDto.setSpecversion("0");
     eventDto.setType("");
-    eventDto.setSource("");
+    eventDto.setSource(invalidSourceValue);
     eventDto.setTraceid("");
 
     // when
