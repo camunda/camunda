@@ -36,8 +36,8 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.StorageException.InvalidChecksum;
 import io.atomix.storage.journal.Indexed;
-import io.atomix.utils.serializer.NamespaceImpl;
-import io.atomix.utils.serializer.NamespaceImpl.Builder;
+import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.Namespace.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
@@ -55,7 +55,7 @@ import org.junit.rules.Timeout;
 
 public class PassiveRoleTest {
 
-  private static final NamespaceImpl NAMESPACE =
+  private static final Namespace NAMESPACE =
       new Builder().register(Namespaces.BASIC).register(ZeebeEntry.class).build();
   @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private final ZeebeEntry entry = new ZeebeEntry(1, 1, 0, 1, ByteBuffer.allocate(0));

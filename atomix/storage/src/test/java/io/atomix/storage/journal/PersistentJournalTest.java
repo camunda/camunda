@@ -24,13 +24,12 @@ import org.junit.Test;
 /** Persistent journal test base. */
 public abstract class PersistentJournalTest extends AbstractJournalTest {
   protected PersistentJournalTest(final int maxSegmentSize, final int cacheSize) {
-    super(maxSegmentSize, cacheSize);
+    super(maxSegmentSize);
   }
 
   /** Tests reading from a compacted journal. */
   @Test
-  public void testCompactAndRecover() throws Exception {
-
+  public void testCompactAndRecover() {
     // Write three segments to the journal.
     JournalWriter<TestEntry> writer = journal.writer();
     for (int i = 0; i < entriesPerSegment * 3; i++) {

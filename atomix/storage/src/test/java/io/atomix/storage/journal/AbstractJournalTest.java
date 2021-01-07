@@ -25,9 +25,7 @@ import static org.junit.Assert.assertTrue;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.index.SparseJournalIndex;
-import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.NamespaceImpl;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,8 +52,7 @@ public abstract class AbstractJournalTest {
 
   protected static final TestEntry ENTRY = new TestEntry(32);
   private static final Namespace NAMESPACE =
-      new FallbackNamespace(
-          new NamespaceImpl.Builder().register(TestEntry.class).register(byte[].class));
+      new Namespace.Builder().register(TestEntry.class).register(byte[].class).build();
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -65,7 +62,7 @@ public abstract class AbstractJournalTest {
   private final int maxSegmentSize;
   private File folder;
 
-  protected AbstractJournalTest(final int maxSegmentSize, final int cacheSize) {
+  protected AbstractJournalTest(final int maxSegmentSize) {
     this.maxSegmentSize = maxSegmentSize;
     final int entryLength = (NAMESPACE.serialize(ENTRY).length + 8);
     entriesPerSegment = (maxSegmentSize - 64) / entryLength;
@@ -84,7 +81,7 @@ public abstract class AbstractJournalTest {
     return runs;
   }
 
-  protected SegmentedJournal<TestEntry> createJournal() throws IOException {
+  protected SegmentedJournal<TestEntry> createJournal() {
     final SparseJournalIndex index = new SparseJournalIndex(5);
     return SegmentedJournal.<TestEntry>builder()
         .withName("test")
@@ -161,8 +158,7 @@ public abstract class AbstractJournalTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testWriteRead() throws Exception {
+  public void testWriteRead() {
     final JournalWriter<TestEntry> writer = journal.writer();
     JournalReader<TestEntry> reader = journal.openReader(1);
 
@@ -182,7 +178,7 @@ public abstract class AbstractJournalTest {
     // Test reading an entry
     Indexed<TestEntry> entry1;
     reader.reset();
-    entry1 = (Indexed) reader.next();
+    entry1 = reader.next();
     assertEquals(1, entry1.index());
     assertEquals(entry1, reader.getCurrentEntry());
     assertEquals(1, reader.getCurrentIndex());
@@ -191,7 +187,7 @@ public abstract class AbstractJournalTest {
     Indexed<TestEntry> entry2;
     assertTrue(reader.hasNext());
     assertEquals(2, reader.getNextIndex());
-    entry2 = (Indexed) reader.next();
+    entry2 = reader.next();
     assertEquals(2, entry2.index());
     assertEquals(entry2, reader.getCurrentEntry());
     assertEquals(2, reader.getCurrentIndex());
@@ -200,15 +196,14 @@ public abstract class AbstractJournalTest {
     // Test opening a new reader and reading from the journal.
     reader = journal.openReader(1);
     assertTrue(reader.hasNext());
-    entry1 = (Indexed) reader.next();
+    entry1 = reader.next();
     assertEquals(1, entry1.index());
     assertEquals(entry1, reader.getCurrentEntry());
     assertEquals(1, reader.getCurrentIndex());
     assertTrue(reader.hasNext());
 
-    assertTrue(reader.hasNext());
     assertEquals(2, reader.getNextIndex());
-    entry2 = (Indexed) reader.next();
+    entry2 = reader.next();
     assertEquals(2, entry2.index());
     assertEquals(entry2, reader.getCurrentEntry());
     assertEquals(2, reader.getCurrentIndex());
@@ -220,15 +215,14 @@ public abstract class AbstractJournalTest {
     // Test opening a new reader and reading from the journal.
     reader = journal.openReader(1);
     assertTrue(reader.hasNext());
-    entry1 = (Indexed) reader.next();
+    entry1 = reader.next();
     assertEquals(1, entry1.index());
     assertEquals(entry1, reader.getCurrentEntry());
     assertEquals(1, reader.getCurrentIndex());
     assertTrue(reader.hasNext());
 
-    assertTrue(reader.hasNext());
     assertEquals(2, reader.getNextIndex());
-    entry2 = (Indexed) reader.next();
+    entry2 = reader.next();
     assertEquals(2, entry2.index());
     assertEquals(entry2, reader.getCurrentEntry());
     assertEquals(2, reader.getCurrentIndex());
@@ -250,7 +244,7 @@ public abstract class AbstractJournalTest {
     assertEquals(1, reader.getCurrentEntry().index());
     assertTrue(reader.hasNext());
     assertEquals(2, reader.getNextIndex());
-    entry2 = (Indexed) reader.next();
+    entry2 = reader.next();
     assertEquals(2, entry2.index());
     assertEquals(entry2, reader.getCurrentEntry());
     assertEquals(2, reader.getCurrentIndex());
@@ -258,7 +252,7 @@ public abstract class AbstractJournalTest {
   }
 
   @Test
-  public void testResetTruncateZero() throws Exception {
+  public void testResetTruncateZero() {
     final JournalWriter<TestEntry> writer = journal.writer();
     final JournalReader<TestEntry> reader = journal.openReader(1);
 
@@ -290,7 +284,7 @@ public abstract class AbstractJournalTest {
   }
 
   @Test
-  public void testTruncateRead() throws Exception {
+  public void testTruncateRead() {
     final int i = 10;
     final JournalWriter<TestEntry> writer = journal.writer();
     final JournalReader<TestEntry> reader = journal.openReader(1);
@@ -319,8 +313,7 @@ public abstract class AbstractJournalTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testWriteReadEntries() throws Exception {
+  public void testWriteReadEntries() {
     final JournalWriter<TestEntry> writer = journal.writer();
     final JournalReader<TestEntry> reader = journal.openReader(1);
 
@@ -328,11 +321,11 @@ public abstract class AbstractJournalTest {
       writer.append(ENTRY);
       assertTrue(reader.hasNext());
       Indexed<TestEntry> entry;
-      entry = (Indexed) reader.next();
+      entry = reader.next();
       assertEquals(i, entry.index());
       assertEquals(32, entry.entry().bytes().length);
       reader.reset(i);
-      entry = (Indexed) reader.next();
+      entry = reader.next();
       assertEquals(i, entry.index());
       assertEquals(32, entry.entry().bytes().length);
 
@@ -351,15 +344,14 @@ public abstract class AbstractJournalTest {
       assertTrue(reader.hasNext());
       reader.reset(i);
       assertTrue(reader.hasNext());
-      entry = (Indexed) reader.next();
+      entry = reader.next();
       assertEquals(i, entry.index());
       assertEquals(32, entry.entry().bytes().length);
     }
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testWriteReadCommittedEntries() throws Exception {
+  public void testWriteReadCommittedEntries() {
     final JournalWriter<TestEntry> writer = journal.writer();
     final JournalReader<TestEntry> reader = journal.openReader(1, JournalReader.Mode.COMMITS);
 
@@ -369,18 +361,18 @@ public abstract class AbstractJournalTest {
       writer.commit(i);
       assertTrue(reader.hasNext());
       Indexed<TestEntry> entry;
-      entry = (Indexed) reader.next();
+      entry = reader.next();
       assertEquals(i, entry.index());
       assertEquals(32, entry.entry().bytes().length);
       reader.reset(i);
-      entry = (Indexed) reader.next();
+      entry = reader.next();
       assertEquals(i, entry.index());
       assertEquals(32, entry.entry().bytes().length);
     }
   }
 
   @Test
-  public void testReadAfterCompact() throws Exception {
+  public void testReadAfterCompact() {
     final JournalWriter<TestEntry> writer = journal.writer();
     final JournalReader<TestEntry> uncommittedReader =
         journal.openReader(1, JournalReader.Mode.ALL);
@@ -422,7 +414,7 @@ public abstract class AbstractJournalTest {
   }
 
   @Test
-  public void shouldNotReadTruncatedEntries() throws IOException {
+  public void shouldNotReadTruncatedEntries() {
     // given
     final int totalWrites = 10;
     int commitPosition = 6;

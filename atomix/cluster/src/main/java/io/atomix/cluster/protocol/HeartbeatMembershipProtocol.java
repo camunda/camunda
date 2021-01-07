@@ -34,8 +34,7 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.FallbackNamespace;
-import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import java.util.Collection;
@@ -65,14 +64,14 @@ public class HeartbeatMembershipProtocol
   private static final String HEARTBEAT_MESSAGE = "atomix-cluster-membership";
   private static final Serializer SERIALIZER =
       Serializer.using(
-          new FallbackNamespace(
-              new NamespaceImpl.Builder()
-                  .register(Namespaces.BASIC)
-                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-                  .register(MemberId.class)
-                  .register(GossipMember.class)
-                  .register(new AddressSerializer(), Address.class)
-                  .name("ClusterMembershipService")));
+          new Namespace.Builder()
+              .register(Namespaces.BASIC)
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+              .register(MemberId.class)
+              .register(GossipMember.class)
+              .register(new AddressSerializer(), Address.class)
+              .name("ClusterMembershipService")
+              .build());
 
   private final HeartbeatMembershipProtocolConfig config;
   private final AtomicBoolean started = new AtomicBoolean();

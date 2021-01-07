@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.NamespaceImpl.Builder;
+import io.atomix.utils.serializer.Namespace.Builder;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.zip.CRC32;
@@ -82,7 +82,7 @@ public class JournalSegmentWriterTest {
   @Test
   public void shouldSucceedValidation() {
     // given
-    final Integer entry = 0;
+    final Integer entry = Integer.MIN_VALUE;
     final byte[] serialized = NAMESPACE.serialize(entry);
 
     crc32.reset();
