@@ -3970,19 +3970,15 @@
         },
         {
           "aliasColors": {},
-          "bars": false,
           "dashLength": 10,
-          "dashes": false,
           "datasource": "$DS_PROMETHEUS",
           "fill": 1,
-          "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
             "y": 21
           },
-          "hiddenSeries": false,
           "id": 37,
           "legend": {
             "avg": false,
@@ -4000,29 +3996,37 @@
           "options": {
             "dataLinks": []
           },
-          "percentage": false,
           "pointradius": 5,
-          "points": false,
           "renderer": "flot",
-          "seriesOverrides": [],
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:407",
+              "alias": "/.*limit.*/",
+              "fill": 0,
+              "linewidth": 2,
+              "color": "#C4162A"
+            }
+          ],
           "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
           "targets": [
             {
-              "expr": "container_file_descriptors{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
+              "expr": "process_files_open_files{namespace=~\"$namespace\",pod=~\"$pod\"}",
+              "legendFormat": "{{pod}} use fds",
+              "interval": "",
               "format": "time_series",
               "hide": false,
-              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} use fds",
               "refId": "B"
+            },
+            {
+              "expr": "process_files_max_files{namespace=~\"$namespace\",pod=~\"$pod\"}",
+              "legendFormat": "{{pod}} limit",
+              "interval": "",
+              "refId": "A"
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "File descriptors",
           "tooltip": {
             "shared": true,
@@ -4060,7 +4064,23 @@
           "yaxis": {
             "align": false,
             "alignLevel": null
-          }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "bars": false,
+          "dashes": false,
+          "fillGradient": 0,
+          "hiddenSeries": false,
+          "percentage": false,
+          "points": false,
+          "stack": false,
+          "steppedLine": false,
+          "timeFrom": null,
+          "timeShift": null
         },
         {
           "aliasColors": {},
