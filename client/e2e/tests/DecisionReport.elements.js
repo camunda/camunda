@@ -12,6 +12,7 @@ export const decisionTable = Selector('.DecisionTable');
 export const decisionTableCell = (row, column) =>
   Selector('.DecisionTable tbody tr').nth(row).find('td').nth(column);
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
+export const controlPanel = Selector('.ReportControlPanel');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
 export const reportTable = reportRenderer.find('.Table');

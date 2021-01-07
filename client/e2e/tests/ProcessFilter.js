@@ -76,10 +76,9 @@ test('should apply a filter to the report result', async (t) => {
 
   const unfiltered = +(await Report.reportRenderer.textContent);
 
-  await t.click(Report.filterButton);
-
   await t
     .resizeWindow(1400, 700)
+    .click(Report.filterButton)
     .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png')
     .maximizeWindow();
 
