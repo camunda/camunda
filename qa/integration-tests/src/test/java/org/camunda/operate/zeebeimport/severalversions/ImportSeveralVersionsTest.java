@@ -82,7 +82,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
     //when
     startImportAndWaitTillItFinishes();
     //then
-    sleepFor(5000L);
+    sleepFor(15000L);
     assertOperateData();
     //make sure that both importers were called
     verify(importerv1, atLeastOnce()).performImport(any(ImportBatch.class));
