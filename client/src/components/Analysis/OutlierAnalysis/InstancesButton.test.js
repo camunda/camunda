@@ -38,7 +38,11 @@ it('invoke loadRawData on button Click', () => {
 
   expect(loadRawData).toHaveBeenCalledWith({
     filter: [
-      {data: {flowNodeId: {operator: '>', unit: 'millis', value: 1250}}, type: 'flowNodeDuration'},
+      {
+        data: {flowNodeId: {operator: '>', unit: 'millis', value: 1250}},
+        type: 'flowNodeDuration',
+        filterLevel: 'instance',
+      },
     ],
     includedColumns: ['processInstanceId'],
     ...props.config,
