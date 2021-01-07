@@ -16,18 +16,17 @@
  */
 package io.atomix.utils.logging;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
 /** Contextual logger. */
-public class ContextualLogger extends ZbLogger {
+public class ContextualLogger implements Logger {
   private static final String SEPARATOR = " - ";
-  private static final String FQCN = ContextualLogger.class.getName();
   private final LoggerContext context;
+  private final Logger delegate;
 
   public ContextualLogger(final Logger delegate, final LoggerContext context) {
-    super(delegate, FQCN);
+    this.delegate = delegate;
     this.context = context;
   }
 
@@ -42,51 +41,66 @@ public class ContextualLogger extends ZbLogger {
   }
 
   @Override
+  public String getName() {
+    return delegate.getName();
+  }
+
+  @Override
+  public boolean isTraceEnabled() {
+    return delegate.isTraceEnabled();
+  }
+
+  @Override
   public void trace(final String msg) {
     if (isTraceEnabled()) {
-      super.trace(contextualize(msg));
+      delegate.trace(contextualize(msg));
     }
   }
 
   @Override
   public void trace(final String format, final Object arg) {
     if (isTraceEnabled()) {
-      super.trace(contextualize(format), arg);
+      delegate.trace(contextualize(format), arg);
     }
   }
 
   @Override
   public void trace(final String format, final Object arg1, final Object arg2) {
     if (isTraceEnabled()) {
-      super.trace(contextualize(format), arg1, arg2);
+      delegate.trace(contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void trace(final String format, final Object... arguments) {
     if (isTraceEnabled()) {
-      super.trace(contextualize(format), arguments);
+      delegate.trace(contextualize(format), arguments);
     }
   }
 
   @Override
   public void trace(final String msg, final Throwable t) {
     if (isTraceEnabled()) {
-      super.trace(contextualize(msg), t);
+      delegate.trace(contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isTraceEnabled(final Marker marker) {
+    return delegate.isTraceEnabled(marker);
   }
 
   @Override
   public void trace(final Marker marker, final String msg) {
     if (isTraceEnabled()) {
-      super.trace(marker, contextualize(msg));
+      delegate.trace(marker, contextualize(msg));
     }
   }
 
   @Override
   public void trace(final Marker marker, final String format, final Object arg) {
     if (isTraceEnabled()) {
-      super.trace(marker, contextualize(format), arg);
+      delegate.trace(marker, contextualize(format), arg);
     }
   }
 
@@ -94,70 +108,80 @@ public class ContextualLogger extends ZbLogger {
   public void trace(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
     if (isTraceEnabled()) {
-      super.trace(marker, contextualize(format), arg1, arg2);
+      delegate.trace(marker, contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void trace(final Marker marker, final String format, final Object... argArray) {
     if (isTraceEnabled()) {
-      super.trace(marker, contextualize(format), argArray);
+      delegate.trace(marker, contextualize(format), argArray);
     }
   }
 
   @Override
   public void trace(final Marker marker, final String msg, final Throwable t) {
     if (isTraceEnabled()) {
-      super.trace(marker, contextualize(msg), t);
+      delegate.trace(marker, contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isDebugEnabled() {
+    return delegate.isDebugEnabled();
   }
 
   @Override
   public void debug(final String msg) {
     if (isDebugEnabled()) {
-      super.debug(contextualize(msg));
+      delegate.debug(contextualize(msg));
     }
   }
 
   @Override
   public void debug(final String format, final Object arg) {
     if (isDebugEnabled()) {
-      super.debug(contextualize(format), arg);
+      delegate.debug(contextualize(format), arg);
     }
   }
 
   @Override
   public void debug(final String format, final Object arg1, final Object arg2) {
     if (isDebugEnabled()) {
-      super.debug(contextualize(format), arg1, arg2);
+      delegate.debug(contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void debug(final String format, final Object... arguments) {
     if (isDebugEnabled()) {
-      super.debug(contextualize(format), arguments);
+      delegate.debug(contextualize(format), arguments);
     }
   }
 
   @Override
   public void debug(final String msg, final Throwable t) {
     if (isDebugEnabled()) {
-      super.debug(contextualize(msg), t);
+      delegate.debug(contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isDebugEnabled(final Marker marker) {
+    return delegate.isDebugEnabled(marker);
   }
 
   @Override
   public void debug(final Marker marker, final String msg) {
     if (isDebugEnabled()) {
-      super.debug(marker, contextualize(msg));
+      delegate.debug(marker, contextualize(msg));
     }
   }
 
   @Override
   public void debug(final Marker marker, final String format, final Object arg) {
     if (isDebugEnabled()) {
-      super.debug(marker, contextualize(format), arg);
+      delegate.debug(marker, contextualize(format), arg);
     }
   }
 
@@ -165,210 +189,240 @@ public class ContextualLogger extends ZbLogger {
   public void debug(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
     if (isDebugEnabled()) {
-      super.debug(marker, contextualize(format), arg1, arg2);
+      delegate.debug(marker, contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void debug(final Marker marker, final String format, final Object... arguments) {
     if (isDebugEnabled()) {
-      super.debug(marker, contextualize(format), arguments);
+      delegate.debug(marker, contextualize(format), arguments);
     }
   }
 
   @Override
   public void debug(final Marker marker, final String msg, final Throwable t) {
     if (isDebugEnabled()) {
-      super.debug(marker, contextualize(msg), t);
+      delegate.debug(marker, contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isInfoEnabled() {
+    return delegate.isInfoEnabled();
   }
 
   @Override
   public void info(final String msg) {
     if (isInfoEnabled()) {
-      super.info(contextualize(msg));
+      delegate.info(contextualize(msg));
     }
   }
 
   @Override
   public void info(final String format, final Object arg) {
     if (isInfoEnabled()) {
-      super.info(contextualize(format), arg);
+      delegate.info(contextualize(format), arg);
     }
   }
 
   @Override
   public void info(final String format, final Object arg1, final Object arg2) {
     if (isInfoEnabled()) {
-      super.info(contextualize(format), arg1, arg2);
+      delegate.info(contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void info(final String format, final Object... arguments) {
     if (isInfoEnabled()) {
-      super.info(contextualize(format), arguments);
+      delegate.info(contextualize(format), arguments);
     }
   }
 
   @Override
   public void info(final String msg, final Throwable t) {
     if (isInfoEnabled()) {
-      super.info(contextualize(msg), t);
+      delegate.info(contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isInfoEnabled(final Marker marker) {
+    return delegate.isInfoEnabled(marker);
   }
 
   @Override
   public void info(final Marker marker, final String msg) {
     if (isInfoEnabled()) {
-      super.info(marker, contextualize(msg));
+      delegate.info(marker, contextualize(msg));
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object arg) {
     if (isInfoEnabled()) {
-      super.info(marker, contextualize(format), arg);
+      delegate.info(marker, contextualize(format), arg);
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object arg1, final Object arg2) {
     if (isInfoEnabled()) {
-      super.info(marker, contextualize(format), arg1, arg2);
+      delegate.info(marker, contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object... arguments) {
     if (isInfoEnabled()) {
-      super.info(marker, contextualize(format), arguments);
+      delegate.info(marker, contextualize(format), arguments);
     }
   }
 
   @Override
   public void info(final Marker marker, final String msg, final Throwable t) {
     if (isInfoEnabled()) {
-      super.info(marker, contextualize(msg), t);
+      delegate.info(marker, contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isWarnEnabled() {
+    return delegate.isWarnEnabled();
   }
 
   @Override
   public void warn(final String msg) {
     if (isWarnEnabled()) {
-      super.warn(contextualize(msg));
+      delegate.warn(contextualize(msg));
     }
   }
 
   @Override
   public void warn(final String format, final Object arg) {
     if (isWarnEnabled()) {
-      super.warn(contextualize(format), arg);
+      delegate.warn(contextualize(format), arg);
     }
   }
 
   @Override
   public void warn(final String format, final Object... arguments) {
     if (isWarnEnabled()) {
-      super.warn(contextualize(format), arguments);
+      delegate.warn(contextualize(format), arguments);
     }
   }
 
   @Override
   public void warn(final String format, final Object arg1, final Object arg2) {
     if (isWarnEnabled()) {
-      super.warn(contextualize(format), arg1, arg2);
+      delegate.warn(contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void warn(final String msg, final Throwable t) {
     if (isWarnEnabled()) {
-      super.warn(contextualize(msg), t);
+      delegate.warn(contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isWarnEnabled(final Marker marker) {
+    return delegate.isWarnEnabled(marker);
   }
 
   @Override
   public void warn(final Marker marker, final String msg) {
     if (isWarnEnabled()) {
-      super.warn(marker, contextualize(msg));
+      delegate.warn(marker, contextualize(msg));
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg) {
     if (isWarnEnabled()) {
-      super.warn(marker, contextualize(format), arg);
+      delegate.warn(marker, contextualize(format), arg);
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg1, final Object arg2) {
     if (isWarnEnabled()) {
-      super.warn(marker, contextualize(format), arg1, arg2);
+      delegate.warn(marker, contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object... arguments) {
     if (isWarnEnabled()) {
-      super.warn(marker, contextualize(format), arguments);
+      delegate.warn(marker, contextualize(format), arguments);
     }
   }
 
   @Override
   public void warn(final Marker marker, final String msg, final Throwable t) {
     if (isWarnEnabled()) {
-      super.warn(marker, contextualize(msg), t);
+      delegate.warn(marker, contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isErrorEnabled() {
+    return delegate.isErrorEnabled();
   }
 
   @Override
   public void error(final String msg) {
     if (isErrorEnabled()) {
-      super.error(contextualize(msg));
+      delegate.error(contextualize(msg));
     }
   }
 
   @Override
   public void error(final String format, final Object arg) {
     if (isErrorEnabled()) {
-      super.error(contextualize(format), arg);
+      delegate.error(contextualize(format), arg);
     }
   }
 
   @Override
   public void error(final String format, final Object arg1, final Object arg2) {
     if (isErrorEnabled()) {
-      super.error(contextualize(format), arg1, arg2);
+      delegate.error(contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void error(final String format, final Object... arguments) {
     if (isErrorEnabled()) {
-      super.error(contextualize(format), arguments);
+      delegate.error(contextualize(format), arguments);
     }
   }
 
   @Override
   public void error(final String msg, final Throwable t) {
     if (isErrorEnabled()) {
-      super.error(contextualize(msg), t);
+      delegate.error(contextualize(msg), t);
     }
+  }
+
+  @Override
+  public boolean isErrorEnabled(final Marker marker) {
+    return delegate.isWarnEnabled(marker);
   }
 
   @Override
   public void error(final Marker marker, final String msg) {
     if (isErrorEnabled()) {
-      super.error(marker, contextualize(msg));
+      delegate.error(marker, contextualize(msg));
     }
   }
 
   @Override
   public void error(final Marker marker, final String format, final Object arg) {
     if (isErrorEnabled()) {
-      super.error(marker, contextualize(format), arg);
+      delegate.error(marker, contextualize(format), arg);
     }
   }
 
@@ -376,21 +430,21 @@ public class ContextualLogger extends ZbLogger {
   public void error(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
     if (isErrorEnabled()) {
-      super.error(marker, contextualize(format), arg1, arg2);
+      delegate.error(marker, contextualize(format), arg1, arg2);
     }
   }
 
   @Override
   public void error(final Marker marker, final String format, final Object... arguments) {
     if (isErrorEnabled()) {
-      super.error(marker, contextualize(format), arguments);
+      delegate.error(marker, contextualize(format), arguments);
     }
   }
 
   @Override
   public void error(final Marker marker, final String msg, final Throwable t) {
     if (isErrorEnabled()) {
-      super.error(marker, contextualize(msg), t);
+      delegate.error(marker, contextualize(msg), t);
     }
   }
 }

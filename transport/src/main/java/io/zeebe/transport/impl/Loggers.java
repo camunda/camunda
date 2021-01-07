@@ -7,11 +7,11 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
-  static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
+  static final Logger TRANSPORT_LOGGER = LoggerFactory.getLogger("io.zeebe.transport");
 
   private Loggers() {}
 }

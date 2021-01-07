@@ -133,7 +133,7 @@ func (suite *JobDispatcherSuite) TestShouldPassClientAndJobToHandler() {
 	go suite.dispatcher.run(&suite.client, handler, 1, &suite.waitGroup)
 
 	// when
-	suite.dispatcher.jobQueue <- entities.Job{ActivatedJob: pb.ActivatedJob{Key: jobKey}}
+	suite.dispatcher.jobQueue <- entities.Job{ActivatedJob: &pb.ActivatedJob{Key: jobKey}}
 
 	// then
 	select {

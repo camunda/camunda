@@ -13,7 +13,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.util.StreamUtil;
 import io.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,7 +87,7 @@ public final class DebugHttpServer {
     try (final InputStream resourceAsStream =
         DebugHttpServer.class.getResourceAsStream(resourceName)) {
       if (resourceAsStream != null) {
-        return StreamUtil.read(resourceAsStream);
+        return resourceAsStream.readAllBytes();
       } else {
         throw new RuntimeException(
             "Failed to find resource " + resourceName + " for debug http exporter");

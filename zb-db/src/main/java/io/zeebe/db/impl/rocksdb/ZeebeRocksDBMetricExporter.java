@@ -9,9 +9,9 @@ package io.zeebe.db.impl.rocksdb;
 
 import io.prometheus.client.Gauge;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.util.ZbLogger;
 import java.util.Objects;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class exports metrics for a RocksDB instance to Prometheus.
@@ -20,7 +20,8 @@ import org.slf4j.Logger;
  */
 public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<ColumnFamilyType>> {
 
-  private static final Logger LOG = new ZbLogger(ZeebeRocksDBMetricExporter.class.getName());
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
 
   private static final String PARTITION = "partition";
   private static final String COLUMN_FAMILY_NAME = "columnFamilyName";

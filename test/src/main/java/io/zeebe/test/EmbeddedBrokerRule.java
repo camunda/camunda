@@ -26,7 +26,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -46,13 +44,14 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
-  protected static final Logger LOG = new ZbLogger("io.zeebe.test");
+  protected static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -66,7 +65,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected long startTime;
   private final Duration timeout;
   private final File newTemporaryFolder;
-  private List<String> dataDirectories;
+  private String dataDirectory;
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
@@ -243,7 +242,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           });
     }
 
-    dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
+    dataDirectory = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {
@@ -262,17 +261,17 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void purgeSnapshots() {
-    for (final String dataDirectoryName : dataDirectories) {
-      final File dataDirectory = new File(dataDirectoryName);
+    final File directory = new File(dataDirectory);
 
-      final File[] partitionDirectories =
-          dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
+    final File[] partitionDirectories = directory.listFiles((d, f) -> new File(d, f).isDirectory());
+    if (partitionDirectories == null) {
+      return;
+    }
 
-      for (final File partitionDirectory : partitionDirectories) {
-        final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
-        if (stateDirectory.exists()) {
-          deleteSnapshots(stateDirectory);
-        }
+    for (final File partitionDirectory : partitionDirectories) {
+      final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
+      if (stateDirectory.exists()) {
+        deleteSnapshots(stateDirectory);
       }
     }
   }
@@ -294,6 +293,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
     public ActorFuture<Void> onBecomingLeader(
         final int partitionId, final long term, final LogStream logStream) {
       latch.countDown();
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
       return CompletableActorFuture.completed(null);
     }
   }

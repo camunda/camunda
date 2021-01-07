@@ -78,6 +78,13 @@ var tests = []struct {
 		goldenFile: "testdata/topology.golden",
 	},
 	{
+		name: "using json flag",
+		cmd:  "status --output=json",
+		// we need to set the path so it evaluates $HOME before we overwrite it
+		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
+		goldenFile: "testdata/topology_json.golden",
+	},
+	{
 		name:       "deploy workflow",
 		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
 		goldenFile: "testdata/deploy.golden",
@@ -95,10 +102,22 @@ var tests = []struct {
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{
-		name:       "activate job",
+		name:       "empty activate job",
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 0",
+		goldenFile: "testdata/empty_activate_job.golden",
+	},
+	{
+		name:       "single activate job",
 		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess"},
-		cmd:        "--insecure activate jobs jobType",
-		goldenFile: "testdata/activate_job.golden",
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 1",
+		goldenFile: "testdata/single_activate_job.golden",
+	},
+	{
+		name: "double activate job",
+		// we deploy on the end again to spent more time in setup phase to avoid a race condition, that we can activate more jobs then one
+		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess", "--insecure create instance jobProcess", "--insecure deploy testdata/job_model.bpmn"},
+		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 2",
+		goldenFile: "testdata/double_activate_job.golden",
 	},
 }
 
@@ -176,7 +195,7 @@ func cmpIgnoreNums(x, y string) bool {
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
 func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	args := append(strings.Fields(command), "--address", s.GatewayAddress)
@@ -187,9 +206,12 @@ func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]
 }
 
 func buildZbctl() ([]byte, error) {
-	if runtime.GOOS == "linux" {
+	switch runtime.GOOS {
+	case "linux":
 		zbctl = "zbctl"
-	} else {
+	case "darwin":
+		zbctl = "zbctl.darwin"
+	default:
 		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 

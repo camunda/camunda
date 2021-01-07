@@ -37,4 +37,6 @@ public interface BrokerClusterState {
   int getPartition(int index);
 
   String getBrokerVersion(int brokerId);
+
+  boolean isPartitionHealthy(int brokerId, int partition);
 }

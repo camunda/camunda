@@ -128,6 +128,32 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-tool</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.bytebuddy</groupId>
+          <artifactId>byte-buddy</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <modelVersion>4.0.0</modelVersion>
@@ -137,7 +163,7 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.26.0-SNAPSHOT</version>
+    <version>0.27.0-SNAPSHOT</version>
   </parent>
 
 
@@ -201,6 +227,7 @@
           <usedDependencies>
             <!-- dependency used but plugin seems to report a false positive here -->
             <dependency>uk.co.real-logic:sbe-tool</dependency>
+            <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

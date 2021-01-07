@@ -42,13 +42,8 @@ organizationFolder('zeebe-io') {
     }
 
     configure {
-
         def traits = it / navigators / 'org.jenkinsci.plugins.github__branch__source.GitHubSCMNavigator' / traits
-        traits << 'org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait' {
-            strategyId 2
-        }
-
+        // Note: the 'traits' variable can be used to configure options that are
+        // not exposed via normal Jenkins API like above 'gitHubBranchDiscovery'
     }
-
 }
-

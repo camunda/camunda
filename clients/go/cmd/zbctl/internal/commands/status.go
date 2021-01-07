@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/protobuf/encoding/protojson"
 	"sort"
 )
 
@@ -33,6 +34,31 @@ func (a ByPartitionID) Len() int           { return len(a) }
 func (a ByPartitionID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPartitionID) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
 
+type Printer interface {
+	print(resp *pb.TopologyResponse) error
+}
+type JSONPrinter struct {
+}
+type HumanPrinter struct {
+}
+
+func (jsonPrinter *JSONPrinter) print(resp *pb.TopologyResponse) error {
+	return printTopologyJSON(resp)
+}
+
+func (humanPrinter *HumanPrinter) print(resp *pb.TopologyResponse) error {
+	printStatus(resp)
+	return nil
+}
+
+var (
+	outputFlag string
+	outputMap  = map[string]Printer{}
+)
+
+const humanOutput = "human"
+const jsonOutput = "json"
+
 var statusCmd = &cobra.Command{
 	Use:     "status",
 	Short:   "Checks the current status of the cluster",
@@ -40,7 +66,10 @@ var statusCmd = &cobra.Command{
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-
+		printer := outputMap[outputFlag]
+		if printer == nil {
+			return fmt.Errorf("cannot find proper printer for %s output", outputFlag)
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
@@ -49,7 +78,10 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		printStatus(resp)
+		err = printer.print(resp)
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 }
@@ -80,14 +112,31 @@ func printStatus(resp *pb.TopologyResponse) {
 
 		sort.Sort(ByPartitionID(broker.Partitions))
 		for _, partition := range broker.Partitions {
-			fmt.Printf("    Partition %d : %s\n", partition.PartitionId, roleToString(partition.Role))
+			fmt.Printf(
+				"    Partition %d : %s, %s\n",
+				partition.PartitionId,
+				roleToString(partition.Role),
+				healthToString(partition.Health),
+			)
 		}
 	}
 }
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
+
+	outputMap[jsonOutput] = &JSONPrinter{}
+	outputMap[humanOutput] = &HumanPrinter{}
+	statusCmd.Flags().StringVarP(
+		&outputFlag,
+		"output",
+		"o",
+		humanOutput,
+		"Specify output format. Default is human readable. Possible Values: human, json",
+	)
 }
+
+const unknownState = "Unknown"
 
 func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
@@ -96,6 +145,26 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	case pb.Partition_FOLLOWER:
 		return "Follower"
 	default:
-		return "Unknown"
+		return unknownState
 	}
+}
+
+func healthToString(health pb.Partition_PartitionBrokerHealth) string {
+	switch health {
+	case pb.Partition_HEALTHY:
+		return "Healthy"
+	case pb.Partition_UNHEALTHY:
+		return "Unhealthy"
+	default:
+		return unknownState
+	}
+}
+
+func printTopologyJSON(resp *pb.TopologyResponse) error {
+	m := protojson.MarshalOptions{EmitUnpopulated: true, Indent: "  "}
+	valueJSON, err := m.Marshal(resp)
+	if err == nil {
+		fmt.Println(string(valueJSON))
+	}
+	return err
 }

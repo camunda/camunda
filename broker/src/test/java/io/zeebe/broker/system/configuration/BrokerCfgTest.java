@@ -20,6 +20,7 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_A
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -33,7 +34,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -56,13 +58,17 @@ public final class BrokerCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
-  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER =
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER =
       "zeebe.broker.experimental.maxAppendsPerFollower";
-  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE =
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE =
       "zeebe.broker.experimental.maxAppendBatchSize";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY =
+      "zeebe.broker.experimental.detectReprocessingInconsistency";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
       "zeebe.broker.experimental.disableExplicitRaftFlush";
+  private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
 
+  @Deprecated(since = "0.26.0")
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
@@ -234,19 +240,31 @@ public final class BrokerCfgTest {
   @Test
   public void shouldEnableDebugLogExporter() {
     // given
+    final var expectedId = DebugLogExporter.defaultExporterId();
+    final var expectedConfig = DebugLogExporter.defaultConfig();
     environment.put(ENV_DEBUG_EXPORTER, "true");
 
     // then
-    assertDefaultDebugLogExporter(false);
+    assertWithDefaultConfigurations(
+        cfg -> assertThat(cfg.getExporters()).containsEntry(expectedId, expectedConfig));
   }
 
   @Test
-  public void shouldEnableDebugLogExporterWithPrettyOption() {
+  public void shouldNotRegisterDebugLogExporter() {
     // given
-    environment.put(ENV_DEBUG_EXPORTER, "pretty");
+    environment.put(ENV_DEBUG_EXPORTER, "false");
+
+    // when
+    final String exporterId = DebugLogExporter.defaultExporterId();
+    final BrokerCfg brokerCfg = TestConfigReader.readConfig("empty", environment);
 
     // then
-    assertDefaultDebugLogExporter(true);
+    assertThat(brokerCfg.getExporters()).doesNotContainKey(exporterId);
+  }
+
+  @Test
+  public void shouldHaveNoExportersByDefault() {
+    assertWithDefaultConfigurations(cfg -> assertThat(cfg.getExporters()).isEmpty());
   }
 
   @Test
@@ -333,31 +351,45 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseDefaultDirectories() {
-    assertDefaultDirectories(DEFAULT_DIRECTORY);
+  public void shouldUseDefaultDirectory() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, DEFAULT_DIRECTORY).toString();
+
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test
-  public void shouldUseSpecifiedDirectories() {
-    assertDirectories("directories", "data1", "data2", "data3");
+  public void shouldUseSpecifiedDirectory() {
+    // given
+    final BrokerCfg config = TestConfigReader.readConfig("directory", environment);
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
+
+    // then
+    assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory);
   }
 
   @Test
-  public void shouldUseDirectoriesFromEnvironment() {
+  public void shouldUseDirectoryFromEnvironment() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
+    environment.put(ZEEBE_BROKER_DATA_DIRECTORY, "foo");
+
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
+  }
+
+  @Test
+  public void shouldOverrideDirectoryWithFirstDirectories() {
+    // given
+    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
     environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
-    assertDefaultDirectories("foo", "bar");
-  }
 
-  @Test
-  public void shouldUseDirectoriesFromEnvironmentWithSpecifiedDirectories() {
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
-    assertDirectories("directories", "foo", "bar");
-  }
-
-  @Test
-  public void shouldUseSingleDirectoryFromEnvironment() {
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "hello");
-    assertDirectories("directories", "hello");
+    // then
+    assertWithDefaultConfigurations(
+        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test
@@ -439,7 +471,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideMaxAppendsViaEnvironment() {
     // given
-    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER, "8");
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER, "8");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -452,7 +484,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideMaxAppendBatchSizeViaEnvironment() {
     // given
-    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE, "256KB");
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE, "256KB");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -460,6 +492,43 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(experimentalCfg.getMaxAppendBatchSizeInBytes()).isEqualTo(256 * 1024);
+  }
+
+  @Test
+  public void shouldDisableDetectReprocessingInconsistencyPerDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
+    // when
+
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDisableExplicitRaftFlush()).isFalse();
+  }
+
+  @Test
+  public void shouldOverrideDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDetectReprocessingInconsistency()).isTrue();
+  }
+
+  @Test
+  public void
+      shouldThrowExceptionWhenInvalidValueIsUsedForDetectReprocessingInconsistencySettingViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "XXX");
+
+    // thrown
+    assertThatThrownBy(() -> TestConfigReader.readConfig("default", environment))
+        .hasMessageContaining(
+            "Failed to bind properties under 'zeebe.broker.experimental.detect-reprocessing-inconsistency' to boolean");
   }
 
   @Test
@@ -767,24 +836,6 @@ public final class BrokerCfgTest {
     assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
   }
 
-  private void assertDefaultDirectories(final String... directories) {
-    assertDirectories("default", directories);
-    assertDirectories("empty", directories);
-  }
-
-  private void assertDirectories(final String configFileName, final String... directories) {
-    assertDirectories(configFileName, Arrays.asList(directories));
-  }
-
-  private void assertDirectories(final String configFileName, final List<String> directories) {
-    final DataCfg cfg = TestConfigReader.readConfig(configFileName, environment).getData();
-    final List<String> expected =
-        directories.stream()
-            .map(d -> Paths.get(BROKER_BASE, d).toString())
-            .collect(Collectors.toList());
-    assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
-  }
-
   private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
     assertEmbeddedGatewayEnabled("default", enabled);
     assertEmbeddedGatewayEnabled("empty", enabled);
@@ -794,20 +845,6 @@ public final class BrokerCfgTest {
     final EmbeddedGatewayCfg gatewayCfg =
         TestConfigReader.readConfig(configFileName, environment).getGateway();
     assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
-  }
-
-  private void assertDefaultDebugLogExporter(final boolean prettyPrint) {
-    assertDebugLogExporter("default", prettyPrint);
-    assertDebugLogExporter("empty", prettyPrint);
-  }
-
-  private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
-    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
-    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
-
-    assertThat(brokerCfg.getExporters().values())
-        .usingRecursiveFieldByFieldElementComparator()
-        .contains(exporterCfg);
   }
 
   private void assertMetricsExporter() {
@@ -851,5 +888,16 @@ public final class BrokerCfgTest {
     assertThat(cfgCluster.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(cfgCluster.getClusterSize()).isEqualTo(clusterSize);
     assertThat(cfgCluster.getInitialContactPoints()).isEqualTo(initialContactPoints);
+  }
+
+  private void assertWithDefaultConfigurations(final Consumer<BrokerCfg> assertions) {
+    Stream.of("default", "empty")
+        .forEach(configFileName -> assertWithConfiguration(assertions, configFileName));
+  }
+
+  private void assertWithConfiguration(
+      final Consumer<BrokerCfg> assertions, final String configFileName) {
+    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
+    assertions.accept(cfg);
   }
 }

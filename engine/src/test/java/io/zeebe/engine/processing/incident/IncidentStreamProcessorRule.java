@@ -135,7 +135,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(1);
 
-    workflowState.putDeployment(1, record);
+    workflowState.putDeployment(record);
   }
 
   public Record<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {

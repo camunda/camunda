@@ -9,7 +9,7 @@
   <parent>
     <artifactId>zeebe-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.26.0-SNAPSHOT</version>
+    <version>0.27.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 

@@ -317,7 +317,7 @@ public final class CreateWorkflowInstanceProcessorTest
     final long key = keyGenerator.nextKey();
     final DeploymentRecord deployment = newDeployment(model);
     final Workflow workflow = deployment.workflows().iterator().next();
-    workflowState.putDeployment(key, deployment);
+    workflowState.putDeployment(deployment);
 
     return workflowState.getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer());
   }

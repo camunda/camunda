@@ -50,6 +50,7 @@ public class DefaultRaftServer implements RaftServer {
       new AtomicReference<>();
   private final AtomicReference<CompletableFuture<Void>> closeFutureRef = new AtomicReference<>();
   private volatile boolean started;
+  private volatile boolean stopped = false;
 
   public DefaultRaftServer(final RaftContext context) {
     this.context = checkNotNull(context, "context cannot be null");
@@ -124,9 +125,14 @@ public class DefaultRaftServer implements RaftServer {
    *
    * @return A completable future to be completed once the server has been shutdown.
    */
+  @Override
   public CompletableFuture<Void> shutdown() {
-    if (!started) {
+    if (!started && !stopped) {
       return Futures.exceptionalFuture(new IllegalStateException("Server not running"));
+    }
+
+    if (stopped) {
+      return Futures.completedFuture(null);
     }
 
     final CompletableFuture<Void> future = new AtomixFuture<>();
@@ -134,22 +140,35 @@ public class DefaultRaftServer implements RaftServer {
         .getThreadContext()
         .execute(
             () -> {
+              stopped = true;
               started = false;
               context.transition(Role.INACTIVE);
               context.close();
               future.complete(null);
             });
-
     return future;
   }
 
+  @Override
+  public CompletableFuture<Void> goInactive() {
+    final CompletableFuture<Void> future = new AtomixFuture<>();
+    context
+        .getThreadContext()
+        .execute(
+            () -> {
+              context.transition(Role.INACTIVE);
+              future.complete(null);
+            });
+    return future;
+  }
   /**
    * Leaves the Raft cluster.
    *
    * @return A completable future to be completed once the server has left the cluster.
    */
+  @Override
   public CompletableFuture<Void> leave() {
-    if (!started) {
+    if (!started || stopped) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -194,8 +213,9 @@ public class DefaultRaftServer implements RaftServer {
    *
    * @return Indicates whether the server is running.
    */
+  @Override
   public boolean isRunning() {
-    return started && context.isRunning();
+    return started && !stopped && context.isRunning();
   }
 
   @Override
@@ -241,6 +261,7 @@ public class DefaultRaftServer implements RaftServer {
     }
 
     if (openFutureRef.compareAndSet(null, new AtomixFuture<>())) {
+      stopped = false;
       joiner
           .get()
           .whenComplete(

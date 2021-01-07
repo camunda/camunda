@@ -10,6 +10,8 @@ package io.zeebe.util.allocation;
 public final class BufferAllocators {
   private static final DirectBufferAllocator DIRECT_BUFFER_ALLOCATOR = new DirectBufferAllocator();
 
+  private BufferAllocators() {}
+
   public static AllocatedBuffer allocateDirect(final int capacity) {
     return DIRECT_BUFFER_ALLOCATOR.allocate(capacity);
   }

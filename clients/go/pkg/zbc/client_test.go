@@ -219,7 +219,7 @@ func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	wrongPath := "non.existing"
 
-	//when
+	// when
 	_, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: wrongPath,
@@ -269,7 +269,7 @@ func (s *clientTestSuite) TestKeepAlive() {
 	// given
 	keepAlive := 2 * time.Minute
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              keepAlive,
 	}
@@ -289,7 +289,7 @@ func (s *clientTestSuite) TestOverrideKeepAliveWithEnvVar() {
 
 	env.set(KeepAliveEnvVar, strconv.Itoa(keepAlive))
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              5 * time.Second,
 	}
@@ -305,7 +305,7 @@ func (s *clientTestSuite) TestOverrideKeepAliveWithEnvVar() {
 func (s *clientTestSuite) TestRejectNegativeDuration() {
 	// given
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              -5 * time.Second,
 	}
@@ -321,7 +321,7 @@ func (s *clientTestSuite) TestRejectNegativeDurationAsEnvVar() {
 	// given
 	env.set(KeepAliveEnvVar, "-100")
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 	}
 
@@ -336,7 +336,7 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	// given
 	blockReq := make(chan struct{})
 	defer close(blockReq)
-	lis, server := createServerWithInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+	lis, server := createServerWithUnaryInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
 		<-blockReq
 		return nil, nil
 	})

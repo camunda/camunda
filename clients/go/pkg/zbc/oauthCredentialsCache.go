@@ -139,7 +139,7 @@ func (cache *oauthYamlCredentialsCache) writeCache() error {
 		return err
 	}
 
-	return ioutil.WriteFile(cache.path, cacheContents, 0640)
+	return ioutil.WriteFile(cache.path, cacheContents, 0600)
 }
 
 func getDefaultOAuthYamlCredentialsCacheRelativePath() string {

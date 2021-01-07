@@ -46,6 +46,7 @@ import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
+import io.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
@@ -210,6 +211,8 @@ public final class Broker implements AutoCloseable {
         "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
+    startContext.addStep("cluster services", () -> atomix.start().join());
+    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -218,8 +221,6 @@ public final class Broker implements AutoCloseable {
             return embeddedGatewayService;
           });
     }
-    startContext.addStep("cluster services", () -> atomix.start().join());
-    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
@@ -404,7 +405,8 @@ public final class Broker implements AutoCloseable {
                     partitionIndexes.get(partitionId),
                     snapshotStoreSupplier,
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler),
-                    buildExporterRepository(brokerCfg));
+                    buildExporterRepository(brokerCfg),
+                    new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
                 new PartitionTransitionImpl(context, LEADER_STEPS, FOLLOWER_STEPS);
             final ZeebePartition zeebePartition = new ZeebePartition(context, transitionBehavior);

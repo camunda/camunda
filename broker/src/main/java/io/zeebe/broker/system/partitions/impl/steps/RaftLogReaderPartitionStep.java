@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.storage.journal.JournalReader.Mode;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -24,8 +25,15 @@ public class RaftLogReaderPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> close(final PartitionContext context) {
-    context.getRaftLogReader().close();
-    context.setRaftLogReader(null);
+    try {
+      context.getRaftLogReader().close();
+    } catch (final Exception e) {
+      Loggers.SYSTEM_LOGGER.error(
+          "Unexpected error closing Raft log reader for partition {}", context.getPartitionId(), e);
+    } finally {
+      context.setRaftLogReader(null);
+    }
+
     return CompletableActorFuture.completed(null);
   }
 

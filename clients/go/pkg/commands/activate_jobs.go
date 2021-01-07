@@ -19,6 +19,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
+	"log"
 	"time"
 )
 
@@ -81,32 +82,48 @@ func (cmd *ActivateJobsCommand) FetchVariables(fetchVariables ...string) Activat
 func (cmd *ActivateJobsCommand) Send(ctx context.Context) ([]entities.Job, error) {
 	cmd.request.RequestTimeout = getLongPollingMillis(ctx)
 
-	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
+	stream, err := cmd.openStream(ctx)
 	if err != nil {
-		if cmd.shouldRetry(ctx, err) {
-			return cmd.Send(ctx)
-		}
 		return nil, err
 	}
 
 	var activatedJobs []entities.Job
-
 	for {
 		response, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
+		if cmd.shouldRetry(ctx, err) {
+			// the headers are outdated and need to be remade
+			stream, err = cmd.openStream(ctx)
+			if err != nil {
+				log.Printf("Failed to reopen job polling stream: %v\n", err)
+			}
+			continue
+		}
+
 		if err != nil {
 			return activatedJobs, err
 		}
 		for _, activatedJob := range response.Jobs {
-			activatedJobs = append(activatedJobs, entities.Job{ActivatedJob: *activatedJob})
+			activatedJobs = append(activatedJobs, entities.Job{ActivatedJob: activatedJob})
 		}
 	}
 
 	return activatedJobs, nil
 }
 
+func (cmd *ActivateJobsCommand) openStream(ctx context.Context) (pb.Gateway_ActivateJobsClient, error) {
+	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
+	if err != nil {
+		if cmd.shouldRetry(ctx, err) {
+			return cmd.openStream(ctx)
+		}
+		return nil, err
+	}
+
+	return stream, nil
+}
 func NewActivateJobsCommand(gateway pb.GatewayClient, pred retryPredicate) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
 		request: pb.ActivateJobsRequest{

@@ -9,12 +9,15 @@ package io.zeebe.broker.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.RaftServer.Role;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.exporter.stream.ExporterPhase;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.management.BrokerAdminService;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,13 +28,7 @@ import org.junit.rules.Timeout;
 public class BrokerAdminServiceTest {
   private final Timeout testTimeout = Timeout.seconds(60);
   private final ClusteringRule clusteringRule =
-      new ClusteringRule(
-          1,
-          3,
-          3,
-          cfg -> {
-            cfg.getData().setLogIndexDensity(1);
-          });
+      new ClusteringRule(1, 1, 1, cfg -> cfg.getData().setLogIndexDensity(1));
   private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -45,38 +42,6 @@ public class BrokerAdminServiceTest {
   public void before() {
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
     leaderAdminService = leader.getBrokerAdminService();
-  }
-
-  @Test
-  public void shouldReportPartitionStatus() {
-    // given
-    final var followers =
-        clusteringRule.getOtherBrokerObjects(clusteringRule.getLeaderForPartition(1).getNodeId());
-
-    // when
-    final var followerStatus =
-        followers.stream()
-            .map(Broker::getBrokerAdminService)
-            .map(BrokerAdminService::getPartitionStatus)
-            .map(status -> status.get(1));
-
-    final var leaderStatus = leaderAdminService.getPartitionStatus().get(1);
-
-    // then
-    followerStatus.forEach(
-        partitionStatus -> {
-          assertThat(partitionStatus.getRole()).isEqualTo(Role.FOLLOWER);
-          assertThat(partitionStatus.getProcessedPosition()).isNull();
-          assertThat(partitionStatus.getSnapshotId()).isNull();
-          assertThat(partitionStatus.getProcessedPositionInSnapshot()).isNull();
-          assertThat(partitionStatus.getStreamProcessorPhase()).isNull();
-        });
-
-    assertThat(leaderStatus.getRole()).isEqualTo(Role.LEADER);
-    assertThat(leaderStatus.getProcessedPosition()).isEqualTo(-1);
-    assertThat(leaderStatus.getSnapshotId()).isNull();
-    assertThat(leaderStatus.getProcessedPositionInSnapshot()).isNull();
-    assertThat(leaderStatus.getStreamProcessorPhase()).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -104,9 +69,7 @@ public class BrokerAdminServiceTest {
   }
 
   @Test
-  public void shouldUnPauseStreamProcessorWhenRequested() {
-    // given
-    clientRule.createSingleJob("test");
+  public void shouldResumeStreamProcessorWhenRequested() {
 
     // when
     leaderAdminService.pauseStreamProcessing();
@@ -118,7 +81,44 @@ public class BrokerAdminServiceTest {
   }
 
   @Test
-  public void shouldPauseStreamProcessorAndTakeSnapshotWhenPrepareUgrade() {
+  public void shouldPauseExporterWhenRequested() {
+    // when
+    leaderAdminService.pauseExporting();
+
+    // then
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+  }
+
+  @Test
+  public void shouldResumeExportingWhenRequested() {
+    // given
+    leaderAdminService.pauseExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+
+    // when
+    final String messageName = "test";
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey("test-key")
+        .send()
+        .join();
+    leaderAdminService.resumeExporting();
+
+    // then
+    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(60))
+        .until(
+            () ->
+                RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                    .withName(messageName)
+                    .exists());
+  }
+
+  @Test
+  public void shouldPauseStreamProcessorAndExporterAndTakeSnapshotWhenPrepareUgrade() {
     // given
     clientRule.createSingleJob("test");
 
@@ -129,7 +129,72 @@ public class BrokerAdminServiceTest {
     waitForSnapshotAtBroker(leaderAdminService);
 
     assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
     assertProcessedPositionIsInSnapshot(leaderAdminService);
+  }
+
+  @Test
+  public void shouldPauseStreamProcessorAfterRestart() {
+    // given
+    leaderAdminService.pauseStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+  }
+
+  @Test
+  public void shouldResumeStreamProcessorAfterRestart() {
+    // given
+    leaderAdminService.pauseStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    leaderAdminService.resumeStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
+  }
+
+  @Test
+  public void shouldPauseExporterAfterRestart() {
+    // given
+    leaderAdminService.pauseExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+  }
+
+  @Test
+  public void shouldResumeExporterAfterRestart() {
+    // given
+    leaderAdminService.pauseExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+    leaderAdminService.resumeExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+
+    // when
+    clusteringRule.restartCluster();
+
+    // then
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
   }
 
   private void assertStreamProcessorPhase(
@@ -142,6 +207,17 @@ public class BrokerAdminServiceTest {
                     .forEach(
                         (p, status) ->
                             assertThat(status.getStreamProcessorPhase()).isEqualTo(expected)));
+  }
+
+  private void assertExporterPhase(
+      final BrokerAdminService brokerAdminService, final ExporterPhase expected) {
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                brokerAdminService
+                    .getPartitionStatus()
+                    .forEach(
+                        (p, status) -> assertThat(status.getExporterPhase()).isEqualTo(expected)));
   }
 
   private void assertProcessedPositionIsInSnapshot(final BrokerAdminService brokerAdminService) {

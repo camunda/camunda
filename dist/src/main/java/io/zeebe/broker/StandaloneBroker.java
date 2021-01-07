@@ -13,10 +13,12 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.shared.EnvironmentHelper;
 import io.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -28,6 +30,7 @@ import org.springframework.core.env.Environment;
 @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
 @ComponentScan({"io.zeebe.broker", "io.zeebe.shared"})
 public class StandaloneBroker implements CommandLineRunner {
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   @Autowired BrokerCfg configuration;
   @Autowired Environment springEnvironment;
@@ -88,7 +91,7 @@ public class StandaloneBroker implements CommandLineRunner {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
       return new Broker(configuration, tempFolder, null, springBrokerBridge);
     } catch (final IOException e) {
-      throw new RuntimeException("Could not start broker", e);
+      throw new UncheckedIOException("Could not start broker", e);
     }
   }
 
@@ -97,7 +100,7 @@ public class StandaloneBroker implements CommandLineRunner {
       try {
         FileUtil.deleteFolder(tempFolder);
       } catch (final IOException e) {
-        e.printStackTrace();
+        LOG.error("Failed to delete temporary folder {}", tempFolder, e);
       }
     }
   }

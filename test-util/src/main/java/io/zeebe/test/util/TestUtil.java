@@ -9,16 +9,16 @@ package io.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.ZbLogger;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class TestUtil {
 
   public static final int MAX_RETRIES = 100;
-  private static final Logger LOG = new ZbLogger(TestUtil.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TestUtil.class);
 
   public static <T> Invocation<T> doRepeatedly(final Callable<T> callable) {
     return new Invocation<>(callable);

@@ -99,13 +99,13 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	var expectedJobs []entities.Job
 	for _, job := range response1.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 	for _, job := range response2.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 	for _, job := range response3.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 
 	gomock.InOrder(

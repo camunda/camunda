@@ -28,7 +28,6 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,11 +37,12 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Abstract partition. */
 public class RaftPartition implements Partition {
 
-  private static final Logger LOG = new ZbLogger(RaftPartition.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
@@ -226,6 +226,10 @@ public class RaftPartition implements Partition {
 
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
+  }
+
+  public CompletableFuture<Void> goInactive() {
+    return server.goInactive();
   }
 
   private void onFailure() {

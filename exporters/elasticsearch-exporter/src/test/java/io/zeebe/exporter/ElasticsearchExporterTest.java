@@ -24,13 +24,13 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
-import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporterTest {
 
@@ -48,7 +48,7 @@ public class ElasticsearchExporterTest {
   public void shouldNotFailOnOpenIfElasticIsUnreachable() {
     // given
     final ElasticsearchClient client =
-        Mockito.spy(new ElasticsearchClient(config, new ZbLogger("test")));
+        Mockito.spy(new ElasticsearchClient(config, LoggerFactory.getLogger("test")));
     final ElasticsearchExporter exporter = createExporter(client);
     config.index.createTemplate = true;
 

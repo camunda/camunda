@@ -274,10 +274,18 @@ message Partition {
     FOLLOWER = 1;
   }
 
+  // Describes the current health of the partition
+  enum PartitionBrokerHealth {
+    HEALTHY = 0;
+    UNHEALTHY = 1;
+  }
+
   // the unique ID of this partition
   int32 partitionId = 1;
   // the role of the broker for this partition
   PartitionBrokerRole role = 2;
+  // the health of this partition
+  PartitionBrokerHealth health = 3;
 }
 
 message UpdateJobRetriesRequest {

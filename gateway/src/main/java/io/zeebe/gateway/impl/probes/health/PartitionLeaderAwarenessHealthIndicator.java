@@ -37,12 +37,9 @@ public class PartitionLeaderAwarenessHealthIndicator implements HealthIndicator 
     } else {
       final var clusterState = optClusterState.get();
       if (clusterState.getPartitions().stream()
-          .filter(
-              index -> {
-                return clusterState.getLeaderForPartition(index) != BrokerClusterState.NODE_ID_NULL;
-              })
-          .findAny()
-          .isPresent()) {
+          .anyMatch(
+              index ->
+                  clusterState.getLeaderForPartition(index) != BrokerClusterState.NODE_ID_NULL)) {
         return Health.up().build();
       } else {
         return Health.down().build();

@@ -21,7 +21,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
@@ -117,6 +116,7 @@ public final class ReProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
+  private boolean detectReprocessingInconsistency;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -131,6 +131,7 @@ public final class ReProcessingStateMachine {
 
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
+    detectReprocessingInconsistency = context.isDetectReprocessingInconsistency();
   }
 
   /**
@@ -267,7 +268,9 @@ public final class ReProcessingStateMachine {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
 
-    verifyRecordMatchesToReprocessing(typedEvent);
+    if (detectReprocessingInconsistency) {
+      verifyRecordMatchesToReprocessing(typedEvent);
+    }
 
     if (currentEvent.getPosition() <= lastSourceEventPosition) {
       // don't reprocess records after the last source event
@@ -383,9 +386,6 @@ public final class ReProcessingStateMachine {
     // if a record is not written to the log stream then the state could be corrupted
     reprocessingStreamWriter.getRecords().stream()
         .filter(record -> record.getSourceRecordPosition() < currentEvent.getSourceRecordPosition())
-        // ignore deployment distributed events because they are written again on reprocessing
-        // (#3124)
-        .filter(record -> record.getIntent() != DeploymentIntent.DISTRIBUTED)
         .findFirst()
         .ifPresent(
             missingRecordOnLogStream -> {

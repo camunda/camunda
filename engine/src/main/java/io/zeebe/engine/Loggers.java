@@ -7,18 +7,20 @@
  */
 package io.zeebe.engine;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Loggers {
-  public static final Logger STREAM_PROCESSING = new ZbLogger("io.zeebe.broker.logstreams");
+  public static final Logger STREAM_PROCESSING =
+      LoggerFactory.getLogger("io.zeebe.broker.logstreams");
   public static final Logger WORKFLOW_REPOSITORY_LOGGER =
-      new ZbLogger("io.zeebe.broker.workflow.repository");
+      LoggerFactory.getLogger("io.zeebe.broker.workflow.repository");
 
-  public static final Logger WORKFLOW_PROCESSOR_LOGGER = new ZbLogger("io.zeebe.broker.workflow");
+  public static final Logger WORKFLOW_PROCESSOR_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.workflow");
 
   public static Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.zeebe.broker.exporter.%s", exporterId);
-    return new ZbLogger(loggerName);
+    return LoggerFactory.getLogger(loggerName);
   }
 }

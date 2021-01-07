@@ -15,9 +15,8 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.zeebe.broker.system.partitions.impl.TestPartitionStep;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
 import org.junit.Before;
@@ -36,8 +35,8 @@ public class ZeebePartitionTransitionIntegrationTest {
   @Before
   public void setup() {
     ctx = mock(PartitionContext.class);
-    final NoopPartitionStep firstComponent = spy(new NoopPartitionStep());
-    final NoopPartitionStep secondComponent = spy(new NoopPartitionStep());
+    final TestPartitionStep firstComponent = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep secondComponent = spy(TestPartitionStep.builder().build());
     transition =
         spy(new PartitionTransitionImpl(ctx, List.of(firstComponent), List.of(secondComponent)));
 
@@ -69,23 +68,5 @@ public class ZeebePartitionTransitionIntegrationTest {
     inOrder.verify(transition).toLeader();
     inOrder.verify(transition).toFollower();
     inOrder.verify(transition).toInactive();
-  }
-
-  private static class NoopPartitionStep implements PartitionStep {
-
-    @Override
-    public ActorFuture<Void> open(final PartitionContext context) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> close(final PartitionContext context) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public String getName() {
-      return "NoopComponent";
-    }
   }
 }

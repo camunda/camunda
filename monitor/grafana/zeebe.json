@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1601901661063,
+  "iteration": 1607335080870,
   "links": [],
   "panels": [
     {
@@ -99,6 +99,7 @@
       "panels": [
         {
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the current processing of records per partition per second.",
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -150,11 +151,12 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Processing per Partition",
+          "title": "Processing Records per Partition",
           "type": "gauge"
         },
         {
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the current exporting of records per partition per second.",
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -206,8 +208,170 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Exporting per Partition",
+          "title": "Exporting Records per Partition",
           "type": "gauge"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Flow node instances completed or terminated per second per partition.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 17,
+            "x": 0,
+            "y": 7
+          },
+          "hiddenSeries": false,
+          "id": 230,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m])) by (partition, action)",
+              "interval": "",
+              "legendFormat": "Partition {{partition}} FNI {{action}} per s",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "FNI per s per partition [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:402",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:403",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "cacheTimeout": null,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Flow node instances completed or terminated per second over all partitions.",
+          "gridPos": {
+            "h": 8,
+            "w": 7,
+            "x": 17,
+            "y": 7
+          },
+          "id": 232,
+          "links": [],
+          "options": {
+            "colorMode": "value",
+            "fieldOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "defaults": {
+                "mappings": [
+                  {
+                    "$$hashKey": "object:725",
+                    "id": 0,
+                    "op": "=",
+                    "text": "0",
+                    "type": 1,
+                    "value": "null"
+                  }
+                ],
+                "nullValueMode": "connected",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 5
+                    },
+                    {
+                      "color": "green",
+                      "value": 10
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal"
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "Partition {{partition}} FNI per s",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Overall FNI  per s [1m]",
+          "type": "stat"
         },
         {
           "columns": [
@@ -222,7 +386,7 @@
             "h": 9,
             "w": 5,
             "x": 0,
-            "y": 7
+            "y": 15
           },
           "id": 68,
           "links": [],
@@ -344,7 +508,7 @@
             "h": 9,
             "w": 9,
             "x": 5,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 116,
@@ -451,7 +615,7 @@
             "h": 9,
             "w": 5,
             "x": 14,
-            "y": 7
+            "y": 15
           },
           "id": 129,
           "pageSize": null,
@@ -558,7 +722,7 @@
             "h": 9,
             "w": 5,
             "x": 19,
-            "y": 7
+            "y": 15
           },
           "id": 54,
           "pageSize": null,
@@ -652,7 +816,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 16
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 58,
@@ -765,7 +929,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 16
+            "y": 24
           },
           "id": 117,
           "interval": null,
@@ -840,7 +1004,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 16
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 74,
@@ -941,7 +1105,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 20
+            "y": 28
           },
           "id": 118,
           "interval": null,
@@ -1011,7 +1175,7 @@
             "h": 8,
             "w": 7,
             "x": 0,
-            "y": 24
+            "y": 32
           },
           "id": 189,
           "links": [],
@@ -1081,7 +1245,7 @@
             "h": 8,
             "w": 8,
             "x": 7,
-            "y": 24
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 87,
@@ -1192,7 +1356,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 24
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 31,
@@ -1305,7 +1469,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 40
           },
           "hiddenSeries": false,
           "id": 62,
@@ -1395,7 +1559,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 40
           },
           "hiddenSeries": false,
           "id": 93,
@@ -2807,7 +2971,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 4
           },
           "hiddenSeries": false,
           "id": 102,
@@ -2904,7 +3068,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 4
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2962,7 +3126,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 105,
@@ -3056,7 +3220,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3112,7 +3276,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 182,
@@ -3137,7 +3301,7 @@
           "renderer": "flot",
           "seriesOverrides": [],
           "spaceLength": 10,
-          "stack": false,
+          "stack": true,
           "steppedLine": false,
           "targets": [
             {
@@ -3167,6 +3331,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:2030",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3175,6 +3340,7 @@
               "show": true
             },
             {
+              "$$hashKey": "object:2031",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3201,7 +3367,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 110,
@@ -3289,7 +3455,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 108,
@@ -3385,13 +3551,14 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Memory limits and requests are taken from the k8 pod metrics.",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 33,
@@ -3416,7 +3583,22 @@
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
-          "seriesOverrides": [],
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:235",
+              "alias": "limit",
+              "color": "#E02F44",
+              "fill": 0,
+              "linewidth": 2
+            },
+            {
+              "$$hashKey": "object:1073",
+              "alias": "request",
+              "color": "#56A64B",
+              "fill": 0,
+              "fillGradient": 0
+            }
+          ],
           "spaceLength": 10,
           "stack": false,
           "steppedLine": false,
@@ -3424,25 +3606,27 @@
             {
               "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"}",
               "format": "time_series",
+              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} RSS",
               "refId": "A"
-            }
-          ],
-          "thresholds": [
+            },
             {
-              "$$hashKey": "object:351",
-              "colorMode": "critical",
-              "fill": true,
-              "fillColor": "rgba(50, 116, 217, 0.2)",
-              "line": true,
-              "lineColor": "rgba(31, 96, 196, 0.6)",
-              "op": "gt",
-              "value": 16000000000,
-              "yaxis": "left"
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "limit",
+              "refId": "B"
+            },
+            {
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "interval": "",
+              "legendFormat": "request",
+              "refId": "C"
             }
           ],
+          "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
@@ -3466,8 +3650,8 @@
               "format": "decbytes",
               "label": null,
               "logBase": 1,
-              "max": "16000000000",
-              "min": "1000000000",
+              "max": null,
+              "min": null,
               "show": true
             },
             {
@@ -3497,7 +3681,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 98,
@@ -3609,7 +3793,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 64,
@@ -3638,8 +3822,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (pod_name) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
-              "legendFormat": "{{pod_name}}",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
+              "interval": "",
+              "legendFormat": "{{pod}}",
               "refId": "A"
             }
           ],
@@ -3705,7 +3890,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 35,
@@ -3795,7 +3980,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 37,
@@ -3825,16 +4010,12 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "(process_open_fds{namespace=~\"$namespace\",pod=~\"$pod\"} / process_max_fds{namespace=~\"$namespace\",pod=~\"$pod\"}) * 100",
+              "expr": "container_file_descriptors{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
               "format": "time_series",
+              "hide": false,
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} used fds",
-              "refId": "A"
-            },
-            {
-              "expr": "",
-              "format": "time_series",
-              "intervalFactor": 1,
+              "legendFormat": "{{pod}} use fds",
               "refId": "B"
             }
           ],
@@ -3859,7 +4040,7 @@
           "yaxes": [
             {
               "$$hashKey": "object:556",
-              "format": "percent",
+              "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -3893,7 +4074,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 40,
@@ -3983,7 +4164,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 39,
@@ -4096,7 +4277,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 6
           },
           "hiddenSeries": false,
           "id": 122,
@@ -4125,7 +4306,8 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_fs_reads_bytes_total{namespace=~\"$namespace\", pod=~\"$namespace.*\"}[1m])) by (pod)",
+              "expr": "sum(rate(container_fs_reads_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (pod)",
+              "interval": "",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -4184,7 +4366,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 6
           },
           "hiddenSeries": false,
           "id": 124,
@@ -4213,7 +4395,8 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_fs_writes_bytes_total{namespace=~\"$namespace\", pod=~\"$namespace.*\"}[1m])) by (pod)",
+              "expr": "sum(rate(container_fs_writes_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (pod)",
+              "interval": "",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -4272,7 +4455,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 126,
@@ -4301,7 +4484,8 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$namespace.*\"}[1m])) by (pod)",
+              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (pod)",
+              "interval": "",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -4360,7 +4544,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 127,
@@ -4389,7 +4573,8 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$namespace.*\"}[1m])) by (pod)",
+              "expr": "sum(rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (pod)",
+              "interval": "",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -4482,7 +4667,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", recordType=\"COMMAND\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\",recordType=\"COMMAND\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4546,7 +4731,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", recordType=\"EVENT\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", recordType=\"EVENT\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4610,7 +4795,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4847,6 +5032,198 @@
             }
           ],
           "title": "Job Life Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Time taken to process a record",
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 38
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 233,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Processing Duration",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Time taken to append a record to the log",
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 38
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 234,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Record write latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Time taken to commit a record to the log (includes write latency)",
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 45
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 235,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Commit latency",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -5559,7 +5936,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5623,7 +6000,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5682,7 +6059,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 16
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 79,
@@ -5774,7 +6151,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 16
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 114,
@@ -5867,7 +6244,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 102
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5931,7 +6308,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 102
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5996,7 +6373,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 109
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6056,7 +6433,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 109
           },
           "hiddenSeries": false,
           "id": 72,
@@ -6150,7 +6527,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 38
+            "y": 117
           },
           "hiddenSeries": false,
           "id": 95,
@@ -6251,7 +6628,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 38
+            "y": 117
           },
           "hiddenSeries": false,
           "id": 180,
@@ -6343,7 +6720,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 46
+            "y": 125
           },
           "id": 205,
           "maxPerRow": 6,
@@ -6420,15 +6797,15 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 46
+            "y": 125
           },
-          "id": 218,
+          "id": 225,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -6499,15 +6876,15 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 46
+            "y": 125
           },
-          "id": 219,
+          "id": 226,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -6578,7 +6955,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 51
+            "y": 130
           },
           "id": 209,
           "maxPerRow": 6,
@@ -6655,15 +7032,15 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 51
+            "y": 130
           },
-          "id": 220,
+          "id": 227,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -6734,15 +7111,15 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 51
+            "y": 130
           },
-          "id": 221,
+          "id": 228,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1598954942580,
+          "repeatIteration": 1603456725499,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -6805,7 +7182,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 135
           },
           "id": 215,
           "options": {
@@ -6856,7 +7233,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 135
           },
           "id": 217,
           "options": {
@@ -6931,7 +7308,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 11
           },
           "hiddenSeries": false,
           "id": 154,
@@ -6960,9 +7337,10 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition))",
+              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[1m])) by (pod, partition) * 10)",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{pod}} Table Reader {{partition}}",
+              "legendFormat": "{{pod}} memory {{partition}}",
               "refId": "A"
             }
           ],
@@ -7022,7 +7400,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 11
           },
           "hiddenSeries": false,
           "id": 144,
@@ -7113,7 +7491,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 16
+            "y": 17
           },
           "hiddenSeries": false,
           "id": 142,
@@ -7204,7 +7582,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 23
           },
           "hiddenSeries": false,
           "id": 151,
@@ -7295,7 +7673,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 23
           },
           "hiddenSeries": false,
           "id": 152,
@@ -7386,7 +7764,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 150,
@@ -7477,7 +7855,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 147,
@@ -7568,7 +7946,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 149,
@@ -7660,7 +8038,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 42
           },
           "hiddenSeries": false,
           "id": 148,
@@ -7751,7 +8129,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 48
           },
           "hiddenSeries": false,
           "id": 155,
@@ -7842,7 +8220,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 48
           },
           "hiddenSeries": false,
           "id": 156,
@@ -7935,7 +8313,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 55
+            "y": 56
           },
           "id": 158,
           "pageSize": null,
@@ -8043,7 +8421,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 55
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 157,
@@ -8134,7 +8512,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 146,
@@ -8225,7 +8603,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 159,
@@ -8316,7 +8694,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 160,
@@ -8407,7 +8785,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 153,
@@ -8518,7 +8896,7 @@
             "h": 10,
             "w": 8,
             "x": 0,
-            "y": 51
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8581,7 +8959,7 @@
             "h": 10,
             "w": 8,
             "x": 8,
-            "y": 51
+            "y": 12
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8638,7 +9016,7 @@
             "h": 10,
             "w": 8,
             "x": 16,
-            "y": 51
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 185,
@@ -8736,7 +9114,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 61
+            "y": 22
           },
           "height": "400",
           "hiddenSeries": false,
@@ -8857,7 +9235,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 13
           },
           "id": 170,
           "maxPerRow": 6,
@@ -8901,8 +9279,8 @@
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-0",
-              "value": "dd-test-startup-metrics-zeebe-0"
+              "text": "zell-test-metrics-zeebe-0",
+              "value": "zell-test-metrics-zeebe-0"
             }
           },
           "targets": [
@@ -8931,9 +9309,9 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 12
+            "y": 13
           },
-          "id": 183,
+          "id": 223,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -8972,13 +9350,13 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1596122668847,
+          "repeatIteration": 1603456725491,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-1",
-              "value": "dd-test-startup-metrics-zeebe-1"
+              "text": "zell-test-metrics-zeebe-1",
+              "value": "zell-test-metrics-zeebe-1"
             }
           },
           "targets": [
@@ -9007,9 +9385,9 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 12
+            "y": 13
           },
-          "id": 184,
+          "id": 224,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -9048,13 +9426,13 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1596122668847,
+          "repeatIteration": 1603456725491,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "dd-test-startup-metrics-zeebe-2",
-              "value": "dd-test-startup-metrics-zeebe-2"
+              "text": "zell-test-metrics-zeebe-2",
+              "value": "zell-test-metrics-zeebe-2"
             }
           },
           "targets": [
@@ -9083,7 +9461,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 19
           },
           "id": 174,
           "options": {
@@ -9143,7 +9521,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -9265,5 +9643,5 @@
   "variables": {
     "list": []
   },
-  "version": 16
+  "version": 24
 }

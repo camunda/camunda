@@ -85,7 +85,7 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(1));
 
     // when
-    engine.start();
+    engine.startWithReprocessingDetection();
 
     // then
     assertThat(
@@ -120,7 +120,7 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(1));
 
     // when
-    engine.start();
+    engine.startWithReprocessingDetection();
 
     // then
     final var streamProcessor = engine.getStreamProcessor(1);
@@ -152,7 +152,7 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(1));
 
     // when
-    engine.start();
+    engine.startWithReprocessingDetection();
 
     // then
     final var streamProcessor = engine.getStreamProcessor(1);
@@ -187,7 +187,7 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(2));
 
     // when
-    engine.start();
+    engine.startWithReprocessingDetection();
 
     // then
     final var streamProcessor = engine.getStreamProcessor(1);

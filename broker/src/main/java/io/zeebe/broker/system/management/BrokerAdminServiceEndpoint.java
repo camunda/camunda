@@ -30,6 +30,8 @@ public class BrokerAdminServiceEndpoint {
     operations.put("resumeProcessing", this::resumeProcessing);
     operations.put("takeSnapshot", this::takeSnapshot);
     operations.put("prepareUpgrade", this::prepareUpgrade);
+    operations.put("pauseExporting", this::pauseExporting);
+    operations.put("resumeExporting", this::resumeExporting);
   }
 
   @WriteOperation
@@ -50,6 +52,16 @@ public class BrokerAdminServiceEndpoint {
 
   private Map<Integer, PartitionStatus> resumeProcessing() {
     springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeStreamProcessing);
+    return partitionStatus();
+  }
+
+  private Map<Integer, PartitionStatus> pauseExporting() {
+    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseExporting);
+    return partitionStatus();
+  }
+
+  private Map<Integer, PartitionStatus> resumeExporting() {
+    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeExporting);
     return partitionStatus();
   }
 

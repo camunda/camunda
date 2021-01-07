@@ -166,14 +166,9 @@
       #		  ├── runtime
       #		  └── snapshots
 
-      # Specify a list of directories in which data is stored. Using multiple
-      # directories makes sense in case the machine which is running Zeebe has
-      # multiple disks which are used in a JBOD (just a bunch of disks) manner. This
-      # allows to get greater throughput in combination with a higher io thread count
-      # since writes to different disks can potentially be done in parallel.
-      #
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORIES.
-      # directories: [ data ]
+      # Specify the directory in which data is stored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
+      # directory: data
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
@@ -300,7 +295,7 @@
 
         # Sets the timeout for a probe response
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
-        # probeTimeout: 2s
+        # probeTimeout: 100ms
 
         # Sets the number of probes failed before declaring a member is suspect
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES
@@ -524,3 +519,8 @@
       # Sets the maximum batch size, which is send per append request to a follower.
       # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
       # maxAppendBatchSize = 32KB;
+
+      # Enables the detection of an inconsistency during reprocessing. If a inconsistency is detect the StreamProcessor is
+      # failed and the partition becomes unhealthy, no further progress will made on that specific partition.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
+      # detectReprocessingInconsistency = false;

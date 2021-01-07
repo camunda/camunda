@@ -25,7 +25,7 @@ public class JobRecordValue extends UnpackedObject implements DbValue {
     return recordProp.getValue();
   }
 
-  public void setRecord(final JobRecord record) {
-    recordProp.getValue().wrap(record);
+  public void setRecordWithoutVariables(final JobRecord record) {
+    recordProp.getValue().wrapWithoutVariables(record);
   }
 }

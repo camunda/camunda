@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
 public final class DeploymentCreateProcessorTest {
+
   @Rule
   public final StreamProcessorRule rule =
       new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
@@ -52,7 +53,7 @@ public final class DeploymentCreateProcessorTest {
   }
 
   @Test
-  public void shouldRejectTwoCreatingCommands() {
+  public void shouldNotRejectTwoCreateDeploymentCommands() {
     // given
     creatingDeployment();
 
@@ -73,12 +74,12 @@ public final class DeploymentCreateProcessorTest {
             DeploymentIntent.CREATE,
             DeploymentIntent.CREATED,
             DeploymentIntent.CREATE,
-            DeploymentIntent.CREATE);
+            DeploymentIntent.CREATED);
     //
     Assertions.assertThat(collect)
         .extracting(Record::getRecordType)
         .containsExactly(
-            RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
+            RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.EVENT);
   }
 
   @Test

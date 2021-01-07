@@ -11,18 +11,18 @@ import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshot implements PersistedSnapshot {
   // version currently hardcoded, could be used for backwards compatibility
   private static final int VERSION = 1;
-  private static final Logger LOGGER = new ZbLogger(FileBasedSnapshot.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshot.class);
 
   private final Path directory;
   private final FileBasedSnapshotMetadata metadata;

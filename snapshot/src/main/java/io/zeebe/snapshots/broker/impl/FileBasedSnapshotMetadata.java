@@ -9,14 +9,14 @@ package io.zeebe.snapshots.broker.impl;
 
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.broker.SnapshotId;
-import io.zeebe.util.ZbLogger;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotMetadata implements SnapshotId {
-  private static final Logger LOGGER = new ZbLogger(FileBasedSnapshotMetadata.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotMetadata.class);
   private static final int METADATA_PARTS = 5;
   private static final int METADATA_PARTS_OLD_VERSION = 3;
 

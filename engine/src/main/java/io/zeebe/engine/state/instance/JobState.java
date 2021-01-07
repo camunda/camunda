@@ -289,8 +289,7 @@ public final class JobState {
   private void resetVariablesAndUpdateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
-    updatedValue.resetVariables();
-    jobRecordToWrite.setRecord(updatedValue);
+    jobRecordToWrite.setRecordWithoutVariables(updatedValue);
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }
 

@@ -8,6 +8,7 @@
 package io.zeebe.test.exporter;
 
 import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.exporter.api.context.ScheduledTask;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,8 +29,15 @@ public class MockController implements Controller {
 
   @Override
   public void scheduleTask(final Duration delay, final Runnable task) {
-    final MockScheduledTask scheduledTask = new MockScheduledTask(delay, task);
+    final var scheduledTask = new MockScheduledTask(delay, task);
     scheduledTasks.add(scheduledTask);
+  }
+
+  @Override
+  public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
+    final var scheduledTask = new MockScheduledTask(delay, task);
+    scheduledTasks.add(scheduledTask);
+    return scheduledTask::cancel;
   }
 
   public void resetScheduler() {

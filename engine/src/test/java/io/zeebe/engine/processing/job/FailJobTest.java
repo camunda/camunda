@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processing.job;
 
-import static io.zeebe.protocol.record.intent.JobIntent.ACTIVATED;
 import static io.zeebe.protocol.record.intent.JobIntent.FAIL;
 import static io.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -112,8 +111,6 @@ public final class FailJobTest {
 
     final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final Record<JobRecordValue> activatedRecord =
-        jobRecords(ACTIVATED).withRecordKey(jobKey).getFirst();
 
     // when
     final Record<JobRecordValue> failRecord =
@@ -129,23 +126,27 @@ public final class FailJobTest {
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     // and the job is published again
-    final Record republishedEvent =
-        jobRecords().skipUntil(j -> j.getIntent() == FAILED).withIntent(ACTIVATED).getFirst();
+    final var jobBatchActivations =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(jobType)
+            .limit(2)
+            .collect(Collectors.toList());
 
-    assertThat(republishedEvent.getKey()).isEqualTo(activatedRecord.getKey());
-    assertThat(republishedEvent.getPosition()).isNotEqualTo(activatedRecord.getPosition());
+    assertThat(jobBatchActivations).hasSize(2);
+    assertThat(jobBatchActivations.get(0)).isEqualTo(batchRecord);
+    assertThat(jobBatchActivations.get(1).getPosition())
+        .isGreaterThan(jobBatchActivations.get(0).getPosition());
+    assertThat(jobBatchActivations.get(1).getValue().getJobKeys().get(0)).isEqualTo(jobKey);
 
     // and the job lifecycle is correct
-    final List<Record> jobEvents = jobRecords().limit(6).collect(Collectors.toList());
+    final List<Record> jobEvents = jobRecords().limit(4).collect(Collectors.toList());
     assertThat(jobEvents)
         .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB, FAIL),
-            tuple(RecordType.EVENT, ValueType.JOB, FAILED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
+            tuple(RecordType.EVENT, ValueType.JOB, FAILED));
 
     final List<Record<JobBatchRecordValue>> jobActivateCommands =
         RecordingExporter.jobBatchRecords().limit(4).collect(Collectors.toList());

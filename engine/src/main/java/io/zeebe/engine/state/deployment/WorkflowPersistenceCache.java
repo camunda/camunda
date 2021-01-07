@@ -31,7 +31,6 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
@@ -41,7 +40,6 @@ public final class WorkflowPersistenceCache {
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedWorkflow>>
       workflowsByProcessIdAndVersion = new HashMap<>();
-  private final LongHashSet deployments;
   private final Long2ObjectHashMap<DeployedWorkflow> workflowsByKey;
 
   // workflow
@@ -86,26 +84,20 @@ public final class WorkflowPersistenceCache {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, dbContext, workflowId, digest);
 
-    deployments = new LongHashSet();
     workflowsByKey = new Long2ObjectHashMap<>();
   }
 
-  boolean putDeployment(final long deploymentKey, final DeploymentRecord deploymentRecord) {
-    final boolean isNewDeployment = !deployments.contains(deploymentKey);
-    if (isNewDeployment) {
-      for (final Workflow workflow : deploymentRecord.workflows()) {
-        final long workflowKey = workflow.getKey();
-        final DirectBuffer resourceName = workflow.getResourceNameBuffer();
-        for (final DeploymentResource resource : deploymentRecord.resources()) {
-          if (resource.getResourceNameBuffer().equals(resourceName)) {
-            persistWorkflow(workflowKey, workflow, resource);
-            updateLatestVersion(workflow);
-          }
+  void putDeployment(final DeploymentRecord deploymentRecord) {
+    for (final Workflow workflow : deploymentRecord.workflows()) {
+      final long workflowKey = workflow.getKey();
+      final DirectBuffer resourceName = workflow.getResourceNameBuffer();
+      for (final DeploymentResource resource : deploymentRecord.resources()) {
+        if (resource.getResourceNameBuffer().equals(resourceName)) {
+          persistWorkflow(workflowKey, workflow, resource);
+          updateLatestVersion(workflow);
         }
       }
-      deployments.add(deploymentKey);
     }
-    return isNewDeployment;
   }
 
   private void persistWorkflow(

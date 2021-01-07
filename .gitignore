@@ -30,8 +30,6 @@ faces-config.NavData
 work/
 public/
 tngp-data
-docs/book
-docs/mdbook
 
 hs_err*.log
 /data/

@@ -18,12 +18,12 @@ package worker
 import (
 	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 )
@@ -74,7 +74,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).RequestTimeout(utils.DefaultTestTimeout).Open()
 
@@ -120,7 +120,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).MaxJobsActive(123).Timeout(timeout).RequestTimeout(utils.DefaultTestTimeout).Name("fooWorker").Open()
 

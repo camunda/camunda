@@ -24,4 +24,9 @@ public interface PartitionInfo {
 
   /** @return <code>true</code> if the broker is the current leader of this partition */
   boolean isLeader();
+
+  /**
+   * @return the current health status for the broker for this partition (i.e. healthy or unhealthy)
+   */
+  PartitionBrokerHealth getHealth();
 }

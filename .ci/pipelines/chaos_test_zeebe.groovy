@@ -1,5 +1,5 @@
 final PROJECT = "zeebe"
-final CHAOS_TEST_NAMESPACE = "86981f58-648d-480b-b768-f273b68ea02d-zeebe"
+final CHAOS_TEST_NAMESPACE = "6897f1b0-2cdf-44c7-84df-61ae048b811e-zeebe"
 final CONTEXT = "gke_camunda-cloud-240911_europe-west1-d_ultrachaos"
 
 pipeline {
@@ -59,10 +59,6 @@ pipeline {
                     sh "kubectl config set-context ${CONTEXT} --user ${CONTEXT}-zeebe-chaos-token-user"
                     // swtich namespace
                     sh "kubens ${CHAOS_TEST_NAMESPACE}"
-                    sh "kubectl get pods"
-                    dir('zeebe/benchmarks/setup/cloud-default') {
-                      sh "kubectl apply -f worker.yaml"
-                    }
                 }
             }
         }
@@ -73,10 +69,12 @@ pipeline {
             }
             steps {
                 container('python') {
-                    dir('zeebe-chaos/chaos-experiments/kubernetes') {
+                    dir('zeebe-chaos/chaos-experiments/camunda-cloud') {
+                        sh "kubectl apply -f worker.yaml"
+                        sh "kubectl get pods"
                         script {
-                            findFiles(glob: '**/*.json').each {
-                                sh 'PATH="$PATH:$(pwd)/scripts/" chaos run ' + it
+                            findFiles(glob: 'production-m/**/*.json').each {
+                                sh 'PATH="$PATH:$(pwd)/../scripts/" chaos run ' + it
 
                             }
                         }
@@ -89,19 +87,19 @@ pipeline {
     post {
         always {
             container('python') {
-                dir("zeebe/benchmarks/setup/cloud-default") {
+                dir('zeebe-chaos/chaos-experiments/camunda-cloud') {
                     sh "kubectl delete -f worker.yaml"
                 }
-                archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/chaostoolkit.log'
-                archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/journal.json'
+                archiveArtifacts 'zeebe-chaos/chaos-experiments/camunda-cloud/chaostoolkit.log'
+                archiveArtifacts 'zeebe-chaos/chaos-experiments/camunda-cloud/journal.json'
             }
         }
 
         changed {
             script {
                 slackSend(
-                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-                    message: "Zeebe ${env.JOB_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+                        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                        message: "Zeebe :monkey: **${env.JOB_NAME}** build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
             }
         }
 

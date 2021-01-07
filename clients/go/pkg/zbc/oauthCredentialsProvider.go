@@ -29,6 +29,7 @@ import (
 	"time"
 )
 
+//nolint:golint
 const OAuthClientIdEnvVar = "ZEEBE_CLIENT_ID"
 
 // #nosec 101
@@ -36,6 +37,8 @@ const OAuthClientSecretEnvVar = "ZEEBE_CLIENT_SECRET"
 
 // #nosec 101
 const OAuthTokenAudienceEnvVar = "ZEEBE_TOKEN_AUDIENCE"
+
+//nolint:golint
 const OAuthAuthorizationUrlEnvVar = "ZEEBE_AUTHORIZATION_SERVER_URL"
 const OAuthRequestTimeoutEnvVar = "ZEEBE_AUTH_REQUEST_TIMEOUT"
 
@@ -138,10 +141,10 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 }
 
 func (p *OAuthCredentialsProvider) getCredentials(ctx context.Context) (*oauth2.Token, error) {
-	if p.token == nil {
+	if p.token == nil || !p.token.Valid() {
 		credentials := p.getCachedToken()
 
-		if credentials != nil {
+		if credentials != nil && credentials.Valid() {
 			p.token = credentials
 			return credentials, nil
 		}

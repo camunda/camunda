@@ -227,7 +227,6 @@ public class FailOverReplicationTest {
   private static void configureBroker(final BrokerCfg brokerCfg) {
     final var data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
-    data.setUseMmap(false);
 
     data.setLogSegmentSize(DataSize.ofKilobytes(8));
     data.setLogIndexDensity(1);

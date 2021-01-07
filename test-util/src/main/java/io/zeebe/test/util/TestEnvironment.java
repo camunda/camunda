@@ -7,14 +7,16 @@
  */
 package io.zeebe.test.util;
 
-import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TestEnvironment {
-  private static final Logger LOG = new ZbLogger("io.zeebe.test.util");
+public final class TestEnvironment {
+  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.util");
 
   private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
   private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";
+
+  private TestEnvironment() {}
 
   /**
    * Returns the test fork number
@@ -26,7 +28,7 @@ public class TestEnvironment {
     try {
       final String testForkNumberProperty = System.getProperty(TEST_FORK_NUMBER_PROPERTY_NAME);
       if (testForkNumberProperty != null) {
-        testForkNumber = Integer.valueOf(testForkNumberProperty);
+        testForkNumber = Integer.parseInt(testForkNumberProperty);
       } else {
         LOG.warn(
             "No system property '{}' set, using default value {}",
@@ -50,7 +52,7 @@ public class TestEnvironment {
     try {
       final String testMavenIdProperty = System.getProperty(TEST_MAVEN_ID_PROPERTY_NAME);
       if (testMavenIdProperty != null) {
-        testMavenId = Integer.valueOf(testMavenIdProperty);
+        testMavenId = Integer.parseInt(testMavenIdProperty);
       } else {
         LOG.warn(
             "No system property '{}' set, using default value {}",

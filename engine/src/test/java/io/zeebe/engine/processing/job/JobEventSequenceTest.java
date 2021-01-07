@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.job;
 import static io.zeebe.engine.util.RecordToWrite.command;
 import static io.zeebe.engine.util.RecordToWrite.event;
 import static io.zeebe.protocol.record.intent.JobBatchIntent.ACTIVATE;
-import static io.zeebe.protocol.record.intent.JobIntent.ACTIVATED;
+import static io.zeebe.protocol.record.intent.JobBatchIntent.ACTIVATED;
 import static io.zeebe.protocol.record.intent.JobIntent.CANCEL;
 import static io.zeebe.protocol.record.intent.JobIntent.CANCELED;
 import static io.zeebe.protocol.record.intent.JobIntent.CREATE;
@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -48,10 +47,10 @@ public final class JobEventSequenceTest {
     final Record<JobRecordValue> canceled =
         RecordingExporter.jobRecords().withIntent(CANCELED).getFirst();
 
-    final Record<JobRecordValue> activated =
-        RecordingExporter.jobRecords().withIntent(ACTIVATED).getFirst();
+    final var activated =
+        RecordingExporter.jobBatchRecords(ACTIVATED).getFirst().getValue().getJobs().get(0);
 
-    assertThat(activated.getValue().getDeadline()).isEqualTo(canceled.getValue().getDeadline());
+    assertThat(activated.getDeadline()).isEqualTo(canceled.getValue().getDeadline());
 
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
@@ -59,7 +58,6 @@ public final class JobEventSequenceTest {
             .collect(Collectors.toList());
     assertThat(records)
         .extracting(Record::getIntent)
-        .containsExactly(
-            CREATE, CREATED, ACTIVATE, CANCEL, ACTIVATED, JobBatchIntent.ACTIVATED, CANCELED);
+        .containsExactly(CREATE, CREATED, ACTIVATE, CANCEL, ACTIVATED, CANCELED);
   }
 }

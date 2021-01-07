@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.exporter.api.context.ScheduledTask;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.util.sched.ActorControl;
@@ -114,6 +115,12 @@ final class ExporterContainer implements Controller {
     actor.runDelayed(delay, task);
   }
 
+  @Override
+  public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
+    final var scheduledTimer = actor.runDelayed(delay, task);
+    return scheduledTimer::cancel;
+  }
+
   public String getId() {
     return context.getConfiguration().getId();
   }
@@ -140,7 +147,7 @@ final class ExporterContainer implements Controller {
       }
       return true;
     } catch (final Exception ex) {
-      context.getLogger().error("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       return false;
     }
   }

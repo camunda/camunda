@@ -28,7 +28,7 @@ public class DiskSpaceUsageMonitor extends Actor {
   public DiskSpaceUsageMonitor(final DataCfg dataCfg) {
     monitoringDelay = dataCfg.getDiskUsageMonitoringInterval();
     minFreeDiskSpaceRequired = dataCfg.getFreeDiskSpaceCommandWatermark();
-    final var directory = new File(dataCfg.getDirectories().get(0));
+    final var directory = new File(dataCfg.getDirectory());
     freeDiskSpaceSupplier = directory::getUsableSpace;
   }
 

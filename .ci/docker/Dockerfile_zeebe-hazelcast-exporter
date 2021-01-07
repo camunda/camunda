@@ -1,0 +1,12 @@
+FROM camunda/zeebe:current-test
+
+RUN apt-get -qq update
+RUN apt-get install --no-install-recommends -qq -y curl
+
+RUN mkdir /usr/local/zeebe/exporters
+RUN curl -L https://github.com/zeebe-io/zeebe-hazelcast-exporter/releases/download/0.10.0/zeebe-hazelcast-exporter-0.10.0-jar-with-dependencies.jar --output /usr/local/zeebe/exporters/zeebe-hazelcast-exporter-jar-with-dependencies.jar
+
+ENV ZEEBE_BROKER_EXPORTERS_HAZELCAST_CLASSNAME=io.zeebe.hazelcast.exporter.HazelcastExporter
+ENV ZEEBE_BROKER_EXPORTERS_HAZELCAST_JARPATH=exporters/zeebe-hazelcast-exporter-jar-with-dependencies.jar
+
+EXPOSE 26500 26501 26502 9600 5701

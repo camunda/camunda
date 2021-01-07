@@ -1,0 +1,21 @@
+{
+  "brokers":  [
+    {
+      "nodeId":  0,
+      "host":  "172.17.0.3",
+      "port":  26501,
+      "partitions":  [
+        {
+          "partitionId":  1,
+          "role":  "LEADER",
+          "health":  "HEALTHY"
+        }
+      ],
+      "version":  "0.24.3-SNAPSHOT"
+    }
+  ],
+  "clusterSize":  1,
+  "partitionsCount":  1,
+  "replicationFactor":  1,
+  "gatewayVersion":  "0.24.3-SNAPSHOT"
+}

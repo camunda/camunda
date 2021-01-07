@@ -120,7 +120,7 @@ func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
 }
 
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(c.gateway, c)
+	return worker.NewJobWorkerBuilder(c.gateway, c, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) Close() error {
@@ -233,7 +233,7 @@ func configureConnectionSecurity(config *ClientConfig) error {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
-			creds = credentials.NewTLS(&tls.Config{})
+			creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
 			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {

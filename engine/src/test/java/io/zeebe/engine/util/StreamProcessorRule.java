@@ -24,7 +24,6 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -40,10 +39,11 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class StreamProcessorRule implements TestRule {
 
-  private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
+  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.broker.test");
 
   private static final int PARTITION_ID = 0;
 
@@ -125,12 +125,15 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessor(startPartitionId, factory);
+    return startTypedStreamProcessor(startPartitionId, factory, false);
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final boolean detectReprocessingInconsistency) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId, factory, detectReprocessingInconsistency);
   }
 
   public void pauseProcessing(final int partitionId) {

@@ -16,6 +16,7 @@
 package worker
 
 import (
+	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
@@ -37,7 +38,7 @@ const (
 type JobWorkerBuilder struct {
 	gatewayClient  pb.GatewayClient
 	jobClient      JobClient
-	request        pb.ActivateJobsRequest
+	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 
 	handler       JobHandler
@@ -46,6 +47,7 @@ type JobWorkerBuilder struct {
 	pollInterval  time.Duration
 	pollThreshold float64
 	metrics       JobWorkerMetrics
+	shouldRetry   func(context.Context, error) bool
 }
 
 type JobWorkerBuilderStep1 interface {
@@ -172,6 +174,7 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 		remaining:      0,
 		threshold:      int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
 		metrics:        builder.metrics,
+		shouldRetry:    builder.shouldRetry,
 	}
 
 	dispatcher := jobDispatcher{
@@ -190,7 +193,10 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 	}
 }
 
-func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) JobWorkerBuilderStep1 {
+// NewJobWorkerBuilder should use the same retryPredicate used by the CredentialProvider (ShouldRetry method):
+//   credsProvider, _ := zbc.NewOAuthCredentialsProvider(...)
+//   worker.NewJobWorkerBuilder(..., credsProvider.ShouldRetry)
+func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, retryPred func(ctx context.Context, err error) bool) JobWorkerBuilderStep1 {
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,
 		jobClient:     jobClient,
@@ -198,11 +204,13 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) Jo
 		concurrency:   DefaultJobWorkerConcurrency,
 		pollInterval:  DefaultJobWorkerPollInterval,
 		pollThreshold: DefaultJobWorkerPollThreshold,
-		request: pb.ActivateJobsRequest{
+		request: &pb.ActivateJobsRequest{
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
 		},
 		requestTimeout: DefaultRequestTimeout + RequestTimeoutOffset,
+		shouldRetry:    retryPred,
 	}
+
 }

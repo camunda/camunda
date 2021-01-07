@@ -387,6 +387,67 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldExecuteScheduledCancellableTask() throws InterruptedException {
+    // given
+    final CountDownLatch timerTriggerLatch = new CountDownLatch(1);
+    final CountDownLatch timerScheduledLatch = new CountDownLatch(1);
+    final Duration delay = Duration.ofSeconds(10);
+
+    final ControlledTestExporter exporter = exporters.get(0);
+    exporter.onExport(
+        r -> {
+          exporter.getController().scheduleCancellableTask(delay, timerTriggerLatch::countDown);
+          timerScheduledLatch.countDown();
+        });
+
+    // when
+    startExporterDirector(exporterDescriptors);
+
+    writeEvent();
+
+    timerScheduledLatch.await(5, TimeUnit.SECONDS);
+
+    rule.getClock().addTime(delay);
+
+    // then
+    assertThat(timerTriggerLatch.await(5, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  public void shouldCancelScheduledCancellableTask() throws InterruptedException {
+    // given
+    final CountDownLatch timerScheduledLatch = new CountDownLatch(1);
+    final CountDownLatch timerTriggerLatch = new CountDownLatch(1);
+    final Duration delay = Duration.ofSeconds(10);
+
+    final var exporter = exporters.get(0);
+    final var shouldBeNotModifiedVariable = new AtomicLong(0);
+    exporter.onExport(
+        r -> {
+          final var taskToCancel =
+              exporter
+                  .getController()
+                  .scheduleCancellableTask(delay, () -> shouldBeNotModifiedVariable.set(1));
+          exporter.getController().scheduleCancellableTask(delay, timerTriggerLatch::countDown);
+          taskToCancel.cancel();
+          timerScheduledLatch.countDown();
+        });
+
+    // when
+    startExporterDirector(exporterDescriptors);
+
+    writeEvent();
+
+    timerScheduledLatch.await(5, TimeUnit.SECONDS);
+
+    rule.getClock().addTime(delay);
+
+    // then
+    assertThat(timerTriggerLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(shouldBeNotModifiedVariable.get()).isZero();
+  }
+
+  @Test
   public void shouldRecoverPositionsFromState() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);

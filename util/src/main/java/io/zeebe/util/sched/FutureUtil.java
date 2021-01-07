@@ -7,9 +7,9 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.LangUtil;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.agrona.LangUtil;
 
 public final class FutureUtil {
   /**

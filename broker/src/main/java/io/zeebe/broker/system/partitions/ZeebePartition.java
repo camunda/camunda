@@ -10,6 +10,7 @@ package io.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -22,6 +23,7 @@ import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +35,6 @@ public final class ZeebePartition extends Actor
     implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-
   private Role raftRole;
 
   private final String actorName;
@@ -122,13 +123,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure();
+                    onInstallFailure(newTerm);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure();
+            onInstallFailure(newTerm);
           }
         });
     return leaderTransitionFuture;
@@ -148,13 +149,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure();
+                    onInstallFailure(newTerm);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure();
+            onInstallFailure(newTerm);
           }
         });
     return followerTransitionFuture;
@@ -213,6 +214,19 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  protected void onActorClosing() {
+    transitionToInactive()
+        .onComplete(
+            (nothing, err) -> {
+              context.getRaftPartition().removeRoleChangeListener(this);
+
+              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
+              raftPartitionHealth.close();
+              closeFuture.complete(null);
+            });
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     if (closeFuture != null) {
       return closeFuture;
@@ -234,24 +248,11 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
-  protected void onActorClosing() {
-    transitionToInactive()
-        .onComplete(
-            (nothing, err) -> {
-              context.getRaftPartition().removeRoleChangeListener(this);
-
-              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
-              raftPartitionHealth.close();
-              closeFuture.complete(null);
-            });
-  }
-
-  @Override
   protected void handleFailure(final Exception failure) {
     LOG.warn("Uncaught exception in {}.", actorName, failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
-    onInstallFailure();
+    onInstallFailure(term);
   }
 
   @Override
@@ -272,11 +273,19 @@ public final class ZeebePartition extends Actor
         });
   }
 
-  private void onInstallFailure() {
+  private void onInstallFailure(final long term) {
     zeebePartitionHealth.setServicesInstalled(false);
+    context
+        .getPartitionListeners()
+        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
+
     if (context.getRaftPartition().getRole() == Role.LEADER) {
       LOG.info("Unexpected failures occurred when installing leader services, stepping down");
       context.getRaftPartition().stepDown();
+    } else {
+      LOG.info(
+          "Unexpected failures occurred when installing follower services, transitioning to inactive");
+      context.getRaftPartition().goInactive();
     }
   }
 
@@ -291,7 +300,15 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListeners.add(failureListener));
+    actor.run(
+        () -> {
+          failureListeners.add(failureListener);
+          if (getHealthStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered();
+          } else {
+            failureListener.onFailure();
+          }
+        });
   }
 
   @Override
@@ -324,11 +341,17 @@ public final class ZeebePartition extends Actor
     final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
     actor.call(
         () -> {
-          context.setProcessingPaused(true);
-          if (context.getStreamProcessor() != null) {
-            context.getStreamProcessor().pauseProcessing().onComplete(completed);
-          } else {
-            completed.complete(null);
+          try {
+            context.pauseProcessing();
+
+            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
+              context.getStreamProcessor().pauseProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause processing state", e);
+            completed.completeExceptionally(e);
           }
         });
     return completed;
@@ -337,9 +360,13 @@ public final class ZeebePartition extends Actor
   public void resumeProcessing() {
     actor.call(
         () -> {
-          context.setProcessingPaused(false);
-          if (context.getStreamProcessor() != null && context.shouldProcess()) {
-            context.getStreamProcessor().resumeProcessing();
+          try {
+            context.resumeProcessing();
+            if (context.getStreamProcessor() != null && context.shouldProcess()) {
+              context.getStreamProcessor().resumeProcessing();
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not resume processing", e);
           }
         });
   }
@@ -363,5 +390,43 @@ public final class ZeebePartition extends Actor
 
   public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
     return actor.call(() -> Optional.ofNullable(context.getStreamProcessor()));
+  }
+
+  public ActorFuture<Optional<ExporterDirector>> getExporterDirector() {
+    return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
+  }
+
+  public ActorFuture<Void> pauseExporting() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          try {
+            final var pauseStatePersisted = context.pauseExporting();
+
+            if (context.getExporterDirector() != null && pauseStatePersisted) {
+              context.getExporterDirector().pauseExporting().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause exporting", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeExporting() {
+    actor.call(
+        () -> {
+          try {
+            context.resumeExporting();
+            if (context.getExporterDirector() != null && context.shouldExport()) {
+              context.getExporterDirector().resumeExporting();
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not resume exporting", e);
+          }
+        });
   }
 }

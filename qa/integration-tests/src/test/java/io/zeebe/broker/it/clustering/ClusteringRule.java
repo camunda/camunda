@@ -78,6 +78,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -479,6 +480,23 @@ public final class ClusteringRule extends ExternalResource {
     waitForPartitionReplicationFactor();
   }
 
+  public void restartCluster() {
+    final var brokers =
+        getBrokers().stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .collect(Collectors.toList());
+    brokers.forEach(this::stopBroker);
+    brokers.forEach(this::getBroker);
+    try {
+      waitUntilBrokersStarted();
+      waitForPartitionReplicationFactor();
+      waitUntilBrokersInTopology();
+    } catch (final Exception e) {
+      LOG.error("Failed to restart cluster", e);
+      Assert.fail("Failed to restart cluster");
+    }
+  }
+
   private void waitUntilBrokerIsAddedToTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
@@ -552,7 +570,10 @@ public final class ClusteringRule extends ExternalResource {
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME).getPartitions()
+        atomix
+            .getPartitionService()
+            .getPartitionGroup(AtomixFactory.GROUP_NAME)
+            .getPartitions()
             .stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
@@ -678,12 +699,12 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public Path getSegmentsDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    final String dataDir = broker.getConfig().getData().getDirectory();
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
   }
 
   public File getSnapshotsDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    final String dataDir = broker.getConfig().getData().getDirectory();
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
 
@@ -758,6 +779,11 @@ public final class ClusteringRule extends ExternalResource {
       logstreams.put(partitionId, logStream);
       latch.countDown();
       partitionLeader.put(partitionId, new Leader(nodeId, term, logStream));
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
       return CompletableActorFuture.completed(null);
     }
   }

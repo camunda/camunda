@@ -118,28 +118,23 @@
       #		  ├── runtime
       #		  └── snapshots
 
-      # Specify a list of directories in which data is stored. Using multiple
-      # directories makes sense in case the machine which is running Zeebe has
-      # multiple disks which are used in a JBOD (just a bunch of disks) manner. This
-      # allows to get greater throughput in combination with a higher io thread count
-      # since writes to different disks can potentially be done in parallel.
-      #
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORIES.
-      # directories: [ data ]
+      # Specify the directory in which data is stored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
+      # directory: data
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
       # logSegmentSize: 512MB
 
       # Configure whether data log segment file channels should be memory mapped.
-      # WARNING: This is an experimental setting. It is not yet as mature as direct file channels (default).
+      # WARNING: This setting has been deprecated. In future versions, log segment file channels will always be memory mapped.
       #
       # Zeebe reads the data log segment files using file channels.
       # Memory mapping these should generally allow for faster processing,
       # resulting in reduced cycle times (i.e. total duration of a single process instance).
       #
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_USEMMAP.
-      # useMmap: false
+      # useMmap: true
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
@@ -260,7 +255,7 @@
 
         # Sets the timeout for a probe response
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
-        # probeTimeout: 2s
+        # probeTimeout: 100ms
 
         # Sets the number of probes failed before declaring a member is suspect
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES
