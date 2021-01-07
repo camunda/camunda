@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Node 10.15.3+
+Node 14.15.4+
 Docker 17.12.0+
 Docker Compose 1.21.0+
 
