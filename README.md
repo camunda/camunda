@@ -7,10 +7,10 @@ Zeebe provides visibility into and control over business processes that span mul
 
 **Why Zeebe?**
 
-* Define workflows visually in BPMN 2.0
+* Define workflows visually in [BPMN 2.0](https://www.omg.org/spec/BPMN/2.0.2/)
 * Choose your programming language
-* Deploy with Docker and Kubernetes
-* Build workflows that react to messages from Kafka and other message queues
+* Deploy with [Docker](https://www.docker.com/) and [Kubernetes](https://kubernetes.io/)
+* Build workflows that react to messages from [Kafka](https://kafka.apache.org/) and other message queues
 * Scale horizontally to handle very high throughput
 * Fault tolerance (no relational database required)
 * Export workflow data for monitoring and analysis
@@ -46,7 +46,7 @@ To learn more about what we're currently working on, please visit the [roadmap](
 
 ## Contributing
 
-Read the [Contributions Guide](/CONTRIBUTING.md)
+Read the [Contributions Guide](/CONTRIBUTING.md).
 
 ## Code of Conduct
 
