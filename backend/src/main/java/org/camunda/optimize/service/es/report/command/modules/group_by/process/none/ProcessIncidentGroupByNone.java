@@ -37,14 +37,14 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessIncidentGroupByNone extends GroupByPart<ProcessReportDataDto> {
 
-  private static final String INCIDENT_AGGREGATION = "incidentAggregation";
+  private static final String NESTED_INCIDENT_AGGREGATION = "incidentAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     return Stream.of(
-      nested(INCIDENT_AGGREGATION, INCIDENTS)
+      nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
         .subAggregation(
           filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
             .subAggregation(distributedByPart.createAggregation(context))
@@ -74,7 +74,7 @@ public class ProcessIncidentGroupByNone extends GroupByPart<ProcessReportDataDto
 
   private Optional<Nested> getFilteredIncidentsAggregation(final SearchResponse response) {
     return Optional.ofNullable(response.getAggregations())
-      .map(aggs -> aggs.get(INCIDENT_AGGREGATION));
+      .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION));
   }
 
   @Override

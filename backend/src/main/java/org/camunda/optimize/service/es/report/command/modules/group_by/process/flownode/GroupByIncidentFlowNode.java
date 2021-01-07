@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -30,8 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.filter.util.modelelement.IncidentFilterQueryUtil.createIncidentAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -41,6 +44,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION = "groupedByFlowNodeIdAggregation";
+  private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
@@ -51,10 +55,12 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
     return Collections.singletonList(
       nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
         .subAggregation(
-          terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
-            .size(configurationService.getEsAggregationBucketLimit())
-            .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
-            .subAggregation(distributedByPart.createAggregation(context))
+          filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
+            .subAggregation(
+              terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
+                .size(configurationService.getEsAggregationBucketLimit())
+                .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
+                .subAggregation(distributedByPart.createAggregation(context)))
         )
     );
   }
@@ -64,7 +70,8 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nestedAgg = response.getAggregations().get(NESTED_INCIDENT_AGGREGATION);
-    final Terms groupedByFlowNodeId = nestedAgg.getAggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION);
+    final Filter filterAgg = nestedAgg.getAggregations().get(FILTERED_INCIDENT_AGGREGATION);
+    final Terms groupedByFlowNodeId = filterAgg.getAggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION);
 
     final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();

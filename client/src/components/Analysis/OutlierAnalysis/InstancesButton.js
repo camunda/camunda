@@ -22,6 +22,7 @@ export function InstancesButton({id, name, config, value, mightFail}) {
               {
                 type: 'flowNodeDuration',
                 data: {[id]: {operator: '>', value, unit: 'millis'}},
+                filterLevel: 'instance',
               },
             ],
             includedColumns: ['processInstanceId'],

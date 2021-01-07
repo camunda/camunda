@@ -33,7 +33,7 @@ exports[`should render a table with correct data 1`] = `
                 <Icon
                   type="save"
                 />
-                Instance ID's CSV
+                Instance IDs
               </ForwardRef(Button)>
             </a>
           </div>,

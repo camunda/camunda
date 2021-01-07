@@ -483,7 +483,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .add()
         .buildList(),
       ProcessFilterBuilder
-        .filter().withOpenIncidentsOnly().filterLevel(FilterApplicationLevel.VIEW).add().buildList(),
+        .filter().withOpenIncident().filterLevel(FilterApplicationLevel.VIEW).add().buildList(),
       ProcessFilterBuilder
         .filter().withResolvedIncident().filterLevel(FilterApplicationLevel.VIEW).add().buildList()
     );

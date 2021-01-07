@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
@@ -40,6 +41,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.tasks.TaskInfo;
 
 import java.io.IOException;
@@ -180,6 +182,12 @@ public class SchemaUpgradeClient {
     CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     try {
       getHighLevelRestClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
+    } catch (ElasticsearchStatusException e) {
+      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
+        log.debug("Index {} from template already exists.", indexNameWithSuffix);
+      } else {
+        throw e;
+      }
     } catch (Exception e) {
       String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
       throw new OptimizeRuntimeException(message, e);

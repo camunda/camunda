@@ -200,9 +200,10 @@ export default class StringInput extends React.Component {
 
     const notNullValues = values.filter((val) => val !== null);
     const hasMore = !valuesAreComplete && !loading;
+    const containMode = operator.includes('contains');
 
     return (
-      <div className={classnames('StringInput', {hasMore})}>
+      <div className={classnames('StringInput', {hasMore, containMode})}>
         <div className="buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>

@@ -327,5 +327,5 @@ export function formatTenantName({id, name}) {
 }
 
 export function formatFileName(name) {
-  return name.replace(/\s+/g, '-').replace(/[/\\?%*:|"<>]/g, '');
+  return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }

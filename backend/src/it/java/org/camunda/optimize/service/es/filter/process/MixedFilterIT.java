@@ -200,7 +200,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     // when I add a resolved + open incident filter
     reportData.setFilter(
       ProcessFilterBuilder.filter()
-        .withOpenIncidentsOnly()
+        .withOpenIncident()
         .add()
         .withResolvedIncident()
         .add()
@@ -327,7 +327,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter().nonSuspendedInstancesOnly().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().completedInstancesOnly().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().runningInstancesOnly().filterLevel(levelToApply).add().buildList(),
-      ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(levelToApply).add().buildList(),
+      ProcessFilterBuilder.filter().withOpenIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .rollingStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),

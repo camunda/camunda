@@ -56,7 +56,7 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
-  public OpenIncidentFilterBuilder withOpenIncidentsOnly() {
+  public OpenIncidentFilterBuilder withOpenIncident() {
     return OpenIncidentFilterBuilder.construct(this);
   }
 

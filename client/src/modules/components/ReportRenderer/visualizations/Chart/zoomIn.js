@@ -96,6 +96,7 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
                   start: format(start, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                   end: format(end, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                 },
+                filterLevel: 'instance',
               },
             ],
           },

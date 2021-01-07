@@ -356,8 +356,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   private Stream<Arguments> filterAndExpectedResult() {
     return Stream.of(
       Arguments.of(
-        ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(INSTANCE).add().buildList(), 3000.),
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncidentsOnly().filterLevel(VIEW).add().buildList(), 3000.),
+        ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 3000.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 3000.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 1000.),
       Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1000.),
       Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), null)
