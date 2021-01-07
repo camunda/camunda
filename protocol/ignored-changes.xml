@@ -1,0 +1,16 @@
+<differences>
+  <difference>
+    <className>io/zeebe/protocol/record/*Decoder</className>
+    <differenceType>6010</differenceType>
+    <field>*</field>
+    <from>protected</from>
+    <to>package</to>
+  </difference>
+  <difference>
+    <className>io/zeebe/protocol/record/*Encoder</className>
+    <differenceType>6010</differenceType>
+    <field>*</field>
+    <from>protected</from>
+    <to>package</to>
+  </difference>
+</differences>
