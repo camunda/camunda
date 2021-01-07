@@ -137,7 +137,7 @@ it('should load the flownode names and hand them to the filter and process part'
   node.update();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
-  expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
+  expect(node.find('Filter').at(0).prop('flowNodeNames')).toEqual(getFlowNodeNames());
   expect(node.find('ProcessPart').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
 

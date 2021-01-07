@@ -5,16 +5,21 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
 public class RollingDateFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
   private RollingDateFilterStartDto start;
   private String type;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private RollingDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -37,16 +42,18 @@ public class RollingDateFilterBuilder {
     return this;
   }
 
-  public ProcessFilterBuilder add() {
-    RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(start);
-    if (type.equals("endDate")) {
-      EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
-      filterBuilder.addFilter(filterDto);
-      return filterBuilder;
-    } else {
-      StartDateFilterDto filterDto = new StartDateFilterDto(dateFilterDataDto);
-      filterBuilder.addFilter(filterDto);
-      return filterBuilder;
-    }
+  public RollingDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
   }
+
+  public ProcessFilterBuilder add() {
+    ProcessFilterDto<DateFilterDataDto<?>> filterDto =
+      type.equals("endDate") ? new EndDateFilterDto() : new StartDateFilterDto();
+    filterDto.setData(new RollingDateFilterDataDto(start));
+    filterDto.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filterDto);
+    return filterBuilder;
+  }
+
 }

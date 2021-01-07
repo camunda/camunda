@@ -27,13 +27,11 @@ public class CanceledInstancesOnlyQueryFilter implements QueryFilter<CanceledIns
                          final ZoneId timezone) {
     if (canceledInstancesOnlyFilters != null && !canceledInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
-
       BoolQueryBuilder onlyRunningInstances =
         boolQuery()
           .should(termQuery(STATE, EXTERNALLY_TERMINATED_STATE))
           .should(termQuery(STATE, INTERNALLY_TERMINATED_STATE)
           );
-
       filters.add(onlyRunningInstances);
     }
   }

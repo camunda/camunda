@@ -10,6 +10,13 @@
   display: flex;
   flex-direction: column;
 
+  .scrollable {
+    @include scrollable;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .sectionTitle {
     text-transform: uppercase;
     font-weight: bold;
@@ -18,11 +25,14 @@
     color: var(--grey-darken-33);
   }
 
-  .source,
+  .source {
+    padding: 20px;
+  }
+
   .reportSetup,
   .filter {
     padding: 20px;
-    border-bottom: 1px solid var(--silver-darken-87);
+    border-top: 1px solid var(--silver-darken-87);
   }
 
   .reportSetup > ul {
@@ -48,16 +58,12 @@
     }
   }
 
-  .filter {
-    overflow: auto;
-    flex-grow: 1;
-    @include scrollable;
-  }
-
   .instanceCount {
+    margin-top: auto;
     text-align: center;
     padding: 10px;
     font-size: 0.875em;
     color: var(--grey-base-40);
+    border-top: 1px solid var(--silver-darken-87);
   }
 }

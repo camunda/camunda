@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.assignee;
 
-import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.assertj.core.groups.Tuple;
@@ -16,6 +15,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,6 +39,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -54,8 +57,11 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -66,11 +72,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -98,14 +105,46 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., DEFAULT_FULLNAME);
+    assertThat(result.getEntryForKey(SECOND_USER))
+      .isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., SECOND_USER_FULLNAME);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    importAllEngineEntitiesFromScratch();
+
+    // cache is empty
+    embeddedOptimizeExtension.getUserTaskIdentityCacheService().resetCache();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(1.), DEFAULT_USERNAME);
+  }
+
+  @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForOneProcessWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -133,15 +172,18 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
-      .containsExactlyInAnyOrder(DEFAULT_USERNAME, getLocalisedUnassignedLabel());
+      .containsExactlyInAnyOrder(DEFAULT_USERNAME, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., DEFAULT_FULLNAME);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., getLocalisedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -163,13 +205,16 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
-      .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, getLocalisedUnassignedLabel());
+      .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(2., DEFAULT_FULLNAME);
     assertThat(result.getEntryForKey(SECOND_USER)).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel())).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., SECOND_USER_FULLNAME);
+    assertThat(result.getEntryForKey(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
+      .containsExactly(1., getLocalisedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
@@ -355,24 +400,24 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isEmpty();
   }
 
-  public static Stream<Arguments> assigneeFilterScenarios() {
+  public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(IN, new String[]{SECOND_USER}, 1L, Collections.singletonList(Tuple.tuple(SECOND_USER, 1.))),
       Arguments.of(
-        IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
+        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L, Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
   }
 
   @ParameterizedTest
-  @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyCountsThoseAssignees(final FilterOperator filterOperator,
-                                                       final String[] filterValues,
-                                                       final List<Tuple> expectedResult) {
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelFilterByAssigneeOnlyCountsThoseAssignees(final FilterOperator filterOperator,
+                                                                final String[] filterValues,
+                                                                final Long expectedInstanceCount,
+                                                                final List<Tuple> expectedResult) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
@@ -388,46 +433,100 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(assigneeFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
-  public static Stream<Arguments> candidateGroupFilterScenarios() {
+  public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1.))
+        IN, new String[]{SECOND_USER}, 1L,
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
-        IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
+        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_USER}, 2L,
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))
+      ),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
   }
 
   @ParameterizedTest
-  @MethodSource("candidateGroupFilterScenarios")
-  public void filterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final FilterOperator filterOperator,
-                                                                          final String[] filterValues,
-                                                                          final List<Tuple> expectedResult) {
+  @MethodSource("instanceLevelAssigneeFilterScenarios")
+  public void instanceLevelFilterByAssigneeOnlyCountsThoseAssigneesFromInstancesMatchingFilter(final FilterOperator filterOperator,
+                                                                                               final String[] filterValues,
+                                                                                               final Long expectedInstanceCount,
+                                                                                               final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(assigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
+          Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
+          Tuple.tuple(DEFAULT_USERNAME, 1.))),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelFilterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final FilterOperator filterOperator,
+                                                                                   final String[] filterValues,
+                                                                                   final Long expectedInstanceCount,
+                                                                                   final List<Tuple> expectedResult) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
     );
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
@@ -436,12 +535,67 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
+          Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
+          Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
+          Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("instanceLevelCandidateGroupFilterScenarios")
+  public void instanceLevelFilterByCandidateGroupOnlyCountsAssigneesFromInstancesWithThoseUserTasks(final FilterOperator filterOperator,
+                                                                                                    final String[] filterValues,
+                                                                                                    final Long expectedInstanceCount,
+                                                                                                    final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);

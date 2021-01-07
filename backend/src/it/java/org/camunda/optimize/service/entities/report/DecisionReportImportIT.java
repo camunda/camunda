@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,7 +34,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class DecisionReportImportIT extends AbstractReportExportImportIT {
+public class DecisionReportImportIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("getTestDecisionReports")
@@ -43,11 +44,9 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
 
     // when
-    final Response response = importClient.importReport(createExportDto(reportDefToImport));
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -63,7 +62,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     assertThat(importedReport.getData().getConfiguration())
       .usingRecursiveComparison()
       .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
+      .isEqualTo(reportDefToImport.getData().getConfiguration());
     assertThat(importedReport.getData().getConfiguration().getXml())
       .isEqualTo(DEFINITION_XML_STRING + "1");
   }
@@ -75,7 +74,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.setSourceIndexVersion(SingleDecisionReportIndex.VERSION + 1);
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -98,7 +97,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -123,7 +122,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setDecisionDefinitionVersion("5");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -153,11 +152,9 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then all non version related data is accurate
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -197,7 +194,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Collections.singletonList("tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -228,11 +225,9 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -266,11 +261,9 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -307,14 +300,12 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final IdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
       collectionId,
       exportedReportDto
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -336,14 +327,14 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
   }
 
   @Test
-  public void importReportIntoNonExistentCollection() {
+  public void importReportIntoCollection_collectionDoesNotExist() {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
 
     // when
     final Response response =
-      importClient.importReportIntoCollection("fakeCollection", exportedReportDto);
+      importClient.importEntityIntoCollection("fakeCollection", exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -357,7 +348,7 @@ public class DecisionReportImportIT extends AbstractReportExportImportIT {
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final Response response = importClient.importEntityIntoCollection(
       collectionId,
       exportedReportDto
     );

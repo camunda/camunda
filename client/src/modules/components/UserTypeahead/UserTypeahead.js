@@ -14,7 +14,14 @@ import {showError} from 'notifications';
 import MultiUserInput from './MultiUserInput';
 import {getUser} from './service';
 
-export function UserTypeahead({users, collectionUsers = [], onChange, mightFail}) {
+export function UserTypeahead({
+  users,
+  collectionUsers = [],
+  onChange,
+  mightFail,
+  fetchUsers,
+  optionsOnly,
+}) {
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
     if (!name) {
@@ -57,9 +64,11 @@ export function UserTypeahead({users, collectionUsers = [], onChange, mightFail}
     <MultiUserInput
       users={users}
       collectionUsers={collectionUsers}
+      fetchUsers={fetchUsers}
       onAdd={addUser}
       onRemove={removeUser}
       onClear={() => onChange([])}
+      optionsOnly={optionsOnly}
     />
   );
 }

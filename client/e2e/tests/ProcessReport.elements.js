@@ -66,9 +66,11 @@ export const tableCell = (row, column) =>
   Selector('.Table tbody tr').nth(row).find('td').nth(column);
 export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
-export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
+export const flowNodeFilterButton = Selector('.Filter__dropdown .activateButton').nth(1);
+export const filterOption = (text) =>
+  Selector('.Filter__dropdown.is-open .DropdownOption').withText(text);
 export const subFilterOption = (text) =>
-  Selector('.Filter .Submenu .DropdownOption').withText(text);
+  Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>

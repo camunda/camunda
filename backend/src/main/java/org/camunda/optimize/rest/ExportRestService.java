@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneG
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityExportService;
@@ -52,19 +54,30 @@ public class ExportRestService {
 
   @GET
   @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("report/json/{type}/{reportId}/{fileName}")
+  @Path("report/json/{reportId}/{fileName}")
   public Response getJsonReport(@Context ContainerRequestContext requestContext,
                                 @PathParam("reportId") String reportId,
-                                @PathParam("type") ReportType reportType,
                                 @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    final Optional<? extends ReportDefinitionExportDto> jsonReport =
-      entityExportService.getJsonReportExportDto(userId, reportType, reportId);
+    final List<ReportDefinitionExportDto> jsonReports =
+      entityExportService.getReportExportDtos(userId, Sets.newHashSet(reportId));
 
-    return jsonReport
-      .map(exportDto -> createJsonResponse(fileName, exportDto))
-      .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    return createJsonResponse(fileName, jsonReports);
+  }
+
+  @GET
+  @Produces(value = {MediaType.APPLICATION_JSON})
+  @Path("dashboard/json/{dashboardId}/{fileName}")
+  public Response getJsonDashboard(@Context ContainerRequestContext requestContext,
+                                   @PathParam("dashboardId") String dashboardId,
+                                   @PathParam("fileName") String fileName) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    final List<OptimizeEntityExportDto> jsonDashboards =
+      entityExportService.getCompleteDashboardExport(userId, Sets.newHashSet(dashboardId));
+
+    return createJsonResponse(fileName, jsonDashboards);
   }
 
   @GET
@@ -148,10 +161,10 @@ public class ExportRestService {
   }
 
   private Response createJsonResponse(final String fileName,
-                                      final ReportDefinitionExportDto jsonReport) {
+                                      final List<? extends OptimizeEntityExportDto> jsonEntities) {
     return Response
       .ok(
-        jsonReport,
+        jsonEntities,
         MediaType.APPLICATION_JSON
       )
       .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))

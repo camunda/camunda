@@ -6,9 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
 public class CanceledInstancesOnlyFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private CanceledInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -18,8 +21,16 @@ public class CanceledInstancesOnlyFilterBuilder {
     return new CanceledInstancesOnlyFilterBuilder(filterBuilder);
   }
 
+  public CanceledInstancesOnlyFilterBuilder filterLevel(FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new CanceledInstancesOnlyFilterDto());
+    final CanceledInstancesOnlyFilterDto filter = new CanceledInstancesOnlyFilterDto();
+    filter.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
+
 }

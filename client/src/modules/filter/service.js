@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'request';
+import {post, get} from 'request';
 
 export async function loadValues(
   processDefinitionKey,
@@ -62,4 +62,10 @@ export function filterIncompatibleExistingFilters(filters, newFilterType, unique
     return filters.filter(({type}) => !uniqueTypes.includes(type));
   }
   return filters;
+}
+
+export async function loadUserNames(type, ids) {
+  const response = await get(`api/${type}`, {idIn: ids.join(',')});
+
+  return await response.json();
 }

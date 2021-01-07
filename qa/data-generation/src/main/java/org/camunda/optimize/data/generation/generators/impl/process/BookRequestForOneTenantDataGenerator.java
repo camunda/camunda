@@ -7,6 +7,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
@@ -16,8 +17,10 @@ public class BookRequestForOneTenantDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/book-request-1-tenant.bpmn";
 
-  public BookRequestForOneTenantDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
-    super(engineClient, nVersions);
+  public BookRequestForOneTenantDataGenerator(final SimpleEngineClient engineClient,
+                                              final Integer nVersions,
+                                              final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

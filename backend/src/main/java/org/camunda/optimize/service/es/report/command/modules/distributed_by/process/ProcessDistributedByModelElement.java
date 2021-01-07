@@ -51,9 +51,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
   public List<DistributedByResult> retrieveResult(final SearchResponse response,
                                                   final Aggregations aggregations,
                                                   final ExecutionContext<ProcessReportDataDto> context) {
-
     final Terms byModelElementAggregation = aggregations.get(MODEL_ELEMENT_ID_TERMS_AGGREGATION);
-
     final Map<String, String> modelElementNames = getModelElementNames(context.getReportData());
     final List<DistributedByResult> distributedByModelElements = new ArrayList<>();
     for (Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
@@ -65,15 +63,18 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
         modelElementNames.remove(modelElementKey);
       }
     }
+    addMissingDistributions(modelElementNames, distributedByModelElements);
+    return distributedByModelElements;
+  }
 
+  private void addMissingDistributions(final Map<String, String> modelElementNames,
+                                       final List<DistributedByResult> distributedByModelElements) {
     // enrich data model elements that haven't been executed, but should still show up in the result
     modelElementNames.keySet().forEach(modelElementKey -> {
       DistributedByResult emptyResult = DistributedByResult.createResultWithEmptyValue(modelElementKey);
       emptyResult.setLabel(modelElementNames.get(modelElementKey));
       distributedByModelElements.add(emptyResult);
     });
-
-    return distributedByModelElements;
   }
 
   private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {

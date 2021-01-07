@@ -53,7 +53,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final Optional<UpgradeStepLogEntryDto> updateLogEntries = getDocumentsOfIndexByIdAs(
+    final Optional<UpgradeStepLogEntryDto> updateLogEntries = getDocumentOfIndexByIdAs(
       UpdateLogEntryIndex.INDEX_NAME,
       TO_VERSION + "_" + SCHEMA_CREATE_INDEX.toString() + "_001",
       UpgradeStepLogEntryDto.class

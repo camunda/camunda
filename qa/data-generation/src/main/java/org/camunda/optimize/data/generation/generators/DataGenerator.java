@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.model.xml.ModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.data.generation.generators.impl.incident.ActiveIncidentResolver;
 import org.camunda.optimize.data.generation.generators.impl.incident.IdleIncidentResolver;
 import org.camunda.optimize.data.generation.generators.impl.incident.IncidentResolver;
@@ -41,13 +42,17 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   protected List<String> tenants = new ArrayList<>();
 
-  protected SimpleEngineClient engineClient;
+  protected final SimpleEngineClient engineClient;
+  private final UserAndGroupProvider userAndGroupProvider;
   private final AtomicInteger startedInstanceCount = new AtomicInteger(0);
 
-  public DataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public DataGenerator(final SimpleEngineClient engineClient,
+                       final Integer nVersions,
+                       final UserAndGroupProvider userAndGroupProvider) {
     this.nVersions = nVersions == null ? generateVersionNumber() : nVersions;
-    generateTenants();
     this.engineClient = engineClient;
+    this.userAndGroupProvider = userAndGroupProvider;
+    generateTenants();
   }
 
   protected abstract ModelType retrieveDiagram();
@@ -161,7 +166,9 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
       final String definitionId = definitionIds.get(ithBatch);
       logger.info("[definition-id:{}] Starting batch execution", definitionId);
-      final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(definitionId, engineClient);
+      final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(
+        definitionId, engineClient, userAndGroupProvider
+      );
       userTaskCompleter.startUserTaskCompletion();
       try {
         IntStream
@@ -204,8 +211,8 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   private void correlateMessagesAndResolveIncidents(final IncidentResolver incidentResolver) {
     if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
       messageEventCorrelater.correlateMessages();
-      incidentResolver.resolveIncidents();
     }
+    incidentResolver.resolveIncidents();
   }
 
   private void startInstanceWithBackoff(final String definitionId, final Map<String, Object> variables) {

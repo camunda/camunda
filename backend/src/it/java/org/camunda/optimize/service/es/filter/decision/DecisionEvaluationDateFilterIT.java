@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -53,7 +54,10 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now().plusDays(1), null)));
+    reportData.setFilter(Collections.singletonList(createFixedEvaluationDateFilter(
+      OffsetDateTime.now().plusDays(1),
+      null
+    )));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
@@ -85,7 +89,10 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now().plusDays(1))));
+    reportData.setFilter(Collections.singletonList(createFixedEvaluationDateFilter(
+      null,
+      OffsetDateTime.now().plusDays(1)
+    )));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 

@@ -6,18 +6,28 @@
 package org.camunda.optimize.service.entities.report;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.AbstractExportImportIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,48 +35,43 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class ProcessReportImportIT extends AbstractReportExportImportIT {
+public class ProcessReportImportIT extends AbstractExportImportIT {
+
+  private static Stream<String> specialVersionKeywords() {
+    return Stream.of(ALL_VERSIONS.toLowerCase(), LATEST_VERSION.toLowerCase()); // export results in lower case
+  }
 
   @ParameterizedTest
   @MethodSource("getTestProcessReports")
   public void importReport(final SingleProcessReportDefinitionRequestDto reportDefToImport) {
     // given
     createAndSaveDefinition(DefinitionType.PROCESS, null);
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    dateFreezer().freezeDateAndReturn();
 
     // when
-    final Response response = importClient.importReport(createExportDto(reportDefToImport));
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
-    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getCreated()).isEqualTo(now);
-    assertThat(importedReport.getLastModified()).isEqualTo(now);
-    assertThat(importedReport.getCollectionId()).isNull();
-    assertThat(importedReport.getName()).isEqualTo(reportDefToImport.getName());
-    assertThat(importedReport.getData())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(importedReport.getData());
-    assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
-    assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "1");
+    assertImportedReport(importedReport, reportDefToImport, null);
   }
 
   @Test
@@ -76,7 +81,7 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.setSourceIndexVersion(SingleProcessReportIndex.VERSION + 1);
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -99,7 +104,7 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -117,14 +122,14 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
   }
 
   @Test
-  public void importReport_missingVersion() {
+  public void importReport_missingAllRequiredVersions() {
     // given a definition that only exists with version 1 and a report that requires version 5 of this definition
     createAndSaveDefinition(DefinitionType.PROCESS, null);
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
     exportedReportDto.getData().setProcessDefinitionVersion("5");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -137,6 +142,48 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
           .type(DefinitionType.PROCESS)
           .key(DEFINITION_KEY)
           .versions(Collections.singletonList("5"))
+          .tenantIds(Collections.singletonList(null))
+          .build());
+  }
+
+  @ParameterizedTest
+  @MethodSource("specialVersionKeywords")
+  public void importReport_allOrLatestVersion(final String versionString) {
+    // given
+    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    exportedReportDto.getData().setProcessDefinitionVersion(versionString);
+
+    // when
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+
+    // then
+    final SingleProcessReportDefinitionRequestDto importedReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+    assertThat(importedReport.getData().getDefinitionVersions()).containsExactly(versionString);
+  }
+
+  @ParameterizedTest
+  @MethodSource("specialVersionKeywords")
+  public void importReport_allOrLatestVersion_missingAllVersions(final String versionString) {
+    // given
+    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    exportedReportDto.getData().setProcessDefinitionVersion(versionString);
+
+    // when
+    final Response response = importClient.importEntity(exportedReportDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
+      .isEqualTo("importDefinitionDoesNotExist");
+    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+      .hasSize(1)
+      .containsExactly(
+        DefinitionExceptionItemDto.builder()
+          .type(DefinitionType.PROCESS)
+          .key(DEFINITION_KEY)
+          .versions(Collections.singletonList(versionString))
           .tenantIds(Collections.singletonList(null))
           .build());
   }
@@ -154,11 +201,9 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then all non version related data is accurate
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -198,7 +243,7 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Collections.singletonList("tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final Response response = importClient.importEntity(exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -229,11 +274,9 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -268,11 +311,9 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
-    final Response response = importClient.importReport(exportedReportDto);
+    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -310,14 +351,12 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final SingleProcessReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final IdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
       collectionId,
       exportedReportDto
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final IdResponseDto importedId = response.readEntity(IdResponseDto.class);
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
@@ -340,14 +379,14 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
   }
 
   @Test
-  public void importReportIntoNonExistentCollection() {
+  public void importReportIntoCollection_collectionDoesNotExist() {
     // given
     createAndSaveDefinition(DefinitionType.PROCESS, null);
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
     final Response response =
-      importClient.importReportIntoCollection("fakeCollection", exportedReportDto);
+      importClient.importEntityIntoCollection("fakeCollection", exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -361,13 +400,179 @@ public class ProcessReportImportIT extends AbstractReportExportImportIT {
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importReportIntoCollection(
+    final Response response = importClient.importEntityIntoCollection(
       collectionId,
       exportedReportDto
     );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("getTestCombinableReports")
+  public void importCombinedReport(final List<SingleProcessReportDefinitionRequestDto> combinableReports) {
+    // given
+    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    dateFreezer().freezeDateAndReturn();
+
+    final CombinedReportDefinitionRequestDto combinedReportDef = createCombinedReportDefinition(combinableReports);
+
+    final Set<OptimizeEntityExportDto> reportsToImport = Sets.newHashSet(
+      createExportDto(combinedReportDef),
+      createExportDto(combinableReports.get(0)),
+      createExportDto(combinableReports.get(1))
+    );
+
+    // when
+    final List<IdResponseDto> importedIds = importClient.importEntitiesAndReturnIds(reportsToImport);
+
+    // then
+    assertThat(importedIds).hasSize(3);
+    Map<String, ReportDefinitionDto<?>> importedReports = Stream.of(
+      reportClient.getReportById(importedIds.get(0).getId()),
+      reportClient.getReportById(importedIds.get(1).getId()),
+      reportClient.getReportById(importedIds.get(2).getId())
+    ).collect(toMap(ReportDefinitionDto::getName, Function.identity()));
+
+    final CombinedReportDefinitionRequestDto importedCombinedReport =
+      (CombinedReportDefinitionRequestDto) importedReports.get(combinedReportDef.getName());
+    final SingleProcessReportDefinitionRequestDto importedSingleReport1 =
+      (SingleProcessReportDefinitionRequestDto) importedReports.get(combinableReports.get(0).getName());
+    final SingleProcessReportDefinitionRequestDto importedSingleReport2 =
+      (SingleProcessReportDefinitionRequestDto) importedReports.get(combinableReports.get(1).getName());
+
+    assertImportedReport(
+      importedSingleReport1,
+      combinableReports.get(0),
+      null
+    );
+    assertImportedReport(
+      importedSingleReport2,
+      combinableReports.get(1),
+      null
+    );
+
+    assertThat(importedCombinedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedCombinedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedCombinedReport.getCreated()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedCombinedReport.getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedCombinedReport.getCollectionId()).isNull();
+    assertThat(importedCombinedReport.getName()).isEqualTo(combinedReportDef.getName());
+    assertThat(importedCombinedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(CombinedReportDataDto.Fields.reports)
+      .isEqualTo(combinedReportDef.getData());
+    assertThat(importedCombinedReport.getData().getReports())
+      .usingElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
+      .containsExactlyElementsOf(combinedReportDef.getData().getReports());
+    assertThat(importedCombinedReport.getData().getReportIds())
+      .containsExactlyInAnyOrder(importedSingleReport1.getId(), importedSingleReport2.getId());
+  }
+
+  @ParameterizedTest
+  @MethodSource("getTestCombinableReports")
+  public void importCombinedReportIntoCollection(final List<SingleProcessReportDefinitionRequestDto> combinableReports) {
+    // given
+    dateFreezer().freezeDateAndReturn();
+    createAndSaveDefinition(DefinitionType.PROCESS, null);
+    final String collectionId = collectionClient.createNewCollectionWithScope(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      DefinitionType.PROCESS,
+      DEFINITION_KEY,
+      Collections.singletonList(null)
+    );
+
+    final CombinedReportDefinitionRequestDto combinedReportDef = createCombinedReportDefinition(combinableReports);
+
+    final Set<OptimizeEntityExportDto> reportsToImport = Sets.newHashSet(
+      createExportDto(combinedReportDef),
+      createExportDto(combinableReports.get(0)),
+      createExportDto(combinableReports.get(1))
+    );
+
+    // when
+    final List<IdResponseDto> importedIds = importClient.importEntitiesIntoCollectionAndReturnIds(
+      collectionId,
+      reportsToImport
+    );
+
+    // then
+    assertThat(importedIds).hasSize(3);
+    Map<String, ReportDefinitionDto<?>> importedReports = Stream.of(
+      reportClient.getReportById(importedIds.get(0).getId()),
+      reportClient.getReportById(importedIds.get(1).getId()),
+      reportClient.getReportById(importedIds.get(2).getId())
+    ).collect(toMap(ReportDefinitionDto::getName, Function.identity()));
+
+    final CombinedReportDefinitionRequestDto importedCombinedReport =
+      (CombinedReportDefinitionRequestDto) importedReports.get(combinedReportDef.getName());
+    final SingleProcessReportDefinitionRequestDto importedSingleReport1 =
+      (SingleProcessReportDefinitionRequestDto) importedReports.get(combinableReports.get(0).getName());
+    final SingleProcessReportDefinitionRequestDto importedSingleReport2 =
+      (SingleProcessReportDefinitionRequestDto) importedReports.get(combinableReports.get(1).getName());
+
+    assertImportedReport(
+      importedSingleReport1,
+      combinableReports.get(0),
+      collectionId
+    );
+    assertImportedReport(
+      importedSingleReport2,
+      combinableReports.get(1),
+      collectionId
+    );
+
+    assertThat(importedCombinedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedCombinedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedCombinedReport.getCreated()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedCombinedReport.getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedCombinedReport.getCollectionId()).isEqualTo(collectionId);
+    assertThat(importedCombinedReport.getName()).isEqualTo(combinedReportDef.getName());
+    assertThat(importedCombinedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(CombinedReportDataDto.Fields.reports)
+      .isEqualTo(combinedReportDef.getData());
+    assertThat(importedCombinedReport.getData().getReports())
+      .usingElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
+      .containsExactlyElementsOf(combinedReportDef.getData().getReports());
+    assertThat(importedCombinedReport.getData().getReportIds())
+      .containsExactlyInAnyOrder(importedSingleReport1.getId(), importedSingleReport2.getId());
+  }
+
+  @Test
+  public void importIncompleteCombinedReport_throwsInvalidImportFileException() {
+    // given an import file that includes a combined report but not the single report within the combined report
+    final CombinedProcessReportDefinitionExportDto combinedReport = createSimpleCombinedExportDto();
+
+    // when
+    final Response response = importClient.importEntity(combinedReport);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+  }
+
+  private void assertImportedReport(final SingleProcessReportDefinitionRequestDto importedReport,
+                                    final SingleProcessReportDefinitionRequestDto expectedReport,
+                                    final String expectedCollectionId) {
+    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedReport.getCreated()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedReport.getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedReport.getCollectionId()).isEqualTo(expectedCollectionId);
+    assertThat(importedReport.getName()).isEqualTo(expectedReport.getName());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(expectedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(expectedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
   }
 
 }

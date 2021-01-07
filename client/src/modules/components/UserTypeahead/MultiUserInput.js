@@ -4,75 +4,45 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useMemo, useCallback} from 'react';
-import debounce from 'debounce';
+import React, {useState} from 'react';
 
 import {MultiSelect} from 'components';
 import {t} from 'translation';
+import debouncePromise from 'debouncePromise';
 
 import {searchIdentities} from './service';
 
 import './MultiUserInput.scss';
 
+const debounceRequest = debouncePromise();
+
 export default function MultiUserInput({
   users = [],
   collectionUsers = [],
   onAdd,
+  fetchUsers,
+  optionsOnly,
   onRemove,
   onClear,
 }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  const [empty, setEmpty] = useState(true);
   const [identities, setIdentities] = useState([]);
 
-  const search = useMemo(
-    () =>
-      debounce(async (query) => {
-        const {total, result} = await searchIdentities(query);
-        setIdentities(result);
-        setLoading(false);
-        setHasMore(total > result.length);
-        setEmpty(result.length === 0);
-        setInitialDataLoaded(!query);
-      }, 800),
-    []
-  );
-
-  const cancelPendingSearch = useCallback(() => {
-    search.clear();
-    setLoading(false);
-  }, [search]);
-
-  const loadNewValues = useCallback(
-    (query) => {
-      if (initialDataLoaded && !query) {
-        return cancelPendingSearch();
-      }
-      setLoading(true);
-      search(query);
-    },
-    [cancelPendingSearch, initialDataLoaded, search]
-  );
-
-  useEffect(() => {
+  const loadNewValues = async (query, delay = 0) => {
     setLoading(true);
-    search('');
-  }, [search]);
 
-  function handleClose() {
-    // prevents unnecessary requests
-    if (loading && !empty) {
-      cancelPendingSearch();
-    } else if (empty) {
-      // prevents disabling the typeahead if closed empty
-      setLoading(true);
-    }
-  }
+    const {total, result} = await debounceRequest(async () => {
+      return await (fetchUsers || searchIdentities)(query);
+    }, delay);
+
+    setIdentities(result);
+    setLoading(false);
+    setHasMore(total > result.length);
+  };
 
   function add(id) {
-    if (id) {
+    if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
         .find((identity) => identity.id === id);
@@ -97,17 +67,17 @@ export default function MultiUserInput({
         label: formatTypeaheadOption(user.identity).text,
       }))}
       className="MultiUserInput"
-      onSearch={loadNewValues}
+      onSearch={(query) => loadNewValues(query, 800)}
       loading={loading}
       hasMore={!loading && hasMore}
-      onClose={handleClose}
-      onOpen={(query) => loadNewValues(query)}
+      onOpen={loadNewValues}
+      onClose={() => setLoading(true)}
       placeholder={t('common.collection.addUserModal.searchPlaceholder')}
       onAdd={add}
       onRemove={onRemove}
       onClear={onClear}
       async
-      typedOption
+      typedOption={!optionsOnly}
     >
       {identities.filter(filterSelected).map((identity) => {
         const {text, tag, subTexts} = formatTypeaheadOption(identity);

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.3.0</version>
+    <version>3.4.0</version>
   </parent>
 
   <artifactId>upgrade-tests</artifactId>
@@ -79,7 +79,7 @@
       <plugin>
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
-        <version>1.11.1</version>
+        <version>1.12.1</version>
         <executions>
           <execution>
             <goals>

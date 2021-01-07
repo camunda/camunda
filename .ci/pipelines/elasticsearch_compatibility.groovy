@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
@@ -158,22 +158,6 @@ spec:
         cpu: 1
         memory: 512Mi
 """
-}
-
-void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
-
-  String buildResultUrl = "${env.BUILD_URL}"
-  if (env.RUN_DISPLAY_URL) {
-    buildResultUrl = "${env.RUN_DISPLAY_URL}"
-  }
-
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${buildResultUrl}"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-  emailext subject: subject, body: body, recipientProviders: recipients
 }
 
 void runMaven(String cmd) {
@@ -416,7 +400,7 @@ pipeline {
 
   post {
     changed {
-      buildNotification(currentBuild.result)
+      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       // Retrigger the build if the slave disconnected

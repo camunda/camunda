@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -17,6 +18,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -29,8 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.filter.util.modelelement.IncidentFilterQueryUtil.createIncidentAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -40,6 +44,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION = "groupedByFlowNodeIdAggregation";
+  private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
@@ -50,10 +55,12 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
     return Collections.singletonList(
       nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
         .subAggregation(
-          terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
-            .size(configurationService.getEsAggregationBucketLimit())
-            .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
-            .subAggregation(distributedByPart.createAggregation(context))
+          filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
+            .subAggregation(
+              terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
+                .size(configurationService.getEsAggregationBucketLimit())
+                .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
+                .subAggregation(distributedByPart.createAggregation(context)))
         )
     );
   }
@@ -63,7 +70,8 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nestedAgg = response.getAggregations().get(NESTED_INCIDENT_AGGREGATION);
-    final Terms groupedByFlowNodeId = nestedAgg.getAggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION);
+    final Filter filterAgg = nestedAgg.getAggregations().get(FILTERED_INCIDENT_AGGREGATION);
+    final Terms groupedByFlowNodeId = filterAgg.getAggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION);
 
     final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();
@@ -77,17 +85,30 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
         flowNodeNames.remove(flowNodeKey);
       }
     }
-
-    // enrich data with flow nodes that haven't been executed, but should still show up in the result
-    flowNodeNames.keySet().forEach(flowNodeKey -> {
-      CompositeCommandResult.GroupByResult emptyResult =
-        CompositeCommandResult.GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
-      emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
-      groupedData.add(emptyResult);
-    });
+    addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
 
     compositeCommandResult.setGroups(groupedData);
-      compositeCommandResult.setIsComplete(groupedByFlowNodeId.getSumOfOtherDocCounts() == 0L);
+    compositeCommandResult.setIsComplete(groupedByFlowNodeId.getSumOfOtherDocCounts() == 0L);
+  }
+
+  private void addMissingGroupByIncidentKeys(final Map<String, String> flowNodeNames,
+                                             final List<CompositeCommandResult.GroupByResult> groupedData,
+                                             final ExecutionContext<ProcessReportDataDto> context) {
+    final boolean viewLevelFilterExists = context.getReportData()
+      .getFilter()
+      .stream()
+      .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
+    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // omitted by the filters
+    if (!viewLevelFilterExists) {
+      // enrich data with flow nodes that haven't been executed, but should still show up in the result
+      flowNodeNames.keySet().forEach(flowNodeKey -> {
+        CompositeCommandResult.GroupByResult emptyResult =
+          CompositeCommandResult.GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
+        emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
+        groupedData.add(emptyResult);
+      });
+    }
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {

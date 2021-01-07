@@ -5,25 +5,40 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.report;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 
-import javax.validation.constraints.NotNull;
-
-@AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
-  private int sourceIndexVersion;
-  @NotNull
-  private String id;
-  @NotNull
-  private String name;
   private String collectionId;
+
+  protected ReportDefinitionExportDto(final String id, final ExportEntityType exportEntityType,
+                                      final int sourceIndexVersion, final String name,
+                                      final String collectionId) {
+    super(id, exportEntityType, name, sourceIndexVersion);
+    this.collectionId = collectionId;
+  }
+
+  public static ReportDefinitionExportDto mapReportDefinitionToExportDto(final ReportDefinitionDto<?> reportDef) {
+    if (ReportType.PROCESS.equals(reportDef.getReportType())) {
+      if (reportDef.isCombined()) {
+        return new CombinedProcessReportDefinitionExportDto((CombinedReportDefinitionRequestDto) reportDef);
+      }
+      return new SingleProcessReportDefinitionExportDto((SingleProcessReportDefinitionRequestDto) reportDef);
+    } else {
+      return new SingleDecisionReportDefinitionExportDto((SingleDecisionReportDefinitionRequestDto) reportDef);
+    }
+  }
 }

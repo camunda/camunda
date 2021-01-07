@@ -133,7 +133,7 @@ it('should remove a filter from the list of filters', () => {
 });
 
 it('should disable variable filters if no decision definition is available', () => {
-  const node = shallow(<DecisionFilter />);
+  const node = shallow(<DecisionFilter data={[]} />);
 
   const buttons = node.find(Dropdown.Option);
   expect(buttons.find('[children="Evaluation Date Time"]').prop('disabled')).toBeFalsy();

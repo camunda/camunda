@@ -17,13 +17,11 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_CANDIDATE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   extends AbstractUserTaskDurationByCandidateGroupReportEvaluationIT {
@@ -59,43 +57,37 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(expectedValues.getExpectedWorkDurationValues().get(FIRST_CANDIDATE_GROUP))
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(expectedValues.getExpectedWorkDurationValues().get(SECOND_CANDIDATE_GROUP))
-    );
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(FIRST_CANDIDATE_GROUP_ID));
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(SECOND_CANDIDATE_GROUP_ID));
   }
 
   @Override
   protected void assertMap_ForOneProcessWithUnassignedTasks(final Double setDuration, final ReportMapResultDto result) {
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(
-      getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP),
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
-    );
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+      );
+    assertThat(result.getInstanceCount()).isEqualTo(1);
   }
 
   @Override
   protected void assertMap_ForSeveralProcesses(final ReportMapResultDto result) {
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP),
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
-    );
-    assertThat(
-      getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP),
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
-    );
-
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
+      );
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP_ID))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
+    assertThat(result.getInstanceCount()).isEqualTo(2);
   }
 
   @Override
@@ -104,25 +96,27 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
-        FIRST_CANDIDATE_GROUP, SET_DURATIONS,
-        SECOND_CANDIDATE_GROUP, new Double[]{SET_DURATIONS[0]}
+        FIRST_CANDIDATE_GROUP_ID, SET_DURATIONS,
+        SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]}
       )
     );
-    assertThat(results.get(MIN).getInstanceCount(), is(2L));
+    assertThat(results.get(MIN).getInstanceCount()).isEqualTo(2);
   }
 
   @Override
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
-    );
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP_ID))
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+      );
   }
 
   @Override
@@ -130,34 +124,34 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
-        FIRST_CANDIDATE_GROUP, new Double[]{SET_DURATIONS[0]},
-        SECOND_CANDIDATE_GROUP, new Double[]{SET_DURATIONS[1]}
+        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]},
+        SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]}
       )
     );
-    assertThat(results.get(MIN).getIsComplete(), is(true));
+    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Override
   protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportMapResultDto result1,
                                                                        final ReportMapResultDto result2) {
-    assertThat(result1.getData().size(), is(1));
-    assertThat(
-      getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1",
-      result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
-    );
+    assertThat(result1.getData()).hasSize(1);
+    assertThat(result1.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      );
 
-    assertThat(result2.getData().size(), is(1));
-    assertThat(
-      getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2",
-      result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
-    );
+    assertThat(result2.getData()).hasSize(1);
+    assertThat(result2.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+      .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
+        .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID) + " in result 2")
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+      );
   }
 
   @Override
   protected void assertCustomOrderOnResultValueIsApplied(ReportMapResultDto result) {
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData()).hasSize(2);
     assertCorrectValueOrdering(result);
   }
 }

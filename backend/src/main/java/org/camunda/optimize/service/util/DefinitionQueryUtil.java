@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.util;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -14,7 +16,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
@@ -28,11 +30,24 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtil {
 
-  public static BoolQueryBuilder createDefinitionQuery(String definitionKey,
-                                                       List<String> definitionVersions,
-                                                       List<String> tenantIds,
+  public static BoolQueryBuilder createDefinitionQuery(final String definitionKey,
+                                                       final List<String> tenantIds,
+                                                       final DefinitionBasedType type) {
+    return createDefinitionQuery(
+      definitionKey,
+      ImmutableList.of(ReportConstants.ALL_VERSIONS),
+      tenantIds,
+      type,
+      // not relevant
+      s -> ""
+    );
+  }
+
+  public static BoolQueryBuilder createDefinitionQuery(final String definitionKey,
+                                                       final List<String> definitionVersions,
+                                                       final List<String> tenantIds,
                                                        final DefinitionBasedType type,
-                                                       Function<String, String> getLatestVersionToKey) {
+                                                       final UnaryOperator<String> getLatestVersionToKey) {
     final BoolQueryBuilder query = boolQuery();
     query.must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
     query.must(termQuery(type.getDefinitionKeyFieldName(), definitionKey));

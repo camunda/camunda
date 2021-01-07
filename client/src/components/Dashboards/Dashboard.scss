@@ -17,27 +17,27 @@
       overflow-y: auto;
       padding: 0 40px 0 40px;
     }
-  }
 
-  .header {
-    margin: 0 40px 40px 40px;
+    & > .header {
+      margin: 0 40px 40px 40px;
 
-    .head {
-      display: flex;
-    }
-
-    .tools {
-      flex-wrap: nowrap;
-      align-items: baseline;
-      display: flex;
-      flex-shrink: 0;
-
-      .tool-button {
-        margin-right: 6px;
+      .head {
+        display: flex;
       }
 
-      .tool-button:last-child {
-        margin-right: 0;
+      .tools {
+        flex-wrap: nowrap;
+        align-items: baseline;
+        display: flex;
+        flex-shrink: 0;
+
+        .tool-button {
+          margin-right: 6px;
+        }
+
+        .tool-button:last-child {
+          margin-right: 0;
+        }
       }
     }
   }

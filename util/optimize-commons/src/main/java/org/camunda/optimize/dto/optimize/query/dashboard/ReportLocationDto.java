@@ -9,13 +9,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldNameConstants
 public class ReportLocationDto {
 
+  // Note that this ID can also be a link to an external resource
   protected String id;
   protected PositionDto position;
   protected DimensionDto dimensions;

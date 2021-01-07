@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -60,7 +62,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
       .flatMap(entry -> entry.getValue().stream())
       .map(MapResultEntryDto::getKey)
       .collect(Collectors.toList());
-    assertThat(collect).contains(getLocalisedUnassignedLabel());
+    assertThat(collect).contains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     // @formatter:on
   }
 
@@ -102,7 +104,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, getCorrectTestExecutionValue(assignee2Count))
+        .distributedByContains(DEFAULT_USERNAME, getCorrectTestExecutionValue(assignee2Count), DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }

@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
@@ -1012,7 +1013,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(4));
     importAllEngineEntitiesFromScratch();
-    reportData.setFilter(Collections.singletonList(new RunningInstancesOnlyFilterDto()));
+    final RunningInstancesOnlyFilterDto filter = new RunningInstancesOnlyFilterDto();
+    filter.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    reportData.setFilter(Collections.singletonList(filter));
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

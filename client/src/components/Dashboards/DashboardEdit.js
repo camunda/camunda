@@ -213,8 +213,9 @@ export class DashboardEdit extends React.Component {
           // report object with the new one that has an id after the save
           const reportIdx = this.state.reports.indexOf(report);
           await this.save(true);
+          const savedDashboardPath = this.props.location.pathname;
           const reportId = this.state.reports[reportIdx].id;
-          history.push('report/' + reportId + '/edit?returnTo=' + location.pathname);
+          history.push('report/' + reportId + '/edit?returnTo=' + savedDashboardPath);
         }
       );
     } else {

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -39,7 +40,6 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeReportConflictException;
@@ -115,6 +115,8 @@ public class ReportService implements CollectionReferencingService {
   public IdResponseDto createNewSingleProcessReport(final String userId,
                                                     final SingleProcessReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    Optional.ofNullable(definitionDto.getData())
+      .ifPresent(data -> ValidationHelper.validateProcessFilters(data.getFilter()));
     return createReport(
       userId, definitionDto, ProcessReportDataDto::new, reportWriter::createNewSingleProcessReport
     );
@@ -192,19 +194,6 @@ public class ReportService implements CollectionReferencingService {
 
     return copyAndMoveReport(
       originalReportDefinition, userId, newName, newCollectionId, existingReportCopies, keepSubReportNames
-    );
-  }
-
-  public IdResponseDto importReport(final String userId,
-                                    final ReportDefinitionDto<?> reportDefinitionDto,
-                                    final String newCollectionId) {
-    return copyAndMoveReport(
-      reportDefinitionDto,
-      userId,
-      reportDefinitionDto.getName(),
-      newCollectionId,
-      new HashMap<>(),
-      true
     );
   }
 
@@ -327,6 +316,7 @@ public class ReportService implements CollectionReferencingService {
                                         String userId,
                                         boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
+    ValidationHelper.validateProcessFilters(updatedReport.getData().getFilter());
 
     final SingleProcessReportDefinitionRequestDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId
@@ -356,7 +346,7 @@ public class ReportService implements CollectionReferencingService {
   public void updateSingleDecisionReport(String reportId,
                                          SingleDecisionReportDefinitionRequestDto updatedReport,
                                          String userId,
-                                         boolean force) throws OptimizeConflictException {
+                                         boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     final SingleDecisionReportDefinitionRequestDto currentReportVersion =
       getSingleDecisionReportDefinition(reportId, userId);
@@ -568,7 +558,29 @@ public class ReportService implements CollectionReferencingService {
     final CollectionDefinitionDto collection =
       collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId).getDefinitionDto();
 
-    ScopeComplianceType complianceLevel = getScopeComplianceForReport(definition, collection);
+    ensureCompliesWithCollectionScope(collection, definition);
+  }
+
+  public void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
+                                                final SingleReportDefinitionDto<?> report) {
+    ensureCompliesWithCollectionScope(
+      report.getData().getDefinitionKey(),
+      report.getData().getTenantIds(),
+      report.getReportType().toDefinitionType(),
+      collection
+    );
+  }
+
+  public void ensureCompliesWithCollectionScope(final String definitionKey,
+                                                final List<String> tenantIds,
+                                                final DefinitionType definitionType,
+                                                final CollectionDefinitionDto collection) {
+    final ScopeComplianceType complianceLevel = getScopeComplianceForReport(
+      definitionKey,
+      tenantIds,
+      definitionType,
+      collection
+    );
     if (NON_TENANT_COMPLIANT.equals(complianceLevel)) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
         collection.getId(),
@@ -588,23 +600,30 @@ public class ReportService implements CollectionReferencingService {
 
   public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
                                                    final CollectionDefinitionDto collection) {
-    return COMPLIANT.equals(getScopeComplianceForReport(report, collection));
+    return COMPLIANT.equals(getScopeComplianceForReport(
+      report.getData().getDefinitionKey(),
+      report.getData().getTenantIds(),
+      report.getReportType().toDefinitionType(),
+      collection
+    ));
   }
 
-  private ScopeComplianceType getScopeComplianceForReport(final SingleReportDefinitionDto<?> report,
+  private ScopeComplianceType getScopeComplianceForReport(final String definitionKey,
+                                                          final List<String> tenantIds,
+                                                          final DefinitionType definitionType,
                                                           final CollectionDefinitionDto collection) {
-    final boolean definitionKeyDefined = report.getData().getDefinitionKey() != null;
-    List<ScopeComplianceType> compliances = collection.getData()
+    if (definitionKey == null) {
+      return COMPLIANT;
+    }
+
+    final List<ScopeComplianceType> compliances = collection.getData()
       .getScope()
       .stream()
-      .map(scope -> {
-        final SingleReportDataDto data = report.getData();
-        return scope.getComplianceType(report.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
-      })
+      .map(scope -> scope.getComplianceType(definitionType, definitionKey, tenantIds))
       .collect(toList());
 
     boolean scopeCompliant =
-      compliances.stream().anyMatch(compliance -> compliance.equals(COMPLIANT)) || !definitionKeyDefined;
+      compliances.stream().anyMatch(compliance -> compliance.equals(COMPLIANT));
     if (scopeCompliant) {
       return COMPLIANT;
     }
@@ -617,8 +636,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   private void checkForUpdateConflictsOnSingleProcessDefinition(SingleProcessReportDefinitionRequestDto currentReportVersion,
-                                                                SingleProcessReportDefinitionRequestDto reportUpdateDto)
-    throws OptimizeConflictException {
+                                                                SingleProcessReportDefinitionRequestDto reportUpdateDto) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
     final String reportId = currentReportVersion.getId();
@@ -639,8 +657,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   private void checkForUpdateConflictsOnSingleDecisionDefinition(SingleDecisionReportDefinitionRequestDto currentReportVersion,
-                                                                 SingleDecisionReportDefinitionRequestDto reportUpdateDto) throws
-                                                                                                                           OptimizeConflictException {
+                                                                 SingleDecisionReportDefinitionRequestDto reportUpdateDto) {
     final Set<ConflictedItemDto> conflictedItems = reportRelationService.getConflictedItemsForUpdatedReport(
       currentReportVersion,
       reportUpdateDto

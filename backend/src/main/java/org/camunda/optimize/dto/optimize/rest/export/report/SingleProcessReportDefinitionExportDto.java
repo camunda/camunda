@@ -20,7 +20,7 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SIN
 
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
   @NotNull
@@ -28,8 +28,9 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
 
   public SingleProcessReportDefinitionExportDto(final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(
-      SingleProcessReportIndex.VERSION,
       reportDefinition.getId(),
+      SINGLE_PROCESS_REPORT,
+      SingleProcessReportIndex.VERSION,
       reportDefinition.getName(),
       reportDefinition.getCollectionId()
     );

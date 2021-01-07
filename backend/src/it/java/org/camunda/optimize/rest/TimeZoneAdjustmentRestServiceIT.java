@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -171,6 +172,10 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
@@ -241,7 +246,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
       .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
   }
-  
+
   @ParameterizedTest
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
@@ -290,36 +295,36 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
-  private static Stream<ProcessReportDataType> allProcessDateReports() {
-    return ProcessReportDataType.allDateReports().stream();
+  @Test
+  public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat() {
+    // given
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+    final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(reportData);
+    reportDef.setLastModified(OffsetDateTime.parse("2021-01-05T10:25:16.161Z"));
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDef)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  private List<String> evaluateReportInLondonTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData) {
-    final ProcessReportResultDto result = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportResultDto>>() {})
-      // @formatter:on
-      .getResult();
-    assertThat(result).isNotNull();
-    if (result instanceof ReportHyperMapResultDto) {
-      ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
-      if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
-        return hyperMapResultDto.getData().stream()
-          .flatMap(hyperEntry -> hyperEntry.getValue().stream())
-          .map(MapResultEntryDto::getKey)
-          .collect(Collectors.toList());
-      } else {
-        return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
-      }
-    } else if (result instanceof ReportMapResultDto) {
-      ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
-      return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    } else {
-      throw new OptimizeIntegrationTestException("Unknown result type!");
-    }
+  private static Stream<ProcessReportDataType> allProcessDateReports() {
+    return ProcessReportDataType.allDateReports().stream();
   }
 
   @ParameterizedTest
@@ -947,6 +952,34 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then
     // if the timezone of the request was not respected then the result would be not be empty
     assertThat(result.getTotal()).isZero();
+  }
+
+  private List<String> evaluateReportInLondonTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData) {
+    final ProcessReportResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
+    assertThat(result).isNotNull();
+    if (result instanceof ReportHyperMapResultDto) {
+      ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
+      if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
+        return hyperMapResultDto.getData().stream()
+          .flatMap(hyperEntry -> hyperEntry.getValue().stream())
+          .map(MapResultEntryDto::getKey)
+          .collect(Collectors.toList());
+      } else {
+        return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
+      }
+    } else if (result instanceof ReportMapResultDto) {
+      ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
+      return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+    } else {
+      throw new OptimizeIntegrationTestException("Unknown result type!");
+    }
   }
 
   private ProcessInstanceDto createTwoProcessInstancesWithStartDate(final OffsetDateTime date) {

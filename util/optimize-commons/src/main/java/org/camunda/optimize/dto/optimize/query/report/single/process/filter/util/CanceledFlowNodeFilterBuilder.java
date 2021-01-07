@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class CanceledFlowNodeFilterBuilder {
 
   private List<String> values = new ArrayList<>();
   private ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private CanceledFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
@@ -35,11 +37,17 @@ public class CanceledFlowNodeFilterBuilder {
     return this;
   }
 
+  public CanceledFlowNodeFilterBuilder filterLevel(FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     CanceledFlowNodeFilterDataDto dataDto = new CanceledFlowNodeFilterDataDto();
     dataDto.setValues(new ArrayList<>(values));
     CanceledFlowNodeFilterDto canceledFlowNodeFilterDto = new CanceledFlowNodeFilterDto();
     canceledFlowNodeFilterDto.setData(dataDto);
+    canceledFlowNodeFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(canceledFlowNodeFilterDto);
     return filterBuilder;
   }

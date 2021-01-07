@@ -18,7 +18,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -50,4 +50,5 @@ public abstract class AbstractGroupByUserTask extends GroupByPart<ProcessReportD
     return Optional.ofNullable(response.getAggregations())
       .map(aggs -> aggs.get(USER_TASKS_AGGREGATION));
   }
+
 }

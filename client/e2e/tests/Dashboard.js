@@ -216,6 +216,8 @@ test('filters', async (t) => {
   await t.click(Filter.multiSelectValue('Travel Expenses'));
   await t.click(Filter.multiSelectValue('Misc'));
 
+  await t.click(Filter.customValueCheckbox);
+
   await t.click(Filter.confirmButton);
 
   await t.resizeWindow(1200, 550);
@@ -237,6 +239,11 @@ test('filters', async (t) => {
   await t.takeElementScreenshot(e.dashboardContainer, 'dashboard/filter-viewMode.png', {
     crop: {bottom: 450},
   });
+
+  await t.click(e.customValueAddButton);
+  await t.typeText(e.typeaheadInput, 'Other', {replace: true});
+  await t.click(e.typeaheadOption('Other'));
+
   await t.maximizeWindow();
 
   await t.expect(e.report.visible).ok();

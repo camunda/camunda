@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
@@ -221,6 +221,7 @@ pipeline {
           env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
           env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
+          env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
           env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
       }
@@ -264,6 +265,24 @@ pipeline {
             }
           }
         }
+        stage('IT 7.14') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.14_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_14_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.14')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage('IT SNAPSHOT') {
           agent {
             kubernetes {
@@ -292,7 +311,7 @@ pipeline {
       // Do not send email if the slave disconnected
       script {
         if (!agentDisconnected()){
-          buildNotification(currentBuild.result)
+          sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
         }
       }
     }
@@ -312,18 +331,3 @@ private void getCamBpmVersion(String profileId) {
   return profile.getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
 }
 
-void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
-
-  String buildResultUrl = "${env.BUILD_URL}"
-  if(env.RUN_DISPLAY_URL) {
-    buildResultUrl = "${env.RUN_DISPLAY_URL}"
-  }
-
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${buildResultUrl}"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-  emailext subject: subject, body: body, recipientProviders: recipients
-}

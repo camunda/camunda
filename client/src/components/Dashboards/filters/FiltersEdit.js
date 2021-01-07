@@ -84,7 +84,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                   return filter;
                 }
                 if (['Boolean', 'Date'].includes(data.type)) {
-                  return {type, data: {name: data.name, type: data.type}};
+                  return {type, data: {name: data.name, type: data.type}, filterLevel: 'instance'};
                 } else {
                   return {
                     type,
@@ -93,6 +93,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                       name: data.name,
                       type: data.type,
                     },
+                    filterLevel: 'instance',
                   };
                 }
               })

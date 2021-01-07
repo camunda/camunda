@@ -130,7 +130,7 @@ public class ObjectMapperFactoryTest {
 
 
   @Test
-  public void testFilterSerializationWithLowecaseType() throws Exception {
+  public void testFilterSerializationWithLowercaseType() throws Exception {
     ProcessReportDataDto data = optimizeMapper.readValue(
       this.getClass()
         .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),

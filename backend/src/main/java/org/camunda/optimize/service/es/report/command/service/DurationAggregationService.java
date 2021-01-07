@@ -167,10 +167,10 @@ public class DurationAggregationService {
 
     final BoolQueryBuilder limitingFilter = QueryBuilders.boolQuery()
       .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
-    limitedMaxBoundInMillis.ifPresent(limitedMax -> {
-      limitingFilter.filter(limitingFilterCreator.apply(FilterOperator.LESS_THAN_EQUALS, limitedMax));
-    });
-
+    limitedMaxBoundInMillis.ifPresent(limitedMax -> limitingFilter.filter(limitingFilterCreator.apply(
+      FilterOperator.LESS_THAN_EQUALS,
+      limitedMax
+    )));
 
     final HistogramAggregationBuilder histogramAggregation = AggregationBuilders
       .histogram(DURATION_HISTOGRAM_AGGREGATION)

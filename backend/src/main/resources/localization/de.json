@@ -840,7 +840,13 @@
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
-        "outputVariable": "Ausgabevariable"
+        "outputVariable": "Ausgabevariable",
+        "incident": "Zwischenfälle",
+        "includesOpenIncident": "mit offenen Zwischenfällen",
+        "includesResolvedIncident": "mit gelösten Zwischenfällen",
+        "openIncident": "Offene Zwischenfälle",
+        "resolvedIncident": "Gelöste Zwischenfälle",
+        "doesNotIncludeIncident": "ohne Zwischenfälle"
       },
       "list": {
         "operators": {
@@ -868,7 +874,7 @@
       },
       "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",
-      "editFilter": "Filter bearbeiten",
+      "updateFilter": "Filter ändern",
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
@@ -954,6 +960,16 @@
         "unassigned": "Nicht zugewiesen",
         "selectValue": "Filter für ID"
       },
+      "dropdownLabel": {
+        "instance": "Prozessinstanzen filtern",
+        "view": "Prozessknoten-Daten filtern",
+        "decision": "Entscheidungsinstanzen filtern"
+      },
+      "allVisible": {
+        "instance": "Alle Instanzen sichtbar",
+        "view": "Alle Prozessknoten-Daten sichtbar"
+      },
+      "linkingTip": "Filter sind durch 'und' Logik verbunden",
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },
     "definitionSelection": {

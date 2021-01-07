@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 
 public class RunningInstancesOnlyFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private RunningInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -18,8 +21,16 @@ public class RunningInstancesOnlyFilterBuilder {
     return new RunningInstancesOnlyFilterBuilder(filterBuilder);
   }
 
+  public RunningInstancesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new RunningInstancesOnlyFilterDto());
+    final RunningInstancesOnlyFilterDto filter = new RunningInstancesOnlyFilterDto();
+    filter.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
+
 }

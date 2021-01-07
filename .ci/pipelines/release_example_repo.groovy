@@ -3,7 +3,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
@@ -71,22 +71,6 @@ spec:
 """
 }
 
-void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
-
-  String buildResultUrl = "${env.BUILD_URL}"
-  if(env.RUN_DISPLAY_URL) {
-    buildResultUrl = "${env.RUN_DISPLAY_URL}"
-  }
-
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${buildResultUrl}"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-  emailext subject: subject, body: body, recipientProviders: recipients
-}
-
 void runRelease(params) {
   def isValidRelease = isValidReleaseVersion(params.RELEASE_VERSION)
   if (!isValidRelease) {
@@ -134,9 +118,11 @@ void runRelease(params) {
 
     # update the optimize version in pom to the release version
     sed -i "s/optimize.version>.*</optimize.version>${params.RELEASE_VERSION}</g" pom.xml
+    # update the optimize-examples version in pom to release version
+    mvn versions:set versions:commit -DnewVersion=${params.RELEASE_VERSION}
 
     git add -u
-    git commit -m \"chore(release): add version ${params.RELEASE_VERSION} to release version overview\"
+    git commit -m \"chore(release): ${params.RELEASE_VERSION}\"
 
     # create tag for the new Optimize version
     git tag -a ${params.RELEASE_VERSION} -m "Tag for version Optimize ${params.RELEASE_VERSION}"
@@ -144,13 +130,12 @@ void runRelease(params) {
 
     # update the optimize version in pom to development version
     sed -i "s/optimize.version>.*</optimize.version>${params.DEVELOPMENT_VERSION}</g" pom.xml
-
     # update the optimize-examples version in pom to development version
-    sed -i "s/version>.*</version>${params.DEVELOPMENT_VERSION}</g" pom.xml
+    mvn versions:set versions:commit -DnewVersion=${params.DEVELOPMENT_VERSION}
 
     # push the changes
     git add -u
-    git commit -m \"chore(release): update pom to snapshot for development version\"
+    git commit -m \"chore(release): update pom to snapshot for next development version\"
     git push origin ${params.BRANCH}
   """)
 }
@@ -223,7 +208,7 @@ pipeline {
 
   post {
     changed {
-      buildNotification(currentBuild.result)
+      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       // Retrigger the build if the slave disconnected

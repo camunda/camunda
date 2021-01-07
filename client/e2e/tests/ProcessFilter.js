@@ -241,11 +241,12 @@ test('add assignee filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
-  await t.click(Report.filterButton);
+  await t.click(Report.flowNodeFilterButton);
   await t.click(Report.filterOption('Assignee'));
 
   await t.click(Filter.multiSelect);
-  await t.click(Filter.multiSelectOption('demo'));
+  await t.typeText(Filter.multiSelect, 'er', {replace: true});
+  await t.click(Filter.multiSelectOptionNumber(0));
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
 

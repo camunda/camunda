@@ -6,11 +6,14 @@
 package org.camunda.optimize.data.generation;
 
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.springframework.util.ClassUtils;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -39,7 +42,7 @@ public class DataGenerationExecutor {
   private ThreadPoolExecutor importExecutor;
 
   private ScheduledExecutorService progressReporter;
-  private UserGenerator userGenerator;
+  private UserAndGroupGenerator userAndGroupGenerator;
 
   public DataGenerationExecutor(final DataGenerationInformation dataGenerationInformation) {
     this.dataGenerationInformation = dataGenerationInformation;
@@ -62,7 +65,7 @@ public class DataGenerationExecutor {
   }
 
   private void initGenerators() {
-    userGenerator = new UserGenerator(engineClient);
+    userAndGroupGenerator = new UserAndGroupGenerator(engineClient);
     List<DataGenerator<?>> processDataGenerators = createGenerators(
       dataGenerationInformation.getProcessDefinitionsAndNumberOfVersions(),
       dataGenerationInformation.getProcessInstanceCountToGenerate()
@@ -85,25 +88,32 @@ public class DataGenerationExecutor {
 
   private List<DataGenerator<?>> createGenerators(final Map<String, Integer> definitions,
                                                   final Long instanceCountToGenerate) {
-    List<DataGenerator<?>> dataGenerators = new ArrayList<>();
+    final List<DataGenerator<?>> dataGenerators = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .acceptPackages(DataGenerator.class.getPackage().getName())
       .scan()) {
       scanResult.getSubclasses(DataGenerator.class.getName()).stream()
         .filter(g -> definitions.containsKey(g.getSimpleName()))
-        .forEach(s -> {
-          try {
-            dataGenerators.add((DataGenerator<?>) s.loadClass()
-              .getConstructor(SimpleEngineClient.class, Integer.class)
-              .newInstance(engineClient, definitions.get(s.getSimpleName())));
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        });
+        .forEach(s -> createAndAddGeneratorInstance(definitions, dataGenerators, s));
     }
     addInstanceCountToGenerators(dataGenerators, instanceCountToGenerate);
     return dataGenerators;
+  }
+
+  @SneakyThrows
+  private void createAndAddGeneratorInstance(final Map<String, Integer> definitions,
+                                             final List<DataGenerator<?>> dataGenerators,
+                                             final ClassInfo s) {
+    if (ClassUtils.hasConstructor(s.loadClass(), SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)) {
+      dataGenerators.add((DataGenerator<?>) s.loadClass()
+        .getConstructor(SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)
+        .newInstance(engineClient, definitions.get(s.getSimpleName()), userAndGroupGenerator));
+    } else {
+      dataGenerators.add((DataGenerator<?>) s.loadClass()
+        .getConstructor(SimpleEngineClient.class, Integer.class)
+        .newInstance(engineClient, definitions.get(s.getSimpleName())));
+    }
   }
 
   private void addInstanceCountToGenerators(final List<DataGenerator<?>> dataGenerators,
@@ -118,7 +128,8 @@ public class DataGenerationExecutor {
   }
 
   public void executeDataGeneration() {
-    userGenerator.generateUsers();
+    userAndGroupGenerator.generateGroups();
+    userAndGroupGenerator.generateUsers();
     for (DataGenerator<?> dataGenerator : allDataGenerators) {
       importExecutor.execute(dataGenerator);
     }

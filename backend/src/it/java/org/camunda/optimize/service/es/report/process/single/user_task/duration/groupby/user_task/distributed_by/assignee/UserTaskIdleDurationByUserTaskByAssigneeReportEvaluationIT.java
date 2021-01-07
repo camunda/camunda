@@ -15,6 +15,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE;
@@ -57,40 +58,40 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
       case RUNNING:
         // @formatter:off
         HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
-          .groupByContains(USER_TASK_1)
-            .distributedByContains(DEFAULT_USERNAME, 200.)
-          .groupByContains(USER_TASK_2)
-            .distributedByContains(DEFAULT_USERNAME, 200.)
-          .doAssert(result);
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+            .isComplete(true)
+            .groupByContains(USER_TASK_1)
+              .distributedByContains(DEFAULT_USERNAME, 200., DEFAULT_FULLNAME)
+            .groupByContains(USER_TASK_2)
+              .distributedByContains(DEFAULT_USERNAME, 200., DEFAULT_FULLNAME)
+            .doAssert(result);
         // @formatter:on
         break;
       case COMPLETED:
         // @formatter:off
         HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
-          .groupByContains(USER_TASK_1)
-            .distributedByContains(DEFAULT_USERNAME, 100.)
-          .groupByContains(USER_TASK_2)
-            .distributedByContains(DEFAULT_USERNAME, null)
-          .doAssert(result);
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+            .isComplete(true)
+            .groupByContains(USER_TASK_1)
+              .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
+            .groupByContains(USER_TASK_2)
+              .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+            .doAssert(result);
         // @formatter:on
         break;
       case ALL:
         // @formatter:off
         HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
-          .groupByContains(USER_TASK_1)
-            .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(100., 200.))
-          .groupByContains(USER_TASK_2)
-            .distributedByContains(DEFAULT_USERNAME, 200.)
-          .doAssert(result);
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+            .isComplete(true)
+            .groupByContains(USER_TASK_1)
+              .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(100., 200.), DEFAULT_FULLNAME)
+            .groupByContains(USER_TASK_2)
+              .distributedByContains(DEFAULT_USERNAME, 200., DEFAULT_FULLNAME)
+            .doAssert(result);
         // @formatter:on
         break;
     }

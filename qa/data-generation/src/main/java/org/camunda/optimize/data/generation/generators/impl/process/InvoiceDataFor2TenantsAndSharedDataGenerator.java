@@ -7,6 +7,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
@@ -17,8 +18,10 @@ public class InvoiceDataFor2TenantsAndSharedDataGenerator extends ProcessDataGen
 
   private static final String DIAGRAM = "/diagrams/process/invoice-2-tenants-and-shared.bpmn";
 
-  public InvoiceDataFor2TenantsAndSharedDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
-    super(engineClient, nVersions);
+  public InvoiceDataFor2TenantsAndSharedDataGenerator(final SimpleEngineClient engineClient,
+                                                      final Integer nVersions,
+                                                      final UserAndGroupProvider userAndGroupProvider) {
+    super(engineClient, nVersions, userAndGroupProvider);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

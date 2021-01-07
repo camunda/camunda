@@ -65,6 +65,9 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       getLicense()
     );
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
+    // ensure the elastic version is an actual version
+    assertThat(telemetryData.getProduct().getInternals().getDatabase().getVersion())
+      .matches("^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$");
   }
 
   @Test

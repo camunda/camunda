@@ -33,6 +33,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
@@ -278,13 +280,22 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     OffsetDateTime creationDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstanceEngineDto1 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId1);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto1.getId(), creationDate.minusSeconds(1L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto1.getId(),
+      creationDate.minusSeconds(1L)
+    );
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId2);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto2.getId(), creationDate.minusSeconds(2L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto2.getId(),
+      creationDate.minusSeconds(2L)
+    );
     final ProcessInstanceEngineDto processInstanceEngineDto3 =
       incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(DEFAULT_TENANT);
-    engineDatabaseExtension.changeIncidentCreationDate(processInstanceEngineDto3.getId(), creationDate.minusSeconds(3L));
+    engineDatabaseExtension.changeIncidentCreationDate(
+      processInstanceEngineDto3.getId(),
+      creationDate.minusSeconds(3L)
+    );
 
     importAllEngineEntitiesFromScratch();
 
@@ -340,6 +351,47 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     // then we only get instance 1 because there's only one running
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isEqualTo(3000.);
+  }
+
+  private Stream<Arguments> filterAndExpectedResult() {
+    return Stream.of(
+      Arguments.of(
+        ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 3000.),
+      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 3000.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 1000.),
+      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1000.),
+      Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("filterAndExpectedResult")
+  public void incidentFilterIsAppliedAtCorrectLevel(final List<ProcessFilterDto<?>> filter,
+                                                    final Double expectedResult) {
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withResolvedIncident()
+        .withIncidentDurationInSec(1L)
+      .startProcessInstance()
+        .withOpenIncident()
+        .withIncidentDurationInSec(3L)
+      .startProcessInstance()
+        .withoutIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ReportConstants.ALL_VERSIONS);
+    reportData.setFilter(filter);
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(result.getData()).isEqualTo(expectedResult);
   }
 
   @Test

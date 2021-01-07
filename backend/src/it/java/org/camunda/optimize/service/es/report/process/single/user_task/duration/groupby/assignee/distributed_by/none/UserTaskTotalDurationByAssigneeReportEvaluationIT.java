@@ -14,10 +14,9 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
@@ -53,14 +52,10 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto("foo", null)).getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(DEFAULT_USERNAME))
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_USER).orElse(new MapResultEntryDto("foo", null)).getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(SECOND_USER))
-    );
+    assertThat(result.getEntryForKey(DEFAULT_USERNAME).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedTotalDurationValues().get(DEFAULT_USERNAME));
+    assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(expectedValues.getExpectedTotalDurationValues().get(SECOND_USER));
   }
 
 }

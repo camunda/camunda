@@ -5,29 +5,15 @@
  */
 package org.camunda.optimize.rest.engine.dto;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineUserDto {
-
-  protected UserProfileDto profile;
-
-  protected UserCredentialsDto credentials;
-
-
-  // getters / setters /////////////////////////////
-  
-  public UserProfileDto getProfile() {
-    return profile;
-  }
-
-  public void setProfile(UserProfileDto profile) {
-    this.profile = profile;
-  }
-
-  public UserCredentialsDto getCredentials() {
-    return credentials;
-  }
-
-  public void setCredentials(UserCredentialsDto credentials) {
-    this.credentials = credentials;
-  }
-
+  private UserProfileDto profile;
+  private UserCredentialsDto credentials;
 }

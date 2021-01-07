@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -27,6 +28,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -249,6 +251,25 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
     assertThat(evaluationResponse.getData()).isEqualTo(1.);
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelFilters")
+  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    // given
+    final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcessAndGetDefinition();
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
+    reportData.setFilter(filtersToApply);
+    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(evaluationResponse.getInstanceCount()).isZero();
+    assertThat(evaluationResponse.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   private static Stream<VariableType> nonNumericVariableTypes() {

@@ -44,7 +44,7 @@ export default class VariablesTable extends React.Component {
         >
           <Button>
             <Icon type="save" />
-            Instance ID's CSV
+            {t('common.instanceIds')}
           </Button>
         </a>
       </div>,

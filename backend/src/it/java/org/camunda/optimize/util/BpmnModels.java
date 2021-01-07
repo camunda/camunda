@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.util;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModels {
@@ -20,7 +23,6 @@ public class BpmnModels {
   public static final String USER_TASK_1 = "userTask1";
   public static final String USER_TASK_2 = "userTask2";
   public static final String SERVICE_TASK = "serviceTask";
-  public static final String SERVICE_TASK_NAME = "serviceTaskName";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
   public static final String VERSION_TAG = "aVersionTag";
@@ -100,6 +102,52 @@ public class BpmnModels {
       .done();
   }
 
+  public static BpmnModelInstance getUserTaskDiagramWithAssignee(final String assignee) {
+    return getUserTaskDiagramWithAssignee(DEFAULT_PROCESS_ID, assignee);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithAssignee(final String procDefKey, final String assignee) {
+    return Bpmn.createExecutableProcess(procDefKey)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaAssignee(assignee)
+      .endEvent(END_EVENT)
+      .done();
+  }
+
+  public static BpmnModelInstance getDoubleUserTaskDiagramWithAssignees(final String assigneeFirstUserTask,
+                                                                        final String assigneeSecondUserTask) {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaAssignee(assigneeFirstUserTask)
+      .userTask(USER_TASK_2).camundaAssignee(assigneeSecondUserTask)
+      .endEvent(END_EVENT)
+      .done();
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithCandidateGroup(final String candidateGroup) {
+    return getUserTaskDiagramWithCandidateGroup(DEFAULT_PROCESS_ID, candidateGroup);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithCandidateGroup(final String procDefKey,
+                                                                       final String candidateGroup) {
+    return getUserTaskDiagramWithMultipleCandidateGroups(procDefKey, ImmutableList.of(candidateGroup));
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithMultipleCandidateGroups(final List<String> candidateGroups) {
+    return getUserTaskDiagramWithMultipleCandidateGroups(DEFAULT_PROCESS_ID, candidateGroups);
+  }
+
+  public static BpmnModelInstance getUserTaskDiagramWithMultipleCandidateGroups(final String procDefKey,
+                                                                                final List<String> candidateGroups) {
+    return Bpmn.createExecutableProcess(procDefKey)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaCandidateGroups(candidateGroups)
+      .endEvent(END_EVENT)
+      .done();
+  }
 
   public static BpmnModelInstance getSingleServiceTaskProcess(String procDefKey) {
     return getSingleServiceTaskProcess(procDefKey, SERVICE_TASK);

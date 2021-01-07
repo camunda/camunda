@@ -13,7 +13,7 @@ import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
-import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 
 import {loadCollectionEntities, importEntity} from './service';
@@ -235,18 +235,14 @@ export class Collection extends React.Component {
                     });
                   }
 
-                  if (
-                    user?.authorizations.includes('import_export') &&
-                    entityType === 'report' &&
-                    !combined
-                  ) {
+                  if (user?.authorizations.includes('import_export')) {
                     actions.push({
                       icon: 'save',
                       text: t('common.export'),
                       action: () => {
-                        window.location.href = `api/export/report/json/${entity.reportType}/${
+                        window.location.href = `api/export/${entityType}/json/${
                           entity.id
-                        }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
+                        }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                       },
                     });
                   }

@@ -13,7 +13,7 @@ import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {EntityList, Deleter} from 'components';
-import {createEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -171,18 +171,14 @@ export class Home extends React.Component {
                   );
                 }
 
-                if (
-                  user?.authorizations.includes('import_export') &&
-                  entityType === 'report' &&
-                  !combined
-                ) {
+                if (user?.authorizations.includes('import_export') && entityType !== 'collection') {
                   actions.push({
                     icon: 'save',
                     text: t('common.export'),
                     action: () => {
-                      window.location.href = `api/export/report/json/${entity.reportType}/${
+                      window.location.href = `api/export/${entityType}/json/${
                         entity.id
-                      }/${encodeURIComponent(entity.name.replace(/\s/g, '_'))}.json`;
+                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                     },
                   });
                 }

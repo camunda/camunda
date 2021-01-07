@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
@@ -137,22 +137,6 @@ spec:
 """
 }
 
-void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
-
-  String buildResultUrl = "${env.BUILD_URL}"
-  if (env.RUN_DISPLAY_URL) {
-    buildResultUrl = "${env.RUN_DISPLAY_URL}"
-  }
-
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${buildResultUrl}"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-  emailext subject: subject, body: body, recipientProviders: recipients
-}
-
 void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
@@ -160,18 +144,11 @@ void runMaven(String cmd) {
 }
 
 void integrationTestSteps() {
-  cloneGitRepo()
+  optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
     runMaven("test -Dskip.fe.build");
     runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade,util/optimize-reimport-preparation -am")
   }
-}
-
-private void cloneGitRepo() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
 }
 
 pipeline {
@@ -197,7 +174,7 @@ pipeline {
         }
       }
       steps {
-        cloneGitRepo()
+        optimizeCloneGitRepo(params.BRANCH)
         script {
           def mavenProps = readMavenPom().getProperties()
           env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
@@ -322,7 +299,7 @@ pipeline {
 
   post {
     changed {
-      buildNotification(currentBuild.result)
+      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       // Retrigger the build if the slave disconnected

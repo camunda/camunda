@@ -13,7 +13,6 @@ import java.util.Map;
 @Data
 @Builder
 public class DataGenerationInformation {
-
   private Long processInstanceCountToGenerate;
   private Long decisionInstanceCountToGenerate;
   @Builder.Default

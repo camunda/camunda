@@ -33,6 +33,8 @@ public class PluginDecisionInputDto {
    * The value type of the variable.
    * Only simple variable types (i.e. Boolean, String, Date, Long, Short, Integer, Double) can be imported to optimize.
    * Make sure to set the variable type to one of these values while adapting the inputs
+   *
+   * Note: This field is required in order to be imported to Optimize.
    */
   private String type;
 
@@ -55,7 +57,6 @@ public class PluginDecisionInputDto {
    * The ID of the decision definition, current input corresponds to.
    */
   private String decisionDefinitionId;
-
 
   /**
    * The ID of the decision instance, current input corresponds to.

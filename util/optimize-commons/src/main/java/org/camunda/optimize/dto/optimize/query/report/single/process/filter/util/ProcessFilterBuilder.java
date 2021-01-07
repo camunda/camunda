@@ -56,12 +56,16 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
-  public WithOpenIncidentsOnlyFilterBuilder withOpenIncidentsOnly() {
-    return WithOpenIncidentsOnlyFilterBuilder.construct(this);
+  public OpenIncidentFilterBuilder withOpenIncident() {
+    return OpenIncidentFilterBuilder.construct(this);
   }
 
-  public WithResolvedIncidentsOnlyFilterBuilder withResolvedIncidentsOnly() {
-    return WithResolvedIncidentsOnlyFilterBuilder.construct(this);
+  public ResolvedIncidentFilterBuilder withResolvedIncident() {
+    return ResolvedIncidentFilterBuilder.construct(this);
+  }
+
+  public NoIncidentFilterBuilder noIncidents() {
+    return NoIncidentFilterBuilder.construct(this);
   }
 
   public RollingDateFilterBuilder rollingEndDate() {

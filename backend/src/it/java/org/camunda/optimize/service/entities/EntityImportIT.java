@@ -8,7 +8,7 @@ package org.camunda.optimize.service.entities;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.service.entities.report.AbstractReportExportImportIT;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.client.Entity;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class EntityImportIT extends AbstractReportExportImportIT {
+public class EntityImportIT extends AbstractExportImportIT {
 
   @Test
   public void importEmptyFile_throwsInvalidImportFileException() {
@@ -56,6 +56,20 @@ public class EntityImportIT extends AbstractReportExportImportIT {
         embeddedOptimizeExtension.getObjectMapper().writeValueAsString(incorrectDto),
         MediaType.APPLICATION_JSON_TYPE
       ));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+  }
+
+  @Test
+  public void importInvalidEntity_throwsInvalidImportFileException() {
+    // given an import entity with a non-nullable field set to null
+    final SingleProcessReportDefinitionExportDto exportDto = createSimpleProcessExportDto();
+    exportDto.setId(null);
+
+    // when
+    final Response response = importClient.importEntity(exportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

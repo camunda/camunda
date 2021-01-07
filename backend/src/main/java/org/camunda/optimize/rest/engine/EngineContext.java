@@ -29,6 +29,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -252,7 +253,7 @@ public class EngineContext {
   }
 
   private UserDto mapEngineUser(EngineListUserDto engineUser) {
-    if (this.configurationService.getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+    if (this.configurationService.getUserIdentityCacheConfiguration().isIncludeUserMetaData()) {
       return new UserDto(
         engineUser.getId(),
         engineUser.getFirstName(),
@@ -264,7 +265,7 @@ public class EngineContext {
     }
   }
 
-  public List<UserDto> getUsersById(final List<String> userIds) {
+  public List<UserDto> getUsersById(final Collection<String> userIds) {
     return userIds.stream()
       // consider adding get multiple users by id to optimize api in engine, see OPT-2788
       .map(this::getUserById)
@@ -306,7 +307,7 @@ public class EngineContext {
     }
   }
 
-  public List<GroupDto> getGroupsById(final List<String> groupIds) {
+  public List<GroupDto> getGroupsById(final Collection<String> groupIds) {
     return groupIds.stream()
       // consider adding get multiple groups by id to optimize api in engine, see OPT-2788
       .map(this::getGroupById)

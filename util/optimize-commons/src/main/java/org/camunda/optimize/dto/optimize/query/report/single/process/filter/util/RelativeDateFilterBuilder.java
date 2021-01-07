@@ -5,16 +5,21 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
 public class RelativeDateFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
   private RelativeDateFilterStartDto start;
   private String type;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private RelativeDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -37,16 +42,17 @@ public class RelativeDateFilterBuilder {
     return this;
   }
 
+  public RelativeDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
-    RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(start);
-    if (type.equals("endDate")) {
-      EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
-      filterBuilder.addFilter(filterDto);
-      return filterBuilder;
-    } else {
-      StartDateFilterDto filterDto = new StartDateFilterDto(dateFilterDataDto);
-      filterBuilder.addFilter(filterDto);
-      return filterBuilder;
-    }
+    ProcessFilterDto<DateFilterDataDto<?>> filterDto =
+      type.equals("endDate") ? new EndDateFilterDto() : new StartDateFilterDto();
+    filterDto.setData(new RelativeDateFilterDataDto(start));
+    filterDto.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filterDto);
+    return filterBuilder;
   }
 }

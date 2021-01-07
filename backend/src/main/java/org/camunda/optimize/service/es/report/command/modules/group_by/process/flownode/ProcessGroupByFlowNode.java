@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -47,10 +47,9 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     return Collections.singletonList(
-      createExecutionStateFilteredFlowNodeAggregation(
-        flowNodeExecutionState,
+      createFilteredFlowNodeAggregation(
+        context,
         terms(NESTED_EVENTS_AGGREGATION)
           .size(configurationService.getEsAggregationBucketLimit())
           .field(EVENTS + "." + ACTIVITY_ID)
@@ -63,7 +62,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    getExecutionStateFilteredFlowNodesAggregation(response)
+    getFilteredFlowNodesAggregation(response)
       .map(filteredFlowNodes -> (Terms) filteredFlowNodes.getAggregations().get(NESTED_EVENTS_AGGREGATION))
       .ifPresent(byFlowNodeIdAggregation -> {
         final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
@@ -78,17 +77,30 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
             flowNodeNames.remove(flowNodeKey);
           }
         }
-
-        // enrich data with flow nodes that haven't been executed, but should still show up in the result
-        flowNodeNames.keySet().forEach(flowNodeKey -> {
-          GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
-          emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
-          groupedData.add(emptyResult);
-        });
+        addMissingGroupByKeys(flowNodeNames, groupedData, context);
 
         compositeCommandResult.setGroups(groupedData);
         compositeCommandResult.setIsComplete(byFlowNodeIdAggregation.getSumOfOtherDocCounts() == 0L);
       });
+  }
+
+  private void addMissingGroupByKeys(final Map<String, String> flowNodeNames, final List<GroupByResult> groupedData,
+                                     final ExecutionContext<ProcessReportDataDto> context) {
+    final boolean viewLevelFilterExists = context.getReportData()
+      .getFilter()
+      .stream()
+      .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
+    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // omitted by the filters
+    if (!viewLevelFilterExists) {
+      // If no view level filter exists, we enrich data with flow nodes that haven't been executed, but should still
+      // show up in the result
+      flowNodeNames.keySet().forEach(flowNodeKey -> {
+        GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
+        emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
+        groupedData.add(emptyResult);
+      });
+    }
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {

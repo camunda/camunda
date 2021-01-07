@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Du
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -30,6 +31,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
@@ -592,6 +594,32 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
   }
 
+  @ParameterizedTest
+  @MethodSource("viewLevelFilters")
+  public void viewLevelFiltersAllAppliedOnlyToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(processDefinition.getKey())
+      .processDefinitionVersions(Collections.singletonList(processDefinition.getVersionAsString()))
+      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .build();
+
+    reportData.getFilter().addAll(filtersToApply);
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    final RawDataProcessReportResultDto result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+  }
+
   @Test
   public void testValidationExceptionOnNullDto() {
     // when
@@ -1097,6 +1125,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
+    variableFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     return Collections.singletonList(variableFilterDto);
   }
 }

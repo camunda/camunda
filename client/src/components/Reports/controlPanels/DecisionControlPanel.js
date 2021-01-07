@@ -130,52 +130,54 @@ export default class DecisionControlPanel extends React.Component {
             onChange={this.changeDefinition}
           />
         </div>
-        <div className="reportSetup">
-          <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
-          <ul>
-            {['view', 'groupBy'].map((field, idx, fields) => {
-              const previous = fields
-                .filter((prev, prevIdx) => prevIdx < idx)
-                .map((prev) => data[prev]);
-
-              return (
-                <li className="select" key={field}>
-                  <span className="label">{t(`report.${field}.label`)}</span>
-                  <ReportSelect
-                    type="decision"
-                    field={field}
-                    report={this.props.report}
-                    value={data[field]}
-                    variables={this.state.variables}
-                    previous={previous}
-                    disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
-                    onChange={(newValue) => this.updateReport(field, newValue)}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div className="filter">
-          <DecisionFilter
-            data={filter}
-            onChange={this.props.updateReport}
-            decisionDefinitionKey={decisionDefinitionKey}
-            decisionDefinitionVersions={decisionDefinitionVersions}
-            tenants={tenantIds}
-            variables={this.state.variables}
-          />
-        </div>
-        {result && typeof result.instanceCount !== 'undefined' && (
-          <div className="instanceCount">
-            {t(
-              `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
-              {
-                count: result.instanceCount,
-              }
-            )}
+        <div className="scrollable">
+          <div className="filter">
+            <DecisionFilter
+              data={filter}
+              onChange={this.props.updateReport}
+              decisionDefinitionKey={decisionDefinitionKey}
+              decisionDefinitionVersions={decisionDefinitionVersions}
+              tenants={tenantIds}
+              variables={this.state.variables}
+            />
           </div>
-        )}
+          <div className="reportSetup">
+            <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
+            <ul>
+              {['view', 'groupBy'].map((field, idx, fields) => {
+                const previous = fields
+                  .filter((prev, prevIdx) => prevIdx < idx)
+                  .map((prev) => data[prev]);
+
+                return (
+                  <li className="select" key={field}>
+                    <span className="label">{t(`report.${field}.label`)}</span>
+                    <ReportSelect
+                      type="decision"
+                      field={field}
+                      report={this.props.report}
+                      value={data[field]}
+                      variables={this.state.variables}
+                      previous={previous}
+                      disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                      onChange={(newValue) => this.updateReport(field, newValue)}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          {result && typeof result.instanceCount !== 'undefined' && (
+            <div className="instanceCount">
+              {t(
+                `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
+                {
+                  count: result.instanceCount,
+                }
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

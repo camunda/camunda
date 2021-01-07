@@ -64,7 +64,9 @@ it('should add a variable filter', () => {
   const node = shallow(
     <FiltersView
       {...props}
-      availableFilters={[{type: 'variable', data: {name: 'boolVar', type: 'Boolean'}}]}
+      availableFilters={[
+        {type: 'variable', data: {name: 'boolVar', type: 'Boolean'}, filterLevel: 'instance'},
+      ]}
     />
   );
 
@@ -75,7 +77,11 @@ it('should add a variable filter', () => {
 
   variableFilter.prop('setFilter')({values: [true]});
   const expectedResult = [
-    {type: 'variable', data: {name: 'boolVar', type: 'Boolean', data: {values: [true]}}},
+    {
+      type: 'variable',
+      data: {name: 'boolVar', type: 'Boolean', data: {values: [true]}},
+      filterLevel: 'instance',
+    },
   ];
   expect(props.setFilter).toHaveBeenCalledWith(expectedResult);
 

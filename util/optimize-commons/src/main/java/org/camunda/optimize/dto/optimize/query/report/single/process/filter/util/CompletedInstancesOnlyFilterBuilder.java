@@ -6,19 +6,31 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
 public class CompletedInstancesOnlyFilterBuilder {
+
   private ProcessFilterBuilder filterBuilder;
+  private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private CompletedInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
+
   static CompletedInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
     return new CompletedInstancesOnlyFilterBuilder(filterBuilder);
   }
 
+  public CompletedInstancesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new CompletedInstancesOnlyFilterDto());
+    final CompletedInstancesOnlyFilterDto filter = new CompletedInstancesOnlyFilterDto();
+    filter.setFilterLevel(filterLevel);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
+
 }

@@ -70,6 +70,7 @@ it('should create a startDate filter on zoom interaction', () => {
               type: 'fixed',
             },
             type: 'startDate',
+            filterLevel: 'instance',
           },
         ],
       },

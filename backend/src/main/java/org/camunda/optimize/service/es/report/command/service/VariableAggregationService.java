@@ -20,6 +20,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable.FILTERED_FLOW_NODE_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -115,10 +117,14 @@ public class VariableAggregationService {
     if (reverseNested == null) {
       return bucketMapEntry.getValue();
     } else {
-      final ParsedNested nestedFlownodeAgg = reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
-      return nestedFlownodeAgg == null
-        ? reverseNested.getAggregations() // this is an instance report
-        : nestedFlownodeAgg.getAggregations(); // this is a flownode report
+      final ParsedNested nestedFlowNodeAgg = reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
+      if (nestedFlowNodeAgg == null) {
+        return reverseNested.getAggregations(); // this is an instance report
+      } else {
+        Aggregations flowNodeAggs = nestedFlowNodeAgg.getAggregations(); // this is a flownode report
+        final ParsedFilter aggregation = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION);
+        return aggregation.getAggregations();
+      }
     }
   }
 

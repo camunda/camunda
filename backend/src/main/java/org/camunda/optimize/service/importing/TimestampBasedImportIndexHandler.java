@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 
 public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
   implements ImportIndexHandler<TimestampBasedImportPage, INDEX_DTO> {
+
   public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(
     Instant.EPOCH,
     ZoneId.systemDefault()

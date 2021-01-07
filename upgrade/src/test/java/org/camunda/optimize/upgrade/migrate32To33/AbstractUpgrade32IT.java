@@ -20,8 +20,8 @@ import java.util.Arrays;
 
 public class AbstractUpgrade32IT extends AbstractUpgradeIT {
 
-  private static final SingleProcessReportIndexV4Old SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV4Old();
-  private static final SingleDecisionReportIndexV4Old SINGLE_DECISION_REPORT_INDEX =
+  protected static final SingleProcessReportIndexV4Old SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV4Old();
+  protected static final SingleDecisionReportIndexV4Old SINGLE_DECISION_REPORT_INDEX =
     new SingleDecisionReportIndexV4Old();
   protected static final ProcessDefinitionIndexV3Old PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndexV3Old();
   protected static final DecisionDefinitionIndexV3Old DECISION_DEFINITION_INDEX = new DecisionDefinitionIndexV3Old();

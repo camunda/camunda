@@ -840,7 +840,13 @@
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
-        "outputVariable": "Output Variable"
+        "outputVariable": "Output Variable",
+        "incident": "Incident",
+        "includesOpenIncident": "With Open Incidents",
+        "includesResolvedIncident": "With Resolved Incidents",
+        "openIncident": "Open Incidents",
+        "resolvedIncident": "Resolved Incidents",
+        "doesNotIncludeIncident": "Without Incidents"
       },
       "list": {
         "operators": {
@@ -868,7 +874,7 @@
       },
       "modalHeader": "Add {type} Filter",
       "addFilter": "Add Filter",
-      "editFilter": "Edit Filter",
+      "updateFilter": "Update Filter",
       "dateModal": {
         "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
         "info": {
@@ -954,6 +960,16 @@
         "unassigned": "unassigned",
         "selectValue": "Filter for ID"
       },
+      "dropdownLabel": {
+        "instance": "Filter Process instances",
+        "view": "Filter Flow Node Data",
+        "decision": "Filter Decision instances"
+      },
+      "allVisible": {
+        "instance": "All instances visible",
+        "view": "All Flow Node data visible"
+      },
+      "linkingTip": "Filters are linked by 'and' logic",
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {

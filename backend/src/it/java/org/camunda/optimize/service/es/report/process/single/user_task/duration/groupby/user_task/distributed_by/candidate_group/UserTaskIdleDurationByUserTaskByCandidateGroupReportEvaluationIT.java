@@ -61,9 +61,9 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-            .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 200., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-            .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 200., FIRST_CANDIDATE_GROUP_NAME)
           .doAssert(result);
         // @formatter:on
         break;
@@ -74,9 +74,9 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 100.)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
           .doAssert(result);
         // @formatter:on
         break;
@@ -87,9 +87,9 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
           .doAssert(result);
         // @formatter:on
         break;
@@ -100,9 +100,13 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100., 200.))
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 200., FIRST_CANDIDATE_GROUP_NAME)
           .doAssert(result);
         // @formatter:on
         break;

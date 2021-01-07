@@ -7,9 +7,11 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.function.Supplier;
 
 @AllArgsConstructor
@@ -22,20 +24,49 @@ public class ExportClient {
       .execute();
   }
 
-  public Response exportReportAsJson(final ReportType reportType, final String reportId, final String fileName) {
+  public Response exportReportAsJson(final String reportId, final String fileName) {
     return getRequestExecutor()
-      .buildExportReportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportId, fileName)
       .execute();
+  }
+
+  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtos(final String reportId,
+                                                                               final String fileName) {
+    return getRequestExecutor()
+      .buildExportReportRequest(reportId, fileName)
+      .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response exportReportAsJsonAsUser(final String userId,
                                            final String password,
-                                           final ReportType reportType,
                                            final String reportId,
                                            final String fileName) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
-      .buildExportReportRequest(reportType, reportId, fileName)
+      .buildExportReportRequest(reportId, fileName)
+      .execute();
+  }
+
+  public Response exportDashboard(final String dashboardId, final String fileName) {
+    return getRequestExecutor()
+      .buildExportDashboardRequest(dashboardId, fileName)
+      .execute();
+  }
+
+  public List<OptimizeEntityExportDto> exportDashboardAndReturnExportDtos(final String dashboardId,
+                                                                          final String fileName) {
+    return getRequestExecutor()
+      .buildExportDashboardRequest(dashboardId, fileName)
+      .executeAndReturnList(OptimizeEntityExportDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response exportDashboardAsUser(final String userId,
+                                        final String password,
+                                        final String dashboardId,
+                                        final String fileName) {
+    return getRequestExecutor()
+      .withUserAuthentication(userId, password)
+      .buildExportDashboardRequest(dashboardId, fileName)
       .execute();
   }
 

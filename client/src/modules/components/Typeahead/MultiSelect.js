@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon, Dropdown, UncontrolledMultiValueInput} from 'components';
@@ -42,6 +42,12 @@ export default function MultiSelect({
 
   const isEmpty = !loading && !query && React.Children.count(children) === 0;
   const isInputDisabled = disabled || (isEmpty && !typedOption);
+
+  useEffect(() => {
+    if (isInputDisabled) {
+      setOpen(false);
+    }
+  }, [isInputDisabled]);
 
   function showList() {
     if (!open) {

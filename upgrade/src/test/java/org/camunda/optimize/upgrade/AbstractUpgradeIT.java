@@ -198,9 +198,9 @@ public abstract class AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  protected <T> Optional<T> getDocumentsOfIndexByIdAs(final String indexName,
-                                                      final String id,
-                                                      final Class<T> valueType) {
+  protected <T> Optional<T> getDocumentOfIndexByIdAs(final String indexName,
+                                                     final String id,
+                                                     final Class<T> valueType) {
     final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id), RequestOptions.DEFAULT);
     return getResponse.isSourceEmpty()
       ? Optional.empty()

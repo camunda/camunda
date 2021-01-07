@@ -11,10 +11,13 @@ import {Deleter, DocsLink, Dropdown, Icon, Input, Table, Tooltip} from 'componen
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import debouncePromise from 'debouncePromise';
 
 import {deleteEvents, loadIngestedEvents} from './service';
 
 import './IngestedEvents.scss';
+
+const debounceRequest = debouncePromise();
 
 const initialOffset = 0;
 const initialLimit = 20;
@@ -32,7 +35,13 @@ export function IngestedEvents({mightFail}) {
   const loadEvents = useCallback(
     async (payload = {limit: initialLimit, offset: initialOffset}) => {
       setLoading(true);
-      await mightFail(loadIngestedEvents(payload), setEventsResponse, showError);
+      await debounceRequest(
+        mightFail,
+        0,
+        loadIngestedEvents(payload),
+        setEventsResponse,
+        showError
+      );
       setLoading(false);
     },
     [mightFail]

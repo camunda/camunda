@@ -7,22 +7,16 @@ package org.camunda.optimize.service.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
-import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
-import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.entities.dashboard.DashboardExportService;
+import org.camunda.optimize.service.entities.report.ReportExportService;
 import org.camunda.optimize.service.identity.IdentityService;
-import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.Optional;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -30,13 +24,22 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 public class EntityExportService {
 
   private final IdentityService identityService;
-  private final ReportReader reportReader;
-  private final ReportAuthorizationService reportAuthorizationService;
+  private final ReportExportService reportExportService;
+  private final DashboardExportService dashboardExportService;
 
-  @SuppressWarnings(UNCHECKED_CAST)
-  public <T extends ReportDefinitionExportDto> Optional<T> getJsonReportExportDto(final String userId,
-                                                                                  final ReportType reportType,
-                                                                                  final String reportId) {
+  public List<ReportDefinitionExportDto> getReportExportDtos(final String userId,
+                                                             final Set<String> reportIds) {
+    validateUserAuthorizedToExportOrFail(userId);
+    return reportExportService.getReportExportDtos(userId, reportIds);
+  }
+
+  public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,
+                                                                  final Set<String> reportIds) {
+    validateUserAuthorizedToExportOrFail(userId);
+    return dashboardExportService.getCompleteDashboardExport(userId, reportIds);
+  }
+
+  private void validateUserAuthorizedToExportOrFail(final String userId) {
     if (!identityService.isSuperUserIdentity(userId)) {
       throw new ForbiddenException(
         String.format(
@@ -45,58 +48,5 @@ public class EntityExportService {
         )
       );
     }
-
-    switch (reportType) {
-      case PROCESS:
-        return (Optional<T>) getSingleProcessReportExportDto(userId, reportId);
-      case DECISION:
-        return (Optional<T>) getSingleDecisionReportExportDto(userId, reportId);
-      default:
-        throw new IllegalArgumentException("Unknown reportType: " + reportType);
-    }
   }
-
-  private Optional<SingleProcessReportDefinitionExportDto> getSingleProcessReportExportDto(final String userId,
-                                                                                           final String reportId) {
-    log.debug("Exporting report with ID {}.", reportId);
-
-    final Optional<SingleProcessReportDefinitionRequestDto> reportDefinition =
-      reportReader.getSingleProcessReportOmitXml(reportId);
-
-    if (!reportDefinition.isPresent()) {
-      log.debug("Could not find report with ID {} to export.", reportId);
-    }
-    reportDefinition.ifPresent(def -> validateReportAuthorizationOrFail(userId, def));
-
-    return reportDefinition.map(SingleProcessReportDefinitionExportDto::new);
-  }
-
-  private Optional<SingleDecisionReportDefinitionExportDto> getSingleDecisionReportExportDto(final String userId,
-                                                                                             final String reportId) {
-    log.debug("Exporting report with ID {}.", reportId);
-
-    final Optional<SingleDecisionReportDefinitionRequestDto> reportDefinition =
-      reportReader.getSingleDecisionReportOmitXml(reportId);
-
-    if (!reportDefinition.isPresent()) {
-      log.debug("Could not find report with ID {} to export.", reportId);
-    }
-    reportDefinition.ifPresent(def -> validateReportAuthorizationOrFail(userId, def));
-
-    return reportDefinition.map(SingleDecisionReportDefinitionExportDto::new);
-  }
-
-  private void validateReportAuthorizationOrFail(final String userId,
-                                                 final ReportDefinitionDto<?> reportDefinition) {
-    if (!reportAuthorizationService.isAuthorizedToReport(userId, reportDefinition)) {
-      throw new ForbiddenException(
-        String.format(
-          "User with ID [%s] is not authorized to access report with ID [%s]",
-          userId,
-          reportDefinition.getId()
-        )
-      );
-    }
-  }
-
 }

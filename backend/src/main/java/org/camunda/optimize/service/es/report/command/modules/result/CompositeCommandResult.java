@@ -28,7 +28,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -101,9 +100,13 @@ public class CompositeCommandResult {
     }
 
     public static DistributedByResult createResultWithZeroValue(String key) {
+      return createResultWithZeroValue(key, null);
+    }
+
+    public static DistributedByResult createResultWithZeroValue(String key, String label) {
       ViewResult viewResult = new ViewResult();
       viewResult.setNumber(0.0);
-      return new DistributedByResult(key, null, viewResult);
+      return new DistributedByResult(key, label, viewResult);
     }
 
     public static DistributedByResult createResultWithEmptyValue(String key, String label) {
@@ -120,12 +123,11 @@ public class CompositeCommandResult {
 
     public static List<DistributedByResult> createEmptyDistributedByResultsForAllPossibleKeys(
       final ExecutionContext<ProcessReportDataDto> context) {
-      final Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
-      List<DistributedByResult> emptyDistributedByResult = new ArrayList<>();
-      for (String key : allDistributedByKeys) {
-        emptyDistributedByResult.add(createResultWithEmptyValue(key, null));
-      }
-      return emptyDistributedByResult;
+      return context.getAllDistributedByKeysAndLabels()
+        .entrySet()
+        .stream()
+        .map(entry -> createResultWithEmptyValue(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
     }
 
     public String getLabel() {

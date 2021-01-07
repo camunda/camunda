@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
@@ -213,7 +213,7 @@ pipeline {
                 }
             }
             steps {
-                cloneGitRepo()
+                optimizeCloneGitRepo(params.BRANCH)
                 script {
                     env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
                 }
@@ -232,7 +232,7 @@ pipeline {
             stages {
                 stage('Prepare') {
                     steps {
-                        cloneGitRepo()
+                        optimizeCloneGitRepo(params.BRANCH)
                         container('postgres') {
                             sh("df -h /export /var/lib/postgresql/data")
                         }
@@ -247,7 +247,7 @@ pipeline {
                 stage('Generate Data') {
                     steps {
                         container('maven') {
-                            cloneGitRepo()
+                            optimizeCloneGitRepo(params.BRANCH)
                             // Generate Data
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
                                 // the line jq -r 'to_entries|map("--\(.key) \(.value|tostring)")| @tsv'
@@ -257,7 +257,7 @@ pipeline {
                                   if [ "${USE_E2E_PRESETS}" = true ]; then
                                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                                   else
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}'"
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}' --startDate "03/01/2018" --endDate "03/01/2020" --jdbcDriver "org.postgresql.Driver" --dbUrl "jdbc:postgresql://localhost:5432/engine" --dbUser "camunda" --dbPassword "camunda""
                                   fi
                                 """)
                             }
@@ -313,7 +313,7 @@ pipeline {
 
     post {
         changed {
-            buildNotification(currentBuild.result)
+            sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
         }
         always {
             // Retrigger the build if the slave disconnected
@@ -326,25 +326,3 @@ pipeline {
     }
 }
 
-private void cloneGitRepo() {
-    git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "$BRANCH",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
-}
-
-void buildNotification(String buildStatus) {
-    // build status of null means successful
-    buildStatus = buildStatus ?: 'SUCCESS'
-
-    String buildResultUrl = "${env.BUILD_URL}"
-    if (env.RUN_DISPLAY_URL) {
-        buildResultUrl = "${env.RUN_DISPLAY_URL}"
-    }
-
-    def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-    def body = "See: ${buildResultUrl}"
-    def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-    emailext subject: subject, body: body, recipientProviders: recipients
-}

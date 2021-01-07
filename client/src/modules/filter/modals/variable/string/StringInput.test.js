@@ -11,7 +11,7 @@ import {Button, Input} from 'components';
 
 import StringInput from './StringInput';
 
-jest.mock('debounce', () => (foo) => foo);
+jest.mock('debouncePromise', () => () => (fn) => fn());
 
 const props = {
   processDefinitionKey: 'procDefKey',
@@ -197,4 +197,21 @@ it('should allow adding custom values', async () => {
 
   expect(props.changeFilter).toHaveBeenCalledWith({operator: 'in', values: ['newValue']});
   expect(node).toIncludeText('Value added to list');
+});
+
+it('should not show previous contains value as custom value after switching operator', async () => {
+  const node = shallow(<StringInput {...props} filter={{operator: 'contains', values: ['A']}} />);
+
+  await flushPromises();
+
+  node
+    .find('.buttonRow')
+    .find(Button)
+    .at(0)
+    .simulate('click', {preventDefault: () => {}});
+  node.setProps({filter: {operator: 'in', values: []}});
+
+  await flushPromises();
+
+  expect(node.find('Checklist').prop('allItems')).not.toContain('A');
 });

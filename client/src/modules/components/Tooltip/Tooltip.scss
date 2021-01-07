@@ -1,14 +1,16 @@
 .Tooltip {
   display: inline-block;
   position: absolute;
+  font-size: 14px;
   max-width: 500px;
   overflow-wrap: break-word;
   background-color: var(--black);
   color: var(--white);
-  padding: 9px 13px 9px 11px;
+  padding: 10px;
   margin: 7px 0;
   border-radius: 6px;
   z-index: var(--z-tooltip);
+  box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
 
   &.center {
     &:before,
@@ -60,37 +62,23 @@
   &.light {
     background: var(--white);
     color: var(--black);
-    border: 1px solid var(--grey-lighten-50);
 
     &:before {
       bottom: calc(100%);
     }
 
-    &.bottom {
-      &:before {
-        border-bottom-color: var(--grey-lighten-50);
-      }
-
-      &:after {
-        border-bottom-color: var(--white);
-      }
+    &.bottom:after {
+      border-bottom-color: var(--white);
     }
 
-    &.top {
-      &:before {
-        bottom: -11px;
-        border-top-color: var(--grey-lighten-50);
-      }
-
-      &:after {
-        border-top-color: var(--white);
-      }
+    &.top:after {
+      border-top-color: var(--white);
     }
   }
 
   &.top {
     &:after {
-      bottom: -10px;
+      bottom: -9px;
       border-top-color: var(--black);
     }
   }

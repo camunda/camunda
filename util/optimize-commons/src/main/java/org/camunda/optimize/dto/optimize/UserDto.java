@@ -11,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
@@ -40,7 +41,7 @@ public class UserDto extends IdentityWithMetadataResponseDto {
   }
 
   @JsonCreator
-  public UserDto(@JsonProperty(required = true, value = "id") final String id,
+  public UserDto(@JsonProperty(required = true, value = "id") @NonNull final String id,
                  @JsonProperty(required = false, value = "firstName") final String firstName,
                  @JsonProperty(required = false, value = "lastName") final String lastName,
                  @JsonProperty(required = false, value = "email") final String email) {

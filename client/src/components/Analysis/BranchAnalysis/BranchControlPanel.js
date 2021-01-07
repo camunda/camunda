@@ -116,6 +116,7 @@ export default class BranchControlPanel extends React.Component {
                         'variable',
                         'assignee',
                         'candidateGroup',
+                        'flowNodeDuration',
                       ].includes(type)
                   ),
                 })
@@ -135,6 +136,7 @@ export default class BranchControlPanel extends React.Component {
               }
               xml={this.props.xml}
               {...this.getDefinitionConfig()}
+              filterLevel="instance"
             />
           </li>
         </ul>

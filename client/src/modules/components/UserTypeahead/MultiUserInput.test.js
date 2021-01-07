@@ -4,18 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React from 'react';
 import {shallow} from 'enzyme';
 
 import MultiUserInput from './MultiUserInput';
 import {searchIdentities} from './service';
 
-jest.mock('debounce', () =>
-  jest.fn((fn) => {
-    fn.clear = jest.fn();
-    return fn;
-  })
-);
+jest.mock('debouncePromise', () => () => (fn) => fn());
 
 jest.mock('./service', () => ({
   searchIdentities: jest.fn().mockReturnValue({result: [], total: 50}),
@@ -27,31 +22,24 @@ it('should render a MultiSelect', () => {
   expect(node.find('MultiSelect')).toExist();
 });
 
-it('should load initial data when component is mounted', () => {
-  shallow(<MultiUserInput />);
+it('should load initial data when select is opened', async () => {
+  const node = shallow(<MultiUserInput />);
 
-  runLastEffect();
+  node.find('MultiSelect').simulate('open');
+  await flushPromises();
 
-  expect(searchIdentities).toHaveBeenCalledWith('');
+  expect(searchIdentities).toHaveBeenCalled();
 });
 
 it('should enable loading while loading data and enable hasMore if there are more data available', async () => {
   const node = shallow(<MultiUserInput />);
-  runLastEffect();
+
+  node.find('MultiSelect').simulate('open');
 
   expect(node.find('MultiSelect').prop('loading')).toBe(true);
-  await node.update();
+  await flushPromises();
   expect(node.find('MultiSelect').prop('loading')).toBe(false);
   expect(node.find('MultiSelect').prop('hasMore')).toBe(true);
-});
-
-it('should enable loading if typeahead is closed while empty', async () => {
-  const node = shallow(<MultiUserInput />);
-
-  node.find('MultiSelect').prop('onSearch')('test');
-  await node.update();
-  node.find('MultiSelect').prop('onClose')();
-  expect(node.find('MultiSelect').prop('loading')).toBe(true);
 });
 
 it('should format user list information correctly', async () => {
@@ -68,8 +56,8 @@ it('should format user list information correctly', async () => {
       users={[{id: 'GROUP:groupId', identity: {id: 'groupId', name: 'groupName', type: 'group'}}]}
     />
   );
-  runLastEffect();
-  await node.update();
+  node.find('MultiSelect').simulate('open');
+  await flushPromises();
 
   expect(node).toMatchSnapshot();
 });

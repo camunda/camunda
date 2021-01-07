@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -194,7 +195,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     final ParsedFilter parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
     if (parentFilterAgg == null) {
       // there are no distributedBy keys
-      context.setAllDistributedByKeys(new HashSet<>());
+      context.setAllDistributedByKeysAndLabels(new HashMap<>());
       return;
     }
 
@@ -232,22 +233,25 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
   private void addEmptyMissingDistributedByResults(
     List<CompositeCommandResult.DistributedByResult> distributedByResults,
     final ExecutionContext<ProcessReportDataDto> context) {
-    context.getAllDistributedByKeys().stream()
-      .filter(key -> distributedByResults.stream()
-        .noneMatch(distributedByResult -> distributedByResult.getKey().equals(key)))
-      .map(key -> createEmptyDistributedBy(key, context))
+    context.getAllDistributedByKeysAndLabels()
+      .entrySet()
+      .stream()
+      .filter(entry -> distributedByResults.stream()
+        .noneMatch(distributedByResult -> distributedByResult.getKey().equals(entry.getKey())))
+      .map(entry -> createEmptyDistributedBy(entry.getKey(), entry.getValue(), context))
       .forEach(distributedByResults::add);
   }
 
   private CompositeCommandResult.DistributedByResult createEmptyDistributedBy(
     final String distributedByKey,
+    final String distributedByLabel,
     final ExecutionContext<ProcessReportDataDto> context) {
     switch (context.getReportData().getView().getProperty().toString()) {
       case VIEW_DURATION_PROPERTY:
-        return createResultWithEmptyValue(distributedByKey);
+        return createResultWithEmptyValue(distributedByKey, distributedByLabel);
       case VIEW_FREQUENCY_PROPERTY:
       default:
-        return createResultWithZeroValue(distributedByKey);
+        return createResultWithZeroValue(distributedByKey, distributedByLabel);
     }
   }
 

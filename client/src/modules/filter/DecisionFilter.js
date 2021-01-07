@@ -7,7 +7,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Dropdown} from 'components';
+import {Dropdown, Icon} from 'components';
 
 import {DateFilter, VariableFilter} from './modals';
 
@@ -126,35 +126,41 @@ export default class DecisionFilter extends React.Component {
       this.state.editFilter ? this.state.editFilter.type : null
     );
 
+    const filters = this.props.data;
+
     return (
       <div className="Filter">
+        <div className="filterHeader">
+          <Icon type="filter" />
+          <span className="dropdownLabel">{t('common.filter.dropdownLabel.decision')}</span>
+          <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
+            <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>
+              {t('common.filter.types.evaluationDateTime')}
+            </Dropdown.Option>
+            <Dropdown.Option
+              disabled={this.definitionIsNotSelected()}
+              onClick={this.openNewFilterModal('inputVariable')}
+            >
+              {t('common.filter.types.inputVariable')}
+            </Dropdown.Option>
+            <Dropdown.Option
+              disabled={this.definitionIsNotSelected()}
+              onClick={this.openNewFilterModal('outputVariable')}
+            >
+              {t('common.filter.types.outputVariable')}
+            </Dropdown.Option>
+          </Dropdown>
+        </div>
+        {filters.length === 0 && (
+          <p className="emptyMessage">{t('common.filter.allVisible.instance')}</p>
+        )}
+        {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
           openEditFilterModal={this.openEditFilterModal}
-          data={this.props.data}
+          data={filters}
           deleteFilter={this.deleteFilter}
           variables={this.props.variables}
         />
-        <Dropdown
-          label={t('common.filter.addFilter')}
-          id="ControlPanel__filters"
-          className="Filter__dropdown"
-        >
-          <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>
-            {t('common.filter.types.evaluationDateTime')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.definitionIsNotSelected()}
-            onClick={this.openNewFilterModal('inputVariable')}
-          >
-            {t('common.filter.types.inputVariable')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            disabled={this.definitionIsNotSelected()}
-            onClick={this.openNewFilterModal('outputVariable')}
-          >
-            {t('common.filter.types.outputVariable')}
-          </Dropdown.Option>
-        </Dropdown>
         <FilterModal
           addFilter={this.addFilter}
           close={this.closeModal}

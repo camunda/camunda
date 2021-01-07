@@ -6,6 +6,8 @@
 package org.camunda.optimize.data.generation.generators;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.camunda.optimize.test.util.client.dto.TaskDto;
 
@@ -13,7 +15,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +29,6 @@ public class UserTaskCompleter {
 
   private static final int TASKS_TO_FETCH = 1000;
   private static final int BACKOFF_SECONDS = 1;
-  private static final Random RANDOM = new Random();
   private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
     Instant.EPOCH.atZone(ZoneId.of("UTC"))
   );
@@ -36,14 +36,18 @@ public class UserTaskCompleter {
 
   private final String processDefinitionId;
   private final SimpleEngineClient engineClient;
+  private final UserAndGroupProvider userAndGroupProvider;
   private ExecutorService taskExecutorService;
   private volatile boolean shouldShutdown = false;
   private CountDownLatch finished = new CountDownLatch(0);
   private OffsetDateTime currentCreationDateFilter = OFFSET_DATE_TIME_OF_EPOCH;
 
-  public UserTaskCompleter(final String processDefinitionId, final SimpleEngineClient engineClient) {
+  public UserTaskCompleter(final String processDefinitionId,
+                           final SimpleEngineClient engineClient,
+                           final UserAndGroupProvider userAndGroupProvider) {
     this.processDefinitionId = processDefinitionId;
     this.engineClient = engineClient;
+    this.userAndGroupProvider = userAndGroupProvider;
   }
 
   public synchronized void startUserTaskCompletion() {
@@ -127,15 +131,19 @@ public class UserTaskCompleter {
     CompletableFuture.allOf(taskFutures).get();
   }
 
-  private void claimAndCompleteUserTask(TaskDto task) {
+  private void claimAndCompleteUserTask(final TaskDto task) {
+    if (userAndGroupProvider == null) {
+      throw new IllegalStateException("Trying to claim/complete user task but no userAndGroupProvider is set.");
+    }
     try {
-      engineClient.addOrRemoveIdentityLinks(task);
-      engineClient.claimTask(task);
+      engineClient.addOrRemoveCandidateGroupIdentityLinks(task, userAndGroupProvider.getRandomGroupId());
 
-      if (RANDOM.nextDouble() > 0.95) {
-        engineClient.unclaimTask(task);
+      if (randomDouble() > 0.95) {
+        // no assignee
+        engineClient.setAssignee(task, null);
       } else {
-        if (RANDOM.nextDouble() < 0.97) {
+        engineClient.setAssignee(task, userAndGroupProvider.getRandomUserId());
+        if (randomDouble() < 0.97) {
           boolean executionDelayed = engineClient
             .getProcessInstanceDelayVariable(task.getProcessInstanceId())
             .orElse(false);
@@ -148,6 +156,10 @@ public class UserTaskCompleter {
     } catch (Exception e) {
       log.error("Could not claim user task!", e);
     }
+  }
+
+  private double randomDouble() {
+    return RandomUtils.nextDouble(0.0D, 1.0D);
   }
 
   private void waitForOutlierDelay() {

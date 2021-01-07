@@ -1,4 +1,4 @@
-FROM alpine:3.12.1 as builder
+FROM alpine:3.12.3 as builder
 
 ARG SKIP_DOWNLOAD=false
 ARG VERSION=2.0.0
@@ -22,14 +22,12 @@ RUN /tmp/download.sh
 
 ##### FINAL IMAGE #####
 
-FROM alpine:3.12.1
+FROM alpine:3.12.3
 
-ENV OPTIMIZE_CLASSPATH=/optimize/config:/optimize/*:/optimize/lib/*
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
 ENV TZ=UTC
 ENV CONTAINER_HOST=0.0.0.0
-ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8090 8091
 

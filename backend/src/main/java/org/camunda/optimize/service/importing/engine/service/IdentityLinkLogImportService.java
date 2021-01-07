@@ -5,29 +5,39 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import com.google.common.collect.ImmutableSet;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricIdentityLinkLogDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.IdentityLinkLogElasticsearchImportJob;
+import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class IdentityLinkLogImportService implements ImportService<HistoricIdentityLinkLogDto> {
-  private static final Logger logger = LoggerFactory.getLogger(IdentityLinkLogImportService.class);
+  private static final Set<IdentityLinkLogType> SUPPORTED_TYPES = ImmutableSet.of(
+    IdentityLinkLogType.ASSIGNEE, IdentityLinkLogType.CANDIDATE
+  );
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final IdentityLinkLogWriter identityLinkLogWriter;
+  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   public IdentityLinkLogImportService(final IdentityLinkLogWriter identityLinkLogWriter,
+                                      final AssigneeCandidateGroupService assigneeCandidateGroupService,
                                       final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                       final EngineContext engineContext) {
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.identityLinkLogWriter = identityLinkLogWriter;
@@ -35,13 +45,13 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
 
   @Override
   public void executeImport(final List<HistoricIdentityLinkLogDto> pageOfEngineEntities,
-                            Runnable importCompleteCallback) {
-    logger.trace("Importing identity link logs from engine...");
+                            final Runnable importCompleteCallback) {
+    log.trace("Importing identity link logs from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<IdentityLinkLogEntryDto> newOptimizeEntities =
-        mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+        filterAndMapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       final ElasticsearchImportJob<IdentityLinkLogEntryDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
@@ -53,22 +63,24 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     return elasticsearchImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
+  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob<IdentityLinkLogEntryDto> elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<IdentityLinkLogEntryDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricIdentityLinkLogDto> engineEntities) {
+  private List<IdentityLinkLogEntryDto> filterAndMapEngineEntitiesToOptimizeEntities(
+    final List<HistoricIdentityLinkLogDto> engineEntities) {
     return engineEntities.stream()
       .filter(instance -> instance.getProcessInstanceId() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(entry -> SUPPORTED_TYPES.contains(entry.getType()))
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<IdentityLinkLogEntryDto> createElasticsearchImportJob(final List<IdentityLinkLogEntryDto> identityLinkLogs,
-                                                                                       Runnable callback) {
-    final IdentityLinkLogElasticsearchImportJob importJob = new IdentityLinkLogElasticsearchImportJob(
-      identityLinkLogWriter,
-      callback
+  private ElasticsearchImportJob<IdentityLinkLogEntryDto> createElasticsearchImportJob(
+    final List<IdentityLinkLogEntryDto> identityLinkLogs,
+    final Runnable callback) {
+    final IdentityLinkLogImportJob importJob = new IdentityLinkLogImportJob(
+      identityLinkLogWriter, assigneeCandidateGroupService, callback
     );
     importJob.setEntitiesToImport(identityLinkLogs);
     return importJob;
@@ -79,7 +91,10 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
       engineContext.getEngineAlias(),
-      engineEntity.getType(),
+      Optional.ofNullable(engineEntity.getType())
+        .map(String::toUpperCase)
+        .map(IdentityLinkLogType::valueOf)
+        .orElse(null),
       engineEntity.getUserId(),
       engineEntity.getGroupId(),
       engineEntity.getTaskId(),

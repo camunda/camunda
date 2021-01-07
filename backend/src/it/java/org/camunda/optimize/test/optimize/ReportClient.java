@@ -147,7 +147,7 @@ public class ReportClient {
       .execute();
   }
 
-  private String createNewCombinedReport(CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
+  public String createNewCombinedReport(CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
     return getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
@@ -175,13 +175,13 @@ public class ReportClient {
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  public void createAndStoreProcessReport(String definitionKey) {
+  public String createAndStoreProcessReport(String definitionKey) {
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
       null,
       definitionKey,
       Collections.singletonList(null)
     );
-    createSingleProcessReport(singleProcessReportDefinitionDto);
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
 
@@ -422,7 +422,7 @@ public class ReportClient {
       .execute();
   }
 
-  public CombinedReportDefinitionRequestDto getCombinedProcessReportDefinitionDto(String reportId) {
+  public CombinedReportDefinitionRequestDto getCombinedProcessReportById(String reportId) {
     return getRequestExecutor()
       .buildGetReportRequest(reportId)
       .execute(CombinedReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
@@ -443,6 +443,12 @@ public class ReportClient {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(SingleProcessReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public SingleDecisionReportDefinitionRequestDto getDecisionReportById(final String id) {
+    return getRequestExecutor()
+      .buildGetReportRequest(id)
+      .execute(SingleDecisionReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public ReportDefinitionDto<?> getReportById(String id) {

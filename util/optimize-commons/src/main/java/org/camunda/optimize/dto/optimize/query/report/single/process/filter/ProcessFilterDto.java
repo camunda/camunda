@@ -7,10 +7,12 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+
+import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
@@ -34,14 +36,23 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
   @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
   @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
-  @JsonSubTypes.Type(value = WithOpenIncidentsOnlyFilterDto.class, name = "withOpenIncidentsOnly"),
-  @JsonSubTypes.Type(value = WithResolvedIncidentsOnlyFilterDto.class, name = "withResolvedIncidentsOnly"),
+  @JsonSubTypes.Type(value = OpenIncidentFilterDto.class, name = "includesOpenIncident"),
+  @JsonSubTypes.Type(value = ResolvedIncidentFilterDto.class, name = "includesResolvedIncident"),
+  @JsonSubTypes.Type(value = NoIncidentFilterDto.class, name = "doesNotIncludeIncident")
 })
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
   protected DATA data;
+  @NotNull
+  protected FilterApplicationLevel filterLevel;
+
+  protected ProcessFilterDto(final DATA data, FilterApplicationLevel filterLevel) {
+    this.data = data;
+    setFilterLevel(filterLevel);
+  }
+
+  public abstract List<FilterApplicationLevel> validApplicationLevels();
 
   @Override
   public String toString() {

@@ -95,9 +95,6 @@ public class EngineConstants {
   public static final String IDENTITY_LINK_OPERATION_ADD = "add";
   public static final String IDENTITY_LINK_OPERATION_DELETE = "delete";
 
-  public static final String IDENTITY_LINK_TYPE_ASSIGNEE = "assignee";
-  public static final String IDENTITY_LINK_TYPE_CANDIDATE = "candidate";
-
   public static final String SUSPEND_PROCESS_INSTANCE_OPERATION = "Suspend";
   public static final String ACTIVATE_PROCESS_INSTANCE_OPERATION = "Activate";
   public static final String PROCESS_INSTANCE_ENTITY_TYPE = "ProcessInstance";

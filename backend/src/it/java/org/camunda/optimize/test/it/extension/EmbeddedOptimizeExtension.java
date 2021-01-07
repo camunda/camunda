@@ -31,6 +31,7 @@ import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
+import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
@@ -489,6 +490,10 @@ public class EmbeddedOptimizeExtension
 
   public UserIdentityCacheService getUserIdentityCacheService() {
     return getOptimize().getUserIdentityCacheService();
+  }
+
+  public UserTaskIdentityCacheService getUserTaskIdentityCacheService() {
+    return getOptimize().getUserTaskIdentityCacheService();
   }
 
   public IndexRolloverService getEventIndexRolloverService() {

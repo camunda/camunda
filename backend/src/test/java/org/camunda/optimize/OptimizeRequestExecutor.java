@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -23,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
@@ -97,12 +97,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_SEARCH_SUB_PATH;
+import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_RESOURCE_PATH;
+import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
@@ -911,8 +916,36 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetAssigneesByIdRequest(List<String> ids) {
+    this.path = ASSIGNEE_RESOURCE_PATH;
+    this.method = GET;
+    addSingleQueryParam("idIn", String.join(",", ids));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSearchForAssigneesRequest(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+    this.path = ASSIGNEE_RESOURCE_PATH + ASSIGNEE_SEARCH_SUB_PATH;
+    this.method = POST;
+    this.body = getBody(requestDto);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetCandidateGroupsRequest(AssigneeRequestDto requestDto) {
     this.path = "/candidateGroup/values";
+    this.method = POST;
+    this.body = getBody(requestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetCandidateGroupsByIdRequest(List<String> ids) {
+    this.path = "/candidateGroup";
+    this.method = GET;
+    addSingleQueryParam("idIn", String.join(",", ids));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSearchForCandidateGroupsRequest(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+    this.path = CANDIDATE_GROUP_RESOURCE_PATH + CANDIDATE_GROUP_SEARCH_SUB_PATH;
     this.method = POST;
     this.body = getBody(requestDto);
     return this;
@@ -925,18 +958,24 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildExportReportRequest(final ReportType reportType,
-                                                          final String reportId,
+  public OptimizeRequestExecutor buildExportReportRequest(final String reportId,
                                                           final String fileName) {
-    this.path = "export/report/json/" + reportType + "/" + reportId + "/" + fileName;
+    this.path = "export/report/json/" + reportId + "/" + fileName;
+    this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildExportDashboardRequest(final String dashboardId,
+                                                             final String fileName) {
+    this.path = "export/dashboard/json/" + dashboardId + "/" + fileName;
     this.method = GET;
     return this;
   }
 
   public OptimizeRequestExecutor buildImportEntityRequest(final String collectionId,
-                                                          final OptimizeEntityExportDto exportedDto) {
+                                                          final Set<OptimizeEntityExportDto> exportedDtos) {
     this.path = "import/";
-    this.body = getBody(exportedDto);
+    this.body = getBody(exportedDtos);
     this.method = POST;
     Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     return this;

@@ -508,7 +508,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     final DashboardDefinitionRestDto storedDashboard = dashboardClient.getDashboard(dashboardId);
 
     // when
-    final CombinedReportDefinitionRequestDto updatedDef = reportClient.getCombinedProcessReportDefinitionDto(
+    final CombinedReportDefinitionRequestDto updatedDef = reportClient.getCombinedProcessReportById(
       combinedReportId);
     updatedDef.setName("I changed the name");
     reportClient.updateDecisionReport(combinedReportId, updatedDef);

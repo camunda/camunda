@@ -11,6 +11,7 @@ export const multiSelect = Selector('.Modal__content .MultiSelect');
 export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const multiSelectOption = (text) => multiSelect.find('.DropdownOption').withText(text);
+export const multiSelectOptionNumber = (idx) => multiSelect.find('.DropdownOption').nth(idx);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .ValueListInput input').nth(0);
@@ -32,3 +33,4 @@ export const stringValues = Selector('.Checklist .itemsList');
 export const firstMultiSelectValue = Selector('.Checklist .itemsList .LabeledInput .label');
 export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
 export const confirmButton = Selector('.Modal .Modal__actions .primary');
+export const customValueCheckbox = Selector('.Modal .customValueCheckbox');

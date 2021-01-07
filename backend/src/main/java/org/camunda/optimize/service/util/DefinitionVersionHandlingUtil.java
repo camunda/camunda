@@ -62,4 +62,9 @@ public class DefinitionVersionHandlingUtil {
     return allVersionSelected.isPresent();
   }
 
+  public static boolean isDefinitionVersionSetToAllOrLatest(List<String> definitionVersions) {
+    return definitionVersions.stream()
+      .anyMatch(v -> v.equalsIgnoreCase(ReportConstants.ALL_VERSIONS) || v.equalsIgnoreCase(ReportConstants.LATEST_VERSION));
+  }
+
 }
