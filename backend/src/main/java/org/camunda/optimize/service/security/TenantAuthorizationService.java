@@ -8,14 +8,13 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,25 +120,30 @@ public class TenantAuthorizationService
     return result;
   }
 
-  private ResolvedResourceTypeAuthorizations resolveUserAuthorizations(String username,
-                                                                       EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allAuthorizations = engineContext.getAllTenantAuthorizations();
-    addEnginesDefaultTenantAuthorizationForUser(username, engineContext, allAuthorizations);
+  private ResolvedResourceTypeAuthorizations resolveUserAuthorizations(final String userId,
+                                                                       final EngineContext engineContext) {
+    final List<AuthorizationDto> allAuthorizationsOfUser = engineContext.getAllTenantAuthorizationsForUser(userId);
+    addEnginesDefaultTenantAuthorizationForUser(userId, engineContext, allAuthorizationsOfUser);
 
-    return resolveResourceAuthorizations(
-      engineContext.getEngineAlias(), allAuthorizations, RELEVANT_PERMISSIONS, username, groups, RESOURCE_TYPE_TENANT
+    return resolveUserResourceAuthorizations(
+      engineContext.getEngineAlias(),
+      allAuthorizationsOfUser,
+      RELEVANT_PERMISSIONS,
+      RESOURCE_TYPE_TENANT
     );
   }
 
-  private ResolvedResourceTypeAuthorizations resolveGroupAuthorizations(String groupId,
-                                                                        EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
+  private ResolvedResourceTypeAuthorizations resolveGroupAuthorizations(final String groupId,
+                                                                        final EngineContext engineContext) {
     final List<AuthorizationDto> allAuthorizations = engineContext.getAllTenantAuthorizations();
     addEnginesDefaultTenantAuthorizationForGroup(groupId, engineContext, allAuthorizations);
 
     return resolveResourceAuthorizations(
-      engineContext.getEngineAlias(), allAuthorizations, RELEVANT_PERMISSIONS, groups, RESOURCE_TYPE_TENANT
+      engineContext.getEngineAlias(),
+      allAuthorizations,
+      RELEVANT_PERMISSIONS,
+      Collections.singletonList(groupId),
+      RESOURCE_TYPE_TENANT
     );
   }
 
