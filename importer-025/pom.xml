@@ -22,7 +22,7 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 
