@@ -19,6 +19,8 @@ import io.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.logging.RecordingAppender;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -93,5 +95,24 @@ final class GrpcErrorMapperTest {
     final Status statusDetail = status.getDetails(0).unpack(Status.class);
     assertThat(statusDetail.getCode()).isEqualTo(expectedDetail.getCode());
     assertThat(statusDetail.getMessage()).isEqualTo(expectedDetail.getMessage());
+  }
+
+  @Test
+  void shouldLogTimeoutExceptionWithCorrectStacktrace() {
+    // given
+    final ExecutionException executionException =
+        new ExecutionException(new TimeoutException("Timed out after 1s"));
+
+    // when
+    log.setLevel(Level.TRACE);
+    final StatusRuntimeException statusException = errorMapper.mapError(executionException, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.DEADLINE_EXCEEDED);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().get(0);
+    assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+
+    assertThat(event.getThrown()).isEqualTo(executionException);
   }
 }
