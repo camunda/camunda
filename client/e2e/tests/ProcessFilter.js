@@ -68,6 +68,29 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
 
+test('filter for custom string variable values', async (t) => {
+  await u.createNewReport(t);
+
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Variable'));
+
+  await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
+  await t.click(Filter.typeaheadOption('stringVar'));
+
+  await t.click(Filter.addValueButton);
+  await t.typeText(Filter.customValueInput, 'custom value', {replace: true});
+  await t.click(Filter.addValueToListButton);
+
+  await t.expect(Filter.stringValues.textContent).contains('custom value');
+
+  await t.click(Report.primaryModalButton);
+
+  await t.expect(Report.controlPanelFilter.textContent).contains('custom value');
+});
+
 test('should apply a filter to the report result', async (t) => {
   await u.createNewReport(t);
 
