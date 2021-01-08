@@ -34,7 +34,7 @@ const DEFAULT_STATE: State = {
 
 class Statistics {
   state: State = {...DEFAULT_STATE};
-  intervalId: null | number = null;
+  intervalId: null | ReturnType<typeof setInterval> = null;
   pollingDisposer: null | IReactionDisposer = null;
 
   constructor() {

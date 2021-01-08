@@ -54,7 +54,7 @@ const DEFAULT_STATE: State = {
 
 class Incidents {
   state: State = {...DEFAULT_STATE};
-  intervalId: null | number = null;
+  intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
   constructor() {

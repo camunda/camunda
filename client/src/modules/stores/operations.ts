@@ -49,7 +49,7 @@ const MAX_OPERATIONS_PER_REQUEST = 20;
 
 class Operations {
   state: State = {...DEFAULT_STATE};
-  intervalId: null | number = null;
+  intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
   constructor() {

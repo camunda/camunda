@@ -54,7 +54,7 @@ class Instances {
   state: State = {
     ...DEFAULT_STATE,
   };
-  intervalId: null | number = null;
+  intervalId: null | ReturnType<typeof setInterval> = null;
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
   instancesPollingDisposer: null | IReactionDisposer = null;

@@ -36,7 +36,7 @@ class Variables {
     ...DEFAULT_STATE,
   };
   shouldCancelOngoingRequests: boolean = false;
-  intervalId: null | number = null;
+  intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
   constructor() {
