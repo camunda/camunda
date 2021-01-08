@@ -13,6 +13,7 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -55,7 +56,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final long key,
       final RecordType type,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> additionalMetadata) {
     appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
   }
@@ -66,7 +67,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> additionalMetadata) {
 
     final LogEntryBuilder event = batchWriter.event();
@@ -90,13 +91,13 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+  public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
     appendRecord(-1, RecordType.COMMAND, intent, value, noop);
   }
 
   @Override
   public void appendFollowUpCommand(
-      final long key, final Intent intent, final UnpackedObject value) {
+      final long key, final Intent intent, final UnifiedRecordValue value) {
     appendRecord(key, RecordType.COMMAND, intent, value, noop);
   }
 
@@ -104,7 +105,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   public void appendFollowUpCommand(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
     appendRecord(key, RecordType.COMMAND, intent, value, metadata);
   }

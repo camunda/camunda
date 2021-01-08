@@ -177,7 +177,7 @@ public final class WorkflowInstanceStateTransitionGuard {
       final BpmnElementContext context, final WorkflowInstanceIntent newState) {
     switch (newState) {
       case ELEMENT_ACTIVATING:
-      case ELEMENT_ACTIVATED:
+        //      case ELEMENT_ACTIVATED:
       case ELEMENT_COMPLETING:
       case ELEMENT_COMPLETED:
       case ELEMENT_TERMINATING:

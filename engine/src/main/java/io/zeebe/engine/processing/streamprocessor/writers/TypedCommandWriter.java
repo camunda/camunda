@@ -7,20 +7,20 @@
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
 /** Things that any actor can write to a partition. */
 public interface TypedCommandWriter {
 
-  void appendNewCommand(Intent intent, UnpackedObject value);
+  void appendNewCommand(Intent intent, UnifiedRecordValue value);
 
-  void appendFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  void appendFollowUpCommand(long key, Intent intent, UnifiedRecordValue value);
 
   void appendFollowUpCommand(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+      long key, Intent intent, UnifiedRecordValue value, Consumer<RecordMetadata> metadata);
 
   void reset();
 

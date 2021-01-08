@@ -8,7 +8,9 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.DbContext;
+import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.EventApplier;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
@@ -103,12 +105,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext setDetectReprocessingInconsistency(
-      final boolean detectReprocessingInconsistency) {
-    this.detectReprocessingInconsistency = detectReprocessingInconsistency;
-    return this;
-  }
-
   @Override
   public ActorControl getActor() {
     return actor;
@@ -169,11 +165,22 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return abortCondition;
   }
 
+  @Override
+  public EventApplier getEventApplier() {
+    return new EventApplier(new BpmnStateBehavior(zeebeState));
+  }
+
   public Consumer<TypedRecord> getOnProcessedListener() {
     return onProcessedListener;
   }
 
   public boolean isDetectReprocessingInconsistency() {
     return detectReprocessingInconsistency;
+  }
+
+  public ProcessingContext setDetectReprocessingInconsistency(
+      final boolean detectReprocessingInconsistency) {
+    this.detectReprocessingInconsistency = detectReprocessingInconsistency;
+    return this;
   }
 }

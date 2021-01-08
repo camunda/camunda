@@ -255,13 +255,14 @@ public class StreamProcessorHealthTest {
     }
 
     @Override
-    public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+    public void appendNewEvent(
+        final long key, final Intent intent, final UnifiedRecordValue value) {
       wrappedWriter.appendNewEvent(key, intent, value);
     }
 
     @Override
     public void appendFollowUpEvent(
-        final long key, final Intent intent, final UnpackedObject value) {
+        final long key, final Intent intent, final UnifiedRecordValue value) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
@@ -272,7 +273,7 @@ public class StreamProcessorHealthTest {
     public void appendFollowUpEvent(
         final long key,
         final Intent intent,
-        final UnpackedObject value,
+        final UnifiedRecordValue value,
         final Consumer<RecordMetadata> metadata) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
@@ -286,13 +287,13 @@ public class StreamProcessorHealthTest {
     }
 
     @Override
-    public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+    public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
       wrappedWriter.appendNewCommand(intent, value);
     }
 
     @Override
     public void appendFollowUpCommand(
-        final long key, final Intent intent, final UnpackedObject value) {
+        final long key, final Intent intent, final UnifiedRecordValue value) {
       wrappedWriter.appendFollowUpCommand(key, intent, value);
     }
 
@@ -300,7 +301,7 @@ public class StreamProcessorHealthTest {
     public void appendFollowUpCommand(
         final long key,
         final Intent intent,
-        final UnpackedObject value,
+        final UnifiedRecordValue value,
         final Consumer<RecordMetadata> metadata) {
       wrappedWriter.appendFollowUpCommand(key, intent, value, metadata);
     }

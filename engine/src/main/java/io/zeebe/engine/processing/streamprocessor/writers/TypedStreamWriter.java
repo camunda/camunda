@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor.writers;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
@@ -25,12 +26,12 @@ public interface TypedStreamWriter extends TypedCommandWriter {
       String reason,
       Consumer<RecordMetadata> metadata);
 
-  void appendNewEvent(long key, Intent intent, UnpackedObject value);
+  void appendNewEvent(long key, Intent intent, UnifiedRecordValue value);
 
-  void appendFollowUpEvent(long key, Intent intent, UnpackedObject value);
+  void appendFollowUpEvent(long key, Intent intent, UnifiedRecordValue value);
 
   void appendFollowUpEvent(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+      long key, Intent intent, UnifiedRecordValue value, Consumer<RecordMetadata> metadata);
 
   void configureSourceContext(long sourceRecordPosition);
 }

@@ -133,6 +133,12 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
   }
+  //
+  //  @Override
+  //  public void onActivate(final ExecutableServiceTask element, final BpmnElementContext context)
+  // {
+  //    stateTransitionBehavior.transitionToActivated(context);
+  //  }
 
   private void createNewJob(
       final BpmnElementContext context,

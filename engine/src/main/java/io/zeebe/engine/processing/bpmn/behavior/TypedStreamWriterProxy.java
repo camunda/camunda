@@ -11,6 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
@@ -41,12 +42,13 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendNewEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
     writer.appendNewEvent(key, intent, value);
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpEvent(
+      final long key, final Intent intent, final UnifiedRecordValue value) {
     writer.appendFollowUpEvent(key, intent, value);
   }
 
@@ -54,7 +56,7 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   public void appendFollowUpEvent(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
     writer.appendFollowUpEvent(key, intent, value, metadata);
   }
@@ -65,13 +67,13 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+  public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
     writer.appendNewCommand(intent, value);
   }
 
   @Override
   public void appendFollowUpCommand(
-      final long key, final Intent intent, final UnpackedObject value) {
+      final long key, final Intent intent, final UnifiedRecordValue value) {
     writer.appendFollowUpCommand(key, intent, value);
   }
 
@@ -79,7 +81,7 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   public void appendFollowUpCommand(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
     writer.appendFollowUpCommand(key, intent, value, metadata);
   }

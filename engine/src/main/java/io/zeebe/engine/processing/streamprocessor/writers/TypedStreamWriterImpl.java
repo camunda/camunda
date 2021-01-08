@@ -7,10 +7,12 @@
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
+import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -19,8 +21,12 @@ import java.util.function.Consumer;
 public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
     implements TypedStreamWriter {
 
-  public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
+  private final ProcessingContext processingContext;
+
+  public TypedStreamWriterImpl(
+      final LogStreamBatchWriter batchWriter, final ProcessingContext processingContext) {
     super(batchWriter);
+    this.processingContext = processingContext;
   }
 
   @Override
@@ -55,21 +61,31 @@ public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
+  public void appendNewEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
+    appendEventRecord(key, intent, value, noop);
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
+  public void appendFollowUpEvent(
+      final long key, final Intent intent, final UnifiedRecordValue value) {
+    appendEventRecord(key, intent, value, noop);
   }
 
   @Override
   public void appendFollowUpEvent(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
+      final Consumer<RecordMetadata> metadata) {
+    appendEventRecord(key, intent, value, metadata);
+  }
+
+  private void appendEventRecord(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
     appendRecord(key, RecordType.EVENT, intent, value, metadata);
+    processingContext.getEventApplier().applyState(key, intent, value);
   }
 }

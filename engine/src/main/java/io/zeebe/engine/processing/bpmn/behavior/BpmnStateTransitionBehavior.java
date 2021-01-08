@@ -60,7 +60,6 @@ public final class BpmnStateTransitionBehavior {
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    stateTransitionGuard.registerStateTransition(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     metrics.elementInstanceActivated(context.getBpmnElementType());
   }
 

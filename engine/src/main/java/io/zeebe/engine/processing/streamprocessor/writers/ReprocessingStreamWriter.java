@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor.writers;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -55,14 +56,15 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendNewEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
     records.add(record);
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpEvent(
+      final long key, final Intent intent, final UnifiedRecordValue value) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
     records.add(record);
@@ -72,7 +74,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   public void appendFollowUpEvent(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
@@ -85,7 +87,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+  public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
 
     final var record =
         new ReprocessingRecord(-1L, sourceRecordPosition, intent, RecordType.COMMAND);
@@ -94,7 +96,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
 
   @Override
   public void appendFollowUpCommand(
-      final long key, final Intent intent, final UnpackedObject value) {
+      final long key, final Intent intent, final UnifiedRecordValue value) {
 
     final var record =
         new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.COMMAND);
@@ -105,7 +107,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   public void appendFollowUpCommand(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
 
     final var record =
