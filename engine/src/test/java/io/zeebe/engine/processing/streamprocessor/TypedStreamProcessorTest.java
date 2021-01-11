@@ -30,7 +30,6 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -44,6 +43,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
 public final class TypedStreamProcessorTest {
+
   private static final String STREAM_NAME = "foo";
   protected SynchronousLogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();
@@ -82,7 +82,7 @@ public final class TypedStreamProcessorTest {
     final long firstEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(deployment("foo", ResourceType.BPMN_XML))
+            .event(deployment("foo"))
             .recordType(RecordType.COMMAND)
             .intent(DeploymentIntent.CREATE)
             .write();
@@ -131,7 +131,7 @@ public final class TypedStreamProcessorTest {
     final long failingKey = keyGenerator.nextKey();
     streams
         .newRecord(STREAM_NAME)
-        .event(deployment("foo", ResourceType.BPMN_XML))
+        .event(deployment("foo"))
         .recordType(RecordType.COMMAND)
         .intent(DeploymentIntent.CREATE)
         .requestId(255L)
@@ -141,7 +141,7 @@ public final class TypedStreamProcessorTest {
     final long secondEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(deployment("foo2", ResourceType.BPMN_XML))
+            .event(deployment("foo2"))
             .recordType(RecordType.COMMAND)
             .intent(DeploymentIntent.CREATE)
             .key(keyGenerator.nextKey())
@@ -180,14 +180,9 @@ public final class TypedStreamProcessorTest {
     assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
   }
 
-  protected DeploymentRecord deployment(final String name, final ResourceType resourceType) {
+  protected DeploymentRecord deployment(final String name) {
     final DeploymentRecord event = new DeploymentRecord();
-    event
-        .resources()
-        .add()
-        .setResourceType(resourceType)
-        .setResource(wrapString("foo"))
-        .setResourceName(wrapString(name));
+    event.resources().add().setResource(wrapString("foo")).setResourceName(wrapString(name));
     return event;
   }
 
@@ -208,6 +203,7 @@ public final class TypedStreamProcessorTest {
   }
 
   protected class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
+
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,

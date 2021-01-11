@@ -20,7 +20,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class DeploymentCreatedProcessorTest {
+
   public static final String PROCESS_ID = "process";
   public static final String RESOURCE_ID = "process.bpmn";
   public static final String MESSAGE_NAME = "msg";
@@ -259,8 +259,7 @@ public final class DeploymentCreatedProcessorTest {
         .resources()
         .add()
         .setResourceName(wrapString(resourceId))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
 
     deploymentRecord
         .workflows()

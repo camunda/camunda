@@ -20,13 +20,9 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -35,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class CreateDeploymentMultiplePartitionsTest {
+
   public static final String PROCESS_ID = "process";
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
@@ -77,9 +74,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
                       final DeploymentResource resource =
                           createdDeployment.getValue().getResources().get(0);
 
-                      Assertions.assertThat(resource)
-                          .hasResource(bpmnXml(WORKFLOW))
-                          .hasResourceType(ResourceType.BPMN_XML);
+                      Assertions.assertThat(resource).hasResource(bpmnXml(WORKFLOW));
 
                       final List<DeployedWorkflow> deployedWorkflows =
                           createdDeployment.getValue().getDeployedWorkflows();
@@ -108,49 +103,6 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     assertThat(deploymentRecords).hasSize(1);
     assertThat(deploymentRecords.get(0).getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
-  }
-
-  @Test
-  public void shouldCreateDeploymentWithYamlResourcesOnAllPartitions() throws Exception {
-    // given
-    final Path yamlFile =
-        Paths.get(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-    final byte[] yamlWorkflow = Files.readAllBytes(yamlFile);
-
-    // when
-    final Record<DeploymentRecordValue> distributedDeployment =
-        ENGINE.deployment().withYamlResource("simple-workflow.yaml", yamlWorkflow).deploy();
-
-    // then
-    assertThat(distributedDeployment.getKey()).isGreaterThanOrEqualTo(0L);
-
-    assertThat(distributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(distributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(distributedDeployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
-
-    ENGINE
-        .getPartitionIds()
-        .forEach(
-            partitionId ->
-                assertCreatedDeploymentEventResources(
-                    partitionId,
-                    distributedDeployment.getKey(),
-                    (deploymentCreatedEvent) -> {
-                      final DeploymentRecordValue deployment = deploymentCreatedEvent.getValue();
-                      final DeploymentResource resource = deployment.getResources().get(0);
-                      Assertions.assertThat(resource).hasResourceType(ResourceType.YAML_WORKFLOW);
-
-                      final List<DeployedWorkflow> deployedWorkflows =
-                          deployment.getDeployedWorkflows();
-                      assertThat(deployedWorkflows).hasSize(1);
-
-                      Assertions.assertThat(deployedWorkflows.get(0))
-                          .hasBpmnProcessId("yaml-workflow")
-                          .hasVersion(1)
-                          .hasWorkflowKey(
-                              getDeployedWorkflow(distributedDeployment, 0).getWorkflowKey())
-                          .hasResourceName("simple-workflow.yaml");
-                    }));
   }
 
   @Test

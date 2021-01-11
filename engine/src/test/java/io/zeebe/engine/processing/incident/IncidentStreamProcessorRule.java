@@ -36,7 +36,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import org.agrona.DirectBuffer;
@@ -120,12 +119,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
 
     final Process process = modelInstance.getModelElementsByType(Process.class).iterator().next();
 
-    record
-        .resources()
-        .add()
-        .setResource(xmlBuffer)
-        .setResourceName(resourceName)
-        .setResourceType(ResourceType.BPMN_XML);
+    record.resources().add().setResource(xmlBuffer).setResourceName(resourceName);
 
     record
         .workflows()

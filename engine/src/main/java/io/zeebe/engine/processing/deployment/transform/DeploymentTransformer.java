@@ -12,7 +12,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.zeebe.engine.processing.deployment.model.yaml.BpmnYamlParser;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -23,9 +22,7 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
-import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
@@ -38,10 +35,10 @@ import org.agrona.io.DirectBufferInputStream;
 import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
+
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   private final BpmnValidator validator;
-  private final BpmnYamlParser yamlParser = new BpmnYamlParser();
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
   private final MessageDigest digestGenerator;
@@ -186,8 +183,6 @@ public final class DeploymentTransformer {
             .setResourceName(deploymentResource.getResourceNameBuffer());
       }
     }
-
-    transformYamlWorkflowResource(deploymentResource, definition);
   }
 
   private boolean isDuplicateOfLatest(
@@ -204,25 +199,7 @@ public final class DeploymentTransformer {
   private BpmnModelInstance readWorkflowDefinition(final DeploymentResource deploymentResource) {
     final DirectBuffer resource = deploymentResource.getResourceBuffer();
     final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
-
-    switch (deploymentResource.getResourceType()) {
-      case YAML_WORKFLOW:
-        return yamlParser.readFromStream(resourceStream);
-      case BPMN_XML:
-      default:
-        return Bpmn.readModelFromStream(resourceStream);
-    }
-  }
-
-  private void transformYamlWorkflowResource(
-      final DeploymentResource deploymentResource, final BpmnModelInstance definition) {
-    if (deploymentResource.getResourceType() != ResourceType.BPMN_XML) {
-      final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-      Bpmn.writeModelToStream(outStream, definition);
-
-      final DirectBuffer bpmnXml = BufferUtil.wrapArray(outStream.toByteArray());
-      deploymentResource.setResource(bpmnXml);
-    }
+    return Bpmn.readModelFromStream(resourceStream);
   }
 
   public RejectionType getRejectionType() {

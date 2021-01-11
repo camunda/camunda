@@ -19,7 +19,6 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
@@ -135,8 +134,7 @@ public final class DeploymentCreateProcessorTest {
         .resources()
         .add()
         .setResourceName(wrapString("process.bpmn"))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
 
     return deploymentRecord;
   }

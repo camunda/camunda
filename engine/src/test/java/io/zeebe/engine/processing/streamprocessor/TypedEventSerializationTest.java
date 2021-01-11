@@ -19,7 +19,6 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
@@ -51,18 +50,12 @@ public final class TypedEventSerializationTest {
         .requestStreamId(requestStreamId);
 
     final String resourceName = "resource";
-    final ResourceType resourceType = ResourceType.BPMN_XML;
     final DirectBuffer resource = wrapString("contents");
     final String bpmnProcessId = "testProcess";
     final long workflowKey = 123;
     final int workflowVersion = 12;
     final DeploymentRecord record = new DeploymentRecord();
-    record
-        .resources()
-        .add()
-        .setResourceName(wrapString(resourceName))
-        .setResourceType(resourceType)
-        .setResource(resource);
+    record.resources().add().setResourceName(wrapString(resourceName)).setResource(resource);
     record
         .workflows()
         .add()

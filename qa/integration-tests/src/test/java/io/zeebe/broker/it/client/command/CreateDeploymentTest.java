@@ -85,25 +85,4 @@ public final class CreateDeploymentTest {
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
   }
-
-  @Test
-  public void shouldDeployYamlWorkflow() {
-    // when
-    final DeploymentEvent result =
-        CLIENT_RULE
-            .getClient()
-            .newDeployCommand()
-            .addResourceFromClasspath("workflows/simple-workflow.yaml")
-            .send()
-            .join();
-
-    // then
-    assertThat(result.getKey()).isGreaterThan(0);
-    assertThat(result.getWorkflows()).hasSize(1);
-
-    final Workflow deployedWorkflow = result.getWorkflows().get(0);
-    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
-    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
-  }
 }

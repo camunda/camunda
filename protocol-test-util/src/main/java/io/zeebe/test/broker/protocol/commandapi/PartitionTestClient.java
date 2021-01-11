@@ -43,7 +43,6 @@ import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -129,7 +128,6 @@ public final class PartitionTestClient {
       final byte[] resource, final String resourceType, final String resourceName) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
-    deploymentResource.put("resourceType", resourceType);
     deploymentResource.put("resourceName", resourceName);
 
     final ExecuteCommandResponse commandResponse =
@@ -139,7 +137,6 @@ public final class PartitionTestClient {
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
-            .put("resourceType", resourceType)
             .done()
             .sendAndAwait();
 
@@ -151,12 +148,7 @@ public final class PartitionTestClient {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, workflow);
 
-    request
-        .resources()
-        .add()
-        .setResource(outStream.toByteArray())
-        .setResourceName("process.bpmn")
-        .setResourceType(ResourceType.BPMN_XML);
+    request.resources().add().setResource(outStream.toByteArray()).setResourceName("process.bpmn");
 
     final DeploymentRecord response = deploy(request);
     final Iterator<Workflow> iterator = response.workflows().iterator();

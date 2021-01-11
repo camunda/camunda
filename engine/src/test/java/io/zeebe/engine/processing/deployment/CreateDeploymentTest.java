@@ -26,9 +26,7 @@ import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class CreateDeploymentTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String PROCESS_ID_2 = "process2";
@@ -313,23 +312,6 @@ public final class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldCreateDeploymentWithYamlWorfklow() throws Exception {
-    // given
-    final Path yamlFile =
-        Paths.get(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-    final byte[] yamlWorkflow = Files.readAllBytes(yamlFile);
-
-    // when
-    final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withYamlResource(yamlWorkflow).deploy();
-
-    // then
-    assertThat(deployment.getValue().getDeployedWorkflows())
-        .extracting(DeployedWorkflow::getBpmnProcessId)
-        .contains("yaml-workflow");
-  }
-
-  @Test
   public void shouldIncrementWorkflowVersions() {
     // given
     final BpmnModelInstance modelInstance =
@@ -485,49 +467,6 @@ public final class CreateDeploymentTest {
 
     assertDifferentResources(
         findWorkflow(originalWorkflows, PROCESS_ID), findWorkflow(repeatedWorkflows, PROCESS_ID));
-  }
-
-  @Test
-  public void shouldFilterDuplicatesWithYamlResource() throws IOException, URISyntaxException {
-    // given
-    final Path yamlFile =
-        Paths.get(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-    final byte[] yamlModel = Files.readAllBytes(yamlFile);
-    final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withYamlResource("process.yaml", yamlModel).deploy();
-
-    // when
-    final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withYamlResource("process.yaml", yamlModel).deploy();
-
-    // then
-    final List<DeployedWorkflow> originalWorkflows = original.getValue().getDeployedWorkflows();
-    final List<DeployedWorkflow> repeatedWorkflows = repeated.getValue().getDeployedWorkflows();
-    assertThat(repeatedWorkflows.size()).isEqualTo(originalWorkflows.size()).isOne();
-
-    assertSameResource(originalWorkflows.get(0), repeatedWorkflows.get(0));
-  }
-
-  @Test
-  public void shouldNotFilterWithDifferentYamlResource() throws IOException, URISyntaxException {
-    // given
-    Path yamlFile = Paths.get(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-    byte[] yamlModel = Files.readAllBytes(yamlFile);
-    final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withYamlResource("process.yaml", yamlModel).deploy();
-
-    // when
-    yamlFile = Paths.get(getClass().getResource("/workflows/other-workflow.yaml").toURI());
-    yamlModel = Files.readAllBytes(yamlFile);
-    final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withYamlResource("process.yaml", yamlModel).deploy();
-
-    // then
-    final List<DeployedWorkflow> originalWorkflows = original.getValue().getDeployedWorkflows();
-    final List<DeployedWorkflow> repeatedWorkflows = repeated.getValue().getDeployedWorkflows();
-    assertThat(repeatedWorkflows.size()).isEqualTo(originalWorkflows.size()).isOne();
-
-    assertDifferentResources(originalWorkflows.get(0), repeatedWorkflows.get(0));
   }
 
   @Test

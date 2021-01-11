@@ -68,7 +68,6 @@ public final class DeployWorkflowCommandImpl
 
     requestBuilder.addWorkflows(
         WorkflowRequestObject.newBuilder()
-            .setType(WorkflowRequestObject.ResourceType.FILE)
             .setName(resourceName)
             .setDefinition(ByteString.copyFrom(resource)));
 

@@ -28,7 +28,6 @@ import io.zeebe.client.impl.response.WorkflowImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
@@ -42,11 +41,9 @@ public final class DeployWorkflowTest extends ClientTest {
 
   public static final String BPMN_1_FILENAME = "/workflows/demo-process.bpmn";
   public static final String BPMN_2_FILENAME = "/workflows/another-demo-process.bpmn";
-  public static final String YAML_FILENAME = "/workflows/simple-workflow.yaml";
 
   public static final String BPMN_1_PROCESS_ID = "demoProcess";
   public static final String BPMN_2_PROCESS_ID = "anotherDemoProcess";
-  public static final String YAML_PROCESS_ID = "yaml-workflow";
 
   @Test
   public void shouldDeployWorkflowFromFile() {
@@ -69,7 +66,6 @@ public final class DeployWorkflowTest extends ClientTest {
 
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
 
@@ -87,7 +83,6 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -104,7 +99,6 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -121,7 +115,7 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
+
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -138,7 +132,7 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
+
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -155,7 +149,7 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
+
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -177,7 +171,7 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
     final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
+
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(expectedBytes);
   }
@@ -189,17 +183,14 @@ public final class DeployWorkflowTest extends ClientTest {
 
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
-    final String filename3 = YAML_FILENAME.substring(1);
 
     final Workflow expected1 = new WorkflowImpl(1, BPMN_1_PROCESS_ID, 1, filename1);
     final Workflow expected2 = new WorkflowImpl(2, BPMN_2_PROCESS_ID, 1, filename2);
-    final Workflow expected3 = new WorkflowImpl(3, YAML_PROCESS_ID, 1, filename3);
 
     gatewayService.onDeployWorkflowRequest(
         key,
         deployedWorkflow(BPMN_1_PROCESS_ID, 1, 1, filename1),
-        deployedWorkflow(BPMN_2_PROCESS_ID, 1, 2, filename2),
-        deployedWorkflow(YAML_PROCESS_ID, 1, 3, filename3));
+        deployedWorkflow(BPMN_2_PROCESS_ID, 1, 2, filename2));
 
     // when
     final DeploymentEvent response =
@@ -207,7 +198,6 @@ public final class DeployWorkflowTest extends ClientTest {
             .newDeployCommand()
             .addResourceFromClasspath(filename1)
             .addResourceFromClasspath(filename2)
-            .addResourceFromClasspath(filename3)
             .send()
             .join();
 
@@ -215,25 +205,19 @@ public final class DeployWorkflowTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
 
     final List<Workflow> workflows = response.getWorkflows();
-    assertThat(workflows).containsOnly(expected1, expected2, expected3);
+    assertThat(workflows).containsOnly(expected1, expected2);
 
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorkflowsList()).hasSize(3);
+    assertThat(request.getWorkflowsList()).hasSize(2);
 
     WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
+
     assertThat(workflow.getName()).isEqualTo(filename1);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
 
     workflow = request.getWorkflows(1);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename2);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
-
-    workflow = request.getWorkflows(2);
-    assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
-    assertThat(workflow.getName()).isEqualTo(filename3);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(YAML_FILENAME));
   }
 
   @Test
