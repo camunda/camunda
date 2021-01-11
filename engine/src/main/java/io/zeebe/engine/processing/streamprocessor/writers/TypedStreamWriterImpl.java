@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
-import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.msgpack.UnpackedObject;
@@ -18,15 +17,19 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
-public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
-    implements TypedStreamWriter {
+public final class TypedStreamWriterImpl implements TypedStreamWriter {
 
-  private final ProcessingContext processingContext;
+  private final TypedCommandWriter commandWriter;
+  private final TypedEventWriterImpl eventWriter;
+  private final TypedRecordWriter recordWriter;
 
-  public TypedStreamWriterImpl(
-      final LogStreamBatchWriter batchWriter, final ProcessingContext processingContext) {
-    super(batchWriter);
-    this.processingContext = processingContext;
+  // todo remove this (it's already in typedrecordwriter
+  private final Consumer<RecordMetadata> noop = m -> {};
+
+  public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
+    recordWriter = new TypedRecordWriter(batchWriter);
+    commandWriter = new TypedCommandWriterImpl(recordWriter);
+    eventWriter = new TypedEventWriterImpl(recordWriter);
   }
 
   @Override
@@ -34,7 +37,7 @@ public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType rejectionType,
       final String reason) {
-    appendRecord(
+    recordWriter.appendRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
         command.getIntent(),
@@ -50,7 +53,7 @@ public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
       final RejectionType rejectionType,
       final String reason,
       final Consumer<RecordMetadata> metadata) {
-    appendRecord(
+    recordWriter.appendRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
         command.getIntent(),
@@ -61,14 +64,14 @@ public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
-    appendEventRecord(key, intent, value, noop);
+  public void configureSourceContext(final long sourceRecordPosition) {
+    recordWriter.configureSourceContext(sourceRecordPosition);
   }
 
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final UnifiedRecordValue value) {
-    appendEventRecord(key, intent, value, noop);
+    eventWriter.appendFollowUpEvent(key, intent, value);
   }
 
   @Override
@@ -77,15 +80,41 @@ public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
       final Intent intent,
       final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
-    appendEventRecord(key, intent, value, metadata);
+    eventWriter.appendFollowUpEvent(key, intent, value, metadata);
   }
 
-  private void appendEventRecord(
+  @Override
+  public void appendNewEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
+    eventWriter.appendNewEvent(key, intent, value);
+  }
+
+  @Override
+  public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
+    commandWriter.appendNewCommand(intent, value);
+  }
+
+  @Override
+  public void appendFollowUpCommand(
+      final long key, final Intent intent, final UnifiedRecordValue value) {
+    commandWriter.appendFollowUpCommand(key, intent, value);
+  }
+
+  @Override
+  public void appendFollowUpCommand(
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
       final Consumer<RecordMetadata> metadata) {
-    appendRecord(key, RecordType.EVENT, intent, value, metadata);
-    processingContext.getEventApplier().applyState(key, intent, value);
+    commandWriter.appendFollowUpCommand(key, intent, value, metadata);
+  }
+
+  @Override
+  public void reset() {
+    commandWriter.reset();
+  }
+
+  @Override
+  public long flush() {
+    return commandWriter.flush();
   }
 }

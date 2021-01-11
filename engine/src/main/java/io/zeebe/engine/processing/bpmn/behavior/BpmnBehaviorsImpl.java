@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.bpmn.WorkflowInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.engine.processing.streamprocessor.StreamAppender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -54,7 +55,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     variableMappingBehavior = new BpmnVariableMappingBehavior(expressionBehavior, zeebeState);
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
-            streamWriter,
+            new StreamAppender(streamWriter, stateBehavior),
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new WorkflowEngineMetrics(zeebeState.getPartitionId()),

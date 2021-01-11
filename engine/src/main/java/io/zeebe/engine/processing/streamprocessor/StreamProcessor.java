@@ -200,7 +200,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     if (errorOnReceivingWriter == null) {
       processingContext
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
-          .logStreamWriter(new TypedStreamWriterImpl(batchWriter, processingContext));
+          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
 
       actor.runOnCompletionBlockingCurrentPhase(
           logStream.newLogStreamReader(), this::onRetrievingReader);

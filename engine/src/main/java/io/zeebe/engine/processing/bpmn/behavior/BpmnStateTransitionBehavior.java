@@ -17,6 +17,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivit
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.engine.processing.streamprocessor.StreamAppender;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -30,7 +31,7 @@ public final class BpmnStateTransitionBehavior {
 
   private static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to find a deployed workflow for process id '%s', but none found.";
-  private final TypedStreamWriter streamWriter;
+  private final TypedStreamWriter streamAppender;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
@@ -41,14 +42,14 @@ public final class BpmnStateTransitionBehavior {
   private final WorkflowInstanceRecord childInstanceRecord = new WorkflowInstanceRecord();
 
   public BpmnStateTransitionBehavior(
-      final TypedStreamWriter streamWriter,
+      final StreamAppender streamAppender,
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final WorkflowEngineMetrics metrics,
       final WorkflowInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp) {
-    this.streamWriter = streamWriter;
+    this.streamAppender = streamAppender;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
@@ -101,7 +102,7 @@ public final class BpmnStateTransitionBehavior {
 
     verifyTransition(context, transition);
 
-    streamWriter.appendFollowUpEvent(
+    streamAppender.appendFollowUpEvent(
         context.getElementInstanceKey(), transition, context.getRecordValue());
   }
 
@@ -127,7 +128,7 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(sequenceFlow.getId())
             .setBpmnElementType(sequenceFlow.getElementType());
 
-    streamWriter.appendNewEvent(
+    streamAppender.appendNewEvent(
         keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
 
     stateBehavior.spawnToken(context);
@@ -145,7 +146,7 @@ public final class BpmnStateTransitionBehavior {
 
     final var childInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(
+    streamAppender.appendNewEvent(
         childInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
 
     stateBehavior.updateElementInstance(context, ElementInstance::spawnToken);
@@ -165,7 +166,7 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(
+    streamAppender.appendNewEvent(
         elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
     stateBehavior.createElementInstanceInFlowScope(
@@ -292,7 +293,7 @@ public final class BpmnStateTransitionBehavior {
         .setElementId(workflow.getWorkflow().getId())
         .setBpmnElementType(workflow.getWorkflow().getElementType());
 
-    streamWriter.appendFollowUpEvent(
+    streamAppender.appendFollowUpEvent(
         workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
 
     stateBehavior.createElementInstance(workflowInstanceKey, childInstanceRecord);
