@@ -351,7 +351,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   /** Builds a default unicast service. */
   protected static ManagedUnicastService buildUnicastService(final ClusterConfig config) {
     return new NettyUnicastService(
-        config.getNodeConfig().getAddress(), config.getMessagingConfig());
+        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
   }
 
   /** Builds a member location provider. */

@@ -72,10 +72,13 @@ public class NettyUnicastService implements ManagedUnicastService {
   private final AtomicBoolean started = new AtomicBoolean();
   private EventLoopGroup group;
   private DatagramChannel channel;
+  private final int preamble;
 
-  public NettyUnicastService(final Address address, final MessagingConfig config) {
+  public NettyUnicastService(
+      final String clusterId, final Address address, final MessagingConfig config) {
     this.address = address;
     this.config = config;
+    preamble = clusterId.hashCode();
   }
 
   @Override
@@ -94,7 +97,8 @@ public class NettyUnicastService implements ManagedUnicastService {
 
     final Message message = new Message(this.address, subject, payload);
     final byte[] bytes = SERIALIZER.encode(message);
-    final ByteBuf buf = channel.alloc().buffer(4 + bytes.length);
+    final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
+    buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
     channel.writeAndFlush(
         new DatagramPacket(buf, new InetSocketAddress(resolvedAddress, address.port())));
@@ -129,17 +133,7 @@ public class NettyUnicastService implements ManagedUnicastService {
                   protected void channelRead0(
                       final ChannelHandlerContext context, final DatagramPacket packet)
                       throws Exception {
-                    final byte[] payload = new byte[packet.content().readInt()];
-                    packet.content().readBytes(payload);
-                    final Message message = SERIALIZER.decode(payload);
-                    final Map<BiConsumer<Address, byte[]>, Executor> listeners =
-                        NettyUnicastService.this.listeners.get(message.subject());
-                    if (listeners != null) {
-                      listeners.forEach(
-                          (consumer, executor) ->
-                              executor.execute(
-                                  () -> consumer.accept(message.source(), message.payload())));
-                    }
+                    handleReceivedPacket(packet);
                   }
                 })
             .option(ChannelOption.RCVBUF_ALLOCATOR, new DefaultMaxBytesRecvByteBufAllocator())
@@ -147,6 +141,26 @@ public class NettyUnicastService implements ManagedUnicastService {
             .option(ChannelOption.SO_REUSEADDR, true);
 
     return bind(serverBootstrap);
+  }
+
+  private void handleReceivedPacket(final DatagramPacket packet) {
+    final int preambleReceived = packet.content().readInt();
+    if (preambleReceived != preamble) {
+      log.warn(
+          "Received unicast message from {} which is outside of the cluster. Ignoring the message.",
+          packet.sender());
+      return;
+    }
+    final byte[] payload = new byte[packet.content().readInt()];
+    packet.content().readBytes(payload);
+    final Message message = SERIALIZER.decode(payload);
+    final Map<BiConsumer<Address, byte[]>, Executor> subjectListeners =
+        listeners.get(message.subject());
+    if (subjectListeners != null) {
+      subjectListeners.forEach(
+          (consumer, executor) ->
+              executor.execute(() -> consumer.accept(message.source(), message.payload())));
+    }
   }
 
   /**
