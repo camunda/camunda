@@ -23,9 +23,7 @@ import {mockServer} from 'modules/mockServer';
 // So we have to use this function in all tests, in order to verify all the async actions are completed, when we want them to be completed.
 const waitForComponentToLoad = async () => {
   expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
-  expect(
-    within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
-  ).toHaveTextContent('731');
+  expect(await screen.findByTitle('View 731 Incidents')).toBeInTheDocument();
 };
 
 type Props = {

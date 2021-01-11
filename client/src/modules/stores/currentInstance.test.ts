@@ -32,7 +32,10 @@ describe('stores/currentInstance', () => {
 
   it('should poll if current instance is running', async () => {
     jest.useFakeTimers();
-    await currentInstanceStore.init(1);
+    currentInstanceStore.init(1);
+    await waitFor(() =>
+      expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
+    );
 
     const secondCurrentInstanceMock = createInstance();
 

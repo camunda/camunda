@@ -174,7 +174,7 @@ describe('stores/statistics', () => {
     filtersStore.setUrlParameters(createMemoryHistory(), {
       pathname: '/instances',
     });
-    await filtersStore.init();
+    filtersStore.init();
     instancesStore.init();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));

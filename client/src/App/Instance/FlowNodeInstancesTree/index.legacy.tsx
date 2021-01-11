@@ -16,7 +16,7 @@ import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {getNodeWithMetaData} from './service';
 import {TYPE} from 'modules/constants';
 
-type Node = {
+type NodeType = {
   id: string;
   type: string;
   state?: InstanceEntityState;
@@ -24,12 +24,12 @@ type Node = {
   startDate: string;
   endDate: null | string;
   parentId: string;
-  children: Node[];
+  children: NodeType[];
   isLastChild: boolean;
 };
 
 type Props = {
-  node: Node;
+  node: NodeType;
   isSelected: boolean;
   treeDepth: number;
   metaData?: any;
@@ -94,7 +94,7 @@ function Node({isSelected, node, treeDepth}: Props) {
 }
 
 type FlowNodeInstancesTreeProps = {
-  node: Node;
+  node: NodeType;
   treeDepth: number;
 };
 

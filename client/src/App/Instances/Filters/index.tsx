@@ -43,7 +43,7 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
-type Filters = {
+type FiltersType = {
   active: boolean;
   activityId: string;
   canceled: boolean;
@@ -62,12 +62,12 @@ type Filters = {
   };
 };
 type Props = {
-  filter: Filters;
+  filter: FiltersType;
   onInstanceClick?: () => void;
   location: Location;
 };
 type State = {
-  filter: Filters;
+  filter: FiltersType;
   previewName?: string;
   previewVersion?: number;
 };

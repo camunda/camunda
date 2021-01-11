@@ -11,28 +11,28 @@ import MultiRow from 'modules/components/MultiRow';
 function InstanceRow() {
   return (
     <tr>
-      <Styled.td>
+      <Styled.Td>
         <Styled.WorkflowContainer>
           <Styled.SkeletonCheckboxBlock />
           <Styled.CircleBlock />
           <Styled.WorkflowBlock />
         </Styled.WorkflowContainer>
-      </Styled.td>
-      <Styled.td>
+      </Styled.Td>
+      <Styled.Td>
         <Styled.InstanceIdBlock />
-      </Styled.td>
-      <Styled.td>
+      </Styled.Td>
+      <Styled.Td>
         <Styled.VersionBlock />
-      </Styled.td>
-      <Styled.td>
+      </Styled.Td>
+      <Styled.Td>
         <Styled.TimeBlock />
-      </Styled.td>
-      <Styled.td>
+      </Styled.Td>
+      <Styled.Td>
         <Styled.TimeBlock />
-      </Styled.td>
-      <Styled.td>
+      </Styled.Td>
+      <Styled.Td>
         <Styled.OperationsBlock />
-      </Styled.td>
+      </Styled.Td>
     </tr>
   );
 }

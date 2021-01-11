@@ -296,7 +296,7 @@ describe('ListPanel', () => {
           res.once(ctx.status(500), ctx.json({}))
         ),
         rest.post('/api/workflow-instances', (_, res, ctx) =>
-          res.once(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
+          res(ctx.json({...mockWorkflowInstances, totalCount: 1000}))
         )
       );
 

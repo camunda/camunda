@@ -16,19 +16,19 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
+jest.mock('modules/components/IncidentOperation', () => {
+  return {
+    IncidentOperation: () => {
+      return <div />;
+    },
+  };
+});
+
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
   const FakeCSSTransition = jest.fn((props) =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null
   );
-
-  jest.mock('modules/components/IncidentOperation', () => {
-    return {
-      IncidentOperation: () => {
-        return <div />;
-      },
-    };
-  });
 
   return {
     CSSTransition: FakeCSSTransition,

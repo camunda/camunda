@@ -22,15 +22,7 @@ import {STATE} from 'modules/constants';
 import {Table, TH, TR} from './VariablesTable';
 import {useParams} from 'react-router-dom';
 
-type Props = {
-  isDisabled?: boolean;
-  closeEdit: () => void;
-  value: unknown;
-  saveVariable: () => void;
-  key?: string;
-};
-
-const Variables = observer(function Variables() {
+const Variables: React.FC = observer(function Variables() {
   const {
     state: {items, status},
     hasNoVariables,

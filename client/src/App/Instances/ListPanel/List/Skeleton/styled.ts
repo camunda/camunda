@@ -13,7 +13,7 @@ const Row = styled.div`
   padding-top: 20px;
 `;
 
-const td = styled.td`
+const Td = styled.td`
   padding: 9px 0 9px 5px;
 `;
 
@@ -68,7 +68,7 @@ const OperationsBlock = styled(Block)`
 
 export {
   Row,
-  td,
+  Td,
   Block,
   WorkflowContainer,
   SkeletonCheckboxBlock,

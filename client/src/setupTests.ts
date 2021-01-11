@@ -9,8 +9,6 @@ import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
-// @ts-expect-error
-import MutationObserver from '@sheerun/mutationobserver-shim';
 import {mockServer} from 'modules/mockServer';
 
 // configure enzyme
@@ -41,8 +39,7 @@ global.beforeEach(() => {
   });
 });
 
-// @ts-expect-error
-global.localStorage = (function () {
+const localStorageMock = (function () {
   let store: {[key: string]: string} = {};
   return {
     getItem(key: string) {
@@ -57,6 +54,8 @@ global.localStorage = (function () {
     removeItem: jest.fn(),
   };
 })();
+
+Object.defineProperty(window, 'localStorage', {value: localStorageMock});
 
 window.MutationObserver = MutationObserver;
 
