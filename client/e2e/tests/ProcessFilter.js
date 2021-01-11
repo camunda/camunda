@@ -100,9 +100,11 @@ test('should apply a filter to the report result', async (t) => {
   const unfiltered = +(await Report.reportRenderer.textContent);
 
   await t
-    .resizeWindow(1400, 700)
+    .resizeWindow(1400, 850)
     .click(Report.filterButton)
-    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png')
+    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png', {
+      crop: {bottom: -250},
+    })
     .maximizeWindow();
 
   await t.click(Report.filterOption('Variable'));
@@ -263,7 +265,18 @@ test('add assignee filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
-  await t.click(Report.flowNodeFilterButton);
+
+  await t
+    .resizeWindow(1400, 850)
+    .click(Report.flowNodeFilterButton)
+    .takeElementScreenshot(
+      Report.controlPanel,
+      'process/filter/report-with-flownode-filterlist-open.png',
+      {
+        crop: {top: 220},
+      }
+    );
+
   await t.click(Report.filterOption('Assignee'));
 
   await t.click(Filter.multiSelect);
