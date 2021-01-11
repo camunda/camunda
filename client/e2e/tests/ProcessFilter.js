@@ -332,3 +332,24 @@ test('the filter is visible in the control panel and contains correct informatio
 
   await t.takeScreenshot('process/filter/combined-filter.png', {fullPage: true}).maximizeWindow();
 });
+
+test('add an incident filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Incident Process', 'All');
+  await u.selectView(t, 'Incident', 'Resolution Duration');
+
+  await t.click(Report.filterButton);
+
+  await t.click(Report.filterOption('Incident'));
+  await t.click(Report.subFilterOption('With Open Incidents'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Incident'));
+  await t.click(Report.subFilterOption('Resolved Incidents'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+});
