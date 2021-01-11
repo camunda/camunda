@@ -13,7 +13,7 @@
     {
       "type": "panel",
       "id": "bargauge",
-      "name": "Bar Gauge",
+      "name": "Bar gauge",
       "version": ""
     },
     {
@@ -26,7 +26,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "6.7.1"
+      "version": "7.0.3"
     },
     {
       "type": "panel",
@@ -60,8 +60,8 @@
     },
     {
       "type": "panel",
-      "id": "table",
-      "name": "Table",
+      "id": "table-old",
+      "name": "Table (old)",
       "version": ""
     }
   ],
@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1607335080870,
+  "iteration": 1610344067961,
   "links": [],
   "panels": [
     {
@@ -100,6 +100,27 @@
         {
           "datasource": "$DS_PROMETHEUS",
           "description": "Shows the current processing of records per partition per second.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "displayName": "",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -109,35 +130,18 @@
           "id": 137,
           "links": [],
           "options": {
-            "fieldOptions": {
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
                 "lastNotNull"
               ],
-              "defaults": {
-                "mappings": [],
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 100
-                    }
-                  ]
-                },
-                "title": ""
-              },
-              "overrides": [],
+              "fields": "",
               "values": false
             },
-            "orientation": "auto",
             "showThresholdLabels": false,
             "showThresholdMarkers": true
           },
-          "pluginVersion": "6.7.1",
+          "pluginVersion": "7.0.3",
           "targets": [
             {
               "expr": "sum(rate(zeebe_stream_processor_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"processed\"}[1m])) by (pod, partition, processor, action)",
@@ -157,6 +161,27 @@
         {
           "datasource": "$DS_PROMETHEUS",
           "description": "Shows the current exporting of records per partition per second.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "displayName": "",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -166,35 +191,18 @@
           "id": 138,
           "links": [],
           "options": {
-            "fieldOptions": {
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
                 "last"
               ],
-              "defaults": {
-                "mappings": [],
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 100
-                    }
-                  ]
-                },
-                "title": ""
-              },
-              "overrides": [],
+              "fields": "",
               "values": false
             },
-            "orientation": "auto",
             "showThresholdLabels": false,
             "showThresholdMarkers": true
           },
-          "pluginVersion": "6.7.1",
+          "pluginVersion": "7.0.3",
           "targets": [
             {
               "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
@@ -218,6 +226,12 @@
           "dashes": false,
           "datasource": "${DS_PROMETHEUS}",
           "description": "Flow node instances completed or terminated per second per partition.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -306,6 +320,41 @@
           "cacheTimeout": null,
           "datasource": "${DS_PROMETHEUS}",
           "description": "Flow node instances completed or terminated per second over all partitions.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "mappings": [
+                {
+                  "$$hashKey": "object:725",
+                  "id": 0,
+                  "op": "=",
+                  "text": "0",
+                  "type": 1,
+                  "value": "null"
+                }
+              ],
+              "nullValueMode": "connected",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 5
+                  },
+                  {
+                    "color": "green",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 8,
             "w": 7,
@@ -316,49 +365,18 @@
           "links": [],
           "options": {
             "colorMode": "value",
-            "fieldOptions": {
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
               "calcs": [
                 "lastNotNull"
               ],
-              "defaults": {
-                "mappings": [
-                  {
-                    "$$hashKey": "object:725",
-                    "id": 0,
-                    "op": "=",
-                    "text": "0",
-                    "type": 1,
-                    "value": "null"
-                  }
-                ],
-                "nullValueMode": "connected",
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 5
-                    },
-                    {
-                      "color": "green",
-                      "value": 10
-                    }
-                  ]
-                },
-                "unit": "none"
-              },
-              "overrides": [],
+              "fields": "",
               "values": false
-            },
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "horizontal"
+            }
           },
-          "pluginVersion": "6.7.1",
+          "pluginVersion": "7.0.3",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
@@ -381,6 +399,12 @@
             }
           ],
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
@@ -492,7 +516,7 @@
           "timeShift": null,
           "title": "Current Roles",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "aliasColors": {},
@@ -502,6 +526,12 @@
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
           "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -541,10 +571,11 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "1 - kube_pod_container_status_ready{pod=~\".*\", pod!~\"curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\".*\", pod!~\".*curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
               "format": "time_series",
               "hide": false,
               "instant": false,
+              "interval": "",
               "legendFormat": "{{pod}} restart",
               "refId": "A"
             },
@@ -610,6 +641,12 @@
             }
           ],
           "datasource": "${DS_PROMETHEUS}",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
@@ -705,7 +742,7 @@
           "timeShift": null,
           "title": "Partition health ",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -717,6 +754,12 @@
           ],
           "datasource": "$DS_PROMETHEUS",
           "description": "Displays the current running pods in the namespace.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
@@ -802,7 +845,7 @@
           "timeShift": null,
           "title": "Running",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "aliasColors": {},
@@ -810,6 +853,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 1,
           "gridPos": {
@@ -917,6 +966,12 @@
           ],
           "datasource": "$DS_PROMETHEUS",
           "description": "Takes the avg of all completed processes per second over the given time range.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "format": "none",
           "gauge": {
             "maxValue": 100,
@@ -967,7 +1022,7 @@
             "ymax": null,
             "ymin": null
           },
-          "tableColumn": "",
+          "tableColumn": " ",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m]))",
@@ -998,6 +1053,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1093,6 +1154,12 @@
           ],
           "datasource": "$DS_PROMETHEUS",
           "description": "Takes the avg of all completed tasks per second over the given time range.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "format": "none",
           "gauge": {
             "maxValue": 100,
@@ -1143,7 +1210,7 @@
             "ymax": null,
             "ymin": null
           },
-          "tableColumn": "",
+          "tableColumn": " ",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m]))",
@@ -1171,6 +1238,31 @@
         {
           "cacheTimeout": null,
           "datasource": "${DS_PROMETHEUS}",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "displayName": "",
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "nullValueMode": "connected",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 40
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 8,
             "w": 7,
@@ -1181,39 +1273,18 @@
           "links": [],
           "options": {
             "colorMode": "value",
-            "fieldOptions": {
+            "graphMode": "area",
+            "justifyMode": "center",
+            "orientation": "vertical",
+            "reduceOptions": {
               "calcs": [
                 "lastNotNull"
               ],
-              "defaults": {
-                "mappings": [],
-                "max": 100,
-                "min": 0,
-                "nullValueMode": "connected",
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "red",
-                      "value": 40
-                    }
-                  ]
-                },
-                "title": "",
-                "unit": "percent"
-              },
-              "overrides": [],
+              "fields": "",
               "values": false
-            },
-            "graphMode": "area",
-            "justifyMode": "center",
-            "orientation": "vertical"
+            }
           },
-          "pluginVersion": "6.7.1",
+          "pluginVersion": "7.0.3",
           "targets": [
             {
               "expr": "(sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) / sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) ) * 100",
@@ -1239,6 +1310,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1350,6 +1427,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1463,6 +1546,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1553,6 +1642,12 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1793,7 +1888,7 @@
           "timeShift": null,
           "title": "Last appended position",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [],
@@ -1871,7 +1966,7 @@
           "timeShift": null,
           "title": "Last committed position",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [],
@@ -1955,7 +2050,7 @@
           "timeShift": null,
           "title": "Last processed position",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "datasource": "${DS_PROMETHEUS}",
@@ -2142,7 +2237,7 @@
           "timeShift": null,
           "title": "Last updated exported position",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [],
@@ -2226,7 +2321,7 @@
           "timeShift": null,
           "title": "Last exported position",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         }
       ],
       "title": "Processing",
@@ -2299,7 +2394,7 @@
           ],
           "title": "Workflow Instance Events per second (range = 1m)",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [],
@@ -2358,7 +2453,7 @@
           ],
           "title": "Job events per second (range = 1m)",
           "transform": "table",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "aliasColors": {},
@@ -3970,15 +4065,25 @@
         },
         {
           "aliasColors": {},
+          "bars": false,
           "dashLength": 10,
+          "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
+          "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
             "y": 21
           },
+          "hiddenSeries": false,
           "id": 37,
           "legend": {
             "avg": false,
@@ -3996,37 +4101,43 @@
           "options": {
             "dataLinks": []
           },
+          "percentage": false,
           "pointradius": 5,
+          "points": false,
           "renderer": "flot",
           "seriesOverrides": [
             {
               "$$hashKey": "object:407",
               "alias": "/.*limit.*/",
+              "color": "#C4162A",
               "fill": 0,
-              "linewidth": 2,
-              "color": "#C4162A"
+              "linewidth": 2
             }
           ],
           "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
           "targets": [
             {
               "expr": "process_files_open_files{namespace=~\"$namespace\",pod=~\"$pod\"}",
-              "legendFormat": "{{pod}} use fds",
-              "interval": "",
               "format": "time_series",
               "hide": false,
+              "interval": "",
               "intervalFactor": 1,
+              "legendFormat": "{{pod}} use fds",
               "refId": "B"
             },
             {
               "expr": "process_files_max_files{namespace=~\"$namespace\",pod=~\"$pod\"}",
-              "legendFormat": "{{pod}} limit",
               "interval": "",
+              "legendFormat": "{{pod}} limit",
               "refId": "A"
             }
           ],
           "thresholds": [],
+          "timeFrom": null,
           "timeRegions": [],
+          "timeShift": null,
           "title": "File descriptors",
           "tooltip": {
             "shared": true,
@@ -4064,23 +4175,7 @@
           "yaxis": {
             "align": false,
             "alignLevel": null
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "bars": false,
-          "dashes": false,
-          "fillGradient": 0,
-          "hiddenSeries": false,
-          "percentage": false,
-          "points": false,
-          "stack": false,
-          "steppedLine": false,
-          "timeFrom": null,
-          "timeShift": null
+          }
         },
         {
           "aliasColors": {},
@@ -6801,7 +6896,7 @@
           "timeShift": null,
           "title": "Commit Index",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -6880,7 +6975,7 @@
           "timeShift": null,
           "title": "Commit Index",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -6959,7 +7054,7 @@
           "timeShift": null,
           "title": "Commit Index",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -7036,7 +7131,7 @@
           "timeShift": null,
           "title": "Index of last appended entry",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -7115,7 +7210,7 @@
           "timeShift": null,
           "title": "Index of last appended entry",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "columns": [
@@ -7194,7 +7289,7 @@
           "timeShift": null,
           "title": "Index of last appended entry",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "datasource": "$DS_PROMETHEUS",
@@ -8426,7 +8521,7 @@
           "timeShift": null,
           "title": "Write stopped",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "aliasColors": {},
@@ -9534,14 +9629,14 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 22,
+  "schemaVersion": 25,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -9564,7 +9659,6 @@
         "definition": "label_values(atomix_role, namespace)",
         "hide": 0,
         "includeAll": true,
-        "index": -1,
         "label": null,
         "multi": false,
         "name": "namespace",
@@ -9587,7 +9681,6 @@
         "definition": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
         "hide": 0,
         "includeAll": true,
-        "index": -1,
         "label": null,
         "multi": true,
         "name": "pod",
@@ -9610,7 +9703,6 @@
         "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "hide": 0,
         "includeAll": true,
-        "index": -1,
         "label": null,
         "multi": true,
         "name": "partition",
@@ -9634,7 +9726,6 @@
   },
   "timepicker": {
     "refresh_intervals": [
-      "5s",
       "10s",
       "30s",
       "1m",
@@ -9660,8 +9751,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "variables": {
-    "list": []
-  },
-  "version": 24
+  "version": 3
 }
