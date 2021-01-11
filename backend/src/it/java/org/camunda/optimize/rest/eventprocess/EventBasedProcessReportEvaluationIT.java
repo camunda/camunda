@@ -7,8 +7,12 @@ package org.camunda.optimize.rest.eventprocess;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -22,10 +26,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
 public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT {
@@ -76,17 +82,16 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
       resultInstance -> assertThat(resultInstance.getProcessInstanceId()).isEqualTo(savedInstance.getProcessInstanceId()));
   }
 
-  @ParameterizedTest
-  @MethodSource("flowNodeExecutionStatesAndExpectedCounts")
-  public void reportsUsingEventBasedProcessCanBeEvaluatedUsingFlowNodeExecutionState(FlowNodeExecutionState state,
-                                                                                     Double expectedStartCount,
-                                                                                     Double expectedUserTaskCount,
-                                                                                     Double expectedEndCount) {
+  @ParameterizedTest(name = "using filter class {0}")
+  @MethodSource("flowNodeStatusFiltersAndExpectedResults")
+  public void reportsUsingEventBasedProcessCanBeEvaluatedUsingFlowNodeStatusFilters(Class<?> filterType,
+                                                                                    List<ProcessFilterDto<?>> filters,
+                                                                                    List<Tuple> expectedResults) {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
-    if (FlowNodeExecutionState.CANCELED.equals(state)) {
+    if (CanceledFlowNodesOnlyFilterDto.class.equals(filterType)) {
       engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
-    } else if (!FlowNodeExecutionState.RUNNING.equals(state)) {
+    } else if (!RunningFlowNodesOnlyFilterDto.class.equals(filterType)) {
       engineIntegrationExtension.finishAllRunningUserTasks();
     }
     importEngineEntities();
@@ -110,26 +115,38 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
       .setProcessDefinitionVersion(savedInstance.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
-    processReportDataDto.getConfiguration().setFlowNodeExecutionState(state);
+    processReportDataDto.setFilter(filters);
     ReportMapResultDto result = reportClient.evaluateMapReport(processReportDataDto).getResult();
 
     // then the event process instance appears in the results
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).hasSize(3).extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(BPMN_START_EVENT_ID, expectedStartCount),
-        Tuple.tuple(USER_TASK_ID_ONE, expectedUserTaskCount),
-        Tuple.tuple(BPMN_END_EVENT_ID, expectedEndCount)
-      );
+    assertThat(result.getData()).hasSize(expectedResults.size())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResults);
   }
 
-  private static Stream<Arguments> flowNodeExecutionStatesAndExpectedCounts() {
+  private static Stream<Arguments> flowNodeStatusFiltersAndExpectedResults() {
     return Stream.of(
-      Arguments.of(FlowNodeExecutionState.RUNNING, null, 1., null),
-      Arguments.of(FlowNodeExecutionState.COMPLETED, 1., 1., 1.),
-      Arguments.of(FlowNodeExecutionState.CANCELED, null, 1., null),
-      Arguments.of(FlowNodeExecutionState.ALL, 1., 1., 1.)
+      Arguments.of(
+        RunningFlowNodesOnlyFilterDto.class,
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(VIEW).add().buildList(),
+        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 1.))
+      ),
+      Arguments.of(
+        CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().filterLevel(VIEW).add().buildList(),
+        Arrays.asList(
+          Tuple.tuple(BPMN_START_EVENT_ID, 1.),
+          Tuple.tuple(USER_TASK_ID_ONE, 1.),
+          Tuple.tuple(BPMN_END_EVENT_ID, 1.)
+        )
+      ),
+      Arguments.of(
+        CanceledFlowNodesOnlyFilterDto.class,
+        ProcessFilterBuilder.filter().canceledFlowNodesOnly().filterLevel(VIEW).add().buildList(),
+        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 1.))
+      )
     );
   }
 

@@ -41,6 +41,13 @@ public interface ModelElementFilterQueryUtil {
       .map(filterClass::cast);
   }
 
+  static <T extends ProcessFilterDto<?>> boolean viewLevelFiltersOfTypeExists(final ProcessReportDataDto reportDataDto,
+                                                                              final Class<T> filterClass) {
+    return reportDataDto.getFilter().stream()
+      .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
+      .anyMatch(filterClass::isInstance);
+  }
+
   static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData,
                                                         final FlowNodeDurationFilterProperties properties) {
     final BoolQueryBuilder disjunctMultiFlowNodeQuery = boolQuery().minimumShouldMatch(1);

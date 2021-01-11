@@ -423,9 +423,9 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     assertThat(resultBothTasksDurationGreaterTen.getData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
-    assertThat(resultOneTaskWithLowerTen.getInstanceCount()).isEqualTo(0L);
+    assertThat(resultOneTaskWithLowerTen.getInstanceCount()).isZero();
     assertThat(resultOneTaskWithLowerTen.getData()).isEmpty();
-    assertThat(resultBothTasksWithLowerTen.getInstanceCount()).isEqualTo(0L);
+    assertThat(resultBothTasksWithLowerTen.getInstanceCount()).isZero();
     assertThat(resultBothTasksWithLowerTen.getData()).isEmpty();
   }
 
