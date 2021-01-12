@@ -67,7 +67,7 @@
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.5",
     "eslint-plugin-camunda-licensed": "^0.4.3",
-    "eslint-plugin-prettier": "^3.3.0",
+    "eslint-plugin-prettier": "^3.3.1",
     "glob": "^7.1.6",
     "http-proxy-middleware": "^1.0.6",
     "husky": "^4.3.0",
