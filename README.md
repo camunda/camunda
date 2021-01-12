@@ -27,7 +27,7 @@ To learn more about what we're currently working on, please visit the [roadmap](
 ## Helpful Links
 
 * [Blog](https://zeebe.io/blog)
-* [Documentation Home](https://docs.zeebe.io)
+* [Documentation Home](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
 * [User Forum](https://forum.zeebe.io)
 * [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
@@ -35,13 +35,13 @@ To learn more about what we're currently working on, please visit the [roadmap](
 
 ## Recommended Docs Entries for New Users
 
-* [What is Zeebe?](https://docs.zeebe.io/introduction/what-is-zeebe.html)
-* [Core Concepts](https://docs.zeebe.io/basics/index.html)
-* [Getting Started Tutorial](https://docs.zeebe.io/getting-started/index.html)
-* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/index.html)
-* [Configuration](https://docs.zeebe.io/operations/configuration.html)
-* [Java Client](https://docs.zeebe.io/clients/java-client/index.html)
-* [Go Client](https://docs.zeebe.io/clients/go-client/index.html)
+* [What is Camunda Cloud?](https://docs.camunda.io/docs/product-manuals/concepts/what-is-camunda-cloud)
+* [Getting Started Tutorial](https://docs.camunda.io/docs/guides/getting-started/create-camunda-cloud-account)
+* [Technical Concepts](https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/index)
+* [BPMN Workflows](https://docs.camunda.io/docs/reference/bpmn-workflows/bpmn-primer)
+* [Configuration](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/index)
+* [Java Client](https://docs.camunda.io/docs/product-manuals/clients/java-client/index)
+* [Go Client](https://docs.camunda.io/docs/product-manuals/clients/go-client/index)
 
 
 ## Contributing

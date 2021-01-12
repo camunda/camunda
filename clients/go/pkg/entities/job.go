@@ -22,7 +22,7 @@ import (
 
 // Job represents a single work item of a workflow.
 //
-// See https://docs.zeebe.io/basics/job-workers.html#what-is-a-job for details
+// See https://docs.camunda.io/docs/product-manuals/concepts/job-workers/#job-queueing for details
 // on jobs.
 type Job struct {
 	*pb.ActivatedJob
@@ -30,7 +30,7 @@ type Job struct {
 
 // GetVariablesAsMap returns a map of a workflow instance's variables.
 //
-// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// See https://docs.camunda.io/docs/product-manuals/concepts/variables for details on workflow
 // variables.
 func (j *Job) GetVariablesAsMap() (map[string]interface{}, error) {
 	var m map[string]interface{}
@@ -40,7 +40,7 @@ func (j *Job) GetVariablesAsMap() (map[string]interface{}, error) {
 // GetVariablesAs unmarshals the JSON representation of a workflow instance's
 // variables into type t.
 //
-// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// See https://docs.camunda.io/docs/product-manuals/concepts/variables for details on workflow
 // variables.
 func (j *Job) GetVariablesAs(t interface{}) error {
 	return json.Unmarshal([]byte(j.Variables), t)

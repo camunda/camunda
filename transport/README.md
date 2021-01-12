@@ -11,7 +11,7 @@ Simple asynchronous Message Transport over TCP/IP.
 * Pipelining for high throughput (many interactions can share single TCP connection)
 
 * [Web Site](https://zeebe.io)
-* [Documentation](https://docs.zeebe.io)
+* [Documentation](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
 * [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [User Forum](https://forum.zeebe.io)

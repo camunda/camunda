@@ -6,7 +6,7 @@ option java_package = "io.zeebe.gateway.protocol";
 option go_package = "pb";
 
 // For a more complete documentation, refer to Zeebe documentation at:
-// https://docs.zeebe.io/grpc/reference.html
+// https://docs.camunda.io/docs/reference/grpc
 
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
