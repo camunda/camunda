@@ -41,7 +41,7 @@
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom --resetMocks=false",
-    "test:ci": "CI=true react-scripts test --env=jsdom --resetMocks=false --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
+    "test:ci": "CI=true react-scripts test --env=jsdom --resetMocks=false --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit --testTimeout 7000",
     "eject": "react-scripts eject",
     "lint": "tsc && eslint src/** --ignore-pattern *.css --no-error-on-unmatched-pattern true --ext .ts,.tsx,.js,.jsx",
     "fix:prettier": "prettier --write \"**/*.ts\"",
