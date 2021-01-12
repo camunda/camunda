@@ -1,0 +1,10 @@
+# Redirect to https
+RewriteEngine on
+RewriteCond %{SERVER_PORT} !^443$
+RewriteRule (.*) https://%{SERVER_NAME}/$1 [R=301,L]
+
+# disable directory listing
+Options -Indexes
+
+# Redirect to new Camunda Cloud docs
+Redirect 301 / https://docs.camunda.io/docs/product-manuals/zeebe/zeebe-overview

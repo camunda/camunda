@@ -53,14 +53,6 @@ spec:
             }
         }
 
-        stage('Build') {
-            steps {
-                container('debian') {
-                    sh '.ci/scripts/docs/build.sh'
-                }
-            }
-        }
-
         stage('Upload') {
             steps {
                 container('debian') {
