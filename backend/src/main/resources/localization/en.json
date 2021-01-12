@@ -880,7 +880,7 @@
         "info": {
           "startDate": "Process Instances <b>started</b>",
           "endDate": "Process Instances <b>ended</b>",
-          "evaluationDateTime": "Process Instances <b>evaluated</b>"
+          "evaluationDateTime": "Decision Instances <b>evaluated</b>"
         },
         "invalidInput": "Please enter a positive integer value",
         "to": "to",

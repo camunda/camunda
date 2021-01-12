@@ -880,7 +880,7 @@
         "info": {
           "startDate": "Prozessinstanzen <b>gestartet</b>",
           "endDate": "Prozessinstanzen <b>beendet</b>",
-          "evaluationDateTime": "Prozessinstanzen <b>evaluierte</b>"
+          "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
         "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",
         "to": "bis",

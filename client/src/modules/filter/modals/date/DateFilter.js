@@ -5,11 +5,14 @@
  */
 
 import React from 'react';
-import {Modal, Button, Form, MessageBox, DateRangeInput} from 'components';
-import './DateFilter.scss';
+
 import {t} from 'translation';
+import {Modal, Button, Form, MessageBox, DateRangeInput} from 'components';
+
 import DateFilterPreview from './DateFilterPreview';
 import {convertFilterToState, convertStateToFilter, isValid} from './service';
+
+import './DateFilter.scss';
 
 export default class DateFilter extends React.Component {
   state = {
