@@ -53,8 +53,6 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 
 @Slf4j
 public class SchemaUpgradeClient {
-  private static final String TASKS_ENDPOINT = "_tasks";
-
   private final ElasticSearchSchemaManager schemaManager;
   private final ElasticsearchMetadataService metadataService;
   private final OptimizeElasticsearchClient elasticsearchClient;
