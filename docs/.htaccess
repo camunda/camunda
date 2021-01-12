@@ -7,4 +7,4 @@ RewriteRule (.*) https://%{SERVER_NAME}/$1 [R=301,L]
 Options -Indexes
 
 # Redirect to new Camunda Cloud docs
-Redirect 301 / https://docs.camunda.io/docs/product-manuals/zeebe/zeebe-overview
+RewriteRule ^ https://docs.camunda.io/docs/product-manuals/zeebe/zeebe-overview? [L,R=301]
