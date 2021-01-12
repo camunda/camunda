@@ -81,13 +81,6 @@ public class DecisionInstanceWriter {
 
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(final String decisionDefinitionKey,
                                                                                final OffsetDateTime evaluationDate) {
-    String deletedItemName = "decision instances";
-    String deletedItemIdentifier = String.format(
-      "decisionDefinitionKey %s and evaluationDate past %s",
-      decisionDefinitionKey,
-      evaluationDate
-    );
-
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
       getClass().getName(), esClient, DeleteByQueryAction.NAME
     );
@@ -100,8 +93,11 @@ public class DecisionInstanceWriter {
       ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         filterQuery,
-        deletedItemName,
-        deletedItemIdentifier,
+        String.format(
+          "decision instances with definitionKey %s and evaluationDate past %s",
+          decisionDefinitionKey,
+          evaluationDate
+        ),
         true,
         DECISION_INSTANCE_INDEX_NAME
       );

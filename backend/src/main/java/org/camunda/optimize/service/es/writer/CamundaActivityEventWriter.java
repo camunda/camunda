@@ -62,7 +62,6 @@ public class CamundaActivityEventWriter {
   }
 
   public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
-    final String deletedItemName = "variable updates";
     log.debug("Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
 
     final BoolQueryBuilder filterQuery = boolQuery()
@@ -71,8 +70,7 @@ public class CamundaActivityEventWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      deletedItemName,
-      "list of ids",
+      String.format("camunda activity events for instances with IDs [%s]" , processInstanceIds),
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()

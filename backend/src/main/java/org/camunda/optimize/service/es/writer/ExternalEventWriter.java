@@ -71,10 +71,9 @@ public class ExternalEventWriter {
   }
 
   public void deleteEventsOlderThan(final OffsetDateTime timestamp) {
-    final String deletedItemName = "external events";
-    final String deletedItemIdentifier = String.format("%s with timestamp older than %s", deletedItemName, timestamp);
+    final String deletedItemIdentifier = String.format("external events with timestamp older than %s", timestamp);
+    log.info("Deleting {}", deletedItemIdentifier);
 
-    log.info("Deleting {} with timestamp older than {}", deletedItemName, timestamp);
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
       getClass().getName(), esClient, DeleteByQueryAction.NAME
     );
@@ -86,7 +85,6 @@ public class ExternalEventWriter {
       ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         filterQuery,
-        deletedItemName,
         deletedItemIdentifier,
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
@@ -98,12 +96,8 @@ public class ExternalEventWriter {
   }
 
   public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
-    final String deletedItemName = "external events";
-    final String deletedItemIdentifier = String.format(
-      "%s with ID from list of size %s",
-      deletedItemName,
-      eventIdsToDelete.size()
-    );
+    final String deletedItemIdentifier =
+      String.format("external events with ID from list of size %s", eventIdsToDelete.size());
 
     log.info("Deleting events with ID in {}", eventIdsToDelete);
 
@@ -112,7 +106,6 @@ public class ExternalEventWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      deletedItemName,
       deletedItemIdentifier,
       true,
       // use wildcarded index name to catch all indices that exist after potential rollover

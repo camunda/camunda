@@ -57,8 +57,7 @@ public class VariableUpdateInstanceWriter {
   }
 
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    String updateItemName = "variable updates";
-    log.info("Deleting variableUpdates for [{}] processInstanceIds", processInstanceIds.size());
+    log.info("Deleting variable updates for [{}] processInstanceIds", processInstanceIds.size());
 
     final BoolQueryBuilder filterQuery = boolQuery()
       .filter(termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
@@ -66,8 +65,7 @@ public class VariableUpdateInstanceWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      updateItemName,
-      "list of ids",
+      String.format("variable updates of instances with IDs [%s]", processInstanceIds),
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
