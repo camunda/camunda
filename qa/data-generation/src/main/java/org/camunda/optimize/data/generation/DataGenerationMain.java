@@ -48,7 +48,7 @@ public class DataGenerationMain {
     main.generateData();
     String dbUser = "dbUser";
     String dbUrl = arguments.get("dbUrl");
-    //update(startDate, endDate, arguments.get("jdbcDriver"), arguments.get("dbUrl"), arguments.get("dbUser"), arguments.get("dbPassword"));
+    update(startDate, endDate, arguments.get("jdbcDriver"), arguments.get("dbUrl"), arguments.get("dbUser"), arguments.get("dbPassword"));
   }
 
   private static DataGenerationInformation extractDataGenerationInformation(Map<String, String> arguments) {
