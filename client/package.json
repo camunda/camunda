@@ -28,7 +28,7 @@
     "react-resizable": "^1.11.0",
     "react-router": "^5.0.1",
     "react-router-dom": "^5.2.0",
-    "react-table": "^7.6.2",
+    "react-table": "^7.6.3",
     "table-js": "^6.1.0",
     "use-deep-compare-effect": "^1.6.1"
   },
