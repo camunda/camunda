@@ -16,6 +16,5 @@
 package io.zeebe.protocol.record.value.deployment;
 
 public enum ResourceType {
-  BPMN_XML,
-  YAML_WORKFLOW
+  BPMN_XML
 }
