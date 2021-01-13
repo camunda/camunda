@@ -46,20 +46,3 @@ it('should add a selected option', () => {
 
   expect(spy).toHaveBeenCalledWith('1');
 });
-
-it('should reset MultiSelect when clicking outside', async () => {
-  const node = shallow(
-    <MultiSelect values={[{value: 'test', label: 'test label'}]}>
-      <MultiSelect.Option id="test_option" value="1">
-        Option One
-      </MultiSelect.Option>
-    </MultiSelect>
-  );
-
-  node.find(UncontrolledMultiValueInput).prop('onChange')({target: {value: 'randomText'}});
-  expect(node.find('OptionsList').prop('filter')).toBe('randomText');
-
-  node.find(UncontrolledMultiValueInput).simulate('blur');
-
-  expect(node.find('OptionsList').prop('filter')).toBe('');
-});

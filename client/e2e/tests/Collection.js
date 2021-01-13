@@ -104,7 +104,7 @@ test('user permissions', async (t) => {
   await t.click(e.addButton);
   await t.click(e.usersTypeahead);
   await t.typeText(e.usersTypeahead, 'sales', {replace: true});
-  await t.pressKey('down enter');
+  await t.click(e.option('sales'));
   await t.click(e.confirmModalButton);
 
   await t.expect(e.groupItem.visible).ok();
@@ -114,9 +114,9 @@ test('user permissions', async (t) => {
 
   await t.click(e.addButton);
   await t.typeText(e.usersTypeahead, 'mary', {replace: true});
-  await t.pressKey('down enter');
+  await t.click(e.option('mary'));
   await t.typeText(e.usersTypeahead, 'peter', {replace: true});
-  await t.pressKey('down enter');
+  await t.click(e.option('peter'));
   await t.selectText(e.usersTypeahead).pressKey('delete');
   await t.click(e.roleOption('Editor'));
   await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
@@ -139,7 +139,7 @@ test('user permissions', async (t) => {
 
   await t.click(e.addButton);
   await t.typeText(e.usersTypeahead, username, {replace: true});
-  await t.pressKey('down enter');
+  await t.click(e.option(username));
   await t.click(e.roleOption('Manager'));
   await t.click(e.confirmModalButton);
 

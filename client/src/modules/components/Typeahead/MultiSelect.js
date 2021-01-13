@@ -57,13 +57,11 @@ export default function MultiSelect({
 
   function hideList() {
     if (!insideClick) {
-      if (query) {
-        setQuery('');
-      }
       onClose();
       setOpen(false);
     } else {
-      input.current.focus();
+      // wait for input to blur before focusing again
+      setTimeout(() => input.current.focus(), 0);
     }
     setInsideClick(false);
   }
