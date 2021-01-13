@@ -152,14 +152,16 @@ message WorkflowRequestObject {
     // using the file extension of the name field
     FILE = 0;
     BPMN = 1; // extension 'bpmn'
-    YAML = 2; // extension 'yaml'
+    YAML = 2 [deprecated = true]; // extension 'yaml'; deprecated as of release 1.0
   }
 
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
   // the resource type; if set to BPMN or YAML then the file extension
   // is ignored
-  ResourceType type = 2;
+  // As of release 1.0, YAML support was removed and BPMN is the only supported resource type.
+  // The field was kept to not break clients.
+  ResourceType type = 2 [deprecated = true];
   // the process definition as a UTF8-encoded string
   bytes definition = 3;
 }

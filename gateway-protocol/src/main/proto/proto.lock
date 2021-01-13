@@ -317,7 +317,13 @@
               {
                 "id": 2,
                 "name": "type",
-                "type": "ResourceType"
+                "type": "ResourceType",
+                "options": [
+                  {
+                    "name": "deprecated",
+                    "value": "true"
+                  }
+                ]
               },
               {
                 "id": 3,
