@@ -15,9 +15,22 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"github.com/spf13/cobra"
-	"log"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
+
+type CancelInstanceResponseWrapper struct {
+	resp *pb.CancelWorkflowInstanceResponse
+}
+
+func (c CancelInstanceResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Canceled workflow instance with key '", cancelInstanceKey, "'"), nil
+}
+
+func (c CancelInstanceResponseWrapper) json() (string, error) {
+	return toJSON(c.resp)
+}
 
 var cancelInstanceKey int64
 
@@ -34,14 +47,16 @@ var cancelInstanceCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err := zbCmd.Send(ctx)
-		if err == nil {
-			log.Println("Canceled workflow instance with key", cancelInstanceKey)
+		resp, err := zbCmd.Send(ctx)
+		if err != nil {
+			return err
 		}
+		err = logHumanAndPrintJSON(CancelInstanceResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(cancelInstanceCmd)
 	cancelCmd.AddCommand(cancelInstanceCmd)
 }
