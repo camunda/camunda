@@ -2503,10 +2503,10 @@
     lodash "^4.17.15"
     redent "^3.0.0"
 
-"@testing-library/react-hooks@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@testing-library/react-hooks/-/react-hooks-4.0.0.tgz#5bb4caa5814690cfc3e385ffaaf2ca4d54a8d08e"
-  integrity sha512-AWIR4M1Fz4dYzuKytkWtabcrwpevq7zj9dImuBOcmrpl3VkjOBDa7Q/62fwK/M30ae5XI25mDSpQ29vzC7A5Lw==
+"@testing-library/react-hooks@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@testing-library/react-hooks/-/react-hooks-4.0.1.tgz#bb678abb7c766c192da74be50148ad8337a5503f"
+  integrity sha512-DufI8Q2GOM7W2yFEEfz85VNVNaHZL0tPZyBT6ytV7HK+1A4frL1ty+W5NBE0u0K3EFV/Pg5O28HGNEtp9D5EyA==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@types/react" ">=16.9.0"
