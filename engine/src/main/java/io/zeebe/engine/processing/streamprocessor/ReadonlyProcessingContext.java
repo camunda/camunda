@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.EventApplier;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
@@ -57,6 +56,4 @@ public interface ReadonlyProcessingContext {
 
   /** @return condition which indicates, whether the processing should stop or not */
   BooleanSupplier getAbortCondition();
-
-  EventApplier getEventApplier();
 }

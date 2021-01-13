@@ -18,7 +18,6 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.streamprocessor.StreamAppender;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -31,7 +30,7 @@ public final class BpmnStateTransitionBehavior {
 
   private static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to find a deployed workflow for process id '%s', but none found.";
-  private final TypedStreamWriter streamAppender;
+  private final StreamAppender streamAppender;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
