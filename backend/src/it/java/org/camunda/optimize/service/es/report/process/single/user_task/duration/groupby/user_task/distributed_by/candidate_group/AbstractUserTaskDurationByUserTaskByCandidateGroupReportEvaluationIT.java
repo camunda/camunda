@@ -14,10 +14,10 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -35,7 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -1016,9 +1015,18 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(result.getData()).isEmpty();
   }
 
+  private static Stream<Arguments> flowNodeStatusProcessFilters() {
+    return Stream.of(
+      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2),
+      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1),
+      Arguments.of(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(), 2)
+    );
+  }
+
   @ParameterizedTest
-  @EnumSource(FlowNodeExecutionState.class)
-  public void evaluateReportWithExecutionState(final FlowNodeExecutionState executionState) {
+  @MethodSource("flowNodeStatusProcessFilters")
+  public void evaluateReportWithFlowNodeStatus(final List<ProcessFilterDto<?>> processFilter,
+                                               final Integer expectedDataSize) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1032,7 +1040,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     changeDuration(firstInstance, USER_TASK_1, 100.);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.claimAllRunningUserTasks(firstInstance.getId());
-    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+    if (isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
       changeDuration(firstInstance, USER_TASK_2, 700.);
     } else {
@@ -1045,7 +1053,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     // claim first running task
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.claimAllRunningUserTasks(secondInstance.getId());
-    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+    if (isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
       changeDuration(secondInstance, USER_TASK_1, 700.);
     } else {
@@ -1057,16 +1065,16 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionState);
+    reportData.setFilter(processFilter);
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).hasSize(2);
-    assertEvaluateReportWithExecutionState(actualResult, executionState);
+    assertThat(actualResult.getData()).hasSize(expectedDataSize);
+    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter);
   }
 
-  protected abstract void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                                 final FlowNodeExecutionState executionState);
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+                                                                       final List<ProcessFilterDto<?>> executionState);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {

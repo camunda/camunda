@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.none;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -24,7 +24,7 @@ public class UserTaskFrequencyByUserTaskEndDateReportEvaluationIT
   extends UserTaskFrequencyByUserTaskDateReportEvaluationIT {
 
   @Test
-  public void groupedByEndDateWithExecutionStateRunning_setIsCompleteFlagToTrue() {
+  public void groupedByEndDateWithFlowNodeStatusFilterRunning_setIsCompleteFlagToTrue() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -33,7 +33,7 @@ public class UserTaskFrequencyByUserTaskEndDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    reportData.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList());
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

@@ -13,6 +13,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,11 +49,11 @@ public class UserTaskIdleDurationByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
-      .isEqualTo(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_1));
-    assertThat(result.getEntryForKey(USER_TASK_2).get().getValue())
-      .isEqualTo(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_2));
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+                                                              final FlowNodeStatusTestValues expectedValues) {
+    Optional.ofNullable(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_1))
+      .ifPresent(expectedVal -> assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(expectedVal));
+    Optional.ofNullable(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_2))
+      .ifPresent(expectedVal -> assertThat(result.getEntryForKey(USER_TASK_2).get().getValue()).isEqualTo(expectedVal));
   }
 }

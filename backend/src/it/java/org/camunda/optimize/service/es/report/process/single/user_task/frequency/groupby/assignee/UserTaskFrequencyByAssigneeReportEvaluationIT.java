@@ -12,7 +12,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -508,7 +507,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
           Tuple.tuple(DEFAULT_USERNAME, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -559,7 +563,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
           Tuple.tuple(DEFAULT_USERNAME, 3.), Tuple.tuple(SECOND_USER, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -603,8 +612,8 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @Data
   @AllArgsConstructor
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedFrequencyValues;
   }
 
@@ -615,17 +624,22 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     return result;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1., 1.)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2., 1.))
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., 1.)
+      ),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      )
     );
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -650,21 +664,21 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat((long) result.getData().size()).isEqualTo(
-      executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
+      flowNodeStatusTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get().extracting(MapResultEntryDto::getValue)
-      .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(DEFAULT_USERNAME));
+      .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(DEFAULT_USERNAME));
     assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
-      .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_USER));
+      .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(SECOND_USER));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCanceled() {
+  public void evaluateReportWithFlowNodeStatusFilterCanceled() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -691,7 +705,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

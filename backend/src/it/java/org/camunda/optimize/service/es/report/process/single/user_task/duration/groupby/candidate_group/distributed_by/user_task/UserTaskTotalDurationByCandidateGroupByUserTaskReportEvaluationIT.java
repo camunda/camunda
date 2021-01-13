@@ -48,8 +48,8 @@ public class UserTaskTotalDurationByCandidateGroupByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilters(final ReportHyperMapResultDto result,
+                                                               final FlowNodeStatusTestValues expectedValues) {
     assertThat(result.getDataEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .isEqualTo(expectedValues.getExpectedTotalDurationValues());
   }

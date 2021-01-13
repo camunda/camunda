@@ -31,7 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CombinedProcessReportResultTest {
 
@@ -54,45 +54,38 @@ public class CombinedProcessReportResultTest {
       AggregationType.AVERAGE
     );
 
-
     // when
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
 
     // then
-    assertThat(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0));
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
     assertThat(resultAsCsv.get(1))
       .isEqualTo(new String[]{
         "variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE", "processInstance_frequency"
       });
-    assertThat(new String[]{"10.99", "1.0", "", "10.99", "1.0"}).isEqualTo(resultAsCsv.get(2));
-    assertThat(new String[]{"900.0", "1.0", "", "900.0", "1.0"}).isEqualTo(resultAsCsv.get(3));
-
+    assertThat(resultAsCsv.get(2)).isEqualTo(new String[]{"10.99", "1.0", "", "10.99", "1.0"});
+    assertThat(resultAsCsv.get(3)).isEqualTo(new String[]{"900.0", "1.0", "", "900.0", "1.0"});
 
     // when (limit = 0)
     resultAsCsv = underTest.getResultAsCsv(0, 0, ZoneId.systemDefault());
 
-
     // then
-    assertThat(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0));
-    assertThat(
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
+    assertThat(resultAsCsv.get(1)).isEqualTo(
       new String[]{"variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE",
-        "processInstance_frequency"}).isEqualTo(resultAsCsv.get(1)
-    );
-    assertThat(new String[]{"10.99", "1.0", "", "10.99", "1.0"}).isEqualTo(resultAsCsv.get(2));
-
+        "processInstance_frequency"});
+    assertThat(resultAsCsv.get(2)).isEqualTo(new String[]{"10.99", "1.0", "", "10.99", "1.0"});
 
     // when (offset = 1)
     resultAsCsv = underTest.getResultAsCsv(0, 1, ZoneId.systemDefault());
 
-
     // then
-    assertThat(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0));
-    assertThat(
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
+    assertThat(resultAsCsv.get(1)).isEqualTo(
       new String[]{"variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE",
-        "processInstance_frequency"}).isEqualTo(resultAsCsv.get(1)
-    );
-    assertThat(new String[]{"900.0", "1.0", "", "900.0", "1.0"}).isEqualTo(resultAsCsv.get(2));
+        "processInstance_frequency"});
+    assertThat(resultAsCsv.get(2)).isEqualTo(new String[]{"900.0", "1.0", "", "900.0", "1.0"});
   }
 
   @Test
@@ -119,17 +112,11 @@ public class CombinedProcessReportResultTest {
     // when
     final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
-
     // then
-    assertThat(
-      new String[]{"SingleTestReport0", "", "SingleTestReport1"}).isEqualTo(resultAsCsv.get(0)
-    );
-    assertThat(
-      new String[]{"processInstance_frequency", "", "processInstance_frequency"}).isEqualTo(resultAsCsv.get(1)
-    );
-    assertThat(
-      new String[]{"5.0", "", "2.0"}).isEqualTo(resultAsCsv.get(2)
-    );
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "SingleTestReport1"});
+    assertThat(resultAsCsv.get(1))
+      .isEqualTo(new String[]{"processInstance_frequency", "", "processInstance_frequency"});
+    assertThat(resultAsCsv.get(2)).isEqualTo(new String[]{"5.0", "", "2.0"});
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration number result with aggregate type {0}")
@@ -159,18 +146,12 @@ public class CombinedProcessReportResultTest {
   }
 
   private void assertCsvByAggregationType(final List<String[]> resultAsCsv, AggregationType aggregationType) {
-    assertThat(
-      new String[]{"SingleTestReport0", "", "SingleTestReport1"}).isEqualTo(resultAsCsv.get(0)
-    );
-    assertThat(
-      new String[]{"processInstance_duration", "", "processInstance_duration"}).isEqualTo(resultAsCsv.get(1)
-    );
-    assertThat(
-      new String[]{CSVUtils.mapAggregationType(aggregationType), "", CSVUtils.mapAggregationType(aggregationType)}).isEqualTo(
-      resultAsCsv.get(2)
-    );
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "SingleTestReport1"});
+    assertThat(resultAsCsv.get(1)).isEqualTo(new String[]{"processInstance_duration", "", "processInstance_duration"});
+    assertThat(resultAsCsv.get(2)).isEqualTo(
+      new String[]{CSVUtils.mapAggregationType(aggregationType), "", CSVUtils.mapAggregationType(aggregationType)});
 
-    assertThat(new String[]{"6.0", "", "6.0"}).isEqualTo(resultAsCsv.get(3));
+    assertThat(resultAsCsv.get(3)).isEqualTo(new String[]{"6.0", "", "6.0"});
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration map result with aggregate type {0}")
@@ -200,37 +181,30 @@ public class CombinedProcessReportResultTest {
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
-    assertThat(
-      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0)
-    );
-    assertThat(
-      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
-        "processInstance_duration"}).isEqualTo(resultAsCsv.get(1)
-    );
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
+    assertThat(resultAsCsv.get(1)).isEqualTo(new String[]{
+      "variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
+      "processInstance_duration"});
     assertThat(
       new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
         CSVUtils.mapAggregationType(aggregationType)}).isEqualTo(resultAsCsv.get(2)
     );
-    assertThat(new String[]{"test1", "3.0", "", "test1", "3.0"}).isEqualTo(resultAsCsv.get(3));
-    assertThat(new String[]{"test2", "6.0", "", "test2", "6.0"}).isEqualTo(resultAsCsv.get(4));
+    assertThat(resultAsCsv.get(3)).isEqualTo(new String[]{"test1", "3.0", "", "test1", "3.0"});
+    assertThat(resultAsCsv.get(4)).isEqualTo(new String[]{"test2", "6.0", "", "test2", "6.0"});
 
     // when (limit = 0)
     resultAsCsv = underTest.getResultAsCsv(0, 0, ZoneId.systemDefault());
 
-
     // then
-    assertThat(
-      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0)
-    );
-    assertThat(
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
+    assertThat(resultAsCsv.get(1)).isEqualTo(
       new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
-        "processInstance_duration"}).isEqualTo(resultAsCsv.get(1)
-    );
+        "processInstance_duration"});
     assertThat(
       new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
         CSVUtils.mapAggregationType(aggregationType)}).isEqualTo(resultAsCsv.get(2)
     );
-    assertThat(new String[]{"test1", "3.0", "", "test1", "3.0"}).isEqualTo(resultAsCsv.get(3));
+    assertThat(resultAsCsv.get(3)).isEqualTo(new String[]{"test1", "3.0", "", "test1", "3.0"});
 
 
     // when (offset = 1)
@@ -238,18 +212,15 @@ public class CombinedProcessReportResultTest {
 
 
     // then
-    assertThat(
-      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}).isEqualTo(resultAsCsv.get(0)
-    );
-    assertThat(
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
+    assertThat(resultAsCsv.get(1)).isEqualTo(
       new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
-        "processInstance_duration"}).isEqualTo(resultAsCsv.get(1)
-    );
+        "processInstance_duration"});
     assertThat(
       new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
         CSVUtils.mapAggregationType(aggregationType)}).isEqualTo(resultAsCsv.get(2)
     );
-    assertThat(new String[]{"test2", "6.0", "", "test2", "6.0"}).isEqualTo(resultAsCsv.get(3));
+    assertThat(resultAsCsv.get(3)).isEqualTo(new String[]{"test2", "6.0", "", "test2", "6.0"});
   }
 
   @Test
@@ -265,7 +236,7 @@ public class CombinedProcessReportResultTest {
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
-    assertThat(new String[]{}).isEqualTo(resultAsCsv.get(0));
+    assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{});
   }
 
 

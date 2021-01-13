@@ -29,7 +29,7 @@ public class UserTaskIdleDurationByUserTaskStartDateByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedIdleDurationValue;
+  protected Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues) {
+    return flowNodeStatusTestValues.expectedIdleDurationValue;
   }
 }

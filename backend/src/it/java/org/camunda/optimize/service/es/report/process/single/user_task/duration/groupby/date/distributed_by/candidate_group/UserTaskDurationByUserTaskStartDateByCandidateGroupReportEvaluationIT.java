@@ -9,9 +9,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -32,7 +34,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 
 public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT
   extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
@@ -62,10 +63,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(final FlowNodeExecutionState executionState,
-                                               final ExecutionStateTestValues candidateGroup1Count,
-                                               final ExecutionStateTestValues candidateGroup2Count) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilters(final List<ProcessFilterDto<?>> processFilters,
+                                                      final FlowNodeStatusTestValues candidateGroup1Count,
+                                                      final FlowNodeStatusTestValues candidateGroup2Count) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -79,7 +80,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     changeDuration(processInstance1, USER_TASK_1, 100.);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance1.getId());
-    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+    if (isSingleFilterOfType(processFilters, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(processInstance1.getId(), USER_TASK_2);
       changeDuration(processInstance1, USER_TASK_2, 100.);
     } else {
@@ -95,7 +96,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
       FIRST_CANDIDATE_GROUP_ID
     );
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
-    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+    if (isSingleFilterOfType(processFilters, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(processInstance2.getId(), USER_TASK_1);
       changeDuration(processInstance2, USER_TASK_1, 100.);
     } else {
@@ -107,7 +108,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionState);
+    reportData.setFilter(processFilters);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -131,51 +132,33 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
   @Data
   @AllArgsConstructor
   @NoArgsConstructor
-  static class ExecutionStateTestValues {
+  static class FlowNodeStatusTestValues {
     Double expectedIdleDurationValue;
     Double expectedWorkDurationValue;
     Double expectedTotalDurationValue;
   }
 
-  protected static Stream<Arguments> getExecutionStateExpectedValues() {
+  protected static Stream<Arguments> getFlowNodeStatusExpectedValues() {
     return Stream.of(
       Arguments.of(
-        FlowNodeExecutionState.RUNNING,
-        new ExecutionStateTestValues(200., 500., 700.),
-        new ExecutionStateTestValues(200., 500., 700.)
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+        new FlowNodeStatusTestValues(200., 500., 700.),
+        new FlowNodeStatusTestValues(200., 500., 700.)
       ),
       Arguments.of(
-        FlowNodeExecutionState.COMPLETED,
-        new ExecutionStateTestValues(100., 100., 100.),
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+        new FlowNodeStatusTestValues(100., 100., 100.),
         null
       ),
       Arguments.of(
-        FlowNodeExecutionState.CANCELED,
-        new ExecutionStateTestValues(100., 100., 100.),
-        new ExecutionStateTestValues(100., 100., 100.)
-      ),
-      Arguments.of(
-        FlowNodeExecutionState.ALL,
-        new ExecutionStateTestValues(
-          calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
-          calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
-          calculateExpectedValueGivenDurationsDefaultAggr(100., 700.)
-        ),
-        new ExecutionStateTestValues(
-          calculateExpectedValueGivenDurationsDefaultAggr(200.),
-          calculateExpectedValueGivenDurationsDefaultAggr(500.),
-          calculateExpectedValueGivenDurationsDefaultAggr(700.)
-        )
+        ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(),
+        new FlowNodeStatusTestValues(100., 100., 100.),
+        new FlowNodeStatusTestValues(100., 100., 100.)
       )
     );
   }
 
-  private String getLocalisedUnassignedLabel() {
-    return embeddedOptimizeExtension.getLocalizationService()
-      .getDefaultLocaleMessageForMissingAssigneeLabel();
-  }
-
-  protected abstract Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
+  protected abstract Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues);
 
   @Override
   protected ProcessGroupByType getGroupByType() {

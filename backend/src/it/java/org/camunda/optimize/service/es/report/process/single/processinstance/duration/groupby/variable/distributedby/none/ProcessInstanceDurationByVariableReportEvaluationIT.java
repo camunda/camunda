@@ -1007,7 +1007,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> runningInstanceFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -1019,7 +1019,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(runningInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1062,7 +1062,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> completedInstanceFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -1074,7 +1074,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(completedInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1170,7 +1170,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DurationFilterUnit.HOURS)
@@ -1185,7 +1185,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(durationFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 

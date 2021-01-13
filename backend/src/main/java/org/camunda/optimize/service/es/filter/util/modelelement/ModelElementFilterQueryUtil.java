@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.filter.util.modelelement;
 
-import lombok.Builder;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
@@ -23,33 +25,34 @@ import static org.camunda.optimize.service.es.report.command.util.AggregationFil
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public interface ModelElementFilterQueryUtil {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class ModelElementFilterQueryUtil {
 
-  static void addFlowNodeDurationFilter(final BoolQueryBuilder boolQuery,
-                                        final ProcessReportDataDto reportDataDto,
-                                        final FlowNodeDurationFilterProperties flowNodeDurationProperties) {
+  protected static void addFlowNodeDurationFilter(final BoolQueryBuilder boolQuery,
+                                                  final ProcessReportDataDto reportDataDto,
+                                                  final FlowNodeDurationFilterProperties flowNodeDurationProperties) {
     findAllViewLevelFiltersOfType(reportDataDto, FlowNodeDurationFilterDto.class).map(ProcessFilterDto::getData)
       .forEach(durationFilterData -> boolQuery.filter(
         createFlowNodeDurationFilterQuery(durationFilterData, flowNodeDurationProperties)));
   }
 
-  static <T extends ProcessFilterDto<?>> Stream<T> findAllViewLevelFiltersOfType(final ProcessReportDataDto reportDataDto,
-                                                                                 final Class<T> filterClass) {
+  protected static <T extends ProcessFilterDto<?>> Stream<T> findAllViewLevelFiltersOfType(final ProcessReportDataDto reportDataDto,
+                                                                                           final Class<T> filterClass) {
     return reportDataDto.getFilter().stream()
       .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .filter(filterClass::isInstance)
       .map(filterClass::cast);
   }
 
-  static <T extends ProcessFilterDto<?>> boolean viewLevelFiltersOfTypeExists(final ProcessReportDataDto reportDataDto,
-                                                                              final Class<T> filterClass) {
+  protected static <T extends ProcessFilterDto<?>> boolean viewLevelFiltersOfTypeExists(final ProcessReportDataDto reportDataDto,
+                                                                                        final Class<T> filterClass) {
     return reportDataDto.getFilter().stream()
       .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .anyMatch(filterClass::isInstance);
   }
 
-  static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData,
-                                                        final FlowNodeDurationFilterProperties properties) {
+  protected static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData,
+                                                                  final FlowNodeDurationFilterProperties properties) {
     final BoolQueryBuilder disjunctMultiFlowNodeQuery = boolQuery().minimumShouldMatch(1);
     durationFilterData.forEach((flowNodeId, durationFilter) -> {
       final BoolQueryBuilder particularFlowNodeQuery = boolQuery()
@@ -65,13 +68,13 @@ public interface ModelElementFilterQueryUtil {
     return disjunctMultiFlowNodeQuery;
   }
 
-  static String nestedFieldBuilder(final String nestedField, final String fieldName) {
+  protected static String nestedFieldBuilder(final String nestedField, final String fieldName) {
     return nestedField + "." + fieldName;
   }
 
-  @Builder
+  @AllArgsConstructor
   @Getter
-  class FlowNodeDurationFilterProperties {
+  static class FlowNodeDurationFilterProperties {
     private String nestedDocRef;
     private String idField;
     private String durationField;

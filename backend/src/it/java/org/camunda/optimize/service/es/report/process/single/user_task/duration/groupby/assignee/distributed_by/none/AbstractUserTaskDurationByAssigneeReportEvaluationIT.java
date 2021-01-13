@@ -13,10 +13,10 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -634,8 +634,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
   @Data
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStateTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedIdleDurationValues;
     Map<String, Double> expectedWorkDurationValues;
     Map<String, Double> expectedTotalDurationValues;
@@ -652,47 +652,33 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     return result;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
-    ExecutionStateTestValues runningStateValues =
-      new ExecutionStateTestValues();
-    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+  protected static Stream<FlowNodeStateTestValues> getFlowNodeStatusFilterValues() {
+    FlowNodeStateTestValues runningStateValues =
+      new FlowNodeStateTestValues();
+    runningStateValues.processFilter = ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 200.);
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
-    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
-    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
-    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
-    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
+    FlowNodeStateTestValues completedOrCanceledStateValues = new FlowNodeStateTestValues();
+    completedOrCanceledStateValues.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedOrCanceledStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
-    ExecutionStateTestValues canceledStateValues = new ExecutionStateTestValues();
-    canceledStateValues.executionState = FlowNodeExecutionState.CANCELED;
+    FlowNodeStateTestValues canceledStateValues = new FlowNodeStateTestValues();
+    canceledStateValues.processFilter = ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList();
     canceledStateValues.expectedIdleDurationValues = getExpectedResultsMap(700., 700.);
     canceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(700., 700.);
     canceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
-    allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
-      200.
-    );
-    allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
-      500.
-    );
-    allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 700.),
-      700.
-    );
-
-    return Stream.of(runningStateValues, completedStateValues, canceledStateValues, allStateValues);
+    return Stream.of(runningStateValues, completedOrCanceledStateValues, canceledStateValues);
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusFilterValues")
+  public void evaluateReportWithFlowNodeStatus(FlowNodeStateTestValues flowNodeStatusFilterValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -706,7 +692,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
     changeUserTaskStartDate(firstInstance, now, USER_TASK_2, 700.);
     changeUserTaskClaimDate(firstInstance, now, USER_TASK_2, 500.);
-    if (FlowNodeExecutionState.CANCELED.equals(executionStateTestValues.executionState)) {
+    if (isSingleFilterOfType(flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
       changeDuration(firstInstance, USER_TASK_2, 700L);
     }
@@ -722,7 +708,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     changeUserTaskStartDate(secondInstance, now, USER_TASK_1, 700.);
     changeUserTaskClaimDate(secondInstance, now, USER_TASK_1, 500.);
-    if (FlowNodeExecutionState.CANCELED.equals(executionStateTestValues.executionState)) {
+    if (isSingleFilterOfType(flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
       changeDuration(secondInstance, USER_TASK_1, 700L);
     }
@@ -731,15 +717,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusFilterValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertEvaluateReportWithExecutionState(result, executionStateTestValues);
+    assertEvaluateReportWithFlowNodeStatusFilter(result, flowNodeStatusFilterValues);
   }
 
-  protected abstract void assertEvaluateReportWithExecutionState(ReportMapResultDto result,
-                                                                 ExecutionStateTestValues expectedValues);
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(ReportMapResultDto result,
+                                                                       FlowNodeStateTestValues expectedValues);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {
@@ -904,7 +890,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       ),
       Arguments.of(
         NOT_IN, new String[]{SECOND_USER}, 2L,
-        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))),
+        Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
+      ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
   }
@@ -1027,7 +1014,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 

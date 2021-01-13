@@ -15,9 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.addFlowNodeDurationFilter;
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.nestedFieldBuilder;
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.viewLevelFiltersOfTypeExists;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_END_DATE;
@@ -30,13 +27,13 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class FlowNodeFilterQueryUtil implements ModelElementFilterQueryUtil {
+public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
 
   private static final String NESTED_DOC = EVENTS;
   private static final String MI_BODY = "multiInstanceBody";
 
   public static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData) {
-    return ModelElementFilterQueryUtil.createFlowNodeDurationFilterQuery(
+    return createFlowNodeDurationFilterQuery(
       durationFilterData,
       getFlowNodeDurationProperties()
     );
@@ -85,12 +82,7 @@ public class FlowNodeFilterQueryUtil implements ModelElementFilterQueryUtil {
   }
 
   private static FlowNodeDurationFilterProperties getFlowNodeDurationProperties() {
-    return FlowNodeDurationFilterProperties.builder()
-      .nestedDocRef(NESTED_DOC)
-      .idField(ACTIVITY_ID)
-      .durationField(ACTIVITY_DURATION)
-      .startDateField(ACTIVITY_START_DATE)
-      .build();
+    return new FlowNodeDurationFilterProperties(NESTED_DOC, ACTIVITY_ID, ACTIVITY_DURATION, ACTIVITY_START_DATE);
   }
 
 }

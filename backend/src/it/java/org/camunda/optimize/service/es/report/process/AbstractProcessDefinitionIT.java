@@ -505,4 +505,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return Triple.of(SECOND_CANDIDATE_GROUP_ID, value, SECOND_CANDIDATE_GROUP_NAME);
   }
 
+  protected static boolean isSingleFilterOfType(List<ProcessFilterDto<?>> processFilters, Class<?> filterType) {
+    return processFilters.size() == 1 && processFilters.get(0).getClass().equals(filterType);
+  }
+
 }

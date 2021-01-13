@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.usertask;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -20,10 +20,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT extends UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT {
+public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT
+  extends UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT {
 
   @Test
-  public void groupedByEndDateWithExecutionStateRunning_setIsCompleteFlagToTrue() {
+  public void groupedByEndDateWithFlowNodeStatusRunning_setIsCompleteFlagToTrue() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -32,7 +33,7 @@ public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT exte
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    reportData.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList());
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then

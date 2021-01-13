@@ -13,7 +13,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -673,8 +672,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   @Data
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedIdleDurationValues;
     Map<String, Double> expectedWorkDurationValues;
     Map<String, Double> expectedTotalDurationValues;
@@ -692,41 +691,27 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     return result;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
-    ExecutionStateTestValues runningStateValues =
-      new ExecutionStateTestValues();
-    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
+    FlowNodeStatusTestValues runningStateValues =
+      new FlowNodeStatusTestValues();
+    runningStateValues.processFilter = ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 200.);
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
-    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
-    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
-    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
-    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
+    FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
+    completedOrCanceled.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedOrCanceled.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceled.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceled.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
-    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
-    allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 200., 200.),
-      200.
-    );
-    allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 500., 500.),
-      500.
-    );
-    allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 700., 700.),
-      700.
-    );
-
-    return Stream.of(runningStateValues, completedStateValues, allStateValues);
+    return Stream.of(runningStateValues, completedOrCanceled);
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatus(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -756,15 +741,15 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertEvaluateReportWithExecutionState(result, executionStateTestValues);
+    assertEvaluateReportWithFlowNodeStatusFilter(result, flowNodeStatusTestValues);
   }
 
-  protected abstract void assertEvaluateReportWithExecutionState(ReportMapResultDto result,
-                                                                 ExecutionStateTestValues expectedValues);
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(ReportMapResultDto result,
+                                                                       FlowNodeStatusTestValues expectedValues);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {
@@ -998,7 +983,12 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Collections.singletonList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -1050,7 +1040,12 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 20.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 

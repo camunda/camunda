@@ -6,9 +6,11 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.assignee;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -23,6 +25,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluationIT {
@@ -55,48 +58,32 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final FlowNodeExecutionState executionState) {
-    switch (executionState) {
-      case RUNNING:
-        // @formatter:off
-        HyperMapAsserter.asserter()
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+                                                              final List<ProcessFilterDto<?>> filter) {
+    if (isSingleFilterOfType(filter, RunningFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
-            .isComplete(true)
-            .groupByContains(USER_TASK_1)
-              .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
-            .groupByContains(USER_TASK_2)
-              .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
-            .doAssert(result);
-        // @formatter:on
-        break;
-      case COMPLETED:
-        // @formatter:off
-        HyperMapAsserter.asserter()
+          .isComplete(true)
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
+          .groupByContains(USER_TASK_2)
+            .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
+        .doAssert(result);
+      // @formatter:on
+    } else if (isSingleFilterOfType(filter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
-            .isComplete(true)
-            .groupByContains(USER_TASK_1)
-              .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
-            .groupByContains(USER_TASK_2)
-              .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-            .doAssert(result);
-        // @formatter:on
-        break;
-      case ALL:
-        // @formatter:off
-        HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
-        .processInstanceCountWithoutFilters(2L)
-            .isComplete(true)
-            .groupByContains(USER_TASK_1)
-              .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(100., 500.), DEFAULT_FULLNAME)
-            .groupByContains(USER_TASK_2)
-              .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
-            .doAssert(result);
-        // @formatter:on
-        break;
+        .isComplete(true)
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
+        .doAssert(result);
+      // @formatter:on
+    } else {
+      fail("Not a valid flow node status filter for test");
     }
   }
 

@@ -49,8 +49,8 @@ public class UserTaskIdleDurationByAssigneeByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+                                                              final FlowNodeStatusTestValues expectedValues) {
     assertThat(result.getDataEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .isEqualTo(expectedValues.getExpectedIdleDurationValues());
   }

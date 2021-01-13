@@ -6,10 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
-import java.sql.SQLException;
 
 public class UserTaskTotalDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT
   extends UserTaskDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT {
@@ -32,7 +29,7 @@ public class UserTaskTotalDurationByUserTaskStartDateByCandidateGroupReportEvalu
   }
 
   @Override
-  protected Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedTotalDurationValue;
+  protected Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues) {
+    return flowNodeStatusTestValues.expectedTotalDurationValue;
   }
 }

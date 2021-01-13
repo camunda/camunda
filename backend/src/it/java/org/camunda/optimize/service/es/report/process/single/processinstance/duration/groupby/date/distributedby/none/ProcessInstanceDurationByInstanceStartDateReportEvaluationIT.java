@@ -221,7 +221,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> runningInstanceFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -231,7 +231,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(runningInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -272,7 +272,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DurationFilterUnit.HOURS)
@@ -285,7 +285,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(durationFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 

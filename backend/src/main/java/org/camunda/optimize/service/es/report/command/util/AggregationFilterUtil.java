@@ -7,11 +7,8 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 
 import java.time.temporal.ChronoUnit;
@@ -19,31 +16,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregationFilterUtil {
-
-  public static BoolQueryBuilder addExecutionStateFilter(BoolQueryBuilder boolQueryBuilder,
-                                                         FlowNodeExecutionState flowNodeExecutionState,
-                                                         String qualifyingFilterField) {
-    switch (flowNodeExecutionState) {
-      case RUNNING:
-        return boolQueryBuilder.mustNot(existsQuery(qualifyingFilterField));
-      case COMPLETED:
-        return boolQueryBuilder.must(existsQuery(qualifyingFilterField));
-      case ALL:
-        return boolQueryBuilder;
-      case CANCELED:
-        return boolQueryBuilder.must(termQuery(qualifyingFilterField, true));
-      default:
-        throw new OptimizeRuntimeException(String.format(
-          "Unknown flow node execution state [%s]",
-          flowNodeExecutionState
-        ));
-    }
-  }
 
   public static Script getDurationScript(final long currRequestDateInMs,
                                          final String durationFieldName,
