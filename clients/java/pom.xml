@@ -162,6 +162,23 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>io/zeebe/client/impl/**</exclude>
+          </excludes>
+          <ignored>
+            <ignored>
+              <!-- ignore new methods in the Zeebe element instance interfaces -->
+              <className>io/zeebe/client/util/Environment</className>
+              <differenceType>8001</differenceType>
+            </ignored>
+            <ignored>
+              <!-- ignore new methods in the Zeebe element instance interfaces -->
+              <className>io/zeebe/client/util/VersionUtil</className>
+              <differenceType>8001</differenceType>
+            </ignored>
+          </ignored>
+        </configuration>
       </plugin>
     </plugins>
   </build>

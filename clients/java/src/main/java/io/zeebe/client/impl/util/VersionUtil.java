@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.util;
+package io.zeebe.client.impl.util;
 
 import io.zeebe.client.impl.Loggers;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public final class VersionUtil {
       version = readProperty(VERSION_PROPERTY_NAME);
       if (version == null) {
         LOG.warn("Version is not found in version file.");
-        version = io.zeebe.client.util.VersionUtil.class.getPackage().getImplementationVersion();
+        version = VersionUtil.class.getPackage().getImplementationVersion();
       }
 
       if (version == null) {
@@ -53,7 +53,7 @@ public final class VersionUtil {
 
   private static String readProperty(final String property) {
     try (final InputStream versionFileStream =
-        io.zeebe.client.util.VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {
+        VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {
       final Properties props = new Properties();
       props.load(versionFileStream);
 

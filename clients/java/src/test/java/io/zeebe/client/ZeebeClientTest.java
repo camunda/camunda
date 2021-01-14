@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.zeebe.client.impl.util.Environment;
+import io.zeebe.client.impl.util.EnvironmentRule;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.client.util.Environment;
-import io.zeebe.client.util.EnvironmentRule;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.Properties;

@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.oauth;
 
-import io.zeebe.client.util.Environment;
+import io.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;

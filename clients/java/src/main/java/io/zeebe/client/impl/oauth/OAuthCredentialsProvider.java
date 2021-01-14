@@ -27,7 +27,7 @@ import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.impl.ZeebeClientCredentials;
-import io.zeebe.client.util.VersionUtil;
+import io.zeebe.client.impl.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
