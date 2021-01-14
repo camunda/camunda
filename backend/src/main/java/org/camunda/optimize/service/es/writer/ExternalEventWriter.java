@@ -99,7 +99,7 @@ public class ExternalEventWriter {
     final String deletedItemIdentifier =
       String.format("external events with ID from list of size %s", eventIdsToDelete.size());
 
-    log.info("Deleting events with ID in {}", eventIdsToDelete);
+    log.info("Deleting {} events by ID.", eventIdsToDelete.size());
 
     final BoolQueryBuilder filterQuery = boolQuery()
       .filter(termsQuery(EventIndex.ID, eventIdsToDelete));

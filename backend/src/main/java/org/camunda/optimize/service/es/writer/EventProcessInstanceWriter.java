@@ -135,10 +135,7 @@ public class EventProcessInstanceWriter {
   }
 
   public void deleteEventsWithIdsInFromAllInstances(final List<String> eventIdsToDelete) {
-    final String updateItem = String.format(
-      "event instance events with ID from list of size %s",
-      eventIdsToDelete.size()
-    );
+    final String updateItem = String.format("%d event process instance events by ID", eventIdsToDelete.size());
 
     final NestedQueryBuilder query = nestedQuery(
       EVENTS,

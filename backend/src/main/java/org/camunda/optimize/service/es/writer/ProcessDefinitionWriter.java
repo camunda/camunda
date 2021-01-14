@@ -82,10 +82,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
 
     final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      String.format(
-        "process definitions with IDs [%s]",
-        processDefIds
-      ),
+      String.format("%d process definitions", processDefIds.size()),
       MARK_AS_DELETED_SCRIPT,
       definitionsToDeleteQuery,
       PROCESS_DEFINITION_INDEX_NAME

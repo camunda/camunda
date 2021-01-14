@@ -65,7 +65,7 @@ public class VariableUpdateInstanceWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      String.format("variable updates of instances with IDs [%s]", processInstanceIds),
+      String.format("variable updates of %d process instances", processInstanceIds.size()),
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
