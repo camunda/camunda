@@ -19,7 +19,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.assertj.core.api.Assertions;
@@ -451,8 +450,7 @@ public final class WorkflowStateTest {
         .resources()
         .add()
         .setResourceName(wrapString(resourceName))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
 
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
     final long key = keyGenerator.nextKey();

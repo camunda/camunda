@@ -7,10 +7,6 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import static io.zeebe.protocol.impl.record.value.deployment.DeploymentResource.getResourceType;
-
-import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.ValueType;
@@ -26,33 +22,10 @@ public final class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Depl
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerDeployWorkflowRequest addResource(
-      final byte[] resource, final String resourceName, final ResourceType resourceType) {
-    requestDto
-        .resources()
-        .add()
-        .setResource(resource)
-        .setResourceName(resourceName)
-        .setResourceType(determineResourceType(resourceName, resourceType));
+  public BrokerDeployWorkflowRequest addResource(final byte[] resource, final String resourceName) {
+    requestDto.resources().add().setResource(resource).setResourceName(resourceName);
 
     return this;
-  }
-
-  private io.zeebe.protocol.record.value.deployment.ResourceType determineResourceType(
-      final String resourceName, final ResourceType resourceType) {
-    switch (resourceType) {
-      case BPMN:
-        return io.zeebe.protocol.record.value.deployment.ResourceType.BPMN_XML;
-      case YAML:
-        return io.zeebe.protocol.record.value.deployment.ResourceType.YAML_WORKFLOW;
-      default:
-        try {
-          return getResourceType(resourceName);
-        } catch (final RuntimeException e) {
-          throw new InvalidBrokerRequestArgumentException(
-              "name", "a string ending with either .bpmn or .yaml", resourceName, e);
-        }
-    }
   }
 
   @Override

@@ -18,7 +18,6 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -81,20 +80,6 @@ public final class DeploymentClient {
     deploymentRecord = new DeploymentRecord();
   }
 
-  public DeploymentClient withYamlResource(final byte[] resource) {
-    return withYamlResource("process.yaml", resource);
-  }
-
-  public DeploymentClient withYamlResource(final String resourceName, final byte[] resource) {
-    deploymentRecord
-        .resources()
-        .add()
-        .setResourceName(wrapString(resourceName))
-        .setResource(wrapArray(resource))
-        .setResourceType(ResourceType.YAML_WORKFLOW);
-    return this;
-  }
-
   public DeploymentClient withXmlResource(final BpmnModelInstance modelInstance) {
     return withXmlResource("process.xml", modelInstance);
   }
@@ -120,8 +105,7 @@ public final class DeploymentClient {
         .resources()
         .add()
         .setResourceName(wrapString(resourceName))
-        .setResource(wrapArray(resourceBytes))
-        .setResourceType(ResourceType.BPMN_XML);
+        .setResource(wrapArray(resourceBytes));
     return this;
   }
 
@@ -131,8 +115,7 @@ public final class DeploymentClient {
         .resources()
         .add()
         .setResourceName(wrapString(resourceName))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
     return this;
   }
 

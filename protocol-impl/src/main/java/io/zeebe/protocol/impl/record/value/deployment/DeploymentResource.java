@@ -20,6 +20,7 @@ import org.agrona.DirectBuffer;
 
 public final class DeploymentResource extends UnpackedObject
     implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
+
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<ResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
@@ -28,27 +29,7 @@ public final class DeploymentResource extends UnpackedObject
   public DeploymentResource() {
     declareProperty(resourceTypeProp)
         .declareProperty(resourceNameProp)
-        // the resource property is updated while iterating over the deployment record
-        // when a YAML workflow is transformed into its XML representation
-        // therefore the resource properties has to be the last one written to the buffer
-        // as otherwise it will potentially override other information
-        // https://github.com/zeebe-io/zeebe/issues/1931
         .declareProperty(resourceProp);
-  }
-
-  public static ResourceType getResourceType(String resourceName) {
-    resourceName = resourceName.toLowerCase();
-
-    if (resourceName.endsWith(".yaml")) {
-      return ResourceType.YAML_WORKFLOW;
-    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
-      return ResourceType.BPMN_XML;
-    } else {
-      throw new RuntimeException(
-          String.format(
-              "Expected to resolve type of resource '%s', but could not; should be a .bpmn or .yaml file",
-              resourceName));
-    }
   }
 
   @Override

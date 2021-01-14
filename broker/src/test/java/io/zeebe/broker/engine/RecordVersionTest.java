@@ -109,16 +109,7 @@ public final class RecordVersionTest {
         .createCmdRequest()
         .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
         .command()
-        .put(
-            "resources",
-            List.of(
-                Map.of(
-                    "resourceName",
-                    "process.bpmn",
-                    "resourceType",
-                    "BPMN_XML",
-                    "resource",
-                    resource)))
+        .put("resources", List.of(Map.of("resourceName", "process.bpmn", "resource", resource)))
         .done()
         .send();
   }
