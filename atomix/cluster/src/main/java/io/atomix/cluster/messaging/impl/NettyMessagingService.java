@@ -201,7 +201,7 @@ public class NettyMessagingService implements ManagedMessagingService {
                   try {
                     responsePayload = handler.apply(message.sender(), message.payload());
                   } catch (final Exception e) {
-                    log.warn("An error occurred in a message handler: {}", e);
+                    log.warn("An error occurred in a message handler:", e);
                     status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
                   }
                   connection.reply(message, status, Optional.ofNullable(responsePayload));
@@ -213,21 +213,20 @@ public class NettyMessagingService implements ManagedMessagingService {
       final String type, final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
     handlers.register(
         type,
-        (message, connection) -> {
-          handler
-              .apply(message.sender(), message.payload())
-              .whenComplete(
-                  (result, error) -> {
-                    final ProtocolReply.Status status;
-                    if (error == null) {
-                      status = ProtocolReply.Status.OK;
-                    } else {
-                      log.warn("An error occurred in a message handler: {}", error);
-                      status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
-                    }
-                    connection.reply(message, status, Optional.ofNullable(result));
-                  });
-        });
+        (message, connection) ->
+            handler
+                .apply(message.sender(), message.payload())
+                .whenComplete(
+                    (result, error) -> {
+                      final ProtocolReply.Status status;
+                      if (error == null) {
+                        status = ProtocolReply.Status.OK;
+                      } else {
+                        log.warn("An error occurred in a message handler:", error);
+                        status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                      }
+                      connection.reply(message, status, Optional.ofNullable(result));
+                    }));
   }
 
   @Override
@@ -321,7 +320,7 @@ public class NettyMessagingService implements ManagedMessagingService {
       serverChannelClass = EpollServerSocketChannel.class;
       clientChannelClass = EpollSocketChannel.class;
       return;
-    } catch (final Throwable e) {
+    } catch (final Exception e) {
       log.debug(
           "Failed to initialize native (epoll) transport. " + "Reason: {}. Proceeding with nio.",
           e.getMessage(),
@@ -350,7 +349,7 @@ public class NettyMessagingService implements ManagedMessagingService {
       final String type,
       final Function<ClientConnection, CompletableFuture<T>> callback,
       final Executor executor) {
-    final CompletableFuture<T> future = new CompletableFuture<T>();
+    final CompletableFuture<T> future = new CompletableFuture<>();
     executeOnPooledConnection(address, type, callback, executor, future);
     return future;
   }
