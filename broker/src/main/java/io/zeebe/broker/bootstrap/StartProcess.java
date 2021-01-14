@@ -72,7 +72,7 @@ public final class StartProcess {
             step.getName(),
             durationStepStarting);
       } catch (final Exception startException) {
-        LOG.info(
+        LOG.error(
             "Bootstrap {} [{}/{}]: {} failed with unexpected exception.",
             name,
             index,
