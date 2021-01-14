@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {Button, Modal, LabeledInput} from 'components';
+import {Button, Modal, LabeledInput, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -65,12 +65,19 @@ export function TelemetrySettings({onClose, mightFail}) {
           />
         </div>
         <p>
-          {t('telemetry.personalData')}
-          <br />
-          {t('telemetry.learnMore')}
-          <a href="https://camunda.com/legal/privacy/" target="_blank" rel="noopener noreferrer">
-            {t('telemetry.privacyPolicy')}
-          </a>
+          <b>{t('telemetry.respectPrivacy')} </b>
+          {t('telemetry.personalData')}{' '}
+          <DocsLink location="technical-guide/setup/telemetry/ ">
+            {t('common.documentation')}
+          </DocsLink>{' '}
+          <span
+            dangerouslySetInnerHTML={{
+              __html: t('telemetry.orView', {
+                policy: t('telemetry.privacyPolicy'),
+                link: 'https://camunda.com/legal/privacy/',
+              }),
+            }}
+          />
         </p>
       </Modal.Content>
       <Modal.Actions>

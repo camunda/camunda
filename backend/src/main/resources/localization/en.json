@@ -49,11 +49,12 @@
     "updated": "Telemetry Settings updated.",
     "header": "Telemetry Settings",
     "text": "To enhance user experience, Camunda Optimize can integrate with Camunda Services GmbH, which requires external network requests. Please choose from the setting below.",
-    "enable": "Enable Meta & Usage Statistics",
+    "enable": "Enable Usage Statistics",
     "info": "Allow Camunda Optimize to send anonymous usage statistics. We use this information to provide you a stable and improved product experience in the environment you are using. This allows Camunda to collect information about the product version and technical environment you are using, and how you are using it.",
-    "personalData": "None of your personal information or stored data will be submitted.",
-    "learnMore": "Learn more: ",
-    "privacyPolicy": "Camunda Privacy Policy"
+    "respectPrivacy": "We respect your privacy.",
+    "personalData": "None of your personal information or stored data will be submitted. To learn more, read our",
+    "orView": "or view our <a href='{link}' target='_blank' rel='noopener noreferrer'>{policy}</a>.",
+    "privacyPolicy": "Privacy Policy"
   },
   "templates": {
     "noProcessHint": "Create Blank Dashboard",
@@ -738,6 +739,7 @@
     "value": "Value",
     "dataSource": "Data Source",
     "selected": "Selected",
+    "documentation": "documentation",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"

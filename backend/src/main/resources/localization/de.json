@@ -49,11 +49,12 @@
     "updated": "Telemetrie-Einstellungen aktualisiert.",
     "header": "Telemetrie-Einstellungen",
     "text": "Um die Benutzererfahrung zu verbessern, kann Camunda Optimize mit der Camunda Services GmbH kommunizieren, was externe Netzwerkanfragen erfordert. Bitte wählen Sie aus der untenstehenden Einstellung.",
-    "enable": "Meta- & Nutzungsstatistiken aktivieren",
+    "enable": "Nutzungsstatistiken aktivieren",
     "info": "Erlauben Sie Camunda Optimize, anonyme Nutzungsstatistiken zu senden. Wir verwenden diese Informationen, um Ihnen eine stabile und verbesserte Produkterfahrung in der von Ihnen verwendeten Umgebung zu bieten. Auf diese Weise kann Camunda Informationen über die Produktversion und die technische Umgebung, die Sie verwenden, und darüber, wie Sie diese verwenden, sammeln.",
-    "personalData": "Keine persönlichen Informationen oder gespeicherten Daten werden übermittelt.",
-    "learnMore": "Weitere Informationen: ",
-    "privacyPolicy": "Camunda Datenschutzerklärung"
+    "respectPrivacy": "Wir respektieren Ihre Privatsphäre.",
+    "personalData": "Keine persönlichen Informationen oder gespeicherten Daten werden übermittelt. Für weitere Informationen, lesen Sie unsere",
+    "orView": "oder sehen Sie sich unsere <a href='{link}' target='_blank' rel='noopener noreferrer'>{policy}</a> an.",
+    "privacyPolicy": "Datenschutzerklärung"
   },
   "templates": {
     "noProcessHint": "Leeres Dashboard erstellen",
@@ -738,6 +739,7 @@
     "value": "Wert",
     "dataSource": "Datenquelle",
     "selected": "Ausgewählt",
+    "documentation": "Dokumentation",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
