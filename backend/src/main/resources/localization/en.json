@@ -446,13 +446,6 @@
         "total": "Total"
       },
       "userTaskDistributedBy": "Distributed By",
-      "nodeStatus": {
-        "legend": "Flow Node Status",
-        "running": "Running",
-        "completed": "Completed",
-        "canceled": "Cancelled or interrupted",
-        "all": "All states"
-      },
       "visibleNodes": {
         "legend": "Customize Node Display",
         "btn": "Select Flow Nodes...",
@@ -509,7 +502,7 @@
     "viewByGroup": "{view} by {group}",
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",
-    "runningEndedUserTaskWarning": "Only completed user tasks are considered when grouping by End Date. Therefore, setting Node Status to 'running' will show no results"
+    "runningEndedFlowNodeWarning": "Only completed flow nodes are considered when grouping by End Date. Therefore, adding 'running' flow node status filter will show no results"
   },
   "dashboard": {
     "label": "Dashboard",
@@ -848,7 +841,12 @@
         "includesResolvedIncident": "With Resolved Incidents",
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
-        "doesNotIncludeIncident": "Without Incidents"
+        "doesNotIncludeIncident": "Without Incidents",
+        "flowNodeStatus": "Flow Node Status",
+        "runningFlowNodesOnly": "Running Flow Nodes Only",
+        "completedFlowNodesOnly": "Completed Flow Nodes Only",
+        "canceledFlowNodesOnly": "Cancelled Flow Nodes Only",
+        "completedOrCanceledFlowNodesOnly": "Completed or Canceled Flow Nodes Only"
       },
       "list": {
         "operators": {

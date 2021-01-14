@@ -12,7 +12,6 @@ import {t} from 'translation';
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import VisibleNodesFilter from './VisibleNodesFilter';
-import NodeStatus from './NodeStatus';
 import DateVariableUnit from './DateVariableUnit';
 import BucketSize from './BucketSize';
 
@@ -32,7 +31,6 @@ export default class Configuration extends React.Component {
   resetToDefaults = () => {
     this.updateConfiguration(
       convertToChangeset({
-        flowNodeExecutionState: 'all',
         precision: null,
         targetValue: {
           active: false,
@@ -129,7 +127,6 @@ export default class Configuration extends React.Component {
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
             <BucketSize report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
-            <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
           </Form>
           <Button className="resetButton" onClick={this.resetToDefaults}>

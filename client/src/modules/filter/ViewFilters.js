@@ -10,7 +10,7 @@ import {Dropdown} from 'components';
 import {t} from 'translation';
 
 export default function ViewFilters({
-  filterByInstancesOnly,
+  filterByTypeOnly,
   openNewFilterModal,
   processDefinitionIsNotSelected,
 }) {
@@ -20,11 +20,25 @@ export default function ViewFilters({
       id="ControlPanel__filters"
       className="ViewFilters Filter__dropdown"
     >
+      <Dropdown.Submenu label={t('common.filter.types.flowNodeStatus')}>
+        <Dropdown.Option onClick={filterByTypeOnly('runningFlowNodesOnly')}>
+          {t('common.filter.types.runningFlowNodesOnly')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByTypeOnly('completedFlowNodesOnly')}>
+          {t('common.filter.types.completedFlowNodesOnly')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByTypeOnly('canceledFlowNodesOnly')}>
+          {t('common.filter.types.canceledFlowNodesOnly')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={filterByTypeOnly('completedOrCanceledFlowNodesOnly')}>
+          {t('common.filter.types.completedOrCanceledFlowNodesOnly')}
+        </Dropdown.Option>
+      </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.incident')}>
-        <Dropdown.Option onClick={filterByInstancesOnly('includesOpenIncident')}>
+        <Dropdown.Option onClick={filterByTypeOnly('includesOpenIncident')}>
           {t('common.filter.types.openIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('includesResolvedIncident')}>
+        <Dropdown.Option onClick={filterByTypeOnly('includesResolvedIncident')}>
           {t('common.filter.types.resolvedIncident')}
         </Dropdown.Option>
       </Dropdown.Submenu>

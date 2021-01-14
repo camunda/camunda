@@ -15,7 +15,7 @@ import AssigneeFilterPreview from './AssigneeFilterPreview';
 
 import './FilterList.scss';
 
-const instanceFilters = [
+const stateFilters = [
   'runningInstancesOnly',
   'completedInstancesOnly',
   'canceledInstancesOnly',
@@ -25,6 +25,10 @@ const instanceFilters = [
   'includesOpenIncident',
   'includesResolvedIncident',
   'doesNotIncludeIncident',
+  'runningFlowNodesOnly',
+  'completedFlowNodesOnly',
+  'canceledFlowNodesOnly',
+  'completedOrCanceledFlowNodesOnly',
 ];
 
 export default class FilterList extends React.Component {
@@ -173,7 +177,7 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
-        } else if (instanceFilters.includes(filter.type)) {
+        } else if (stateFilters.includes(filter.type)) {
           list.push(
             <li key={i} className="listItem notEditable">
               <ActionItem

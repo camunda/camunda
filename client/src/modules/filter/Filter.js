@@ -139,7 +139,7 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByInstancesOnly = (type) => () => {
+  filterByTypeOnly = (type) => () => {
     this.addFilter({
       type,
       data: null,
@@ -169,7 +169,7 @@ export default class Filter extends React.Component {
           <FilterOptions
             processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
             openNewFilterModal={this.openNewFilterModal}
-            filterByInstancesOnly={this.filterByInstancesOnly}
+            filterByTypeOnly={this.filterByTypeOnly}
           />
         </div>
         {filters.length === 0 && (

@@ -11,21 +11,8 @@ import {Redirect, withRouter} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {
-  ReportRenderer,
-  LoadingIndicator,
-  MessageBox,
-  EntityNameForm,
-  InstanceCount,
-} from 'components';
-import {
-  incompatibleFilters,
-  updateEntity,
-  createEntity,
-  evaluateReport,
-  getCollection,
-  reportConfig,
-} from 'services';
+import {ReportRenderer, LoadingIndicator, EntityNameForm, InstanceCount} from 'components';
+import {updateEntity, createEntity, evaluateReport, getCollection, reportConfig} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
@@ -36,6 +23,7 @@ import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
 import ReportSelect from './controlPanels/ReportSelect';
+import ReportWarnings from './ReportWarnings';
 
 const {process: processConfig} = reportConfig;
 
@@ -200,20 +188,6 @@ export class ReportEdit extends React.Component {
     }
   };
 
-  showIncompleteResultWarning = () => {
-    const {report} = this.state;
-    if (
-      !report ||
-      !report.result ||
-      typeof report.result.isComplete === 'undefined' ||
-      !report.data.visualization
-    ) {
-      return false;
-    }
-
-    return !report.result.isComplete;
-  };
-
   closeConflictModal = () => {
     this.state.updatePromise(null);
     this.setState({conflict: null, updatePromise: null});
@@ -284,22 +258,7 @@ export class ReportEdit extends React.Component {
               </div>
             )}
 
-            {this.showIncompleteResultWarning() && (
-              <MessageBox type="warning">
-                {t('report.incomplete', {
-                  count: report.result.data.length || Object.keys(report.result.data).length,
-                })}
-              </MessageBox>
-            )}
-
-            {data?.filter && incompatibleFilters(data.filter) && (
-              <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
-            )}
-
-            {data?.groupBy?.type === 'endDate' &&
-              data.configuration.flowNodeExecutionState === 'running' && (
-                <MessageBox type="warning">{t('report.runningEndedUserTaskWarning')}</MessageBox>
-              )}
+            {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
 
             {loadingReportData ? (
               <LoadingIndicator />

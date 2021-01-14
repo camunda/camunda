@@ -446,13 +446,6 @@
         "total": "Summe"
       },
       "userTaskDistributedBy": "Aufgeteilt nach",
-      "nodeStatus": {
-        "legend": "Prozessknoten-Status",
-        "running": "In Ausführung",
-        "completed": "Abgeschlossen",
-        "canceled": "Abgebrochen oder unterbrochen",
-        "all": "Alle Zustände"
-      },
       "visibleNodes": {
         "legend": "Anzuzeigende Prozessknoten anpassen",
         "btn": "Prozessknoten auswählen....",
@@ -509,7 +502,7 @@
     "viewByGroup": "{view} nach {group}",
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",
-    "runningEndedUserTaskWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Benutzeraufgaben berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status auf 'In Ausführung' keine Ergebnisse"
+    "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse"
   },
   "dashboard": {
     "label": "Dashboard",
@@ -848,7 +841,12 @@
         "includesResolvedIncident": "mit gelösten Zwischenfällen",
         "openIncident": "Offene Zwischenfälle",
         "resolvedIncident": "Gelöste Zwischenfälle",
-        "doesNotIncludeIncident": "ohne Zwischenfälle"
+        "doesNotIncludeIncident": "ohne Zwischenfälle",
+        "flowNodeStatus": "Prozessknoten-Status",
+        "runningFlowNodesOnly": "Nur laufende Prozessknoten",
+        "completedFlowNodesOnly": "Nur abgeschlossene Prozessknoten",
+        "canceledFlowNodesOnly": "Nur abgebrochene Prozessknoten",
+        "completedOrCanceledFlowNodesOnly": "Nur abgeschlossene oder abgebrochene Prozessknoten"
       },
       "list": {
         "operators": {

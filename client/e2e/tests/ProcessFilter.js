@@ -366,3 +366,23 @@ test('add an incident filter', async (t) => {
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
+
+test('add flow node status filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Flow Node Status'));
+  await t.click(Report.subFilterOption('Running Flow Nodes Only'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Flow Node Status'));
+  await t.click(Report.subFilterOption('Completed or Canceled Flow Nodes Only'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+});

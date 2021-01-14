@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function incompatibleFilters(filterData) {
+export function incompatibleFilters(filterData, view) {
   const filters = filterData.map((filter) => filter.type);
   const bothExist = (arr) => arr.every((val) => filters.includes(val));
 
@@ -16,6 +16,11 @@ export function incompatibleFilters(filterData) {
     bothExist(['canceledInstancesOnly', 'suspendedInstancesOnly']) ||
     bothExist(['nonSuspendedInstancesOnly', 'suspendedInstancesOnly']) ||
     bothExist(['endDate', 'runningInstancesOnly']) ||
-    bothExist(['endDate', 'suspendedInstancesOnly'])
+    bothExist(['endDate', 'suspendedInstancesOnly']) ||
+    ((view?.entity === 'flowNode' || view?.entity === 'userTask') &&
+      (bothExist(['completedFlowNodesOnly', 'runningFlowNodesOnly']) ||
+        bothExist(['canceledFlowNodesOnly', 'runningFlowNodesOnly']) ||
+        bothExist(['completedOrCanceledFlowNodesOnly', 'runningFlowNodesOnly']) ||
+        bothExist(['completedFlowNodesOnly', 'canceledFlowNodesOnly'])))
   );
 }
