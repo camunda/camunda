@@ -16,7 +16,13 @@
               },
               {
                 "name": "YAML",
-                "integer": 2
+                "integer": 2,
+                "options": [
+                  {
+                    "name": "deprecated",
+                    "value": "true"
+                  }
+                ]
               }
             ]
           },
