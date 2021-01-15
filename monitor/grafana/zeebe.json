@@ -60,6 +60,12 @@
     },
     {
       "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
       "id": "table-old",
       "name": "Table (old)",
       "version": ""
@@ -83,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1610344067961,
+  "iteration": 1610701555265,
   "links": [],
   "panels": [
     {
@@ -392,121 +398,119 @@
           "type": "stat"
         },
         {
-          "columns": [
-            {
-              "text": "Current",
-              "value": "current"
-            }
-          ],
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "align": null,
+                "displayMode": "color-text"
+              },
+              "mappings": [
+                {
+                  "from": "",
+                  "id": 0,
+                  "operator": "",
+                  "text": "Follower",
+                  "to": "",
+                  "type": 1,
+                  "value": "1"
+                },
+                {
+                  "from": "",
+                  "id": 1,
+                  "operator": "",
+                  "text": "Candidate",
+                  "to": "",
+                  "type": 1,
+                  "value": "2"
+                },
+                {
+                  "from": "",
+                  "id": 2,
+                  "operator": "",
+                  "text": "Leader",
+                  "to": "",
+                  "type": 1,
+                  "value": "3"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "orange",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 3
+                  }
+                ]
+              }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Partition"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 76
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Role"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 96
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Broker"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 408
+                  }
+                ]
+              }
+            ]
           },
-          "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 5,
+            "w": 8,
             "x": 0,
             "y": 15
           },
           "id": 68,
           "links": [],
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": 1,
-            "desc": true
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Partition"
+              }
+            ]
           },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "link": false,
-              "pattern": "Time",
-              "type": "date"
-            },
-            {
-              "alias": "Broker - Partition",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "link": false,
-              "mappingType": 1,
-              "pattern": "Metric",
-              "preserveFormat": false,
-              "sanitize": false,
-              "thresholds": [],
-              "type": "string",
-              "unit": "short",
-              "valueMaps": []
-            },
-            {
-              "alias": "Role",
-              "align": "auto",
-              "colorMode": "value",
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Current",
-              "thresholds": [
-                "0",
-                "3"
-              ],
-              "type": "string",
-              "unit": "short",
-              "valueMaps": [
-                {
-                  "text": "Follower",
-                  "value": "1"
-                },
-                {
-                  "text": "Leader",
-                  "value": "3"
-                },
-                {
-                  "text": "Candidate",
-                  "value": "2"
-                }
-              ]
-            },
-            {
-              "alias": "test",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Current",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            }
-          ],
+          "pluginVersion": "7.0.3",
           "targets": [
             {
               "expr": "atomix_role{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
               "instant": true,
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} {{partitionGroupName}} {{partition}}",
               "refId": "A"
@@ -514,9 +518,371 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Current Roles",
-          "transform": "timeseries_aggregations",
-          "type": "table-old"
+          "title": "Current Roles (raft)",
+          "transformations": [
+            {
+              "id": "labelsToFields",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "partitionGroupName": true,
+                  "service": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 10,
+                  "__name__": 1,
+                  "endpoint": 2,
+                  "instance": 3,
+                  "job": 4,
+                  "namespace": 5,
+                  "partition": 8,
+                  "partitionGroupName": 6,
+                  "pod": 7,
+                  "service": 9
+                },
+                "renameByName": {
+                  "Value": "Role",
+                  "partition": "Partition",
+                  "pod": "Broker"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the partition roles of brokers according to the gateway topology.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": null,
+                "displayMode": "color-text"
+              },
+              "mappings": [
+                {
+                  "from": "",
+                  "id": 0,
+                  "operator": "",
+                  "text": "Follower",
+                  "to": "",
+                  "type": 1,
+                  "value": "0"
+                },
+                {
+                  "from": "",
+                  "id": 1,
+                  "operator": "",
+                  "text": "Leader",
+                  "to": "",
+                  "type": 1,
+                  "value": "3"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "orange",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 3
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "partition"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 70
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Leader"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 61
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Gateway"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 152
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Partition"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 68
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Broker"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 58
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Role"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 78
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 9,
+            "x": 8,
+            "y": 15
+          },
+          "id": 237,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Partition"
+              }
+            ]
+          },
+          "pluginVersion": "7.0.3",
+          "targets": [
+            {
+              "expr": "zeebe_gateway_topology_partition_roles{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": true,
+              "interval": "",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Gateway topology",
+          "transformations": [
+            {
+              "id": "labelsToFields",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "service": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 9,
+                  "broker": 7,
+                  "endpoint": 1,
+                  "instance": 2,
+                  "job": 3,
+                  "namespace": 4,
+                  "partition": 6,
+                  "pod": 5,
+                  "service": 8
+                },
+                "renameByName": {
+                  "Value": "Role",
+                  "broker": "Broker",
+                  "partition": "Partition",
+                  "pod": "Gateway (pod)"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": null,
+                "displayMode": "color-text"
+              },
+              "mappings": [
+                {
+                  "from": "",
+                  "id": 0,
+                  "operator": "",
+                  "text": "Healthy",
+                  "to": "",
+                  "type": 1,
+                  "value": "1"
+                },
+                {
+                  "from": "",
+                  "id": 1,
+                  "operator": "",
+                  "text": "Unhealthy",
+                  "to": "",
+                  "type": 1,
+                  "value": "0"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Partition"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 77
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 94
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 7,
+            "x": 17,
+            "y": 15
+          },
+          "id": 129,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Broker"
+              }
+            ]
+          },
+          "pluginVersion": "7.0.3",
+          "targets": [
+            {
+              "expr": "zeebe_health{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
+              "instant": true,
+              "legendFormat": "{{pod}} {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Partition health ",
+          "transformations": [
+            {
+              "id": "labelsToFields",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "service": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 9,
+                  "__name__": 1,
+                  "endpoint": 2,
+                  "instance": 3,
+                  "job": 4,
+                  "namespace": 5,
+                  "partition": 7,
+                  "pod": 6,
+                  "service": 8
+                },
+                "renameByName": {
+                  "Value": "Status",
+                  "partition": "Partition",
+                  "pod": "Broker"
+                }
+              }
+            }
+          ],
+          "type": "table"
         },
         {
           "aliasColors": {},
@@ -536,9 +902,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
-            "w": 9,
-            "x": 5,
-            "y": 15
+            "w": 18,
+            "x": 0,
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 116,
@@ -636,117 +1002,6 @@
         {
           "columns": [
             {
-              "text": "Current",
-              "value": "current"
-            }
-          ],
-          "datasource": "${DS_PROMETHEUS}",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fontSize": "100%",
-          "gridPos": {
-            "h": 9,
-            "w": 5,
-            "x": 14,
-            "y": 15
-          },
-          "id": 129,
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": null,
-            "desc": false
-          },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "date"
-            },
-            {
-              "alias": "",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            },
-            {
-              "alias": "Broker Partition",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "pattern": "Metric",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            },
-            {
-              "alias": "Status",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Current",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short",
-              "valueMaps": [
-                {
-                  "text": "Healthy",
-                  "value": "1"
-                },
-                {
-                  "text": "Unhealthy",
-                  "value": "0"
-                }
-              ]
-            }
-          ],
-          "targets": [
-            {
-              "expr": "zeebe_health{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
-              "instant": true,
-              "legendFormat": "{{pod}} {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Partition health ",
-          "transform": "timeseries_aggregations",
-          "type": "table-old"
-        },
-        {
-          "columns": [
-            {
               "$$hashKey": "object:6333",
               "text": "Current",
               "value": "current"
@@ -763,9 +1018,9 @@
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 5,
-            "x": 19,
-            "y": 15
+            "w": 6,
+            "x": 18,
+            "y": 24
           },
           "id": 54,
           "pageSize": null,
@@ -865,7 +1120,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 24
+            "y": 33
           },
           "hiddenSeries": false,
           "id": 58,
@@ -984,7 +1239,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 24
+            "y": 33
           },
           "id": 117,
           "interval": null,
@@ -1065,7 +1320,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 24
+            "y": 33
           },
           "hiddenSeries": false,
           "id": 74,
@@ -1172,7 +1427,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 28
+            "y": 37
           },
           "id": 118,
           "interval": null,
@@ -1267,7 +1522,7 @@
             "h": 8,
             "w": 7,
             "x": 0,
-            "y": 32
+            "y": 41
           },
           "id": 189,
           "links": [],
@@ -1322,7 +1577,7 @@
             "h": 8,
             "w": 8,
             "x": 7,
-            "y": 32
+            "y": 41
           },
           "hiddenSeries": false,
           "id": 87,
@@ -1439,7 +1694,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 32
+            "y": 41
           },
           "hiddenSeries": false,
           "id": 31,
@@ -1558,7 +1813,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 49
           },
           "hiddenSeries": false,
           "id": 62,
@@ -1654,7 +1909,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 49
           },
           "hiddenSeries": false,
           "id": 93,
@@ -9751,5 +10006,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 3
+  "version": 4
 }
