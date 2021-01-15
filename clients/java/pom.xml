@@ -162,6 +162,11 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>io/zeebe/client/impl/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
   </build>

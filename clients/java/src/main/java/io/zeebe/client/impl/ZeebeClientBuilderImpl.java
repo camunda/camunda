@@ -28,7 +28,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.zeebe.client.util.Environment;
+import io.zeebe.client.impl.util.Environment;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
