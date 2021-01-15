@@ -25,7 +25,12 @@ public interface BrokerClusterState {
 
   List<Integer> getFollowersForPartition(int partition);
 
-  /** @return the node id of a random broker or {@link UNKNOWN_NODE_ID} if no brokers are known */
+  List<Integer> getInactiveNodesForPartition(int partition);
+
+  /**
+   * @return the node id of a random broker or {@link BrokerClusterState#UNKNOWN_NODE_ID} if no
+   *     brokers are known
+   */
   int getRandomBroker();
 
   List<Integer> getPartitions();

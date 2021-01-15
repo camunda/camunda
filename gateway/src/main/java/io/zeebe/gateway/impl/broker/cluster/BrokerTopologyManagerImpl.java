@@ -131,7 +131,8 @@ public final class BrokerTopologyManagerImpl extends Actor
         newTopology::addPartitionIfAbsent,
         (leaderPartitionId, term) ->
             newTopology.setPartitionLeader(leaderPartitionId, nodeId, term),
-        followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId));
+        followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId),
+        inactivePartitionId -> newTopology.addPartitionInactive(inactivePartitionId, nodeId));
 
     final String clientAddress = distributedBrokerInfo.getCommandApiAddress();
     if (clientAddress != null) {
