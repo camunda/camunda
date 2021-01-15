@@ -17,5 +17,6 @@ package io.zeebe.client.api.response;
 
 public enum PartitionBrokerRole {
   LEADER,
-  FOLLOWER
+  FOLLOWER,
+  INACTIVE
 }
