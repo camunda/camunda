@@ -63,7 +63,7 @@
     "@testing-library/react": "^11.2.3",
     "@testing-library/react-hooks": "^5.0.0",
     "@testing-library/testcafe": "^4.3.1",
-    "@types/node-fetch": "^2.5.7",
+    "@types/node-fetch": "^2.5.8",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.5",
     "eslint-plugin-camunda-licensed": "^0.4.3",
