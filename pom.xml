@@ -32,7 +32,7 @@
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
-    <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
+    <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
 
     <jackson.version>2.12.1</jackson.version>
     <jsonpath.version>2.5.0</jsonpath.version>
