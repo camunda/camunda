@@ -88,7 +88,7 @@
     <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
     <version.feel-scala>1.12.4</version.feel-scala>
     <version.restassert>4.3.3</version.restassert>
-    <version.spring-boot>2.4.1</version.spring-boot>
+    <version.spring-boot>2.4.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.0.3</version.kryo>
