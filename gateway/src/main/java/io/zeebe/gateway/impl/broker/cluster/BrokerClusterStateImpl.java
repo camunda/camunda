@@ -21,6 +21,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
   private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
+  private final Int2ObjectHashMap<List<Integer>> partitionInactiveNodes;
   private final Int2ObjectHashMap<IntArrayList> healthyPartitionsPerBroker;
   private final Int2ObjectHashMap<String> brokerAddresses;
   private final Int2ObjectHashMap<String> brokerVersions;
@@ -40,6 +41,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       healthyPartitionsPerBroker.putAll(topology.healthyPartitionsPerBroker);
       brokerAddresses.putAll(topology.brokerAddresses);
       brokerVersions.putAll(topology.brokerVersions);
+      partitionInactiveNodes.putAll(topology.partitionInactiveNodes);
 
       brokers.addAll(topology.brokers);
       partitions.addAll(topology.partitions);
@@ -54,6 +56,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
     partitionLeaderTerms = new Int2ObjectHashMap<>();
     partitionFollowers = new Int2ObjectHashMap<>();
+    partitionInactiveNodes = new Int2ObjectHashMap<>();
     healthyPartitionsPerBroker = new Int2ObjectHashMap<>();
     brokerAddresses = new Int2ObjectHashMap<>();
     brokerVersions = new Int2ObjectHashMap<>();
@@ -69,6 +72,10 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       final List<Integer> followers = partitionFollowers.get(partitionId);
       if (followers != null) {
         followers.removeIf(follower -> follower == leaderId);
+      }
+      final List<Integer> inactives = partitionInactiveNodes.get(partitionId);
+      if (inactives != null) {
+        inactives.removeIf(inactive -> inactive == leaderId);
       }
     }
   }
@@ -95,10 +102,23 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   public void addPartitionFollower(final int partitionId, final int followerId) {
     partitionFollowers.computeIfAbsent(partitionId, ArrayList::new).add(followerId);
     partitionLeaders.remove(partitionId, followerId);
+    final List<Integer> inactives = partitionInactiveNodes.get(partitionId);
+    if (inactives != null) {
+      inactives.removeIf(inactive -> inactive == followerId);
+    }
+  }
+
+  public void addPartitionInactive(final int partitionId, final int brokerId) {
+    partitionInactiveNodes.computeIfAbsent(partitionId, ArrayList::new).add(brokerId);
+    partitionLeaders.remove(partitionId, brokerId);
+    final List<Integer> followers = partitionFollowers.get(partitionId);
+    if (followers != null) {
+      followers.removeIf(follower -> follower == brokerId);
+    }
   }
 
   public void addPartitionIfAbsent(final int partitionId) {
-    if (partitions.indexOf(partitionId) == -1) {
+    if (!partitions.contains(partitionId)) {
       partitions.addInt(partitionId);
     }
   }
@@ -131,6 +151,10 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
           final List<Integer> followers = partitionFollowers.get(partitionId);
           if (followers != null) {
             followers.remove(Integer.valueOf(brokerId));
+          }
+          final List<Integer> inactive = partitionInactiveNodes.get(partitionId);
+          if (inactive != null) {
+            inactive.removeIf(id -> id == brokerId);
           }
         });
   }
@@ -170,6 +194,11 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   @Override
   public List<Integer> getFollowersForPartition(final int partition) {
     return partitionFollowers.get(partition);
+  }
+
+  @Override
+  public List<Integer> getInactiveNodesForPartition(final int partition) {
+    return partitionInactiveNodes.get(partition);
   }
 
   @Override

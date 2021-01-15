@@ -44,7 +44,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
@@ -86,20 +85,11 @@ public final class EndpointManager {
         .getPartitions()
         .forEach(
             partitionId -> {
-              final Partition.Builder partitionBuilder = Partition.newBuilder();
-              partitionBuilder.setPartitionId(partitionId);
+              final Partition.Builder partitionBuilder =
+                  Partition.newBuilder().setPartitionId(partitionId);
 
-              if (topology.getLeaderForPartition(partitionId) == brokerId) {
-                partitionBuilder.setRole(PartitionBrokerRole.LEADER);
-              } else {
-                final List<Integer> followersForPartition =
-                    topology.getFollowersForPartition(partitionId);
-
-                if (followersForPartition != null && followersForPartition.contains(brokerId)) {
-                  partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
-                } else {
-                  return;
-                }
+              if (!setRole(brokerId, partitionId, topology, partitionBuilder)) {
+                return;
               }
               if (topology.isPartitionHealthy(brokerId, partitionId)) {
                 partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
@@ -108,6 +98,33 @@ public final class EndpointManager {
               }
               brokerInfo.addPartitions(partitionBuilder);
             });
+  }
+
+  /**
+   * Sets the broker's partition role in the Partition.Builder
+   *
+   * @return true if it could set the role. False if no role was could be found.
+   */
+  private boolean setRole(
+      final Integer brokerId,
+      final Integer partitionId,
+      final BrokerClusterState topology,
+      final Partition.Builder partitionBuilder) {
+    final int partitionLeader = topology.getLeaderForPartition(partitionId);
+    final List<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final List<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+
+    if (partitionLeader == brokerId) {
+      partitionBuilder.setRole(PartitionBrokerRole.LEADER);
+    } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
+      partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
+    } else if (partitionInactives != null && partitionInactives.contains(brokerId)) {
+      partitionBuilder.setRole(PartitionBrokerRole.INACTIVE);
+    } else {
+      return false;
+    }
+
+    return true;
   }
 
   public void activateJobs(
@@ -226,9 +243,7 @@ public final class EndpointManager {
         responseObserver);
   }
 
-  public void topology(
-      final TopologyRequest request,
-      final ServerStreamObserver<TopologyResponse> responseObserver) {
+  public void topology(final ServerStreamObserver<TopologyResponse> responseObserver) {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
     final BrokerClusterState topology = topologyManager.getTopology();
 
