@@ -18,6 +18,7 @@ package io.zeebe.client;
 import static io.zeebe.client.util.RecordingGatewayService.broker;
 import static io.zeebe.client.util.RecordingGatewayService.partition;
 import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
+import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.INACTIVE;
 import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,7 +47,7 @@ public final class TopologyRequestTest extends ClientTest {
         "1.22.3-SNAPSHOT",
         broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER), partition(1, FOLLOWER)),
         broker(1, "host2", 212, "2.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, LEADER)),
-        broker(2, "host3", 432, "3.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, FOLLOWER)));
+        broker(2, "host3", 432, "3.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, INACTIVE)));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();
@@ -89,7 +90,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getPartitions())
         .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
         .containsOnly(
-            tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.FOLLOWER));
+            tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.INACTIVE));
   }
 
   @Test
