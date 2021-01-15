@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.IncidentState;
@@ -20,16 +21,18 @@ import io.zeebe.protocol.record.value.ErrorType;
 
 public final class BpmnIncidentBehavior {
 
-  private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final IncidentRecord incidentRecord = new IncidentRecord();
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
   private final TypedStreamWriter streamWriter;
+  private final KeyGenerator keyGenerator;
 
   public BpmnIncidentBehavior(final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
     this.streamWriter = streamWriter;
+    keyGenerator = zeebeState.getKeyGenerator();
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -57,8 +60,10 @@ public final class BpmnIncidentBehavior {
       final BpmnElementContext context,
       final long variableScopeKey) {
 
-    incidentCommand.reset();
-    incidentCommand
+    // todo: check whether incident can be created like in CreateIncidentProcessor#L44
+
+    incidentRecord.reset();
+    incidentRecord
         .setWorkflowInstanceKey(context.getWorkflowInstanceKey())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setWorkflowKey(context.getWorkflowKey())
@@ -68,6 +73,7 @@ public final class BpmnIncidentBehavior {
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 
+    // todo: move state behaviour to eventapplier
     elementInstanceState.storeRecord(
         context.getElementInstanceKey(),
         context.getFlowScopeKey(),
@@ -75,7 +81,8 @@ public final class BpmnIncidentBehavior {
         context.getIntent(),
         Purpose.FAILED);
 
-    streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
+    final var incidentKey = keyGenerator.nextKey();
+    streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.CREATED, incidentRecord);
   }
 
   public void resolveIncidents(final BpmnElementContext context) {

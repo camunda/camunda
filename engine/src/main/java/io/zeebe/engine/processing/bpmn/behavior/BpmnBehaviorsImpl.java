@@ -53,9 +53,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     stateBehavior = new BpmnStateBehavior(zeebeState);
     stateTransitionGuard = new WorkflowInstanceStateTransitionGuard(stateBehavior);
     variableMappingBehavior = new BpmnVariableMappingBehavior(expressionBehavior, zeebeState);
+    final var appender = new StreamAppender(streamWriter, zeebeState);
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
-            new StreamAppender(streamWriter, stateBehavior),
+            appender,
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new WorkflowEngineMetrics(zeebeState.getPartitionId()),
@@ -69,7 +70,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             streamWriter,
             sideEffects,
             zeebeState);
-    incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
+    incidentBehavior = new BpmnIncidentBehavior(zeebeState, appender);
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter);
     workflowResultSenderBehavior = new BpmnWorkflowResultSenderBehavior(zeebeState, responseWriter);

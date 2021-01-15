@@ -338,9 +338,9 @@ public final class ExclusiveGatewayTest {
     assertThat(
             RecordingExporter.incidentRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(2))
+                .limit(1))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED);
+        .containsExactly(IncidentIntent.CREATED);
 
     // when
     ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
@@ -360,8 +360,8 @@ public final class ExclusiveGatewayTest {
     assertThat(
             RecordingExporter.incidentRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(3))
+                .limit(2))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

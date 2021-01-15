@@ -7,9 +7,9 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplier;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -23,9 +23,9 @@ public final class StreamAppender implements TypedStreamWriter {
   private final TypedStreamWriter delegate;
   private final EventApplier eventApplier;
 
-  public StreamAppender(final TypedStreamWriter delegate, final BpmnStateBehavior stateBehavior) {
+  public StreamAppender(final TypedStreamWriter delegate, final ZeebeState zeebeState) {
     this.delegate = delegate;
-    eventApplier = new EventApplier(stateBehavior);
+    eventApplier = new EventApplier(zeebeState);
   }
 
   @Override
