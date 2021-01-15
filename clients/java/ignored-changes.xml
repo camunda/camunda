@@ -1,0 +1,10 @@
+<differences>
+  <difference>
+    <className>io/zeebe/client/util/Environment</className>
+    <differenceType>8001</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/util/VersionUtil</className>
+    <differenceType>8001</differenceType>
+  </difference>
+</differences>
