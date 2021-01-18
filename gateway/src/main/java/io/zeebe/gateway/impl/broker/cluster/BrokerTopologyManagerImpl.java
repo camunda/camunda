@@ -161,7 +161,9 @@ public final class BrokerTopologyManagerImpl extends Actor
           }
 
           final var followers = topology.getFollowersForPartition(partition);
-          followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
+          if (followers != null) {
+            followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
+          }
         });
   }
 }
