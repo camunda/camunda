@@ -298,13 +298,8 @@ public final class ErrorEventIncidentTest {
     assertThat(
             RecordingExporter.incidentRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(5))
+                .limit(3))
         .extracting(Record::getIntent)
-        .containsExactly(
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED,
-            IncidentIntent.RESOLVED,
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED);
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.CREATED);
   }
 }

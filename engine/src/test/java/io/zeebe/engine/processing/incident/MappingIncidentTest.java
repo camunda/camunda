@@ -80,12 +80,6 @@ public final class MappingIncidentTest {
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
-    final Record createIncidentEvent =
-        RecordingExporter.incidentRecords()
-            .onlyCommands()
-            .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .onlyEvents()
@@ -94,9 +88,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
-    assertThat(incidentEvent.getSourceRecordPosition())
-        .isEqualTo(createIncidentEvent.getPosition());
+    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
@@ -186,11 +178,6 @@ public final class MappingIncidentTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    final Record createIncidentEvent =
-        RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(IncidentIntent.CREATE)
-            .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -198,9 +185,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
-    assertThat(incidentEvent.getSourceRecordPosition())
-        .isEqualTo(createIncidentEvent.getPosition());
+    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
