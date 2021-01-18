@@ -1,6 +1,7 @@
 <differences>
   <difference>
     <className>io/zeebe/protocol/record/*Decoder</className>
+    <!-- protected fields were downgraded to package visibility -->
     <differenceType>6010</differenceType>
     <field>*</field>
     <from>protected</from>
@@ -8,9 +9,20 @@
   </difference>
   <difference>
     <className>io/zeebe/protocol/record/*Encoder</className>
+    <!-- protected fields were downgraded to package visibility -->
     <differenceType>6010</differenceType>
     <field>*</field>
     <from>protected</from>
     <to>package</to>
+  </difference>
+  <difference>
+    <className>io/zeebe/protocol/record/*Encoder</className>
+    <!-- final modifier was added to class -->
+    <differenceType>3003</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/protocol/record/*Decoder</className>
+    <!-- final modifier was added to class -->
+    <differenceType>3003</differenceType>
   </difference>
 </differences>
