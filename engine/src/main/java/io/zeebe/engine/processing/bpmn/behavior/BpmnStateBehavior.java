@@ -139,7 +139,7 @@ public final class BpmnStateBehavior {
         flowScopeInstance, elementInstanceKey, record, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  public ElementInstance createElementInstance(
+  ElementInstance createElementInstance(
       final long childInstanceKey, final WorkflowInstanceRecord childRecord) {
     return elementInstanceState.newInstance(
         childInstanceKey, childRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);

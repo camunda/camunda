@@ -36,11 +36,16 @@ public final class EventApplier {
     /* Pseudo code */
     //    switch (value) {
     //      instanceof WorkflowInstanceRecord => switch (intent) {
-    //       WorkflowInstanceIntent.ELEMENT_ACTIVATING => updateElementInstanceState()
+    //       WorkflowInstanceIntent.ELEMENT_ACTIVATING => switch(value.type) {
+    //          SERVICE_TASK => updateElementInstanceState()
+    //       },
+    //       WorkflowInstanceIntent.ELEMENT_ACTIVATED => updateElementInstanceState()
     //      }
     //      instanceof IncidentRecord => switch (intent) {
     //        IncidentIntent.CREATED => createIncident() + markCommandAsFailed()
     //      }
+    //      instanceof VariableRecord
+    //                CREATED =>
     //    }
     if (value instanceof WorkflowInstanceRecord) {
       final var record = (WorkflowInstanceRecord) value;

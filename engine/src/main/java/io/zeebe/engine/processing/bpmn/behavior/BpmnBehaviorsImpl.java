@@ -16,8 +16,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement
 import io.zeebe.engine.processing.streamprocessor.StreamAppender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Function;
@@ -36,6 +38,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final TypedStreamWriter streamWriter;
   private final BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
+  private final KeyGenerator keyGenerator;
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
@@ -76,6 +79,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     workflowResultSenderBehavior = new BpmnWorkflowResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(zeebeState, streamWriter);
+    keyGenerator = zeebeState.getKeyGenerator();
   }
 
   @Override
@@ -114,6 +118,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
+  public TypedEventWriter eventWriter() {
+    return streamWriter;
+  }
+
+  @Override
   public BpmnStateTransitionBehavior stateTransitionBehavior() {
     return stateTransitionBehavior;
   }
@@ -136,5 +145,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior() {
     return bufferedMessageStartEventBehavior;
+  }
+
+  @Override
+  public KeyGenerator keyGenerator() {
+    return keyGenerator;
   }
 }

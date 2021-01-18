@@ -19,11 +19,15 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.Either;
+import io.zeebe.util.collection.Tuple;
 
 public final class ServiceTaskProcessor implements BpmnElementProcessor<ExecutableServiceTask> {
 
@@ -36,6 +40,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final TypedEventWriter eventWriter;
+  private final KeyGenerator keyGenerator;
 
   public ServiceTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
@@ -45,6 +51,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
     stateBehavior = behaviors.stateBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
+    eventWriter = behaviors.eventWriter();
+    keyGenerator = behaviors.keyGenerator();
   }
 
   @Override
@@ -53,29 +61,39 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivating(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableServiceTask element, final BpmnElementContext context) {
+    /* todo:
+     * x whatever was done previously when writing the element_activating event
+     * x everything what was done during the processing of the element_activating (so onActivating)
+     * x everything what was done during the processing of the element_activated (so onActivated)
+     * - move state changes to event applier
+     */
 
-    variableMappingBehavior
-        .applyInputMappings(context, element)
+    final var elementInstanceKey = keyGenerator.nextKey();
+
+    eventWriter.appendFollowUpEvent(
+        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getRecordValue());
+    stateBehavior.createElementInstanceInFlowScope(
+        context, elementInstanceKey, context.getRecordValue());
+
+    final var scopeKey = context.getElementInstanceKey();
+    Either.<Failure, Void>right(null)
+        .flatMap(ok -> variableMappingBehavior.applyInputMappings(context, element))
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(ok -> evaluateJobExpressions(element, scopeKey))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            jobTypeAndRetries -> {
+              stateTransitionBehavior.transitionToActivated(context);
+              createNewJob(context, element, jobTypeAndRetries);
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onActivated(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onActivating(final ExecutableServiceTask element, final BpmnElementContext context) {}
 
-    final var scopeKey = context.getElementInstanceKey();
-    final Either<Failure, String> jobTypeOrFailure =
-        expressionBehavior.evaluateStringExpression(element.getType(), scopeKey);
-    jobTypeOrFailure
-        .flatMap(
-            jobType -> expressionBehavior.evaluateLongExpression(element.getRetries(), scopeKey))
-        .ifRightOrLeft(
-            retries -> createNewJob(context, element, jobTypeOrFailure.get(), retries.intValue()),
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
+  @Override
+  public void onActivated(final ExecutableServiceTask element, final BpmnElementContext context) {}
 
   @Override
   public void onCompleting(final ExecutableServiceTask element, final BpmnElementContext context) {
@@ -133,21 +151,28 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
   }
-  //
-  //  @Override
-  //  public void onActivate(final ExecutableServiceTask element, final BpmnElementContext context)
-  // {
-  //    stateTransitionBehavior.transitionToActivated(context);
-  //  }
+
+  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
+      final ExecutableServiceTask element, final long scopeKey) {
+    return Either.<Failure, Void>right(null)
+        .flatMap(ok -> expressionBehavior.evaluateStringExpression(element.getType(), scopeKey))
+        .flatMap(
+            jobType ->
+                expressionBehavior
+                    .evaluateLongExpression(element.getRetries(), scopeKey)
+                    .map(retries -> new Tuple<>(jobType, retries)));
+  }
 
   private void createNewJob(
       final BpmnElementContext context,
       final ExecutableServiceTask serviceTask,
-      final String jobType,
-      final int retries) {
+      final Tuple<String, Long> jobTypeAndRetries) {
+
+    final var type = jobTypeAndRetries.getLeft();
+    final var retries = jobTypeAndRetries.getRight().intValue();
 
     jobCommand
-        .setType(jobType)
+        .setType(type)
         .setRetries(retries)
         .setCustomHeaders(serviceTask.getEncodedHeaders())
         .setBpmnProcessId(context.getBpmnProcessId())

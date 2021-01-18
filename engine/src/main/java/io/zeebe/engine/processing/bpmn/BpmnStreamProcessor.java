@@ -102,6 +102,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final ExecutableFlowElement element) {
 
     switch (intent) {
+      case ACTIVATE_ELEMENT:
+        processor.onActivate(element, context);
+        break;
       case ELEMENT_ACTIVATING:
         processor.onActivating(element, context);
         break;

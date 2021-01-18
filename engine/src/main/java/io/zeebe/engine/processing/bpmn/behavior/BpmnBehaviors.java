@@ -10,6 +10,8 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.WorkflowInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.zeebe.engine.state.KeyGenerator;
 
 public interface BpmnBehaviors {
 
@@ -36,4 +38,10 @@ public interface BpmnBehaviors {
   BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior();
 
   BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior();
+
+  // todo: remove this low level access from the behaviors (only here for the spike)
+  TypedEventWriter eventWriter();
+
+  // todo: remove this low level access from the behaviors (only here for the spike)
+  KeyGenerator keyGenerator();
 }

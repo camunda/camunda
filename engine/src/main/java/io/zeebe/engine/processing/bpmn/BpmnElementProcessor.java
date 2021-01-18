@@ -23,6 +23,8 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   /** @return the class that represents the BPMN element */
   Class<T> getType();
 
+  default void onActivate(final T element, final BpmnElementContext context) {}
+
   /**
    * The element is entered (initial step). Perform every action to initialize the element.
    *

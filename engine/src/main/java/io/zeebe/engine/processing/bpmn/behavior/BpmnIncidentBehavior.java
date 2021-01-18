@@ -83,6 +83,10 @@ public final class BpmnIncidentBehavior {
 
     final var incidentKey = keyGenerator.nextKey();
     streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.CREATED, incidentRecord);
+
+    //    ServiceTask:Activate_Element -> WorkflowInstance:Element_Activating .... Incident:Created
+    // {elementInstanceKey}
+    //    Incident:Resolve -> WorkflowInstance:Element_Activated
   }
 
   public void resolveIncidents(final BpmnElementContext context) {

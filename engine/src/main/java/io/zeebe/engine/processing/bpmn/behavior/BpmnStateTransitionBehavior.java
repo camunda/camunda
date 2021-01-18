@@ -163,13 +163,19 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(element.getId())
             .setBpmnElementType(element.getElementType());
 
-    final var elementInstanceKey = keyGenerator.nextKey();
+    if (element.getElementType() == BpmnElementType.SERVICE_TASK) {
+      final var newCommandKey = -1L;
+      streamAppender.appendFollowUpCommand(
+          newCommandKey, WorkflowInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
+    } else {
+      final var elementInstanceKey = keyGenerator.nextKey();
 
-    streamAppender.appendNewEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
+      streamAppender.appendNewEvent(
+          elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
-    stateBehavior.createElementInstanceInFlowScope(
-        context, elementInstanceKey, elementInstanceRecord);
+      stateBehavior.createElementInstanceInFlowScope(
+          context, elementInstanceKey, elementInstanceRecord);
+    }
   }
 
   /**
