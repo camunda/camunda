@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
+import org.camunda.optimize.upgrade.plan.UpgradeFrom33To34Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 
@@ -37,6 +38,7 @@ public class UpgradeMain {
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
     addUpgradePlan(GenericUpgradeFactory.createUpgradePlan());
+    addUpgradePlan(UpgradeFrom33To34Factory.createUpgradePlan());
   }
 
   public static void main(String... args) {
