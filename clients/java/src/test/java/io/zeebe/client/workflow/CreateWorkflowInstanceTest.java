@@ -21,13 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import com.google.common.base.Charsets;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.Test;
@@ -96,7 +96,8 @@ public final class CreateWorkflowInstanceTest extends ClientTest {
   public void shouldCreateWorkflowInstanceWithInputStreamVariables() {
     // given
     final String variables = "{\"foo\": \"bar\"}";
-    final InputStream inputStream = new ByteArrayInputStream(variables.getBytes(Charsets.UTF_8));
+    final InputStream inputStream =
+        new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
 
     // when
     client.newCreateInstanceCommand().workflowKey(123).variables(inputStream).send().join();

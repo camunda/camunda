@@ -19,7 +19,6 @@ import static io.zeebe.client.util.RecordingGatewayService.deployedWorkflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.google.common.base.Charsets;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.Workflow;
@@ -33,6 +32,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
@@ -127,7 +127,11 @@ public final class DeployWorkflowTest extends ClientTest {
     final String xml = new String(getBytes(filename));
 
     // when
-    client.newDeployCommand().addResourceString(xml, Charsets.UTF_8, filename).send().join();
+    client
+        .newDeployCommand()
+        .addResourceString(xml, StandardCharsets.UTF_8, filename)
+        .send()
+        .join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -141,7 +145,7 @@ public final class DeployWorkflowTest extends ClientTest {
   public void shouldDeployWorkflowFromUtf8String() {
     // given
     final String filename = BPMN_1_FILENAME;
-    final String xml = new String(getBytes(filename), Charsets.UTF_8);
+    final String xml = new String(getBytes(filename), StandardCharsets.UTF_8);
 
     // when
     client.newDeployCommand().addResourceStringUtf8(xml, filename).send().join();

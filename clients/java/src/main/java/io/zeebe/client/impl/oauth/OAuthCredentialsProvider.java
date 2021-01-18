@@ -20,7 +20,6 @@ import static java.lang.Math.toIntExact;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.google.common.io.CharStreams;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Status;
@@ -188,9 +187,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
     try (final InputStream in = connection.getInputStream();
         final InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-
-      final ZeebeClientCredentials fetchedCredentials =
-          CREDENTIALS_READER.readValue(CharStreams.toString(reader));
+      final ZeebeClientCredentials fetchedCredentials = CREDENTIALS_READER.readValue(reader);
 
       if (fetchedCredentials == null) {
         throw new IOException("Expected valid credentials but got null instead.");
