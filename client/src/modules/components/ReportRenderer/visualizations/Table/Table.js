@@ -5,6 +5,7 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
+import update from 'immutability-helper';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -31,8 +32,14 @@ export function Table(props) {
     }
   }, [mightFail, needEndpoint]);
 
-  const updateSorting = (by, order) =>
-    updateReport({configuration: {sorting: {$set: {by, order}}}}, true);
+  const updateSorting = async (by, order) => {
+    setLoading(true);
+    await loadReport(result.pagination, {
+      ...report,
+      data: update(report.data, {configuration: {sorting: {$set: {by, order}}}}),
+    });
+    setLoading(false);
+  };
 
   const fetchData = useCallback(
     async ({pageIndex, pageSize}) => {
@@ -60,10 +67,12 @@ export function Table(props) {
       tableData.fetchData = fetchData;
       tableData.loading = loading;
       tableData.defaultPageSize = result.pagination.limit;
+      tableData.defaultPage = result.pagination.offset / result.pagination.limit;
       tableData.totalEntries = result.instanceCount;
     } else {
       // Normal single Report
       tableData = processDefaultData(props);
+      tableData.loading = loading;
     }
 
     return {
