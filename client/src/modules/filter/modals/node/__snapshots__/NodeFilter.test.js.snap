@@ -6,25 +6,25 @@ exports[`should contain buttons to switch between executed and not executed mode
     active={false}
     onClick={[Function]}
   >
-    pending or executing
+    Running
   </ForwardRef(Button)>
   <ForwardRef(Button)
     active={true}
     onClick={[Function]}
   >
-    was executed
+    Running, Canceled or Completed
   </ForwardRef(Button)>
   <ForwardRef(Button)
     active={false}
     onClick={[Function]}
   >
-    was not executed
+    Not executed
   </ForwardRef(Button)>
   <ForwardRef(Button)
     active={false}
     onClick={[Function]}
   >
-    was cancelled or interrupted
+    Canceled
   </ForwardRef(Button)>
 </ButtonGroup>
 `;

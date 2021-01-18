@@ -866,13 +866,9 @@
           "occurs": "ist",
           "contains": "enthält",
           "notContains": "enthält nicht"
-        },
-        "not": "Nicht ",
-        "executedFlowNodes": "Ausgeführt",
-        "canceledFlowNodes": "Abgebrochen oder unterbrochen",
-        "executingFlowNodes": "in Ausführung"
+        }
       },
-      "modalHeader": "Füge {type} Filter hinzu",
+      "modalHeader": "{type} Filter",
       "addFilter": "Filter hinzufügen",
       "updateFilter": "Filter ändern",
       "dateModal": {
@@ -943,11 +939,10 @@
         "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {
-        "note": "Sowohl Ausgeführte als auch Ausführende Prozessknoten werden im Ergebnis zurückgegeben.",
-        "executed": "wurde ausgeführt",
-        "notExecuted": "wurde nicht ausgeführt",
-        "canceled": "wurde abgebrochen oder unterbrochen",
-        "executing": "wartend oder in Ausführung",
+        "executedFlowNodes": "Laufend, Abgebrochen oder Beendet",
+        "notExecutedFlowNodes": "Nicht ausgeführt",
+        "canceledFlowNodes": "Abgebrochen",
+        "executingFlowNodes": "Laufend",
         "previewLabel": "Zeige Prozessinstanzen bei denen gilt: "
       },
       "assigneeModal": {

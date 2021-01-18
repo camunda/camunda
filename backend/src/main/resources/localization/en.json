@@ -866,13 +866,9 @@
           "occurs": "occurs",
           "contains": "contains",
           "notContains": "does not contain"
-        },
-        "not": "Not ",
-        "executedFlowNodes": "Executed",
-        "canceledFlowNodes": "Cancelled or interrupted",
-        "executingFlowNodes": "Pending or Executing"
+        }
       },
-      "modalHeader": "Add {type} Filter",
+      "modalHeader": "{type} Filter",
       "addFilter": "Add Filter",
       "updateFilter": "Update Filter",
       "dateModal": {
@@ -943,11 +939,10 @@
         "appliedTo": "filter is applied to"
       },
       "nodeModal": {
-        "note": "Both Executed and Executing Flow Nodes are returned in the result.",
-        "executed": "was executed",
-        "notExecuted": "was not executed",
-        "canceled": "was cancelled or interrupted",
-        "executing": "pending or executing",
+        "executedFlowNodes": "Running, Canceled or Completed",
+        "notExecutedFlowNodes": "Not executed",
+        "canceledFlowNodes": "Canceled",
+        "executingFlowNodes": "Running",
         "previewLabel": "Display process instances where: "
       },
       "assigneeModal": {

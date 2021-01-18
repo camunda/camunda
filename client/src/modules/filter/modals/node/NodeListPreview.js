@@ -32,19 +32,20 @@ export default function NodeListPreview({nodes, operator, type}) {
       </li>
     );
   });
+
+  const executed = type === 'executedFlowNodes' && operator !== 'not in';
+
   return (
     <>
       <ul className="previewList">{previewList}</ul>
       {createOperator(
-        type === 'executingFlowNodes'
-          ? t('common.filter.list.operators.is')
-          : operator === 'not in' && nodes.length > 1
-          ? t('common.filter.list.operators.were')
-          : t('common.filter.list.operators.was')
+        ((type === 'executingFlowNodes' || executed) && t('common.filter.list.operators.is')) ||
+          (type !== 'canceledFlowNodes' && nodes.length > 1
+            ? t('common.filter.list.operators.were')
+            : t('common.filter.list.operators.was'))
       )}
       <span className="parameterName">
-        {operator === 'not in' && t('common.filter.list.not')}
-        {t('common.filter.list.' + type)}
+        {t('common.filter.nodeModal.' + (operator === 'not in' ? 'notExecutedFlowNodes' : type))}
       </span>
     </>
   );

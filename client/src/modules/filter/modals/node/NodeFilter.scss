@@ -9,18 +9,9 @@
       display: flex;
     }
 
-    .note {
-      &.hidden {
-        visibility: hidden;
-      }
-
-      font-size: 13px;
-      color: var(--grey-lighten-56);
-      margin-top: 0;
-      margin-bottom: 24px;
-    }
-
     .preview {
+      margin-bottom: 24px;
+
       .parameterName {
         font-style: italic;
         font-weight: bold;

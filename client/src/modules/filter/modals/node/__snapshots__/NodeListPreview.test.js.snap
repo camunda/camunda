@@ -21,13 +21,13 @@ exports[`should create preview of nodes 1`] = `
     className="previewItemOperator"
   >
      
-    was
+    is
      
   </span>
   <span
     className="parameterName"
   >
-    Executed
+    Running, Canceled or Completed
   </span>
 </Fragment>
 `;
@@ -77,8 +77,7 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
   <span
     className="parameterName"
   >
-    Not 
-    Executed
+    Not executed
   </span>
 </Fragment>
 `;
@@ -122,13 +121,13 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     className="previewItemOperator"
   >
      
-    was
+    is
      
   </span>
   <span
     className="parameterName"
   >
-    Executed
+    Running, Canceled or Completed
   </span>
 </Fragment>
 `;

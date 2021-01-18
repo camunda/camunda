@@ -68,5 +68,5 @@ it('should show executing node filter', () => {
     <NodeListPreview {...props} operator={undefined} type="executingFlowNodes" />
   );
 
-  expect(node.find('.parameterName')).toIncludeText('Pending or Executing');
+  expect(node.find('.parameterName')).toIncludeText('Running');
 });
