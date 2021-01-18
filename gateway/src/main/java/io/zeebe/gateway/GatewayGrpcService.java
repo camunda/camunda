@@ -132,8 +132,7 @@ public class GatewayGrpcService extends GatewayImplBase {
   @Override
   public void topology(
       final TopologyRequest request, final StreamObserver<TopologyResponse> responseObserver) {
-    endpointManager.topology(
-        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+    endpointManager.topology(ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
   @Override
