@@ -206,6 +206,40 @@ public final class TopologyUpdateTest {
             });
   }
 
+  @Test
+  public void shouldUpdateTopologyOnBrokerInactive() {
+    // given
+    final int partition = 0;
+    final int brokerId = 0;
+    final BrokerInfo broker = createBroker(brokerId);
+    broker.setLeaderForPartition(partition, 1);
+    topologyManager.event(createMemberAddedEvent(broker));
+
+    // when
+    Awaitility.waitAtMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> {
+              assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+                  .isNullOrEmpty();
+              assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+                  .isEqualTo(brokerId);
+            });
+    broker.setInactiveForPartition(partition);
+    topologyManager.event(createMemberUpdateEvent(broker));
+
+    // then
+    Awaitility.waitAtMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> {
+              assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+                  .contains(brokerId);
+              assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+                  .isNotEqualTo(brokerId);
+            });
+  }
+
   private BrokerInfo createBroker(final int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()

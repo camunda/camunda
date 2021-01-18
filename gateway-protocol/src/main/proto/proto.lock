@@ -29,6 +29,10 @@
               {
                 "name": "FOLLOWER",
                 "integer": 1
+              },
+              {
+                "name": "INACTIVE",
+                "integer": 2
               }
             ]
           }

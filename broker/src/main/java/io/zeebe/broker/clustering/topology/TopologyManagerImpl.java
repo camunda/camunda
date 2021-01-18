@@ -155,7 +155,8 @@ public final class TopologyManagerImpl extends Actor
     brokerInfo.consumePartitions(
         partition -> removeIfLeader(brokerInfo, partition),
         (leaderPartitionId, term) -> {},
-        followerPartitionId -> {});
+        followerPartitionId -> {},
+        inactivePartitionId -> {});
   }
 
   private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
@@ -178,7 +179,8 @@ public final class TopologyManagerImpl extends Actor
             notifyPartitionLeaderUpdated(leaderPartitionId, brokerInfo);
           }
         },
-        followerPartitionId -> removeIfLeader(brokerInfo, followerPartitionId));
+        followerPartitionId -> removeIfLeader(brokerInfo, followerPartitionId),
+        inactivePartitionId -> removeIfLeader(brokerInfo, inactivePartitionId));
   }
 
   private boolean updatePartitionLeader(

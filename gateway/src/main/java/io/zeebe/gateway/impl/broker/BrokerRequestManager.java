@@ -286,8 +286,8 @@ final class BrokerRequestManager extends Actor {
   }
 
   private static class RequestResult {
-    private boolean processed;
-    private ErrorCode errorCode;
+    private final boolean processed;
+    private final ErrorCode errorCode;
 
     RequestResult(final boolean processed, final ErrorCode errorCode) {
       this.processed = processed;
