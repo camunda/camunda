@@ -74,7 +74,7 @@
     <version.protobuf-common>2.0.1</version.protobuf-common>
     <version.micrometer>1.6.3</version.micrometer>
     <version.rocksdbjni>6.15.2</version.rocksdbjni>
-    <version.sbe>1.20.4</version.sbe>
+    <version.sbe>1.21.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.4</version.scala>
     <version.slf4j>1.7.30</version.slf4j>
