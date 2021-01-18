@@ -327,6 +327,34 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   @Test
   public void evaluateReportWithFlowNodeStatusCompletedFilter() {
     // given
+    ProcessInstanceEngineDto runningInstance = deployAndStartSimpleUserTaskProcess();
+    final ProcessInstanceEngineDto completedInstance = engineIntegrationExtension.startProcessInstance(
+      runningInstance.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstance.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      runningInstance.getProcessDefinitionKey(),
+      runningInstance.getProcessDefinitionVersion()
+    );
+    reportData.setFilter(ProcessFilterBuilder.filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList());
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(END_EVENT)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+  }
+
+  @Test
+  public void evaluateReportWithFlowNodeStatusCompletedOrCanceledFilter() {
+    // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
     importAllEngineEntitiesFromScratch();

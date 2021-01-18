@@ -702,6 +702,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         getExpectedResultsMap(2., 1.)
       ),
       new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      ),
+      new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
         getExpectedResultsMap(1., null)
       )

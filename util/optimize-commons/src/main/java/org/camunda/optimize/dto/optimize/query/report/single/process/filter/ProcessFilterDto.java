@@ -39,10 +39,11 @@ import java.util.List;
   @JsonSubTypes.Type(value = OpenIncidentFilterDto.class, name = "includesOpenIncident"),
   @JsonSubTypes.Type(value = ResolvedIncidentFilterDto.class, name = "includesResolvedIncident"),
   @JsonSubTypes.Type(value = NoIncidentFilterDto.class, name = "doesNotIncludeIncident"),
-  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-    name = "completedOrCanceledFlowNodesOnly"),
+  @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly"),
+  @JsonSubTypes.Type(value = CompletedFlowNodesOnlyFilterDto.class, name = "completedFlowNodesOnly"),
   @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
-  @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly")
+  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+    name = "completedOrCanceledFlowNodesOnly")
 })
 @Data
 @NoArgsConstructor

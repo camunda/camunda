@@ -115,6 +115,10 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT
         1., null, 1L
       ),
       new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        1., 1., 2L
+      ),
+      new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
         1., 1., 2L
       )

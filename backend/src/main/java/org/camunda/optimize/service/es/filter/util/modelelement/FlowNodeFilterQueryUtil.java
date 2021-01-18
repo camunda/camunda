@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
@@ -52,6 +53,13 @@ public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
       .mustNot(existsQuery(nestedFieldReference(ACTIVITY_END_DATE)));
   }
 
+  public static QueryBuilder createCompletedFlowNodesOnlyFilterQuery() {
+    return boolQuery()
+      .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
+      .must(termQuery(nestedFieldReference(ACTIVITY_CANCELED), false))
+      .must(existsQuery(nestedFieldReference(ACTIVITY_END_DATE)));
+  }
+
   public static QueryBuilder createCanceledFlowNodesOnlyFilterQuery() {
     return boolQuery()
       .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
@@ -68,6 +76,9 @@ public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
                                               final ProcessReportDataDto reportDataDto) {
     if (viewLevelFiltersOfTypeExists(reportDataDto, RunningFlowNodesOnlyFilterDto.class)) {
       boolQuery.filter(createRunningFlowNodesOnlyFilterQuery());
+    }
+    if (viewLevelFiltersOfTypeExists(reportDataDto, CompletedFlowNodesOnlyFilterDto.class)) {
+      boolQuery.filter(createCompletedFlowNodesOnlyFilterQuery());
     }
     if (viewLevelFiltersOfTypeExists(reportDataDto, CanceledFlowNodesOnlyFilterDto.class)) {
       boolQuery.filter(createCanceledFlowNodesOnlyFilterQuery());

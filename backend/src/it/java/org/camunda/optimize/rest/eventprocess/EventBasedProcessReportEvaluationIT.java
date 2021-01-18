@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
@@ -86,14 +87,18 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
   @MethodSource("flowNodeStatusFiltersAndExpectedResults")
   public void reportsUsingEventBasedProcessCanBeEvaluatedUsingFlowNodeStatusFilters(Class<?> filterType,
                                                                                     List<ProcessFilterDto<?>> filters,
-                                                                                    List<Tuple> expectedResults) {
+                                                                                    List<Tuple> expectedResults,
+                                                                                    Long expectedInstanceCount) {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
     if (CanceledFlowNodesOnlyFilterDto.class.equals(filterType)) {
       engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
-    } else if (!RunningFlowNodesOnlyFilterDto.class.equals(filterType)) {
-      engineIntegrationExtension.finishAllRunningUserTasks();
     }
+    final ProcessInstanceEngineDto completedInstance = engineIntegrationExtension.startProcessInstance(
+      processInstanceEngineDto.getDefinitionId(), Collections.emptyMap(), "completedBusinessKey");
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstance.getId());
+    engineIntegrationExtension.startProcessInstance(
+      processInstanceEngineDto.getDefinitionId(), Collections.emptyMap(), "runningBusinessKey");
     importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEvents(
       processInstanceEngineDto,
@@ -119,8 +124,8 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(processReportDataDto).getResult();
 
     // then the event process instance appears in the results
-    assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getData()).hasSize(expectedResults.size())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResults);
@@ -131,21 +136,34 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
       Arguments.of(
         RunningFlowNodesOnlyFilterDto.class,
         ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(VIEW).add().buildList(),
-        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 1.))
+        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 2.)),
+        2L
+      ),
+      Arguments.of(
+        CompletedFlowNodesOnlyFilterDto.class,
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList(),
+        Arrays.asList(
+          Tuple.tuple(BPMN_START_EVENT_ID, 3.),
+          Tuple.tuple(USER_TASK_ID_ONE, 1.),
+          Tuple.tuple(BPMN_END_EVENT_ID, 1.)
+        ),
+        3L
       ),
       Arguments.of(
         CompletedOrCanceledFlowNodesOnlyFilterDto.class,
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().filterLevel(VIEW).add().buildList(),
         Arrays.asList(
-          Tuple.tuple(BPMN_START_EVENT_ID, 1.),
+          Tuple.tuple(BPMN_START_EVENT_ID, 3.),
           Tuple.tuple(USER_TASK_ID_ONE, 1.),
           Tuple.tuple(BPMN_END_EVENT_ID, 1.)
-        )
+        ),
+        3L
       ),
       Arguments.of(
         CanceledFlowNodesOnlyFilterDto.class,
         ProcessFilterBuilder.filter().canceledFlowNodesOnly().filterLevel(VIEW).add().buildList(),
-        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 1.))
+        Collections.singletonList(Tuple.tuple(USER_TASK_ID_ONE, 1.)),
+        1L
       )
     );
   }

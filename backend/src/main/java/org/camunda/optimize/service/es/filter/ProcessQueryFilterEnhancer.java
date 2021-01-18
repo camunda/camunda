@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Canc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
@@ -64,6 +65,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final ResolvedIncidentQueryFilter resolvedIncidentQueryFilter;
   private final NoIncidentQueryFilter noIncidentQueryFilter;
   private final RunningFlowNodesOnlyQueryFilter runningFlowNodesOnlyQueryFilter;
+  private final CompletedFlowNodesOnlyQueryFilter completedFlowNodesOnlyQueryFilter;
   private final CanceledFlowNodesOnlyQueryFilter canceledFlowNodesOnlyQueryFilter;
   private final CompletedOrCanceledFlowNodesOnlyQueryFilter completedOrCanceledFlowNodesOnlyQueryFilter;
 
@@ -98,6 +100,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       noIncidentQueryFilter.addFilters(query, extractFilters(filters, NoIncidentFilterDto.class), timezone);
       runningFlowNodesOnlyQueryFilter.addFilters(
         query, extractFilters(filters, RunningFlowNodesOnlyFilterDto.class), timezone);
+      completedFlowNodesOnlyQueryFilter.addFilters(
+        query, extractFilters(filters, CompletedFlowNodesOnlyFilterDto.class), timezone);
       canceledFlowNodesOnlyQueryFilter.addFilters(
         query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone);
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(

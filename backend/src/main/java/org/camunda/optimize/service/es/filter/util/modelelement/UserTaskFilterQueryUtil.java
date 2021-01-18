@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
@@ -70,6 +71,13 @@ public class UserTaskFilterQueryUtil extends ModelElementFilterQueryUtil {
                                               final ProcessReportDataDto reportDataDto) {
     if (viewLevelFiltersOfTypeExists(reportDataDto, RunningFlowNodesOnlyFilterDto.class)) {
       boolQuery.filter(boolQuery().mustNot(existsQuery(nestedFieldReference(USER_TASK_END_DATE))));
+    }
+    if (viewLevelFiltersOfTypeExists(reportDataDto, CompletedFlowNodesOnlyFilterDto.class)) {
+      boolQuery.filter(
+        boolQuery()
+          .must(existsQuery(nestedFieldReference(USER_TASK_END_DATE)))
+          .must(termQuery(nestedFieldReference(USER_TASK_CANCELED), false))
+      );
     }
     if (viewLevelFiltersOfTypeExists(reportDataDto, CanceledFlowNodesOnlyFilterDto.class)) {
       boolQuery.filter(boolQuery().must(termQuery(nestedFieldReference(USER_TASK_CANCELED), true)));

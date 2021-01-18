@@ -1118,6 +1118,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   private static Stream<Arguments> flowNodeStatusFilter() {
     return Stream.of(
       Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2),
+      Arguments.of(ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1),
       Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1)
     );
   }

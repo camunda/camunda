@@ -642,9 +642,45 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
+  public void evaluateReportWithFlowNodeStatusCompleted() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto completedInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), START_EVENT, 1000.);
+    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), USER_TASK_1, 2000.);
+    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), END_EVENT, 3000.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    reportData.setFilter(ProcessFilterBuilder.filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList());
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+    assertThat(result.getData()).hasSize(3);
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
+    assertThat(result.getEntryForKey(END_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(3000.));
+  }
+
+  @Test
   public void evaluateReportWithFlowNodeStatusCanceled() {
     // given
-    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    DateCreationFreezer.dateFreezer().freezeDateAndReturn();
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto instanceWithCanceledActivity =
@@ -679,7 +715,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   @Test
   public void evaluateReportWithFlowNodeStatusCompletedOrCanceled() {
     // given
-    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    DateCreationFreezer.dateFreezer().freezeDateAndReturn();
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto =

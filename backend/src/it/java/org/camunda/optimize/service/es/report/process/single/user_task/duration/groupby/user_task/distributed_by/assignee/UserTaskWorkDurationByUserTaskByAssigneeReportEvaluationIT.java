@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
@@ -71,6 +72,17 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
           .groupByContains(USER_TASK_2)
             .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
         .doAssert(result);
+      // @formatter:on
+    } else if (isSingleFilterOfType(filter, CompletedFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+        .isComplete(true)
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
+        .doAssert(result);
+
       // @formatter:on
     } else if (isSingleFilterOfType(filter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off

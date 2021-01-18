@@ -146,6 +146,11 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
         new FlowNodeStatusTestValues(200., 500., 700.)
       ),
       Arguments.of(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        new FlowNodeStatusTestValues(100., 100., 100.),
+        null
+      ),
+      Arguments.of(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
         new FlowNodeStatusTestValues(100., 100., 100.),
         null

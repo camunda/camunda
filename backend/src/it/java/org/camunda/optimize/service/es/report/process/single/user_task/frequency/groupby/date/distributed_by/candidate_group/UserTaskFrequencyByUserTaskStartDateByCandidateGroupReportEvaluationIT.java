@@ -123,6 +123,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
   protected static Stream<Arguments> getFlowNodeStatusFilterExpectedValues() {
     return Stream.of(
       Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 1., null, 1L),
+      Arguments.of(ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1., 1., 2L),
       Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1., 1., 2L)
     );
   }

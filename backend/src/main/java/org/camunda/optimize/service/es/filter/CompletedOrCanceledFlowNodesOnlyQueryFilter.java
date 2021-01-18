@@ -25,9 +25,9 @@ public class CompletedOrCanceledFlowNodesOnlyQueryFilter
 
   @Override
   public void addFilters(final BoolQueryBuilder query,
-                         final List<CompletedOrCanceledFlowNodesOnlyFilterDataDto> noIncidentFilterData,
+                         final List<CompletedOrCanceledFlowNodesOnlyFilterDataDto> completedOrCanceledFilterData,
                          final ZoneId timezone) {
-    if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
+    if (!CollectionUtils.isEmpty(completedOrCanceledFilterData)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(EVENTS, createCompletedOrCanceledFlowNodesOnlyFilterQuery(), ScoreMode.None));
     }

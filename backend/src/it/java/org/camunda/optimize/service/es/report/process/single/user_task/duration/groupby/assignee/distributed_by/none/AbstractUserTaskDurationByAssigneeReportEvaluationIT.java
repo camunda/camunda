@@ -660,6 +660,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
+    FlowNodeStateTestValues completedStateValues =
+      new FlowNodeStateTestValues();
+    completedStateValues.processFilter = ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList();
+    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
+
     FlowNodeStateTestValues completedOrCanceledStateValues = new FlowNodeStateTestValues();
     completedOrCanceledStateValues.processFilter = ProcessFilterBuilder.filter()
       .completedOrCanceledFlowNodesOnly().add().buildList();
@@ -673,7 +680,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     canceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(700., 700.);
     canceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    return Stream.of(runningStateValues, completedOrCanceledStateValues, canceledStateValues);
+    return Stream.of(runningStateValues, completedStateValues, completedOrCanceledStateValues, canceledStateValues);
   }
 
   @ParameterizedTest

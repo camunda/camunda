@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -124,6 +123,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
       Arguments.of(
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
         new FlowNodeStatusTestValues(200., 500., 700., 1L)
+      ),
+      Arguments.of(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        new FlowNodeStatusTestValues(100., 100., 100., 2L)
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),

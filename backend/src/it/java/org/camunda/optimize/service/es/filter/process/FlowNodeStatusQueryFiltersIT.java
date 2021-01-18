@@ -24,6 +24,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
@@ -87,6 +88,39 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(2.);
     assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
+  }
+
+  @Test
+  public void completedFlowNodeStatusFilterWorks() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
+    ProcessInstanceEngineDto runningInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(runningInstance.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto finishedInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(finishedInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(finishedInstance.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessFilterDto<?>> completedFlowNodes = ProcessFilterBuilder
+      .filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList();
+    final ReportMapResultDto result = evaluateReport(processDefinition, completedFlowNodes);
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(3L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(result.getData()).hasSize(4);
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(3.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.);
+    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
+    assertThat(result.getEntryForKey(END_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 

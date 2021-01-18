@@ -1005,6 +1005,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
+    FlowNodeStatusTestValues completedStateValues = new FlowNodeStatusTestValues();
+    completedStateValues.processFilters = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
+
     FlowNodeStatusTestValues completedOrCanceledStateValues = new FlowNodeStatusTestValues();
     completedOrCanceledStateValues.processFilters = ProcessFilterBuilder.filter()
       .completedOrCanceledFlowNodesOnly().add().buildList();
@@ -1012,7 +1019,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     completedOrCanceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedOrCanceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
-    return Stream.of(runningStateValues, completedOrCanceledStateValues);
+    return Stream.of(runningStateValues, completedStateValues, completedOrCanceledStateValues);
   }
 
   @ParameterizedTest

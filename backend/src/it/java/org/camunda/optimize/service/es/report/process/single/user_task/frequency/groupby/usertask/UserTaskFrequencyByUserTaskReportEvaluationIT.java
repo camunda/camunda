@@ -449,6 +449,10 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
         getExpectedResultsMap(1., 1.), 2
       ),
       new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null), 1
+      ),
+      new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
         getExpectedResultsMap(1., null), 1
       )

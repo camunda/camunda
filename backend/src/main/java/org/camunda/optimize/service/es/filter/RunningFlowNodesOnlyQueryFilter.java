@@ -24,9 +24,9 @@ public class RunningFlowNodesOnlyQueryFilter implements QueryFilter<RunningFlowN
 
   @Override
   public void addFilters(final BoolQueryBuilder query,
-                         final List<RunningFlowNodesOnlyFilterDataDto> noIncidentFilterData,
+                         final List<RunningFlowNodesOnlyFilterDataDto> runningFlowNodesFilterData,
                          final ZoneId timezone) {
-    if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
+    if (!CollectionUtils.isEmpty(runningFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(EVENTS, createRunningFlowNodesOnlyFilterQuery(), ScoreMode.None));
     }

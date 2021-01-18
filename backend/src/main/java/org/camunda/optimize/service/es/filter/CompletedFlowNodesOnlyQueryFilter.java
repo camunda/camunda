@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedFlowNodesOnlyFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
@@ -15,20 +15,20 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createCompletedFlowNodesOnlyFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 @Component
-public class CanceledFlowNodesOnlyQueryFilter implements QueryFilter<CanceledFlowNodesOnlyFilterDataDto> {
+public class CompletedFlowNodesOnlyQueryFilter implements QueryFilter<CompletedFlowNodesOnlyFilterDataDto> {
 
   @Override
   public void addFilters(final BoolQueryBuilder query,
-                         final List<CanceledFlowNodesOnlyFilterDataDto> canceledFlowNodesFilterData,
+                         final List<CompletedFlowNodesOnlyFilterDataDto> completedFlowNodesFilterData,
                          final ZoneId timezone) {
-    if (!CollectionUtils.isEmpty(canceledFlowNodesFilterData)) {
+    if (!CollectionUtils.isEmpty(completedFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(EVENTS, createCanceledFlowNodesOnlyFilterQuery(), ScoreMode.None));
+      filters.add(nestedQuery(EVENTS, createCompletedFlowNodesOnlyFilterQuery(), ScoreMode.None));
     }
   }
 

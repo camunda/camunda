@@ -50,6 +50,14 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     runningStateValues.expectedTotalDurationValue = 700.;
     runningStateValues.expectedInstanceCount = 1L;
 
+    FlowNodeStatusTestValues completedStateValues = new FlowNodeStatusTestValues();
+    completedStateValues.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedStateValues.expectedIdleDurationValue = 100.;
+    completedStateValues.expectedWorkDurationValue = 100.;
+    completedStateValues.expectedTotalDurationValue = 100.;
+    completedStateValues.expectedInstanceCount = 2L;
+
     FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
     completedOrCanceled.processFilter = ProcessFilterBuilder.filter()
       .completedOrCanceledFlowNodesOnly().add().buildList();
@@ -58,7 +66,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     completedOrCanceled.expectedTotalDurationValue = 100.;
     completedOrCanceled.expectedInstanceCount = 2L;
 
-    return Stream.of(runningStateValues, completedOrCanceled);
+    return Stream.of(runningStateValues, completedStateValues, completedOrCanceled);
   }
 
   @ParameterizedTest
