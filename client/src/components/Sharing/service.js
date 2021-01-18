@@ -6,12 +6,12 @@
 
 import {get, post} from 'request';
 
-export async function evaluateEntity(id, type, params = {}) {
+export async function evaluateEntity(id, type, query = {}) {
   let response;
 
   const request = type === 'dashboard' ? get : post;
   try {
-    response = await request(`api/share/${type}/${id}/evaluate`, params);
+    response = await request(`api/share/${type}/${id}/evaluate`, {}, {query});
   } catch (e) {
     return (await e.json()).reportDefinition;
   }
@@ -20,11 +20,12 @@ export async function evaluateEntity(id, type, params = {}) {
 }
 
 export function createLoadReportCallback(dashboardShareId) {
-  return async (reportId, filter) => {
+  return async (reportId, filter, query) => {
     try {
       const response = await post(
         `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`,
-        {filter}
+        {filter},
+        {query}
       );
       return await response.json();
     } catch (error) {
