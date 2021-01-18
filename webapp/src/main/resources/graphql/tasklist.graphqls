@@ -1,53 +1,68 @@
+# Describes the User task
 type Task {
-    # the unique identifier of the task
+    # The unique identifier of the task
     id: ID!
+    # Name of the task
     name: String!
+    # Name of the workflow
     workflowName: String!
+    # When was the task created
     creationTime: String!
+    # When was the task completed
     completionTime: String
+    # Who is assigned to the task
     assignee: User
+    # Variables associated to the task
     variables: [Variable!]
+    # State of the task
     taskState: TaskState!
 }
-
+# What can be queried
 input TaskQuery {
+    # State of the tasks
     state: TaskState
+    # Are the tasks assigned?
     assigned: Boolean
+    # Who is assigned to the tasks?
     assignee: String
 }
-
+# State of the task
 enum TaskState {
     CREATED,
     COMPLETED,
     CANCELED
 }
-
+# Variable used in task
 type Variable {
     name: String!
     value: String!
 }
-
+# Change or add a variable with name and value
 input VariableInput {
     name: String!
     value: String!
 }
-
+# Describes the user
 type User {
     username: ID!
     firstname: String
     lastname: String
 }
-
+# What can be searched for
 type Query {
-    # find all tasks
+    # Find all tasks specified by query.
     tasks(query: TaskQuery!): [Task!]!
-    # get one task: returns error when task does not exist
+    # Get task with id. Returns task or error when task does not exist.
     task(id: String!): Task!
+    # Get currently logged in user.
     currentUser: User!
 }
-
+# What can be changed
 type Mutation {
+    # Complete a task with taskId and optional variables. Returns the task.
     completeTask(taskId: String!, variables: [VariableInput!]!): Task!
-    claimTask(taskId: String!): Task!				
+    # Claim a task with taskId to currently logged in user. Returns the task.
+    claimTask(taskId: String!): Task!
+    # Unclaim a task with taskId. Returns the task.
 	unclaimTask(taskId: String!): Task!
 }
