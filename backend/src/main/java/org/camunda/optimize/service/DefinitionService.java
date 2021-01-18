@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.Sets;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -25,6 +26,10 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.util.configuration.CacheConfiguration;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -37,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -46,15 +52,45 @@ import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
-@AllArgsConstructor
 @Component
 @Slf4j
-public class DefinitionService {
+public class DefinitionService implements ConfigurationReloadable {
   private final DefinitionReader definitionReader;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
+  private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestProcessDefinitionCache;
+  private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestDecisionDefinitionCache;
+
+  public DefinitionService(final DefinitionReader definitionReader,
+                           final DefinitionAuthorizationService definitionAuthorizationService,
+                           final TenantService tenantService,
+                           final CamundaActivityEventReader camundaActivityEventReader,
+                           final ConfigurationService configurationService) {
+    this.definitionReader = definitionReader;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.tenantService = tenantService;
+    this.camundaActivityEventReader = camundaActivityEventReader;
+
+    final CacheConfiguration definitionCacheConfiguration = configurationService.getCaches().getDefinitions();
+    latestProcessDefinitionCache = Caffeine.newBuilder()
+      .maximumSize(definitionCacheConfiguration.getMaxSize())
+      .expireAfterWrite(definitionCacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
+      .build(this::fetchLatestProcessDefinition);
+    latestDecisionDefinitionCache = Caffeine.newBuilder()
+      .maximumSize(definitionCacheConfiguration.getMaxSize())
+      .expireAfterWrite(definitionCacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
+      .build(this::fetchLatestDecisionDefinition);
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    latestProcessDefinitionCache.invalidateAll();
+    latestDecisionDefinitionCache.invalidateAll();
+  }
 
   public Optional<DefinitionWithTenantsResponseDto> getDefinitionWithAvailableTenants(final DefinitionType type,
                                                                                       final String key,
@@ -211,11 +247,14 @@ public class DefinitionService {
       .collect(toList());
   }
 
-  public <T extends DefinitionOptimizeResponseDto> Optional<T> getLatestDefinition(final DefinitionType type,
-                                                                                   final String definitionKey,
-                                                                                   final List<String> definitionVersions,
-                                                                                   final List<String> tenantIds) {
-    return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
+  @SuppressWarnings(UNCHECKED_CAST)
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinition(final DefinitionType type,
+                                                                             final String definitionKey,
+                                                                             final List<String> definitionVersions,
+                                                                             final List<String> tenantIds) {
+    return isDefinitionVersionSetToAllOrLatest(definitionVersions)
+      ? (Optional<T>) getLatestCachedDefinition(type, definitionKey, tenantIds)
+      : definitionReader.getFirstDefinitionFromTenantsIfAvailable(
       type,
       definitionKey,
       definitionVersions,
@@ -223,9 +262,9 @@ public class DefinitionService {
     );
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedProcessDefinitions(final DefinitionType type,
-                                                                                              final String userId,
-                                                                                              final boolean withXml) {
+  public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
+                                                                                       final String userId,
+                                                                                       final boolean withXml) {
     log.debug("Fetching definitions of type " + type);
     List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
 
@@ -268,13 +307,6 @@ public class DefinitionService {
       .filter(tenantWithDefinitionsDto -> !tenantWithDefinitionsDto.getDefinitions().isEmpty())
       .sorted(Comparator.comparing(TenantWithDefinitionsResponseDto::getId, Comparator.nullsFirst(naturalOrder())))
       .collect(toList());
-  }
-
-  public Optional<String> getDefinitionXml(final DefinitionType type,
-                                           final String userId,
-                                           final String definitionKey,
-                                           final List<String> versions) {
-    return getDefinitionXml(type, userId, definitionKey, versions, (String) null);
   }
 
   public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
@@ -323,14 +355,6 @@ public class DefinitionService {
       });
   }
 
-  public Optional<String> getDefinitionXml(final DefinitionType type,
-                                           final String userId,
-                                           final String definitionKey,
-                                           final List<String> definitionVersions,
-                                           final String tenantId) {
-    return getDefinitionXml(type, userId, definitionKey, definitionVersions, Collections.singletonList(tenantId));
-  }
-
   public <T extends DefinitionOptimizeResponseDto> Optional<T> getProcessDefinitionWithXmlAsService(final DefinitionType type,
                                                                                                     final String definitionKey,
                                                                                                     final String definitionVersion,
@@ -353,12 +377,7 @@ public class DefinitionService {
       return Optional.empty();
     }
 
-    return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
-      type,
-      definitionKey,
-      definitionVersions,
-      prepareTenantListForDefinitionSearch(tenantIds)
-    );
+    return getDefinition(type, definitionKey, definitionVersions, tenantIds);
   }
 
   public static List<String> prepareTenantListForDefinitionSearch(final List<String> selectedTenantIds) {
@@ -373,6 +392,58 @@ public class DefinitionService {
                 ? Comparator.nullsLast(Comparator.naturalOrder())
                 : Comparator.nullsFirst(Comparator.naturalOrder()))
       .collect(toList());
+  }
+
+  private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(final String definitionKey) {
+    return fetchLatestDefinition(DefinitionType.PROCESS, definitionKey);
+  }
+
+  private Map<String, DefinitionOptimizeResponseDto> fetchLatestDecisionDefinition(final String definitionKey) {
+    return fetchLatestDefinition(DefinitionType.DECISION, definitionKey);
+  }
+
+  private Map<String, DefinitionOptimizeResponseDto> fetchLatestDefinition(final DefinitionType type,
+                                                                           final String definitionKey) {
+    final List<DefinitionOptimizeResponseDto> definitions = definitionReader.getLatestDefinitionsFromTenantsIfAvailable(
+      type,
+      definitionKey
+    );
+    return definitions.stream()
+      .collect(toMap(DefinitionOptimizeResponseDto::getTenantId, Function.identity()));
+  }
+
+  private Optional<DefinitionOptimizeResponseDto> getLatestCachedDefinition(final DefinitionType type,
+                                                                            final String definitionKey,
+                                                                            final List<String> tenantIds) {
+    final Map<String, DefinitionOptimizeResponseDto> tenantToDefinitionMap =
+      getCachedTenantToLatestDefinitionMap(type, definitionKey);
+
+    final List<Map.Entry<String, DefinitionOptimizeResponseDto>> sortedFilteredEntries =
+      tenantToDefinitionMap.entrySet()
+        .stream()
+        .filter(e -> tenantIds.contains(e.getKey()) || e.getKey() == null)
+        .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
+        .collect(toList());
+
+    // If only one or no definition with the latest version is present, return that
+    if (sortedFilteredEntries.size() <= 1) {
+      return Optional.ofNullable(sortedFilteredEntries.isEmpty() ? null : sortedFilteredEntries.get(0).getValue());
+    }
+
+    // If there are duplicate latest definitions on multiple tenants, apply tenant logic by sorting tenantIds
+    prepareTenantListForDefinitionSearch(tenantIds);
+    return sortedFilteredEntries.stream()
+      .filter(e -> tenantIds.contains(e.getKey()))
+      .map(Map.Entry::getValue)
+      .findFirst();
+  }
+
+  private Map<String, DefinitionOptimizeResponseDto> getCachedTenantToLatestDefinitionMap(final DefinitionType type,
+                                                                                          final String definitionKey) {
+    if (DefinitionType.PROCESS.equals(type)) {
+      return latestProcessDefinitionCache.get(definitionKey);
+    }
+    return latestDecisionDefinitionCache.get(definitionKey);
   }
 
   private HashSet<String> resolveTenantsToFilterFor(final List<String> tenantIds, final @NonNull String userId) {
@@ -433,7 +504,6 @@ public class DefinitionService {
       ))
       .filter(definitionWithTenantsDto -> !definitionWithTenantsDto.getTenants().isEmpty());
   }
-
 
   private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {
     return tenantService.getTenantsForUser(userId).stream()

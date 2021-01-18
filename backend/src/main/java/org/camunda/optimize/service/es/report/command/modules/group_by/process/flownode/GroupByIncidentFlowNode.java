@@ -113,7 +113,7 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

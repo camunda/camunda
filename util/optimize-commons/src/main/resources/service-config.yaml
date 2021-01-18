@@ -512,3 +512,9 @@ caches:
     maxSize: 100
     # the time a read result will be cached
     defaultTtlMillis: 10000
+  # This cache is used to cache the latest definition available on each tenant.
+  # It helps to optimize the performance for of report evaluations.
+  definitions:
+    maxSize: 1000
+    # the time a read result will be cached
+    defaultTtlMillis: 10000

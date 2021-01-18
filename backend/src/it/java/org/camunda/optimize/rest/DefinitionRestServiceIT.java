@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -928,7 +929,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when the "all" version is included
     final List<TenantResponseDto> tenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-        definitionType, definitionKey, Lists.newArrayList("all")
+        definitionType, definitionKey, Collections.singletonList(ALL_VERSIONS)
       );
 
     // then all tenants are returned
@@ -942,7 +943,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when "all" version is included among specific versions
     final List<TenantResponseDto> tenantsForSpecificAndAllVersion =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-        definitionType, definitionKey, Lists.newArrayList("all", "2")
+        definitionType, definitionKey, Lists.newArrayList(ALL_VERSIONS, "2")
       );
 
     // then all tenants are returned

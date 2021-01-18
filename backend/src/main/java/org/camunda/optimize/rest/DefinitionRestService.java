@@ -73,7 +73,7 @@ public class DefinitionRestService {
                                                             @PathParam("type") DefinitionType type,
                                                             @QueryParam("includeXml") boolean includeXml) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return definitionService.getFullyImportedProcessDefinitions(type, userId, includeXml);
+    return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
   }
 
   @GET
@@ -115,7 +115,8 @@ public class DefinitionRestService {
     }
 
     definitionVersions.sort(Comparator.comparing(
-      (DefinitionVersionResponseDto definitionVersionDto) -> Integer.valueOf(definitionVersionDto.getVersion())).reversed());
+      (DefinitionVersionResponseDto definitionVersionDto) -> Integer.valueOf(definitionVersionDto.getVersion()))
+                              .reversed());
     return definitionVersions;
   }
 
@@ -160,7 +161,12 @@ public class DefinitionRestService {
                                                           @QueryParam("camundaEventImportedOnly") final boolean camundaEventImportedOnly) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    List<DefinitionWithTenantsResponseDto> definitions = getDefinitions(type, collectionId, camundaEventImportedOnly, userId);
+    List<DefinitionWithTenantsResponseDto> definitions = getDefinitions(
+      type,
+      collectionId,
+      camundaEventImportedOnly,
+      userId
+    );
     return definitions.stream()
       .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
       .collect(Collectors.toList());
@@ -223,7 +229,8 @@ public class DefinitionRestService {
   }
 
   private List<DefinitionWithTenantsResponseDto> getDefinitions(final DefinitionType type, final String collectionId,
-                                                                final boolean camundaEventImportedOnly, final String userId) {
+                                                                final boolean camundaEventImportedOnly,
+                                                                final String userId) {
     if (collectionId != null) {
       return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
     } else {
@@ -259,12 +266,12 @@ public class DefinitionRestService {
     processResponse.header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
   }
 
-  private void logAndThrowNotFoundException(@PathParam("type") final DefinitionType type,
-                                            @QueryParam("key") final String key,
-                                            @QueryParam("version") final String version) {
-    String notFoundErrorMessage = "Could not find xml for definition with key [" + key + "]," +
-      " version [" + version + "] or type [" + type + "]." +
-      " It is possible that is hasn't been imported yet.";
+  private void logAndThrowNotFoundException(final DefinitionType type,
+                                            final String key,
+                                            final String version) {
+    final String notFoundErrorMessage = String.format(
+      "Could not find xml for [%s] definition with key [%s] and version [%s]. " +
+        "It is possible that it hasn't been imported yet.", type, key, version);
     log.error(notFoundErrorMessage);
     throw new NotFoundException(notFoundErrorMessage);
   }

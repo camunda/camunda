@@ -69,4 +69,15 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     this.userTaskNames = userTaskNames;
   }
 
+  public Map<String, String> getFlowNodeNames() {
+    return flowNodeNames == null
+      ? new HashMap<>()
+      : new HashMap<>(flowNodeNames);
+  }
+
+  public Map<String, String> getUserTaskNames() {
+    return userTaskNames == null
+      ? new HashMap<>()
+      : new HashMap<>(userTaskNames);
+  }
 }

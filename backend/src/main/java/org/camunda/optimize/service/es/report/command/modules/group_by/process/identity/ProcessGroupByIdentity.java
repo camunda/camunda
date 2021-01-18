@@ -82,7 +82,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

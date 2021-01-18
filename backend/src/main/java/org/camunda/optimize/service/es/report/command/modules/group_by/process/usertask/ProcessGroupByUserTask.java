@@ -122,7 +122,7 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

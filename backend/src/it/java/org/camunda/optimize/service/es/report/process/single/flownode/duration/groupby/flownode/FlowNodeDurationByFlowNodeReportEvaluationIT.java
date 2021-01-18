@@ -479,7 +479,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final String otherTenantId = "tenant1";
 
     engineIntegrationExtension.createTenant(otherTenantId);
-
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(definitionKey), noneTenantId);
 
     importAllEngineEntitiesFromScratch();

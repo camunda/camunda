@@ -26,7 +26,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
   private final static String VERSION_TAG = "aVersionTag";
 
   @Test
-  public void getProcessDefinitionsWithMoreThenTen() {
+  public void getProcessDefinitionsWithMoreThanTen() {
     for (int i = 0; i < 11; i++) {
       // given
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
@@ -151,7 +151,6 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     assertThat(actualXml).isEqualTo(Bpmn.convertToString(modelInstance));
   }
 
-
   @Test
   public void getProcessDefinitionXmlByKeyAndAllVersion() {
     // given
@@ -167,8 +166,8 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       .endEvent()
       .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      modelInstance);
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
     importAllEngineEntitiesFromScratch();
 

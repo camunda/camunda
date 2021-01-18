@@ -105,7 +105,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

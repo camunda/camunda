@@ -25,7 +25,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
   private final static String DECISION_DEFINITION_KEY = "aDecision";
 
   @Test
-  public void getDecisionDefinitionsWithMoreThenTen() {
+  public void getDecisionDefinitionsWithMoreThanTen() {
     for (int i = 0; i < 11; i++) {
       // given
       deployAndStartSimpleDecisionDefinition(DECISION_DEFINITION_KEY + i);
@@ -183,7 +183,6 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // then: we get the latest version xml
     assertThat(actualXml).isEqualTo(Dmn.convertToString(latestModelInstance));
   }
-
 
   private void addDecisionDefinitionWithoutXmlToElasticsearch() {
     final DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = DecisionDefinitionOptimizeDto.builder()

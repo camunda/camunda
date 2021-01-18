@@ -35,14 +35,20 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
 import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.ParsedTopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -51,6 +57,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +98,7 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @AllArgsConstructor
@@ -101,6 +109,8 @@ public class DefinitionReader {
   private static final String VERSION_TAG_AGGREGATION = "versionTags";
   private static final String TENANT_AGGREGATION = "tenants";
   private static final String ENGINE_AGGREGATION = "engines";
+  private static final String TOP_HITS_AGGREGATION = "topHits";
+  private static final String DEFINITION_KEY_FILTER_AGGREGATION = "definitionKeyFilter";
   private static final String DEFINITION_TYPE_AGGREGATION = "definitionType";
   private static final String DEFINITION_KEY_AGGREGATION = "definitionKey";
   private static final String DEFINITION_KEY_AND_TYPE_AGGREGATION = "definitionKeyAndType";
@@ -191,6 +201,15 @@ public class DefinitionReader {
       }
     }
     return definition;
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> List<T> getLatestDefinitionsFromTenantsIfAvailable(final DefinitionType type,
+                                                                                                      final String definitionKey) {
+    if (definitionKey == null) {
+      return Collections.emptyList();
+    }
+
+    return getLatestDefinitionPerTenant(type, definitionKey);
   }
 
   public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
@@ -408,7 +427,75 @@ public class DefinitionReader {
         return sourceAsMap.get(resolveVersionFieldFromType(type)).toString();
       }
     }
-    throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+    throw new OptimizeRuntimeException("Unable to retrieve latest version for " + type + " definition key: " + key);
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> List<T> getLatestDefinitionPerTenant(final DefinitionType type,
+                                                                                        final String key) {
+    log.debug("Fetching latest [{}] definitions for key [{}] on each tenant", type, key);
+
+    final FilterAggregationBuilder keyFilterAgg =
+      filter(
+        DEFINITION_KEY_FILTER_AGGREGATION,
+        boolQuery()
+          .must(termQuery(resolveDefinitionKeyFieldFromType(type), key))
+          .must(termQuery(DEFINITION_DELETED, false))
+      );
+
+    final TermsAggregationBuilder tenantsAggregation =
+      terms(TENANT_AGGREGATION)
+        .field(DEFINITION_TENANT_ID)
+        .size(LIST_FETCH_LIMIT)
+        .missing(TENANT_NOT_DEFINED_VALUE);
+
+    final Script numericVersionScript = createDefaultScript(
+      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)"
+    );
+
+    final TermsAggregationBuilder versionAggregation =
+      terms(VERSION_AGGREGATION)
+        .field(DEFINITION_VERSION)
+        .size(1) // only return bucket for latest version
+        .order(BucketOrder.aggregation("versionForSorting", false))
+        // custom sort agg to sort by numeric version value (instead of string bucket key)
+        .subAggregation(AggregationBuilders.min("versionForSorting").script(numericVersionScript));
+
+    final AggregationBuilder definitionAgg =
+      keyFilterAgg.subAggregation(
+        tenantsAggregation.subAggregation(
+          versionAggregation.subAggregation(
+            // return top hit in latest version bucket, should only be one
+            AggregationBuilders.topHits(TOP_HITS_AGGREGATION).size(1)
+          )));
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .size(0)
+      .aggregation(definitionAgg);
+    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String reason = String.format(
+        "Was not able to fetch latest [%s] definitions for key [%s]",
+        type,
+        key
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    final List<T> result = retrieveResultsFromLatestDefinitionPerTenant(type, searchResponse);
+
+    if (result.isEmpty()) {
+      log.debug(
+        "Could not find latest [{}] definitions with key [{}]",
+        type, key
+      );
+    }
+
+    return result;
   }
 
   public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
@@ -771,5 +858,32 @@ public class DefinitionReader {
       default:
         throw new IllegalStateException("Unknown DefinitionType:" + type);
     }
+  }
+
+  private <T extends DefinitionOptimizeResponseDto> List<T> retrieveResultsFromLatestDefinitionPerTenant(
+    final DefinitionType type,
+    final SearchResponse searchResponse) {
+    final Class<T> typeClass = resolveDefinitionClassFromType(type);
+    List<T> results = new ArrayList<>();
+    final ParsedFilter filteredDefsAgg = searchResponse.getAggregations().get(DEFINITION_KEY_FILTER_AGGREGATION);
+    final ParsedStringTerms tenantsAgg = filteredDefsAgg.getAggregations().get(TENANT_AGGREGATION);
+
+    // There should be max. one version bucket in each tenant bucket containing the latest definition for this tenant
+    for (Terms.Bucket tenantBucket : tenantsAgg.getBuckets()) {
+      final ParsedStringTerms versionsAgg = tenantBucket
+        .getAggregations()
+        .get(VERSION_AGGREGATION);
+      for (Terms.Bucket b : versionsAgg.getBuckets()) {
+        final ParsedTopHits topHits = b.getAggregations().get(TOP_HITS_AGGREGATION);
+        results.addAll(ElasticsearchReaderUtil.mapHits(
+          topHits.getHits(),
+          1,
+          typeClass,
+          createMappingFunctionForDefinitionType(typeClass)
+        ));
+      }
+    }
+
+    return results;
   }
 }
