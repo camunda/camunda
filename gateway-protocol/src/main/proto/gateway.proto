@@ -272,6 +272,7 @@ message Partition {
   enum PartitionBrokerRole {
     LEADER = 0;
     FOLLOWER = 1;
+    INACTIVE = 2;
   }
 
   // Describes the current health of the partition
