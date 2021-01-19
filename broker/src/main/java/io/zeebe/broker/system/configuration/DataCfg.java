@@ -24,7 +24,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(512);
+  private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
   private static final boolean DEFAULT_DISK_USAGE_MONITORING_ENABLED = true;
   private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.99;
   private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
@@ -42,7 +42,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
-  private Duration snapshotPeriod = Duration.ofMinutes(15);
+  private Duration snapshotPeriod = Duration.ofMinutes(5);
 
   private int logIndexDensity = 100;
 

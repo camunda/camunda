@@ -172,7 +172,7 @@
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
-      # logSegmentSize: 512MB
+      # logSegmentSize: 128MB
 
       # Configure whether data log segment file channels should be memory mapped.
       # WARNING: This is an experimental setting. It is not yet as mature as direct file channels (default).
