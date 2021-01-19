@@ -13,7 +13,6 @@ import {incompatibleFilters} from 'services';
 
 export default function ReportWarnings({
   report: {
-    combined,
     result,
     data: {view, groupBy, filter},
   },

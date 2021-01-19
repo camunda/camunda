@@ -57,7 +57,7 @@ it('should show a warning message when there are incompatible filter ', async ()
   );
 
   expect(node.find('MessageBox').children()).toIncludeText(
-    'No data is shown since the combination of filters is incompatible with each other'
+    'No data shown due to incompatible filters'
   );
 });
 

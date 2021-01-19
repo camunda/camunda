@@ -55,3 +55,24 @@ it('should only be compatible if flow node status filters filters are in flow no
     )
   ).toBe(true);
 });
+
+it('should return true if filters contains open and resolved incidents on the view level for incident reports', () => {
+  expect(
+    incompatibleFilters(
+      [
+        {type: 'includesOpenIncident', data: null, filterLevel: 'view'},
+        {type: 'includesResolvedIncident', data: null, filterLevel: 'view'},
+      ],
+      {entity: 'incident'}
+    )
+  ).toBe(true);
+});
+
+it('should return true if filters contains without incidents and open/resolved incidents on any level', () => {
+  expect(
+    incompatibleFilters([
+      {type: 'doesNotIncludeIncident', data: null},
+      {type: 'includesResolvedIncident', data: null},
+    ])
+  ).toBe(true);
+});

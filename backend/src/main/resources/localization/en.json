@@ -965,7 +965,7 @@
         "view": "All Flow Node data visible"
       },
       "linkingTip": "Filters are linked by 'and' logic",
-      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
+      "incompatibleFilters": "No data shown due to incompatible filters"
     },
     "definitionSelection": {
       "latest": "Latest",

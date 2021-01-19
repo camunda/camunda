@@ -5,8 +5,10 @@
  */
 
 export function incompatibleFilters(filterData, view) {
-  const filters = filterData.map((filter) => filter.type);
-  const bothExist = (arr) => arr.every((val) => filters.includes(val));
+  const bothExist = (arr, checkLevel) =>
+    arr.every((val) =>
+      filterData.some(({type, filterLevel}) => type === val && sameLevel(checkLevel, filterLevel))
+    );
 
   return (
     bothExist(['completedInstancesOnly', 'runningInstancesOnly']) ||
@@ -21,6 +23,17 @@ export function incompatibleFilters(filterData, view) {
       (bothExist(['completedFlowNodesOnly', 'runningFlowNodesOnly']) ||
         bothExist(['canceledFlowNodesOnly', 'runningFlowNodesOnly']) ||
         bothExist(['completedOrCanceledFlowNodesOnly', 'runningFlowNodesOnly']) ||
-        bothExist(['completedFlowNodesOnly', 'canceledFlowNodesOnly'])))
+        bothExist(['completedFlowNodesOnly', 'canceledFlowNodesOnly']))) ||
+    bothExist(['doesNotIncludeIncident', 'includesOpenIncident']) ||
+    bothExist(['doesNotIncludeIncident', 'includesResolvedIncident']) ||
+    (view?.entity === 'incident' &&
+      bothExist(['includesOpenIncident', 'includesResolvedIncident'], 'view'))
   );
+}
+
+function sameLevel(checkLevel, filterLevel) {
+  if (checkLevel) {
+    return checkLevel === filterLevel;
+  }
+  return true;
 }
