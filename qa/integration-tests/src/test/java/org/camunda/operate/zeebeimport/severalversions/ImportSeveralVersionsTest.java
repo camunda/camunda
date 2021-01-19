@@ -5,6 +5,16 @@
  */
 package org.camunda.operate.zeebeimport.severalversions;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+
 import java.io.IOException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
@@ -18,24 +28,21 @@ import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
+@Ignore("Unignore after v.1.0.0 is out")
 public class ImportSeveralVersionsTest extends OperateIntegrationTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsTest.class);
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule(ImportSeveralVersionsInitializer.OPERATE_PREFIX);
@@ -65,10 +72,10 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   private int incidentCount;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v25.processors.ElasticsearchBulkProcessor importerv1;
+  private org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor importerv1;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor importerv2;
+  private org.camunda.operate.zeebeimport.v27.processors.ElasticsearchBulkProcessor importerv2;
 
   public TestContainerUtil testContainerUtil = new TestContainerUtil();
 
@@ -82,7 +89,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
     //when
     startImportAndWaitTillItFinishes();
     //then
-    sleepFor(15000L);
+    sleepFor(5000L);
     assertOperateData();
     //make sure that both importers were called
     verify(importerv1, atLeastOnce()).performImport(any(ImportBatch.class));
@@ -90,12 +97,14 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   }
 
   private void startImportAndWaitTillItFinishes() {
+
     zeebeImporter.start();
 
     final Object importFinishedLock = zeebeImporter.getImportFinished();
     synchronized (importFinishedLock) {
       try {
         importFinishedLock.wait();
+        logger.info("All import jobs are scheduled");
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

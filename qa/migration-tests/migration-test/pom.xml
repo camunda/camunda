@@ -53,6 +53,20 @@
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
+      <artifactId>test-fixture-0250</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>test-fixture-0260</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate-els-schema</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

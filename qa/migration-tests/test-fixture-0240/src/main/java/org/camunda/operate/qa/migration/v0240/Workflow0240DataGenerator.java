@@ -105,7 +105,7 @@ public class Workflow0240DataGenerator {
 
   private void startBigWorkflowInstance() {
     String payload =
-        "{\"items\": [" + IntStream.range(1, 3000).boxed().map(Object::toString).collect(
+        "{\"items\": [" + IntStream.range(1, 1000).boxed().map(Object::toString).collect(
             Collectors.joining(",")) + "]}";
     ZeebeTestUtil
         .startWorkflowInstance(zeebeClient, WORKFLOW_BPMN_PROCESS_ID, payload);

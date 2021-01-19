@@ -21,13 +21,13 @@
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer-025</artifactId>
+      <artifactId>camunda-operate-importer-026</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer-026</artifactId>
+      <artifactId>camunda-operate-importer-027</artifactId>
       <version>${project.version}</version>
     </dependency>
 

@@ -8,7 +8,7 @@ package org.camunda.operate.util.apps.idempotency;
 import java.util.HashSet;
 import java.util.Set;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.zeebeimport.v25.processors.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.springframework.context.annotation.Bean;

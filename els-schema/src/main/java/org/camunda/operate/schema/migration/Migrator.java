@@ -13,6 +13,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -193,6 +194,11 @@ public class Migrator{
     String numberOfReplicas = previousSettings.getOrDefault(NUMBERS_OF_REPLICA, "" + elsConfig.getNumberOfReplicas());
     String refreshInterval = previousSettings.getOrDefault(REFRESH_INTERVAL, elsConfig.getRefreshInterval());
     updateSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, numberOfReplicas).put(REFRESH_INTERVAL, refreshInterval).build(), indexPattern);
+    forceIndexRefresh(indexPattern);
+  }
+
+  private void forceIndexRefresh(String indexPattern) throws IOException {
+    esClient.indices().refresh(new RefreshRequest(indexPattern), RequestOptions.DEFAULT);
   }
 
   private void setSettingsForReindex(String version) throws IOException {

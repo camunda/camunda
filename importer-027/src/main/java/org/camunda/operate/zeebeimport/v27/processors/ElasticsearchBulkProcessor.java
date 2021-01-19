@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.zeebeimport.v26.processors;
+package org.camunda.operate.zeebeimport.v27.processors;
 
 import java.util.List;
 import java.util.Map;
@@ -12,15 +12,15 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebe.ImportValueType;
-import org.camunda.operate.zeebeimport.v26.record.value.DeploymentRecordValueImpl;
-import org.camunda.operate.zeebeimport.v26.record.value.IncidentRecordValueImpl;
-import org.camunda.operate.zeebeimport.v26.record.value.VariableDocumentRecordImpl;
-import org.camunda.operate.zeebeimport.v26.record.value.VariableRecordValueImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.DeploymentRecordValueImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.IncidentRecordValueImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.VariableDocumentRecordImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import org.camunda.operate.zeebeimport.ImportBatch;
-import org.camunda.operate.zeebeimport.v26.record.RecordImpl;
-import org.camunda.operate.zeebeimport.v26.record.value.JobRecordValueImpl;
-import org.camunda.operate.zeebeimport.v26.record.value.WorkflowInstanceRecordValueImpl;
+import org.camunda.operate.zeebeimport.v27.record.RecordImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.JobRecordValueImpl;
+import org.camunda.operate.zeebeimport.v27.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
     ImportValueType importValueType = importBatch.getImportValueType();
 
-    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.26", importBatch.getImportValueType(), importBatch.getPartitionId());
+    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.27", importBatch.getImportValueType(), importBatch.getPartitionId());
 
     switch (importValueType) {
     case WORKFLOW_INSTANCE:
@@ -163,6 +163,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "0.26";
+    return "0.27";
   }
 }

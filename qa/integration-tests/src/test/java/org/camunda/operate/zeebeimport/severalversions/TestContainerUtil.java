@@ -124,8 +124,9 @@ public class TestContainerUtil {
                 .filter(p -> p.getFileName().endsWith("snapshots"))
                 .collect(Collectors.toList());
             if (files.size() == 1 && Files.isDirectory(files.get(0))) {
-              if (Files.walk(files.get(0)).count() > 0) {
+              if (Files.walk(files.get(0)).count() > 1) {
                 found = true;
+                logger.debug("Zeebe snapshot was found in " + Files.walk(files.get(0)).findFirst().toString());
               }
             }
             if (!found) {

@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.qa.util.migration;
 
+import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebePort;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,12 +16,9 @@ import java.time.Duration;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.MountableFile;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebePort;
 
 public abstract class AbstractTestFixture implements TestFixture {
 
@@ -55,11 +54,31 @@ public abstract class AbstractTestFixture implements TestFixture {
             .forPort(8080)
             .forPath("/actuator/prometheus")
             .withReadTimeout(Duration.ofSeconds(30)));
+    applyConfiguration(operateContainer, testContext.getInternalElsHost(),
+        testContext.getInternalElsPort(), testContext.getInternalZeebeContactPoint());
     operateContainer.start();
 
     testContext.setExternalOperateHost(operateContainer.getContainerIpAddress());
     testContext.setExternalOperatePort(operateContainer.getMappedPort(OPERATE_HTTP_PORT));
     logger.info("************ Operate started  ************");
+  }
+
+  //for newer versions
+  private void applyConfiguration(final GenericContainer<?> operateContainer,
+      String elsHost, Integer elsPort, String zeebeContactPoint) {
+    operateContainer
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_UHOST", elsHost)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+
+    if (zeebeContactPoint != null) {
+      operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT", zeebeContactPoint)
+          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", ZEEBE_PREFIX);
+    }
+
   }
 
   protected Path createConfigurationFile() {
@@ -73,6 +92,7 @@ public abstract class AbstractTestFixture implements TestFixture {
     }
   }
 
+  //for older versions
   protected Properties getOperateElsProperties(String elsHost, Integer elsPort, String zeebeContactPoint) {
     Properties properties = new Properties();
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);

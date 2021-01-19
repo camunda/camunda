@@ -17,6 +17,8 @@
 		<module>test-fixture-121</module>
 		<module>test-fixture-0230</module>
 		<module>test-fixture-0240</module>
+		<module>test-fixture-0250</module>
+		<module>test-fixture-0260</module>
 		<module>migration-test</module>
 	</modules>
 
