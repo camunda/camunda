@@ -56,6 +56,10 @@ public final class BpmnStateTransitionBehavior {
     this.processorLookUp = processorLookUp;
   }
 
+  public void transitionToActivating(final BpmnElementContext context) {
+    transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+  }
+
   public void transitionToActivated(final BpmnElementContext context) {
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);

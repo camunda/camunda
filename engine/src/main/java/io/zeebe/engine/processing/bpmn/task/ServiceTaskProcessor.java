@@ -71,34 +71,37 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
-    eventWriter.appendFollowUpEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getRecordValue());
+    final var updatedContextForElementActivating =
+        context.copy(elementInstanceKey, context.getRecordValue(), context.getIntent());
 
-    stateBehavior.createElementInstanceInFlowScope(
-        context, elementInstanceKey, context.getRecordValue()); // state change
+    stateTransitionBehavior.transitionToActivating(updatedContextForElementActivating);
 
-    final var updatedContext =
-        context.copy(
-            elementInstanceKey,
-            context.getRecordValue(),
+    final var updatedContextAfterElementActivating =
+        updatedContextForElementActivating.copy(
+            updatedContextForElementActivating.getElementInstanceKey(),
+            updatedContextForElementActivating.getRecordValue(),
             WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     final var scopeKey = context.getElementInstanceKey();
     Either.<Failure, Void>right(null)
         .flatMap(
             ok ->
-                variableMappingBehavior.applyInputMappings(updatedContext, element)) // state change
+                variableMappingBehavior.applyInputMappings(
+                    updatedContextAfterElementActivating, element)) // state change
         .flatMap(
             ok ->
                 eventSubscriptionBehavior.subscribeToEvents(
-                    element, updatedContext)) // state change
+                    element, updatedContextAfterElementActivating)) // state change
         .flatMap(ok -> evaluateJobExpressions(element, scopeKey))
         .ifRightOrLeft(
             jobTypeAndRetries -> {
-              stateTransitionBehavior.transitionToActivated(updatedContext); // state change
-              createNewJob(updatedContext, element, jobTypeAndRetries); // state change
+              stateTransitionBehavior.transitionToActivated(updatedContextAfterElementActivating);
+              createNewJob(
+                  updatedContextAfterElementActivating, element, jobTypeAndRetries); // state change
             },
-            failure -> incidentBehavior.createIncident(failure, updatedContext)); // state change
+            failure ->
+                incidentBehavior.createIncident(
+                    failure, updatedContextAfterElementActivating)); // state change
   }
 
   @Override

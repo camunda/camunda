@@ -18,6 +18,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 // todo move this class out of this package
 public final class EventApplier {
@@ -33,20 +34,6 @@ public final class EventApplier {
   }
 
   public void applyState(final long key, final Intent intent, final UnifiedRecordValue value) {
-    /* Pseudo code */
-    //    switch (value) {
-    //      instanceof WorkflowInstanceRecord => switch (intent) {
-    //       WorkflowInstanceIntent.ELEMENT_ACTIVATING => switch(value.type) {
-    //          SERVICE_TASK => updateElementInstanceState()
-    //       },
-    //       WorkflowInstanceIntent.ELEMENT_ACTIVATED => updateElementInstanceState()
-    //      }
-    //      instanceof IncidentRecord => switch (intent) {
-    //        IncidentIntent.CREATED => createIncident() + markCommandAsFailed()
-    //      }
-    //      instanceof VariableRecord
-    //                CREATED =>
-    //    }
     if (value instanceof WorkflowInstanceRecord) {
       final var record = (WorkflowInstanceRecord) value;
       final var newState = (WorkflowInstanceIntent) intent;
@@ -54,10 +41,24 @@ public final class EventApplier {
       context.init(key, record, newState);
 
       // todo this filter to determine what to do could be wrapped in a nicer mapping/interface
-      if (newState == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-        stateBehavior.updateElementInstance(
-            context, elementInstance -> elementInstance.setState(newState));
+      switch (newState) {
+        case ELEMENT_ACTIVATING:
+          {
+            if (record.getBpmnElementType() == BpmnElementType.SERVICE_TASK) {
+              stateBehavior.createElementInstanceInFlowScope(
+                  context, key, context.getRecordValue());
+            }
+            break;
+          }
+        case ELEMENT_ACTIVATED:
+          {
+            stateBehavior.updateElementInstance(
+                context, elementInstance -> elementInstance.setState(newState));
+            break;
+          }
+        default:
       }
+
     } else if (value instanceof IncidentRecord) {
       final var record = (IncidentRecord) value;
       if (intent == IncidentIntent.CREATED) {
