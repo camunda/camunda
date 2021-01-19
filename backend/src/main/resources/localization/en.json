@@ -54,7 +54,7 @@
     "respectPrivacy": "We respect your privacy.",
     "personalData": "None of your personal information or stored data will be submitted. To learn more, read our",
     "orView": "or view our <a href='{link}' target='_blank' rel='noopener noreferrer'>{policy}</a>.",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "privacy policy"
   },
   "templates": {
     "noProcessHint": "Create Blank Dashboard",
@@ -845,7 +845,7 @@
         "flowNodeStatus": "Flow Node Status",
         "runningFlowNodesOnly": "Running Flow Nodes Only",
         "completedFlowNodesOnly": "Completed Flow Nodes Only",
-        "canceledFlowNodesOnly": "Cancelled Flow Nodes Only",
+        "canceledFlowNodesOnly": "Canceled Flow Nodes Only",
         "completedOrCanceledFlowNodesOnly": "Completed or Canceled Flow Nodes Only"
       },
       "list": {
