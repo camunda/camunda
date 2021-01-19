@@ -89,11 +89,23 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
     // process the event
-    if (stateTransitionGuard.isValidStateTransition(context)) {
+    if (needsToBeProcessed(intent, element)
+        && stateTransitionGuard.isValidStateTransition(context)) {
       LOGGER.trace("Process workflow instance event [context: {}]", context);
 
       processEvent(intent, processor, element);
     }
+  }
+
+  // TODO this is for the spike and should be removed eventually
+  private boolean needsToBeProcessed(
+      final WorkflowInstanceIntent intent, final ExecutableFlowElement element) {
+    if (intent == WorkflowInstanceIntent.ELEMENT_ACTIVATING
+        && element.getElementType() == BpmnElementType.SERVICE_TASK) {
+      return false;
+    }
+
+    return true;
   }
 
   private void processEvent(

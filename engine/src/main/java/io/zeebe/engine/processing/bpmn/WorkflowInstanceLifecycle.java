@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ACTIVATE_ELEMENT;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
@@ -52,6 +53,8 @@ public final class WorkflowInstanceLifecycle {
     TRANSITION_RULES.put(ELEMENT_TERMINATED, Collections.emptySet());
     TRANSITION_RULES.put(EVENT_OCCURRED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(SEQUENCE_FLOW_TAKEN, EnumSet.of(ELEMENT_ACTIVATING));
+
+    TRANSITION_RULES.put(ACTIVATE_ELEMENT, EnumSet.of(ELEMENT_ACTIVATING));
   }
 
   private WorkflowInstanceLifecycle() {}

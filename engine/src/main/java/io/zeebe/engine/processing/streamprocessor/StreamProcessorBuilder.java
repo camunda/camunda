@@ -71,7 +71,7 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder detectReprocessingInconsistency(
       final boolean detectReprocessingInconsistency) {
-    this.processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
+    processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
     return this;
   }
 

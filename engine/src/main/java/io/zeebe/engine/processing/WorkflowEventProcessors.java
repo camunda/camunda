@@ -96,7 +96,15 @@ public final class WorkflowEventProcessors {
       final BpmnStreamProcessor bpmnStepProcessor) {
 
     Arrays.stream(WorkflowInstanceIntent.values())
+        .filter(intent -> intent == WorkflowInstanceIntent.ACTIVATE_ELEMENT)
+        .forEach(
+            intent ->
+                typedRecordProcessors.onCommand(
+                    ValueType.WORKFLOW_INSTANCE, intent, bpmnStepProcessor));
+
+    Arrays.stream(WorkflowInstanceIntent.values())
         .filter(WorkflowEventProcessors::isWorkflowInstanceEvent)
+        .filter(intent -> intent != WorkflowInstanceIntent.ACTIVATE_ELEMENT)
         .forEach(
             intent ->
                 typedRecordProcessors.onEvent(

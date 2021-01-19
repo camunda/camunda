@@ -73,20 +73,32 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     eventWriter.appendFollowUpEvent(
         elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getRecordValue());
+
     stateBehavior.createElementInstanceInFlowScope(
-        context, elementInstanceKey, context.getRecordValue());
+        context, elementInstanceKey, context.getRecordValue()); // state change
+
+    final var updatedContext =
+        context.copy(
+            elementInstanceKey,
+            context.getRecordValue(),
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     final var scopeKey = context.getElementInstanceKey();
     Either.<Failure, Void>right(null)
-        .flatMap(ok -> variableMappingBehavior.applyInputMappings(context, element))
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(
+            ok ->
+                variableMappingBehavior.applyInputMappings(updatedContext, element)) // state change
+        .flatMap(
+            ok ->
+                eventSubscriptionBehavior.subscribeToEvents(
+                    element, updatedContext)) // state change
         .flatMap(ok -> evaluateJobExpressions(element, scopeKey))
         .ifRightOrLeft(
             jobTypeAndRetries -> {
-              stateTransitionBehavior.transitionToActivated(context);
-              createNewJob(context, element, jobTypeAndRetries);
+              stateTransitionBehavior.transitionToActivated(updatedContext); // state change
+              createNewJob(updatedContext, element, jobTypeAndRetries); // state change
             },
-            failure -> incidentBehavior.createIncident(failure, context));
+            failure -> incidentBehavior.createIncident(failure, updatedContext)); // state change
   }
 
   @Override
