@@ -101,10 +101,12 @@ public final class ServiceTaskTest {
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(2))
+                .limit(3))
         .extracting(Record::getIntent)
         .containsSequence(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            WorkflowInstanceIntent.ACTIVATE_ELEMENT,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final Record<WorkflowInstanceRecordValue> serviceTask =
         RecordingExporter.workflowInstanceRecords()

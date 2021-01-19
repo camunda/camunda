@@ -77,6 +77,12 @@ public final class MappingIncidentTest {
     final Record failureEvent =
         RecordingExporter.workflowInstanceRecords()
             .withElementId("failingTask")
+            .withIntent(WorkflowInstanceIntent.ACTIVATE_ELEMENT)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+    final Record activationAttemptEvent =
+        RecordingExporter.workflowInstanceRecords()
+            .withElementId("failingTask")
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
@@ -89,7 +95,8 @@ public final class MappingIncidentTest {
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
-    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
+    assertThat(incidentEvent.getValue().getVariableScopeKey())
+        .isEqualTo(activationAttemptEvent.getKey());
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
     Assertions.assertThat(incidentEventValue)
@@ -98,8 +105,8 @@ public final class MappingIncidentTest {
         .hasWorkflowKey(workflowKey)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
-        .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasElementInstanceKey(activationAttemptEvent.getKey())
+        .hasVariableScopeKey(activationAttemptEvent.getKey());
 
     assertThat(incidentEventValue.getErrorMessage()).contains("no variable found for name 'foo'");
   }
