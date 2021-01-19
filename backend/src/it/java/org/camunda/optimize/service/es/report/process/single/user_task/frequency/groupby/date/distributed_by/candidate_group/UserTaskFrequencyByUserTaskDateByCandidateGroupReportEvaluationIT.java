@@ -286,47 +286,6 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksWithDifferentCandidateGroups();
-    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-
-    ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksWithDifferentCandidateGroups();
-    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .doAssert(result);
-    // @formatter:on
-  }
-
-  @Test
   public void userTasksStartedAtSameIntervalAreGroupedTogether() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
@@ -653,7 +612,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -701,7 +665,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 

@@ -103,7 +103,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -220,34 +221,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     assertThat(result.getData())
       .hasSize(3)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
-  }
-
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    startAndCompleteInstanceWithDates(
-      processDefinition.getId(),
-      referenceDate.minusDays(3),
-      referenceDate.minusDays(1)
-    );
-    startAndCompleteInstanceWithDates(
-      processDefinition.getId(),
-      referenceDate.minusDays(2),
-      referenceDate.minusDays(4)
-    );
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
   }
 
   @Test
@@ -399,7 +372,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -426,7 +400,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -453,7 +428,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(3), now.plusDays(5));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);

@@ -114,7 +114,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
 
   private boolean isResultComplete(final Aggregations aggregations) {
     boolean complete = true;
-    Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
+    final Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
     if (agg.getBuckets().size() > configurationService.getEsAggregationBucketLimit()) {
       complete = false;
     }
@@ -136,9 +136,6 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       results.add(
         CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions)
       );
-      if (results.size() >= configurationService.getEsAggregationBucketLimit()) {
-        break;
-      }
     }
     return results;
   }

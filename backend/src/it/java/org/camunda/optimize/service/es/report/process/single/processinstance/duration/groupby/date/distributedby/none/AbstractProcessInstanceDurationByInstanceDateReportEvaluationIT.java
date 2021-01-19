@@ -338,48 +338,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
-    final String processDefinitionId = instance1.getDefinitionId();
-    final String processDefinitionKey = instance1.getProcessDefinitionKey();
-    final String processDefinitionVersion = instance1.getProcessDefinitionVersion();
-    adjustProcessInstanceDates(instance1.getId(), referenceDate, 0L, 1L);
-
-    final ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance2.getId(), referenceDate, -1L, 2L);
-    final ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance3.getId(), referenceDate, -1L, 100L);
-    final ProcessInstanceEngineDto instance4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance4.getId(), referenceDate, -2L, 1L);
-    final ProcessInstanceEngineDto instance5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance5.getId(), referenceDate, -2L, 2L);
-    final ProcessInstanceEngineDto instance6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance6.getId(), referenceDate, -2L, 3L);
-    final ProcessInstanceEngineDto instance7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance7.getId(), referenceDate, -2L, 4L);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(getTestReportDataType())
-      .build();
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void emptyIntervalBetweenTwoProcessInstances() {
     // given
     OffsetDateTime referenceDate = OffsetDateTime.now();

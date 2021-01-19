@@ -314,51 +314,6 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
-    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_2, 10.);
-
-    ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
-    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeDuration(processInstance2, USER_TASK_1, 20.);
-    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, 10., SECOND_USER_FULLNAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 20., DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
-      .doAssert(result);
-    // @formatter:on
-  }
-
-  @Test
   public void userTasksStartedAtSameIntervalAreGroupedTogether() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
@@ -696,7 +651,12 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -754,7 +714,12 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
@@ -762,9 +727,9 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
   public void instanceLevelFilterByCandidateGroupOnlyCountsAssigneesFromInstancesMatchingFilter(final FilterOperator filterOperator,
-                                                                                   final String[] filterValues,
-                                                                                   final Long expectedInstanceCount,
-                                                                                   final List<Tuple> expectedResult) {
+                                                                                                final String[] filterValues,
+                                                                                                final Long expectedInstanceCount,
+                                                                                                final List<Tuple> expectedResult) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension

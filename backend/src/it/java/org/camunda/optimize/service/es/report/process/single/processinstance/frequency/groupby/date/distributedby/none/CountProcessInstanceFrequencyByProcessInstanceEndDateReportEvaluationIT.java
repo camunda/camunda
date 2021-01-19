@@ -122,7 +122,6 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
     assertThat(resultData.get(4).getValue(), is(0.));
   }
 
-
   @Test
   public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() {
     // given 1 completed + 2 running process instances

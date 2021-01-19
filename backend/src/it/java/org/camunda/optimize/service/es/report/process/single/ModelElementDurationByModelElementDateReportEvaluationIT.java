@@ -113,7 +113,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -133,38 +134,6 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(expectedDuration);
-  }
-
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-
-    ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
   }
 
   @ParameterizedTest
@@ -283,7 +252,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -310,7 +280,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(3), now.plusDays(5));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -337,7 +308,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     startProcessInstancesWithModelElementDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);

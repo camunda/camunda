@@ -316,54 +316,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData.get(4).getValue()).isEqualTo(0.);
   }
 
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
-    OffsetDateTime lastEvaluationDateFilter = beforeStart;
-
-    // third bucket
-    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-
-    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
-
-    // second bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-
-    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
-
-    // first bucket
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(AggregateByDateUnit.DAY)
-      .build();
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto result = evaluationResult.getResult();
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(result.getIsComplete()).isFalse();
-    assertThat(resultData).hasSize(2);
-  }
-
   @ParameterizedTest
   @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(

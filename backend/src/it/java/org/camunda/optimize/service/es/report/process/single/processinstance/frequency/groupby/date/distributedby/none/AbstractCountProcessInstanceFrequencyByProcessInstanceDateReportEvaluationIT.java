@@ -132,8 +132,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReportById(
-        reportId);
+      reportClient.evaluateMapReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -264,43 +263,6 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       resultValues,
       contains(resultValues.stream().sorted(Comparator.reverseOrder()).toArray())
     );
-  }
-
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
-    // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    final String definitionId = processInstanceDto.getDefinitionId();
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
-    changeProcessInstanceDate(processInstanceDto2.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(definitionId);
-    changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(definitionId);
-    changeProcessInstanceDate(processInstanceDto4.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(definitionId);
-    changeProcessInstanceDate(processInstanceDto5.getId(), referenceDate.minusDays(2));
-    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtension.startProcessInstance(definitionId);
-    changeProcessInstanceDate(processInstanceDto6.getId(), referenceDate.minusDays(2));
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(result.getIsComplete(), is(false));
   }
 
   @Test
