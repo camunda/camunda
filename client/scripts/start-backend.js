@@ -164,10 +164,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     async function restoreSqlDump() {
-      await downloadFile(
-        'https://storage.googleapis.com/optimize-data/optimize_data-e2e.sqlc',
-        'databaseDumps/dump.sqlc'
-      );
+      await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
 
       dataGeneratorProcess = spawnWithArgs(
         'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
@@ -189,10 +186,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function downloadFile(downloadUrl, filePath) {
       return new Promise(async (resolve) => {
-        const file = fs.createWriteStream(filePath);
-        const res = await fetch(downloadUrl);
-        res.body.pipe(file);
-        file.on('finish', () => {
+        const downloadFile = spawnWithArgs(`gsutil -q cp ${downloadUrl} ${filePath}`);
+        downloadFile.on('close', () => {
           resolve();
         });
       });

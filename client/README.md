@@ -5,6 +5,7 @@
 Node 14.15.4+
 Docker 17.12.0+
 Docker Compose 1.21.0+
+[Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 
 ## Installation
 
@@ -16,6 +17,16 @@ npm install -g yarn
 Install dependencies
 ```bash
 yarn
+```
+
+## Login to GCP
+
+```bash
+gcloud auth application-default login
+```
+
+```bash
+gcloud config set project ci-30-162810
 ```
 
 ## Development server
