@@ -42,7 +42,7 @@ it('should not allow adding the same filter twice', () => {
   expect(node.find(Dropdown.Option).at(0)).toBeDisabled();
 });
 
-it('should disable the variable option if there are no reports', () => {
+it('should disable options that rely on process data if there are no reports', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
   expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
@@ -50,7 +50,7 @@ it('should disable the variable option if there are no reports', () => {
   expect(node.find(Dropdown.Option).last()).toBeDisabled();
 });
 
-it('should show a prompt to save the dashboard when adding a variable filter on a dashboard with unsaved reports', async () => {
+it('should show a prompt to save the dashboard when adding filters that rely on processes on a dashboard with unsaved reports', async () => {
   const node = shallow(
     <AddFiltersButton {...props} reports={[{id: 'reportId'}, {report: {name: 'unsaved report'}}]} />
   );
@@ -94,7 +94,11 @@ it('should remove filters that are no longer valid', () => {
 it('should include the allowed values for string and number variables', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node
+    .find(Dropdown.Option)
+    .findWhere((n) => n.text() === 'Variable')
+    .first()
+    .simulate('click');
 
   const modal = node.find('.dashboardVariableFilter');
 
@@ -116,7 +120,11 @@ it('should include the allowed values for string and number variables', () => {
 it('should not include a data field for boolean and date variables', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node
+    .find(Dropdown.Option)
+    .findWhere((n) => n.text() === 'Variable')
+    .first()
+    .simulate('click');
 
   const modal = node.find('.dashboardVariableFilter');
 
@@ -156,11 +164,32 @@ it('should not include a data field for boolean and date variables', () => {
 it('should include a checkbox to allow custom values', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node
+    .find(Dropdown.Option)
+    .findWhere((n) => n.text() === 'Variable')
+    .first()
+    .simulate('click');
 
   const postText = shallow(
     node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'})
   );
 
+  expect(postText.find('[type="checkbox"]')).toExist();
+});
+
+it('should show an assignee filter modal with additional content', () => {
+  const node = shallow(<AddFiltersButton {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .findWhere((n) => n.text() === 'Assignee')
+    .first()
+    .simulate('click');
+
+  expect(node.find('.dashboardAssigneeFilter')).toExist();
+
+  const postText = shallow(
+    node.find('.dashboardAssigneeFilter').prop('getPosttext')({type: 'String'})
+  );
   expect(postText.find('[type="checkbox"]')).toExist();
 });

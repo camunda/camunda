@@ -12,13 +12,13 @@ import {t} from 'translation';
 
 import {loadUserNames} from './service';
 
-export function AssigneeFilterPreview({mightFail, filter}) {
+export function AssigneeFilterPreview({mightFail, filter, getNames}) {
   const [names, setNames] = useState({});
 
   useEffect(() => {
     const realUsers = filter.data.values.filter((id) => !!id); // remove null for Unassigned
     mightFail(
-      loadUserNames(filter.type, realUsers),
+      (getNames || loadUserNames)(filter.type, realUsers),
       (response) =>
         setNames(
           response.reduce((prev, current) => {
@@ -28,7 +28,7 @@ export function AssigneeFilterPreview({mightFail, filter}) {
         ),
       showError
     );
-  }, [mightFail, filter]);
+  }, [mightFail, filter, getNames]);
 
   const {values, operator} = filter.data;
 

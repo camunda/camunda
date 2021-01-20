@@ -6,8 +6,14 @@
 
 import {post, get} from 'request';
 
-export async function loadUsers(type, payload) {
+export async function loadUsersByDefinition(type, payload) {
   const response = await post(`api/${type}/search`, payload);
+
+  return await response.json();
+}
+
+export async function loadUsersByReportIds(type, payload) {
+  const response = await post(`api/${type}/search/reports`, payload);
 
   return await response.json();
 }

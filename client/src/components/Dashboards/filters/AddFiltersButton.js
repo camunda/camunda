@@ -6,11 +6,12 @@
 
 import React, {useState} from 'react';
 import useDeepCompareEffect from 'use-deep-compare-effect';
+import update from 'immutability-helper';
 
 import {getVariableNames, getVariableValues} from './service';
 
 import {Dropdown, Icon, LabeledInput, Tooltip} from 'components';
-import {VariableFilter} from 'filter';
+import {VariableFilter, AssigneeFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -23,10 +24,8 @@ export function AddFiltersButton({
   persistReports,
   mightFail,
 }) {
-  const [showVariableModal, setShowVariableModal] = useState(false);
-  const [openVariableModalAfterReportUpdate, setOpenVariableModalAfterReportUpdate] = useState(
-    null
-  );
+  const [showModal, setShowModal] = useState(false);
+  const [openModalAfterReportUpdate, setOpenModalAfterReportUpdate] = useState(null);
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
 
@@ -49,10 +48,10 @@ export function AddFiltersButton({
             );
           })
         );
-        if (openVariableModalAfterReportUpdate) {
-          openVariableModalAfterReportUpdate();
-          setShowVariableModal(true);
-          setOpenVariableModalAfterReportUpdate(null);
+        if (openModalAfterReportUpdate) {
+          openModalAfterReportUpdate.resolve();
+          setShowModal(openModalAfterReportUpdate.type);
+          setOpenModalAfterReportUpdate(null);
         }
       },
       showError
@@ -67,7 +66,27 @@ export function AddFiltersButton({
     return availableFilters.some((filter) => filter.type === type);
   }
 
-  const disableVariableFilter = reports.length === 0;
+  function saveAndContinue(type) {
+    if (hasUnsavedReports) {
+      showPrompt(
+        {
+          title: t('dashboard.saveModal.unsaved'),
+          body: t('dashboard.saveModal.text'),
+          yes: t('common.saveContinue'),
+          no: t('common.cancel'),
+        },
+        () =>
+          new Promise((resolve) => {
+            setOpenModalAfterReportUpdate({resolve, type});
+            persistReports();
+          })
+      );
+    } else {
+      setShowModal(type);
+    }
+  }
+
+  const noReports = reports.length === 0;
 
   return (
     <>
@@ -87,37 +106,27 @@ export function AddFiltersButton({
           </Dropdown.Option>
         ))}
         <Tooltip
-          content={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
+          content={noReports ? t('dashboard.filter.disabledVariable') : undefined}
           position="bottom"
         >
-          <Dropdown.Option
-            disabled={disableVariableFilter}
-            onClick={() => {
-              if (hasUnsavedReports) {
-                showPrompt(
-                  {
-                    title: t('dashboard.saveModal.unsaved'),
-                    body: t('dashboard.saveModal.text'),
-                    yes: t('common.saveContinue'),
-                    no: t('common.cancel'),
-                  },
-                  () =>
-                    new Promise((resolve) => {
-                      setOpenVariableModalAfterReportUpdate(() => resolve);
-                      persistReports();
-                    })
-                );
-              } else {
-                setShowVariableModal(true);
-              }
-            }}
-          >
+          <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue('variable')}>
             {t('dashboard.filter.types.variable')}
           </Dropdown.Option>
         </Tooltip>
+        {['assignee', 'candidateGroup'].map((type) => (
+          <Tooltip
+            key={type}
+            content={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
+            position="bottom"
+          >
+            <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue(type)}>
+              {t('common.filter.types.' + type)}
+            </Dropdown.Option>
+          </Tooltip>
+        ))}
       </Dropdown>
 
-      {showVariableModal && (
+      {showModal === 'variable' && (
         <VariableFilter
           className="dashboardVariableFilter"
           forceEnabled={(variable) =>
@@ -138,7 +147,7 @@ export function AddFiltersButton({
                 },
               ]);
             }
-            setShowVariableModal(false);
+            setShowModal(false);
             setAllowCustomValues(false);
           }}
           getPretext={(variable) => {
@@ -170,7 +179,7 @@ export function AddFiltersButton({
             return null;
           }}
           close={() => {
-            setShowVariableModal(false);
+            setShowModal(false);
             setAllowCustomValues(false);
           }}
           config={{
@@ -178,6 +187,46 @@ export function AddFiltersButton({
             getValues: (...args) => getVariableValues(reportIds, ...args),
           }}
           filterType="variable"
+        />
+      )}
+
+      {(showModal === 'assignee' || showModal === 'candidateGroup') && (
+        <AssigneeFilter
+          className="dashboardAssigneeFilter"
+          forceEnabled={() => allowCustomValues}
+          reportIds={reportIds}
+          addFilter={(data) => {
+            setAvailableFilters([
+              ...availableFilters,
+              update(data, {data: {allowCustomValues: {$set: allowCustomValues}}}),
+            ]);
+            setShowModal(false);
+            setAllowCustomValues(false);
+          }}
+          getPretext={() => {
+            return (
+              <div className="preText">
+                {t('dashboard.filter.modal.pretext.default')}{' '}
+                {t('dashboard.filter.modal.pretext.flowNodeData')}
+              </div>
+            );
+          }}
+          getPosttext={() => {
+            return (
+              <LabeledInput
+                type="checkbox"
+                label={t('dashboard.filter.modal.allowCustomValues')}
+                className="customValueCheckbox"
+                checked={allowCustomValues}
+                onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+              />
+            );
+          }}
+          close={() => {
+            setShowModal(false);
+            setAllowCustomValues(false);
+          }}
+          filterType={showModal}
         />
       )}
     </>

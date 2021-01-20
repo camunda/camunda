@@ -555,6 +555,7 @@
       "label": "Berichtsfilter hinzufügen",
       "viewLabel": "Berichtsdaten filtern",
       "disabledVariable": "Variablenfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
+      "disabledAssignee": "Bearbeiter- und Potenzielle Gruppen-Filter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
       "resetAll": "Alle zurücksetzen",
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
@@ -563,7 +564,8 @@
         "pretext": {
           "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",
           "Boolean": "Wahr und Falsch Werte werden im resultierenden Filter verfügbar sein.",
-          "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein."
+          "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein.",
+          "flowNodeData": "Der Filter berücksichtigt Prozessknoten Daten."
         },
         "allowCustomValues": "Betrachter können Filterwerte hinzufügen"
       },

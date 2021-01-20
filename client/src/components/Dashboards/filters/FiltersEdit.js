@@ -5,16 +5,18 @@
  */
 
 import React, {useState} from 'react';
+import update from 'immutability-helper';
 
 import {getVariableNames, getVariableValues} from './service';
 
 import {Button, Icon, LabeledInput} from 'components';
-import {VariableFilter} from 'filter';
+import {VariableFilter, AssigneeFilter} from 'filter';
 import {t} from 'translation';
 
 import InstanceStateFilter from './InstanceStateFilter';
 import DateFilter from './DateFilter';
 import DashboardVariableFilter from './VariableFilter';
+import DashboardAssigneeFilter from './AssigneeFilter';
 
 import './FiltersEdit.scss';
 
@@ -67,11 +69,29 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                 {deleter}
               </DashboardVariableFilter>
             );
+          case 'assignee':
+          case 'candidateGroup':
+            return (
+              <DashboardAssigneeFilter key={idx} config={data} type={type}>
+                <Button
+                  className="editButton"
+                  icon
+                  onClick={() => {
+                    setFilterToEdit(idx);
+                    setAllowCustomValues(data.allowCustomValues);
+                  }}
+                >
+                  <Icon type="edit" />
+                </Button>
+                {deleter}
+              </DashboardAssigneeFilter>
+            );
           default:
             return null;
         }
       })}
-      {typeof filterToEdit !== 'undefined' && (
+
+      {typeof filterToEdit !== 'undefined' && availableFilters[filterToEdit].type === 'variable' && (
         <VariableFilter
           className="dashboardVariableFilter"
           forceEnabled={(variable) =>
@@ -144,6 +164,52 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
           }}
         />
       )}
+
+      {typeof filterToEdit !== 'undefined' &&
+        ['assignee', 'candidateGroup'].includes(availableFilters[filterToEdit].type) && (
+          <AssigneeFilter
+            className="dashboardVariableFilter"
+            forceEnabled={() => allowCustomValues}
+            reportIds={reportIds}
+            addFilter={(data) => {
+              setAvailableFilters(
+                availableFilters.map((filter, idx) => {
+                  if (idx !== filterToEdit) {
+                    return filter;
+                  }
+                  return update(data, {data: {allowCustomValues: {$set: allowCustomValues}}});
+                })
+              );
+              setFilterToEdit();
+              setAllowCustomValues(false);
+            }}
+            getPretext={() => {
+              return (
+                <div className="preText">
+                  {t('dashboard.filter.modal.pretext.default')}{' '}
+                  {t('dashboard.filter.modal.pretext.flowNodeData')}
+                </div>
+              );
+            }}
+            getPosttext={() => {
+              return (
+                <LabeledInput
+                  type="checkbox"
+                  label={t('dashboard.filter.modal.allowCustomValues')}
+                  className="customValueCheckbox"
+                  checked={allowCustomValues}
+                  onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+                />
+              );
+            }}
+            close={() => {
+              setFilterToEdit();
+              setAllowCustomValues(false);
+            }}
+            filterType={availableFilters[filterToEdit].type}
+            filterData={availableFilters[filterToEdit]}
+          />
+        )}
     </div>
   );
 }

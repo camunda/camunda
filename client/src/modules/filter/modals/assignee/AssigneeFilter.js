@@ -5,11 +5,14 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import classnames from 'classnames';
+
 import {Modal, Button, ButtonGroup, Labeled, Form, UserTypeahead} from 'components';
-import {loadUsers, getUsersById} from './service';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
+
+import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
 import './AssigneeFilter.scss';
 
@@ -18,6 +21,11 @@ export function AssigneeFilter({
   close,
   processDefinitionKey,
   tenantIds,
+  reportIds,
+  getPretext,
+  getPosttext,
+  className,
+  forceEnabled,
   mightFail,
   filterType,
   addFilter,
@@ -60,13 +68,14 @@ export function AssigneeFilter({
   };
 
   return (
-    <Modal open onClose={close} className="AssigneeFilter">
+    <Modal open onClose={close} className={classnames('AssigneeFilter', className)}>
       <Modal.Header>
         {t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
       </Modal.Header>
       <Modal.Content>
+        {getPretext?.(users, operator)}
         <ButtonGroup>
           <Button active={operator === 'in'} onClick={() => setOperator('in')}>
             {t('common.filter.assigneeModal.includeOnly')}
@@ -82,15 +91,20 @@ export function AssigneeFilter({
                 users={users}
                 onChange={setUsers}
                 fetchUsers={async (query) => {
-                  const result = await mightFail(
-                    loadUsers(filterType, {
+                  let dataPromise;
+                  if (reportIds) {
+                    dataPromise = loadUsersByReportIds(filterType, {
+                      reportIds,
+                      terms: query,
+                    });
+                  } else {
+                    dataPromise = loadUsersByDefinition(filterType, {
                       processDefinitionKey,
                       tenantIds,
                       terms: query,
-                    }),
-                    (result) => result,
-                    showError
-                  );
+                    });
+                  }
+                  const result = await mightFail(dataPromise, (result) => result, showError);
 
                   if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
                     result.total++;
@@ -108,12 +122,18 @@ export function AssigneeFilter({
             </Labeled>
           </Form.InputGroup>
         </Form>
+        {getPosttext?.(users, operator)}
       </Modal.Content>
       <Modal.Actions>
         <Button main onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary onClick={confirm} disabled={users.length === 0}>
+        <Button
+          main
+          primary
+          onClick={confirm}
+          disabled={users.length === 0 && !forceEnabled?.(users, operator)}
+        >
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
       </Modal.Actions>

@@ -57,3 +57,19 @@ it('should display assignee names', () => {
 
   expect(node.find('b').at(1).prop('children')).toBe('Demo Demo');
 });
+
+it('should accept a custom function to get user names', () => {
+  const getNames = jest.fn().mockReturnValue([
+    {
+      id: 'demo',
+      name: 'Harald',
+    },
+  ]);
+  const node = shallow(<AssigneeFilterPreview {...props} getNames={getNames} />);
+
+  runLastEffect();
+
+  expect(loadUserNames).not.toHaveBeenCalled();
+  expect(getNames).toHaveBeenCalledWith('assignee', ['demo']);
+  expect(node.find('b').at(1).prop('children')).toBe('Harald');
+});

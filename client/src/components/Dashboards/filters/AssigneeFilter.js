@@ -1,0 +1,192 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import React, {useState, useEffect} from 'react';
+import classnames from 'classnames';
+
+import {t} from 'translation';
+import {Popover, Form, Switch, Button, Icon, UserTypeahead} from 'components';
+import {withErrorHandling} from 'HOC';
+import {AssigneeFilterPreview} from 'filter';
+
+import {getAssigneeNames, loadUsersByReportIds} from './service';
+
+import './AssigneeFilter.scss';
+
+function getOperatorText(operator) {
+  switch (operator) {
+    case 'not in':
+      return t('common.filter.list.operators.not');
+    default:
+      return t('common.filter.list.operators.is');
+  }
+}
+
+export function AssigneeFilter({config, setFilter, reports, mightFail, filter, type, children}) {
+  const [users, setUsers] = useState([]);
+  const [names, setNames] = useState({});
+
+  const {operator, values, allowCustomValues} = config;
+
+  useEffect(() => {
+    mightFail(getAssigneeNames(type, values), (names) => {
+      setNames(
+        names.reduce((obj, assignee) => {
+          obj[assignee.id] = assignee;
+          return obj;
+        }, {})
+      );
+    });
+  }, [mightFail, values, type]);
+
+  function addValue(value, scopedFilter = filter) {
+    const newFilter = {
+      operator,
+      values: [...(scopedFilter?.values || []), value],
+    };
+    setFilter(newFilter);
+
+    return newFilter;
+  }
+
+  function removeValue(value, scopedFilter = filter) {
+    const values = scopedFilter.values.filter((existingValue) => existingValue !== value);
+
+    const newFilter = values.length ? {operator, values} : null;
+    setFilter(newFilter);
+
+    return newFilter;
+  }
+
+  const predefinedUsers = filter?.values.filter((user) => values.includes(user)) ?? [];
+  function addCustomValues(users) {
+    setFilter({
+      operator,
+      values: [...predefinedUsers, ...users.map((user) => user.identity.id)],
+    });
+  }
+  function removeCustomValues() {
+    if (predefinedUsers.length) {
+      setFilter({
+        operator,
+        values: predefinedUsers,
+      });
+    } else {
+      setFilter(null);
+    }
+  }
+
+  let previewFilter = filter;
+  if (filter?.values.length > 1) {
+    previewFilter = {operator: filter.operator, values: [t('dashboard.filter.multiple')]};
+  }
+
+  return (
+    <div className="AssigneeFilter__Dashboard">
+      <div className="title">
+        {t('common.filter.types.' + type)}
+        {children}
+      </div>
+      <Popover
+        title={
+          <>
+            <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}
+            {filter ? (
+              <AssigneeFilterPreview
+                filter={{type, data: previewFilter}}
+                getNames={() => Object.values(names)}
+              />
+            ) : (
+              getOperatorText(operator) + ' ...'
+            )}
+          </>
+        }
+      >
+        <Form compact>
+          <fieldset>
+            {values.map((value, idx) => (
+              <Switch
+                key={idx}
+                checked={!!filter?.values.includes(value)}
+                label={value === null ? t('common.nullOrUndefined') : names[value]?.name || value}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    addValue(value);
+                  } else {
+                    removeValue(value);
+                  }
+                }}
+              />
+            ))}
+            {allowCustomValues && (
+              <div className="customValue">
+                <Switch
+                  checked={!!filter?.values.some((user) => !values.includes(user))}
+                  onChange={(evt) => {
+                    if (evt.target.checked) {
+                      addCustomValues(users);
+                    } else {
+                      removeCustomValues();
+                    }
+                  }}
+                  disabled={!users.length}
+                />
+                <UserTypeahead
+                  users={users}
+                  onChange={(users) => {
+                    setUsers(users);
+
+                    if (users.length) {
+                      addCustomValues(users);
+                      setNames({
+                        ...names,
+                        ...users.reduce((obj, {identity}) => {
+                          obj[identity.id] = identity;
+                          return obj;
+                        }, {}),
+                      });
+                    } else {
+                      removeCustomValues();
+                    }
+                  }}
+                  fetchUsers={async (query) => {
+                    const result = await mightFail(
+                      loadUsersByReportIds(type, {
+                        reportIds: reports.map(({id}) => id).filter((id) => !!id),
+                        terms: query,
+                      }),
+                      (result) => result
+                    );
+
+                    result.result = result.result.filter((user) => !values.includes(user.id));
+
+                    if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
+                      result.total++;
+                      result.result.unshift({
+                        id: null,
+                        name: t('common.filter.assigneeModal.unassigned'),
+                        type: 'user',
+                      });
+                    }
+
+                    return result;
+                  }}
+                  optionsOnly
+                />
+              </div>
+            )}
+          </fieldset>
+          <hr />
+          <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
+            {t('common.off')}
+          </Button>
+        </Form>
+      </Popover>
+    </div>
+  );
+}
+
+export default withErrorHandling(AssigneeFilter);

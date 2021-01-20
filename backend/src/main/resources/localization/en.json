@@ -555,6 +555,7 @@
       "label": "Add a filter",
       "viewLabel": "Filter Report data",
       "disabledVariable": "Variable Filters are only available for Dashboards that contain at least one Report.",
+      "disabledAssignee": "Assignee and Candidate Group Filters are only available for Dashboards that contain at least one Report.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
@@ -563,7 +564,8 @@
         "pretext": {
           "Date": "Date selection will be available in the resulting filter.",
           "Boolean": "True and false values will be available in the resulting filter.",
-          "default": "Selected options will be available in the resulting filter."
+          "default": "Selected options will be available in the resulting filter.",
+          "flowNodeData": "The filter will consider flownode data."
         },
         "allowCustomValues": "Allow viewer to add filter values"
       },

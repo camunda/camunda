@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should abbreviate multiple string selections 1`] = `
+<React.Fragment>
+  <Icon
+    className="indicator active"
+    type="filter"
+  />
+   
+  <AssigneeFilterPreviewErrorHandler
+    filter={
+      Object {
+        "data": Object {
+          "operator": "not in",
+          "values": Array [
+            "multiple",
+          ],
+        },
+        "type": "assignee",
+      }
+    }
+    getNames={[Function]}
+  />
+</React.Fragment>
+`;
+
+exports[`should show the operator when no value is selected 1`] = `
+<React.Fragment>
+  <Icon
+    className="indicator"
+    type="filter"
+  />
+   
+  is not ...
+</React.Fragment>
+`;
