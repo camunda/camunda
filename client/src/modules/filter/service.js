@@ -57,11 +57,34 @@ export async function loadDecisionValues(
   return await response.json();
 }
 
-export function filterIncompatibleExistingFilters(filters, newFilterType, uniqueTypes) {
-  if (uniqueTypes.includes(newFilterType)) {
-    return filters.filter(({type}) => !uniqueTypes.includes(type));
-  }
-  return filters;
+export function filterSameTypeExistingFilters(filters, newFilter) {
+  const uniqueFilters = [
+    'runningInstancesOnly',
+    'completedInstancesOnly',
+    'canceledInstancesOnly',
+    'nonCanceledInstancesOnly',
+    'suspendedInstancesOnly',
+    'nonSuspendedInstancesOnly',
+    'startDate',
+    'endDate',
+    'runningFlowNodesOnly',
+    'completedFlowNodesOnly',
+    'canceledFlowNodesOnly',
+    'completedOrCanceledFlowNodesOnly',
+    'doesNotIncludeIncident',
+    'includesOpenIncident',
+    'includesResolvedIncident',
+    'evaluationDateTime',
+  ];
+
+  return filters.filter(
+    ({type, filterLevel}) =>
+      !(
+        newFilter.filterLevel === filterLevel &&
+        newFilter.type === type &&
+        uniqueFilters.includes(type)
+      )
+  );
 }
 
 export async function loadUserNames(type, ids) {

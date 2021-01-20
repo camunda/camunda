@@ -14,7 +14,7 @@ import {DateFilter, VariableFilter} from './modals';
 import FilterList from './FilterList';
 import './Filter.scss';
 
-import {loadDecisionValues, filterIncompatibleExistingFilters} from './service';
+import {loadDecisionValues, filterSameTypeExistingFilters} from './service';
 import {t} from 'translation';
 
 export default class DecisionFilter extends React.Component {
@@ -95,8 +95,7 @@ export default class DecisionFilter extends React.Component {
   };
 
   addFilter = (newFilter) => {
-    let filters = this.props.data;
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['evaluationDateTime']);
+    const filters = filterSameTypeExistingFilters(this.props.data, newFilter);
 
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();

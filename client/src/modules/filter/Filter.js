@@ -19,7 +19,7 @@ import {
   NodeDuration,
 } from './modals';
 import FilterList from './FilterList';
-import {loadValues, filterIncompatibleExistingFilters} from './service';
+import {loadValues, filterSameTypeExistingFilters} from './service';
 import InstanceFilters from './InstanceFilters';
 import ViewFilters from './ViewFilters';
 
@@ -98,16 +98,8 @@ export default class Filter extends React.Component {
   };
 
   addFilter = (newFilter) => {
-    let filters = this.props.data;
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'completedInstancesOnly',
-    ]);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['runningInstancesOnly']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['canceledInstancesOnly']);
-
     newFilter.filterLevel = this.props.filterLevel;
+    const filters = filterSameTypeExistingFilters(this.props.data, newFilter);
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
   };
