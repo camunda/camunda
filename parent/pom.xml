@@ -574,6 +574,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>toxiproxy</artifactId>
+        <version>${version.testcontainers}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-api</artifactId>
         <version>${version.docker-java-api}</version>
