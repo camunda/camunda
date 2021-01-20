@@ -74,6 +74,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
     final var updatedContextForElementActivating =
         context.copy(elementInstanceKey, context.getRecordValue(), context.getIntent());
 
+    /* todo find way to make clear which methodse are save to call during processing (because they
+    only create events, and which ones are dangerous */
     stateTransitionBehavior.transitionToActivating(updatedContextForElementActivating);
 
     final var updatedContextAfterElementActivating =
@@ -96,8 +98,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
         .ifRightOrLeft(
             jobTypeAndRetries -> {
               stateTransitionBehavior.transitionToActivated(updatedContextAfterElementActivating);
-              createNewJob(
-                  updatedContextAfterElementActivating, element, jobTypeAndRetries); // state change
+              appendCreateJobCommand(
+                  updatedContextAfterElementActivating, element, jobTypeAndRetries);
             },
             failure ->
                 incidentBehavior.createIncident(
@@ -178,7 +180,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
                     .map(retries -> new Tuple<>(jobType, retries)));
   }
 
-  private void createNewJob(
+  private void appendCreateJobCommand(
       final BpmnElementContext context,
       final ExecutableServiceTask serviceTask,
       final Tuple<String, Long> jobTypeAndRetries) {
