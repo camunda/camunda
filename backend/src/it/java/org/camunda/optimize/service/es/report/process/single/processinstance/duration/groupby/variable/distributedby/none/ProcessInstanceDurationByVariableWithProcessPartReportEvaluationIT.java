@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
@@ -363,64 +362,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
         .isEqualTo(calculateExpectedValueGivenDurations(1000., 9000., 2000.).get(aggType));
     });
-  }
-
-  @SneakyThrows
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() {
-    // given
-    final OffsetDateTime now = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put(DEFAULT_VARIABLE_NAME, 100.0);
-    ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
-      processDefinitionDto.getId(),
-      variables
-    );
-    engineDatabaseExtension.changeActivityInstanceStartDate(instance.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(instance.getId(), now.plusSeconds(1));
-
-    variables.put(DEFAULT_VARIABLE_NAME, 200.0);
-    instance = engineIntegrationExtension.startProcessInstance(processDefinitionDto.getId(), variables);
-    engineDatabaseExtension.changeActivityInstanceStartDate(instance.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(instance.getId(), now.plusSeconds(1));
-
-    variables.put(DEFAULT_VARIABLE_NAME, 300.0);
-    instance = engineIntegrationExtension.startProcessInstance(processDefinitionDto.getId(), variables);
-    engineDatabaseExtension.changeActivityInstanceStartDate(instance.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(instance.getId(), now.plusSeconds(1));
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
-      .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(processDefinitionDto.getVersionAsString())
-      .setVariableName(DEFAULT_VARIABLE_NAME)
-      .setVariableType(VariableType.DOUBLE)
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .build();
-    reportData.getConfiguration().getCustomBucket().setActive(true);
-    reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
-    reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(3);
-    assertThat(resultDto.getIsComplete()).isTrue();
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(3);
-    assertThat(resultDto.getData().stream()
-                 .map(MapResultEntryDto::getKey)
-                 .collect(toList()))
-      .containsExactly("10.00", "110.00", "210.00");
-    assertThat(resultDto.getData().get(0).getValue()).isEqualTo(1000L);
-    assertThat(resultDto.getData().get(1).getValue()).isEqualTo(1000L);
-    assertThat(resultDto.getData().get(2).getValue()).isEqualTo(1000L);
   }
 
   @Test

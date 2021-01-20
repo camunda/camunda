@@ -426,30 +426,6 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(3);
-    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void evaluateReportForMultipleEventsWithMultipleProcesses() {
     // given
     ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -489,7 +465,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void evaluateReportForMoreThenTenEvents() {
+  public void evaluateReportForMoreThanTenEvents() {
     // given
     AbstractServiceTaskBuilder serviceTaskBuilder = Bpmn.createExecutableProcess("aProcess")
       .startEvent()

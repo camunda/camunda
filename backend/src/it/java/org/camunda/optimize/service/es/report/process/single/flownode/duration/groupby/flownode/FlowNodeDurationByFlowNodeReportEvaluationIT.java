@@ -166,40 +166,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
-
-    ProcessInstanceEngineDto processInstanceDto =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 100.);
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 20.);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 200.);
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 10.);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 900.);
-    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 90.);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(4);
-    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();

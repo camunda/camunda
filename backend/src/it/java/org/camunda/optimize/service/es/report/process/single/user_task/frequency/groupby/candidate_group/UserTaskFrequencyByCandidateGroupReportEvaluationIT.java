@@ -250,35 +250,6 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();

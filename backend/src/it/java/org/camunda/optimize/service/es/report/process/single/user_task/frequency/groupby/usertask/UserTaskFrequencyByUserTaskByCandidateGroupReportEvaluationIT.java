@@ -235,39 +235,6 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
-
-    importAndRefresh();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();

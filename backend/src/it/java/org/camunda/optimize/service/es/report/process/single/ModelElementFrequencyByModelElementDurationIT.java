@@ -464,39 +464,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   }
 
   @Test
-  public void multipleBuckets_customBuckets_tooManyBuckets_returnsLimitedResult() {
-    // given
-    final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1);
-    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 2000);
-    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 3000);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    reportData.getConfiguration().setCustomBucket(
-      CustomBucketDto.builder()
-        .active(true)
-        .baseline(0.0D)
-        .bucketSize(1.0D)
-        .build()
-    );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isFalse();
-    assertThat(resultDto.getData())
-      .isNotNull()
-      .hasSize(1000)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .contains(
-        Tuple.tuple(createDurationBucketKey(1), getExpectedNumberOfModelElements())
-      );
-  }
-
-  @Test
   public void multipleBuckets_defaultSorting() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();

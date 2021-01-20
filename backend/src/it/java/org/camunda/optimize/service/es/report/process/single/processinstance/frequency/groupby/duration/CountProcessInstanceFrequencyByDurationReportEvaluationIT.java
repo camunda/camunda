@@ -462,41 +462,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_customBuckets_tooManyBuckets_returnsLimitedResult() {
-    // given
-    final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 2000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 3000);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(
-      firstProcessInstance.getProcessDefinitionKey(), firstProcessInstance.getProcessDefinitionVersion()
-    );
-    reportData.getConfiguration().setCustomBucket(
-      CustomBucketDto.builder()
-        .active(true)
-        .baseline(0.0D)
-        .bucketSize(1.0D)
-        .build()
-    );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isFalse();
-    assertThat(resultDto.getData())
-      .isNotNull()
-      .hasSize(1000)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .contains(
-        Tuple.tuple(createDurationBucketKey(1), 1.0D)
-      );
-  }
-
-  @Test
   public void multipleBuckets_defaultSorting() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();

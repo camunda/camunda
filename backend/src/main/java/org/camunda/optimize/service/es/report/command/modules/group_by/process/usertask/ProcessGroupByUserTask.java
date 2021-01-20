@@ -103,19 +103,17 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
     // omitted by the filters
     if (!viewLevelFilterExists) {
       // If no view level filter exists, we enrich the user task data with user tasks that may not have been executed,
-      // but should still show up in the result (limited by ESBucketLimit)
+      // but should still show up in the result
       userTaskNames.keySet().forEach(userTaskKey -> {
-        if (groupedData.size() < configurationService.getEsAggregationBucketLimit()) {
-          GroupByResult emptyResult;
-          if (distributedByPart instanceof ProcessDistributedByNone) {
-            emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
-          } else {
-            // Add empty result for each missing bucket
-            emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
-          }
-          emptyResult.setLabel(userTaskNames.get(userTaskKey));
-          groupedData.add(emptyResult);
+        GroupByResult emptyResult;
+        if (distributedByPart instanceof ProcessDistributedByNone) {
+          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
+        } else {
+          // Add empty result for each missing bucket
+          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
         }
+        emptyResult.setLabel(userTaskNames.get(userTaskKey));
+        groupedData.add(emptyResult);
       });
     }
   }

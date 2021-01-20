@@ -481,46 +481,6 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto1, USER_TASK_2, 20.);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20.);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
-
-    // then
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();

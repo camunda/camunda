@@ -273,47 +273,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   }
 
   @Test
-  public void reportEvaluationResultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-        getDoubleUserTaskDiagram());
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
-    changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[1]);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
-    changeDuration(processInstanceDto2, USER_TASK_2, SET_DURATIONS[1]);
-
-    importAndRefresh();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
-
-    // then
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, SET_DURATIONS[0], DEFAULT_FULLNAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition =

@@ -768,41 +768,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    // @formatter:off
-    IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(TWO_PARALLEL_TASKS)
-      .startProcessInstance()
-        .withResolvedIncident()
-        .withIncidentDurationInSec(2L)
-      .startProcessInstance()
-        .withResolvedIncident()
-        .withIncidentDurationInSec(4L)
-      .executeDeployment();
-    // @formatter:on
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    MapResultAsserter.asserter()
-      .processInstanceCount(2L)
-      .isComplete(false)
-      .groupedByContains(END_EVENT_1, null)
-      .groupedByContains(END_EVENT_2, null)
-      .groupedByContains(SERVICE_TASK_ID_1, 3000.)
-      .groupedByContains(SERVICE_TASK_ID_2, null)
-      .groupedByContains(SPLITTING_GATEWAY_ID, null)
-      .groupedByContains(START_EVENT, null)
-      .doAssert(resultDto);
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     // @formatter:off

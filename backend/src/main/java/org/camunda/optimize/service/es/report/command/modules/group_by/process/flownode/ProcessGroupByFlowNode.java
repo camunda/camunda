@@ -41,8 +41,8 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
 
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
 
-  private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+  private final ConfigurationService configurationService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

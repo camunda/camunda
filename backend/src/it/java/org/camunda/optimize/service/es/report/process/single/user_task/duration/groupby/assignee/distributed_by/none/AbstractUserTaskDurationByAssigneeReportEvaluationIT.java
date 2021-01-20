@@ -377,38 +377,6 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
