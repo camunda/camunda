@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -281,7 +280,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -313,7 +312,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -345,7 +344,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -492,7 +491,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -531,7 +530,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -564,7 +563,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldInvokeOnProcessedListener() throws InterruptedException, TimeoutException {
+  public void shouldInvokeOnProcessedListener() throws InterruptedException {
     // given
     final var onProcessedListener = new AwaitableProcessedListener();
     streamProcessorRule.startTypedStreamProcessor(
@@ -750,7 +749,7 @@ public final class StreamProcessorTest {
     }
 
     private boolean await() throws InterruptedException {
-      return getLatch().await(TIMEOUT.toMillis(), TimeUnit.SECONDS);
+      return getLatch().await(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
     }
 
     private CountDownLatch getLatch() {
