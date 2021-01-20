@@ -573,6 +573,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>toxiproxy</artifactId>
+        <version>${version.testcontainers}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.netflix.concurrency-limits</groupId>
         <artifactId>concurrency-limits-core</artifactId>
         <version>${version.netflix.concurrency}</version>

@@ -18,6 +18,7 @@ package io.atomix.cluster.messaging;
 
 import io.atomix.utils.net.Address;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
@@ -27,11 +28,19 @@ import java.util.function.BiFunction;
 public interface MessagingService {
 
   /**
-   * Returns the local messaging service address.
+   * Returns the local messaging service address. This is the address used by other nodes to
+   * communicate to this service.
    *
-   * @return the local address
+   * @return the address remote nodes use to communicate to this node
    */
   Address address();
+
+  /**
+   * Returns the interfaces to which the local messaging service is bind.
+   *
+   * @return the address the messaging service is bound to
+   */
+  Collection<Address> bindingAddresses();
 
   /**
    * Sends a message asynchronously to the specified communication address. The message is specified

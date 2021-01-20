@@ -71,6 +71,8 @@ public final class AtomixFactory {
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
             .withMembershipProtocol(membershipProtocol)
+            .withMessagingInterface(networkCfg.getInternalApi().getHost())
+            .withMessagingPort(networkCfg.getInternalApi().getPort())
             .withAddress(
                 Address.from(
                     networkCfg.getInternalApi().getAdvertisedHost(),
