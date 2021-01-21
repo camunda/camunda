@@ -80,6 +80,8 @@ test('filter for custom string variable values', async (t) => {
   await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
   await t.click(Filter.typeaheadOption('stringVar'));
 
+  await t.expect(Filter.stringValues.textContent).contains('aStringValue');
+
   await t.click(Filter.addValueButton);
   await t.typeText(Filter.customValueInput, 'custom value', {replace: true});
   await t.click(Filter.addValueToListButton);
