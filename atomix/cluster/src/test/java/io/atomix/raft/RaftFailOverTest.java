@@ -16,7 +16,6 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.storage.journal.Indexed;
 import java.util.Collection;
@@ -214,21 +213,6 @@ public class RaftFailOverTest {
         assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
       }
     }
-  }
-
-  @Test
-  public void shouldNotJoinAfterDataLoss() throws Exception {
-    // given
-    final var follower = raftRule.shutdownFollower();
-
-    // when
-    raftRule.triggerDataLossOnNode(follower);
-
-    // then
-    // follower is not allowed to join the cluster, he needs to bootstrap
-    assertThatThrownBy(() -> raftRule.joinCluster(follower))
-        .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("not a member of the cluster");
   }
 
   @Test

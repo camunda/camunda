@@ -29,7 +29,6 @@ import java.util.function.Function;
 /** Test server protocol. */
 public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServerProtocol {
 
-  private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
@@ -61,11 +60,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       return null;
     }
     return super.server(memberId);
-  }
-
-  @Override
-  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.join(request)));
   }
 
   @Override
@@ -108,17 +102,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.append(request)));
-  }
-
-  @Override
-  public void registerJoinHandler(
-      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    joinHandler = handler;
-  }
-
-  @Override
-  public void unregisterJoinHandler() {
-    joinHandler = null;
   }
 
   @Override
@@ -258,14 +241,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   CompletableFuture<ConfigureResponse> configure(final ConfigureRequest request) {
     if (configureHandler != null) {
       return configureHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<JoinResponse> join(final JoinRequest request) {
-    if (joinHandler != null) {
-      return joinHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }

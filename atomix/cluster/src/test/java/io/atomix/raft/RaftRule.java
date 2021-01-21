@@ -223,7 +223,7 @@ public final class RaftRule extends ExternalResource {
   public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
-        .join(getMemberIds())
+        .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }

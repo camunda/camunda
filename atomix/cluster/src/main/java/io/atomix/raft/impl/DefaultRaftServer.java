@@ -48,7 +48,6 @@ public class DefaultRaftServer implements RaftServer {
   private final Logger log;
   private final AtomicReference<CompletableFuture<RaftServer>> openFutureRef =
       new AtomicReference<>();
-  private final AtomicReference<CompletableFuture<Void>> closeFutureRef = new AtomicReference<>();
   private volatile boolean started;
   private volatile boolean stopped = false;
 
@@ -98,16 +97,6 @@ public class DefaultRaftServer implements RaftServer {
   @Override
   public CompletableFuture<RaftServer> bootstrap(final Collection<MemberId> cluster) {
     return start(() -> cluster().bootstrap(cluster));
-  }
-
-  @Override
-  public CompletableFuture<RaftServer> join(final Collection<MemberId> cluster) {
-    return start(() -> cluster().join(cluster));
-  }
-
-  @Override
-  public CompletableFuture<RaftServer> listen(final Collection<MemberId> cluster) {
-    return start(() -> cluster().listen(cluster));
   }
 
   @Override

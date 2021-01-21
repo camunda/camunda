@@ -17,7 +17,6 @@
 package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
-import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftException.NoLeader;
@@ -31,8 +30,6 @@ import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
-import io.atomix.raft.protocol.JoinRequest;
-import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -109,78 +106,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   @Override
   public RaftServer.Role role() {
     return RaftServer.Role.LEADER;
-  }
-
-  @Override
-  public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    // If another configuration change is already under way, reject the configuration.
-    // If the leader index is 0 or is greater than the commitIndex, reject the join requests.
-    // Configuration changes should not be allowed until the leader has committed a no-op entry.
-    // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
-    if (configuring() || initializing()) {
-      log.debug(
-          "Cannot accept join request {}. Another configuration change ongoing (configuring = {}) or the leader has not committed its first entry (initializing = {})",
-          request,
-          configuring(),
-          initializing());
-      return CompletableFuture.completedFuture(
-          logResponse(JoinResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
-    }
-
-    // If the member is already a known member of the cluster, complete the join successfully.
-    final MemberId memberId = request.member().memberId();
-    if (raft.getCluster().getMember(memberId) != null) {
-      final RaftMemberContext memberContext = raft.getCluster().getMemberState(memberId);
-      if (memberContext != null) {
-        // reset the failure count se we can immediately start appending again
-        memberContext.resetFailureCount();
-      }
-      return CompletableFuture.completedFuture(
-          logResponse(
-              JoinResponse.builder()
-                  .withStatus(RaftResponse.Status.OK)
-                  .withIndex(raft.getCluster().getConfiguration().index())
-                  .withTerm(raft.getCluster().getConfiguration().term())
-                  .withTime(raft.getCluster().getConfiguration().time())
-                  .withMembers(raft.getCluster().getMembers())
-                  .build()));
-    }
-
-    final RaftMember member = request.member();
-
-    // Add the joining member to the members list. If the joining member's type is ACTIVE, join the
-    // member in the
-    // PROMOTABLE state to allow it to get caught up without impacting the quorum size.
-    final Collection<RaftMember> members = raft.getCluster().getMembers();
-    members.add(new DefaultRaftMember(member.memberId(), member.getType(), Instant.now()));
-
-    final CompletableFuture<JoinResponse> future = new CompletableFuture<>();
-    configure(members)
-        .whenComplete(
-            (index, error) -> {
-              if (error == null) {
-                future.complete(
-                    logResponse(
-                        JoinResponse.builder()
-                            .withStatus(RaftResponse.Status.OK)
-                            .withIndex(index)
-                            .withTerm(raft.getCluster().getConfiguration().term())
-                            .withTime(raft.getCluster().getConfiguration().time())
-                            .withMembers(members)
-                            .build()));
-              } else {
-                future.complete(
-                    logResponse(
-                        JoinResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-              }
-            });
-    return future;
   }
 
   @Override
