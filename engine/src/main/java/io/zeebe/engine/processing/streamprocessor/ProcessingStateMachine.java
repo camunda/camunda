@@ -349,8 +349,14 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              writtenEventPosition = logStreamWriter.flush();
-              return writtenEventPosition >= 0;
+              final long position = logStreamWriter.flush();
+
+              // only overwrite position if events were flushed
+              if (position > 0) {
+                writtenEventPosition = position;
+              }
+
+              return position >= 0;
             },
             abortCondition);
 
