@@ -161,37 +161,6 @@ public class DefaultRaftServer implements RaftServer {
             });
     return future;
   }
-  /**
-   * Leaves the Raft cluster.
-   *
-   * @return A completable future to be completed once the server has left the cluster.
-   */
-  @Override
-  public CompletableFuture<Void> leave() {
-    if (!started || stopped) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    if (closeFutureRef.compareAndSet(null, new AtomixFuture<>())) {
-      if (openFutureRef.get() == null) {
-        cluster()
-            .leave()
-            .whenComplete(
-                (leaveResult, leaveError) -> {
-                  shutdown()
-                      .whenComplete(
-                          (shutdownResult, shutdownError) -> {
-                            context.delete();
-                            closeFutureRef.get().complete(null);
-                          });
-                });
-      } else {
-        leaveAfterOpenFinished();
-      }
-    }
-
-    return closeFutureRef.get();
-  }
 
   @Override
   public RaftContext getContext() {
@@ -229,29 +198,6 @@ public class DefaultRaftServer implements RaftServer {
               future.complete(null);
             });
     return future;
-  }
-
-  private void leaveAfterOpenFinished() {
-    openFutureRef
-        .get()
-        .whenComplete(
-            (openResult, openError) -> {
-              if (openError == null) {
-                cluster()
-                    .leave()
-                    .whenComplete(
-                        (leaveResult, leaveError) -> {
-                          shutdown()
-                              .whenComplete(
-                                  (shutdownResult, shutdownError) -> {
-                                    context.delete();
-                                    closeFutureRef.get().complete(null);
-                                  });
-                        });
-              } else {
-                closeFutureRef.get().complete(null);
-              }
-            });
   }
 
   /** Starts the server. */

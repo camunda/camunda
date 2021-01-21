@@ -181,15 +181,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .build();
   }
 
-  /**
-   * Closes the server and exits the partition.
-   *
-   * @return future that is completed when the operation is complete
-   */
-  public CompletableFuture<Void> leave() {
-    return server.leave();
-  }
-
   public CompletableFuture<Void> goInactive() {
     return server.goInactive();
   }

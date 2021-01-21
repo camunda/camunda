@@ -25,8 +25,6 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
-import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -79,14 +77,6 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<ReconfigureResponse> onReconfigure(ReconfigureRequest request);
-
-  /**
-   * Handles a leave request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<LeaveResponse> onLeave(LeaveRequest request);
 
   /**
    * Handles a transfer request.

@@ -21,10 +21,6 @@ import io.atomix.utils.event.AbstractEvent;
 /** Raft cluster event. */
 public class RaftClusterEvent extends AbstractEvent<RaftClusterEvent.Type, RaftMember> {
 
-  public RaftClusterEvent(final Type type, final RaftMember subject) {
-    super(type, subject);
-  }
-
   public RaftClusterEvent(final Type type, final RaftMember subject, final long time) {
     super(type, subject, time);
   }
@@ -32,6 +28,5 @@ public class RaftClusterEvent extends AbstractEvent<RaftClusterEvent.Type, RaftM
   /** Raft cluster event type. */
   public enum Type {
     JOIN,
-    LEAVE,
   }
 }

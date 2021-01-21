@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
-  private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
@@ -111,21 +110,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
         () ->
             getServer(memberId)
                 .thenCompose(listener -> listener.join(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
-    return responseFuture;
-  }
-
-  @Override
-  public CompletableFuture<LeaveResponse> leave(
-      final MemberId memberId, final LeaveRequest request) {
-    final var responseFuture = new CompletableFuture<LeaveResponse>();
-    send(
-        memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.leave(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
@@ -244,17 +228,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterJoinHandler() {
     joinHandler = null;
-  }
-
-  @Override
-  public void registerLeaveHandler(
-      final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    leaveHandler = handler;
-  }
-
-  @Override
-  public void unregisterLeaveHandler() {
-    leaveHandler = null;
   }
 
   @Override
@@ -394,14 +367,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<ConfigureResponse> configure(final ConfigureRequest request) {
     if (configureHandler != null) {
       return configureHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<LeaveResponse> leave(final LeaveRequest request) {
-    if (leaveHandler != null) {
-      return leaveHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }

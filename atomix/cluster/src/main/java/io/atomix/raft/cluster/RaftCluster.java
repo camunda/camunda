@@ -339,30 +339,6 @@ public interface RaftCluster {
   }
 
   /**
-   * Leaves the cluster.
-   *
-   * <p>Invocations of this method will cause the local {@link RaftServer} to leave the cluster.
-   * <em>This method is for advanced usage only.</em> Typically, users should use {@link
-   * RaftServer#leave()} to leave the cluster and close a server in order to ensure all associated
-   * resources are properly closed.
-   *
-   * <p>When a server leaves the cluster, the server submits a {@link
-   * io.atomix.raft.protocol.LeaveRequest} to the cluster leader. The leader will replicate and
-   * commit the configuration change in order to remove the leaving server from the cluster and
-   * notify each member of the leaving server.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to
-   * leave the cluster until successful. The server will continuously attempt to leave the cluster
-   * until successful.
-   *
-   * @return A completable future to be completed once the local server has left the cluster.
-   */
-  CompletableFuture<Void> leave();
-
-  /**
    * Registers a callback to be called when a member leaves the cluster.
    *
    * <p>The registered {@code callback} will be called whenever an existing {@link RaftMember}
