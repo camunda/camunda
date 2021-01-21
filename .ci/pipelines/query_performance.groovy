@@ -286,23 +286,7 @@ pipeline {
           }
         }
         stage('Restore Test Data') {
-          steps {
-            timeout(90) {
-              container('gcloud') {
-                sh "gsutil -q cp gs://optimize-data/${SQL_DUMP} /db_dump/${SQL_DUMP}"
-              }
-              container('postgresql') {
-                sh "pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/${SQL_DUMP}"
-              }
-            }
-          }
-          post {
-            always {
-              container('gcloud') {
-                sh "rm -f /db_dump/${SQL_DUMP}"
-              }
-            }
-          }
+          restoreTestData(params.SQL_DUMP)
         }
         stage('Run Query Performance Tests') {
           steps {
