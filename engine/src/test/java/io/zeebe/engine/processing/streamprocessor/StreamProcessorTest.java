@@ -39,8 +39,8 @@ import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -242,7 +242,7 @@ public final class StreamProcessorTest {
                 processors.onEvent(
                     ValueType.WORKFLOW_INSTANCE,
                     WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                    new TypedRecordProcessor<UnifiedRecordValue>() {
+                    new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
                           final long position,
@@ -262,16 +262,7 @@ public final class StreamProcessorTest {
         streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // then
-    final Record<WorkflowInstanceRecord> activatedEvent =
-        TestUtil.doRepeatedly(
-                () ->
-                    streamProcessorRule
-                        .events()
-                        .onlyWorkflowInstanceRecords()
-                        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-                        .findAny())
-            .until(Optional::isPresent)
-            .get();
+    final Record<WorkflowInstanceRecord> activatedEvent = waitForActivated();
     assertThat(activatedEvent).isNotNull();
     assertThat((activatedEvent).getSourceRecordPosition()).isEqualTo(position);
 
@@ -289,7 +280,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -321,7 +312,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -353,7 +344,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -500,7 +491,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -539,7 +530,7 @@ public final class StreamProcessorTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
+                new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
                       final long position,
@@ -572,7 +563,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldInvokeOnProcessedListener() throws InterruptedException, TimeoutException {
+  public void shouldInvokeOnProcessedListener() throws InterruptedException {
     // given
     final var onProcessedListener = new AwaitableProcessedListener();
     streamProcessorRule.startTypedStreamProcessor(
@@ -673,6 +664,68 @@ public final class StreamProcessorTest {
         .isEqualTo(positionProcessedAfterResume);
   }
 
+  @Test
+  public void shouldNotOverwriteLastWrittenPositionIfNoFollowUpEvent()
+      throws ExecutionException, InterruptedException {
+    // given
+    final var onProcessedListener = new AwaitableProcessedListener();
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors
+                .onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                    new TypedRecordProcessor<>() {
+                      @Override
+                      public void processRecord(
+                          final long position,
+                          final TypedRecord<UnifiedRecordValue> record,
+                          final TypedResponseWriter responseWriter,
+                          final TypedStreamWriter streamWriter,
+                          final Consumer<SideEffectProducer> sideEffect) {
+                        streamWriter.appendFollowUpEvent(
+                            record.getKey(),
+                            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+                            record.getValue());
+                      }
+                    })
+                .onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+                    mock(TypedRecordProcessor.class))
+                .onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.CANCEL,
+                    mock(TypedRecordProcessor.class)),
+        onProcessedListener.expect(2));
+
+    // when
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    assertThat(onProcessedListener.await()).isTrue();
+    final long activatedPosition = waitForActivated().getPosition();
+
+    onProcessedListener.expect(1);
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.CANCEL);
+    assertThat(onProcessedListener.await()).isTrue();
+
+    // then
+    final long lastWrittenPos =
+        streamProcessorRule.getStreamProcessor(0).getLastWrittenPositionAsync().get();
+    assertThat(lastWrittenPos).isEqualTo(activatedPosition);
+  }
+
+  private Record<WorkflowInstanceRecord> waitForActivated() {
+    return TestUtil.doRepeatedly(
+            () ->
+                streamProcessorRule
+                    .events()
+                    .onlyWorkflowInstanceRecords()
+                    .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                    .findAny())
+        .until(Optional::isPresent)
+        .get();
+  }
+
   /**
    * A simple listener which allows you to wait for specific amount of records to be processed.
    *
@@ -696,7 +749,7 @@ public final class StreamProcessorTest {
     }
 
     private boolean await() throws InterruptedException {
-      return getLatch().await(TIMEOUT.toMillis(), TimeUnit.SECONDS);
+      return getLatch().await(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
     }
 
     private CountDownLatch getLatch() {
