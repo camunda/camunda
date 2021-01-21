@@ -242,7 +242,6 @@
     "addName": "Report Name",
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
-    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your report set-up.",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",

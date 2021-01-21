@@ -85,18 +85,3 @@ it('should show a warning when running node status filter is added on a grouped 
     "Only completed flow nodes are considered when grouping by End Date. Therefore, adding 'running' flow node status filter will show no results"
   );
 });
-
-it('should show a warning message when the data is not complete', async () => {
-  const node = shallow(
-    <ReportWarnings
-      report={{
-        ...report,
-        result: {data: new Array(1000), isComplete: false, instanceCount: 1500},
-      }}
-    />
-  );
-
-  expect(node.find('MessageBox').children()).toIncludeText(
-    'Showing 1000 data points in the result. To refine the set of results, edit your report set-up'
-  );
-});

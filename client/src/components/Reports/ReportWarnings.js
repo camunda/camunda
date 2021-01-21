@@ -13,28 +13,11 @@ import {incompatibleFilters} from 'services';
 
 export default function ReportWarnings({
   report: {
-    result,
     data: {view, groupBy, filter},
   },
 }) {
-  const showIncompleteResultWarning = () => {
-    if (!result || typeof result.isComplete === 'undefined') {
-      return false;
-    }
-
-    return !result.isComplete;
-  };
-
   return (
     <>
-      {showIncompleteResultWarning() && (
-        <MessageBox type="warning">
-          {t('report.incomplete', {
-            count: result.data.length || Object.keys(result.data).length,
-          })}
-        </MessageBox>
-      )}
-
       {incompatibleFilters(filter, view) && (
         <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
       )}

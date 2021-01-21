@@ -242,7 +242,6 @@
     "addName": "Berichtname",
     "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
-    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die angegebene Einstellung.",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
