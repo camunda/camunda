@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Comp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
-import org.camunda.optimize.upgrade.plan.UpgradeFrom33To34Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ public class MigrateFlowNodeStatusConfigToFiltersIT extends AbstractUpgrade33IT 
   public void flowNodeStatusConfigIsFullyMigratedToViewLevelFiltersWhereRequired() {
     // given
     executeBulk("steps/3.3/reports/33-process-report-with-flow-node-status-config.json");
-    final UpgradePlan upgradePlan = UpgradeFrom33To34Factory.createUpgradePlan();
+    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
 
     // then
     final List<SingleProcessReportDefinitionRequestDto> reportDtosBeforeUpgrade = getAllDocumentsOfIndexAs(

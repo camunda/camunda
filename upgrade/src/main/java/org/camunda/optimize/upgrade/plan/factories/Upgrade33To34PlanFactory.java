@@ -3,18 +3,18 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.plan;
+package org.camunda.optimize.upgrade.plan.factories;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class UpgradeFrom33To34Factory {
+public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
 
-  public static UpgradePlan createUpgradePlan() {
+  @Override
+  public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.3.0")
       .toVersion("3.4.0")

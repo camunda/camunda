@@ -8,16 +8,13 @@ package org.camunda.optimize.upgrade.main;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
-import org.camunda.optimize.upgrade.plan.UpgradeFrom33To34Factory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -32,13 +29,10 @@ public class UpgradeMain {
     new HashSet<>(Arrays.asList("n", "no"))
   );
 
-  private static final Map<String, UpgradePlan> UPGRADE_PLANS = new HashMap<>();
   private static final UpgradeProcedure UPGRADE_PROCEDURE = UpgradeProcedureFactory.create();
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
-    addUpgradePlan(GenericUpgradeFactory.createUpgradePlan());
-    addUpgradePlan(UpgradeFrom33To34Factory.createUpgradePlan());
   }
 
   public static void main(String... args) {
@@ -47,7 +41,8 @@ public class UpgradeMain {
         .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
         .findFirst()
         .orElse(Version.VERSION);
-      UpgradePlan upgradePlan = UPGRADE_PLANS.get(targetVersion);
+
+      final UpgradePlan upgradePlan = new UpgradePlanRegistry().getUpgradePlanForTargetVersion(targetVersion);
 
       if (upgradePlan == null) {
         String errorMessage =
@@ -69,10 +64,6 @@ public class UpgradeMain {
       log.error(e.getMessage(), e);
       System.exit(2);
     }
-  }
-
-  private static void addUpgradePlan(final UpgradePlan upgradePlan) {
-    UPGRADE_PLANS.put(upgradePlan.getToVersion(), upgradePlan);
   }
 
   private static void printWarning(String fromVersion, String toVersion) {

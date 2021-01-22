@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.migrate33To34;
 
-import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate33To34.indices.SingleProcessReportIndexV5Old;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import java.util.Arrays;
 
 public class AbstractUpgrade33IT extends AbstractUpgradeIT {
+  protected static final String FROM_VERSION = "3.3.0";
 
   protected static final SingleProcessReportIndexV5Old PROCESS_REPORT_INDEX = new SingleProcessReportIndexV5Old();
 
@@ -24,7 +24,7 @@ public class AbstractUpgrade33IT extends AbstractUpgradeIT {
         PROCESS_REPORT_INDEX
       )
     );
-    setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
+    setMetadataVersion(FROM_VERSION);
   }
 
 }

@@ -3,17 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.plan;
+package org.camunda.optimize.upgrade.plan.factories;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class GenericUpgradeFactory {
+public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
 
-  public static UpgradePlan createUpgradePlan() {
+  @Override
+  public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(PreviousVersion.PREVIOUS_VERSION)
       .toVersion(Version.VERSION)

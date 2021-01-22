@@ -9,7 +9,7 @@ import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
-import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
+import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +65,7 @@ public abstract class AbstractConnectToElasticsearchIT {
     embeddedOptimizeExtension.stopOptimize();
 
     // then
-    testUpgradeProcedure.performUpgrade(GenericUpgradeFactory.createUpgradePlan());
+    testUpgradeProcedure.performUpgrade(new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan());
   }
 
 }
