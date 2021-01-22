@@ -1,6 +1,6 @@
 module github.com/zeebe-io/zeebe/benchmarks/project/zbench
 
-go 1.13
+go 1.15
 
 require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
