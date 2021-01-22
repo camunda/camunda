@@ -88,7 +88,6 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
         addMissingGroupByResults(userTaskNames, groupedData, context);
 
         compositeCommandResult.setGroups(groupedData);
-        compositeCommandResult.setIsComplete(userTasksAggregation.getSumOfOtherDocCounts() == 0L);
       });
   }
 

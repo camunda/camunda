@@ -84,7 +84,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
@@ -115,7 +114,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
@@ -150,7 +148,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -181,7 +178,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -217,7 +213,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(3)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
@@ -272,7 +267,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
@@ -309,7 +303,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(1);
@@ -457,7 +450,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
@@ -478,7 +470,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(6);
@@ -502,7 +493,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);

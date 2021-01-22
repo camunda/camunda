@@ -209,7 +209,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(2);
     assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1.);
@@ -1098,7 +1097,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -1134,7 +1132,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();

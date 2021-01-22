@@ -102,7 +102,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT_1, null)
       .groupedByContains(END_EVENT_2, null)
       .groupedByContains(SERVICE_TASK_ID_1, 1.)
@@ -133,7 +132,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -161,7 +159,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -193,7 +190,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(4L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -217,7 +213,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -242,7 +237,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -273,7 +267,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(SERVICE_TASK_ID_2, null, SERVICE_TASK_NAME_2)
@@ -305,7 +298,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(SERVICE_TASK_ID_2, null, SERVICE_TASK_NAME_2)
@@ -337,7 +329,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -368,7 +359,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -402,7 +392,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, (double) selectedTenants.size(), SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -432,7 +421,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then the result has two process instances
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -451,7 +439,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -493,7 +480,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(3L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -537,8 +523,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     final MapResultAsserter asserter = MapResultAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(3L)
-      .isComplete(true);
+      .processInstanceCountWithoutFilters(3L);
     Optional.ofNullable(firstExpectedResult)
       .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1));
     Optional.ofNullable(secondExpectedResult)
@@ -568,7 +553,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(START_EVENT, null)
       .groupedByContains(SPLITTING_GATEWAY_ID, null)
       .groupedByContains(SERVICE_TASK_ID_2, 2.)
@@ -600,7 +584,6 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
       .groupedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_NAME_2)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)

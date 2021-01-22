@@ -81,7 +81,6 @@ public class UserTaskFrequencyByUserTaskWorkDurationReportEvaluationIT
     // then we expect two instances in a complete result, however as for one no work time could be calculated there
     // is just one duration bucket with one user task instance present
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getData())
       .hasSize(1)

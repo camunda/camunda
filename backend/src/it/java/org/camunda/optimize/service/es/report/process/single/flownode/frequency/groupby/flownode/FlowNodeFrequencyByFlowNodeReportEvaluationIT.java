@@ -420,7 +420,6 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }

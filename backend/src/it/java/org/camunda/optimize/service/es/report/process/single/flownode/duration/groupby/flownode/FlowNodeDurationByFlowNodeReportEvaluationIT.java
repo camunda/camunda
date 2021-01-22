@@ -156,7 +156,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData().size()).isEqualTo(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent();
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())

@@ -174,7 +174,6 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
 
@@ -202,7 +201,6 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
 
     final List<MapResultEntryDto> resultData = result.getData();
 

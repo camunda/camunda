@@ -216,7 +216,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -248,7 +247,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getData())
       // we expect buckets from 1000ms (finished instance) to 5000ms (running instance in relation to currentTime)
@@ -276,7 +274,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then the result should be complete even though the duration increased
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(resultDto.getData())
@@ -301,7 +298,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
@@ -329,7 +325,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
@@ -366,7 +361,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       .hasSize(3)
@@ -459,7 +453,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull().isEmpty();
   }
 
@@ -481,7 +474,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
@@ -510,7 +502,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(2)
       .isSortedAccordingTo(
@@ -541,7 +532,6 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(2)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed())

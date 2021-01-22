@@ -190,7 +190,6 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
@@ -229,7 +228,6 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       results,
       ImmutableMap.of(USER_TASK_1, new Double[]{10.}, USER_TASK_2, new Double[]{20.})
     );
-    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Test

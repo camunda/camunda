@@ -46,14 +46,4 @@ public class FilterLimitedAggregationUtil {
     return Optional.ofNullable((ParsedFilter) aggregations.get(filterParentAggregationName))
       .map(ParsedSingleBucketAggregation::getAggregations);
   }
-
-  public static boolean isResultComplete(final Aggregations aggregations, final long totalHits) {
-    boolean complete = totalHits == 0L;
-    if (aggregations != null
-      && aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
-      final ParsedFilter limitingAggregation = aggregations.get(FILTER_LIMITED_AGGREGATION);
-      complete = limitingAggregation.getDocCount() == totalHits;
-    }
-    return complete;
-  }
 }

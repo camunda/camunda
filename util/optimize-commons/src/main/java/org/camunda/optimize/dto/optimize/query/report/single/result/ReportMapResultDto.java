@@ -20,10 +20,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
-public class ReportMapResultDto implements LimitedResultDto, DecisionReportResultDto, ProcessReportResultDto {
+public class ReportMapResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
   private List<MapResultEntryDto> data = new ArrayList<>();
-  private Boolean isComplete = true;
   private long instanceCount;
   private long instanceCountWithoutFilters;
 

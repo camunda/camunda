@@ -281,7 +281,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
@@ -327,7 +326,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getIsComplete()).isTrue();
       final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
@@ -405,7 +403,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue())

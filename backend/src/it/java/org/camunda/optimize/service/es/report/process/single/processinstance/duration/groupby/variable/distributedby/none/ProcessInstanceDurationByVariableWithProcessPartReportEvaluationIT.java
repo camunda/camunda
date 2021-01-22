@@ -302,7 +302,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getIsComplete()).isTrue();
       final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
@@ -396,7 +395,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).isEmpty();
   }
@@ -1089,7 +1087,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -1128,7 +1125,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();

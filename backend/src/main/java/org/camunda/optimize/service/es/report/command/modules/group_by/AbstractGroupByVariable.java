@@ -217,7 +217,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     addMissingVariableBuckets(groupedData, response, context);
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
     if (VariableType.DATE.equals(getVariableType(context))) {
       compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
@@ -266,15 +265,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {
     return VariableType.getNumericTypes().contains(getVariableType(context));
-  }
-
-  private boolean isResultComplete(final Filter filteredVariables,
-                                   final MultiBucketsAggregation variableTerms) {
-    final long resultDocCount = variableTerms.getBuckets()
-      .stream()
-      .mapToLong(MultiBucketsAggregation.Bucket::getDocCount)
-      .sum();
-    return filteredVariables.getDocCount() == resultDocCount;
   }
 
   private AggregateByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {

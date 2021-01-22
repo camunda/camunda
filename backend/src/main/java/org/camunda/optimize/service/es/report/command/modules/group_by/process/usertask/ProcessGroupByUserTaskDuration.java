@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
 import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
-import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -68,9 +67,6 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
           );
 
         compositeCommandResult.setGroups(durationHistogramData);
-        compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
-          userFilteredFlowNodes.getAggregations(), userFilteredFlowNodes.getDocCount()
-        ));
       });
   }
 

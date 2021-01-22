@@ -90,7 +90,6 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(6L));
-    assertThat(result.getIsComplete(), is(true));
 
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(4));

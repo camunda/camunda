@@ -106,7 +106,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
@@ -129,7 +128,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
         SECOND_USER, new Double[]{SET_DURATIONS[1]}
       )
     );
-    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Override

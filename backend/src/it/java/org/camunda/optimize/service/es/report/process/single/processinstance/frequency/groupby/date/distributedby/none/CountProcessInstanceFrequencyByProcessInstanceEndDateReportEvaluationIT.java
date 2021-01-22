@@ -145,7 +145,6 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getIsComplete(), is(true));
 
     final List<MapResultEntryDto> resultData = result.getData();
 

@@ -147,7 +147,6 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
 
     // then
     final ZonedDateTime truncatedDate = truncateToStartOfUnit(startOfToday, mapToChronoUnit(unit));
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     // formatter:off
@@ -186,7 +185,6 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
 
     // then
     final ZonedDateTime truncatedDate = truncateToStartOfUnit(startOfToday, mapToChronoUnit(unit));
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     // formatter:off
@@ -275,7 +273,6 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getData())
@@ -327,7 +324,6 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getData())
@@ -383,7 +379,6 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getData())

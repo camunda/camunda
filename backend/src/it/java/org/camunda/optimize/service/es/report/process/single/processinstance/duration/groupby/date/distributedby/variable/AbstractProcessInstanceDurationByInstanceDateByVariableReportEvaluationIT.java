@@ -419,7 +419,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then result has 80 buckets each and they include both instances
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData())

@@ -409,7 +409,6 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then result has 80 buckets each and they include both instances
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData())
@@ -610,7 +609,6 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then a non-empty result is returned with instances in the first and last bucket
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(result.getData()).isNotEmpty();

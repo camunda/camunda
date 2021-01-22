@@ -34,11 +34,6 @@ public class HyperMapAsserter {
     return this;
   }
 
-  public HyperMapAsserter isComplete(boolean isComplete) {
-    expectedResult.setIsComplete(isComplete);
-    return this;
-  }
-
   public GroupByAdder groupByContains(final String groupByKey) {
     return new GroupByAdder(this, groupByKey);
   }
@@ -64,13 +59,6 @@ public class HyperMapAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
-    assertThat(actualResult.getIsComplete())
-      .as(String.format(
-        "IsComplete status should be [%s] but is [%s].",
-        expectedResult.getIsComplete(),
-        actualResult.getIsComplete()
-      ))
-      .isEqualTo(expectedResult.getIsComplete());
     assertThat(actualResult.getData())
       .as("Data should not be null.")
       .isNotNull();

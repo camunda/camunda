@@ -88,7 +88,6 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
     addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(groupedByFlowNodeId.getSumOfOtherDocCounts() == 0L);
   }
 
   private void addMissingGroupByIncidentKeys(final Map<String, String> flowNodeNames,

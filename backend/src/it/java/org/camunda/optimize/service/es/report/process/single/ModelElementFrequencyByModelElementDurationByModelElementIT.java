@@ -83,7 +83,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .isComplete(true)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -117,7 +116,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .isComplete(true)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -146,7 +144,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     // then
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(0L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isEmpty();
   }
 
@@ -170,7 +167,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .isComplete(true)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -216,7 +212,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .isComplete(true)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(2.0D))
       .doAssert(result);
@@ -237,7 +232,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
@@ -262,7 +256,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
       // in intervals of 100ms (nearest power of 10 interval for this range)
@@ -295,7 +288,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
@@ -385,7 +377,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull().isEmpty();
   }
 
@@ -407,7 +398,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())));

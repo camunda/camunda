@@ -25,7 +25,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -37,10 +36,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -50,9 +47,6 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
 
   private static final String ELEMENT_AGGREGATION = "elementAggregation";
   private static final String FILTERED_ELEMENTS_AGGREGATION = "filteredElements";
-
-  private static final String FILTER_ELEMENTS_WITH_DATE_FIELD_SET_AGGREGATION =
-    "filterElementsWithDateFieldSetAgg";
 
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
@@ -124,10 +118,6 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
       .subAggregation(
         filter(FILTERED_ELEMENTS_AGGREGATION, getFilterQuery(context))
           .subAggregation(aggregationToWrap)
-          .subAggregation(filter(
-            FILTER_ELEMENTS_WITH_DATE_FIELD_SET_AGGREGATION,
-            existsQuery(getDateField())
-          ))
       )
       // sibling aggregation for distributedByPart for retrieval of all keys that
       // should be present in distributedBy result
@@ -139,28 +129,11 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
-    result.setIsComplete(isResultComplete(response));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
     );
-  }
-
-  private boolean isResultComplete(final SearchResponse response) {
-    boolean complete = true;
-    final Aggregations aggregations = response.getAggregations();
-    if (aggregations != null) {
-      final Nested flowNodes = aggregations.get(ELEMENT_AGGREGATION);
-      final Filter filteredFlowNodes = flowNodes.getAggregations().get(FILTERED_ELEMENTS_AGGREGATION);
-      if (filteredFlowNodes.getAggregations().getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
-        final ParsedFilter limitingAggregation = filteredFlowNodes.getAggregations().get(FILTER_LIMITED_AGGREGATION);
-        final ParsedFilter totalFlowNodesWithDateFieldSetAgg =
-          filteredFlowNodes.getAggregations().get(FILTER_ELEMENTS_WITH_DATE_FIELD_SET_AGGREGATION);
-        complete = limitingAggregation.getDocCount() == totalFlowNodesWithDateFieldSetAgg.getDocCount();
-      }
-    }
-    return complete;
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,

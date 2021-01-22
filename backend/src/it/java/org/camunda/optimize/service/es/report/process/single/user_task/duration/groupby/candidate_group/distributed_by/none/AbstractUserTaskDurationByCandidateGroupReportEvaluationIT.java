@@ -357,7 +357,6 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .extracting(MapResultEntryDto::getValue)
@@ -411,7 +410,6 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
         DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
       )
     );
-    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Test

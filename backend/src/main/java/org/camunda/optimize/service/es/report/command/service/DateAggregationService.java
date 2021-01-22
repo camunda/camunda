@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -168,10 +167,6 @@ public class DateAggregationService {
         throw new IllegalStateException(String.format("Duplicate key %s", u));
       }, LinkedHashMap::new));
     return formattedKeyToBucketMap;
-  }
-
-  public boolean isResultComplete(final Aggregations aggregations, final long totalHits) {
-    return FilterLimitedAggregationUtil.isResultComplete(aggregations, totalHits);
   }
 
   private DateHistogramAggregationBuilder createDateHistogramAggregation(final DateAggregationContext context) {

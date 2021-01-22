@@ -16,8 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class UserTaskFrequencyByUserTaskWorkDurationByUserTaskIT
   extends AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT {
 
@@ -61,7 +59,6 @@ public class UserTaskFrequencyByUserTaskWorkDurationByUserTaskIT
     // then we expect two instances in a complete result, however as for one no work time could be calculated there
     // is just one duration bucket with one user task instance present
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)

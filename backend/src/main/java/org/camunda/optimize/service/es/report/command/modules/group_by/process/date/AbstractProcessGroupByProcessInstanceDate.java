@@ -115,9 +115,6 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setIsComplete(dateAggregationService.isResultComplete(
-      response.getAggregations(), response.getHits().getTotalHits().value
-    ));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()

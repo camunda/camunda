@@ -42,7 +42,6 @@ public class CompositeCommandResult {
   private boolean keyIsOfNumericType = false;
 
   private List<GroupByResult> groups = new ArrayList<>();
-  private Boolean isComplete = true;
 
   public void setGroup(GroupByResult groupByResult) {
     this.groups = singletonList(groupByResult);
@@ -155,7 +154,6 @@ public class CompositeCommandResult {
 
   public ReportHyperMapResultDto transformToHyperMap() {
     ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
-    resultDto.setIsComplete(this.isComplete);
 
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
@@ -169,7 +167,6 @@ public class CompositeCommandResult {
 
   public ReportMapResultDto transformToMap() {
     ReportMapResultDto resultDto = new ReportMapResultDto();
-    resultDto.setIsComplete(this.isComplete);
     List<MapResultEntryDto> mapData = new ArrayList<>();
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();

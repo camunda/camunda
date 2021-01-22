@@ -80,7 +80,6 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
         addMissingGroupByKeys(flowNodeNames, groupedData, context);
 
         compositeCommandResult.setGroups(groupedData);
-        compositeCommandResult.setIsComplete(byFlowNodeIdAggregation.getSumOfOtherDocCounts() == 0L);
       });
   }
 

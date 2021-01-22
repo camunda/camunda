@@ -387,7 +387,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinitionDto.getVersionAsString());
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getEntryForKey("bar1").get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
@@ -428,7 +427,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3);
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(3);
     assertThat(resultDto.getData().stream()
@@ -471,7 +469,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then the correct baseline is used and both instances are included in the result
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData().get(0).getKey()).isEqualTo("-300.00");
     assertThat(resultDto.getData()
@@ -1557,7 +1554,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(numberOfInstances);
     List<MapResultEntryDto> resultData = result.getData();
@@ -1601,21 +1597,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
-
-//  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-//    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-//      getSingleServiceTaskProcess());
-//    ProcessInstanceEngineDto processInstanceEngineDto =
-//      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-//    processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-//    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-//    return processInstanceEngineDto;
-//  }
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
                                                     String processDefinitionId,

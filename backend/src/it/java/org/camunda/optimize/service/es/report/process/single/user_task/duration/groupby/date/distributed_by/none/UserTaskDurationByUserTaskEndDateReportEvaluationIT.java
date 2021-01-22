@@ -5,42 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.none;
 
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public abstract class UserTaskDurationByUserTaskEndDateReportEvaluationIT
   extends UserTaskDurationByUserTaskDateReportEvaluationIT {
-
-  @Test
-  public void groupedByEndDateWithFlowNodeStatusFilterRunning_setIsCompleteFlagToTrue() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList());
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isEmpty();
-    assertThat(result.getIsComplete()).isTrue();
-  }
 
   @Override
   protected ProcessGroupByType getGroupByType() {

@@ -66,7 +66,6 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
           .groupByContains(USER_TASK_2)
@@ -78,7 +77,6 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
-        .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);
@@ -89,7 +87,6 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
-        .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);

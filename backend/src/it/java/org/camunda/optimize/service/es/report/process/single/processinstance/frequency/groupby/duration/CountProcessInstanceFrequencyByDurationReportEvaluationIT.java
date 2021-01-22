@@ -206,7 +206,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -238,7 +237,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       // we expect buckets from 1000ms (finished instance) to 5000ms (running instance in relation to currentTime)
       // in intervals of 100ms (interval us rounded up to nearest power of 10)
@@ -268,7 +266,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then the result should be complete even though the duration increased
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(resultDto.getData())
@@ -295,7 +292,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
@@ -327,7 +323,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
@@ -366,7 +361,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
       .hasSize(3)
@@ -457,7 +451,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isFalse();
     assertThat(resultDto.getData()).isNotNull().isEmpty();
   }
 
@@ -481,7 +474,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
@@ -512,7 +504,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(2)
       .isSortedAccordingTo(
@@ -545,7 +536,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .hasSize(2)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed())

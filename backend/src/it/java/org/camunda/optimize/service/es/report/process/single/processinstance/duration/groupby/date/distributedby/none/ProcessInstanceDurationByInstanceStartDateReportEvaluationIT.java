@@ -170,7 +170,6 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getIsComplete()).isTrue();
 
     final List<MapResultEntryDto> resultData = result.getData();
 

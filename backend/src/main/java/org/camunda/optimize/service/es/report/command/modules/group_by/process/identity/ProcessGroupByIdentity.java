@@ -103,12 +103,9 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
-
     final List<GroupByResult> groupedData = getByIdentityAggregationResults(response, filteredUserTasks, context);
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(byIdentityAggregation.getSumOfOtherDocCounts() == 0L);
     compositeCommandResult.setSorting(
       context.getReportConfiguration()
         .getSorting()
