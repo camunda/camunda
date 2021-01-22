@@ -43,3 +43,9 @@ it('should pass the disabled prop to the child-button', () => {
 
   expect(node.find(Button)).toBeDisabled();
 });
+
+it('should show an error warning if specified', () => {
+  const node = shallow(<ActionItem warning="There is an error" />);
+
+  expect(node.find('Message')).toMatchSnapshot();
+});

@@ -10,23 +10,38 @@ import equal from 'deep-equal';
 
 import {ActionItem, DefinitionSelection} from 'components';
 import {Filter} from 'filter';
-import {getFlowNodeNames} from 'services';
+import {getFlowNodeNames, loadVariables} from 'services';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import './BranchControlPanel.scss';
 
-export default class BranchControlPanel extends React.Component {
+export class BranchControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       flowNodeNames: null,
+      variables: null,
     };
   }
 
   componentDidMount() {
     this.loadFlowNodeNames();
+    this.loadVariables();
   }
+
+  loadVariables = () => {
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
+    if (processDefinitionKey && processDefinitionVersions) {
+      this.props.mightFail(
+        loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+        (variables) => this.setState({variables}),
+        showError
+      );
+    }
+  };
 
   loadFlowNodeNames = async () => {
     this.setState({
@@ -44,6 +59,7 @@ export default class BranchControlPanel extends React.Component {
       !equal(this.props.processDefinitionVersions, processDefinitionVersions)
     ) {
       this.loadFlowNodeNames();
+      this.loadVariables();
     }
   }
 
@@ -113,7 +129,6 @@ export default class BranchControlPanel extends React.Component {
                         'executedFlowNodes',
                         'executingFlowNodes',
                         'canceledFlowNodes',
-                        'variable',
                         'assignee',
                         'candidateGroup',
                         'flowNodeDuration',
@@ -130,13 +145,14 @@ export default class BranchControlPanel extends React.Component {
           <li className="item itemFilter">
             <Filter
               data={this.props.filter}
-              flowNodeNames={this.state.flowNodeNames}
               onChange={({filter}) =>
                 this.props.onChange({filter: update(this.props.filter, filter)})
               }
               xml={this.props.xml}
               {...this.getDefinitionConfig()}
               filterLevel="instance"
+              flowNodeNames={this.state.flowNodeNames}
+              variables={this.state.variables}
             />
           </li>
         </ul>
@@ -144,3 +160,5 @@ export default class BranchControlPanel extends React.Component {
     );
   }
 }
+
+export default withErrorHandling(BranchControlPanel);

@@ -7,9 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {loadFrequencyData} from './service';
-
 import {BranchAnalysis} from './BranchAnalysis';
+import BranchControlPanel from './BranchControlPanel';
+import {loadFrequencyData} from './service';
 
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 
@@ -30,7 +30,7 @@ jest.mock('services', () => {
 it('should contain a control panel', () => {
   const node = shallow(<BranchAnalysis />);
 
-  expect(node.find('BranchControlPanel')).toExist();
+  expect(node.find(BranchControlPanel)).toExist();
 });
 
 it('should load the process definition xml when the process definition id is updated', () => {

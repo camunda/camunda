@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import classnames from 'classnames';
 
 import {ActionItem, Tooltip} from 'components';
 import {t} from 'translation';
@@ -34,9 +35,13 @@ const stateFilters = [
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
-  getVariableName = (type, nameOrId) => {
-    if (this.props.variables && this.props.variables[type].length) {
-      return this.props.variables[type].find(({id}) => id === nameOrId).name;
+  getVariableName = (type, nameOrId, variableExists) => {
+    if (isDecisionVariable(type) && this.props.variables?.[type]) {
+      if (variableExists) {
+        const {name, id} = this.props.variables[type].find(({id}) => id === nameOrId);
+        return name || id;
+      }
+      return t('report.missingVariable');
     }
 
     return nameOrId;
@@ -63,11 +68,17 @@ export default class FilterList extends React.Component {
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
           const {name, type, data} = filter.data;
-          const variableName = this.getVariableName(filter.type, name);
+          const variableExists = checkVariableExistence(filter.type, name, this.props.variables);
+          const variableName = this.getVariableName(filter.type, name, variableExists);
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li
+              key={i}
+              onClick={variableExists ? this.props.openEditFilterModal(filter) : undefined}
+              className={classnames('listItem', {notEditable: !variableExists})}
+            >
               <ActionItem
+                warning={!variableExists && t('report.nonExistingVariable')}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -216,3 +227,19 @@ FilterList.defaultProps = {
   openEditFilterModal: () => {},
   deleteFilter: () => {},
 };
+
+function isDecisionVariable(type) {
+  return ['inputVariable', 'outputVariable'].includes(type);
+}
+
+function checkVariableExistence(type, name, variables) {
+  if (!variables || (isDecisionVariable(type) && !variables[type])) {
+    return true;
+  }
+
+  if (isDecisionVariable(type)) {
+    return variables[type].some((variable) => variable.id === name);
+  }
+
+  return variables.some((variable) => variable.name === name);
+}

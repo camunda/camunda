@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show an error warning if specified 1`] = `
+<Message
+  error={true}
+>
+  <Icon
+    type="warning"
+  />
+   
+  There is an error
+</Message>
+`;

@@ -14,6 +14,10 @@
     color: var(--white);
   }
 
+  > .Message.error {
+    padding: 5px 10px;
+  }
+
   .Button,
   .Button:hover,
   .Button:active {

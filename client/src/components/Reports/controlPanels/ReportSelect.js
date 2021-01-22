@@ -101,7 +101,7 @@ function addVariables(options, variables, payloadFormatter, filter = () => true)
     if (subOptions && typeof subOptions === 'string') {
       return {
         ...option,
-        options: variables[subOptions].filter(filter).map(({id, name, type}) => {
+        options: variables[subOptions]?.filter(filter).map(({id, name, type}) => {
           const value = id ? {id, name, type} : {name, type};
           return {
             key: subOptions + '_' + (id || name),

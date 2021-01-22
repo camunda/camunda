@@ -63,7 +63,7 @@ it('should use the variables prop to resolve variable names', () => {
     <FilterList variables={{inputVariable: []}} data={data} openEditFilterModal={jest.fn()} />
   );
 
-  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
+  expect(node.find('VariablePreview').prop('variableName')).toBe('Missing variable');
 
   node.setProps({
     variables: {
@@ -72,6 +72,32 @@ it('should use the variables prop to resolve variable names', () => {
   });
 
   expect(node.find('VariablePreview').prop('variableName')).toBe('Resolved Name');
+
+  node.setProps({
+    variables: {inputVariable: [{id: 'notANameButAnId', name: null, type: 'String'}]},
+  });
+
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
+});
+
+it('should disable editing and pass a warning to variablePreview if variable does not exist', () => {
+  const data = [
+    {
+      type: 'variable',
+      data: {
+        name: 'notANameButAnId',
+        type: 'String',
+        data: {
+          operator: 'in',
+          values: ['varValue'],
+        },
+      },
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} variables={[]} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toMatchSnapshot();
 });
 
 it('should use the DateFilterPreview component for date variables', () => {

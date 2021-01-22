@@ -32,7 +32,7 @@ export default withErrorHandling(
       super(props);
 
       this.state = {
-        variables: [],
+        variables: null,
         flowNodeNames: null,
       };
     }
@@ -131,10 +131,9 @@ export default withErrorHandling(
                 'executedFlowNodes',
                 'executingFlowNodes',
                 'canceledFlowNodes',
-                'variable',
+                'flowNodeDuration',
                 'assignee',
                 'candidateGroup',
-                'flowNodeDuration',
               ].includes(type)
           ),
         },
@@ -186,6 +185,7 @@ export default withErrorHandling(
                 tenantIds={data.tenantIds}
                 xml={data.configuration.xml}
                 filterLevel="instance"
+                variables={this.state.variables}
               />
             </div>
             <div className="reportSetup">
@@ -254,6 +254,7 @@ export default withErrorHandling(
                 tenantIds={data.tenantIds}
                 xml={data.configuration.xml}
                 filterLevel="view"
+                variables={this.state.variables}
               />
             </div>
             {result && typeof result.instanceCount !== 'undefined' && (

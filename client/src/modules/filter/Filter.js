@@ -174,6 +174,7 @@ export default class Filter extends React.Component {
           openEditFilterModal={this.openEditFilterModal}
           data={filters}
           deleteFilter={this.deleteFilter}
+          variables={this.props.variables}
         />
         <FilterModal
           addFilter={this.addFilter}

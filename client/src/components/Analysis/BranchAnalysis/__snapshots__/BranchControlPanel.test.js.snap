@@ -61,6 +61,7 @@ exports[`should display a sentence to describe what the user can do on this page
         processDefinitionKey=""
         processDefinitionVersions={Array []}
         tenantIds={Array []}
+        variables={null}
         xml={null}
       />
     </li>

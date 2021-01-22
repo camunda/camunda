@@ -1,5 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should disable editing and pass a warning to variablePreview if variable does not exist 1`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem notEditable"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      warning="Variable does not exist"
+    >
+      <VariablePreview
+        filter={
+          Object {
+            "operator": "in",
+            "values": Array [
+              "varValue",
+            ],
+          }
+        }
+        variableName="notANameButAnId"
+      />
+    </ActionItem>
+  </li>
+</ul>
+`;
+
 exports[`should display a flow node duration filter 1`] = `
 <ul
   className="FilterList"

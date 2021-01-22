@@ -7,9 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {getFlowNodeNames} from 'services';
+import {getFlowNodeNames, loadVariables} from 'services';
 
-import BranchControlPanel from './BranchControlPanel';
+import {BranchControlPanel} from './BranchControlPanel';
 
 jest.mock('services', () => {
   return {
@@ -18,6 +18,7 @@ jest.mock('services', () => {
       a: 'foo',
       b: 'bar',
     }),
+    loadVariables: jest.fn().mockReturnValue([{name: 'variable1', type: 'String'}]),
   };
 });
 
@@ -27,6 +28,7 @@ const data = {
   tenantIds: [],
   filter: null,
   xml: 'aFooXml',
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 const emptyData = {
@@ -99,7 +101,7 @@ it('should pass the xml to the Filter component', async () => {
   expect(filter.find('[xml="aFooXml"]')).toExist();
 });
 
-it('should load the flownode names and hand them to the filter if process definition changes', async () => {
+it('should load the flownode and variable names and hand them to the filter if process definition changes', async () => {
   const node = shallow(<BranchControlPanel {...data} />);
   node.setProps({
     processDefinitionKey: 'fooKey',
@@ -110,7 +112,9 @@ it('should load the flownode names and hand them to the filter if process defini
   node.update();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(loadVariables).toHaveBeenCalled();
   expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
+  expect(node.find('Filter').prop('variables')).toEqual(loadVariables());
 });
 
 it('should display a sentence to describe what the user can do on this page', () => {

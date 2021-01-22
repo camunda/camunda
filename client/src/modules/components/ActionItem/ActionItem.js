@@ -6,16 +6,22 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Button} from 'components';
+
+import {Button, Message, Icon} from 'components';
 
 import './ActionItem.scss';
 
-export default function ActionItem({disabled, onClick, highlighted, ...props}) {
+export default function ActionItem({disabled, onClick, highlighted, warning, ...props}) {
   return (
     <div className={classnames({highlighted}, 'ActionItem')}>
       <span {...props} className={classnames('content', props.className)}>
         {props.children}
       </span>
+      {warning && (
+        <Message error>
+          <Icon type="warning" /> {warning}
+        </Message>
+      )}
       <Button disabled={disabled} onClick={onClick}>
         ×
       </Button>

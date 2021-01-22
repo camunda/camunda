@@ -125,26 +125,6 @@ it('should reset variable groupby on definition change', async () => {
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
 });
 
-it('should reset variable filters on definition change', async () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <DecisionControlPanel
-      report={{
-        data: {
-          ...report.data,
-          filter: [{type: 'inputVariable'}, {type: 'evaluationDateTime'}, {type: 'outputVariable'}],
-        },
-      }}
-      updateReport={spy}
-    />
-  );
-
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
-
-  expect(spy).toHaveBeenCalled();
-  expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'evaluationDateTime'}]});
-});
-
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);

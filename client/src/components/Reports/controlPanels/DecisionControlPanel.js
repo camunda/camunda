@@ -24,8 +24,8 @@ const {decision: decisionConfig} = reportConfig;
 export default class DecisionControlPanel extends React.Component {
   state = {
     variables: {
-      inputVariable: [],
-      outputVariable: [],
+      inputVariable: null,
+      outputVariable: null,
     },
   };
 
@@ -60,7 +60,7 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   changeDefinition = async ({key, versions, tenantIds, name}) => {
-    const {groupBy, filter} = this.props.report.data;
+    const {groupBy} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
@@ -89,9 +89,6 @@ export default class DecisionControlPanel extends React.Component {
               ? await loadDecisionDefinitionXml(key, versions[0], tenantIds[0])
               : null,
         },
-      },
-      filter: {
-        $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable'),
       },
     };
 

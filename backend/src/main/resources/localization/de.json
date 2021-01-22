@@ -501,7 +501,9 @@
     "viewByGroup": "{view} nach {group}",
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",
-    "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse"
+    "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse",
+    "missingVariable": "Fehlende Variable",
+    "nonExistingVariable": "Variable existiert nicht"
   },
   "dashboard": {
     "label": "Dashboard",
