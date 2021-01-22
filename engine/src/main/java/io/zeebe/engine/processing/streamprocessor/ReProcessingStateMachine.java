@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.processing.streamprocessor.writers.EventApplier;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -20,13 +21,17 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -112,11 +117,14 @@ public final class ReProcessingStateMachine {
   private long lastFollowUpEventPosition;
   private long snapshotPosition;
 
+  private final Map<Long, Long> generatedKeyBySourceCommandPosition = new HashMap<>();
+
   private ActorFuture<Long> recoveryFuture;
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private boolean detectReprocessingInconsistency;
+  private final boolean detectReprocessingInconsistency;
+  private final EventApplier eventApplier;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -128,6 +136,7 @@ public final class ReProcessingStateMachine {
     zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
+    eventApplier = new EventApplier(zeebeState);
 
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
@@ -206,6 +215,22 @@ public final class ReProcessingStateMachine {
             lastFollowUpEventPosition = currentPosition;
           }
         }
+
+        // store the keys per migrated processor
+        final UnifiedRecordValue value =
+            recordValues.readRecordValue(newEvent, metadata.getValueType());
+        typedEvent.wrap(newEvent, metadata, value);
+
+        if (MigratedStreamProcessors.isMigrated(typedEvent)
+            && typedEvent.getRecordType() == RecordType.COMMAND) {
+          generatedKeyBySourceCommandPosition.put(newEvent.getPosition(), -1L);
+        }
+
+        Optional.ofNullable(generatedKeyBySourceCommandPosition.get(sourceEventPosition))
+            .ifPresent(
+                lastKey ->
+                    generatedKeyBySourceCommandPosition.put(
+                        sourceEventPosition, Math.max(newEvent.getKey(), lastKey)));
       }
 
       // reset position
@@ -311,9 +336,36 @@ public final class ReProcessingStateMachine {
   private TransactionOperation chooseOperationForEvent(
       final long position, final TypedRecord<?> currentEvent) {
     final TransactionOperation operationOnProcessing;
-    if (failedEventPositions.contains(position)) {
+
+    if (MigratedStreamProcessors.isMigrated(currentEvent)) {
+      if (currentEvent.getRecordType() == RecordType.EVENT) {
+        // replay only events - skip commands and rejections
+        operationOnProcessing =
+            () -> {
+              eventApplier.applyState(
+                  currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+            };
+      } else {
+        LOG.debug(
+            "Skip record on replay. [record-type: {}, value-type: {}, intent: {}, record: {}]",
+            typedEvent.getRecordType(),
+            typedEvent.getValueType(),
+            typedEvent.getIntent(),
+            typedEvent);
+
+        operationOnProcessing = () -> {};
+
+        // restore the key generator if records are written during the processing
+        final var keyGenerator = zeebeState.getKeyGenerator();
+        Optional.ofNullable(generatedKeyBySourceCommandPosition.get(currentEvent.getPosition()))
+            .filter(key -> key > 0)
+            .ifPresent(keyGenerator::setKey);
+      }
+
+    } else if (failedEventPositions.contains(position)) {
       LOG.info(LOG_STMT_FAILED_ON_PROCESSING, currentEvent);
       operationOnProcessing = () -> zeebeState.tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
+
     } else {
       operationOnProcessing =
           () -> {
@@ -329,6 +381,7 @@ public final class ReProcessingStateMachine {
             zeebeState.markAsProcessed(position);
           };
     }
+
     return operationOnProcessing;
   }
 
@@ -372,6 +425,7 @@ public final class ReProcessingStateMachine {
   private void onRecovered(final long lastProcessedPosition) {
     recoveryFuture.complete(lastProcessedPosition);
     failedEventPositions.clear();
+    generatedKeyBySourceCommandPosition.clear();
   }
 
   private void verifyRecordMatchesToReprocessing(final TypedRecord<?> currentEvent) {

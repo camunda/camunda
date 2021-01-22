@@ -9,6 +9,8 @@ package io.zeebe.db;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import org.agrona.DirectBuffer;
 
 /**
  * The zeebe database, to store key value pairs in different column families. The column families
@@ -64,4 +66,9 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @return {@code true} if the column is empty, otherwise {@code false}
    */
   boolean isEmpty(ColumnFamilyType column, DbContext context);
+
+  void visit(
+      final ColumnFamilyType column,
+      final DbContext context,
+      final BiConsumer<DirectBuffer, DirectBuffer> visitor);
 }

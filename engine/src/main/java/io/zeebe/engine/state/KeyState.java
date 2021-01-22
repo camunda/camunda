@@ -37,4 +37,8 @@ public final class KeyState implements KeyGenerator {
   public long nextKey() {
     return nextValueManager.getNextValue(LATEST_KEY);
   }
+
+  public void setKey(final long newKey) {
+    nextValueManager.setKey(LATEST_KEY, newKey);
+  }
 }

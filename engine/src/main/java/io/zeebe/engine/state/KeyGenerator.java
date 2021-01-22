@@ -10,4 +10,6 @@ package io.zeebe.engine.state;
 public interface KeyGenerator {
 
   long nextKey();
+
+  void setKey(long newKey);
 }

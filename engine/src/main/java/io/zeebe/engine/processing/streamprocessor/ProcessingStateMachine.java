@@ -226,6 +226,21 @@ public final class ProcessingStateMachine {
       final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
       typedEvent.wrap(event, metadata, value);
 
+      if (MigratedStreamProcessors.isMigrated(typedEvent)
+          && typedEvent.getRecordType() != RecordType.COMMAND) {
+        // process only commands - skip events and rejections
+        LOG.debug(
+            "Skip record on processing. [record-type: {}, value-type: {}, intent: {}, record: {}]",
+            typedEvent.getRecordType(),
+            typedEvent.getValueType(),
+            typedEvent.getIntent(),
+            typedEvent);
+
+        currentProcessor = null;
+        skipRecord();
+        return;
+      }
+
       processInTransaction(typedEvent);
 
       metrics.eventProcessed();

@@ -52,9 +52,15 @@ public final class NextValueManager {
     }
 
     final long nextKey = previousKey + 1;
-    nextValue.set(nextKey);
-    nextValueColumnFamily.put(nextValueKey, nextValue);
+    setKey(key, nextKey);
 
     return nextKey;
+  }
+
+  public void setKey(final String key, final long nextKey) {
+    nextValueKey.wrapString(key);
+
+    nextValue.set(nextKey);
+    nextValueColumnFamily.put(nextValueKey, nextValue);
   }
 }

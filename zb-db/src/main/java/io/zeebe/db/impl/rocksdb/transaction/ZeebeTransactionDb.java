@@ -425,6 +425,15 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
+  public void visit(
+      final ColumnFamilyNames column,
+      final DbContext context,
+      final BiConsumer<DirectBuffer, DirectBuffer> visitor) {
+    final var columnFamilyHandle = columnFamilyMap.get(column);
+    foreach(columnFamilyHandle, context, visitor);
+  }
+
+  @Override
   public void close() {
     // Correct order of closing
     // 1. transaction
