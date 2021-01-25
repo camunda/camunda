@@ -67,7 +67,18 @@ public final class TypedStreamProcessorTest {
     stream = streams.createLogStream(STREAM_NAME);
 
     final AtomicLong key = new AtomicLong();
-    keyGenerator = () -> key.getAndIncrement();
+    keyGenerator =
+        new KeyGenerator() {
+          @Override
+          public long nextKey() {
+            return key.getAndIncrement();
+          }
+
+          @Override
+          public void setKey(final long newKey) {
+            key.set(newKey);
+          }
+        };
   }
 
   @Test
