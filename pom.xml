@@ -52,7 +52,7 @@
     <junit.platform.version>1.7.0</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.18.1</assertj.version>
+    <assertj.version>3.19.0</assertj.version>
 
     <lombok.version>1.18.16</lombok.version>
     <logback.version>1.2.3</logback.version>
