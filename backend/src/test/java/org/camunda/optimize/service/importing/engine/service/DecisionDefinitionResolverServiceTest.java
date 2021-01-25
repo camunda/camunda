@@ -63,7 +63,7 @@ public class DecisionDefinitionResolverServiceTest {
       .get()
       .extracting(DecisionDefinitionOptimizeDto::getVersion)
       .isEqualTo(version);
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
   }
 
   @Test
@@ -84,7 +84,7 @@ public class DecisionDefinitionResolverServiceTest {
     assertThat(secondDecisionDefinitionTry).isPresent();
     assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
 
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
   }
 
   @Test
@@ -108,7 +108,7 @@ public class DecisionDefinitionResolverServiceTest {
         DecisionDefinitionOptimizeDto::getVersion
       )
       .containsExactly(id, TEST_KEY, "1");
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
   }
 
@@ -125,13 +125,13 @@ public class DecisionDefinitionResolverServiceTest {
 
     // then
     assertThat(firstDecisionDefinitionTry).isPresent();
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
 
     // when
     final Optional<DecisionDefinitionOptimizeDto> secondDecisionDefinitionTry =
       underTest.getDefinition(id, engineContext);
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
     assertThat(secondDecisionDefinitionTry).isPresent();
     assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
@@ -150,7 +150,7 @@ public class DecisionDefinitionResolverServiceTest {
 
     // then
     assertThat(definition).isNotPresent();
-    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false, true);
+    verify(decisionDefinitionReader, times(1)).getAllDecisionDefinitions();
     verify(engineContext, times(1)).fetchDecisionDefinition(id);
   }
 
@@ -167,7 +167,7 @@ public class DecisionDefinitionResolverServiceTest {
         .dmn10Xml("")
         .build()
     );
-    when(decisionDefinitionReader.getDecisionDefinitions(false, false, true)).thenReturn(mockedDefinitions);
+    when(decisionDefinitionReader.getAllDecisionDefinitions()).thenReturn(mockedDefinitions);
   }
 
   private void mockDecisionDefinitionForEngineContext(final String id, final String version) {

@@ -129,7 +129,6 @@ public class DefinitionReader {
     if (type == null || key == null) {
       return Optional.empty();
     }
-
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(DEFINITION_KEY, key))
       .must(termQuery(DEFINITION_DELETED, false));
@@ -137,26 +136,14 @@ public class DefinitionReader {
     return getDefinitionWithTenantIdsDtos(query, resolveIndexNameForType(type)).stream().findFirst();
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                          final boolean fullyImported,
-                                                                          final boolean withXml) {
-    return getDefinitions(type, fullyImported, withXml, false);
-  }
-
-  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                          final boolean fullyImported,
-                                                                          final boolean withXml,
-                                                                          final boolean includeDeleted) {
-    return fetchDefinitions(type, fullyImported, withXml, matchAllQuery(), includeDeleted);
-  }
-
-  public List<DefinitionWithTenantIdsDto> getFullyImportedDefinitions(final DefinitionType type,
-                                                                      final Set<String> keys,
-                                                                      final Set<String> tenantIds) {
+  public List<DefinitionWithTenantIdsDto> getFullyImportedDefinitionsWithTenantIds(final DefinitionType type,
+                                                                                   final Set<String> keys,
+                                                                                   final Set<String> tenantIds) {
     final BoolQueryBuilder filterQuery = boolQuery();
     filterQuery.filter(
       boolQuery().minimumShouldMatch(1)
         .must(termQuery(DEFINITION_DELETED, false))
+        // use separate should queries as definition type may be null (returning both process and decision)
         .should(existsQuery(PROCESS_DEFINITION_XML))
         .should(existsQuery(DECISION_DEFINITION_XML))
     );
@@ -172,13 +159,14 @@ public class DefinitionReader {
 
   public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
                                                                                        final boolean withXml) {
-    return getDefinitions(type, true, withXml);
+    return getDefinitions(type, true, withXml, false);
   }
 
-  public <T extends DefinitionOptimizeResponseDto> Optional<T> getFirstDefinitionFromTenantsIfAvailable(final DefinitionType type,
-                                                                                                        final String definitionKey,
-                                                                                                        final List<String> definitionVersions,
-                                                                                                        final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeResponseDto> Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+    final DefinitionType type,
+    final String definitionKey,
+    final List<String> definitionVersions,
+    final List<String> tenantIds) {
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }
@@ -203,13 +191,14 @@ public class DefinitionReader {
     return definition;
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getLatestDefinitionsFromTenantsIfAvailable(final DefinitionType type,
-                                                                                                      final String definitionKey) {
+  public <T extends DefinitionOptimizeResponseDto> List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+    final DefinitionType type,
+    final String definitionKey) {
     if (definitionKey == null) {
       return Collections.emptyList();
     }
 
-    return getLatestDefinitionPerTenant(type, definitionKey);
+    return getLatestFullyImportedDefinitionPerTenant(type, definitionKey);
   }
 
   public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
@@ -243,71 +232,6 @@ public class DefinitionReader {
     return searchResponse.getAggregations().<Terms>get(ENGINE_AGGREGATION).getBuckets().stream()
       .map(MultiBucketsAggregation.Bucket::getKeyAsString)
       .collect(Collectors.toSet());
-  }
-
-  private <T extends DefinitionOptimizeResponseDto> Optional<T> getFullyImportedDefinition(
-    final DefinitionType type,
-    final String definitionKey,
-    final String definitionVersion,
-    final String tenantId) {
-
-    if (definitionKey == null || definitionVersion == null) {
-      return Optional.empty();
-    }
-
-    final String validVersion =
-      convertToLatestParticularVersion(definitionVersion, () -> getLatestVersionToKey(type, definitionKey));
-    final BoolQueryBuilder query = boolQuery()
-      .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
-      .must(termQuery(resolveVersionFieldFromType(type), validVersion))
-      .must(termQuery(DEFINITION_DELETED, false))
-      .must(existsQuery(resolveXmlFieldFromType(type)));
-
-    if (tenantId != null) {
-      query.must(termQuery(TENANT_ID, tenantId));
-    } else {
-      query.mustNot(existsQuery(TENANT_ID));
-    }
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(query);
-    searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch [%s] definition with key [%s], version [%s] and tenantId [%s]",
-        type,
-        definitionKey,
-        validVersion,
-        tenantId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (searchResponse.getHits().getTotalHits().value == 0L) {
-      log.debug(
-        "Could not find [{}] definition with key [{}], version [{}] and tenantId [{}]",
-        type, definitionKey, validVersion, tenantId
-      );
-      return Optional.empty();
-    }
-
-    final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    final T definitionOptimizeDto = ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      1,
-      typeClass,
-      createMappingFunctionForDefinitionType(typeClass)
-    ).stream()
-      .findFirst()
-      .orElse(null);
-    return Optional.ofNullable(definitionOptimizeDto);
   }
 
   public Map<String, TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant() {
@@ -430,74 +354,6 @@ public class DefinitionReader {
     throw new OptimizeRuntimeException("Unable to retrieve latest version for " + type + " definition key: " + key);
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getLatestDefinitionPerTenant(final DefinitionType type,
-                                                                                        final String key) {
-    log.debug("Fetching latest [{}] definitions for key [{}] on each tenant", type, key);
-
-    final FilterAggregationBuilder keyFilterAgg =
-      filter(
-        DEFINITION_KEY_FILTER_AGGREGATION,
-        boolQuery()
-          .must(termQuery(resolveDefinitionKeyFieldFromType(type), key))
-          .must(termQuery(DEFINITION_DELETED, false))
-      );
-
-    final TermsAggregationBuilder tenantsAggregation =
-      terms(TENANT_AGGREGATION)
-        .field(DEFINITION_TENANT_ID)
-        .size(LIST_FETCH_LIMIT)
-        .missing(TENANT_NOT_DEFINED_VALUE);
-
-    final Script numericVersionScript = createDefaultScript(
-      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)"
-    );
-
-    final TermsAggregationBuilder versionAggregation =
-      terms(VERSION_AGGREGATION)
-        .field(DEFINITION_VERSION)
-        .size(1) // only return bucket for latest version
-        .order(BucketOrder.aggregation("versionForSorting", false))
-        // custom sort agg to sort by numeric version value (instead of string bucket key)
-        .subAggregation(AggregationBuilders.min("versionForSorting").script(numericVersionScript));
-
-    final AggregationBuilder definitionAgg =
-      keyFilterAgg.subAggregation(
-        tenantsAggregation.subAggregation(
-          versionAggregation.subAggregation(
-            // return top hit in latest version bucket, should only be one
-            AggregationBuilders.topHits(TOP_HITS_AGGREGATION).size(1)
-          )));
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .size(0)
-      .aggregation(definitionAgg);
-    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String reason = String.format(
-        "Was not able to fetch latest [%s] definitions for key [%s]",
-        type,
-        key
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    final List<T> result = retrieveResultsFromLatestDefinitionPerTenant(type, searchResponse);
-
-    if (result.isEmpty()) {
-      log.debug(
-        "Could not find latest [{}] definitions with key [{}]",
-        type, key
-      );
-    }
-
-    return result;
-  }
-
   public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
                                                                   final String key,
                                                                   final Set<String> tenantIds) {
@@ -596,33 +452,15 @@ public class DefinitionReader {
       .collect(Collectors.toList());
   }
 
-  private void addTenantIdFilter(final Set<String> tenantIds, final BoolQueryBuilder query) {
-    if (!CollectionUtils.isEmpty(tenantIds)) {
-      final BoolQueryBuilder tenantFilterQuery = boolQuery().minimumShouldMatch(1);
-
-      if (tenantIds.contains(null)) {
-        tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
-      }
-
-      final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
-      if (!nonNullValues.isEmpty()) {
-        tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
-      }
-
-      query.filter(tenantFilterQuery);
-    }
-  }
-
-  private <T extends DefinitionOptimizeResponseDto> List<T> fetchDefinitions(final DefinitionType type,
+  protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
                                                                              final boolean fullyImported,
                                                                              final boolean withXml,
-                                                                             final QueryBuilder query,
                                                                              final boolean includeDeleted) {
     final String xmlField = resolveXmlFieldFromType(type);
     final BoolQueryBuilder rootQuery = boolQuery().must(
       fullyImported ? existsQuery(xmlField) : matchAllQuery()
     );
-    final BoolQueryBuilder filteredQuery = rootQuery.must(query);
+    final BoolQueryBuilder filteredQuery = rootQuery.must(matchAllQuery());
     if (!includeDeleted) {
       filteredQuery.must(termQuery(DEFINITION_DELETED, false));
     }
@@ -653,6 +491,140 @@ public class DefinitionReader {
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
     );
+  }
+
+  private <T extends DefinitionOptimizeResponseDto> Optional<T> getFullyImportedDefinition(
+    final DefinitionType type,
+    final String definitionKey,
+    final String definitionVersion,
+    final String tenantId) {
+
+    if (definitionKey == null || definitionVersion == null) {
+      return Optional.empty();
+    }
+
+    final String validVersion =
+      convertToLatestParticularVersion(definitionVersion, () -> getLatestVersionToKey(type, definitionKey));
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
+      .must(termQuery(resolveVersionFieldFromType(type), validVersion))
+      .must(termQuery(DEFINITION_DELETED, false))
+      .must(existsQuery(resolveXmlFieldFromType(type)));
+
+    if (tenantId != null) {
+      query.must(termQuery(TENANT_ID, tenantId));
+    } else {
+      query.mustNot(existsQuery(TENANT_ID));
+    }
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch [%s] definition with key [%s], version [%s] and tenantId [%s]",
+        type,
+        definitionKey,
+        validVersion,
+        tenantId
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getTotalHits().value == 0L) {
+      log.debug(
+        "Could not find [{}] definition with key [{}], version [{}] and tenantId [{}]",
+        type, definitionKey, validVersion, tenantId
+      );
+      return Optional.empty();
+    }
+
+    final Class<T> typeClass = resolveDefinitionClassFromType(type);
+    final T definitionOptimizeDto = ElasticsearchReaderUtil.mapHits(
+      searchResponse.getHits(),
+      1,
+      typeClass,
+      createMappingFunctionForDefinitionType(typeClass)
+    ).stream()
+      .findFirst()
+      .orElse(null);
+    return Optional.ofNullable(definitionOptimizeDto);
+  }
+
+  private <T extends DefinitionOptimizeResponseDto> List<T> getLatestFullyImportedDefinitionPerTenant(final DefinitionType type,
+                                                                                                      final String key) {
+    log.debug("Fetching latest fully imported [{}] definitions for key [{}] on each tenant", type, key);
+
+    final FilterAggregationBuilder keyFilterAgg =
+      filter(
+        DEFINITION_KEY_FILTER_AGGREGATION,
+        boolQuery()
+          .must(termQuery(resolveDefinitionKeyFieldFromType(type), key))
+          .must(termQuery(DEFINITION_DELETED, false))
+          .must(existsQuery(resolveXmlFieldFromType(type)))
+      );
+
+    final TermsAggregationBuilder tenantsAggregation =
+      terms(TENANT_AGGREGATION)
+        .field(DEFINITION_TENANT_ID)
+        .size(LIST_FETCH_LIMIT)
+        .missing(TENANT_NOT_DEFINED_VALUE);
+
+    final Script numericVersionScript = createDefaultScript(
+      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)"
+    );
+
+    final TermsAggregationBuilder versionAggregation =
+      terms(VERSION_AGGREGATION)
+        .field(DEFINITION_VERSION)
+        .size(1) // only return bucket for latest version
+        .order(BucketOrder.aggregation("versionForSorting", false))
+        // custom sort agg to sort by numeric version value (instead of string bucket key)
+        .subAggregation(AggregationBuilders.min("versionForSorting").script(numericVersionScript));
+
+    final AggregationBuilder definitionAgg =
+      keyFilterAgg.subAggregation(
+        tenantsAggregation.subAggregation(
+          versionAggregation.subAggregation(
+            // return top hit in latest version bucket, should only be one
+            AggregationBuilders.topHits(TOP_HITS_AGGREGATION).size(1)
+          )));
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .size(0)
+      .aggregation(definitionAgg);
+    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String reason = String.format(
+        "Was not able to fetch latest [%s] definitions for key [%s]",
+        type,
+        key
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    final List<T> result = retrieveResultsFromLatestDefinitionPerTenant(type, searchResponse);
+
+    if (result.isEmpty()) {
+      log.debug(
+        "Could not find latest [{}] definitions with key [{}]",
+        type, key
+      );
+    }
+
+    return result;
   }
 
   private List<DefinitionWithTenantIdsDto> getDefinitionWithTenantIdsDtos(final QueryBuilder filterQuery,
@@ -717,6 +689,23 @@ public class DefinitionReader {
       .collect(toList());
   }
 
+  private void addTenantIdFilter(final Set<String> tenantIds, final BoolQueryBuilder query) {
+    if (!CollectionUtils.isEmpty(tenantIds)) {
+      final BoolQueryBuilder tenantFilterQuery = boolQuery().minimumShouldMatch(1);
+
+      if (tenantIds.contains(null)) {
+        tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
+      }
+
+      final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+      if (!nonNullValues.isEmpty()) {
+        tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
+      }
+
+      query.filter(tenantFilterQuery);
+    }
+  }
+
   private List<ParsedComposite.ParsedBucket> performSearchAndCollectAllKeyAndTypeBuckets
     (final QueryBuilder filterQuery,
      final String[] definitionIndexNames,
@@ -755,6 +744,33 @@ public class DefinitionReader {
     }
 
     return keyAndTypeAggBuckets;
+  }
+
+  private <T extends DefinitionOptimizeResponseDto> List<T> retrieveResultsFromLatestDefinitionPerTenant(
+    final DefinitionType type,
+    final SearchResponse searchResponse) {
+    final Class<T> typeClass = resolveDefinitionClassFromType(type);
+    List<T> results = new ArrayList<>();
+    final ParsedFilter filteredDefsAgg = searchResponse.getAggregations().get(DEFINITION_KEY_FILTER_AGGREGATION);
+    final ParsedStringTerms tenantsAgg = filteredDefsAgg.getAggregations().get(TENANT_AGGREGATION);
+
+    // There should be max. one version bucket in each tenant bucket containing the latest definition for this tenant
+    for (Terms.Bucket tenantBucket : tenantsAgg.getBuckets()) {
+      final ParsedStringTerms versionsAgg = tenantBucket
+        .getAggregations()
+        .get(VERSION_AGGREGATION);
+      for (Terms.Bucket b : versionsAgg.getBuckets()) {
+        final ParsedTopHits topHits = b.getAggregations().get(TOP_HITS_AGGREGATION);
+        results.addAll(ElasticsearchReaderUtil.mapHits(
+          topHits.getHits(),
+          1,
+          typeClass,
+          createMappingFunctionForDefinitionType(typeClass)
+        ));
+      }
+    }
+
+    return results;
   }
 
   private <T extends DefinitionOptimizeResponseDto> Function<SearchHit, T> createMappingFunctionForDefinitionType(
@@ -860,30 +876,4 @@ public class DefinitionReader {
     }
   }
 
-  private <T extends DefinitionOptimizeResponseDto> List<T> retrieveResultsFromLatestDefinitionPerTenant(
-    final DefinitionType type,
-    final SearchResponse searchResponse) {
-    final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    List<T> results = new ArrayList<>();
-    final ParsedFilter filteredDefsAgg = searchResponse.getAggregations().get(DEFINITION_KEY_FILTER_AGGREGATION);
-    final ParsedStringTerms tenantsAgg = filteredDefsAgg.getAggregations().get(TENANT_AGGREGATION);
-
-    // There should be max. one version bucket in each tenant bucket containing the latest definition for this tenant
-    for (Terms.Bucket tenantBucket : tenantsAgg.getBuckets()) {
-      final ParsedStringTerms versionsAgg = tenantBucket
-        .getAggregations()
-        .get(VERSION_AGGREGATION);
-      for (Terms.Bucket b : versionsAgg.getBuckets()) {
-        final ParsedTopHits topHits = b.getAggregations().get(TOP_HITS_AGGREGATION);
-        results.addAll(ElasticsearchReaderUtil.mapHits(
-          topHits.getHits(),
-          1,
-          typeClass,
-          createMappingFunctionForDefinitionType(typeClass)
-        ));
-      }
-    }
-
-    return results;
-  }
 }

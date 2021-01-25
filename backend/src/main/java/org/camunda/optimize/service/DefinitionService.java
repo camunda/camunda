@@ -129,13 +129,11 @@ public class DefinitionService implements ConfigurationReloadable {
       final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
         .map(TenantDto::getId)
         .collect(toList());
-      final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(
+      final Set<String> tenantsToFilterFor =
         CollectionUtils.isEmpty(tenantIds)
-          ? availableTenants
-          : availableTenants.stream().filter(tenantIds::contains).collect(toList()),
-        userId
-      );
-
+          ? Sets.newHashSet(availableTenants)
+          : availableTenants.stream().filter(tenantIds::contains).collect(Collectors.toSet());
+      tenantsToFilterFor.add(null); // always include shared tenant, even when not in tenantIds
       definitionVersions.addAll(definitionReader.getDefinitionVersions(type, key, tenantsToFilterFor));
     }
 
@@ -145,22 +143,13 @@ public class DefinitionService implements ConfigurationReloadable {
   public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
                                                                   final String key,
                                                                   final List<String> tenantIds) {
-    final List<DefinitionVersionResponseDto> definitionVersions = new ArrayList<>();
-
-    final Optional<DefinitionWithTenantIdsDto> optionalDefinition =
-      definitionReader.getDefinitionWithAvailableTenants(type, key);
-    if (optionalDefinition.isPresent()) {
-      final List<String> availableTenants = optionalDefinition.get().getTenantIds();
-      final List<String> tenantsToFilterFor = prepareTenantListForDefinitionSearch(
-        CollectionUtils.isEmpty(tenantIds)
-          ? availableTenants
-          : availableTenants.stream().filter(tenantIds::contains).collect(toList())
-      );
-
-      definitionVersions.addAll(definitionReader.getDefinitionVersions(type, key, Sets.newHashSet(tenantsToFilterFor)));
-    }
-
-    return definitionVersions;
+    final Set<String> tenantsToFilterFor = Sets.newHashSet(tenantIds);
+    tenantsToFilterFor.add(null);
+    return definitionReader.getDefinitionVersions(
+      type,
+      key,
+      tenantsToFilterFor
+    );
   }
 
   public List<TenantDto> getDefinitionTenants(final DefinitionType type,
@@ -240,7 +229,7 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                             @NonNull final String userId) {
     final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
-      .getFullyImportedDefinitions(definitionType, keys, tenantsToFilterFor);
+      .getFullyImportedDefinitionsWithTenantIds(definitionType, keys, tenantsToFilterFor);
     return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
       // sort by name case insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
@@ -254,7 +243,7 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                              final List<String> tenantIds) {
     return isDefinitionVersionSetToAllOrLatest(definitionVersions)
       ? (Optional<T>) getLatestCachedDefinition(type, definitionKey, tenantIds)
-      : definitionReader.getFirstDefinitionFromTenantsIfAvailable(
+      : definitionReader.getFirstFullyImportedDefinitionFromTenantsIfAvailable(
       type,
       definitionKey,
       definitionVersions,
@@ -276,7 +265,6 @@ public class DefinitionService implements ConfigurationReloadable {
   }
 
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(final String userId) {
-
     final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant =
       definitionReader.getDefinitionsGroupedByTenant();
 
@@ -404,10 +392,11 @@ public class DefinitionService implements ConfigurationReloadable {
 
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestDefinition(final DefinitionType type,
                                                                            final String definitionKey) {
-    final List<DefinitionOptimizeResponseDto> definitions = definitionReader.getLatestDefinitionsFromTenantsIfAvailable(
-      type,
-      definitionKey
-    );
+    final List<DefinitionOptimizeResponseDto> definitions =
+      definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+        type,
+        definitionKey
+      );
     return definitions.stream()
       .collect(toMap(DefinitionOptimizeResponseDto::getTenantId, Function.identity()));
   }
