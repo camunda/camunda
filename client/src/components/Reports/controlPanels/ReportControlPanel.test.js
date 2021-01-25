@@ -230,27 +230,6 @@ it('should load the process definition xml when a new definition is selected', a
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });
 
-it('should remove incompatible filters when changing the process definition', async () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <ReportControlPanel
-      {...props}
-      report={{
-        ...report,
-        data: {
-          ...report.data,
-          filter: [{type: 'startDate'}, {type: 'executingFlowNodes'}, {type: 'executedFlowNodes'}],
-        },
-      }}
-      updateReport={spy}
-    />
-  );
-
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
-
-  expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
-});
-
 it('should reset the groupby and visualization when changing process definition and groupby is variable', async () => {
   const spy = jest.fn();
   const node = shallow(

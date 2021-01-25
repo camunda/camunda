@@ -503,7 +503,8 @@
     "missingAssignee": "Unassigned",
     "runningEndedFlowNodeWarning": "Only completed flow nodes are considered when grouping by End Date. Therefore, adding 'running' flow node status filter will show no results",
     "missingVariable": "Missing variable",
-    "nonExistingVariable": "Variable does not exist"
+    "nonExistingVariable": "Variable does not exist",
+    "nonExistingFlowNode": "Flow Node(s) does not exist"
   },
   "dashboard": {
     "label": "Dashboard",

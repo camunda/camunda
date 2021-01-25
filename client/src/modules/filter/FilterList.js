@@ -101,11 +101,17 @@ export default class FilterList extends React.Component {
         ) {
           const {values, operator} = filter.data;
           const flowNodeNames = this.props.flowNodeNames || {};
+          const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, values);
           const selectedNodes = values.map((id) => ({name: flowNodeNames[id], id}));
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li
+              key={i}
+              onClick={allFlowNodesExist ? this.props.openEditFilterModal(filter) : undefined}
+              className={classnames('listItem', {notEditable: !allFlowNodesExist})}
+            >
               <ActionItem
+                warning={!allFlowNodesExist && t('report.nonExistingFlowNode')}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -140,6 +146,7 @@ export default class FilterList extends React.Component {
           const filters = filter.data;
           const filtersCount = Object.keys(filters).length;
           const flowNodeNames = this.props.flowNodeNames || {};
+          const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, Object.keys(filters));
 
           const filterValues = (
             <div className="filterValues">
@@ -166,8 +173,13 @@ export default class FilterList extends React.Component {
           );
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li
+              key={i}
+              onClick={allFlowNodesExist ? this.props.openEditFilterModal(filter) : undefined}
+              className={classnames('listItem', {notEditable: !allFlowNodesExist})}
+            >
               <ActionItem
+                warning={!allFlowNodesExist && t('report.nonExistingFlowNode')}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -242,4 +254,9 @@ function checkVariableExistence(type, name, variables) {
   }
 
   return variables.some((variable) => variable.name === name);
+}
+
+function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
+  const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
+  return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
 }

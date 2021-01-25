@@ -123,17 +123,6 @@ export class BranchControlPanel extends React.Component {
                   processDefinitionKey: key,
                   processDefinitionVersions: versions,
                   tenantIds,
-                  filter: this.props.filter.filter(
-                    ({type}) =>
-                      ![
-                        'executedFlowNodes',
-                        'executingFlowNodes',
-                        'canceledFlowNodes',
-                        'assignee',
-                        'candidateGroup',
-                        'flowNodeDuration',
-                      ].includes(type)
-                  ),
                 })
               }
             />

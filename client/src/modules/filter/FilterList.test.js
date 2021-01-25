@@ -149,6 +149,24 @@ it('should display nodeListPreview for flow node filter', async () => {
   });
 });
 
+it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      data: {
+        operator: 'in',
+        values: ['flowNodeThatDoesNotExist'],
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should display a flow node filter with executing nodes', () => {
   const data = [
     {
@@ -224,6 +242,23 @@ it('should show flow node duration filter in expanded state if specified', () =>
   );
 
   expect(node.find('PreviewItemValue')).toExist();
+});
+
+it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
+  const data = [
+    {
+      type: 'flowNodeDuration',
+      data: {
+        flowNodeThatDoesNotExist: {operator: '<', value: 18, unit: 'hours'},
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
+  );
+
+  expect(node).toMatchSnapshot();
 });
 
 it('should display a running instances only filter', () => {

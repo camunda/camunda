@@ -84,7 +84,7 @@ export default withErrorHandling(
     }
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
-      const {view, groupBy, filter} = this.props.report.data;
+      const {view, groupBy} = this.props.report.data;
 
       const change = {
         processDefinitionKey: {$set: key},
@@ -123,19 +123,6 @@ export default withErrorHandling(
                 : null,
           },
           processPart: {$set: null},
-        },
-        filter: {
-          $set: filter.filter(
-            ({type}) =>
-              ![
-                'executedFlowNodes',
-                'executingFlowNodes',
-                'canceledFlowNodes',
-                'flowNodeDuration',
-                'assignee',
-                'candidateGroup',
-              ].includes(type)
-          ),
         },
       };
 

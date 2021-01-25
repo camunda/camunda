@@ -1,5 +1,97 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 1`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem notEditable"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      warning="Flow Node(s) does not exist"
+    >
+      <NodeListPreview
+        nodes={
+          Array [
+            Object {
+              "id": "flowNodeThatDoesNotExist",
+              "name": undefined,
+            },
+          ]
+        }
+        operator="in"
+        type="executedFlowNodes"
+      />
+    </ActionItem>
+  </li>
+</ul>
+`;
+
+exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 2`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem notEditable"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      warning="Flow Node(s) does not exist"
+    >
+      <span
+        className="parameterName"
+      >
+        Duration
+      </span>
+      <span>
+         
+        filter is applied to
+         
+      </span>
+      <Tooltip
+        content={
+          <div
+            className="filterValues"
+          >
+            <div>
+              <div
+                className="flowNode"
+              >
+                <PreviewItemValue>
+                  flowNodeThatDoesNotExist
+                </PreviewItemValue>
+                <span>
+                   
+                  is less than
+                   
+                </span>
+                <PreviewItemValue>
+                  18
+                   
+                  hours
+                </PreviewItemValue>
+              </div>
+            </div>
+          </div>
+        }
+        position="bottom"
+      >
+        <span
+          className="PreviewItemValue"
+        >
+          1
+           
+          Flow Node
+        </span>
+      </Tooltip>
+    </ActionItem>
+  </li>
+</ul>
+`;
+
 exports[`should disable editing and pass a warning to variablePreview if variable does not exist 1`] = `
 <ul
   className="FilterList"
@@ -38,6 +130,7 @@ exports[`should display a flow node duration filter 1`] = `
   >
     <ActionItem
       onClick={[Function]}
+      warning={false}
     >
       <span
         className="parameterName"
