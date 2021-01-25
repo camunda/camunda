@@ -137,7 +137,7 @@ spec:
         mountPath: /camunda/logs
         subPath: camunda-logs
   - name: gcloud
-    image: google/cloud-sdk:alpine
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
     imagePullPolicy: Always
     command: ["cat"]
     tty: true

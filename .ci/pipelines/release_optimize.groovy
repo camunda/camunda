@@ -95,7 +95,7 @@ spec:
         cpu: 2
         memory: 1Gi
   - name: gcloud
-    image: google/cloud-sdk:slim
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
