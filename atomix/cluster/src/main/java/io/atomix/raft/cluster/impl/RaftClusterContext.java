@@ -29,7 +29,6 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.JoinRequest;
-import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.Futures;
@@ -67,8 +66,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private volatile Configuration configuration;
   private volatile Scheduled joinTimeout;
   private volatile CompletableFuture<Void> joinFuture;
-  private volatile Scheduled leaveTimeout;
-  private volatile CompletableFuture<Void> leaveFuture;
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -232,41 +229,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       configure(new Configuration(0, 0, member.getLastUpdated().toEpochMilli(), activeMembers));
     }
     return join();
-  }
-
-  /** Leaves the cluster. */
-  @Override
-  public synchronized CompletableFuture<Void> leave() {
-    if (leaveFuture != null) {
-      return leaveFuture;
-    }
-
-    leaveFuture = new CompletableFuture<>();
-
-    raft.getThreadContext()
-        .execute(
-            () -> {
-              // If a join attempt is still underway, cancel the join and complete the join future
-              // exceptionally.
-              // The join future will be set to null once completed.
-              cancelJoinTimer();
-              if (joinFuture != null) {
-                joinFuture.completeExceptionally(
-                    new IllegalStateException("failed to join cluster"));
-              }
-
-              // If there are no remote members to leave, simply transition the server to INACTIVE.
-              if (getActiveMemberStates().isEmpty()
-                  && configuration.index() <= raft.getCommitIndex()) {
-                log.trace("Single member cluster. Transitioning directly to inactive.");
-                raft.transition(RaftServer.Role.INACTIVE);
-                leaveFuture.complete(null);
-              } else {
-                leave(leaveFuture);
-              }
-            });
-
-    return leaveFuture.whenComplete((result, error) -> leaveFuture = null);
   }
 
   @Override
@@ -474,62 +436,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
   }
 
-  /** Attempts to leave the cluster. */
-  private void leave(final CompletableFuture<Void> future) {
-    // Set a timer to retry the attempt to leave the cluster.
-    leaveTimeout =
-        raft.getThreadContext()
-            .schedule(
-                raft.getElectionTimeout(),
-                () -> {
-                  leave(future);
-                });
-
-    // Attempt to leave the cluster by submitting a LeaveRequest directly to the server state.
-    // Non-leader states should forward the request to the leader if there is one. Leader states
-    // will log, replicate, and commit the reconfiguration.
-    raft.getRaftRole()
-        .onLeave(LeaveRequest.builder().withMember(getMember()).build())
-        .whenComplete(
-            (response, error) -> {
-              // Cancel the leave timer.
-              cancelLeaveTimer();
-
-              if (error == null && response.status() == RaftResponse.Status.OK) {
-                final Configuration configuration =
-                    new Configuration(
-                        response.index(),
-                        response.term(),
-                        response.timestamp(),
-                        response.members());
-
-                // Configure the cluster and commit the configuration as we know the successful
-                // response
-                // indicates commitment.
-                configure(configuration).commit();
-                future.complete(null);
-              } else {
-                // Reset the leave timer.
-                leaveTimeout =
-                    raft.getThreadContext()
-                        .schedule(
-                            raft.getElectionTimeout(),
-                            () -> {
-                              leave(future);
-                            });
-              }
-            });
-  }
-
-  /** Cancels the leave timeout. */
-  private void cancelLeaveTimer() {
-    if (leaveTimeout != null) {
-      log.trace("Cancelling leave timeout");
-      leaveTimeout.cancel();
-      leaveTimeout = null;
-    }
-  }
-
   /**
    * Resets the cluster state to the persisted state.
    *
@@ -612,27 +518,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       raft.transition(member.getType());
     }
 
-    // Iterate through configured members and remove any that no longer exist in the configuration.
-    int i = 0;
-    while (i < remoteMembers.size()) {
-      final RaftMemberContext member = remoteMembers.get(i);
-      if (!configuration.members().contains(member.getMember())) {
-        members.remove(member.getMember());
-        remoteMembers.remove(i);
-        for (final List<RaftMemberContext> memberType : memberTypes.values()) {
-          memberType.remove(member);
-        }
-        membersMap.remove(member.getMember().memberId());
-        listeners.forEach(
-            l ->
-                l.event(
-                    new RaftClusterEvent(
-                        RaftClusterEvent.Type.LEAVE, member.getMember(), time.toEpochMilli())));
-      } else {
-        i++;
-      }
-    }
-
     // If the local member was removed from the cluster, remove it from the members list.
     if (!configuration.members().contains(member)) {
       members.remove(member);
@@ -656,9 +541,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public RaftClusterContext commit() {
     // Apply the configuration to the local server state.
     raft.transition(member.getType());
-    if (!configuration.members().contains(member) && leaveFuture != null) {
-      leaveFuture.complete(null);
-    }
 
     // If the local stored configuration is older than the committed configuration, overwrite it.
     if (raft.getMetaStore().loadConfiguration().index() < configuration.index()) {

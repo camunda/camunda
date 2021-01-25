@@ -26,8 +26,6 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
-import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -52,6 +50,7 @@ import org.slf4j.Logger;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
+
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
 
   private long pendingSnapshotStartTimestamp;
@@ -332,30 +331,6 @@ public class PassiveRole extends InactiveRole {
           .exceptionally(
               error ->
                   ReconfigureResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
-  }
-
-  @Override
-  public CompletableFuture<LeaveResponse> onLeave(final LeaveRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              LeaveResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::leave)
-          .exceptionally(
-              error ->
-                  LeaveResponse.builder()
                       .withStatus(RaftResponse.Status.ERROR)
                       .withError(RaftError.Type.NO_LEADER)
                       .build())
@@ -809,6 +784,7 @@ public class PassiveRole extends InactiveRole {
   }
 
   private static final class ResetWriterSnapshotListener implements PersistedSnapshotListener {
+
     private final ThreadContext threadContext;
     private final RaftLogWriter logWriter;
     private final Logger log;

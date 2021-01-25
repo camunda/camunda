@@ -277,24 +277,6 @@ public class RaftTest extends ConcurrentTestCase {
     assertTrue(follower.isLeader());
   }
 
-  /** Tests leaving a sever from a cluster. */
-  @Test
-  public void testServerLeave() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer server = servers.get(0);
-    server.leave().thenRun(this::resume);
-    await(30000);
-  }
-
-  /** Tests leaving the leader from a cluster. */
-  @Test
-  public void testLeaderLeave() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer server = getLeader(servers).get();
-    server.leave().thenRun(this::resume);
-    await(30000);
-  }
-
   /** Tests an active member joining the cluster. */
   @Test
   public void testActiveJoin() throws Throwable {
@@ -321,20 +303,6 @@ public class RaftTest extends ConcurrentTestCase {
           .thenRun(this::resume);
     }
     await(15000);
-  }
-
-  /** Tests joining and leaving the cluster, resizing the quorum. */
-  @Test
-  public void testResize() throws Throwable {
-    final RaftServer server = createServers(1).get(0);
-    final RaftServer joiner = createServer(nextNodeId());
-    joiner
-        .join(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-        .thenRun(this::resume);
-    await(15000);
-    server.leave().thenRun(this::resume);
-    await(15000);
-    joiner.leave().thenRun(this::resume);
   }
 
   /** Tests an active member join event. */

@@ -33,8 +33,6 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
-import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -260,61 +258,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 future.complete(
                     logResponse(
                         ReconfigureResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-              }
-            });
-    return future;
-  }
-
-  @Override
-  public CompletableFuture<LeaveResponse> onLeave(final LeaveRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    // If another configuration change is already under way, reject the configuration.
-    // If the leader index is 0 or is greater than the commitIndex, reject the join requests.
-    // Configuration changes should not be allowed until the leader has committed a no-op entry.
-    // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
-    if (configuring() || initializing()) {
-      return CompletableFuture.completedFuture(
-          logResponse(LeaveResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
-    }
-
-    // If the leaving member is not a known member of the cluster, complete the leave successfully.
-    if (raft.getCluster().getMember(request.member().memberId()) == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              LeaveResponse.builder()
-                  .withStatus(RaftResponse.Status.OK)
-                  .withMembers(raft.getCluster().getMembers())
-                  .build()));
-    }
-
-    final RaftMember member = request.member();
-
-    final Collection<RaftMember> members = raft.getCluster().getMembers();
-    members.remove(member);
-
-    final CompletableFuture<LeaveResponse> future = new CompletableFuture<>();
-    configure(members)
-        .whenComplete(
-            (index, error) -> {
-              if (error == null) {
-                future.complete(
-                    logResponse(
-                        LeaveResponse.builder()
-                            .withStatus(RaftResponse.Status.OK)
-                            .withIndex(index)
-                            .withTerm(raft.getCluster().getConfiguration().term())
-                            .withTime(raft.getCluster().getConfiguration().time())
-                            .withMembers(members)
-                            .build()));
-              } else {
-                future.complete(
-                    logResponse(
-                        LeaveResponse.builder()
                             .withStatus(RaftResponse.Status.ERROR)
                             .withError(RaftError.Type.PROTOCOL_ERROR)
                             .build()));

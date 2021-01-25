@@ -33,15 +33,6 @@ public interface RaftServerProtocol {
   CompletableFuture<JoinResponse> join(MemberId memberId, JoinRequest request);
 
   /**
-   * Sends a leave request to the given node.
-   *
-   * @param memberId the node to which to send the request
-   * @param request the request to send
-   * @return a future to be completed with the response
-   */
-  CompletableFuture<LeaveResponse> leave(MemberId memberId, LeaveRequest request);
-
-  /**
    * Sends a configure request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -113,16 +104,6 @@ public interface RaftServerProtocol {
 
   /** Unregisters the join request handler. */
   void unregisterJoinHandler();
-
-  /**
-   * Registers a leave request callback.
-   *
-   * @param handler the open session request handler to register
-   */
-  void registerLeaveHandler(Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler);
-
-  /** Unregisters the leave request handler. */
-  void unregisterLeaveHandler();
 
   /**
    * Registers a transfer request callback.

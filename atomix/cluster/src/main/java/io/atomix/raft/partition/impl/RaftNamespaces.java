@@ -28,8 +28,6 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
-import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -60,8 +58,8 @@ public final class RaftNamespaces {
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
           .register(JoinRequest.class)
           .register(JoinResponse.class)
-          .register(LeaveRequest.class)
-          .register(LeaveResponse.class)
+          .register(Void.class) // LeaveRequest
+          .register(Void.class) // LeaveResponse
           .register(ConfigureRequest.class)
           .register(ConfigureResponse.class)
           .register(ReconfigureRequest.class)

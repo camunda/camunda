@@ -203,7 +203,6 @@ public class RaftContext implements AutoCloseable {
     protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
     protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
     protocol.registerReconfigureHandler(request -> runOnContext(() -> role.onReconfigure(request)));
-    protocol.registerLeaveHandler(request -> runOnContext(() -> role.onLeave(request)));
     protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
     protocol.registerAppendHandler(request -> runOnContext(() -> role.onAppend(request)));
     protocol.registerPollHandler(request -> runOnContext(() -> role.onPoll(request)));
@@ -617,7 +616,6 @@ public class RaftContext implements AutoCloseable {
     protocol.unregisterInstallHandler();
     protocol.unregisterJoinHandler();
     protocol.unregisterReconfigureHandler();
-    protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();

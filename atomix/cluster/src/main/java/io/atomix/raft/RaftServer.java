@@ -206,11 +206,6 @@ public interface RaftServer {
    * #builder(MemberId) builder}. For {@link StorageLevel#DISK persistent} servers, subsequent
    * starts will result in the last known cluster configuration being loaded from disk.
    *
-   * <p>The returned {@link RaftCluster} can be used to modify the state of the cluster to which
-   * this server belongs. Note, however, that users need not explicitly {@link
-   * RaftCluster#join(MemberId...) join} or {@link RaftCluster#leave() leave} the cluster since
-   * starting and stopping the server results in joining and leaving the cluster respectively.
-   *
    * @return The server's cluster configuration.
    */
   RaftCluster cluster();
@@ -457,13 +452,6 @@ public interface RaftServer {
   CompletableFuture<Void> goInactive();
 
   /**
-   * Leaves the Raft cluster.
-   *
-   * @return A completable future to be completed once the server has left the cluster.
-   */
-  CompletableFuture<Void> leave();
-
-  /**
    * Returns the current Raft context.
    *
    * @return the current Raft context
@@ -641,7 +629,6 @@ public interface RaftServer {
      * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
      * This factory is useful in testing, when we want to control the execution.
      *
-     * @param randomFactory
      * @return The Raft server builder.
      */
     public Builder withRandomFactory(final Supplier<Random> randomFactory) {
@@ -738,7 +725,7 @@ public interface RaftServer {
     /**
      * Represents the state of an inactive server.
      *
-     * <p>All servers start in this state and return to this state when {@link #leave() stopped}.
+     * <p>All servers start in this state.
      */
     INACTIVE(false),
 
