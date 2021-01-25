@@ -37,7 +37,7 @@
       <type>test-jar</type>
     </dependency>
 
-    <!-- CAM BPM dependencies -->
+    <!-- Camunda Platform dependencies -->
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>

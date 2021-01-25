@@ -144,7 +144,7 @@
               </envVars>
             </configuration>
             <executions>
-              <!-- Starting CamBPM, old and new ES through docker-compose -->
+              <!-- Starting Camunda Platform, old and new ES through docker-compose -->
               <execution>
                 <id>docker-compose-start</id>
                 <phase>pre-integration-test</phase>

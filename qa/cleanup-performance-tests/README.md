@@ -16,7 +16,7 @@ Prerequisites:
 to be able to connect to the Elasticsearch and the engine.
 
 There are two test suites built into this test module, separated using maven profiles:
-1. Test Camunda BPM engine data cleanup (decision and process instance data)
+1. Test Camunda Platform engine data cleanup (decision and process instance data)
 They can be run using the maven profile `engine-cleanup-performance`:
 
 ```

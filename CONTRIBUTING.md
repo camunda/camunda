@@ -12,9 +12,9 @@ We would love you to contribute to this project. You can do so in various ways.
 
 ## Commit Message Conventions
 
-> This page defines a convention for commit messages for [camundaBPM](http://camunda.org) related projects.
+> This page defines a convention for commit messages for [Camunda Platform](http://camunda.org) related projects.
 >
-> All commits pushed to the [camunda BPM](https://github.com/camunda) repositories must conform to that convention.
+> All commits pushed to the [Camunda Platform](https://github.com/camunda) repositories must conform to that convention.
 
 The contents of this page are partly based on the [angular commit messages document](https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y/edit?pli=1).
 

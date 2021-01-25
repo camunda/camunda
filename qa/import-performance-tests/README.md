@@ -2,7 +2,7 @@
 
 In order to measure performance of the import process of a static data set the following steps are required
 
-* start Camunda BPM Platform with one of the supported databases 
+* start Camunda Platform with one of the supported databases 
 * populate test data into Platform 
 * run import process 
 * evaluate results\ prepare report 
@@ -13,7 +13,7 @@ to start the tests one could use following command
 mvn -Pstatic-data-import-performance-test clean verify
 ```
 
-please note that test relies on the fact that you already have Camunda BPM Platform started and 
+please note that test relies on the fact that you already have Camunda Platform started and 
 configured to connect ot the database against which test will be run. Elasticsearch
 instance will be started by maven.
 
@@ -21,7 +21,7 @@ instance will be started by maven.
 
 In order to measure performance of the import process while the engine is generating data
 
-* start Camunda BPM, postgres and elasticsearch using the following docker commands
+* start Camunda Platform, postgres and elasticsearch using the following docker commands
 
 ```
 docker-compose -f ../../docker-compose.postgresql.yml up -d --force-recreate
@@ -35,18 +35,18 @@ mvn -Plive-data-import-performance-test clean verify
 
 
 
-## Camunda BP Platform 
+## Camunda Platform 
 
-Test itself does not provide Camunda BPM Platform, but rather relies on connection properties to an instance 
+Test itself does not provide Camunda Platform, but rather relies on connection properties to an instance 
 which is already configured in desired manner. Following setups are recommended for execution: 
 
-* Tomcat distribution of Camunda BPM Platform with PostgreSQL database 
-* Tomcat distribution of Camunda BPM Platform with Oracle database
+* Tomcat distribution of Camunda Platform with PostgreSQL database 
+* Tomcat distribution of Camunda Platform with Oracle database
 
 You are strongly encouraged to use one of the [Docker containers][docker-containers] already provided by 
 Camunda. Otherwise you have to perform following steps: 
 
-* download Camunda BPM Platform distribution [[1]][camunda-distro]
+* download Camunda Platform distribution [[1]][camunda-distro]
 * download install and configure Database of your choice 
 * download JDBC driver required to work with your database into _lib_ folder of application server
 * adjust _server.xml_, replacing datasource properties with configuration parameters required in order

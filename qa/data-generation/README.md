@@ -9,7 +9,7 @@ varying amount of versions. The diagrams try to cover all possible
 BPMN symbols. The process instance instantiation is done
 with variables containing each possible variable type in Camunda.
 
-Before you can start the data generation the Camunda BPM platform
+Before you can start the data generation the Camunda Platform
 must have already been started.  
 
 **Important note:** the user operations log will only be written to the Engine if the property 
