@@ -21,7 +21,6 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.rocksdb.Loggers;
 import java.io.File;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +47,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
   private final OptimisticTransactionDB optimisticTransactionDB;
   private final List<AutoCloseable> closables;
-  private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
   private final WriteOptions defaultWriteOptions;
@@ -57,11 +55,9 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
-      final EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
       final List<AutoCloseable> closables) {
     this.defaultHandle = defaultHandle;
     this.optimisticTransactionDB = optimisticTransactionDB;
-    this.columnFamilyMap = columnFamilyMap;
     this.closables = closables;
 
     prefixReadOptions =
@@ -83,15 +79,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
           final Options options, final String path, final List<AutoCloseable> closables)
           throws RocksDBException {
-    final EnumMap<ColumnFamilyNames, Long> columnFamilyMap = new EnumMap<>(columnFamilyTypeClass);
-
     final OptimisticTransactionDB optimisticTransactionDB =
         OptimisticTransactionDB.open(options, path);
     closables.add(optimisticTransactionDB);
     final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
-    return new ZeebeTransactionDb<>(
-        defaultColumnFamilyHandle, optimisticTransactionDB, columnFamilyMap, closables);
+    return new ZeebeTransactionDb<>(defaultColumnFamilyHandle, optimisticTransactionDB, closables);
   }
 
   private static long getNativeHandle(final RocksObject object) {
@@ -191,8 +184,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
-  public Optional<String> getProperty(
-      final ColumnFamilyNames columnFamilyName, final String propertyName) {
+  public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {
       propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);

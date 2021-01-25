@@ -13,19 +13,13 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * This class exports metrics for a RocksDB instance to Prometheus.
- *
- * @param <ColumnFamilyType>
- */
+/** This class exports metrics for a RocksDB instance to Prometheus. */
 public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<ColumnFamilyType>> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
 
   private static final String PARTITION = "partition";
-  private static final String COLUMN_FAMILY_NAME = "columnFamilyName";
-  private static final String PROPERTY_NAME = "propertyName";
   private static final String ZEEBE_NAMESPACE = "zeebe";
 
   private static final String MEMORY_METRICS_HELP =
@@ -77,41 +71,33 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
 
   private final String partition;
   private final ZeebeDb<ColumnFamilyType> database;
-  private final Class<ColumnFamilyType> columnFamilyTypeClass;
 
   public ZeebeRocksDBMetricExporter(
-      final String partition,
-      final ZeebeDb<ColumnFamilyType> database,
-      final Class<ColumnFamilyType> columnFamilyTypeClass) {
+      final String partition, final ZeebeDb<ColumnFamilyType> database) {
     this.partition = Objects.requireNonNull(partition);
     this.database = Objects.requireNonNull(database);
-    this.columnFamilyTypeClass = Objects.requireNonNull(columnFamilyTypeClass);
   }
 
   public void exportMetrics() {
     final long startTime = System.currentTimeMillis();
-    for (final ColumnFamilyType columnFamilyName : columnFamilyTypeClass.getEnumConstants()) {
-
-      exportMetrics(columnFamilyName, MEMORY_METRICS);
-      exportMetrics(columnFamilyName, LIVE_METRICS);
-      exportMetrics(columnFamilyName, SST_METRICS);
-      exportMetrics(columnFamilyName, WRITE_METRICS);
-    }
+    exportMetrics(MEMORY_METRICS);
+    exportMetrics(LIVE_METRICS);
+    exportMetrics(SST_METRICS);
+    exportMetrics(WRITE_METRICS);
 
     final long elapsedTime = System.currentTimeMillis() - startTime;
-    LOG.trace("Exporting RocksDBMetrics took + " + elapsedTime + " ms");
+    LOG.trace("Exporting RocksDBMetrics took + {} ms", elapsedTime);
   }
 
-  private void exportMetrics(
-      final ColumnFamilyType columnFamilyName, final RocksDBMetric[] metrics) {
+  private void exportMetrics(final RocksDBMetric[] metrics) {
     for (final RocksDBMetric metric : metrics) {
       try {
         database
-            .getProperty(columnFamilyName, metric.getPropertyName())
+            .getProperty(metric.getPropertyName())
             .map(Double::parseDouble)
-            .ifPresent(value -> metric.exportValue(partition, columnFamilyName, value));
-      } catch (Throwable t) {
-        LOG.debug(t.getMessage(), t);
+            .ifPresent(value -> metric.exportValue(partition, value));
+      } catch (final Exception exception) {
+        LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
       }
     }
   }
@@ -121,7 +107,7 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
     private final String propertyName;
     private final Gauge gauge;
 
-    private RocksDBMetric(String propertyName, String namePrefix, String help) {
+    private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
 
       gauge =
@@ -129,7 +115,7 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
               .namespace(ZEEBE_NAMESPACE)
               .name(namePrefix + gaugeSuffix())
               .help(help)
-              .labelNames(PARTITION, COLUMN_FAMILY_NAME)
+              .labelNames(PARTITION)
               .register();
     }
 
@@ -139,8 +125,8 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
       return suffix.replaceAll("-", "_");
     }
 
-    public void exportValue(String partitionID, Enum columnFamilyName, Double value) {
-      gauge.labels(partitionID, columnFamilyName.name().toLowerCase()).set(value);
+    public void exportValue(final String partitionID, final Double value) {
+      gauge.labels(partitionID).set(value);
     }
 
     public String getPropertyName() {
