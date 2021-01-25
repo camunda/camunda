@@ -46,18 +46,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 
-/** Storage serializer namespaces. */
+/**
+ * Storage serializer namespaces.
+ */
 public final class RaftNamespaces {
 
-  /** Raft protocol namespace. */
+  /**
+   * Raft protocol namespace.
+   */
   public static final Namespace RAFT_PROTOCOL =
       new Builder()
           .register(Namespaces.BASIC)
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(Void.class) // JoinRequest
-          .register(Void.class) // JoinResponse
-          .register(Void.class) // LeaveRequest
-          .register(Void.class) // LeaveResponse
           .register(ConfigureRequest.class)
           .register(ConfigureResponse.class)
           .register(ReconfigureRequest.class)
@@ -111,5 +111,6 @@ public final class RaftNamespaces {
           .name("RaftStorage")
           .build();
 
-  private RaftNamespaces() {}
+  private RaftNamespaces() {
+  }
 }
