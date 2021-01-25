@@ -653,7 +653,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE))
+      .isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
   }
 

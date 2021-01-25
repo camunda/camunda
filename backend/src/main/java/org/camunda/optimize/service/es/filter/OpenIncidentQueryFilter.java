@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.IncidentFilterQueryUtil.createOpenIncidentFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil.createOpenIncidentTermQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
@@ -28,7 +28,7 @@ public class OpenIncidentQueryFilter implements QueryFilter<OpenIncidentFilterDa
                          final ZoneId timezone) {
     if (!CollectionUtils.isEmpty(withOpenIncident)) {
       List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(INCIDENTS, createOpenIncidentFilterQuery(), ScoreMode.None));
+      filters.add(nestedQuery(INCIDENTS, createOpenIncidentTermQuery(), ScoreMode.None));
     }
   }
 

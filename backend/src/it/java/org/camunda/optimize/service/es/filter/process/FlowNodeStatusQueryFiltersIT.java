@@ -174,8 +174,8 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .buildList();
     final ReportMapResultDto result = evaluateReport(processDefinition, flowNodeFilter);
 
-    // then the instance count is 2 as two instances have flow nodes matching the filters
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    // then
+    assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     // but no data is contained as no flow node can be running AND completed/canceled
     assertThat(result.getData()).isEmpty();

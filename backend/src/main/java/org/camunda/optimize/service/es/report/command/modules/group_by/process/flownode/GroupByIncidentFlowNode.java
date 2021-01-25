@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.IncidentFilterQueryUtil.createIncidentAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil.createIncidentAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;

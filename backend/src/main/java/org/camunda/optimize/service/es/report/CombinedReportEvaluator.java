@@ -74,7 +74,7 @@ public class CombinedReportEvaluator {
     } catch (IOException e) {
       final String message = String.format(
         "Could not count instances in combined report with single report IDs: [%s]",
-        singleReportDefinitions.stream().map(def -> def.getId())
+        singleReportDefinitions.stream().map(ReportDefinitionDto::getId)
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);

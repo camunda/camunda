@@ -84,12 +84,6 @@ public class ReportClient {
   }
 
   public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds) {
-    updateCombinedReport(combinedReportId, containedReportIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds,
-                                    String username,
-                                    String password) {
     final CombinedReportDefinitionRequestDto combinedReportData = new CombinedReportDefinitionRequestDto();
     combinedReportData.getData()
       .getReports()
@@ -100,7 +94,7 @@ public class ReportClient {
       );
     getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
-      .withUserAuthentication(username, password)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute();
   }
 
@@ -613,15 +607,6 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<NumberResultDto>>() {});
-      // @formatter:on
-  }
-
-  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithRawDataResult(
-    final ProcessReportDataDto reportData) {
-    return getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 

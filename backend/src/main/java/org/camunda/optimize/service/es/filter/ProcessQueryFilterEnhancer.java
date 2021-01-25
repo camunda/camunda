@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
@@ -32,6 +34,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -43,9 +48,12 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
 
+  @Getter
   private final StartDateQueryFilter startDateQueryFilter;
+  @Getter
   private final EndDateQueryFilter endDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
@@ -107,14 +115,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(
         query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone);
     }
-  }
-
-  public StartDateQueryFilter getStartDateQueryFilter() {
-    return startDateQueryFilter;
-  }
-
-  public EndDateQueryFilter getEndDateQueryFilter() {
-    return endDateQueryFilter;
+    addInstanceFilterForViewLevelMatching(query, filters);
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -126,4 +127,12 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       .map(dateFilter -> (T) dateFilter.getData())
       .collect(Collectors.toList());
   }
+
+  private void addInstanceFilterForViewLevelMatching(final BoolQueryBuilder query,
+                                                     final List<ProcessFilterDto<?>> filters) {
+    UserTaskFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
+    FlowNodeFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
+    IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
+  }
+
 }
