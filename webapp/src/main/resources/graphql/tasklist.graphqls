@@ -1,4 +1,4 @@
-# Describes the User task
+# Describes the User task.
 type Task {
     # The unique identifier of the task
     id: ID!
@@ -18,8 +18,6 @@ type Task {
     taskState: TaskState!
     #Array of values to be copied into `TaskQuery` to request for next or previous page of tasks.
     sortValues: [String!]
-    hasNext: Boolean!
-    hasPrevious: Boolean!
 }
 
 #Task query - query to get one page of tasks.
@@ -32,34 +30,38 @@ input TaskQuery {
     assignee: String
     #Size of tasks page (default: 50).
     pageSize: Int
-    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values.
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values plus same sort values.
     searchAfter: [String!]
-    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly before this values.
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values.
+    searchAfterOrEqual: [String!]
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly before this values plus same sort values.
     searchBefore: [String!]
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly before this values.
+    searchBeforeOrEqual: [String!]
 }
-# State of the task
+# State of the task.
 enum TaskState {
     CREATED,
     COMPLETED,
     CANCELED
 }
-# Variable used in task
+# Variable used in task.
 type Variable {
     name: String!
     value: String!
 }
-# Change or add a variable with name and value
+# Change or add a variable with name and value.
 input VariableInput {
     name: String!
     value: String!
 }
-# Describes the user
+# Describes the user.
 type User {
     username: ID!
     firstname: String
     lastname: String
 }
-# What can be searched for
+# What can be searched for.
 type Query {
     # Get list of tasks based on `TaskQuery`.
     tasks(query: TaskQuery!): [Task!]!
@@ -68,7 +70,7 @@ type Query {
     # Get currently logged in user.
     currentUser: User!
 }
-# What can be changed
+# What can be changed.
 type Mutation {
     # Complete a task with taskId and optional variables. Returns the task.
     completeTask(taskId: String!, variables: [VariableInput!]!): Task!

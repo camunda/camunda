@@ -167,6 +167,82 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertTasksPage(response, 5, null, sortValues);
   }
 
+  @Test
+  public void shouldReturnPagesWithAfterBeforeOrEqual() throws IOException {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+
+    tester
+        .having()
+        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
+        .waitUntil()
+        .workflowIsDeployed()
+        .and()
+        .startWorkflowInstances(bpmnProcessId, 10)
+        .waitUntil()
+        .tasksAreCreated(flowNodeBpmnId, 10);
+
+    // when querying page 1
+    final ObjectNode queryPage1 = objectMapper.createObjectNode();
+    queryPage1.putObject("query").put("pageSize", 3);
+    final GraphQLResponse responsePage1 = tester.getTasksByQueryAsVariable(queryPage1);
+
+    // then
+    assertEquals("3", responsePage1.get("$.data.tasks.length()"));
+    List<String> sortValues = responsePage1.getList("$.data.tasks[2].sortValues", String.class);
+
+    // when querying page 2
+    final ObjectNode query1Page2 = objectMapper.createObjectNode();
+    query1Page2
+        .putObject("query")
+        .put("pageSize", 4)
+        .putArray("searchAfter")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    final GraphQLResponse response1Page2 = tester.getTasksByQueryAsVariable(query1Page2);
+
+    // then
+    assertEquals("4", response1Page2.get("$.data.tasks.length()"));
+    sortValues = response1Page2.getList("$.data.tasks[0].sortValues", String.class);
+
+    // when querying page 2 once again with searchAfterOrEqual
+    final ObjectNode query2Page2 = objectMapper.createObjectNode();
+    query2Page2
+        .putObject("query")
+        .put("pageSize", 4)
+        .putArray("searchAfterOrEqual")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    final GraphQLResponse response2Page2 = tester.getTasksByQueryAsVariable(query2Page2);
+
+    // then
+    assertEquals("4", response2Page2.get("$.data.tasks.length()"));
+    for (int i = 0; i < 4; i++) {
+      final String taskJsonPath = String.format("$.data.tasks[%d]", i);
+      assertEquals(
+          response1Page2.get(taskJsonPath + ".id"), response2Page2.get(taskJsonPath + ".id"));
+    }
+    sortValues = response1Page2.getList("$.data.tasks[3].sortValues", String.class);
+
+    // when querying page 2 once again with searchBeforeOrEqual
+    final ObjectNode query3Page2 = objectMapper.createObjectNode();
+    query3Page2
+        .putObject("query")
+        .put("pageSize", 4)
+        .putArray("searchBeforeOrEqual")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    final GraphQLResponse response3Page2 = tester.getTasksByQueryAsVariable(query3Page2);
+
+    // then
+    assertEquals("4", response3Page2.get("$.data.tasks.length()"));
+    for (int i = 0; i < 4; i++) {
+      final String taskJsonPath = String.format("$.data.tasks[%d]", i);
+      assertEquals(
+          response1Page2.get(taskJsonPath + ".id"), response3Page2.get(taskJsonPath + ".id"));
+    }
+  }
+
   private void assertTasksPage(
       final GraphQLResponse response,
       int pageSize,

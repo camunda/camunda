@@ -19,7 +19,9 @@ public class TaskQueryDTO {
 
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
+  private String[] searchAfterOrEqual;
   private String[] searchBefore;
+  private String[] searchBeforeOrEqual;
 
   public TaskState getState() {
     return state;
@@ -66,6 +68,15 @@ public class TaskQueryDTO {
     return this;
   }
 
+  public String[] getSearchAfterOrEqual() {
+    return searchAfterOrEqual;
+  }
+
+  public TaskQueryDTO setSearchAfterOrEqual(final String[] searchAfterOrEqual) {
+    this.searchAfterOrEqual = searchAfterOrEqual;
+    return this;
+  }
+
   public String[] getSearchBefore() {
     return searchBefore;
   }
@@ -73,6 +84,27 @@ public class TaskQueryDTO {
   public TaskQueryDTO setSearchBefore(final String[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
+  }
+
+  public String[] getSearchBeforeOrEqual() {
+    return searchBeforeOrEqual;
+  }
+
+  public TaskQueryDTO setSearchBeforeOrEqual(final String[] searchBeforeOrEqual) {
+    this.searchBeforeOrEqual = searchBeforeOrEqual;
+    return this;
+  }
+
+  public TaskQueryDTO createCopy() {
+    return new TaskQueryDTO()
+        .setAssigned(this.assigned)
+        .setAssignee(this.assignee)
+        .setPageSize(this.pageSize)
+        .setSearchAfter(this.searchAfter)
+        .setSearchAfterOrEqual(this.searchAfterOrEqual)
+        .setSearchBefore(this.searchBefore)
+        .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
+        .setState(this.state);
   }
 
   @Override
@@ -89,14 +121,18 @@ public class TaskQueryDTO {
         && Objects.equals(assigned, that.assigned)
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(searchAfter, that.searchAfter)
-        && Arrays.equals(searchBefore, that.searchBefore);
+        && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
+        && Arrays.equals(searchBefore, that.searchBefore)
+        && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual);
   }
 
   @Override
   public int hashCode() {
     int result = Objects.hash(state, assigned, assignee, pageSize);
     result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
     result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
     return result;
   }
 }

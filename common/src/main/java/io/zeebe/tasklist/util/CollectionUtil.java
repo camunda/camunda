@@ -158,4 +158,8 @@ public abstract class CollectionUtil {
   public static String[] toArrayOfStrings(final Object[] items) {
     return Arrays.stream(items).map(String::valueOf).toArray(String[]::new);
   }
+
+  public static long countNonNullObjects(Object... objects) {
+    return Arrays.stream(objects).filter(o -> o != null).count();
+  }
 }

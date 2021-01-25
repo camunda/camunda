@@ -37,6 +37,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -115,7 +116,66 @@ public class TaskReaderWriter {
   }
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
-    final QueryBuilder esQuery = buildQuery(query);
+    final List<TaskDTO> response = queryTasks(query, fieldNames);
+
+    // query one additional instance
+    if (query.getSearchAfterOrEqual() != null || query.getSearchBeforeOrEqual() != null) {
+      adjustResponse(response, query, fieldNames);
+    }
+
+    return response;
+  }
+
+  /**
+   * In case of searchAfterOrEqual and searchBeforeOrEqual add additional task either at the
+   * beginning of the list, or at the end, to conform with "orEqual" part.
+   *
+   * @param response
+   * @param request
+   */
+  private void adjustResponse(
+      final List<TaskDTO> response, final TaskQueryDTO request, List<String> fieldNames) {
+    String taskId = null;
+    if (request.getSearchAfterOrEqual() != null) {
+      taskId = request.getSearchAfterOrEqual()[1];
+    } else if (request.getSearchBeforeOrEqual() != null) {
+      taskId = request.getSearchBeforeOrEqual()[1];
+    }
+
+    final TaskQueryDTO newRequest =
+        request
+            .createCopy()
+            .setSearchAfter(null)
+            .setSearchAfterOrEqual(null)
+            .setSearchBefore(null)
+            .setSearchBeforeOrEqual(null);
+
+    final List<TaskDTO> tasks = queryTasks(newRequest, fieldNames, taskId);
+    if (tasks.size() > 0) {
+      final TaskDTO entity = tasks.get(0);
+      if (request.getSearchAfterOrEqual() != null) {
+        // insert at the beginning of the list and remove the last element
+        if (response.size() == request.getPageSize()) {
+          response.remove(response.size() - 1);
+        }
+        response.add(0, entity);
+      } else if (request.getSearchBeforeOrEqual() != null) {
+        // insert at the end of the list and remove the first element
+        if (response.size() == request.getPageSize()) {
+          response.remove(0);
+        }
+        response.add(entity);
+      }
+    }
+  }
+
+  private List<TaskDTO> queryTasks(final TaskQueryDTO query, List<String> fieldNames) {
+    return queryTasks(query, fieldNames, null);
+  }
+
+  private List<TaskDTO> queryTasks(
+      final TaskQueryDTO query, List<String> fieldNames, String taskId) {
+    final QueryBuilder esQuery = buildQuery(query, taskId);
     // TODO #104 define list of fields
 
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
@@ -144,7 +204,7 @@ public class TaskReaderWriter {
                         objectMapper);
                 return entity;
               });
-      if (query.getSearchBefore() != null) {
+      if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
         Collections.reverse(tasks);
       }
       return tasks;
@@ -155,7 +215,7 @@ public class TaskReaderWriter {
     }
   }
 
-  private QueryBuilder buildQuery(TaskQueryDTO query) {
+  private QueryBuilder buildQuery(TaskQueryDTO query, String taskId) {
     QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
     if (query.getState() != null) {
       stateQ = termQuery(TaskTemplate.STATE, query.getState());
@@ -172,16 +232,29 @@ public class TaskReaderWriter {
     if (query.getAssignee() != null) {
       assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
     }
-    QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ);
+    IdsQueryBuilder idsQuery = null;
+    if (taskId != null) {
+      idsQuery = idsQuery().addIds(taskId);
+    }
+    QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ, idsQuery);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }
     return constantScoreQuery(jointQ);
   }
 
+  /**
+   * In case of searchAfterOrEqual and searchBeforeOrEqual, this method will ignore "orEqual" part.
+   *
+   * @param searchSourceBuilder
+   * @param query
+   */
   private void applySorting(SearchSourceBuilder searchSourceBuilder, TaskQueryDTO query) {
 
-    final boolean directSorting = query.getSearchAfter() != null || query.getSearchBefore() == null;
+    final boolean directSorting =
+        query.getSearchAfter() != null
+            || query.getSearchAfterOrEqual() != null
+            || (query.getSearchBefore() == null && query.getSearchBeforeOrEqual() == null);
 
     final String sort1Field =
         getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
@@ -194,14 +267,22 @@ public class TaskReaderWriter {
     }
 
     final SortBuilder sort2;
-    final Object[] querySearchAfter;
+    Object[] querySearchAfter = null; // may be null
     if (directSorting) { // this sorting is also the default one for 1st page
       sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.ASC);
-      querySearchAfter = query.getSearchAfter(); // may be null
+      if (query.getSearchAfter() != null) {
+        querySearchAfter = query.getSearchAfter();
+      } else if (query.getSearchAfterOrEqual() != null) {
+        querySearchAfter = query.getSearchAfterOrEqual();
+      }
     } else { // searchBefore != null
       // reverse sorting
       sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.DESC);
-      querySearchAfter = query.getSearchBefore();
+      if (query.getSearchBefore() != null) {
+        querySearchAfter = query.getSearchBefore();
+      } else if (query.getSearchBeforeOrEqual() != null) {
+        querySearchAfter = query.getSearchBeforeOrEqual();
+      }
     }
 
     searchSourceBuilder.sort(sort1).sort(sort2).size(query.getPageSize());
