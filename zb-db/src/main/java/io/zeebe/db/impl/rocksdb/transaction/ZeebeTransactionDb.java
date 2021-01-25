@@ -20,7 +20,6 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.rocksdb.Loggers;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -29,12 +28,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
 import org.rocksdb.Checkpoint;
-import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.DBOptions;
 import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
@@ -52,7 +49,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final OptimisticTransactionDB optimisticTransactionDB;
   private final List<AutoCloseable> closables;
   private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
-  private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
   private final WriteOptions defaultWriteOptions;
@@ -62,15 +58,20 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
-      final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap,
       final List<AutoCloseable> closables) {
     this.defaultHandle = defaultHandle;
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.columnFamilyMap = columnFamilyMap;
-    this.handelToEnumMap = handelToEnumMap;
     this.closables = closables;
 
-    prefixReadOptions = new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
+    prefixReadOptions =
+        new ReadOptions()
+            .setPrefixSameAsStart(true)
+            .setTotalOrderSeek(false)
+            // setting a positive value to readahead is only useful when using network storage with
+            // high latency, at the cost of making iterators expensiver (memory and computation
+            // wise)
+            .setReadaheadSize(0);
     closables.add(prefixReadOptions);
     defaultReadOptions = new ReadOptions();
     closables.add(defaultReadOptions);
@@ -80,32 +81,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final DBOptions options,
-          final String path,
-          final List<ColumnFamilyDescriptor> columnFamilyDescriptors,
-          final List<AutoCloseable> closables,
-          final Class<ColumnFamilyNames> columnFamilyTypeClass)
+          final Options options, final String path, final List<AutoCloseable> closables)
           throws RocksDBException {
     final EnumMap<ColumnFamilyNames, Long> columnFamilyMap = new EnumMap<>(columnFamilyTypeClass);
 
-    final List<ColumnFamilyHandle> handles = new ArrayList<>();
     final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(
-            options, path, List.of(columnFamilyDescriptors.get(0)), handles);
+        OptimisticTransactionDB.open(options, path);
     closables.add(optimisticTransactionDB);
-    final var defaultHandle = handles.get(0);
-
-    final ColumnFamilyNames[] enumConstants = columnFamilyTypeClass.getEnumConstants();
-    final Long2ObjectHashMap<ColumnFamilyHandle> handleToEnumMap = new Long2ObjectHashMap<>();
-    for (int i = 0; i < handles.size(); i++) {
-      final ColumnFamilyHandle columnFamilyHandle = handles.get(i);
-      closables.add(columnFamilyHandle);
-      columnFamilyMap.put(enumConstants[i], getNativeHandle(columnFamilyHandle));
-      handleToEnumMap.put(getNativeHandle(handles.get(i)), handles.get(i));
-    }
+    final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
     return new ZeebeTransactionDb<>(
-        defaultHandle, optimisticTransactionDB, columnFamilyMap, handleToEnumMap, closables);
+        defaultColumnFamilyHandle, optimisticTransactionDB, columnFamilyMap, closables);
   }
 
   private static long getNativeHandle(final RocksObject object) {
@@ -117,7 +103,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     }
   }
 
-  long getColumnFamilyHandle(final ColumnFamilyNames columnFamily) {
+  long getColumnFamilyHandle() {
     return getNativeHandle(defaultHandle);
   }
 
@@ -207,12 +193,9 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   @Override
   public Optional<String> getProperty(
       final ColumnFamilyNames columnFamilyName, final String propertyName) {
-
-    final var handle = handelToEnumMap.get(columnFamilyMap.get(columnFamilyName));
-
     String propertyValue = null;
     try {
-      propertyValue = optimisticTransactionDB.getProperty(handle, propertyName);
+      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
     } catch (final RocksDBException rde) {
       LOG.debug(rde.getMessage(), rde);
     }
@@ -248,10 +231,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   //////////////////////////// ITERATION /////////////////////////////
   ////////////////////////////////////////////////////////////////////
 
-  RocksIterator newIterator(
-      final long columnFamilyHandle, final DbContext context, final ReadOptions options) {
-    final ColumnFamilyHandle handle = handelToEnumMap.get(columnFamilyHandle);
-    return context.newIterator(options, handle);
+  RocksIterator newIterator(final DbContext context, final ReadOptions options) {
+    return context.newIterator(options, defaultHandle);
   }
 
   protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
@@ -275,8 +256,10 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
         });
   }
 
-  // This method is used mainly from other iterator methods to iterate over column family entries,
-  // which are prefixed with column family key.
+  /**
+   * This method is used mainly from other iterator methods to iterate over column family entries,
+   * which are prefixed with column family key.
+   */
   protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
       final DbLong columnFamilyKey,
       final long columnFamilyHandle,
@@ -338,8 +321,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
             ensureInOpenTransaction(
                 context,
                 transaction -> {
-                  try (final RocksIterator iterator =
-                      newIterator(columnFamilyHandle, context, prefixReadOptions)) {
+                  try (final RocksIterator iterator = newIterator(context, prefixReadOptions)) {
 
                     columnFamilyKey.write(prefixKeyBuffer, 0);
                     prefix.write(prefixKeyBuffer, Long.BYTES);
