@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
@@ -15,6 +16,8 @@ import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CH
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
@@ -66,6 +69,10 @@ public class TasklistTester {
   private TestCheck taskIsCreatedCheck;
 
   @Autowired
+  @Qualifier(TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
+  private TestCheck tasksAreCreatedCheck;
+
+  @Autowired
   @Qualifier(TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCanceledCheck;
 
@@ -84,6 +91,8 @@ public class TasklistTester {
   @Autowired private TaskMutationResolver taskMutationResolver;
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
+
+  @Autowired private ObjectMapper objectMapper;
 
   private GraphQLResponse graphQLResponse;
 
@@ -165,7 +174,13 @@ public class TasklistTester {
   }
 
   public GraphQLResponse getAllTasks() throws IOException {
-    graphQLResponse = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    final ObjectNode query = objectMapper.createObjectNode();
+    query.putObject("query");
+    return this.getTasksByQueryAsVariable(query);
+  }
+
+  public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables) throws IOException {
+    graphQLResponse = graphQLTestTemplate.perform("graphql/get-tasks-by-query.graphql", variables);
     return graphQLResponse;
   }
 
@@ -242,6 +257,14 @@ public class TasklistTester {
   public TasklistTester taskIsCreated(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
         taskIsCreatedCheck, workflowInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+    return this;
+  }
+
+  public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
+    elasticsearchTestRule.processAllRecordsAndWait(
+        tasksAreCreatedCheck, workflowInstanceId, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;

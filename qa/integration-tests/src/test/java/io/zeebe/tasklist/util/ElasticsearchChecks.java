@@ -45,6 +45,8 @@ public class ElasticsearchChecks {
 
   public static final String TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCreatedByFlowNodeBpmnIdCheck";
+  public static final String TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK =
+      "tasksAreCreatedByFlowNodeBpmnIdCheck";
   public static final String TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCanceledByFlowNodeBpmnIdCheck";
   public static final String TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK =
@@ -153,6 +155,42 @@ public class ElasticsearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CREATED);
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  /**
+   * Checks whether the tasks for given args[0] workflowInstanceKey (Long) and given args[1]
+   * flowNodeBpmnId (String) exist and are in state CREATED.
+   */
+  @Bean(name = TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
+  public TestCheck getTasksAreCreatedByFlowNodeBpmnIdCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(3);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String.class);
+        assertThat(objects[2]).isInstanceOf(Integer.class);
+        final String workflowInstanceKey = (String) objects[0];
+        final String flowNodeBpmnId = (String) objects[1];
+        final int taskCount = (Integer) objects[2];
+        try {
+          final List<TaskEntity> tasks =
+              elasticsearchHelper.getTask(workflowInstanceKey, flowNodeBpmnId);
+          return (tasks.size() == taskCount)
+              && (tasks.stream()
+                  .map(TaskEntity::getState)
+                  .collect(Collectors.toList())
+                  .contains(TaskState.CREATED));
         } catch (NotFoundException ex) {
           return false;
         }

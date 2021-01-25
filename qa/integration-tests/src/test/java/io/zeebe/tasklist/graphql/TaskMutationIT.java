@@ -220,8 +220,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     // having
     createCreatedAndCompletedTasks(1, 0);
 
-    GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    GraphQLResponse response = tester.getAllTasks();
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when

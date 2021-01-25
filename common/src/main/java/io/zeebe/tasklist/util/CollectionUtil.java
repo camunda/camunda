@@ -154,4 +154,8 @@ public abstract class CollectionUtil {
     }
     return true;
   }
+
+  public static String[] toArrayOfStrings(final Object[] items) {
+    return Arrays.stream(items).map(String::valueOf).toArray(String[]::new);
+  }
 }

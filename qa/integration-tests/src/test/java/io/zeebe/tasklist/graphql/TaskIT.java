@@ -14,6 +14,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -53,6 +55,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskMutationResolver taskMutationResolver;
 
+  @Autowired private ObjectMapper objectMapper;
+
   @Before
   public void before() {
     super.before();
@@ -71,9 +75,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .waitUntil()
             .workflowIsDeployed()
             .and()
-            .startWorkflowInstance(bpmnProcessId)
-            .startWorkflowInstance(bpmnProcessId)
-            .startWorkflowInstance(bpmnProcessId)
+            .startWorkflowInstances(bpmnProcessId, 3)
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
             .when()
@@ -95,6 +97,101 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals(TaskState.CREATED.name(), response.get(taskJsonPath + ".taskState"));
       assertNull(response.get(taskJsonPath + ".assignee"));
       assertEquals("0", response.get(taskJsonPath + ".variables.length()"));
+    }
+    assertSorting(response);
+  }
+
+  @Test
+  public void shouldReturnPages() throws IOException {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+
+    tester
+        .having()
+        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
+        .waitUntil()
+        .workflowIsDeployed()
+        .and()
+        .startWorkflowInstances(bpmnProcessId, 10)
+        .waitUntil()
+        .tasksAreCreated(flowNodeBpmnId, 10);
+
+    // when querying page 1
+    final ObjectNode queryPage1 = objectMapper.createObjectNode();
+    queryPage1.putObject("query").put("pageSize", 3);
+    GraphQLResponse response = tester.getTasksByQueryAsVariable(queryPage1);
+
+    // then
+    assertTasksPage(response, 3, null, null);
+    List<String> sortValues = response.getList("$.data.tasks[2].sortValues", String.class);
+
+    // when querying page 2
+    final ObjectNode queryPage2 = objectMapper.createObjectNode();
+    queryPage2
+        .putObject("query")
+        .put("pageSize", 4)
+        .putArray("searchAfter")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    response = tester.getTasksByQueryAsVariable(queryPage2);
+
+    // then
+    assertTasksPage(response, 4, sortValues, null);
+    sortValues = response.getList("$.data.tasks[3].sortValues", String.class);
+
+    // when querying page 3
+    final ObjectNode queryPage3 = objectMapper.createObjectNode();
+    queryPage3
+        .putObject("query")
+        .put("pageSize", 4)
+        .putArray("searchAfter")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    response = tester.getTasksByQueryAsVariable(queryPage3);
+
+    // then
+    assertTasksPage(response, 3, sortValues, null);
+    sortValues = response.getList("$.data.tasks[0].sortValues", String.class);
+
+    // when querying with searchBefore
+    final ObjectNode queryPage4 = objectMapper.createObjectNode();
+    queryPage4
+        .putObject("query")
+        .put("pageSize", 5)
+        .putArray("searchBefore")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    response = tester.getTasksByQueryAsVariable(queryPage4);
+
+    // then
+    assertTasksPage(response, 5, null, sortValues);
+  }
+
+  private void assertTasksPage(
+      final GraphQLResponse response,
+      int pageSize,
+      List<String> searchAfter,
+      List<String> searchBefore) {
+    assertTrue(response.isOk());
+    assertEquals(String.valueOf(pageSize), response.get("$.data.tasks.length()"));
+    for (int i = 0; i < pageSize; i++) {
+      final String taskJsonPath = String.format("$.data.tasks[%d]", i);
+      assertNotNull(response.get(taskJsonPath + ".id"));
+      assertNotNull(response.get(taskJsonPath + ".creationTime"));
+      assertEquals(TaskState.CREATED.name(), response.get(taskJsonPath + ".taskState"));
+
+      final List<String> sortValues = response.getList(taskJsonPath + ".sortValues", String.class);
+      assertNotNull(sortValues);
+      assertThat(sortValues).hasSize(2);
+      // default sorting is descendant for creation date
+      if (searchAfter != null) {
+        final Long sortValue1 = Long.valueOf(sortValues.get(0));
+        assertThat(sortValue1).isLessThanOrEqualTo(Long.valueOf(searchAfter.get(0)));
+      }
+      if (searchBefore != null) {
+        final Long sortValue1 = Long.valueOf(sortValues.get(0));
+        assertThat(sortValue1).isGreaterThanOrEqualTo(Long.valueOf(searchBefore.get(0)));
+      }
     }
     assertSorting(response);
   }

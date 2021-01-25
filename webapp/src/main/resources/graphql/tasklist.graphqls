@@ -16,8 +16,13 @@ type Task {
     variables: [Variable!]
     # State of the task
     taskState: TaskState!
+    #Array of values to be copied into `TaskQuery` to request for next or previous page of tasks.
+    sortValues: [String!]
+    hasNext: Boolean!
+    hasPrevious: Boolean!
 }
-# What can be queried
+
+#Task query - query to get one page of tasks.
 input TaskQuery {
     # State of the tasks
     state: TaskState
@@ -25,6 +30,12 @@ input TaskQuery {
     assigned: Boolean
     # Who is assigned to the tasks?
     assignee: String
+    #Size of tasks page (default: 50).
+    pageSize: Int
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values.
+    searchAfter: [String!]
+    #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly before this values.
+    searchBefore: [String!]
 }
 # State of the task
 enum TaskState {
@@ -50,9 +61,9 @@ type User {
 }
 # What can be searched for
 type Query {
-    # Find all tasks specified by query.
+    # Get list of tasks based on `TaskQuery`.
     tasks(query: TaskQuery!): [Task!]!
-    # Get task with id. Returns task or error when task does not exist.
+    # Get one task by id. Returns task or error when task does not exist.
     task(id: String!): Task!
     # Get currently logged in user.
     currentUser: User!

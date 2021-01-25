@@ -1,0 +1,20 @@
+query getTasks($query: TaskQuery!){
+    tasks(query: $query) {
+        id
+        name
+        workflowName
+        creationTime
+        completionTime
+        assignee {
+            username
+            firstname
+            lastname
+        }
+        variables {
+            name
+            value
+        }
+        taskState
+        sortValues
+    }
+}

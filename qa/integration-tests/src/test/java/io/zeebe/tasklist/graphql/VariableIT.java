@@ -55,22 +55,21 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
 
-    tester
-        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId, "{\"upperLevelVar\": 1, \"overwrittenVar\": \"10\"}")
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId)
-        .startWorkflowInstance(bpmnProcessId, "{\"upperLevelVar\": 2}")
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId);
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource(
-            "graphql/variableIT/get-all-tasks-with-variables.graphql");
+        tester
+            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(
+                bpmnProcessId, "{\"upperLevelVar\": 1, \"overwrittenVar\": \"10\"}")
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .startWorkflowInstance(bpmnProcessId, "{\"upperLevelVar\": 2}")
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -115,19 +114,17 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
 
-    tester
-        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111}")
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId);
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource(
-            "graphql/variableIT/get-all-tasks-with-variables.graphql");
+        tester
+            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111}")
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -164,23 +161,21 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
 
-    tester
-        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111, \"clients\": [1, 2]}")
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId)
-        .and()
-        .claimAndCompleteHumanTask(flowNodeBpmnId, "result", "\"SUCCESS\"")
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId);
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource(
-            "graphql/variableIT/get-all-tasks-with-variables.graphql");
+        tester
+            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111, \"clients\": [1, 2]}")
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .and()
+            .claimAndCompleteHumanTask(flowNodeBpmnId, "result", "\"SUCCESS\"")
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -202,17 +197,17 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @Test
   public void shouldReturnOneTaskWithVariables() throws IOException {
     // having
-    tester
-        .createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(BPMN_PROCESS_ID, "{\"var\": 111}")
-        .waitUntil()
-        .taskIsCreated(ELEMENT_ID);
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource(
-            "graphql/variableIT/get-all-tasks-with-variables.graphql");
+        tester
+            .createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(BPMN_PROCESS_ID, "{\"var\": 111}")
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .and()
+            .getAllTasks();
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
