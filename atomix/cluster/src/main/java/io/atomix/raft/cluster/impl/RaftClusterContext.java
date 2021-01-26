@@ -27,6 +27,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.storage.system.Configuration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -116,6 +117,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       return bootstrapFuture;
     }
 
+    ensureConfigurationIsConsistent(cluster);
+
     bootstrapFuture = new CompletableFuture<>();
     final var isOnBoostrapCluster = configuration == null;
     if (isOnBoostrapCluster) {
@@ -146,6 +149,35 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
             });
 
     return bootstrapFuture.whenComplete((result, error) -> bootstrapFuture = null);
+  }
+
+  private void ensureConfigurationIsConsistent(final Collection<MemberId> cluster) {
+    final var hasPersistedConfiguration = configuration != null;
+    if (hasPersistedConfiguration) {
+      final var newClusterSize = cluster.size();
+      final var persistedClusterSize = configuration.members().size();
+
+      if (persistedClusterSize != newClusterSize) {
+        throw new IllegalStateException(
+            String.format(
+                "Expected that persisted cluster size '%d' is equal to given one '%d', but was different.",
+                persistedClusterSize, newClusterSize));
+      }
+
+      final var persistedMembers = configuration.members();
+      for (final MemberId memberId : cluster) {
+        final var noMatch =
+            persistedMembers.stream()
+                .map(RaftMember::memberId)
+                .noneMatch(persistedMemberId -> persistedMemberId.equals(memberId));
+        if (noMatch) {
+          throw new IllegalStateException(
+              String.format(
+                  "Expected to find given node id '%s' in persisted members '%s', but was not found.",
+                  memberId, Arrays.toString(persistedMembers.toArray())));
+        }
+      }
+    }
   }
 
   private void createInitialConfig(final Collection<MemberId> cluster) {

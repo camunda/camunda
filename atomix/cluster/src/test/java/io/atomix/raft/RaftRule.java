@@ -236,6 +236,15 @@ public final class RaftRule extends ExternalResource {
         .get(30, TimeUnit.SECONDS);
   }
 
+  public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
+      throws Exception {
+    final RaftMember member = getRaftMember(nodeId);
+    createServer(member.memberId())
+        .bootstrap(memberIds)
+        .thenAccept(this::addCommitListener)
+        .get(30, TimeUnit.SECONDS);
+  }
+
   public String shutdownLeader() throws Exception {
     final var leader = getLeader().orElseThrow();
     shutdownServer(leader);
@@ -248,7 +257,7 @@ public final class RaftRule extends ExternalResource {
     joinCluster(leader);
   }
 
-  private List<MemberId> getMemberIds() {
+  public List<MemberId> getMemberIds() {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
   }
 
