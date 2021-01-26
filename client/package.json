@@ -22,9 +22,9 @@
     "eslint-plugin-testing-library": "^3.10.1",
     "final-form": "^4.20.1",
     "lodash": "^4.17.20",
-    "mobx": "^6.0.4",
-    "mobx-react": "^7.0.5",
-    "polished": "^4.0.5",
+    "mobx": "^6.0.5",
+    "mobx-react": "^7.0.6",
+    "polished": "^4.1.0",
     "react": "^17.0.1",
     "react-contenteditable": "^3.3.5",
     "react-dom": "^17.0.1",
@@ -61,7 +61,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.3",
-    "@testing-library/react-hooks": "^5.0.0",
+    "@testing-library/react-hooks": "^5.0.3",
     "@testing-library/testcafe": "^4.3.1",
     "@types/node-fetch": "^2.5.8",
     "enzyme": "^3.11.0",
@@ -102,5 +102,8 @@
     "hooks": {
       "pre-commit": "lint-staged"
     }
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }
