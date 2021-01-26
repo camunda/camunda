@@ -22,7 +22,7 @@
     "eslint-plugin-testing-library": "^3.10.1",
     "final-form": "^4.20.1",
     "lodash": "^4.17.20",
-    "mobx": "^6.0.4",
+    "mobx": "^6.0.5",
     "mobx-react": "^7.0.5",
     "polished": "^4.0.5",
     "react": "^17.0.1",
