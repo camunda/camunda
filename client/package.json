@@ -24,7 +24,7 @@
     "lodash": "^4.17.20",
     "mobx": "^6.0.5",
     "mobx-react": "^7.0.5",
-    "polished": "^4.0.5",
+    "polished": "^4.1.0",
     "react": "^17.0.1",
     "react-contenteditable": "^3.3.5",
     "react-dom": "^17.0.1",
@@ -102,5 +102,8 @@
     "hooks": {
       "pre-commit": "lint-staged"
     }
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }
