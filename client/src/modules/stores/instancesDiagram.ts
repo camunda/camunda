@@ -24,6 +24,12 @@ type State = {
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
+type Node = {
+  $type: string;
+  id: string;
+  name: string;
+};
+
 const DEFAULT_STATE: State = {
   diagramModel: null,
   status: 'initial',
@@ -73,13 +79,12 @@ class InstancesDiagram {
     }
   };
 
-  get selectableFlowNodes() {
+  get selectableFlowNodes(): Node[] {
     // @ts-expect-error ts-migrate(2339) FIXME: Property 'bpmnElements' does not exist on type 'ne... Remove this comment to see the full error message
     return getFlowNodes(this.state.diagramModel?.bpmnElements);
   }
 
   get selectableIds() {
-    // @ts-expect-error ts-migrate(7031) FIXME: Binding element 'id' implicitly has an 'any' type.
     return this.selectableFlowNodes.map(({id}) => id);
   }
 
@@ -104,6 +109,27 @@ class InstancesDiagram {
       logger.error(error);
     }
   };
+
+  get flowNodeFilterOptions() {
+    return this.selectableFlowNodes
+      .map(({id, name}) => ({
+        value: id,
+        label: name ?? id,
+      }))
+      .sort((node, nextNode) => {
+        const label = node.label.toUpperCase();
+        const nextLabel = nextNode.label.toUpperCase();
+
+        if (label < nextLabel) {
+          return -1;
+        }
+        if (label > nextLabel) {
+          return 1;
+        }
+
+        return 0;
+      });
+  }
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
