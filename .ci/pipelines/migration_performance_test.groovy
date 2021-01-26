@@ -219,8 +219,7 @@ pipeline {
       steps {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-              sh ('OPERATE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args=\'${project.version}\' --non-recursive exec:exec)')
-              sh ('mvn -B -s $MAVEN_SETTINGS_XML -f els-schema/pom.xml exec:java -Dexec.mainClass=org.camunda.operate.schema.migration.SchemaMigration -Dcamunda.operate.schemaVersion=$OPERATE_VERSION-migration-test')
+              sh ('OPERATE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args=\'${project.version}\' --non-recursive exec:exec) && mvn -B -s $MAVEN_SETTINGS_XML -f els-schema/pom.xml exec:java -Dexec.mainClass=org.camunda.operate.schema.migration.SchemaMigration -Dcamunda.operate.schemaVersion=$OPERATE_VERSION-migration-test')
           }
         }
       }
