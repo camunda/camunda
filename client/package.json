@@ -24,7 +24,7 @@
     "final-form-arrays": "^3.0.2",
     "graphql": "^15.4.0",
     "jest-environment-jsdom-fifteen": "^1.0.2",
-    "mobx": "^6.0.4",
+    "mobx": "^6.0.5",
     "mobx-react-lite": "^3.1.6",
     "polished": "^4.1.0",
     "react": "^17.0.1",
