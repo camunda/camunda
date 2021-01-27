@@ -91,7 +91,7 @@ func (poller *jobPoller) activateJobs() {
 			if poller.shouldRetry(ctx, err) {
 				// the headers are outdated and need to be rebuilt
 				stream, err = poller.openStream(ctx)
-				if err == nil {
+				if err != nil {
 					log.Printf("Failed to reopen job polling stream: %v\n", err)
 					break
 				}
