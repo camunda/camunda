@@ -51,7 +51,7 @@ public final class CandidateRole extends ActiveRole {
     if (raft.getCluster().getActiveMemberStates().isEmpty()) {
       log.info("Single member cluster. Transitioning directly to leader.");
       raft.setTerm(raft.getTerm() + 1);
-      raft.setLastVotedFor(raft.getCluster().getMember().memberId());
+      raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
       raft.transition(RaftServer.Role.LEADER);
       return CompletableFuture.completedFuture(this);
     }
@@ -102,7 +102,7 @@ public final class CandidateRole extends ActiveRole {
     // When the election timer is reset, increment the current term and
     // restart the election.
     raft.setTerm(raft.getTerm() + 1);
-    raft.setLastVotedFor(raft.getCluster().getMember().memberId());
+    raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
 
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
@@ -172,7 +172,7 @@ public final class CandidateRole extends ActiveRole {
       final VoteRequest request =
           VoteRequest.builder()
               .withTerm(raft.getTerm())
-              .withCandidate(raft.getCluster().getMember().memberId())
+              .withCandidate(raft.getCluster().getLocalMember().memberId())
               .withLastLogIndex(lastEntry != null ? lastEntry.index() : 0)
               .withLastLogTerm(lastTerm)
               .build();
@@ -274,7 +274,7 @@ public final class CandidateRole extends ActiveRole {
     }
 
     // If the vote request is not for this candidate then reject the vote.
-    if (request.candidate() == raft.getCluster().getMember().memberId()) {
+    if (request.candidate() == raft.getCluster().getLocalMember().memberId()) {
       return CompletableFuture.completedFuture(
           logResponse(
               VoteResponse.builder()

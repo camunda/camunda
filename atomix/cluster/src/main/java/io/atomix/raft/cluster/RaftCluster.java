@@ -198,7 +198,7 @@ public interface RaftCluster {
    *
    * @return The local cluster member.
    */
-  RaftMember getMember();
+  RaftMember getLocalMember();
 
   /**
    * Returns a collection of all cluster members.

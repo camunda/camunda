@@ -294,7 +294,7 @@ public final class RaftRule extends ExternalResource {
       if (raftServer.isRunning()) {
         final var raftContext = raftServer.getContext();
         final var snapshotStore =
-            getSnapshotStore(raftServer.cluster().getMember().memberId().id());
+            getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
         InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);

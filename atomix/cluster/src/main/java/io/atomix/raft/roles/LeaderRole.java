@@ -217,14 +217,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   /** Ensures the local server is not the leader. */
   private void stepDown() {
-    if (raft.getLeader() != null && raft.getLeader().equals(raft.getCluster().getMember())) {
+    if (raft.getLeader() != null && raft.getLeader().equals(raft.getCluster().getLocalMember())) {
       raft.setLeader(null);
     }
   }
 
   /** Sets the current node as the cluster leader. */
   private void takeLeadership() {
-    raft.setLeader(raft.getCluster().getMember().memberId());
+    raft.setLeader(raft.getCluster().getLocalMember().memberId());
     raft.getCluster().getRemoteMemberStates().forEach(m -> m.resetState(raft.getLog()));
   }
 

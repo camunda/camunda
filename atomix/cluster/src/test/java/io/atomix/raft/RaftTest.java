@@ -219,25 +219,25 @@ public class RaftTest extends ConcurrentTestCase {
 
     final RaftServer leader =
         servers.stream()
-            .filter(s -> s.cluster().getMember().equals(s.cluster().getLeader()))
+            .filter(s -> s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
             .get();
 
     final RaftServer follower =
         servers.stream()
-            .filter(s -> !s.cluster().getMember().equals(s.cluster().getLeader()))
+            .filter(s -> !s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
             .get();
 
     follower
         .cluster()
-        .getMember(leader.cluster().getMember().memberId())
+        .getMember(leader.cluster().getLocalMember().memberId())
         .addTypeChangeListener(
             t -> {
               threadAssertEquals(t, RaftMember.Type.PASSIVE);
               resume();
             });
-    leader.cluster().getMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
+    leader.cluster().getLocalMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
     await(15000, 2);
   }
 
@@ -416,7 +416,7 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldLeaderStepDownOnDisconnect() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch stepDownListener = new CountDownLatch(1);
     leader.addRoleChangeListener(
@@ -439,7 +439,7 @@ public class RaftTest extends ConcurrentTestCase {
     // given
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
     final AtomicLong commitIndex = new AtomicLong();
     leader
         .getContext()
@@ -469,7 +469,7 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> servers = createServers(3);
 
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch newLeaderElected = new CountDownLatch(1);
     final AtomicReference<MemberId> newLeaderId = new AtomicReference<>();
@@ -478,7 +478,7 @@ public class RaftTest extends ConcurrentTestCase {
             s.addRoleChangeListener(
                 (role, term) -> {
                   if (role == Role.LEADER) {
-                    newLeaderId.set(s.getContext().getCluster().getMember().memberId());
+                    newLeaderId.set(s.getContext().getCluster().getLocalMember().memberId());
                     newLeaderElected.countDown();
                   }
                 }));
@@ -494,7 +494,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldTriggerHeartbeatTimeouts() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final List<RaftServer> followers = getFollowers(servers);
-    final MemberId followerId = followers.get(0).getContext().getCluster().getMember().memberId();
+    final MemberId followerId =
+        followers.get(0).getContext().getCluster().getLocalMember().memberId();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
@@ -510,7 +511,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldReSendPollRequestOnTimeouts() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final List<RaftServer> followers = getFollowers(servers);
-    final MemberId followerId = followers.get(0).getContext().getCluster().getMember().memberId();
+    final MemberId followerId =
+        followers.get(0).getContext().getCluster().getLocalMember().memberId();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
