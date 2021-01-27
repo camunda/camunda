@@ -38,8 +38,9 @@ public class RaftBootstrapTest {
     // expected
     Assertions.assertThatThrownBy(() -> raftRule.bootstrapNodeWithMemberIds("1", newMemberIds))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessage(
-            "Expected that persisted cluster size '3' is equal to given one '4', but was different.");
+        .hasMessageContaining(
+            "Expected that persisted cluster size '3' is equal to given one '4', but was different.")
+        .hasMessageContaining("Changing the configuration is not supported.");
   }
 
   @Test
@@ -56,6 +57,7 @@ public class RaftBootstrapTest {
     // expected
     Assertions.assertThatThrownBy(() -> raftRule.bootstrapNodeWithMemberIds("1", newMemberIds))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Expected to find given node id '4' in persisted members");
+        .hasMessageContaining("Expected to find given node id '4' in persisted members")
+        .hasMessageContaining("Changing the configuration is not supported.");
   }
 }

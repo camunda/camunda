@@ -167,8 +167,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       if (persistedClusterSize != newClusterSize) {
         throw new IllegalStateException(
             String.format(
-                "Expected that persisted cluster size '%d' is equal to given one '%d', but was different.",
-                persistedClusterSize, newClusterSize));
+                "Expected that persisted cluster size '%d' is equal to given one '%d', but was different. "
+                    + "Persisted configuration '%s' is different then given one, new given member id's are: '%s'. Changing the configuration is not supported. "
+                    + "Please restart with the same configuration or recreate a new cluster after deleting persisted data.",
+                persistedClusterSize,
+                newClusterSize,
+                configuration,
+                Arrays.toString(cluster.toArray())));
       }
 
       final var persistedMembers = configuration.members();
@@ -180,7 +185,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         if (noMatch) {
           throw new IllegalStateException(
               String.format(
-                  "Expected to find given node id '%s' in persisted members '%s', but was not found.",
+                  "Expected to find given node id '%s' in persisted members '%s', but was not found. "
+                      + "Persisted configuration is different then given one. Changing the configuration is not supported. "
+                      + "Please restart with the same configuration or recreate a new cluster after deleting persisted data.",
                   memberId, Arrays.toString(persistedMembers.toArray())));
         }
       }
