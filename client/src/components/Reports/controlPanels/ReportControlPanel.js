@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
 import {Filter} from 'filter';
@@ -38,15 +37,12 @@ export default withErrorHandling(
     }
 
     componentDidMount() {
-      this.loadVariables();
-      this.loadFlowNodeNames();
+      const data = this.props.report.data;
+      this.loadVariables(data);
+      this.loadFlowNodeNames(data);
     }
 
-    loadFlowNodeNames = async () => {
-      const {
-        data: {processDefinitionKey, processDefinitionVersions, tenantIds},
-      } = this.props.report;
-
+    loadFlowNodeNames = async ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         this.setState({
           flowNodeNames: await getFlowNodeNames(
@@ -58,42 +54,57 @@ export default withErrorHandling(
       }
     };
 
-    loadVariables = () => {
-      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props.report.data;
+    loadVariables = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
-        this.props.mightFail(
-          loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
-          (variables) => this.setState({variables}),
-          showError
-        );
+        return new Promise((resolve, reject) => {
+          this.props.mightFail(
+            loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+            (variables) => this.setState({variables}, resolve),
+            (error) => reject(showError(error))
+          );
+        });
       }
     };
 
-    componentDidUpdate(prevProps) {
-      const {data} = this.props.report;
-      const {data: prevData} = prevProps.report;
+    variableExists = (varName) =>
+      this.state.variables.some((variable) => variable.name === varName);
 
-      if (
-        data.processDefinitionKey !== prevData.processDefinitionKey ||
-        !equal(data.processDefinitionVersions, prevData.processDefinitionVersions) ||
-        !equal(data.tenantIds, prevData.tenantIds)
-      ) {
-        this.loadVariables();
-        this.loadFlowNodeNames();
+    getVariableConfig = () => {
+      const {view, groupBy, distributedBy} = this.props.report.data;
+
+      if (view?.entity === 'variable') {
+        return {
+          name: view.property.name,
+          reset: (change) => {
+            change.view = {$set: null};
+            change.groupBy = {$set: null};
+            change.visualization = {$set: null};
+          },
+        };
+      } else if (groupBy?.type === 'variable') {
+        return {
+          name: groupBy.value.name,
+          reset: (change) => {
+            change.groupBy = {$set: null};
+            change.visualization = {$set: null};
+          },
+        };
+      } else if (distributedBy?.type === 'variable') {
+        return {
+          name: distributedBy.value.name,
+          reset: (change) => {
+            change.distributedBy = {$set: {type: 'none', value: null}};
+          },
+        };
       }
-    }
+    };
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
-      const {view, groupBy} = this.props.report.data;
-
       const change = {
         processDefinitionKey: {$set: key},
         processDefinitionName: {$set: name},
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
-        distributedBy: {
-          $set: {type: 'none', value: null},
-        },
         configuration: {
           tableColumns: {
             $set: {
@@ -126,17 +137,25 @@ export default withErrorHandling(
         },
       };
 
-      if (view?.entity === 'variable') {
-        change.view = {$set: null};
-        change.groupBy = {$set: null};
-        change.visualization = {$set: null};
+      const definitionData = {
+        processDefinitionKey: key,
+        processDefinitionVersions: versions,
+        tenantIds,
+      };
+
+      const variableConfig = this.getVariableConfig();
+      if (variableConfig) {
+        this.props.setLoading(true);
+        await this.loadVariables(definitionData);
+        this.props.setLoading(false);
+        if (!this.variableExists(variableConfig.name)) {
+          variableConfig.reset(change);
+        }
+      } else {
+        this.loadVariables(definitionData);
       }
 
-      if (groupBy?.type === 'variable') {
-        change.groupBy = {$set: null};
-        change.visualization = {$set: null};
-      }
-
+      this.loadFlowNodeNames(definitionData);
       this.props.updateReport(change, true);
     };
 

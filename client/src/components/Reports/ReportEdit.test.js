@@ -306,3 +306,15 @@ it('should go back to a custom route after canceling if provided as URL Search P
   expect(node.find('Redirect')).toExist();
   expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
 });
+
+it('should show loading indicator if specified by children components', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  node.find(ReportControlPanel).prop('setLoading')(true);
+
+  expect(node.find('LoadingIndicator')).toExist();
+
+  node.find(ReportControlPanel).prop('setLoading')(false);
+
+  expect(node.find('LoadingIndicator')).not.toExist();
+});

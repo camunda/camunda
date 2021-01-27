@@ -193,6 +193,8 @@ export class ReportEdit extends React.Component {
     this.setState({conflict: null, updatePromise: null});
   };
 
+  setLoading = (value) => this.setState({loadingReportData: value});
+
   loadReport = (params, query = this.state.report) =>
     this.props.mightFail(
       evaluateReport(query, [], params),
@@ -271,10 +273,18 @@ export class ReportEdit extends React.Component {
             )}
           </div>
           {!combined && reportType === 'process' && (
-            <ReportControlPanel report={report} updateReport={this.updateReport} />
+            <ReportControlPanel
+              report={report}
+              updateReport={this.updateReport}
+              setLoading={this.setLoading}
+            />
           )}
           {!combined && reportType === 'decision' && (
-            <DecisionControlPanel report={report} updateReport={this.updateReport} />
+            <DecisionControlPanel
+              report={report}
+              updateReport={this.updateReport}
+              setLoading={this.setLoading}
+            />
           )}
           {combined && (
             <CombinedReportPanel

@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {DefinitionSelection} from 'components';
 
-import DecisionControlPanel from './DecisionControlPanel';
+import {DecisionControlPanel} from './DecisionControlPanel';
 import ReportSelect from './ReportSelect';
 
 import {loadInputVariables, loadOutputVariables} from 'services';
@@ -58,9 +58,14 @@ const report = {
   result: {instanceCount: 3},
 };
 
+const props = {
+  report,
+  mightFail: async (data, cb) => cb(await data),
+};
+
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
-  const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
+  const node = shallow(<DecisionControlPanel {...props} updateReport={spy} />);
 
   node.find(ReportSelect).at(0).prop('onChange')('newSetting');
 
@@ -69,21 +74,21 @@ it('should call the provided updateReport property function when a setting chang
 
 it('should disable the groupBy Select if view is not selected', () => {
   const node = shallow(
-    <DecisionControlPanel report={{...report, data: {...report.data, view: ''}}} />
+    <DecisionControlPanel {...props} report={{...report, data: {...report.data, view: ''}}} />
   );
 
   expect(node.find(ReportSelect).at(1)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
-  const node = shallow(<DecisionControlPanel report={report} />);
+  const node = shallow(<DecisionControlPanel {...props} />);
 
   expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
   expect(node.find(ReportSelect).at(2)).not.toBeDisabled();
 });
 
 it('should include variables in the groupby options', () => {
-  const node = shallow(<DecisionControlPanel report={report} />);
+  const node = shallow(<DecisionControlPanel {...props} />);
 
   const groupbyDropdown = node.find(ReportSelect).at(1);
 
@@ -91,7 +96,7 @@ it('should include variables in the groupby options', () => {
 });
 
 it('should retrieve variable names', async () => {
-  shallow(<DecisionControlPanel report={report} />);
+  shallow(<DecisionControlPanel {...props} />);
 
   const payload = {
     decisionDefinitionKey: 'aKey',
@@ -105,10 +110,11 @@ it('should retrieve variable names', async () => {
   expect(loadOutputVariables).toHaveBeenCalledWith(payload);
 });
 
-it('should reset variable groupby on definition change', async () => {
+it('should reset variable groupby on definition change only if variable does not exist', async () => {
   const spy = jest.fn();
   const node = shallow(
     <DecisionControlPanel
+      {...props}
       report={{
         data: {
           ...report.data,
@@ -116,20 +122,45 @@ it('should reset variable groupby on definition change', async () => {
         },
       }}
       updateReport={spy}
+      setLoading={jest.fn()}
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
+  await flushPromises();
 
+  await node.find(DefinitionSelection).prop('onChange')({});
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
 });
 
+it('should not reset variable report when changing to a definition that has the same variable', async () => {
+  loadInputVariables.mockReturnValueOnce([{id: 'clause1', name: 'Invoice Amount'}]);
+  const spy = jest.fn();
+  const node = shallow(
+    <DecisionControlPanel
+      {...props}
+      report={{
+        data: {
+          ...report.data,
+          groupBy: {type: 'inputVariable', value: {id: 'clause1', name: 'Invoice Amount'}},
+        },
+      }}
+      updateReport={spy}
+      setLoading={jest.fn()}
+    />
+  );
+
+  await flushPromises();
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+  expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
+});
+
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
-  const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
+  const node = shallow(<DecisionControlPanel {...props} updateReport={spy} />);
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
+  await node.find(DefinitionSelection).prop('onChange')({});
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
@@ -138,6 +169,7 @@ it('should reset definition specific configurations on definition change', async
 it('should not crash when no decisionDefinition is selected', () => {
   shallow(
     <DecisionControlPanel
+      {...props}
       report={{
         data: {
           ...report.data,
@@ -151,7 +183,7 @@ it('should not crash when no decisionDefinition is selected', () => {
 });
 
 it('should show the number of decision instances in the current Filter', () => {
-  const node = shallow(<DecisionControlPanel report={report} />);
+  const node = shallow(<DecisionControlPanel {...props} />);
 
   expect(node).toIncludeText('3 evaluations in current filter');
 });
