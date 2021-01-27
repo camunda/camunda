@@ -1,6 +1,6 @@
 .DecisionTable {
   .dmn-decision-table-container .tjs-container {
-    grid-template-columns: unset;
+    width: 100%;
 
     table {
       width: 100%;
@@ -9,19 +9,12 @@
         .annotation {
           width: 192px !important;
         }
-
-        tr:last-child th {
-          border-bottom: 0;
-        }
       }
     }
   }
-}
 
-.dark .DecisionTable {
-  .CustomCell,
-  .hit.header,
-  tfoot td {
-    border: inherit;
+  tfoot td:first-child {
+    padding-left: 5px;
+    border-right: solid 1px var(--table-cell-border-color);
   }
 }

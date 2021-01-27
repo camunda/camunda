@@ -13,7 +13,7 @@
     "date-fns": "^2.16.1",
     "debounce": "^1.2.0",
     "deep-equal": "^2.0.5",
-    "dmn-js": "^9.4.0",
+    "dmn-js": "^10.0.0",
     "fitty": "^2.3.3",
     "focus-visible": "^5.2.0",
     "heatmap.js": "^2.0.5",

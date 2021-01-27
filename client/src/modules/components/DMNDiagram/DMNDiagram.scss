@@ -7,15 +7,23 @@
 
 .dark .DMNDiagram {
   .dmn-decision-table-container {
-    color: inherit;
+    * {
+      background-color: inherit;
+    }
+
+    .rule-index,
+    .index-column {
+      background-color: var(--grey-darken-13);
+    }
+
+    .input-variable,
+    .output-variable,
+    .clause {
+      color: inherit;
+    }
 
     .tjs-table tbody tr:nth-child(2n) {
       background-color: var(--grey-darken-23);
-    }
-
-    .decision-table-properties {
-      color: inherit;
-      background-color: inherit;
     }
   }
 }
