@@ -11,6 +11,7 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.PartitionIdIterator;
@@ -56,6 +57,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
           request.getMaxJobsToActivate(),
           request.getType(),
           responseObserver::onNext,
+          responseObserver::onError,
           (remainingAmount, resourceExhaustedWasPresent) -> responseObserver.onCompleted());
     }
   }
@@ -66,6 +68,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       final int maxJobsToActivate,
       final String type,
       final Consumer<ActivateJobsResponse> onResponse,
+      final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted) {
     activateJobs(
         request,
@@ -73,6 +76,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
         maxJobsToActivate,
         type,
         onResponse,
+        onError,
         onCompleted);
   }
 
@@ -82,6 +86,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       final int remainingAmount,
       final String jobType,
       final Consumer<ActivateJobsResponse> onResponse,
+      final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted) {
     activateJobs(
         request,
@@ -89,6 +94,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
         remainingAmount,
         jobType,
         onResponse,
+        onError,
         onCompleted,
         false,
         false);
@@ -100,6 +106,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       final int remainingAmount,
       final String jobType,
       final Consumer<ActivateJobsResponse> onResponse,
+      final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted,
       final boolean pollPrevPartition,
       final boolean resourceExhaustedWasPresent) {
@@ -132,12 +139,16 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
                       remainingAmount - jobsCount,
                       jobType,
                       onResponse,
+                      onError,
                       onCompleted,
                       response.getResponse().getTruncated(),
                       resourceExhaustedWasPresent);
                 } else {
                   final boolean wasResourceExhausted = wasResourceExhausted(error);
-                  if (!wasResourceExhausted) {
+                  if (isRejection(error)) {
+                    onError.accept(error);
+                    return;
+                  } else if (!wasResourceExhausted) {
                     logErrorResponse(partitionIdIterator, jobType, error);
                   }
 
@@ -147,6 +158,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
                       remainingAmount,
                       jobType,
                       onResponse,
+                      onError,
                       onCompleted,
                       false,
                       wasResourceExhausted);
@@ -156,6 +168,10 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       // enough jobs activated or no more partitions left to check
       onCompleted.accept(remainingAmount, resourceExhaustedWasPresent);
     }
+  }
+
+  private boolean isRejection(final Throwable error) {
+    return error != null && BrokerRejectionException.class.isAssignableFrom(error.getClass());
   }
 
   private boolean wasResourceExhausted(final Throwable error) {

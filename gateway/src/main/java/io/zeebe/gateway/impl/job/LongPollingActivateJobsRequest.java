@@ -88,6 +88,18 @@ public final class LongPollingActivateJobsRequest {
     }
   }
 
+  public void onError(final Throwable error) {
+    if (isCompleted() || isCanceled()) {
+      return;
+    }
+
+    try {
+      responseObserver.onError(error);
+    } catch (final Exception e) {
+      LOG.warn("Failed to send response to client.", e);
+    }
+  }
+
   public void timeout() {
     complete();
     isTimedOut = true;
