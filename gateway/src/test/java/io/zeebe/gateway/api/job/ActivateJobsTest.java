@@ -9,21 +9,32 @@ package io.zeebe.gateway.api.job;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.zeebe.gateway.api.util.GatewayTest;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
+import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -137,5 +148,34 @@ public final class ActivateJobsTest extends GatewayTest {
             .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
       }
     }
+  }
+
+  @Test
+  public void shouldSendRejectionWithoutRetrying() {
+    // given
+    final RejectionType rejectionType = RejectionType.INVALID_ARGUMENT;
+    final AtomicInteger callCounter = new AtomicInteger();
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        (RequestHandler<BrokerRequest<?>, BrokerResponse<?>>)
+            request -> {
+              callCounter.incrementAndGet();
+              return new BrokerRejectionResponse<>(
+                  new BrokerRejection(Intent.UNKNOWN, 1, rejectionType, "expected"));
+            });
+    final ActivateJobsRequest request =
+        ActivateJobsRequest.newBuilder().setType("").setMaxJobsToActivate(1).build();
+
+    // when/then
+    assertThatThrownBy(
+            () -> {
+              final Iterator<ActivateJobsResponse> responseIterator = client.activateJobs(request);
+              responseIterator.hasNext();
+            })
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.INVALID_ARGUMENT.getCode());
+    assertThat(callCounter).hasValue(1);
   }
 }

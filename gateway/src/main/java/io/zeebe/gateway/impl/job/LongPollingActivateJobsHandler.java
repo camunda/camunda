@@ -119,6 +119,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
           request.getMaxJobsToActivate(),
           request.getType(),
           response -> onResponse(request, response),
+          error -> onError(request, error),
           (remainingAmount, containedResourceExhaustedResponse) ->
               onCompleted(state, request, remainingAmount, containedResourceExhaustedResponse));
     }
@@ -182,6 +183,10 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     actor.submit(() -> request.onResponse(activateJobsResponse));
   }
 
+  private void onError(final LongPollingActivateJobsRequest request, final Throwable error) {
+    actor.submit(() -> request.onError(error));
+  }
+
   private void resetFailedAttemptsAndHandlePendingRequests(final String jobType) {
     final InFlightLongPollingActivateJobsRequestsState state = getJobTypeState(jobType);
 
@@ -190,12 +195,11 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     final Queue<LongPollingActivateJobsRequest> pendingRequests = state.getPendingRequests();
 
     if (!pendingRequests.isEmpty()) {
-      pendingRequests.stream()
-          .forEach(
-              nextPendingRequest -> {
-                LOG.trace("Unblocking ActivateJobsRequest {}", nextPendingRequest.getRequest());
-                activateJobs(nextPendingRequest);
-              });
+      pendingRequests.forEach(
+          nextPendingRequest -> {
+            LOG.trace("Unblocking ActivateJobsRequest {}", nextPendingRequest.getRequest());
+            activateJobs(nextPendingRequest);
+          });
     } else {
       if (!state.hasActiveRequests()) {
         jobTypeState.remove(jobType);
