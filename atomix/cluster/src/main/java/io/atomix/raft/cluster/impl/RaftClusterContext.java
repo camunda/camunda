@@ -151,6 +151,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                 // commit configuration and transition
                 commit();
               }
+
               completeBootstrapFuture();
             });
 
@@ -290,7 +291,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (!members.contains(localMember)) {
       bootstrapFuture.completeExceptionally(
           new IllegalStateException("not a member of the cluster"));
-    } else if (bootstrapFuture != null) {
+    } else {
       bootstrapFuture.complete(null);
     }
   }
