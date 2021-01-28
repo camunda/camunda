@@ -21,5 +21,5 @@ public class DashboardDefinitionUpdateDto {
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
   protected String collectionId;
-  protected List<DashboardFilterDto> availableFilters = new ArrayList<>();
+  protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
 }

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -19,6 +19,6 @@ public class ShortVariableFilterDataDto extends OperatorMultipleValuesVariableFi
   public ShortVariableFilterDataDto(final String name,
                                     final FilterOperator operator,
                                     final List<String> values) {
-    super(name, VariableType.SHORT, new OperatorMultipleValuesVariableFilterSubDataDto(operator, values));
+    super(name, VariableType.SHORT, new OperatorMultipleValuesFilterDataDto(operator, values));
   }
 }

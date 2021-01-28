@@ -20,5 +20,5 @@ public class BaseDashboardDefinitionDto {
   protected String owner;
   protected String lastModifier;
   protected String collectionId;
-  protected List<DashboardFilterDto> availableFilters = new ArrayList<>();
+  protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
 }

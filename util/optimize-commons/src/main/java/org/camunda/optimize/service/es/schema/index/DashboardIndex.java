@@ -39,7 +39,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String REPORT_ID = "id";
   public static final String CONFIGURATION = "configuration";
 
-  public static final String FILTER_TYPE = DashboardFilterDto.Fields.type;
+  public static final String FILTER_TYPE = "type";
   public static final String FILTER_DATA = DashboardFilterDto.Fields.data;
 
   @Override
