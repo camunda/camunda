@@ -16,23 +16,21 @@ import io.zeebe.db.DbValue;
 import io.zeebe.db.KeyValuePairVisitor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbException;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.rocksdb.Loggers;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.MutableDirectBuffer;
 import org.rocksdb.Checkpoint;
-import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.DBOptions;
 import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
@@ -49,23 +47,27 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
   private final OptimisticTransactionDB optimisticTransactionDB;
   private final List<AutoCloseable> closables;
-  private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
-  private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
   private final WriteOptions defaultWriteOptions;
+  private final ColumnFamilyHandle defaultHandle;
 
   protected ZeebeTransactionDb(
+      final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
-      final EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
-      final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap,
       final List<AutoCloseable> closables) {
+    this.defaultHandle = defaultHandle;
     this.optimisticTransactionDB = optimisticTransactionDB;
-    this.columnFamilyMap = columnFamilyMap;
-    this.handelToEnumMap = handelToEnumMap;
     this.closables = closables;
 
-    prefixReadOptions = new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
+    prefixReadOptions =
+        new ReadOptions()
+            .setPrefixSameAsStart(true)
+            .setTotalOrderSeek(false)
+            // setting a positive value to readahead is only useful when using network storage with
+            // high latency, at the cost of making iterators expensiver (memory and computation
+            // wise)
+            .setReadaheadSize(0);
     closables.add(prefixReadOptions);
     defaultReadOptions = new ReadOptions();
     closables.add(defaultReadOptions);
@@ -75,30 +77,14 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final DBOptions options,
-          final String path,
-          final List<ColumnFamilyDescriptor> columnFamilyDescriptors,
-          final List<AutoCloseable> closables,
-          final Class<ColumnFamilyNames> columnFamilyTypeClass)
+          final Options options, final String path, final List<AutoCloseable> closables)
           throws RocksDBException {
-    final EnumMap<ColumnFamilyNames, Long> columnFamilyMap = new EnumMap<>(columnFamilyTypeClass);
-
-    final List<ColumnFamilyHandle> handles = new ArrayList<>();
     final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options, path, columnFamilyDescriptors, handles);
+        OptimisticTransactionDB.open(options, path);
     closables.add(optimisticTransactionDB);
+    final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
-    final ColumnFamilyNames[] enumConstants = columnFamilyTypeClass.getEnumConstants();
-    final Long2ObjectHashMap<ColumnFamilyHandle> handleToEnumMap = new Long2ObjectHashMap<>();
-    for (int i = 0; i < handles.size(); i++) {
-      final ColumnFamilyHandle columnFamilyHandle = handles.get(i);
-      closables.add(columnFamilyHandle);
-      columnFamilyMap.put(enumConstants[i], getNativeHandle(columnFamilyHandle));
-      handleToEnumMap.put(getNativeHandle(handles.get(i)), handles.get(i));
-    }
-
-    return new ZeebeTransactionDb<>(
-        optimisticTransactionDB, columnFamilyMap, handleToEnumMap, closables);
+    return new ZeebeTransactionDb<>(defaultColumnFamilyHandle, optimisticTransactionDB, closables);
   }
 
   private static long getNativeHandle(final RocksObject object) {
@@ -110,8 +96,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     }
   }
 
-  long getColumnFamilyHandle(final ColumnFamilyNames columnFamily) {
-    return columnFamilyMap.get(columnFamily);
+  long getColumnFamilyHandle() {
+    return getNativeHandle(defaultHandle);
   }
 
   @Override
@@ -198,14 +184,10 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
-  public Optional<String> getProperty(
-      final ColumnFamilyNames columnFamilyName, final String propertyName) {
-
-    final var handle = handelToEnumMap.get(columnFamilyMap.get(columnFamilyName));
-
+  public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {
-      propertyValue = optimisticTransactionDB.getProperty(handle, propertyName);
+      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
     } catch (final RocksDBException rde) {
       LOG.debug(rde.getMessage(), rde);
     }
@@ -241,80 +223,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   //////////////////////////// ITERATION /////////////////////////////
   ////////////////////////////////////////////////////////////////////
 
-  RocksIterator newIterator(
-      final long columnFamilyHandle, final DbContext context, final ReadOptions options) {
-    final ColumnFamilyHandle handle = handelToEnumMap.get(columnFamilyHandle);
-    return context.newIterator(options, handle);
-  }
-
-  public <ValueType extends DbValue> void foreach(
-      final long columnFamilyHandle,
-      final DbContext context,
-      final ValueType iteratorValue,
-      final Consumer<ValueType> consumer) {
-    foreach(
-        columnFamilyHandle,
-        context,
-        (keyBuffer, valueBuffer) -> {
-          iteratorValue.wrap(valueBuffer, 0, valueBuffer.capacity());
-          consumer.accept(iteratorValue);
-        });
-  }
-
-  public <KeyType extends DbKey, ValueType extends DbValue> void foreach(
-      final long columnFamilyHandle,
-      final DbContext context,
-      final KeyType iteratorKey,
-      final ValueType iteratorValue,
-      final BiConsumer<KeyType, ValueType> consumer) {
-    foreach(
-        columnFamilyHandle,
-        context,
-        (keyBuffer, valueBuffer) -> {
-          iteratorKey.wrap(keyBuffer, 0, keyBuffer.capacity());
-          iteratorValue.wrap(valueBuffer, 0, valueBuffer.capacity());
-          consumer.accept(iteratorKey, iteratorValue);
-        });
-  }
-
-  private void foreach(
-      final long columnFamilyHandle,
-      final DbContext context,
-      final BiConsumer<DirectBuffer, DirectBuffer> keyValuePairConsumer) {
-    ensureInOpenTransaction(
-        context,
-        transaction -> {
-          try (final RocksIterator iterator =
-              newIterator(columnFamilyHandle, context, defaultReadOptions)) {
-            for (iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
-              context.wrapKeyView(iterator.key());
-              context.wrapValueView(iterator.value());
-              keyValuePairConsumer.accept(context.getKeyView(), context.getValueView());
-            }
-          }
-        });
-  }
-
-  public <KeyType extends DbKey, ValueType extends DbValue> void whileTrue(
-      final long columnFamilyHandle,
-      final DbContext context,
-      final KeyType keyInstance,
-      final ValueType valueInstance,
-      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    ensureInOpenTransaction(
-        context,
-        transaction -> {
-          try (final RocksIterator iterator =
-              newIterator(columnFamilyHandle, context, defaultReadOptions)) {
-            boolean shouldVisitNext = true;
-            for (iterator.seekToFirst(); iterator.isValid() && shouldVisitNext; iterator.next()) {
-              shouldVisitNext = visit(context, keyInstance, valueInstance, visitor, iterator);
-            }
-          }
-        });
+  RocksIterator newIterator(final DbContext context, final ReadOptions options) {
+    return context.newIterator(options, defaultHandle);
   }
 
   protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
+      final DbLong columnFamilyKey,
       final long columnFamilyHandle,
       final DbContext context,
       final DbKey prefix,
@@ -322,6 +236,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       final ValueType valueInstance,
       final BiConsumer<KeyType, ValueType> visitor) {
     whileEqualPrefix(
+        columnFamilyKey,
         columnFamilyHandle,
         context,
         prefix,
@@ -334,6 +249,49 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   /**
+   * This method is used mainly from other iterator methods to iterate over column family entries,
+   * which are prefixed with column family key.
+   */
+  protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
+      final DbLong columnFamilyKey,
+      final long columnFamilyHandle,
+      final DbContext context,
+      final KeyType keyInstance,
+      final ValueType valueInstance,
+      final BiConsumer<KeyType, ValueType> visitor) {
+    whileEqualPrefix(
+        columnFamilyKey,
+        columnFamilyHandle,
+        context,
+        new DbNullKey(),
+        keyInstance,
+        valueInstance,
+        (k, v) -> {
+          visitor.accept(k, v);
+          return true;
+        });
+  }
+
+  // This method is used mainly from other iterator methods to iterate over column family entries,
+  // which are prefixed with column family key.
+  protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
+      final DbLong columnFamilyKey,
+      final long columnFamilyHandle,
+      final DbContext context,
+      final KeyType keyInstance,
+      final ValueType valueInstance,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    whileEqualPrefix(
+        columnFamilyKey,
+        columnFamilyHandle,
+        context,
+        new DbNullKey(),
+        keyInstance,
+        valueInstance,
+        visitor);
+  }
+
+  /**
    * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on iterators
    * at the moment, so using prefixes seem to be mostly related to skipping files that do not
    * contain keys with the given prefix (which is useful anyway), but it will still iterate over all
@@ -343,6 +301,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
    * <p>While iterating over subsequent keys we have to validate it.
    */
   protected <KeyType extends DbKey, ValueType extends DbValue> void whileEqualPrefix(
+      final DbLong columnFamilyKey,
       final long columnFamilyHandle,
       final DbContext context,
       final DbKey prefix,
@@ -354,10 +313,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
             ensureInOpenTransaction(
                 context,
                 transaction -> {
-                  try (final RocksIterator iterator =
-                      newIterator(columnFamilyHandle, context, prefixReadOptions)) {
-                    prefix.write(prefixKeyBuffer, 0);
-                    final int prefixLength = prefix.getLength();
+                  try (final RocksIterator iterator = newIterator(context, prefixReadOptions)) {
+
+                    columnFamilyKey.write(prefixKeyBuffer, 0);
+                    prefix.write(prefixKeyBuffer, Long.BYTES);
+                    final int prefixLength = Long.BYTES + prefix.getLength();
 
                     boolean shouldVisitNext = true;
 
@@ -372,7 +332,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
                       if (!startsWith(
                           prefixKeyBuffer.byteArray(),
                           0,
-                          prefix.getLength(),
+                          prefixLength,
                           keyBytes,
                           0,
                           keyBytes.length)) {
@@ -392,7 +352,9 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       final ValueType valueInstance,
       final KeyValuePairVisitor<KeyType, ValueType> iteratorConsumer,
       final RocksIterator iterator) {
-    context.wrapKeyView(iterator.key());
+    final var keyBytes = iterator.key();
+
+    context.wrapKeyView(keyBytes);
     context.wrapValueView(iterator.value());
 
     final DirectBuffer keyViewBuffer = context.getKeyView();
@@ -403,25 +365,27 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     return iteratorConsumer.visit(keyInstance, valueInstance);
   }
 
-  public boolean isEmpty(final long columnFamilyHandle, final DbContext context) {
-    final AtomicBoolean isEmpty = new AtomicBoolean(false);
-    ensureInOpenTransaction(
+  public boolean isEmpty(
+      final long columnFamilyKey, final long columnFamilyHandle, final DbContext context) {
+    final var columnKey = new DbLong();
+    columnKey.wrapLong(columnFamilyKey);
+    final AtomicBoolean isEmpty = new AtomicBoolean(true);
+    whileEqualPrefix(
+        columnKey,
+        columnFamilyHandle,
         context,
-        transaction -> {
-          try (final RocksIterator iterator =
-              newIterator(columnFamilyHandle, context, defaultReadOptions)) {
-            iterator.seekToFirst();
-            final boolean hasEntry = iterator.isValid();
-            isEmpty.set(!hasEntry);
-          }
+        DbNullKey.INSTANCE,
+        DbNil.INSTANCE,
+        (key, value) -> {
+          isEmpty.set(false);
+          return false;
         });
     return isEmpty.get();
   }
 
   @Override
   public boolean isEmpty(final ColumnFamilyNames columnFamilyName, final DbContext context) {
-    final var columnFamilyHandle = columnFamilyMap.get(columnFamilyName);
-    return isEmpty(columnFamilyHandle, context);
+    return isEmpty(columnFamilyName.ordinal(), getNativeHandle(defaultHandle), context);
   }
 
   @Override
@@ -447,6 +411,33 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   @FunctionalInterface
   interface TransactionConsumer {
+
     void run(ZeebeTransaction transaction) throws Exception;
+  }
+
+  /**
+   * This class is used only internally by #whileEqualPrefix to search for same column family
+   * prefix.
+   */
+  private static final class DbNullKey implements DbKey {
+
+    public static final DbNullKey INSTANCE = new DbNullKey();
+
+    private DbNullKey() {}
+
+    @Override
+    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+      // do nothing
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      // do nothing
+    }
+
+    @Override
+    public int getLength() {
+      return 0;
+    }
   }
 }

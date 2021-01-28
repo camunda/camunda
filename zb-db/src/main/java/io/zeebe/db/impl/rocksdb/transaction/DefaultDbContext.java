@@ -29,6 +29,7 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Status;
 
 public final class DefaultDbContext implements DbContext {
+
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
   private final ZeebeTransaction transaction;
@@ -72,7 +73,8 @@ public final class DefaultDbContext implements DbContext {
   @Override
   public void wrapKeyView(final byte[] key) {
     if (key != null) {
-      keyViewBuffer.wrap(key);
+      // wrap without the column family key
+      keyViewBuffer.wrap(key, Long.BYTES, key.length - Long.BYTES);
     } else {
       keyViewBuffer.wrap(ZERO_SIZE_ARRAY);
     }

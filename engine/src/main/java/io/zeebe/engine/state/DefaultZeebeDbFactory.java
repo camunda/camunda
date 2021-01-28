@@ -17,9 +17,7 @@ import java.util.function.BiFunction;
 public final class DefaultZeebeDbFactory {
 
   public static final BiFunction<String, ZeebeDb<ZbColumnFamilies>, ZeebeRocksDBMetricExporter>
-      DEFAULT_DB_METRIC_EXPORTER_FACTORY =
-          (partitionId, database) ->
-              new ZeebeRocksDBMetricExporter<>(partitionId, database, ZbColumnFamilies.class);
+      DEFAULT_DB_METRIC_EXPORTER_FACTORY = ZeebeRocksDBMetricExporter::new;
 
   /**
    * Returns the default zeebe database factory, which is used in most of the places except for the

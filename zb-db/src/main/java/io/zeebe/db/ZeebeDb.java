@@ -18,8 +18,6 @@ import java.util.Optional;
  * ColumnFamily instance via {@link #createColumnFamily(Enum, DbContext, DbKey, DbValue)}. If the
  * column family instances are created they are type save, which makes it possible that only the
  * defined key and value types are stored in the column family.
- *
- * @param <ColumnFamilyType>
  */
 public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extends AutoCloseable {
 
@@ -33,7 +31,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @param <KeyType> the key type of the column family
    * @param <ValueType> the value type of the column family
    * @param columnFamily the enum instance of the column family
-   * @param context
    * @param keyInstance this instance defines the type of the column family key type
    * @param valueInstance this instance defines the type of the column family value type
    * @return the created column family instance
@@ -52,7 +49,7 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    */
   void createSnapshot(File snapshotDir);
 
-  Optional<String> getProperty(ColumnFamilyType columnFamilyName, String propertyName);
+  Optional<String> getProperty(String propertyName);
 
   DbContext createContext();
 
