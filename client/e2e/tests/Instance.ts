@@ -237,7 +237,9 @@ test('Instance with an incident - incident bar', async (t) => {
 
   // click and expand incident bar
   await t
-    .click(screen.getByRole('button', {name: /view 3 incidents in instance/i}))
+    .click(
+      screen.queryByRole('button', {name: /view 3 incidents in instance/i})
+    )
     .expect(screen.getByText(/incident type:/i).exists)
     .ok()
     .expect(screen.getByText(/flow node:/i).exists)
@@ -409,7 +411,9 @@ test('Instance with an incident - incident bar', async (t) => {
     })
     .click(screen.getByRole('button', {name: 'Save variable'}));
 
-  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
+  await t
+    .expect(screen.queryByTestId('operation-spinner').exists)
+    .notOk({timeout: 120000});
 
   // clear filters
   await t
