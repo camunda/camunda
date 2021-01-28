@@ -14,7 +14,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class AdjacentEventTypesDto {
+public class AutogenerationAdjacentEventTypesDto {
   @Builder.Default
   private List<EventTypeDto> precedingEvents = new ArrayList<>();
   @Builder.Default
