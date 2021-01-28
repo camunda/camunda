@@ -121,7 +121,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
 
     if (!explicitStart) {
@@ -130,7 +130,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     subscriptionHandlerExecutor.shutdown();
     subscriptionHandlers.clear();
     partitionReprocessingCompleteListeners.clear();
