@@ -24,15 +24,6 @@ import java.util.function.Function;
 public interface RaftServerProtocol {
 
   /**
-   * Sends a join request to the given node.
-   *
-   * @param memberId the node to which to send the request
-   * @param request the request to send
-   * @return a future to be completed with the response
-   */
-  CompletableFuture<JoinResponse> join(MemberId memberId, JoinRequest request);
-
-  /**
    * Sends a configure request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -94,16 +85,6 @@ public interface RaftServerProtocol {
    * @return a future to be completed with the response
    */
   CompletableFuture<AppendResponse> append(MemberId memberId, AppendRequest request);
-
-  /**
-   * Registers a join request callback.
-   *
-   * @param handler the open session request handler to register
-   */
-  void registerJoinHandler(Function<JoinRequest, CompletableFuture<JoinResponse>> handler);
-
-  /** Unregisters the join request handler. */
-  void unregisterJoinHandler();
 
   /**
    * Registers a transfer request callback.

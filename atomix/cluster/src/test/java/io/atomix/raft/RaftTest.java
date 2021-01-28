@@ -32,7 +32,6 @@ import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.cluster.RaftClusterEvent;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.impl.RaftNamespaces;
@@ -133,10 +132,6 @@ public class RaftTest extends ConcurrentTestCase {
         server
             .bootstrap(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
             .thenRun(latch::countDown);
-      } else {
-        server
-            .listen(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-            .thenRun(latch::countDown);
       }
       servers.add(server);
     }
@@ -204,66 +199,6 @@ public class RaftTest extends ConcurrentTestCase {
     return configurator.apply(defaults).build();
   }
 
-  /** Tests starting several members individually. */
-  @Test
-  public void testSingleMemberStart() throws Throwable {
-    // given
-    final RaftServer server = createServers(1).get(0);
-    server.bootstrap().thenRun(this::resume);
-    await(10000);
-
-    // when
-    final RaftServer joiner1 = createServer(nextNodeId());
-    joiner1.join(server.cluster().getMember().memberId()).thenRun(this::resume);
-    await(10000);
-    final RaftServer joiner2 = createServer(nextNodeId());
-    joiner2.join(server.cluster().getMember().memberId()).thenRun(this::resume);
-
-    // then
-    await(10000);
-  }
-
-  /** Tests joining a server after many entries have been committed. */
-  @Test
-  public void testActiveJoinLate() throws Throwable {
-    testServerJoinLate(RaftMember.Type.ACTIVE, RaftServer.Role.FOLLOWER);
-  }
-
-  /** Tests joining a server after many entries have been committed. */
-  @Test
-  public void testPassiveJoinLate() throws Throwable {
-    testServerJoinLate(RaftMember.Type.PASSIVE, RaftServer.Role.PASSIVE);
-  }
-
-  /** Tests joining a server after many entries have been committed. */
-  private void testServerJoinLate(final RaftMember.Type type, final RaftServer.Role role)
-      throws Throwable {
-    createServers(3);
-    final var leader = getLeader(servers).orElseThrow();
-
-    appendEntry(leader);
-
-    final RaftServer joiner = createServer(nextNodeId());
-    joiner.addRoleChangeListener(
-        (s, t) -> {
-          if (s == role) {
-            resume();
-          }
-        });
-    if (type == RaftMember.Type.ACTIVE) {
-      joiner
-          .join(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    } else {
-      joiner
-          .listen(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    }
-    await(15000, 2);
-    final var newLeader = getLeader(servers).orElseThrow();
-    appendEntries(newLeader, 10);
-  }
-
   /** Tests transferring leadership. */
   @Test
   @Ignore
@@ -277,76 +212,6 @@ public class RaftTest extends ConcurrentTestCase {
     assertTrue(follower.isLeader());
   }
 
-  /** Tests an active member joining the cluster. */
-  @Test
-  public void testActiveJoin() throws Throwable {
-    testServerJoin(RaftMember.Type.ACTIVE);
-  }
-
-  /** Tests a passive member joining the cluster. */
-  @Test
-  public void testPassiveJoin() throws Throwable {
-    testServerJoin(RaftMember.Type.PASSIVE);
-  }
-
-  /** Tests a server joining the cluster. */
-  private void testServerJoin(final RaftMember.Type type) throws Throwable {
-    createServers(3);
-    final RaftServer server = createServer(nextNodeId());
-    if (type == RaftMember.Type.ACTIVE) {
-      server
-          .join(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    } else {
-      server
-          .listen(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    }
-    await(15000);
-  }
-
-  /** Tests an active member join event. */
-  @Test
-  public void testActiveJoinEvent() throws Throwable {
-    testJoinEvent(RaftMember.Type.ACTIVE);
-  }
-
-  /** Tests a passive member join event. */
-  @Test
-  public void testPassiveJoinEvent() throws Throwable {
-    testJoinEvent(RaftMember.Type.PASSIVE);
-  }
-
-  /** Tests a member join event. */
-  private void testJoinEvent(final RaftMember.Type type) throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-
-    final RaftMember member = nextMember(type);
-
-    final RaftServer server = servers.get(0);
-    server
-        .cluster()
-        .addListener(
-            event -> {
-              if (event.type() == RaftClusterEvent.Type.JOIN) {
-                threadAssertEquals(event.subject().memberId(), member.memberId());
-                resume();
-              }
-            });
-
-    final RaftServer joiner = createServer(member.memberId());
-    if (type == RaftMember.Type.ACTIVE) {
-      joiner
-          .join(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    } else {
-      joiner
-          .listen(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-          .thenRun(this::resume);
-    }
-    await(15000, 2);
-  }
-
   /** Tests demoting the leader. */
   @Test
   public void testDemoteLeader() throws Throwable {
@@ -354,25 +219,25 @@ public class RaftTest extends ConcurrentTestCase {
 
     final RaftServer leader =
         servers.stream()
-            .filter(s -> s.cluster().getMember().equals(s.cluster().getLeader()))
+            .filter(s -> s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
             .get();
 
     final RaftServer follower =
         servers.stream()
-            .filter(s -> !s.cluster().getMember().equals(s.cluster().getLeader()))
+            .filter(s -> !s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
             .get();
 
     follower
         .cluster()
-        .getMember(leader.cluster().getMember().memberId())
+        .getMember(leader.cluster().getLocalMember().memberId())
         .addTypeChangeListener(
             t -> {
               threadAssertEquals(t, RaftMember.Type.PASSIVE);
               resume();
             });
-    leader.cluster().getMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
+    leader.cluster().getLocalMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
     await(15000, 2);
   }
 
@@ -403,10 +268,6 @@ public class RaftTest extends ConcurrentTestCase {
         server
             .bootstrap(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
             .thenRun(this::resume);
-      } else {
-        server
-            .listen(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
-            .thenRun(this::resume);
       }
       servers.add(server);
     }
@@ -414,11 +275,6 @@ public class RaftTest extends ConcurrentTestCase {
     await(30000 * live, live);
 
     return servers;
-  }
-
-  private RaftServer awaitLeader(final List<RaftServer> servers) {
-    waitUntil(() -> getLeader(servers).isPresent(), 100);
-    return getLeader(servers).orElseThrow();
   }
 
   /** Tests submitting a command. */
@@ -560,7 +416,7 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldLeaderStepDownOnDisconnect() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch stepDownListener = new CountDownLatch(1);
     leader.addRoleChangeListener(
@@ -583,7 +439,7 @@ public class RaftTest extends ConcurrentTestCase {
     // given
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
     final AtomicLong commitIndex = new AtomicLong();
     leader
         .getContext()
@@ -613,7 +469,7 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> servers = createServers(3);
 
     final RaftServer leader = getLeader(servers).get();
-    final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
+    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch newLeaderElected = new CountDownLatch(1);
     final AtomicReference<MemberId> newLeaderId = new AtomicReference<>();
@@ -622,7 +478,7 @@ public class RaftTest extends ConcurrentTestCase {
             s.addRoleChangeListener(
                 (role, term) -> {
                   if (role == Role.LEADER) {
-                    newLeaderId.set(s.getContext().getCluster().getMember().memberId());
+                    newLeaderId.set(s.getContext().getCluster().getLocalMember().memberId());
                     newLeaderElected.countDown();
                   }
                 }));
@@ -638,7 +494,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldTriggerHeartbeatTimeouts() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final List<RaftServer> followers = getFollowers(servers);
-    final MemberId followerId = followers.get(0).getContext().getCluster().getMember().memberId();
+    final MemberId followerId =
+        followers.get(0).getContext().getCluster().getLocalMember().memberId();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
@@ -654,7 +511,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldReSendPollRequestOnTimeouts() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final List<RaftServer> followers = getFollowers(servers);
-    final MemberId followerId = followers.get(0).getContext().getCluster().getMember().memberId();
+    final MemberId followerId =
+        followers.get(0).getContext().getCluster().getLocalMember().memberId();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);

@@ -223,7 +223,7 @@ public final class RaftRule extends ExternalResource {
   public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
-        .join(getMemberIds())
+        .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
@@ -232,6 +232,15 @@ public final class RaftRule extends ExternalResource {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
         .bootstrap(getMemberIds())
+        .thenAccept(this::addCommitListener)
+        .get(30, TimeUnit.SECONDS);
+  }
+
+  public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
+      throws Exception {
+    final RaftMember member = getRaftMember(nodeId);
+    createServer(member.memberId())
+        .bootstrap(memberIds)
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
@@ -248,7 +257,7 @@ public final class RaftRule extends ExternalResource {
     joinCluster(leader);
   }
 
-  private List<MemberId> getMemberIds() {
+  public List<MemberId> getMemberIds() {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
   }
 
@@ -285,7 +294,7 @@ public final class RaftRule extends ExternalResource {
       if (raftServer.isRunning()) {
         final var raftContext = raftServer.getContext();
         final var snapshotStore =
-            getSnapshotStore(raftServer.cluster().getMember().memberId().id());
+            getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
         InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);

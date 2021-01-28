@@ -48,7 +48,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -264,22 +263,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     } catch (final IOException e) {
       log.error("Failed to delete partition: {}", partition, e);
     }
-  }
-
-  public CompletableFuture<Void> join(final Collection<MemberId> otherMembers) {
-    log.info("Joining partition {} ({})", partition.id(), partition.name());
-    initServer();
-    return server
-        .join(otherMembers)
-        .whenComplete(
-            (r, e) -> {
-              if (e == null) {
-                log.info("Successfully joined partition {} ({})", partition.id(), partition.name());
-              } else {
-                log.warn("Failed to join partition {} ({})", partition.id(), partition.name(), e);
-              }
-            })
-        .thenApply(v -> null);
   }
 
   public Optional<ZeebeLogAppender> getAppender() {

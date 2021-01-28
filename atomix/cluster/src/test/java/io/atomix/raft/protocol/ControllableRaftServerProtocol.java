@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
-  private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
@@ -100,20 +99,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       final CompletableFuture responseFuture) {
     final var message = new Tuple<>(requestHandler, responseFuture);
     messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
-  }
-
-  @Override
-  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    final var responseFuture = new CompletableFuture<JoinResponse>();
-    send(
-        memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.join(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
-    return responseFuture;
   }
 
   @Override
@@ -217,17 +202,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
     return responseFuture;
-  }
-
-  @Override
-  public void registerJoinHandler(
-      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    joinHandler = handler;
-  }
-
-  @Override
-  public void unregisterJoinHandler() {
-    joinHandler = null;
   }
 
   @Override
@@ -367,14 +341,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<ConfigureResponse> configure(final ConfigureRequest request) {
     if (configureHandler != null) {
       return configureHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<JoinResponse> join(final JoinRequest request) {
-    if (joinHandler != null) {
-      return joinHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }

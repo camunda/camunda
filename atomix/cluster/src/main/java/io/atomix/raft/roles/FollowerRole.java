@@ -169,7 +169,7 @@ public final class FollowerRole extends ActiveRole {
       final PollRequest request =
           PollRequest.builder()
               .withTerm(raft.getTerm())
-              .withCandidate(raft.getCluster().getMember().memberId())
+              .withCandidate(raft.getCluster().getLocalMember().memberId())
               .withLastLogIndex(lastEntry != null ? lastEntry.index() : 0)
               .withLastLogTerm(lastTerm)
               .build();

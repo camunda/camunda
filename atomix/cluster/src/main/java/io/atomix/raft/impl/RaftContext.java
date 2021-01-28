@@ -201,7 +201,6 @@ public class RaftContext implements AutoCloseable {
   private void registerHandlers(final RaftServerProtocol protocol) {
     protocol.registerConfigureHandler(request -> runOnContext(() -> role.onConfigure(request)));
     protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
-    protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
     protocol.registerReconfigureHandler(request -> runOnContext(() -> role.onReconfigure(request)));
     protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
     protocol.registerAppendHandler(request -> runOnContext(() -> role.onAppend(request)));
@@ -394,7 +393,7 @@ public class RaftContext implements AutoCloseable {
               new Consumer<>() {
                 @Override
                 public void accept(final RaftMember member) {
-                  if (member.memberId().equals(cluster.getMember().memberId())) {
+                  if (member.memberId().equals(cluster.getLocalMember().memberId())) {
                     future.complete(null);
                   } else {
                     future.completeExceptionally(
@@ -408,7 +407,7 @@ public class RaftContext implements AutoCloseable {
           // If a leader already exists, request a leadership transfer from it. Otherwise,
           // transition to the candidate
           // state and attempt to get elected.
-          final RaftMember member = getCluster().getMember();
+          final RaftMember member = getCluster().getLocalMember();
           final RaftMember leader = getLeader();
           if (leader != null) {
             protocol
@@ -614,7 +613,6 @@ public class RaftContext implements AutoCloseable {
   private void unregisterHandlers(final RaftServerProtocol protocol) {
     protocol.unregisterConfigureHandler();
     protocol.unregisterInstallHandler();
-    protocol.unregisterJoinHandler();
     protocol.unregisterReconfigureHandler();
     protocol.unregisterTransferHandler();
     protocol.unregisterAppendHandler();
@@ -920,7 +918,7 @@ public class RaftContext implements AutoCloseable {
    */
   public boolean isLeader() {
     final MemberId leader = this.leader;
-    return leader != null && leader.equals(cluster.getMember().memberId());
+    return leader != null && leader.equals(cluster.getLocalMember().memberId());
   }
 
   /**
