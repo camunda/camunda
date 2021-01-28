@@ -11,8 +11,8 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.ErrorEventHandler;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
 import org.agrona.DirectBuffer;
 
 public final class BpmnEventPublicationBehavior {
@@ -25,8 +25,13 @@ public final class BpmnEventPublicationBehavior {
       final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
     final var workflowState = zeebeState.getWorkflowState();
     final var keyGenerator = zeebeState.getKeyGenerator();
-    elementInstanceState = workflowState.getElementInstanceState();
-    errorEventHandler = new ErrorEventHandler(workflowState, keyGenerator);
+    elementInstanceState = zeebeState.getElementInstanceState();
+    errorEventHandler =
+        new ErrorEventHandler(
+            zeebeState.getWorkflowState(),
+            zeebeState.getElementInstanceState(),
+            zeebeState.getEventScopeInstanceState(),
+            zeebeState.getKeyGenerator());
     this.streamWriter = streamWriter;
   }
 

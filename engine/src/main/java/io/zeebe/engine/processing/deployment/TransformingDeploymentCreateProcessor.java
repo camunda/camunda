@@ -23,8 +23,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
@@ -42,7 +44,9 @@ public final class TransformingDeploymentCreateProcessor
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
   private final DeploymentTransformer deploymentTransformer;
-  private final WorkflowState workflowState;
+  private final MutableWorkflowState workflowState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionProcessor;
@@ -52,6 +56,8 @@ public final class TransformingDeploymentCreateProcessor
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor) {
     workflowState = zeebeState.getWorkflowState();
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
     deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
@@ -127,20 +133,15 @@ public final class TransformingDeploymentCreateProcessor
       }
 
       if (hasAtLeastOneTimer) {
-        workflowState
-            .getEventScopeInstanceState()
-            .createIfNotExists(workflow.getKey(), Collections.emptyList());
+        eventScopeInstanceState.createIfNotExists(workflow.getKey(), Collections.emptyList());
       }
     }
   }
 
   private void unsubscribeFromPreviousTimers(
       final TypedStreamWriter streamWriter, final Workflow workflow) {
-    workflowState
-        .getTimerState()
-        .forEachTimerForElementInstance(
-            NO_ELEMENT_INSTANCE,
-            timer -> unsubscribeFromPreviousTimer(streamWriter, workflow, timer));
+    timerInstanceState.forEachTimerForElementInstance(
+        NO_ELEMENT_INSTANCE, timer -> unsubscribeFromPreviousTimer(streamWriter, workflow, timer));
   }
 
   private void unsubscribeFromPreviousTimer(

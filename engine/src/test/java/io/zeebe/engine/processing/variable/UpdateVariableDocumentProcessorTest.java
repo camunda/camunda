@@ -15,8 +15,8 @@ import io.zeebe.engine.processing.CommandProcessorTestCase;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
@@ -38,15 +38,15 @@ public final class UpdateVariableDocumentProcessorTest
 
   public static final int WORKFLOW_KEY = -1;
 
-  private ElementInstanceState elementInstanceState;
-  private VariablesState variablesState;
+  private MutableElementInstanceState elementInstanceState;
+  private MutableVariableState variablesState;
   private UpdateVariableDocumentProcessor processor;
 
   @Before
   public void setUp() {
     final ZeebeState state = ZEEBE_STATE_RULE.getZeebeState();
-    elementInstanceState = state.getWorkflowState().getElementInstanceState();
-    variablesState = Mockito.spy(elementInstanceState.getVariablesState());
+    elementInstanceState = state.getElementInstanceState();
+    variablesState = Mockito.spy(state.getVariableState());
     processor = new UpdateVariableDocumentProcessor(elementInstanceState, variablesState);
   }
 

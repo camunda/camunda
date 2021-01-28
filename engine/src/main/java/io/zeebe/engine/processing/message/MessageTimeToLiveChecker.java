@@ -8,8 +8,8 @@
 package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.message.Message;
-import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;

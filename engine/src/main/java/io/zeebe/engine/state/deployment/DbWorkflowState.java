@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.state.deployment;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
@@ -14,9 +16,12 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.zeebe.engine.state.NextValueManager;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -34,7 +39,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
-public final class WorkflowPersistenceCache {
+public final class DbWorkflowState implements MutableWorkflowState {
 
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
 
@@ -47,7 +52,8 @@ public final class WorkflowPersistenceCache {
   private final DbLong workflowKey;
   private final PersistedWorkflow persistedWorkflow;
 
-  private final ColumnFamily<DbCompositeKey, PersistedWorkflow> workflowByIdAndVersionColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedWorkflow>
+      workflowByIdAndVersionColumnFamily;
   private final DbLong workflowVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
 
@@ -58,8 +64,9 @@ public final class WorkflowPersistenceCache {
   private final ColumnFamily<DbString, Digest> digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
-  public WorkflowPersistenceCache(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  private final NextValueManager versionManager;
+
+  public DbWorkflowState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     workflowKey = new DbLong();
     persistedWorkflow = new PersistedWorkflow();
     workflowColumnFamily =
@@ -85,9 +92,12 @@ public final class WorkflowPersistenceCache {
             ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, dbContext, workflowId, digest);
 
     workflowsByKey = new Long2ObjectHashMap<>();
+
+    versionManager = new NextValueManager(zeebeDb, dbContext, ZbColumnFamilies.WORKFLOW_VERSION);
   }
 
-  void putDeployment(final DeploymentRecord deploymentRecord) {
+  @Override
+  public void putDeployment(final DeploymentRecord deploymentRecord) {
     for (final Workflow workflow : deploymentRecord.workflows()) {
       final long workflowKey = workflow.getKey();
       final DirectBuffer resourceName = workflow.getResourceNameBuffer();
@@ -174,6 +184,7 @@ public final class WorkflowPersistenceCache {
     versionMap.put(version, deployedWorkflow);
   }
 
+  @Override
   public DeployedWorkflow getLatestWorkflowVersionByProcessId(final DirectBuffer processId) {
     final Long2ObjectHashMap<DeployedWorkflow> versionMap =
         workflowsByProcessIdAndVersion.get(processId);
@@ -208,6 +219,7 @@ public final class WorkflowPersistenceCache {
     return null;
   }
 
+  @Override
   public DeployedWorkflow getWorkflowByProcessIdAndVersion(
       final DirectBuffer processId, final int version) {
     final Long2ObjectHashMap<DeployedWorkflow> versionMap =
@@ -244,6 +256,7 @@ public final class WorkflowPersistenceCache {
     return null;
   }
 
+  @Override
   public DeployedWorkflow getWorkflowByKey(final long key) {
     final DeployedWorkflow deployedWorkflow = workflowsByKey.get(key);
 
@@ -268,11 +281,13 @@ public final class WorkflowPersistenceCache {
     return null;
   }
 
+  @Override
   public Collection<DeployedWorkflow> getWorkflows() {
     updateCompleteInMemoryState();
     return workflowsByKey.values();
   }
 
+  @Override
   public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(
       final DirectBuffer bpmnProcessId) {
     updateCompleteInMemoryState();
@@ -290,6 +305,7 @@ public final class WorkflowPersistenceCache {
     workflowColumnFamily.forEach((workflow) -> updateInMemoryState(persistedWorkflow));
   }
 
+  @Override
   public void putLatestVersionDigest(final DirectBuffer processId, final DirectBuffer digest) {
     workflowId.wrapBuffer(processId);
     this.digest.set(digest);
@@ -297,9 +313,38 @@ public final class WorkflowPersistenceCache {
     digestByIdColumnFamily.put(workflowId, this.digest);
   }
 
+  @Override
   public DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
     workflowId.wrapBuffer(processId);
     final Digest latestDigest = digestByIdColumnFamily.get(workflowId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
+  }
+
+  @Override
+  public int getNextWorkflowVersion(final String bpmnProcessId) {
+    return (int) versionManager.getNextValue(bpmnProcessId);
+  }
+
+  @Override
+  public <T extends ExecutableFlowElement> T getFlowElement(
+      final long workflowKey, final DirectBuffer elementId, final Class<T> elementType) {
+
+    final var deployedWorkflow = getWorkflowByKey(workflowKey);
+    if (deployedWorkflow == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find a workflow deployed with key '%d' but not found.", workflowKey));
+    }
+
+    final var workflow = deployedWorkflow.getWorkflow();
+    final var element = workflow.getElementById(elementId, elementType);
+    if (element == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find a flow element with id '%s' in workflow with key '%d' but not found.",
+              bufferAsString(elementId), workflowKey));
+    }
+
+    return element;
   }
 }

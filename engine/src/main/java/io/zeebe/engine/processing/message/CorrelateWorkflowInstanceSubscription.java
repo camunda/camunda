@@ -18,9 +18,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
@@ -46,9 +47,10 @@ public final class CorrelateWorkflowInstanceSubscription
       "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
 
-  private final WorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final WorkflowState workflowState;
+  private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
 
   private final EventHandle eventHandle;
@@ -58,16 +60,16 @@ public final class CorrelateWorkflowInstanceSubscription
   private DirectBuffer correlationKey;
 
   public CorrelateWorkflowInstanceSubscription(
-      final WorkflowInstanceSubscriptionState subscriptionState,
+      final MutableWorkflowInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final ZeebeState zeebeState) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     workflowState = zeebeState.getWorkflowState();
+    elementInstanceState = zeebeState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
 
-    eventHandle =
-        new EventHandle(keyGenerator, zeebeState.getWorkflowState().getEventScopeInstanceState());
+    eventHandle = new EventHandle(keyGenerator, zeebeState.getEventScopeInstanceState());
   }
 
   @Override
@@ -153,7 +155,7 @@ public final class CorrelateWorkflowInstanceSubscription
       final DirectBuffer variables) {
 
     final var elementInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
+        elementInstanceState.getInstance(subscription.getElementInstanceKey());
     if (elementInstance == null) {
       return false;
     }

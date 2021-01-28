@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.engine.state.instance.IncidentState;
+import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.Record;
@@ -96,7 +96,8 @@ public final class IncidentStreamProcessorTest {
   @Test
   public void shouldRemoveIncidentFromStateOnResolved() {
     // given
-    final IncidentState incidentState = streamProcessorRule.getZeebeState().getIncidentState();
+    final MutableIncidentState incidentState =
+        streamProcessorRule.getZeebeState().getIncidentState();
     final IncidentRecord incidentRecord = new IncidentRecord();
     incidentRecord.setElementInstanceKey(2);
     incidentState.createIncident(1, incidentRecord);

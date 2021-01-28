@@ -14,9 +14,9 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.message.Message;
-import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -27,14 +27,14 @@ import org.agrona.DirectBuffer;
 public final class RejectMessageCorrelationProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageState messageState;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageState messageState;
+  private final MutableMessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
   private MessageSubscription subscription;
 
   public RejectMessageCorrelationProcessor(
-      final MessageState messageState,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageState messageState,
+      final MutableMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;

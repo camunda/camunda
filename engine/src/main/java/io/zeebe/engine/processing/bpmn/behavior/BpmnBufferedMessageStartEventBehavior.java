@@ -13,9 +13,9 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.message.Message;
-import io.zeebe.engine.state.message.MessageState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.Optional;
@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnBufferedMessageStartEventBehavior {
 
-  private final MessageState messageState;
+  private final MutableMessageState messageState;
   private final WorkflowState workflowState;
   private final TypedStreamWriter streamWriter;
 
@@ -36,7 +36,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     this.streamWriter = streamWriter;
 
     eventHandle =
-        new EventHandle(zeebeState.getKeyGenerator(), workflowState.getEventScopeInstanceState());
+        new EventHandle(zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState());
   }
 
   public void correlateMessage(final BpmnElementContext context) {

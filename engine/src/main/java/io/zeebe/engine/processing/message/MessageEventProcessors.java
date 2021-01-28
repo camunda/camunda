@@ -11,10 +11,10 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
-import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
-import io.zeebe.engine.state.message.MessageState;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -27,12 +27,13 @@ public final class MessageEventProcessors {
       final ZeebeState zeebeState,
       final SubscriptionCommandSender subscriptionCommandSender) {
 
-    final MessageState messageState = zeebeState.getMessageState();
-    final MessageSubscriptionState subscriptionState = zeebeState.getMessageSubscriptionState();
-    final MessageStartEventSubscriptionState startEventSubscriptionState =
+    final MutableMessageState messageState = zeebeState.getMessageState();
+    final MutableMessageSubscriptionState subscriptionState =
+        zeebeState.getMessageSubscriptionState();
+    final MutableMessageStartEventSubscriptionState startEventSubscriptionState =
         zeebeState.getMessageStartEventSubscriptionState();
-    final EventScopeInstanceState eventScopeInstanceState =
-        zeebeState.getWorkflowState().getEventScopeInstanceState();
+    final MutableEventScopeInstanceState eventScopeInstanceState =
+        zeebeState.getEventScopeInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
@@ -71,7 +72,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.OPEN,
             new OpenMessageStartEventSubscriptionProcessor(
-                startEventSubscriptionState, zeebeState.getWorkflowState()))
+                startEventSubscriptionState, zeebeState.getEventScopeInstanceState()))
         .onCommand(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.CLOSE,

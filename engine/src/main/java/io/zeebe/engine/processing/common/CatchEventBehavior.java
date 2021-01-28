@@ -22,11 +22,11 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
+import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.instance.TimerInstanceState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -46,8 +46,8 @@ public final class CatchEventBehavior {
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
 
-  private final EventScopeInstanceState eventScopeInstanceState;
-  private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableWorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
@@ -64,8 +64,8 @@ public final class CatchEventBehavior {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
 
-    eventScopeInstanceState = zeebeState.getWorkflowState().getEventScopeInstanceState();
-    timerInstanceState = zeebeState.getWorkflowState().getTimerState();
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    timerInstanceState = zeebeState.getTimerState();
     workflowInstanceSubscriptionState = zeebeState.getWorkflowInstanceSubscriptionState();
   }
 

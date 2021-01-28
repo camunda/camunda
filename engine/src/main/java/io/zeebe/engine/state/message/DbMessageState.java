@@ -18,9 +18,10 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableMessageState;
 import org.agrona.DirectBuffer;
 
-public final class MessageState {
+public final class DbMessageState implements MutableMessageState {
 
   /**
    * <pre>message key -> message
@@ -90,7 +91,7 @@ public final class MessageState {
 
   private final ColumnFamily<DbLong, DbString> workflowInstanceCorrelationKeyColumnFamiliy;
 
-  public MessageState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbMessageState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     messageKey = new DbLong();
     message = new Message();
     messageColumnFamily =
@@ -142,6 +143,7 @@ public final class MessageState {
             correlationKey);
   }
 
+  @Override
   public void put(final Message message) {
     messageKey.wrapLong(message.getKey());
     messageColumnFamily.put(messageKey, message);
@@ -160,6 +162,7 @@ public final class MessageState {
     }
   }
 
+  @Override
   public void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -169,6 +172,7 @@ public final class MessageState {
     correlatedMessageColumnFamily.put(messageBpmnProcessIdKey, DbNil.INSTANCE);
   }
 
+  @Override
   public boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -179,6 +183,7 @@ public final class MessageState {
     return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
   }
 
+  @Override
   public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -189,6 +194,7 @@ public final class MessageState {
     correlatedMessageColumnFamily.delete(messageBpmnProcessIdKey);
   }
 
+  @Override
   public boolean existActiveWorkflowInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -199,6 +205,7 @@ public final class MessageState {
     return activeWorkflowInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
   }
 
+  @Override
   public void putActiveWorkflowInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -210,6 +217,7 @@ public final class MessageState {
         bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
   }
 
+  @Override
   public void removeActiveWorkflowInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -220,6 +228,7 @@ public final class MessageState {
     activeWorkflowInstancesByCorrelationKeyColumnFamiliy.delete(bpmnProcessIdCorrelationKey);
   }
 
+  @Override
   public void putWorkflowInstanceCorrelationKey(
       final long workflowInstanceKey, final DirectBuffer correlationKey) {
     ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
@@ -230,6 +239,7 @@ public final class MessageState {
     workflowInstanceCorrelationKeyColumnFamiliy.put(this.workflowInstanceKey, this.correlationKey);
   }
 
+  @Override
   public DirectBuffer getWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
     ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
 
@@ -240,6 +250,7 @@ public final class MessageState {
     return correlationKey != null ? correlationKey.getBuffer() : null;
   }
 
+  @Override
   public void removeWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
     ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
 
@@ -247,6 +258,7 @@ public final class MessageState {
     workflowInstanceCorrelationKeyColumnFamiliy.delete(this.workflowInstanceKey);
   }
 
+  @Override
   public void visitMessages(
       final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
 
@@ -262,11 +274,13 @@ public final class MessageState {
         });
   }
 
+  @Override
   public Message getMessage(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
   }
 
+  @Override
   public void visitMessagesWithDeadlineBefore(final long timestamp, final MessageVisitor visitor) {
     deadlineColumnFamily.whileTrue(
         ((compositeKey, zbNil) -> {
@@ -280,6 +294,7 @@ public final class MessageState {
         }));
   }
 
+  @Override
   public boolean exist(
       final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
     messageName.wrapBuffer(name);
@@ -289,6 +304,7 @@ public final class MessageState {
     return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
   }
 
+  @Override
   public void remove(final long key) {
     final Message message = getMessage(key);
     if (message == null) {
@@ -317,10 +333,5 @@ public final class MessageState {
         ((compositeKey, zbNil) -> {
           correlatedMessageColumnFamily.delete(compositeKey);
         }));
-  }
-
-  @FunctionalInterface
-  public interface MessageVisitor {
-    boolean visit(Message message);
   }
 }

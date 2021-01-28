@@ -10,11 +10,11 @@ package io.zeebe.engine.processing.incident;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.IncidentState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.IncidentState;
+import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.JobState.State;
 import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -84,8 +84,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
 
   private boolean rejectWorkflowInstanceIncident(
       final long elementInstanceKey, final CommandControl<IncidentRecord> commandControl) {
-    final ElementInstanceState elementInstanceState =
-        zeebeState.getWorkflowState().getElementInstanceState();
+    final ElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
 
     final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
     final boolean noFailedRecord = failedRecord == null;

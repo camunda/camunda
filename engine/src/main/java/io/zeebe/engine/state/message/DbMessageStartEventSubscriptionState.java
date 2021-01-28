@@ -15,10 +15,13 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public final class MessageStartEventSubscriptionState {
+public final class DbMessageStartEventSubscriptionState
+    implements MutableMessageStartEventSubscriptionState {
 
   private final DbString messageName;
   private final DbLong workflowKey;
@@ -34,7 +37,7 @@ public final class MessageStartEventSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
       subscriptionsOfWorkflowKeyColumnFamily;
 
-  public MessageStartEventSubscriptionState(
+  public DbMessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     messageName = new DbString();
     workflowKey = new DbLong();
@@ -55,6 +58,7 @@ public final class MessageStartEventSubscriptionState {
             DbNil.INSTANCE);
   }
 
+  @Override
   public void put(final MessageStartEventSubscriptionRecord subscription) {
     subscriptionValue.set(subscription);
 
@@ -64,6 +68,7 @@ public final class MessageStartEventSubscriptionState {
     subscriptionsOfWorkflowKeyColumnFamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
+  @Override
   public void removeSubscriptionsOfWorkflow(final long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
@@ -75,6 +80,7 @@ public final class MessageStartEventSubscriptionState {
         });
   }
 
+  @Override
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     workflowKey.wrapLong(subscription.getWorkflowKey());
@@ -82,19 +88,15 @@ public final class MessageStartEventSubscriptionState {
     return subscriptionsColumnFamily.exists(messageNameAndWorkflowKey);
   }
 
+  @Override
   public void visitSubscriptionsByMessageName(
-      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
+      final DirectBuffer messageName, final Consumer<MessageStartEventSubscriptionRecord> visitor) {
 
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(
         this.messageName,
         (key, value) -> {
-          visitor.visit(value.get());
+          visitor.accept(value.get());
         });
-  }
-
-  @FunctionalInterface
-  public interface MessageStartEventSubscriptionVisitor {
-    void visit(MessageStartEventSubscriptionRecord subscription);
   }
 }

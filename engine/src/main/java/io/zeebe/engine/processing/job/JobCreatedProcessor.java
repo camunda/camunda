@@ -11,17 +11,16 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 
 public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
 
-  private final WorkflowState workflowState;
+  private final MutableElementInstanceState elementInstanceState;
 
-  public JobCreatedProcessor(final WorkflowState scopeInstances) {
-    workflowState = scopeInstances;
+  public JobCreatedProcessor(final MutableElementInstanceState elementInstanceState) {
+    this.elementInstanceState = elementInstanceState;
   }
 
   @Override
@@ -32,7 +31,6 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
 
     final long elementInstanceKey = record.getValue().getElementInstanceKey();
     if (elementInstanceKey > 0) {
-      final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
       final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
       if (elementInstance != null) {

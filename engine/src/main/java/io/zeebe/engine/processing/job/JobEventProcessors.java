@@ -24,16 +24,23 @@ public final class JobEventProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final int maxRecordSize) {
 
-    final var workflowState = zeebeState.getWorkflowState();
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
 
-    final var jobErrorThrownProcessor =
-        new JobErrorThrownProcessor(workflowState, keyGenerator, jobState);
+    final var jobErrorThrownProcessor = new JobErrorThrownProcessor(zeebeState);
 
     typedRecordProcessors
-        .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(workflowState))
-        .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(workflowState))
+        .onEvent(
+            ValueType.JOB,
+            JobIntent.CREATED,
+            new JobCreatedProcessor(zeebeState.getElementInstanceState()))
+        .onEvent(
+            ValueType.JOB,
+            JobIntent.COMPLETED,
+            new JobCompletedEventProcessor(
+                zeebeState.getElementInstanceState(),
+                zeebeState.getEventScopeInstanceState(),
+                zeebeState.getVariableState()))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
@@ -47,10 +54,7 @@ public final class JobEventProcessors {
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                jobState,
-                workflowState.getElementInstanceState().getVariablesState(),
-                keyGenerator,
-                maxRecordSize))
+                jobState, zeebeState.getVariableState(), keyGenerator, maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {

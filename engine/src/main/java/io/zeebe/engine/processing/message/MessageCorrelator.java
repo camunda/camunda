@@ -10,9 +10,9 @@ package io.zeebe.engine.processing.message;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.state.message.Message;
-import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
@@ -22,8 +22,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class MessageCorrelator {
 
   private final DirectBuffer messageVariables = new UnsafeBuffer();
-  private final MessageState messageState;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageState messageState;
+  private final MutableMessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
   private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
@@ -31,8 +31,8 @@ public final class MessageCorrelator {
   private long messageKey;
 
   public MessageCorrelator(
-      final MessageState messageState,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageState messageState,
+      final MutableMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;

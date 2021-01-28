@@ -14,9 +14,10 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import java.util.function.Consumer;
 
-public final class TimerInstanceState {
+public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, TimerInstance>
       timerInstanceColumnFamily;
@@ -32,7 +33,7 @@ public final class TimerInstanceState {
 
   private long nextDueDate;
 
-  public TimerInstanceState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbTimerInstanceState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     timerInstance = new TimerInstance();
     timerKey = new DbLong();
     elementInstanceKey = new DbLong();
@@ -48,6 +49,7 @@ public final class TimerInstanceState {
             ZbColumnFamilies.TIMER_DUE_DATES, dbContext, dueDateCompositeKey, DbNil.INSTANCE);
   }
 
+  @Override
   public void put(final TimerInstance timer) {
     timerKey.wrapLong(timer.getKey());
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
@@ -58,6 +60,7 @@ public final class TimerInstanceState {
     dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
   }
 
+  @Override
   public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
@@ -81,10 +84,7 @@ public final class TimerInstanceState {
     return nextDueDate;
   }
 
-  /**
-   * NOTE: the timer instance given to the consumer is shared and will be mutated on the next
-   * iteration.
-   */
+  @Override
   public void forEachTimerForElementInstance(
       final long elementInstanceKey, final Consumer<TimerInstance> action) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
@@ -96,6 +96,7 @@ public final class TimerInstanceState {
         });
   }
 
+  @Override
   public TimerInstance get(final long elementInstanceKey, final long timerKey) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.timerKey.wrapLong(timerKey);
@@ -103,6 +104,7 @@ public final class TimerInstanceState {
     return timerInstanceColumnFamily.get(elementAndTimerKey);
   }
 
+  @Override
   public void remove(final TimerInstance timer) {
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
     timerKey.wrapLong(timer.getKey());
@@ -110,10 +112,5 @@ public final class TimerInstanceState {
 
     dueDateKey.wrapLong(timer.getDueDate());
     dueDateColumnFamily.delete(dueDateCompositeKey);
-  }
-
-  @FunctionalInterface
-  public interface TimerVisitor {
-    boolean visit(TimerInstance timer);
   }
 }

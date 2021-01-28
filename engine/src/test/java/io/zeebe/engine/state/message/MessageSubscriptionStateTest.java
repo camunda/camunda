@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,7 @@ public final class MessageSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MessageSubscriptionState state;
+  private MutableMessageSubscriptionState state;
 
   @Before
   public void setUp() {

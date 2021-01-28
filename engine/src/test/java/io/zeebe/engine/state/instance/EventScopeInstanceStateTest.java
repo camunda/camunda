@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,12 +26,12 @@ public final class EventScopeInstanceStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private EventScopeInstanceState state;
+  private MutableEventScopeInstanceState state;
 
   @Before
   public void setUp() {
     final ZeebeState zeebeState = stateRule.getZeebeState();
-    state = zeebeState.getWorkflowState().getEventScopeInstanceState();
+    state = zeebeState.getEventScopeInstanceState();
   }
 
   @Test

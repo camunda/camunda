@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private WorkflowInstanceSubscriptionState state;
+  private MutableWorkflowInstanceSubscriptionState state;
 
   @Before
   public void setUp() {

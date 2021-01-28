@@ -13,9 +13,9 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.VariablesState;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
@@ -34,8 +34,8 @@ public final class BpmnWorkflowResultSenderBehavior {
 
   public BpmnWorkflowResultSenderBehavior(
       final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
-    variablesState = elementInstanceState.getVariablesState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    variablesState = zeebeState.getVariableState();
     this.responseWriter = responseWriter;
   }
 

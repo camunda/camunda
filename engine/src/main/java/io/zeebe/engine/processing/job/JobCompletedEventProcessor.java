@@ -11,18 +11,27 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class JobCompletedEventProcessor implements TypedRecordProcessor<JobRecord> {
 
-  private final WorkflowState workflowState;
+  private final MutableElementInstanceState elementInstanceState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableVariableState variableState;
 
-  public JobCompletedEventProcessor(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public JobCompletedEventProcessor(
+      final MutableElementInstanceState elementInstanceState,
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableVariableState variableState) {
+    this.elementInstanceState = elementInstanceState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
+    this.variableState = variableState;
   }
 
   @Override
@@ -33,29 +42,25 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
 
     final JobRecord jobEvent = record.getValue();
     final long elementInstanceKey = jobEvent.getElementInstanceKey();
-    final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     if (elementInstance != null) {
       final long scopeKey = elementInstance.getValue().getFlowScopeKey();
-      final ElementInstance scopeInstance =
-          workflowState.getElementInstanceState().getInstance(scopeKey);
+      final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
       if (scopeInstance != null && scopeInstance.isActive()) {
         final WorkflowInstanceRecord value = elementInstance.getValue();
 
         elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
         elementInstance.setJobKey(-1);
-        workflowState.getElementInstanceState().updateInstance(elementInstance);
+        elementInstanceState.updateInstance(elementInstance);
 
         streamWriter.appendFollowUpEvent(
             elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
 
-        workflowState.getEventScopeInstanceState().shutdownInstance(elementInstanceKey);
-        workflowState
-            .getElementInstanceState()
-            .getVariablesState()
-            .setTemporaryVariables(elementInstanceKey, jobEvent.getVariablesBuffer());
+        eventScopeInstanceState.shutdownInstance(elementInstanceKey);
+
+        variableState.setTemporaryVariables(elementInstanceKey, jobEvent.getVariablesBuffer());
       }
     }
   }

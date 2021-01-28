@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.deployment;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -33,7 +33,7 @@ public final class DeploymentCreateProcessorTest {
   public final StreamProcessorRule rule =
       new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
-  private WorkflowState workflowState;
+  private MutableWorkflowState workflowState;
 
   @Before
   public void setUp() {

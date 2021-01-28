@@ -15,9 +15,10 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import org.agrona.DirectBuffer;
 
-public final class MessageSubscriptionState {
+public final class DbMessageSubscriptionState implements MutableMessageSubscriptionState {
 
   private final DbContext dbContext;
 
@@ -43,7 +44,7 @@ public final class MessageSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  public MessageSubscriptionState(
+  public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this.dbContext = dbContext;
 
@@ -79,12 +80,14 @@ public final class MessageSubscriptionState {
             DbNil.INSTANCE);
   }
 
+  @Override
   public MessageSubscription get(final long elementInstanceKey, final DirectBuffer messageName) {
     this.messageName.wrapBuffer(messageName);
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
+  @Override
   public void put(final MessageSubscription subscription) {
     elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
     messageName.wrapBuffer(subscription.getMessageName());
@@ -95,6 +98,7 @@ public final class MessageSubscriptionState {
         nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
+  @Override
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
@@ -126,6 +130,7 @@ public final class MessageSubscriptionState {
     return visitor.visit(messageSubscription);
   }
 
+  @Override
   public void updateToCorrelatingState(
       final MessageSubscription subscription,
       final DirectBuffer messageVariables,
@@ -136,15 +141,18 @@ public final class MessageSubscriptionState {
     updateSentTime(subscription, sentTime);
   }
 
+  @Override
   public void resetSentTime(final MessageSubscription subscription) {
     updateSentTime(subscription, 0);
   }
 
+  @Override
   public void updateSentTimeInTransaction(
       final MessageSubscription subscription, final long sentTime) {
     dbContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
   }
 
+  @Override
   public void updateSentTime(final MessageSubscription subscription, final long sentTime) {
     elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
     messageName.wrapBuffer(subscription.getMessageName());
@@ -160,6 +168,7 @@ public final class MessageSubscriptionState {
     }
   }
 
+  @Override
   public void visitSubscriptionBefore(
       final long deadline, final MessageSubscriptionVisitor visitor) {
     sentTimeColumnFamily.whileTrue(
@@ -172,6 +181,7 @@ public final class MessageSubscriptionState {
         });
   }
 
+  @Override
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
@@ -180,6 +190,7 @@ public final class MessageSubscriptionState {
     return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
+  @Override
   public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
@@ -194,6 +205,7 @@ public final class MessageSubscriptionState {
     return found;
   }
 
+  @Override
   public void remove(final MessageSubscription subscription) {
     subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
@@ -209,10 +221,5 @@ public final class MessageSubscriptionState {
       sentTime.wrapLong(subscription.getCommandSentTime());
       sentTimeColumnFamily.delete(sentTimeCompositeKey);
     }
-  }
-
-  @FunctionalInterface
-  public interface MessageSubscriptionVisitor {
-    boolean visit(MessageSubscription subscription);
   }
 }

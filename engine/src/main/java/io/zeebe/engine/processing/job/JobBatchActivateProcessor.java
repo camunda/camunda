@@ -14,8 +14,8 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.immutable.VariablesState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
@@ -39,7 +39,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  private final JobState jobState;
+  private final MutableJobState jobState;
   private final VariablesState variablesState;
   private final KeyGenerator keyGenerator;
   private final long maxRecordLength;
@@ -48,7 +48,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      final JobState jobState,
+      final MutableJobState jobState,
       final VariablesState variablesState,
       final KeyGenerator keyGenerator,
       final long maxRecordLength) {
@@ -224,7 +224,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(
-      long jobKey, final JobRecord job, final TypedStreamWriter streamWriter) {
+      final long jobKey, final JobRecord job, final TypedStreamWriter streamWriter) {
 
     final String messageSize = ByteValue.prettyPrint(maxRecordLength);
 

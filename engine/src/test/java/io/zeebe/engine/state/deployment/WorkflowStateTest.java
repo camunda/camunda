@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -31,7 +32,8 @@ public final class WorkflowStateTest {
   private static final Long FIRST_WORKFLOW_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
-  private WorkflowState workflowState;
+
+  private MutableWorkflowState workflowState;
   private ZeebeState zeebeState;
 
   @Before
@@ -426,7 +428,7 @@ public final class WorkflowStateTest {
 
   public static DeploymentRecord creatingDeploymentRecord(
       final ZeebeState zeebeState, final String processId) {
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
+    final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
     final int version = workflowState.getNextWorkflowVersion(processId);
     return creatingDeploymentRecord(zeebeState, processId, version);
   }

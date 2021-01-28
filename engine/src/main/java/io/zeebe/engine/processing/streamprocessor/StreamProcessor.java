@@ -244,7 +244,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   private long recoverFromSnapshot() {
     final ZeebeState zeebeState = recoverState();
-    final long snapshotPosition = zeebeState.getLastSuccessfulProcessedRecordPosition();
+    final long snapshotPosition =
+        zeebeState.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
