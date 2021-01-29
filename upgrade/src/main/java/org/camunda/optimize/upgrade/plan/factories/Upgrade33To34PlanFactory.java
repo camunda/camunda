@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -19,6 +21,8 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.3.0")
       .toVersion("3.4.0")
       .addUpgradeStep(migrateFlowNodeStatusConfigToFilters())
+      .addUpgradeStep(migrateEventMappingEventSources())
+      .addUpgradeStep(migrateEventPublishStateEventSources())
       .build();
   }
 
@@ -55,6 +59,58 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n";
     //@formatter:on
     return new UpdateIndexStep(new SingleProcessReportIndex(), script);
+  }
+
+  private static UpgradeStep migrateEventMappingEventSources() {
+    //@formatter:off
+    final String script =
+      "ctx._source.eventSources.forEach(eventSource -> {\n" +
+      updateEventSourceScript() +
+      "})\n";
+    //@formatter:on
+    return new UpdateIndexStep(new EventProcessMappingIndex(), script);
+  }
+
+  private static UpgradeStep migrateEventPublishStateEventSources() {
+    //@formatter:off
+    final String script =
+      "ctx._source.eventImportSources.forEach(eventImportSource -> {\n" +
+      "  def eventSource = eventImportSource.eventSource;\n" +
+      updateEventSourceScript() +
+      "})\n";
+    //@formatter:on
+    return new UpdateIndexStep(new EventProcessPublishStateIndex(), script);
+  }
+
+  private static String updateEventSourceScript() {
+    //@formatter:off
+    return
+      "  if (eventSource.type == 'external') {\n" +
+      "    def sourceConfig = [\n" +
+      "      'includeAllGroups': true,\n" +
+      "      'eventScope': eventSource.eventScope\n" +
+      "     ];\n" +
+      "    sourceConfig.group = null;" +
+      "    eventSource.configuration = sourceConfig;\n" +
+      "  } else if (eventSource.type == 'camunda') {\n" +
+      "    def sourceConfig = [\n" +
+      "      'eventScope': eventSource.eventScope,\n" +
+      "      'processDefinitionKey': eventSource.processDefinitionKey,\n" +
+      "      'versions': eventSource.versions,\n" +
+      "      'tenants': eventSource.tenants,\n" +
+      "      'tracedByBusinessKey': eventSource.tracedByBusinessKey,\n" +
+      "      'traceVariable': eventSource.traceVariable\n" +
+      "     ];\n" +
+      "    sourceConfig.processDefinitionName = null;\n" +
+      "    eventSource.configuration = sourceConfig;\n" +
+      "  }\n" +
+      "  eventSource.remove(\"processDefinitionKey\");\n" +
+      "  eventSource.remove(\"versions\");\n" +
+      "  eventSource.remove(\"tenants\");\n" +
+      "  eventSource.remove(\"tracedByBusinessKey\");\n" +
+      "  eventSource.remove(\"traceVariable\");\n" +
+      "  eventSource.remove(\"eventScope\");\n";
+    //@formatter:on
   }
 
 }

@@ -288,7 +288,6 @@ public class OptimizeRequestExecutor {
   public <T> T execute(Class<T> classToExtractFromResponse, int responseCode) {
     try (final Response response = execute()) {
       assertStatusCode(response, responseCode);
-
       return response.readEntity(classToExtractFromResponse);
     }
   }

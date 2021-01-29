@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.event;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   @Test
   public void updateEventSourcesWithAuthorization() {
     // given
-    final EventSourceEntryDto camundaSource = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY);
+    final CamundaEventSourceEntryDto camundaSource = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY);
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     eventProcessMapping.getEventSources().add(camundaSource);
 
@@ -51,7 +51,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   public void updateEventSourcesWithoutAccessToProcess() {
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry =
+    final CamundaEventSourceEntryDto eventSourceEntry =
       createSimpleCamundaEventSourceEntryWithTenant(PROCESS_DEF_KEY, TENANT_1);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
 

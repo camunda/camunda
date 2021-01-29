@@ -7,17 +7,17 @@ package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -38,7 +38,6 @@ import org.slf4j.event.Level;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,7 +56,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
@@ -386,14 +385,16 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
     // when
     List<EventCountResponseDto> eventCountDtos =
-      createPostEventCountsRequest(Lists.newArrayList(
-        EventSourceEntryDto.builder()
-          .type(EventSourceType.CAMUNDA)
-          .processDefinitionKey(definitionKey)
-          .versions(ImmutableList.of("1"))
-          .eventScope(Collections.singletonList(EventScopeType.ALL))
-          .tenants(ImmutableList.of(tenantId2))
-          .build()
+      createPostEventCountsRequest(Arrays.asList(
+        CamundaEventSourceEntryDto.builder()
+          .configuration(
+            CamundaEventSourceConfigDto.builder()
+              .eventScope(Collections.singletonList(EventScopeType.ALL))
+              .processDefinitionKey(definitionKey)
+              .versions(ImmutableList.of("1"))
+              .tenants(ImmutableList.of(tenantId2))
+              .build()
+          ).build()
       )).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -463,7 +464,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
-          createExternalEventSourceEntry(),
+          createExternalEventAllGroupsSourceEntry(),
           createCamundaEventSourceEntryDto(
             definitionKey,
             Collections.singletonList(EventScopeType.ALL),
@@ -501,7 +502,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
       .eventSources(
         ImmutableList.of(
-          createExternalEventSourceEntry(),
+          createExternalEventAllGroupsSourceEntry(),
           createCamundaEventSourceEntryDto(
             definitionKey,
             Collections.singletonList(EventScopeType.ALL),
@@ -574,8 +575,8 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    final List<EventSourceEntryDto> sources = ImmutableList.of(
-      createExternalEventSourceEntry(),
+    final List<EventSourceEntryDto<?>> sources = ImmutableList.of(
+      createExternalEventAllGroupsSourceEntry(),
       createCamundaEventSourceEntryDto(
         definitionKey,
         Collections.singletonList(EventScopeType.ALL),
@@ -627,7 +628,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    final List<EventSourceEntryDto> sources = Collections.singletonList(
+    final List<EventSourceEntryDto<?>> sources = Collections.singletonList(
       createCamundaEventSourceEntryDto(
         definitionKey,
         Collections.singletonList(EventScopeType.ALL),
@@ -1305,8 +1306,8 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       );
   }
 
-  private List<EventSourceEntryDto> createEventSourcesWithExternalEventsOnly() {
-    return Collections.singletonList(createExternalEventSourceEntry());
+  private List<EventSourceEntryDto<?>> createEventSourcesWithExternalEventsOnly() {
+    return Collections.singletonList(createExternalEventAllGroupsSourceEntry());
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
@@ -1322,13 +1323,13 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
                                                                                 final List<EventScopeType> eventScope,
                                                                                 final List<String> versions) {
-    final ArrayList<EventSourceEntryDto> eventSources = Lists.newArrayList(
+    final List<EventSourceEntryDto<?>> eventSources = Arrays.asList(
       createCamundaEventSourceEntryDto(definitionKey, eventScope, versions)
     );
     return createPostEventCountsRequest(eventSources);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequest(final List<EventSourceEntryDto> eventSources) {
+  private OptimizeRequestExecutor createPostEventCountsRequest(final List<EventSourceEntryDto<?>> eventSources) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(EventCountRequestDto.builder().eventSources(eventSources).build());
   }
@@ -1350,14 +1351,15 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .buildPostEventCountRequest(eventCountSorter, searchTerm, eventCountSuggestionsRequestDto);
   }
 
-  private EventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,
-                                                               final List<EventScopeType> eventScope,
-                                                               final List<String> versions) {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
-      .processDefinitionKey(definitionKey)
-      .versions(versions)
-      .eventScope(eventScope)
+  private CamundaEventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,
+                                                                      final List<EventScopeType> eventScope,
+                                                                      final List<String> versions) {
+    return CamundaEventSourceEntryDto.builder()
+      .configuration(CamundaEventSourceConfigDto.builder()
+                       .eventScope(eventScope)
+                       .processDefinitionKey(definitionKey)
+                       .versions(versions)
+                       .build())
       .build();
   }
 

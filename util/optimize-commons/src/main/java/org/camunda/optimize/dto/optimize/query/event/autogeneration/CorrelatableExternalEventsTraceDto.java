@@ -9,8 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -45,12 +46,16 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
 
   @Override
   public String getSourceIdentifier() {
-    return EventSourceType.EXTERNAL.getId();
+    // TODO Autogeneration will be supported for multiple groups in OPT-4541
+    return EventSourceType.EXTERNAL.getId() + ":" + "allExternalEventGroups";
   }
 
   @Override
-  public String getCorrelationValueForEventSource(final EventSourceEntryDto eventSourceEntryDto) {
-    return tracingId;
+  public String getCorrelationValueForEventSource(final EventSourceEntryDto<?> eventSourceEntryDto) {
+    if (eventSourceEntryDto instanceof ExternalEventSourceEntryDto) {
+      return tracingId;
+    }
+    throw new OptimizeRuntimeException("Cannot get correlation value from non-external sources");
   }
 
 }

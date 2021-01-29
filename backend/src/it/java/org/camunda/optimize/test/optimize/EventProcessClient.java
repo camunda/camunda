@@ -22,11 +22,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanc
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
@@ -37,7 +41,6 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -207,8 +210,8 @@ public class EventProcessClient {
     final Map<String, EventMappingDto> flowNodeEventMappingsDto,
     final String name,
     final String xml) {
-    List<EventSourceEntryDto> externalEventSource = new ArrayList<>();
-    externalEventSource.add(createExternalEventSourceEntry());
+    List<EventSourceEntryDto<? extends EventSourceConfigDto>> externalEventSource = new ArrayList<>();
+    externalEventSource.add(createExternalEventAllGroupsSourceEntry());
     return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       flowNodeEventMappingsDto,
       name,
@@ -220,7 +223,7 @@ public class EventProcessClient {
   @SneakyThrows
   public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
     final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml,
-    final List<EventSourceEntryDto> eventSources) {
+    final List<EventSourceEntryDto<?>> eventSources) {
     return EventProcessMappingDto.builder()
       .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
       .mappings(flowNodeEventMappingsDto)
@@ -240,37 +243,48 @@ public class EventProcessClient {
     return getRequestExecutor().buildCleanupEventProcessMappingRequest(cleanupRequestDto);
   }
 
-  public static EventSourceEntryDto createExternalEventSourceEntry() {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.EXTERNAL)
-      .eventScope(Collections.singletonList(EventScopeType.ALL))
+  public static ExternalEventSourceEntryDto createExternalEventAllGroupsSourceEntry() {
+    return ExternalEventSourceEntryDto.builder()
+      .configuration(ExternalEventSourceConfigDto.builder()
+                       .eventScope(Collections.singletonList(EventScopeType.ALL))
+                       .includeAllGroups(true)
+                       .build())
       .build();
   }
 
-  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {
+  public static ExternalEventSourceEntryDto createExternalEventSourceEntryForGroup(final String group) {
+    return ExternalEventSourceEntryDto.builder()
+      .configuration(ExternalEventSourceConfigDto.builder()
+                       .eventScope(Collections.singletonList(EventScopeType.ALL))
+                       .includeAllGroups(false).group(group).build())
+      .build();
+  }
+
+  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {
     return createSimpleCamundaEventSourceEntryWithTenant(processDefinitionKey, null);
   }
 
-  public static EventSourceEntryDto createSimpleCamundaEventSourceEntryWithTenant(final String processDefinitionKey,
-                                                                                  final String tenantId) {
+  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntryWithTenant(final String processDefinitionKey,
+                                                                                         final String tenantId) {
     return createSimpleCamundaEventSourceEntry(processDefinitionKey, ALL_VERSIONS, tenantId);
   }
 
-  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
-                                                                        final String version) {
+  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
+                                                                               final String version) {
     return createSimpleCamundaEventSourceEntry(processDefinitionKey, version, null);
   }
 
-  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
-                                                                        final String version,
-                                                                        final String tenantId) {
-    return EventSourceEntryDto.builder()
-      .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(version))
-      .tenants(Lists.newArrayList(tenantId))
-      .tracedByBusinessKey(true)
-      .type(EventSourceType.CAMUNDA)
-      .eventScope(Collections.singletonList(EventScopeType.ALL))
+  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
+                                                                               final String version,
+                                                                               final String tenantId) {
+    return CamundaEventSourceEntryDto.builder()
+      .configuration(CamundaEventSourceConfigDto.builder()
+                       .eventScope(Collections.singletonList(EventScopeType.ALL))
+                       .processDefinitionKey(processDefinitionKey)
+                       .versions(ImmutableList.of(version))
+                       .tenants(Lists.newArrayList(tenantId))
+                       .tracedByBusinessKey(true)
+                       .build())
       .build();
   }
 

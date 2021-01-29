@@ -7,12 +7,13 @@
 package org.camunda.optimize.service.events.autogeneration;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableExternalEventsTraceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedTraceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.service.EventTraceStateService;
 import org.camunda.optimize.service.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.es.reader.CorrelatedCamundaProcessInstanceReader;
@@ -44,19 +45,26 @@ public class CorrelatedInstanceService {
       eventTraceStateServiceFactory.createEventTraceStateService(EXTERNAL_EVENTS_INDEX_SUFFIX);
   }
 
-  public List<String> getCorrelationValueSampleForCamundaEventSources(final List<EventSourceEntryDto> eventSources) {
+  public List<String> getCorrelationValueSampleForCamundaEventSources(final List<CamundaEventSourceEntryDto> eventSources) {
     return correlatedCamundaProcessInstanceReader.getCorrelationValueSampleForEventSources(eventSources);
   }
 
-  public List<CorrelatedTraceDto> getCorrelatedTracesForEventSources(final List<EventSourceEntryDto> eventSources,
+  public List<CorrelatedTraceDto> getCorrelatedTracesForEventSources(final List<EventSourceEntryDto<?>> eventSources,
                                                                      final List<String> correlationValues) {
     final Map<EventSourceType, List<EventSourceEntryDto>> sourceByType = eventSources.stream()
-      .collect(groupingBy(EventSourceEntryDto::getType));
+      .collect(groupingBy(EventSourceEntryDto::getSourceType));
+    final Map<String, EventSourceEntryDto<?>> sourcesBySourceIdentifier = eventSources.stream()
+      .collect(toMap(EventSourceEntryDto::getSourceIdentifier, Function.identity()));
+    final Map<String, CamundaEventSourceEntryDto> camundaSourceByDefKey = sourceByType.get(EventSourceType.CAMUNDA)
+      .stream()
+      .map(CamundaEventSourceEntryDto.class::cast)
+      .collect(toMap(source -> source.getConfiguration().getProcessDefinitionKey(), Function.identity()));
+
     final List<CorrelatableInstanceDto> correlatableInstances = new ArrayList<>();
     if (!CollectionUtils.isEmpty(sourceByType.get(EventSourceType.CAMUNDA))) {
       correlatableInstances.addAll(
         correlatedCamundaProcessInstanceReader.getCorrelatableInstancesForSources(
-          sourceByType.get(EventSourceType.CAMUNDA),
+          new ArrayList<>(camundaSourceByDefKey.values()),
           correlationValues
         ));
     }
@@ -69,12 +77,9 @@ public class CorrelatedInstanceService {
           .collect(Collectors.toList()));
     }
 
-    final Map<String, EventSourceEntryDto> camundaSourceByIdentifier = sourceByType.get(EventSourceType.CAMUNDA)
-      .stream()
-      .collect(toMap(EventSourceEntryDto::getSourceIdentifier, Function.identity()));
     return correlatableInstances.stream()
       .collect(toMap(
-        instance -> getCorrelationValueForInstance(instance, camundaSourceByIdentifier),
+        instance -> getCorrelationValueForInstance(instance, sourcesBySourceIdentifier),
         Arrays::asList,
         (instance1, instance2) -> Stream.concat(instance1.stream(), instance2.stream())
           .sorted(Comparator.comparing(CorrelatableInstanceDto::getStartDate))
@@ -102,9 +107,10 @@ public class CorrelatedInstanceService {
   }
 
   private String getCorrelationValueForInstance(final CorrelatableInstanceDto correlatableInstance,
-                                                final Map<String, EventSourceEntryDto> sourceByIdentifier) {
-    final EventSourceEntryDto sourceForInstance = sourceByIdentifier.get(correlatableInstance.getSourceIdentifier());
-    return correlatableInstance.getCorrelationValueForEventSource(sourceForInstance);
+                                                final Map<String, EventSourceEntryDto<?>> sourcesByIdentifier) {
+    return correlatableInstance.getCorrelationValueForEventSource(
+      sourcesByIdentifier.get(correlatableInstance.getSourceIdentifier())
+    );
   }
 
 }

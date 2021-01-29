@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,7 +37,7 @@ public class EsEventProcessMappingDto implements OptimizeDto {
   private OffsetDateTime lastModified;
   private String lastModifier;
   private List<EsEventMappingDto> mappings;
-  private List<EventSourceEntryDto> eventSources;
+  private List<EventSourceEntryDto<?>> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
   public static EsEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
@@ -61,7 +61,6 @@ public class EsEventProcessMappingDto implements OptimizeDto {
       .eventSources(eventMappingDto.getEventSources())
       .roles(eventMappingDto.getRoles())
       .build();
-
   }
 
   public EventProcessMappingDto toEventProcessMappingDto() {

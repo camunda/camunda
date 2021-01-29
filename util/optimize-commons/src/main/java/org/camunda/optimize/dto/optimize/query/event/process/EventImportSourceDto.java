@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import java.time.OffsetDateTime;
 
@@ -29,7 +30,7 @@ public class EventImportSourceDto {
   private OffsetDateTime lastImportedEventTimestamp;
   private OffsetDateTime lastImportExecutionTimestamp;
 
-  private EventSourceEntryDto eventSource;
+  private EventSourceEntryDto<?> eventSource;
 
   @JsonIgnore
   public String getId() {

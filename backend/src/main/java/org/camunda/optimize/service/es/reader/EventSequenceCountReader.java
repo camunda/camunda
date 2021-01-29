@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
@@ -121,17 +121,17 @@ public class EventSequenceCountReader {
     return eventCountDtos;
   }
 
-  public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<EventSourceEntryDto> eventSourceEntryDtos) {
-    log.debug("Fetching event counts for event sources: {}", eventSourceEntryDtos);
+  public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<CamundaEventSourceEntryDto> camundaEventSourceEntryDtos) {
+    log.debug("Fetching event counts for event sources: {}", camundaEventSourceEntryDtos);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(matchAllQuery());
     searchSourceBuilder.aggregation(createAggregationBuilder());
     searchSourceBuilder.size(0);
 
-    final String[] indicesToSearch = eventSourceEntryDtos.stream()
-      .map(source -> new EventSequenceCountIndex(source.getProcessDefinitionKey()).getIndexName())
-      .collect(Collectors.toList()).toArray(new String[eventSourceEntryDtos.size()]);
+    final String[] indicesToSearch = camundaEventSourceEntryDtos.stream()
+      .map(source -> new EventSequenceCountIndex(source.getConfiguration().getProcessDefinitionKey()).getIndexName())
+      .collect(Collectors.toList()).toArray(new String[camundaEventSourceEntryDtos.size()]);
     final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
       .source(searchSourceBuilder);
     List<EventCountResponseDto> eventCountDtos = new ArrayList<>();

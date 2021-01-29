@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.distributed
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
+import org.camunda.optimize.util.SuppressionConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -127,6 +128,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     if (groupBy != null
       && (DecisionGroupByType.INPUT_VARIABLE.equals(groupBy.getType())
       || DecisionGroupByType.OUTPUT_VARIABLE.equals(groupBy.getType()))) {
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
       VariableType varType = ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) groupBy).getValue().getType();
       return VariableType.DATE.equals(varType);
     }
@@ -137,6 +139,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     if (groupBy != null
       && (DecisionGroupByType.INPUT_VARIABLE.equals(groupBy.getType())
       || DecisionGroupByType.OUTPUT_VARIABLE.equals(groupBy.getType()))) {
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
       VariableType varType = ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) groupBy).getValue().getType();
       return VariableType.getNumericTypes().contains(varType);
     }

@@ -13,9 +13,10 @@ import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportInd
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -507,9 +508,9 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
         .build()
     );
 
-    EventSourceEntryDto firstEventSource =
+    CamundaEventSourceEntryDto firstEventSource =
       createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(firstProcessInstanceEngineDto);
-    EventSourceEntryDto secondEventSource =
+    CamundaEventSourceEntryDto secondEventSource =
       createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(secondProcessInstanceEngineDto);
 
     createAndPublishEventMapping(mappingsForEventProcess, Arrays.asList(firstEventSource, secondEventSource));
@@ -555,9 +556,9 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
         .build()
     );
 
-    final EventSourceEntryDto camundaSource =
+    final CamundaEventSourceEntryDto camundaSource =
       createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(processInstanceEngineDto);
-    final EventSourceEntryDto externalSource = createExternalEventSource();
+    final ExternalEventSourceEntryDto externalSource = createExternalEventSource();
 
     createAndPublishEventMapping(mappingsForEventProcess, Arrays.asList(camundaSource, externalSource));
 
@@ -583,7 +584,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
     importEngineEntities();
-    final EventSourceEntryDto eventSource =
+    final CamundaEventSourceEntryDto eventSource =
       createCamundaEventSourceEntryForInstance(
         processInstanceEngineDto,
         Collections.singletonList("versionNotSameAsInstance")

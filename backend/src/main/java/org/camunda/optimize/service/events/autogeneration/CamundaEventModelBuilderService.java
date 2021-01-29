@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -58,9 +58,9 @@ public class CamundaEventModelBuilderService {
   public AbstractFlowNodeBuilder<?, ?> createOrExtendModelWithEventSource(final ProcessBuilder processBuilder,
                                                                           final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
                                                                           final Map<String, EventMappingDto> mappings,
-                                                                          final EventSourceEntryDto sourceEntryDto,
+                                                                          final CamundaEventSourceEntryDto sourceEntryDto,
                                                                           final boolean isFinalSourceInSeries) {
-    if (EventScopeType.PROCESS_INSTANCE.equals(sourceEntryDto.getEventScope().get(0))) {
+    if (EventScopeType.PROCESS_INSTANCE.equals(sourceEntryDto.getConfiguration().getEventScope().get(0))) {
       return createProcessStartEndModel(
         processBuilder,
         generatedModelBuilder,
@@ -82,10 +82,10 @@ public class CamundaEventModelBuilderService {
   private AbstractFlowNodeBuilder<?, ?> createStartEndEventModel(final ProcessBuilder processBuilder,
                                                                  AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
                                                                  final Map<String, EventMappingDto> mappings,
-                                                                 final EventSourceEntryDto sourceEntryDto,
+                                                                 final CamundaEventSourceEntryDto sourceEntryDto,
                                                                  final boolean isFinalSourceInSeries) {
     final BpmnModelInstance modelInstance = getModelInstanceForSourceEntryDefinition(sourceEntryDto);
-    final String processDefinitionKey = sourceEntryDto.getProcessDefinitionKey();
+    final String processDefinitionKey = sourceEntryDto.getConfiguration().getProcessDefinitionKey();
     final List<EventTypeDto> startEvents = getStartEventsFromInstance(modelInstance, processDefinitionKey);
     final List<EventTypeDto> endEvents = getEndEventsFromInstance(modelInstance, processDefinitionKey);
 
@@ -96,7 +96,7 @@ public class CamundaEventModelBuilderService {
       generatedModelBuilder = prepareModelBuilderForCurrentSource(
         generatedModelBuilder,
         startEvents,
-        sourceEntryDto.getProcessDefinitionKey()
+        processDefinitionKey
       );
     }
 
@@ -136,7 +136,7 @@ public class CamundaEventModelBuilderService {
     // if this is false, we expect there to be sources to add to the model after this one, so we need to return the
     // builder in a state where it can be extended
     if (!isFinalSourceInSeries) {
-      nextBuilder = prepareModelBuilderForNextSource(nextBuilder, endEvents, sourceEntryDto.getProcessDefinitionKey());
+      nextBuilder = prepareModelBuilderForNextSource(nextBuilder, endEvents, processDefinitionKey);
     }
     return nextBuilder;
   }
@@ -144,14 +144,13 @@ public class CamundaEventModelBuilderService {
   private AbstractFlowNodeBuilder<?, ?> createProcessStartEndModel(final ProcessBuilder processBuilder,
                                                                    final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
                                                                    final Map<String, EventMappingDto> mappings,
-                                                                   final EventSourceEntryDto sourceEntryDto,
+                                                                   final CamundaEventSourceEntryDto sourceEntryDto,
                                                                    final boolean isFinalSourceInSeries) {
+    final String processDefinitionKey = sourceEntryDto.getConfiguration().getProcessDefinitionKey();
     final String definitionName = getDefinition(sourceEntryDto).map(DefinitionOptimizeResponseDto::getName)
-      .orElse(sourceEntryDto.getProcessDefinitionKey());
-    final EventTypeDto processInstanceStartProcessEvent =
-      createCamundaProcessStartEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
-    final EventTypeDto processInstanceEndProcessEvent =
-      createCamundaProcessEndEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
+      .orElse(processDefinitionKey);
+    final EventTypeDto processInstanceStartProcessEvent = createCamundaProcessStartEventTypeDto(processDefinitionKey);
+    final EventTypeDto processInstanceEndProcessEvent = createCamundaProcessEndEventTypeDto(processDefinitionKey);
     final String processStartEventId = generateNodeId(processInstanceStartProcessEvent);
     final String processEndEventId = generateNodeId(processInstanceEndProcessEvent);
     final String processStartNodeName = applyCamundaProcessInstanceStartEventSuffix(definitionName);
@@ -173,7 +172,7 @@ public class CamundaEventModelBuilderService {
     } else {
       // If this source isn't the start or end source in the overall model, it gets added as a call activity
       if (!isFinalSourceInSeries) {
-        final String nodeId = generateTaskIdForDefinitionKey(sourceEntryDto.getProcessDefinitionKey());
+        final String nodeId = generateTaskIdForDefinitionKey(processDefinitionKey);
         builderToReturn = generatedModelBuilder.callActivity(nodeId).name(definitionName);
         mappings.put(nodeId, EventMappingDto.builder()
           .start(processInstanceStartProcessEvent)
@@ -192,7 +191,7 @@ public class CamundaEventModelBuilderService {
   }
 
   private AbstractFlowNodeBuilder<?, ?> addOrConnectToGateway(final AbstractFlowNodeBuilder<?, ?> nextBuilder,
-                                                              final EventSourceEntryDto source,
+                                                              final CamundaEventSourceEntryDto source,
                                                               final GatewayDirection direction) {
     final BpmnModelInstance bpmnModelInstance = nextBuilder.done();
     final String gatewayId = generateModelGatewayIdForSource(source, direction);
@@ -204,21 +203,23 @@ public class CamundaEventModelBuilderService {
     }
   }
 
-  private BpmnModelInstance getModelInstanceForSourceEntryDefinition(final EventSourceEntryDto sourceEntryDto) {
+  private BpmnModelInstance getModelInstanceForSourceEntryDefinition(final CamundaEventSourceEntryDto sourceEntryDto) {
     final String definitionXml = getDefinition(sourceEntryDto)
       .map(ProcessDefinitionOptimizeDto.class::cast)
       .map(ProcessDefinitionOptimizeDto::getBpmn20Xml)
       .orElseThrow(() -> new OptimizeRuntimeException(String.format(
-        "Process definition with definition key %s could not be loaded", sourceEntryDto.getProcessDefinitionKey())));
+        "Process definition with definition key %s could not be loaded",
+        sourceEntryDto.getConfiguration().getProcessDefinitionKey()
+      )));
     return BpmnModelUtil.parseBpmnModel(definitionXml);
   }
 
-  private Optional<DefinitionOptimizeResponseDto> getDefinition(final EventSourceEntryDto sourceEntryDto) {
+  private Optional<DefinitionOptimizeResponseDto> getDefinition(final CamundaEventSourceEntryDto sourceEntryDto) {
     return definitionService.getDefinitionWithXmlAsService(
       DefinitionType.PROCESS,
-      sourceEntryDto.getProcessDefinitionKey(),
-      sourceEntryDto.getVersions(),
-      sourceEntryDto.getTenants()
+      sourceEntryDto.getConfiguration().getProcessDefinitionKey(),
+      sourceEntryDto.getConfiguration().getVersions(),
+      sourceEntryDto.getConfiguration().getTenants()
     );
   }
 

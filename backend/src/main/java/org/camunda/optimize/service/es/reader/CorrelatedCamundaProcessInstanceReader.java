@@ -9,10 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelationValueDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -79,9 +80,9 @@ public class CorrelatedCamundaProcessInstanceReader {
 
   private final ProcessDefinitionReader processDefinitionReader;
 
-  public List<String> getCorrelationValueSampleForEventSources(final List<EventSourceEntryDto> eventSources) {
-    final List<EventSourceEntryDto> camundaSources = eventSources.stream()
-      .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getType()))
+  public List<String> getCorrelationValueSampleForEventSources(final List<CamundaEventSourceEntryDto> eventSources) {
+    final List<CamundaEventSourceEntryDto> camundaSources = eventSources.stream()
+      .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getSourceType()))
       .collect(Collectors.toList());
     if (camundaSources.isEmpty()) {
       log.debug("There are no Camunda sources to fetch sample correlation values for");
@@ -117,7 +118,7 @@ public class CorrelatedCamundaProcessInstanceReader {
     return extractCorrelationValues(aggregations, camundaSources);
   }
 
-  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<EventSourceEntryDto> camundaSources,
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<CamundaEventSourceEntryDto> camundaSources,
                                                                                  final List<String> correlationValues) {
     if (camundaSources.isEmpty()) {
       log.debug("There are no Camunda sources to fetch correlated process instances for");
@@ -165,12 +166,12 @@ public class CorrelatedCamundaProcessInstanceReader {
   }
 
   private List<String> extractCorrelationValues(final Aggregations aggregations,
-                                                final List<EventSourceEntryDto> eventSources) {
+                                                final List<CamundaEventSourceEntryDto> eventSources) {
     final Terms valuesByProcessDefinition = aggregations.get(EVENT_SOURCE_AGG);
     List<String> correlationValues = new ArrayList<>();
     for (Terms.Bucket eventSourceBucket : valuesByProcessDefinition.getBuckets()) {
-      EventSourceEntryDto eventSourceForCurrentBucket = eventSources.stream()
-        .filter(source -> source.getProcessDefinitionKey().equals(eventSourceBucket.getKeyAsString()))
+      CamundaEventSourceEntryDto eventSourceForCurrentBucket = eventSources.stream()
+        .filter(source -> source.getConfiguration().getProcessDefinitionKey().equals(eventSourceBucket.getKeyAsString()))
         .findFirst()
         .orElseThrow(() -> new OptimizeRuntimeException(String.format(
           "Could not find event source for bucket with key %s when sampling for correlation values",
@@ -184,14 +185,15 @@ public class CorrelatedCamundaProcessInstanceReader {
             CorrelationValueDto.class
           );
           Optional<String> correlationValueToAdd;
-          if (eventSourceForCurrentBucket.isTracedByBusinessKey()) {
+          final CamundaEventSourceConfigDto eventSourceConfig = eventSourceForCurrentBucket.getConfiguration();
+          if (eventSourceConfig.isTracedByBusinessKey()) {
             correlationValueToAdd = Optional.ofNullable(correlationValueDto.getBusinessKey());
-          } else if (eventSourceForCurrentBucket.getTraceVariable() != null) {
+          } else if (eventSourceConfig.getTraceVariable() != null) {
             final Map<String, SimpleProcessVariableDto> variablesByName = correlationValueDto.getVariables()
               .stream()
               .collect(Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
             correlationValueToAdd = Optional.ofNullable(
-              variablesByName.get(eventSourceForCurrentBucket.getTraceVariable()).getValue());
+              variablesByName.get(eventSourceConfig.getTraceVariable()).getValue());
           } else {
             throw new OptimizeRuntimeException(
               "Cannot get variable sample values for event source with no tracing variable");
@@ -217,7 +219,7 @@ public class CorrelatedCamundaProcessInstanceReader {
   }
 
   private void addCorrelationValuesAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                               final List<EventSourceEntryDto> eventSources) {
+                                               final List<CamundaEventSourceEntryDto> eventSources) {
     TermsAggregationBuilder correlationValuesAggregation = terms(EVENT_SOURCE_AGG)
       .field(PROCESS_DEFINITION_KEY)
       .size(eventSources.size())
@@ -229,27 +231,27 @@ public class CorrelatedCamundaProcessInstanceReader {
     searchSourceBuilder.aggregation(correlationValuesAggregation);
   }
 
-  private BoolQueryBuilder queryForEventSourceInstances(final EventSourceEntryDto eventSource) {
+  private BoolQueryBuilder queryForEventSourceInstances(final CamundaEventSourceEntryDto eventSource) {
     return boolQuery()
-      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getProcessDefinitionKey()))
+      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getConfiguration().getProcessDefinitionKey()))
       .filter(versionsQuery(eventSource))
       .filter(tenantsQuery(eventSource));
   }
 
-  private BoolQueryBuilder queryForEventSourceInstancesWithCorrelationValues(final EventSourceEntryDto eventSource,
+  private BoolQueryBuilder queryForEventSourceInstancesWithCorrelationValues(final CamundaEventSourceEntryDto eventSource,
                                                                              final List<String> correlationValues) {
     final BoolQueryBuilder eventSourceQuery = boolQuery()
-      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getProcessDefinitionKey()))
+      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getConfiguration().getProcessDefinitionKey()))
       .filter(versionsQuery(eventSource))
       .filter(tenantsQuery(eventSource));
-    if (eventSource.isTracedByBusinessKey()) {
+    if (eventSource.getConfiguration().isTracedByBusinessKey()) {
       eventSourceQuery.filter(termsQuery(BUSINESS_KEY, correlationValues));
     } else {
       eventSourceQuery.filter(
         nestedQuery(
           VARIABLES,
           boolQuery()
-            .filter(termQuery(getNestedVariableNameField(), eventSource.getTraceVariable()))
+            .filter(termQuery(getNestedVariableNameField(), eventSource.getConfiguration().getTraceVariable()))
             .filter(termsQuery(getNestedVariableValueField(), correlationValues)),
           ScoreMode.None
         )
@@ -258,27 +260,29 @@ public class CorrelatedCamundaProcessInstanceReader {
     return eventSourceQuery;
   }
 
-  private BoolQueryBuilder versionsQuery(final EventSourceEntryDto eventSource) {
+  private BoolQueryBuilder versionsQuery(final CamundaEventSourceEntryDto eventSource) {
+    final CamundaEventSourceConfigDto eventSourceConfig = eventSource.getConfiguration();
     final BoolQueryBuilder versionQuery = boolQuery();
-    if (isDefinitionVersionSetToLatest(eventSource.getVersions())) {
+    if (isDefinitionVersionSetToLatest(eventSourceConfig.getVersions())) {
       versionQuery.must(termQuery(
         PROCESS_DEFINITION_VERSION,
-        processDefinitionReader.getLatestVersionToKey(eventSource.getProcessDefinitionKey())
+        processDefinitionReader.getLatestVersionToKey(eventSource.getConfiguration().getProcessDefinitionKey())
       ));
-    } else if (!isDefinitionVersionSetToAll(eventSource.getVersions())) {
-      versionQuery.must(termsQuery(PROCESS_DEFINITION_VERSION, eventSource.getVersions()));
-    } else if (eventSource.getVersions().isEmpty()) {
+    } else if (!isDefinitionVersionSetToAll(eventSourceConfig.getVersions())) {
+      versionQuery.must(termsQuery(PROCESS_DEFINITION_VERSION, eventSourceConfig.getVersions()));
+    } else if (eventSourceConfig.getVersions().isEmpty()) {
       versionQuery.mustNot(existsQuery(PROCESS_DEFINITION_VERSION));
     }
     return versionQuery;
   }
 
-  private BoolQueryBuilder tenantsQuery(final EventSourceEntryDto eventSource) {
+  private BoolQueryBuilder tenantsQuery(final CamundaEventSourceEntryDto eventSource) {
+    final CamundaEventSourceConfigDto eventSourceConfig = eventSource.getConfiguration();
     final BoolQueryBuilder tenantQuery = boolQuery();
-    if (eventSource.getTenants().contains(null) || eventSource.getTenants().isEmpty()) {
+    if (eventSourceConfig.getTenants().contains(null) || eventSourceConfig.getTenants().isEmpty()) {
       tenantQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
     }
-    final List<String> nonNullTenants = eventSource.getTenants().
+    final List<String> nonNullTenants = eventSourceConfig.getTenants().
       stream().filter(Objects::nonNull).collect(Collectors.toList());
     if (!nonNullTenants.isEmpty()) {
       tenantQuery.should(termsQuery(TENANT_ID, nonNullTenants));

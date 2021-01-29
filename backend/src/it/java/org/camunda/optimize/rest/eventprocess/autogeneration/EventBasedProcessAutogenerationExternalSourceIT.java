@@ -12,8 +12,8 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForNode;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 
 public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEventProcessAutogenerationIT {
@@ -60,7 +60,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_B, traceIdTwo, now),
       createCloudEventOfType(EVENT_A, traceIdTwo, now.plusSeconds(10))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -87,7 +88,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, traceIdTwo, now),
       createCloudEventOfType(EVENT_B, traceIdTwo, now.plusSeconds(10))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -110,7 +112,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -152,7 +155,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(eventC, traceId, now.plusSeconds(20)),
       createCloudEventOfType(eventD, traceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -199,7 +203,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       illegalCharEvent,
       createCloudEventOfType(EVENT_A, traceId, now.plusSeconds(10))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -238,7 +243,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -291,7 +297,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -343,7 +350,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -401,7 +409,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, secondTraceId, now),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -431,7 +440,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     final Instant now = Instant.now();
     final String firstTraceId = "firstTraceId";
     ingestEventAndProcessTraces(Collections.singletonList(createCloudEventOfType(EVENT_A, firstTraceId, now)));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -469,7 +479,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_D, secondTraceId, now),
       createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(10))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -534,7 +545,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -596,7 +608,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(30)),
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(40))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -664,7 +677,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_B, thirdTraceId, now.plusSeconds(30)),
       createCloudEventOfType(EVENT_D, thirdTraceId, now.plusSeconds(40))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when
@@ -735,7 +749,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_B, thirdTraceId, now.plusSeconds(30)),
       createCloudEventOfType(EVENT_D, thirdTraceId, now.plusSeconds(40))
     ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final List<EventSourceEntryDto<?>> externalSource = Collections.singletonList(
+      createExternalEventAllGroupsSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
 
     // when

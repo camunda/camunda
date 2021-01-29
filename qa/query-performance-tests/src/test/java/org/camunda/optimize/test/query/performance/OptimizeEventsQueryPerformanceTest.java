@@ -10,10 +10,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
@@ -66,9 +66,10 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
 
     EventCountRequestDto countRequest = EventCountRequestDto.builder()
       .eventSources(Collections.singletonList(
-        EventSourceEntryDto.builder()
-          .type(EventSourceType.EXTERNAL)
-          .eventScope(Collections.singletonList(EventScopeType.ALL))
+        ExternalEventSourceEntryDto.builder()
+          .configuration(ExternalEventSourceConfigDto.builder()
+                           .eventScope(Collections.singletonList(EventScopeType.ALL))
+                           .includeAllGroups(true).build())
           .build()))
       .build();
 

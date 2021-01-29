@@ -18,14 +18,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinit
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -227,19 +228,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
       eventMappings, EVENT_PROCESS_NAME, createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
     );
-  }
-
-  protected EventSourceEntryDto convertToEventSourceEntryDto(EventSourceEntryResponseDto eventSourceRestEntry) {
-    return EventSourceEntryDto.builder()
-      .id(eventSourceRestEntry.getId())
-      .type(eventSourceRestEntry.getType())
-      .eventScope(eventSourceRestEntry.getEventScope())
-      .processDefinitionKey(eventSourceRestEntry.getProcessDefinitionKey())
-      .versions(eventSourceRestEntry.getVersions())
-      .tenants(eventSourceRestEntry.getTenants())
-      .tracedByBusinessKey(eventSourceRestEntry.isTracedByBusinessKey())
-      .traceVariable(eventSourceRestEntry.getTraceVariable())
-      .build();
   }
 
   @SneakyThrows
@@ -482,7 +470,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final Map<String, EventMappingDto> eventMappings,
     final String traceVariable) {
-    final EventSourceEntryDto eventSourceEntry =
+    final CamundaEventSourceEntryDto eventSourceEntry =
       createCamundaEventSourceEntryForInstance(
         processInstanceEngineDto,
         traceVariable,
@@ -492,7 +480,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   protected String createAndPublishEventMapping(final Map<String, EventMappingDto> eventMappings,
-                                                final List<EventSourceEntryDto> eventSourceEntryDtos) {
+                                                final List<EventSourceEntryDto<?>> eventSourceEntryDtos) {
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
@@ -505,37 +493,38 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventProcessMappingId;
   }
 
-  protected EventSourceEntryDto createExternalEventSource() {
-    return EventProcessClient.createExternalEventSourceEntry();
+  protected ExternalEventSourceEntryDto createExternalEventSource() {
+    return EventProcessClient.createExternalEventAllGroupsSourceEntry();
   }
 
-  protected EventSourceEntryDto createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(
+  protected CamundaEventSourceEntryDto createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(
     final ProcessInstanceEngineDto processInstanceEngineDto) {
     return createCamundaEventSourceEntryForInstance(processInstanceEngineDto, null);
   }
 
-  protected EventSourceEntryDto createCamundaEventSourceEntryForInstance(final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                                         final List<String> versions) {
+  protected CamundaEventSourceEntryDto createCamundaEventSourceEntryForInstance(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                                final List<String> versions) {
     return createCamundaEventSourceEntryForInstance(processInstanceEngineDto, null, versions);
   }
 
-  private EventSourceEntryDto createCamundaEventSourceEntryForInstance(
+  private CamundaEventSourceEntryDto createCamundaEventSourceEntryForInstance(
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final String traceVariable,
     final List<String> versions) {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
-      .eventScope(Collections.singletonList(EventScopeType.ALL))
-      .tracedByBusinessKey(traceVariable == null)
-      .traceVariable(traceVariable)
-      .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
-      .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
+    return CamundaEventSourceEntryDto.builder()
+      .configuration(CamundaEventSourceConfigDto.builder()
+                       .eventScope(Collections.singletonList(EventScopeType.ALL))
+                       .tracedByBusinessKey(traceVariable == null)
+                       .traceVariable(traceVariable)
+                       .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
+                       .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+                       .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
+                       .build())
       .build();
   }
 
   protected ProcessInstanceDto createAndSaveEventInstanceContainingEvents(final List<CloudEventRequestDto> eventsToAdd,
-                                                                        final String indexId) {
+                                                                          final String indexId) {
     final ProcessInstanceDto eventInstanceContainingEvent =
       eventProcessClient.createEventInstanceWithEvents(eventsToAdd);
     final EventProcessInstanceIndex eventInstanceIndex = createEventInstanceIndex(indexId);
@@ -823,7 +812,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
-  protected EventSourceEntryDto createCamundaSourceEntryForImportedDefinition(final String processName) {
+  protected CamundaEventSourceEntryDto createCamundaSourceEntryForImportedDefinition(final String processName) {
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndImportInstanceWithProcessName(processName);
     return createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(processInstanceEngineDto);
   }

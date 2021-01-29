@@ -13,14 +13,15 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsR
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
@@ -261,23 +262,21 @@ public class EventBasedProcessRestService {
     );
   }
 
-  private List<EventSourceEntryResponseDto> mapSourceEntriesToRestDtos(final String userId,
-                                                                       final List<EventSourceEntryDto> eventSourceDtos) {
+  private List<EventSourceEntryDto<?>> mapSourceEntriesToRestDtos(final String userId,
+                                                                  final List<EventSourceEntryDto<?>> eventSourceDtos) {
     return eventSourceDtos.stream()
-      .map(eventSource -> EventSourceEntryResponseDto.from(
-        eventSource,
-        getDefinitionName(userId, eventSource)
-      ))
+      .peek(eventSource -> {
+        if (eventSource instanceof CamundaEventSourceEntryDto) {
+          final CamundaEventSourceConfigDto sourceConfig = (CamundaEventSourceConfigDto) eventSource.getConfiguration();
+          sourceConfig.setProcessDefinitionName(getDefinitionName(userId, sourceConfig.getProcessDefinitionKey()));
+        }
+      })
       .collect(toList());
   }
 
-  private String getDefinitionName(final String userId, final EventSourceEntryDto eventSource) {
-    return definitionService.getDefinitionWithAvailableTenants(
-      DefinitionType.PROCESS,
-      eventSource.getProcessDefinitionKey(),
-      userId
-    )
+  private String getDefinitionName(final String userId, final String eventSource) {
+    return definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
       .map(DefinitionWithTenantsResponseDto::getName)
-      .orElse(eventSource.getProcessDefinitionKey());
+      .orElse(eventSource);
   }
 }

@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.event.process.es;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldNameConstants
+@EqualsAndHashCode
 public class EsEventMappingDto implements OptimizeDto {
 
   String flowNodeId;

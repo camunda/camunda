@@ -8,8 +8,9 @@ package org.camunda.optimize.service.importing.eventprocess.mediator;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -63,14 +64,14 @@ public class EventProcessInstanceImportMediatorFactory {
   }
 
   private ImportService<? extends EventProcessEventDto> createImportService(EventProcessPublishStateDto eventProcessPublishStateDto,
-                                                                            EventSourceEntryDto eventSourceEntryDto) {
+                                                                            EventSourceEntryDto<?> eventSourceEntryDto) {
     final EventProcessInstanceImportService eventProcessInstanceImportService = createEventProcessInstanceImportService(
       eventProcessPublishStateDto);
-    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getType())) {
+    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getSourceType())) {
       return eventProcessInstanceImportService;
-    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getType())) {
+    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getSourceType())) {
       return new CustomTracedEventProcessInstanceImportService(
-        eventSourceEntryDto,
+        (CamundaEventSourceEntryDto) eventSourceEntryDto,
         new SimpleDateFormat(configurationService.getEngineDateFormat()),
         eventProcessInstanceImportService,
         processDefinitionReader,
@@ -79,7 +80,7 @@ public class EventProcessInstanceImportMediatorFactory {
       );
     } else {
       throw new OptimizeRuntimeException(String.format(
-        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getType()
+        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getSourceType()
       ));
     }
   }

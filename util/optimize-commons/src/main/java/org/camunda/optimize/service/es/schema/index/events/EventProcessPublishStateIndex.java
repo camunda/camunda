@@ -6,21 +6,23 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   public static final String ID = EsEventProcessPublishStateDto.Fields.id;
   public static final String PROCESS_MAPPING_ID = EsEventProcessPublishStateDto.Fields.processMappingId;
@@ -51,13 +53,8 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
   public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
-  public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.Fields.type;
-  public static final String EVENT_SOURCE_EVENT_SCOPE = EventSourceEntryDto.Fields.eventScope;
-  public static final String EVENT_SOURCE_PROC_DEF_KEY = EventSourceEntryDto.Fields.processDefinitionKey;
-  public static final String EVENT_SOURCE_VERSIONS = EventSourceEntryDto.Fields.versions;
-  public static final String EVENT_SOURCE_TENANTS = EventSourceEntryDto.Fields.tenants;
-  public static final String EVENT_SOURCE_TRACED_BY_BUSINESS_KEY = EventSourceEntryDto.Fields.tracedByBusinessKey;
-  public static final String EVENT_SOURCE_TRACE_VARIABLE = EventSourceEntryDto.Fields.traceVariable;
+  public static final String EVENT_SOURCE_TYPE = MAPPING_PROPERTY_TYPE;
+  public static final String EVENT_SOURCE_CONFIG = EventSourceEntryDto.Fields.configuration;
 
   @Override
   public String getIndexName() {
@@ -178,6 +175,7 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(EVENT_SOURCE)
         .field("type", "object")
+        .field("dynamic", true)
         .startObject("properties");
           addEventSourcesField(newXContentBuilder)
         .endObject()
@@ -190,28 +188,13 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(EVENT_SOURCE_ID)
-        .field("type", "keyword")
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject()
       .startObject(EVENT_SOURCE_TYPE)
-        .field("type", "keyword")
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject()
-      .startObject(EVENT_SOURCE_EVENT_SCOPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_PROC_DEF_KEY)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_VERSIONS)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TENANTS)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TRACED_BY_BUSINESS_KEY)
-        .field("type", "boolean")
-      .endObject()
-      .startObject(EVENT_SOURCE_TRACE_VARIABLE)
-        .field("type", "keyword")
+      .startObject(EVENT_SOURCE_CONFIG)
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject();
     // @formatter:on
   }

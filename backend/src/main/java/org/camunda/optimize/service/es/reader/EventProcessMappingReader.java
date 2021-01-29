@@ -138,7 +138,6 @@ public class EventProcessMappingReader {
         throw new OptimizeRuntimeException(reason, e);
       }
     }
-
     return result;
   }
 

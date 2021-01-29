@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -174,8 +174,8 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
     );
 
-    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
-    final EventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
+    final CamundaEventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
+    final CamundaEventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
 
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
@@ -221,8 +221,8 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
     );
 
-    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
-    final EventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
+    final CamundaEventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
+    final CamundaEventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
 
     final EventProcessMappingDto eventProcessMappingDto1 =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
@@ -298,7 +298,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
+  private CamundaEventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
     elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
       processDefinitionKey,
       null,

@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -52,5 +53,5 @@ public class EventProcessMappingDto implements OptimizeDto {
   private Double publishingProgress;
 
   @Builder.Default
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 }

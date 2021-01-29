@@ -6,7 +6,9 @@
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.events.CamundaActivityEventFetcherService;
@@ -24,20 +26,19 @@ public class EventFetcherFactory {
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
-  public EventFetcherService createEventFetcherForEventSource(EventSourceEntryDto eventSourceEntryDto) {
-    switch (eventSourceEntryDto.getType()) {
-      case EXTERNAL:
-        return externalEventService;
-      case CAMUNDA:
-        return new CamundaActivityEventFetcherService(
-          eventSourceEntryDto.getProcessDefinitionKey(),
-          eventSourceEntryDto,
-          camundaActivityEventReader,
-          timestampBasedImportIndexReader
-        );
-      default:
-        throw new OptimizeRuntimeException("Cannot find event fetching service for event import source type: "
-                                             + eventSourceEntryDto.getType());
+  public EventFetcherService createEventFetcherForEventSource(EventSourceEntryDto<?> eventSourceEntryDto) {
+    if (eventSourceEntryDto instanceof ExternalEventSourceEntryDto) {
+      return externalEventService;
+    } else if (eventSourceEntryDto instanceof CamundaEventSourceEntryDto) {
+      final CamundaEventSourceEntryDto camundaEventSource = (CamundaEventSourceEntryDto) eventSourceEntryDto;
+      return new CamundaActivityEventFetcherService(
+        camundaEventSource,
+        camundaActivityEventReader,
+        timestampBasedImportIndexReader
+      );
+    } else {
+      throw new OptimizeRuntimeException("Cannot find event fetching service for event import source type: "
+                                           + eventSourceEntryDto.getSourceType());
     }
   }
 }

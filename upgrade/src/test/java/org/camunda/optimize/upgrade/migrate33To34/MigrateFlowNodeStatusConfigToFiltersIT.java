@@ -58,7 +58,10 @@ public class MigrateFlowNodeStatusConfigToFiltersIT extends AbstractUpgrade33IT 
       });
     // that other fields aren't affected
     assertThat(
-      getAllDocumentsOfIndexAs(PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionRequestDto.class))
+      getAllDocumentsOfIndexAs(
+        new SingleProcessReportIndex().getIndexName(),
+        SingleProcessReportDefinitionRequestDto.class
+      ))
       .usingRecursiveFieldByFieldElementComparator()
       .usingElementComparatorIgnoringFields(SingleProcessReportIndex.DATA)
       .containsExactlyInAnyOrderElementsOf(reportDtosBeforeUpgrade);
@@ -102,6 +105,5 @@ public class MigrateFlowNodeStatusConfigToFiltersIT extends AbstractUpgrade33IT 
     return getDocumentOfIndexByIdAs(
       new SingleProcessReportIndex().getIndexName(), reportId, SingleProcessReportDefinitionRequestDto.class);
   }
-
 
 }

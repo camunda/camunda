@@ -11,7 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -33,5 +33,5 @@ public class EventMappingCleanupRequestDto {
 
   @NotNull
   @Builder.Default
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 }
