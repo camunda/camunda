@@ -22,7 +22,7 @@
     "eslint-plugin-testing-library": "^3.10.1",
     "final-form": "^4.20.1",
     "final-form-arrays": "^3.0.2",
-    "graphql": "^15.4.0",
+    "graphql": "^15.5.0",
     "jest-environment-jsdom-fifteen": "^1.0.2",
     "mobx": "^6.0.5",
     "mobx-react-lite": "^3.1.7",
