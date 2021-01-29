@@ -167,7 +167,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
 
     // when
     final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then

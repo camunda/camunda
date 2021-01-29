@@ -19,15 +19,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDistributedByNone extends DecisionDistributedByPart {
 
   @Override
-  public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
-    return Optional.empty();
+  public boolean isKeyOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
+    return false;
   }
 
   @Override

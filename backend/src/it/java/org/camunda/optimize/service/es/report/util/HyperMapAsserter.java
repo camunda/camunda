@@ -147,14 +147,14 @@ public class HyperMapAsserter {
     private String groupByLabel;
     private List<MapResultEntryDto> distributedByEntry = new ArrayList<>();
 
-    public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey) {
-      this(asserter, groupByKey, groupByKey);
-    }
-
     public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey, final String groupByLabel) {
       this.asserter = asserter;
       this.groupByKey = groupByKey;
       this.groupByLabel = groupByLabel;
+    }
+
+    public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey) {
+      this(asserter, groupByKey, groupByKey);
     }
 
     public GroupByAdder distributedByContains(Collection<MapResultEntryDto> entries) {
@@ -173,8 +173,7 @@ public class HyperMapAsserter {
     }
 
     public GroupByAdder groupByContains(final String groupByKey) {
-      add();
-      return new GroupByAdder(asserter, groupByKey);
+      return groupByContains(groupByKey, groupByKey);
     }
 
     public GroupByAdder groupByContains(final String groupByKey, final String groupByLabel) {

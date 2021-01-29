@@ -317,15 +317,15 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -360,56 +360,15 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish task 1 and 2 of instance 1 with first candidate group
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish task 1 of instance 2 with first candidate group and leave task 2 of instance 2 unassigned
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
-
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }

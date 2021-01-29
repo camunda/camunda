@@ -101,7 +101,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     if (response.getAggregations() != null) {
       // Only enrich result if aggregations exist (if no aggregations exist, this report contains no instances)
       result.setGroups(processAggregations(response, response.getAggregations(), context));
-      result.setSorting(
+      result.setGroupBySorting(
         context.getReportConfiguration()
           .getSorting()
           .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))

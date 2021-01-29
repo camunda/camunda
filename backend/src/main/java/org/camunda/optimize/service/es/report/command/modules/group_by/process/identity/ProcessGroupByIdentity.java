@@ -106,7 +106,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     final List<GroupByResult> groupedData = getByIdentityAggregationResults(response, filteredUserTasks, context);
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setSorting(
+    compositeCommandResult.setGroupBySorting(
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC))

@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
@@ -87,6 +89,11 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
 
         addMissingGroupByResults(userTaskNames, groupedData, context);
 
+        compositeCommandResult.setGroupBySorting(
+          context.getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(null, SortOrder.ASC))
+        );
         compositeCommandResult.setGroups(groupedData);
       });
   }

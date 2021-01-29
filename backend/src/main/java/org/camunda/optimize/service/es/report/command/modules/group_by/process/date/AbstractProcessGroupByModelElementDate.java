@@ -129,7 +129,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
-    result.setSorting(
+    result.setGroupBySorting(
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))

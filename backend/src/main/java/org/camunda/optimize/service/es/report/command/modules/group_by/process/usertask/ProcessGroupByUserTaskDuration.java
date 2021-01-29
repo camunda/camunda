@@ -58,7 +58,8 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
+    compositeCommandResult.setGroupByKeyOfNumericType(true);
+    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
     getFilteredUserTaskAggregation(response)
       .ifPresent(userFilteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =

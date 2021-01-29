@@ -141,7 +141,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     IntStream.range(0, procInsts.size())
       .forEach(i -> {
         String id = procInsts.get(i).getId();
-        OffsetDateTime newStartDate = now.minus(i, unit);
+        OffsetDateTime newStartDate = now.plus(i, unit);
         idToNewStartDate.put(id, newStartDate);
       });
     changeModelElementDates(idToNewStartDate);

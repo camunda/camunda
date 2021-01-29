@@ -53,13 +53,14 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -514,20 +515,12 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
         .groupByContains(USER_TASK_2)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
           .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
         .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -536,7 +529,16 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   @Test
   public void testCustomOrderOnResultLabelIsApplied() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT_ID)
+      .userTask(USER_TASK_1).name("thisLabelComesSecond")
+      .userTask(USER_TASK_2).name("thisLabelComesFirst")
+      .endEvent(END_EVENT)
+      .done();
+
+    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(bpmnModelInstance);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -564,82 +566,15 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-        .groupByContains(USER_TASK_1)
+        .groupByContains(USER_TASK_1, "thisLabelComesSecond")
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
           .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
+        .groupByContains(USER_TASK_2, "thisLabelComesFirst")
           .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
         .doAssert(results.get(aggType));
       // @formatter:on
     });
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    // set current time to now for easier evaluation of duration of unassigned tasks
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
-    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskOneWithFirstGroupAndLeaveOneUnassigned(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
-
-    importAndRefresh();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final Map<AggregationType, ReportHyperMapResultDto> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
-
-    // then
-    aggregationTypes.forEach(
-      (AggregationType aggType) -> assertHyperMap_CustomOrderOnResultValueIsApplied(results, aggType)
-    );
-  }
-
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(results.get(aggType));
-    // @formatter:on
   }
 
   @Test

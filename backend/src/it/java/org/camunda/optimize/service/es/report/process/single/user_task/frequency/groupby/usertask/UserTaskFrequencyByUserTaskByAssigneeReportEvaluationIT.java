@@ -47,11 +47,12 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -270,12 +271,12 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
-        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .groupByContains(USER_TASK_2)
-        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
         .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+      .groupByContains(USER_TASK_1)
+        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -283,7 +284,17 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   @Test
   public void testCustomOrderOnResultLabelIsApplied() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT_ID)
+      .userTask(USER_TASK_1).name("thisLabelComesSecond")
+      .userTask(USER_TASK_2).name("thisLabelComesFirst")
+      .endEvent(END_EVENT)
+      .done();
+
+    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(bpmnModelInstance);
+
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -324,68 +335,12 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+      .groupByContains(USER_TASK_1, "thisLabelComesSecond")
         .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-      .groupByContains(USER_TASK_2)
         .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+      .groupByContains(USER_TASK_2, "thisLabelComesFirst")
         .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
-    );
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
-    );
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto2.getId()
-    );
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      SECOND_USER,
-      SECOND_USERS_PASSWORD,
-      processInstanceDto3.getId()
-    );
-
-    importAndRefresh();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(3L)
-      .processInstanceCountWithoutFilters(3L)
-      .groupByContains(USER_TASK_1)
         .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
-        .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 2., getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
       .doAssert(actualResult);
     // @formatter:on
   }

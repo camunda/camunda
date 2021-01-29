@@ -8,7 +8,6 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 
 import java.util.List;
@@ -24,10 +23,5 @@ public class RawDataProcessReportResultDto implements ProcessReportResultDto {
   @Override
   public ResultType getType() {
     return ResultType.RAW;
-  }
-
-  @Override
-  public void sortResultData(final ReportSortingDto sorting, final boolean keyIsOfNumericType) {
-    // to be implemented later
   }
 }

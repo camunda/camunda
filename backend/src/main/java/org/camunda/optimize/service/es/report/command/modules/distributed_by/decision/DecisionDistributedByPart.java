@@ -9,13 +9,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 
-import java.util.Optional;
-
 public abstract class DecisionDistributedByPart extends DistributedByPart<DecisionReportDataDto> {
 
   @Override
-  public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
-    return Optional.of(false);
+  public boolean isKeyOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
+    return false;
   }
 
 }

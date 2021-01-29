@@ -196,12 +196,12 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-        .groupByContains(groupedByDayDateAsString(today))
-          .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
-          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
+        .groupByContains(groupedByDayDateAsString(today))
+          .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .doAssert(result);
       // @formatter:on
     });
@@ -241,16 +241,16 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .doAssert(result);
@@ -293,17 +293,17 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -356,8 +356,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
         .distributedByContains(USER_TASK_1, 20., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(USER_TASK_1, 30., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
@@ -399,12 +399,12 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 15., USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -434,15 +434,15 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -479,12 +479,12 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
-      .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
+      .groupByContains(groupedByDateAsString(referenceDate.plus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
-        .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
+        .groupByContains(groupedByDateAsString(referenceDate.plus(i, groupByUnitAsChrono), groupByUnitAsChrono))
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME);
     }
     groupByAdder.doAssert(result);
@@ -902,8 +902,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 10.);
-    assertLastValueEquals(resultData, 20.);
+    assertFirstValueEquals(resultData, 20.);
+    assertLastValueEquals(resultData, 10.);
   }
 
   @Test
@@ -936,8 +936,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 50.);
-    assertLastValueEquals(resultData, 10.);
+    assertFirstValueEquals(resultData, 10.);
+    assertLastValueEquals(resultData, 50.);
     final int sumOfAllValues = resultData.stream()
       .map(HyperMapResultEntryDto::getValue)
       .flatMap(List::stream)

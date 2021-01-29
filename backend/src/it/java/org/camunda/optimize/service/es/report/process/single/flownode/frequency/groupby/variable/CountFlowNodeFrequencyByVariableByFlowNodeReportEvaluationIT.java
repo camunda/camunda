@@ -35,7 +35,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +216,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter asserter = HyperMapAsserter.asserter()
       .processInstanceCount(numberOfInstances)
       .processInstanceCountWithoutFilters(numberOfInstances);
-    dateVarValues.sort(Comparator.reverseOrder()); // default sorting for date variables
+
     dateVarValues
       .forEach(date -> {
         final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(date, chronoUnit);

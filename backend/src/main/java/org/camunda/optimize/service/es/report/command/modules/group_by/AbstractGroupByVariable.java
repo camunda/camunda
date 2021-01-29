@@ -34,7 +34,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -218,18 +217,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     compositeCommandResult.setGroups(groupedData);
     if (VariableType.DATE.equals(getVariableType(context))) {
-      compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
+      compositeCommandResult.setGroupBySorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
-    compositeCommandResult.setKeyIsOfNumericType(
-      distributedByPart.isKeyOfNumericType(context).orElse(getSortByKeyIsOfNumericType(context))
-    );
-    // additional sorting of groupBy number variable result buckets when in a distributed by report
-    if (distributedByPart.isKeyOfNumericType(context).isPresent()
-      && getSortByKeyIsOfNumericType(context)) {
-      groupedData.sort(
-        Comparator.comparingDouble(groupBy -> Double.parseDouble(groupBy.getKey()))
-      );
-    }
+    compositeCommandResult.setGroupByKeyOfNumericType(getSortByKeyIsOfNumericType(context));
+    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
   }
 
   private void addMissingVariableBuckets(final List<GroupByResult> groupedData,

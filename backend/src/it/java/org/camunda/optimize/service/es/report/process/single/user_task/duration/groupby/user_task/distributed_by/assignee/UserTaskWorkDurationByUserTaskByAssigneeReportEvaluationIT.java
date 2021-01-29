@@ -145,25 +145,6 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     // @formatter:on
   }
 
-  @Override
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-      .doAssert(results.get(aggType));
-    // @formatter:on
-  }
-
   protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,
                                                                             final Double[] setDurations2,
                                                                             final ReportHyperMapResultDto result1,

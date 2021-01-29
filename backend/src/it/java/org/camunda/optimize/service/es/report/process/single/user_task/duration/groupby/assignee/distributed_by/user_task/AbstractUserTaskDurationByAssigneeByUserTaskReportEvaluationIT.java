@@ -47,7 +47,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -475,20 +474,20 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(
-          USER_TASK_1,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          USER_TASK_1_NAME
-        )
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(
           USER_TASK_2,
           calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
           USER_TASK_2_NAME
         )
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+        .distributedByContains(
+          USER_TASK_1,
+          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+          USER_TASK_1_NAME
+        )
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -525,65 +524,13 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(
-          USER_TASK_1,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          USER_TASK_1_NAME
-        )
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(
           USER_TASK_2,
           calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
           USER_TASK_2_NAME
         )
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-      .doAssert(results.get(aggType));
-      // @formatter:on
-    });
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    // set current time to now for easier evaluation of duration of unassigned tasks
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
-    changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[0]);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final Map<AggregationType, ReportHyperMapResultDto> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
-
-    // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_CustomOrderOnResultValueIsApplied(results, aggType);
-    });
-  }
-
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
       .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(
           USER_TASK_1,
@@ -591,15 +538,9 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           USER_TASK_1_NAME
         )
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-        .distributedByContains(
-          USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, UNASSIGNED_TASK_DURATION, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(results.get(aggType));
-    // @formatter:on
+      // @formatter:on
+    });
   }
 
   @Test

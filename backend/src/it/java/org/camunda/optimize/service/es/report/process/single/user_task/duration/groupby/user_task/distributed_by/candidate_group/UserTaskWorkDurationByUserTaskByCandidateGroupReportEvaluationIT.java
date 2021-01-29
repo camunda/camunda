@@ -240,33 +240,6 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID,null, FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(results.get(aggType));
-    // @formatter:on
-  }
-
-  @Override
   protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,
                                                                             final Double[] setDurations2,
                                                                             final ReportHyperMapResultDto result1,

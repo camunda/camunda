@@ -78,8 +78,8 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
   private final VariableAggregationService variableAggregationService;
 
   @Override
-  public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
-    return Optional.of(VariableType.getNumericTypes().contains(getVariableType(context)));
+  public boolean isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
+    return VariableType.getNumericTypes().contains(getVariableType(context));
   }
 
   @Override

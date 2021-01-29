@@ -48,7 +48,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.getTypeForId;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -170,7 +169,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final String reportId = createNewReport(reportData);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
@@ -192,60 +191,6 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
         .distributedByContains("a string", 0.0)
         .distributedByContains("another string", 0.0)
         .distributedByContains("this is also a string", 1.0)
-      .doAssert(result);
-    // @formatter:on
-  }
-
-  @Test
-  public void customOrderOnResultValueIsApplied() {
-    // given
-    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
-    final ProcessInstanceEngineDto procInstance1 =
-      deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
-
-    final ProcessInstanceEngineDto procInstance2 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "another string")
-      );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate.minusDays(1));
-
-    final ProcessInstanceEngineDto procInstance3 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "this is also a string")
-      );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto procInstance4 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "this is also a string")
-      );
-    changeProcessInstanceDate(procInstance4.getId(), referenceDate.minusDays(1));
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
-
-    // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(4L)
-      .processInstanceCountWithoutFilters(4L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-        .distributedByContains("this is also a string", 2.0)
-        .distributedByContains("another string", 1.0)
-        .distributedByContains("a string", 0.0)
       .doAssert(result);
     // @formatter:on
   }

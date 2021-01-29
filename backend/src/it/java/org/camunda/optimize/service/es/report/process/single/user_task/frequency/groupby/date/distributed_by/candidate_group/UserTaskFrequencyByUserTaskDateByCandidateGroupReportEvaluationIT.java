@@ -59,7 +59,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -176,16 +175,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
@@ -222,64 +221,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(result);
-    // @formatter:on
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksWithDifferentCandidateGroups();
-    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-
-    ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksWithDifferentCandidateGroups();
-    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
-
-    ProcessInstanceEngineDto processInstance3 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksWithDifferentCandidateGroups();
-    changeUserTaskDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
-    changeUserTaskDate(processInstance3, USER_TASK_2, referenceDate.minusDays(3));
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(3L)
-      .processInstanceCountWithoutFilters(3L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
@@ -313,12 +264,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 2., SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -345,15 +296,15 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -392,12 +343,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
-      .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
+      .groupByContains(groupedByDateAsString(referenceDate.plus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
-        .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
+        .groupByContains(groupedByDateAsString(referenceDate.plus(i, groupByUnitAsChrono), groupByUnitAsChrono))
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME);
     }
     groupByAdder.doAssert(result);
@@ -740,8 +691,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 2.);
-    assertLastValueEquals(resultData, 1.);
+    assertFirstValueEquals(resultData, 1.);
+    assertLastValueEquals(resultData, 2.);
   }
 
   @Test
@@ -925,7 +876,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     IntStream.range(0, procInsts.size())
       .forEach(i -> {
         String id = procInsts.get(i).getId();
-        OffsetDateTime newStartDate = now.minus(i, unit);
+        OffsetDateTime newStartDate = now.plus(i, unit);
         idToNewStartDate.put(id, newStartDate);
       });
     changeUserTaskDates(idToNewStartDate);
