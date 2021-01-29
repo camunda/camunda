@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -29,7 +29,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private RecordValues recordValues;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeState zeebeState;
-  private DbContext dbContext;
+  private TransactionContext transactionContext;
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
@@ -66,8 +66,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext dbContext(final DbContext dbContext) {
-    this.dbContext = dbContext;
+  public ProcessingContext transactionContext(final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
     return this;
   }
 
@@ -144,8 +144,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public DbContext getDbContext() {
-    return dbContext;
+  public TransactionContext getTransactionContext() {
+    return transactionContext;
   }
 
   @Override

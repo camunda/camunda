@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.message;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 public final class DbWorkflowInstanceSubscriptionState
     implements MutableWorkflowInstanceSubscriptionState {
 
-  private final DbContext dbContext;
+  private final TransactionContext transactionContext;
 
   // (elementInstanceKey, messageName) => WorkflowInstanceSubscription
   private final DbLong elementInstanceKey;
@@ -38,9 +38,8 @@ public final class DbWorkflowInstanceSubscriptionState
       sentTimeColumnFamily;
 
   public DbWorkflowInstanceSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
-    this.dbContext = dbContext;
-
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
@@ -49,7 +48,7 @@ public final class DbWorkflowInstanceSubscriptionState
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_KEY,
-            dbContext,
+            transactionContext,
             elementKeyAndMessageName,
             workflowInstanceSubscription);
 
@@ -58,7 +57,7 @@ public final class DbWorkflowInstanceSubscriptionState
     sentTimeColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_SENT_TIME,
-            dbContext,
+            transactionContext,
             sentTimeCompositeKey,
             DbNil.INSTANCE);
   }
@@ -128,7 +127,7 @@ public final class DbWorkflowInstanceSubscriptionState
   @Override
   public void updateSentTimeInTransaction(
       final WorkflowInstanceSubscription subscription, final long sentTime) {
-    dbContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
+    transactionContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
   }
 
   @Override

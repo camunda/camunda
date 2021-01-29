@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state.processing;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.NextValueManager;
@@ -28,12 +28,12 @@ public final class DbKeyGenerator implements KeyGenerator {
    * generated over all partitions.
    *
    * @param partitionId the partition to determine the key start value
-   * @param dbContext
    */
-  public DbKeyGenerator(final int partitionId, final ZeebeDb zeebeDb, final DbContext dbContext) {
+  public DbKeyGenerator(
+      final int partitionId, final ZeebeDb zeebeDb, final TransactionContext transactionContext) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
-        new NextValueManager(keyStartValue, zeebeDb, dbContext, ZbColumnFamilies.KEY);
+        new NextValueManager(keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY);
   }
 
   @Override

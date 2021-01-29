@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.message;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -38,14 +38,14 @@ public final class DbMessageStartEventSubscriptionState
       subscriptionsOfWorkflowKeyColumnFamily;
 
   public DbMessageStartEventSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageName = new DbString();
     workflowKey = new DbLong();
     messageNameAndWorkflowKey = new DbCompositeKey<>(messageName, workflowKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
-            dbContext,
+            transactionContext,
             messageNameAndWorkflowKey,
             subscriptionValue);
 
@@ -53,7 +53,7 @@ public final class DbMessageStartEventSubscriptionState
     subscriptionsOfWorkflowKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
-            dbContext,
+            transactionContext,
             workflowKeyAndMessageName,
             DbNil.INSTANCE);
   }

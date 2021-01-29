@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.deployment;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
@@ -18,12 +18,14 @@ import java.util.function.ObjLongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbDeploymentState implements MutableDeploymentState {
+
   private final PendingDeploymentDistribution pendingDeploymentDistribution;
 
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DbDeploymentState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbDeploymentState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution =
@@ -31,7 +33,7 @@ public final class DbDeploymentState implements MutableDeploymentState {
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_DEPLOYMENT,
-            dbContext,
+            transactionContext,
             deploymentKey,
             pendingDeploymentDistribution);
   }

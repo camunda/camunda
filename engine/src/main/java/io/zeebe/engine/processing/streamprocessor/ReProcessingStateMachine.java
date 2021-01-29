@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
@@ -103,7 +103,7 @@ public final class ReProcessingStateMachine {
   private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
-  private final DbContext dbContext;
+  private final TransactionContext transactionContext;
   private final RetryStrategy updateStateRetryStrategy;
   private final RetryStrategy processRetryStrategy;
 
@@ -125,7 +125,7 @@ public final class ReProcessingStateMachine {
     logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
     recordProcessorMap = context.getRecordProcessorMap();
-    dbContext = context.getDbContext();
+    transactionContext = context.getTransactionContext();
     zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
@@ -139,7 +139,6 @@ public final class ReProcessingStateMachine {
    * Reprocess the records. It returns the position of the last successfully processed record. If
    * there is nothing processed it returns {@link StreamProcessor#UNSET_POSITION}
    *
-   * @param snapshotPosition
    * @return a ActorFuture with last reprocessed position
    */
   ActorFuture<Long> startRecover(final long snapshotPosition) {
@@ -294,7 +293,7 @@ public final class ReProcessingStateMachine {
               if (onRetry) {
                 zeebeDbTransaction.rollback();
               }
-              zeebeDbTransaction = dbContext.getCurrentTransaction();
+              zeebeDbTransaction = transactionContext.getCurrentTransaction();
               zeebeDbTransaction.run(operationOnProcessing);
               return true;
             },

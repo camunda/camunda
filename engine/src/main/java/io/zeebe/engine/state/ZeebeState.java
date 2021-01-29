@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.deployment.DbDeploymentState;
 import io.zeebe.engine.state.deployment.DbWorkflowState;
@@ -63,32 +63,36 @@ public class ZeebeState {
 
   private final int partitionId;
 
-  public ZeebeState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, dbContext);
+  public ZeebeState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
   }
 
   public ZeebeState(
-      final int partitionId, final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+      final int partitionId,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
-    keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, dbContext);
+    keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, transactionContext);
 
-    variableState = new DbVariableState(zeebeDb, dbContext, keyGenerator);
-    workflowState = new DbWorkflowState(zeebeDb, dbContext);
-    timerInstanceState = new DbTimerInstanceState(zeebeDb, dbContext);
-    elementInstanceState = new DbElementInstanceState(zeebeDb, dbContext, variableState);
-    eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, dbContext);
+    variableState = new DbVariableState(zeebeDb, transactionContext, keyGenerator);
+    workflowState = new DbWorkflowState(zeebeDb, transactionContext);
+    timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
+    elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
+    eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
 
-    deploymentState = new DbDeploymentState(zeebeDb, dbContext);
-    jobState = new DbJobState(zeebeDb, dbContext, partitionId);
-    messageState = new DbMessageState(zeebeDb, dbContext);
-    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, dbContext);
+    deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
+    jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
+    messageState = new DbMessageState(zeebeDb, transactionContext);
+    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
-        new DbMessageStartEventSubscriptionState(zeebeDb, dbContext);
-    workflowInstanceSubscriptionState = new DbWorkflowInstanceSubscriptionState(zeebeDb, dbContext);
-    incidentState = new DbIncidentState(zeebeDb, dbContext, partitionId);
-    blackListState = new DbBlackListState(zeebeDb, dbContext);
-    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, dbContext);
+        new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
+    workflowInstanceSubscriptionState =
+        new DbWorkflowInstanceSubscriptionState(zeebeDb, transactionContext);
+    incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
+    blackListState = new DbBlackListState(zeebeDb, transactionContext);
+    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
   }
 
   public MutableDeploymentState getDeploymentState() {

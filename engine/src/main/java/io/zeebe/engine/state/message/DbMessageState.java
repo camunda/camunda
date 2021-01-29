@@ -11,7 +11,7 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -48,7 +48,8 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre>deadline | key -> []
    *
-   * find messages which are before a given timestamp */
+   * find messages which are before a given timestamp
+   */
   private final DbLong deadline;
 
   private final DbCompositeKey<DbLong, DbLong> deadlineMessageKey;
@@ -57,7 +58,8 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre>name | correlation key | message id -> []
    *
-   * exist a message for a given message name, correlation key and message id */
+   * exist a message for a given message name, correlation key and message id
+   */
   private final DbString messageId;
 
   private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>
@@ -68,7 +70,8 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre>key | bpmn process id -> []
    *
-   * check if a message is correlated to a workflow */
+   * check if a message is correlated to a workflow
+   */
   private final DbCompositeKey<DbLong, DbString> messageBpmnProcessIdKey;
 
   private final DbString bpmnProcessIdKey;
@@ -77,7 +80,8 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre> bpmn process id | correlation key -> []
    *
-   * check if a workflow instance is created by this correlation key */
+   * check if a workflow instance is created by this correlation key
+   */
   private final DbCompositeKey<DbString, DbString> bpmnProcessIdCorrelationKey;
 
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
@@ -86,16 +90,19 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre> workflow instance key -> correlation key
    *
-   * get correlation key by workflow instance key */
+   * get correlation key by workflow instance key
+   */
   private final DbLong workflowInstanceKey;
 
   private final ColumnFamily<DbLong, DbString> workflowInstanceCorrelationKeyColumnFamiliy;
 
-  public DbMessageState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbMessageState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageKey = new DbLong();
     message = new Message();
     messageColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.MESSAGE_KEY, dbContext, messageKey, message);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_KEY, transactionContext, messageKey, message);
 
     messageName = new DbString();
     correlationKey = new DbString();
@@ -103,26 +110,35 @@ public final class DbMessageState implements MutableMessageState {
     nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, messageKey);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGES, dbContext, nameCorrelationMessageKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGES,
+            transactionContext,
+            nameCorrelationMessageKey,
+            DbNil.INSTANCE);
 
     deadline = new DbLong();
     deadlineMessageKey = new DbCompositeKey<>(deadline, messageKey);
     deadlineColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_DEADLINES, dbContext, deadlineMessageKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGE_DEADLINES,
+            transactionContext,
+            deadlineMessageKey,
+            DbNil.INSTANCE);
 
     messageId = new DbString();
     nameCorrelationMessageIdKey = new DbCompositeKey<>(nameAndCorrelationKey, messageId);
     messageIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_IDS, dbContext, nameCorrelationMessageIdKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGE_IDS,
+            transactionContext,
+            nameCorrelationMessageIdKey,
+            DbNil.INSTANCE);
 
     bpmnProcessIdKey = new DbString();
     messageBpmnProcessIdKey = new DbCompositeKey<>(messageKey, bpmnProcessIdKey);
     correlatedMessageColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_CORRELATED,
-            dbContext,
+            transactionContext,
             messageBpmnProcessIdKey,
             DbNil.INSTANCE);
 
@@ -130,7 +146,7 @@ public final class DbMessageState implements MutableMessageState {
     activeWorkflowInstancesByCorrelationKeyColumnFamiliy =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_WORKFLOWS_ACTIVE_BY_CORRELATION_KEY,
-            dbContext,
+            transactionContext,
             bpmnProcessIdCorrelationKey,
             DbNil.INSTANCE);
 
@@ -138,7 +154,7 @@ public final class DbMessageState implements MutableMessageState {
     workflowInstanceCorrelationKeyColumnFamiliy =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_WORKFLOW_INSTANCE_CORRELATION_KEYS,
-            dbContext,
+            transactionContext,
             workflowInstanceKey,
             correlationKey);
   }
