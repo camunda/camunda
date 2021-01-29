@@ -15,16 +15,16 @@
  */
 package io.zeebe.client.impl.command;
 
-import io.zeebe.client.impl.ZeebeObjectMapper;
+import io.zeebe.client.api.JsonMapper;
 import java.io.InputStream;
 import java.util.Map;
 
 public abstract class CommandWithVariables<T> {
 
-  protected final ZeebeObjectMapper objectMapper;
+  protected final JsonMapper objectMapper;
 
-  public CommandWithVariables(final ZeebeObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  public CommandWithVariables(final JsonMapper jsonMapper) {
+    this.objectMapper = jsonMapper;
   }
 
   public T variables(final InputStream variables) {

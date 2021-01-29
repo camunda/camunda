@@ -16,12 +16,12 @@
 package io.zeebe.client.impl.command;
 
 import io.grpc.stub.StreamObserver;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.response.CompleteJobResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -40,11 +40,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeObjectMapper objectMapper,
+      final JsonMapper jsonMapper,
       final long key,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
-    super(objectMapper);
+    super(jsonMapper);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;

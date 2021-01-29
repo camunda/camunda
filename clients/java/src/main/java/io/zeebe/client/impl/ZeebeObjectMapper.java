@@ -19,12 +19,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-public final class ZeebeObjectMapper extends ObjectMapper {
+public final class ZeebeObjectMapper extends ObjectMapper implements JsonMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};

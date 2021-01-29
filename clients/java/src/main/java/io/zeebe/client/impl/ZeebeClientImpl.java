@@ -25,6 +25,7 @@ import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.command.ClientException;
@@ -67,7 +68,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeClientConfiguration config;
-  private final ZeebeObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
   private final ScheduledExecutorService executorService;
@@ -97,7 +98,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ScheduledExecutorService executorService) {
     this.config = config;
-    objectMapper = new ZeebeObjectMapper();
+    this.jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
     this.executorService = executorService;
@@ -238,7 +239,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateWorkflowInstanceCommandImpl(
         asyncStub,
-        objectMapper,
+        jsonMapper,
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest);
   }
@@ -257,7 +258,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public SetVariablesCommandStep1 newSetVariablesCommand(final long elementInstanceKey) {
     return new SetVariablesCommandImpl(
         asyncStub,
-        objectMapper,
+        jsonMapper,
         elementInstanceKey,
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest);
@@ -266,7 +267,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(
-        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override
@@ -293,7 +294,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
         config,
         asyncStub,
         jobClient,
-        objectMapper,
+        jsonMapper,
         executorService,
         closeables,
         credentialsProvider::shouldRetryRequest);
@@ -302,12 +303,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return new ActivateJobsCommandImpl(
-        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

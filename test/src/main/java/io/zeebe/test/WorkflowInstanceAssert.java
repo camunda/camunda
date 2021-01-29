@@ -16,7 +16,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import io.zeebe.test.util.record.WorkflowInstances;
 import io.zeebe.test.util.stream.StreamWrapperException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -164,12 +163,7 @@ public class WorkflowInstanceAssert
     }
 
     final Object value;
-    try {
-      value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
-    } catch (final IOException e) {
-      failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
-      return this;
-    }
+    value = OBJECT_MAPPER.fromJson(variables.get(key), Object.class);
 
     if ((expectedValue == null && value != null)
         || (expectedValue != null && !expectedValue.equals(value))) {

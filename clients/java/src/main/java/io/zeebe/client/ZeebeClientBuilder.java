@@ -16,6 +16,7 @@
 package io.zeebe.client;
 
 import io.grpc.ClientInterceptor;
+import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -97,6 +98,8 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
+
+  ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
