@@ -102,7 +102,7 @@
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.2.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.1.1</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
