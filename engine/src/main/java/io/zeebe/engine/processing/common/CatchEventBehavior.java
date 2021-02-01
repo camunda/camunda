@@ -120,8 +120,10 @@ public final class CatchEventBehavior {
       }
     }
 
-    eventScopeInstanceState.createIfNotExists(
-        context.getElementInstanceKey(), supplier.getInterruptingElementIds());
+    if (!events.isEmpty()) {
+      eventScopeInstanceState.createIfNotExists(
+          context.getElementInstanceKey(), supplier.getInterruptingElementIds());
+    }
   }
 
   public void subscribeToTimerEvent(
