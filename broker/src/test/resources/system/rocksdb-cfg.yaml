@@ -1,6 +1,6 @@
 zeebe:
   broker:
-    data:
+    experimental:
       rocksdb:
         columnFamilyOptions:
           compaction_pri: "kOldestSmallestSeqFirst"

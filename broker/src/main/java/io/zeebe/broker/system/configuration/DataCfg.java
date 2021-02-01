@@ -51,7 +51,6 @@ public final class DataCfg implements ConfigurationEntry {
   private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
   private Duration diskUsageMonitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
-  private RocksdbCfg rocksdb = new RocksdbCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -73,7 +72,6 @@ public final class DataCfg implements ConfigurationEntry {
       diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
       diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
     }
-    rocksdb.init(globalConfig, brokerBase);
   }
 
   /**
@@ -187,14 +185,6 @@ public final class DataCfg implements ConfigurationEntry {
     this.diskUsageMonitoringInterval = diskUsageMonitoringInterval;
   }
 
-  public RocksdbCfg getRocksdb() {
-    return rocksdb;
-  }
-
-  public void setRocksdb(final RocksdbCfg rocksdb) {
-    this.rocksdb = rocksdb;
-  }
-
   @Override
   public String toString() {
     return "DataCfg{"
@@ -216,8 +206,6 @@ public final class DataCfg implements ConfigurationEntry {
         + diskUsageCommandWatermark
         + ", diskUsageMonitoringInterval="
         + diskUsageMonitoringInterval
-        + ", rocksdb="
-        + rocksdb
         + '}';
   }
 }

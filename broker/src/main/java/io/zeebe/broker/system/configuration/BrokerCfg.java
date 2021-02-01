@@ -57,6 +57,7 @@ public final class BrokerCfg {
     exporters.values().forEach(e -> e.init(this, brokerBase));
     gateway.init(this, brokerBase);
     backpressure.init(this, brokerBase);
+    experimental.init(this, brokerBase);
   }
 
   private void applyEnvironment(final Environment environment) {
