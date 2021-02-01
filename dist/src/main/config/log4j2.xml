@@ -3,9 +3,13 @@
 
   <Properties>
     <Property name="log.path">${sys:app.home}/logs</Property>
-    <Property name="log.pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{actor-name}] [%t] %-5level %logger{36} - %msg%n</Property>
-    <Property name="log.stackdriver.serviceName">${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-}</Property>
-    <Property name="log.stackdriver.serviceVersion">${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-}</Property>
+    <Property name="log.pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{actor-name}] [%t] %-5level
+      %logger{36} - %msg%n
+    </Property>
+    <Property name="log.stackdriver.serviceName">${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-}
+    </Property>
+    <Property name="log.stackdriver.serviceVersion">${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-}
+    </Property>
   </Properties>
 
   <Appenders>
@@ -16,7 +20,7 @@
 
     <Console name="Stackdriver" target="SYSTEM_OUT">
       <StackdriverLayout serviceName="${log.stackdriver.serviceName}"
-        serviceVersion="${log.stackdriver.serviceVersion}" />
+        serviceVersion="${log.stackdriver.serviceVersion}"/>
     </Console>
 
     <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"

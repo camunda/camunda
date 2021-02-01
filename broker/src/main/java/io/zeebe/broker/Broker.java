@@ -8,6 +8,7 @@
 package io.zeebe.broker;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.core.Atomix;
@@ -32,6 +33,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.broker.system.management.BrokerAdminService;
 import io.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -205,7 +207,10 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
-        "command api transport", () -> commandApiTransportStep(clusterCfg, localBroker));
+        "command api transport",
+        () ->
+            commandApiTransportStep(
+                clusterCfg, brokerCfg.getNetwork().getCommandApi(), localBroker));
     startContext.addStep(
         "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
@@ -272,25 +277,35 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable commandApiTransportStep(
-      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
-
-    final var nettyMessagingService =
-        new NettyMessagingService(
-            clusterCfg.getClusterName(),
-            Address.from(localBroker.getCommandApiAddress()),
-            new MessagingConfig());
-
-    nettyMessagingService.start().join();
-    LOG.debug("Bound command API to {} ", nettyMessagingService.address());
+      final ClusterCfg clusterCfg,
+      final SocketBindingCfg commpandApiConfig,
+      final BrokerInfo localBroker) {
+    final var messagingService = createMessagingService(clusterCfg, commpandApiConfig);
+    messagingService.start().join();
+    LOG.debug(
+        "Bound command API to {}, using advertised address {} ",
+        messagingService.bindingAddresses(),
+        messagingService.address());
 
     final var transportFactory = new TransportFactory(scheduler);
     serverTransport =
-        transportFactory.createServerTransport(localBroker.getNodeId(), nettyMessagingService);
+        transportFactory.createServerTransport(localBroker.getNodeId(), messagingService);
 
     return () -> {
       serverTransport.close();
-      nettyMessagingService.stop().join();
+      messagingService.stop().join();
     };
+  }
+
+  private ManagedMessagingService createMessagingService(
+      final ClusterCfg clusterCfg, final SocketBindingCfg socketCfg) {
+    final var messagingConfig = new MessagingConfig();
+    messagingConfig.setInterfaces(List.of(socketCfg.getHost()));
+    messagingConfig.setPort(socketCfg.getPort());
+    return new NettyMessagingService(
+        clusterCfg.getClusterName(),
+        Address.from(socketCfg.getAdvertisedHost(), socketCfg.getAdvertisedPort()),
+        messagingConfig);
   }
 
   private AutoCloseable commandApiHandlerStep(
