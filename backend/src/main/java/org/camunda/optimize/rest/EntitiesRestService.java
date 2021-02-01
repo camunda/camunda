@@ -6,9 +6,9 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
@@ -27,9 +27,11 @@ import java.util.List;
 
 @AllArgsConstructor
 @Secured
-@Path("/entities")
+@Path(EntitiesRestService.ENTITIES_PATH)
 @Component
 public class EntitiesRestService {
+
+  public static final String ENTITIES_PATH = "/entities";
 
   private final EntitiesService entitiesService;
   private final SessionService sessionService;

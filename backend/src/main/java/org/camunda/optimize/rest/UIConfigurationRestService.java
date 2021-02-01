@@ -16,9 +16,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @AllArgsConstructor
-@Path("/ui-configuration")
+@Path(UIConfigurationRestService.UI_CONFIGURATION_PATH)
 @Component
 public class UIConfigurationRestService {
+
+  public static final String UI_CONFIGURATION_PATH = "/ui-configuration";
 
   private final UIConfigurationService uiConfigurationService;
 

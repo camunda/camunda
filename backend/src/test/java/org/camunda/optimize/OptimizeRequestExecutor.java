@@ -114,6 +114,7 @@ import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -796,7 +797,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetUIConfigurationRequest() {
-    this.path = "/ui-configuration";
+    this.path = UI_CONFIGURATION_PATH;
     this.method = GET;
     return this;
   }
