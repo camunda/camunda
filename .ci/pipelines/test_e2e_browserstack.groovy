@@ -193,11 +193,7 @@ pipeline {
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
   }
-
-  environment {
-    GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials("github-camunda-cloud-packages-token")
-  }
-
+  
   stages {
     stage('Prepare') {
       steps {

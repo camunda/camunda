@@ -166,9 +166,6 @@ pipeline {
       }
     }
     stage('Maven Release') {
-      environment {
-        GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials('github-camunda-cloud-packages-token')
-      }
       steps {
         container('maven') {
           sshagent(['camunda-jenkins-github-ssh']) {
