@@ -42,7 +42,10 @@ public enum BpmnElementType {
   // Other
   SEQUENCE_FLOW,
   MULTI_INSTANCE_BODY,
-  CALL_ACTIVITY;
+  CALL_ACTIVITY,
+
+  // TODO (saig0): remove element type for testing - #6202
+  TESTING_ONLY;
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
     switch (elementTypeName) {

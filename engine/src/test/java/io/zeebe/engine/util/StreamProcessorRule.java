@@ -237,6 +237,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
   }
 
+  public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
+    return streamProcessingComposite.writeCommandRejection(intent, value);
+  }
+
   public void snapshot() {
     final var partitionId = startPartitionId;
     streamProcessingComposite.snapshot(partitionId);

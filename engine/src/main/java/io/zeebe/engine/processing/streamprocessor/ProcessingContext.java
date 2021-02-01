@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private ActorControl actor;
-  private EventFilter eventFilter;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private TypedStreamWriter logStreamWriter = new NoopTypedStreamWriter();
@@ -39,11 +38,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
-    return this;
-  }
-
-  public ProcessingContext eventFilter(final EventFilter eventFilter) {
-    this.eventFilter = eventFilter;
     return this;
   }
 
@@ -112,11 +106,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   @Override
   public ActorControl getActor() {
     return actor;
-  }
-
-  @Override
-  public EventFilter getEventFilter() {
-    return eventFilter;
   }
 
   @Override

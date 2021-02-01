@@ -212,6 +212,15 @@ public class StreamProcessingComposite {
         .write();
   }
 
+  public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
+    return streams
+        .newRecord(getLogName(partitionId))
+        .recordType(RecordType.COMMAND_REJECTION)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
   public static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
   }

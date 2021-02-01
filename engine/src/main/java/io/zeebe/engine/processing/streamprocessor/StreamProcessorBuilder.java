@@ -10,9 +10,6 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +68,7 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder detectReprocessingInconsistency(
       final boolean detectReprocessingInconsistency) {
-    this.processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
+    processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
     return this;
   }
 
@@ -102,10 +99,6 @@ public final class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    final MetadataFilter metadataFilter = new VersionFilter();
-    final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
-    processingContext.eventFilter(eventFilter);
-
     return new StreamProcessor(this);
   }
 
@@ -116,36 +109,5 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-  }
-
-  private static class MetadataEventFilter implements EventFilter {
-
-    protected final RecordMetadata metadata = new RecordMetadata();
-    protected final MetadataFilter metadataFilter;
-
-    MetadataEventFilter(final MetadataFilter metadataFilter) {
-      this.metadataFilter = metadataFilter;
-    }
-
-    @Override
-    public boolean applies(final LoggedEvent event) {
-      event.readMetadata(metadata);
-      return metadataFilter.applies(metadata);
-    }
-  }
-
-  private final class VersionFilter implements MetadataFilter {
-    @Override
-    public boolean applies(final RecordMetadata m) {
-      if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
-        throw new RuntimeException(
-            String.format(
-                "Cannot handle event with version newer "
-                    + "than what is implemented by broker (%d > %d)",
-                m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
-      }
-
-      return true;
-    }
   }
 }
