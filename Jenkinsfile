@@ -39,7 +39,6 @@ pipeline {
   environment {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
-    GITHUB_CAMUNDA_CLOUD_PACKAGES_TOKEN = credentials("github-camunda-cloud-packages-token")
   }
 
   options {
@@ -55,7 +54,6 @@ pipeline {
           sh '''
             apk add --no-cache git
             cd ./client
-            mv .npmrc.ci .npmrc
             yarn install --frozen-lockfile
             yarn lint
             yarn build
