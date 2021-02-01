@@ -49,16 +49,21 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     if (random.nextBoolean()) {
       result.append(new StepActivateAndFailJob(jobTypeId));
     }
+
     result.append(new StepActivateAndCompleteJob(jobTypeId));
 
     return result;
   }
 
   public static final class StepActivateAndCompleteJob extends AbstractExecutionStep {
-    private final String jobTypeId;
+    private final String jobType;
 
-    public StepActivateAndCompleteJob(final String jobTypeId) {
-      this.jobTypeId = jobTypeId;
+    public StepActivateAndCompleteJob(final String jobType) {
+      this.jobType = jobType;
+    }
+
+    public String getJobType() {
+      return jobType;
     }
 
     @Override
@@ -73,20 +78,24 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
       final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
 
-      return new EqualsBuilder().append(jobTypeId, that.jobTypeId).isEquals();
+      return new EqualsBuilder().append(jobType, that.jobType).isEquals();
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(jobTypeId).toHashCode();
+      return new HashCodeBuilder(17, 37).append(jobType).toHashCode();
     }
   }
 
   public static final class StepActivateAndFailJob extends AbstractExecutionStep {
-    private final String jobTypeId;
+    private final String jobType;
 
-    public StepActivateAndFailJob(final String jobTypeId) {
-      this.jobTypeId = jobTypeId;
+    public StepActivateAndFailJob(final String jobType) {
+      this.jobType = jobType;
+    }
+
+    public String getJobType() {
+      return jobType;
     }
 
     @Override
@@ -101,12 +110,12 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
       final StepActivateAndFailJob that = (StepActivateAndFailJob) o;
 
-      return new EqualsBuilder().append(jobTypeId, that.jobTypeId).isEquals();
+      return new EqualsBuilder().append(jobType, that.jobType).isEquals();
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(jobTypeId).toHashCode();
+      return new HashCodeBuilder(17, 37).append(jobType).toHashCode();
     }
   }
 

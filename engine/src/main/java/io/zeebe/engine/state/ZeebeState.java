@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.state;
 
+import io.zeebe.db.DbKey;
+import io.zeebe.db.DbValue;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.deployment.DbDeploymentState;
@@ -39,6 +41,7 @@ import io.zeebe.engine.state.processing.DbBlackListState;
 import io.zeebe.engine.state.processing.DbKeyGenerator;
 import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.zeebe.protocol.Protocol;
+import java.util.function.BiConsumer;
 
 public class ZeebeState {
 
@@ -162,5 +165,31 @@ public class ZeebeState {
 
   public MutableEventScopeInstanceState getEventScopeInstanceState() {
     return eventScopeInstanceState;
+  }
+
+  /**
+   * This method iterates over all entries for a given column family and presents each entry to the
+   * consumer
+   *
+   * <p><strong>Hint</strong> This method should only be used in tests
+   *
+   * @param columnFamily the enum instance of the column family
+   * @param keyInstance this instance defines the type of the column family key type
+   * @param valueInstance this instance defines the type of the column family value type
+   * @param visitor the visitor that will be called for each entry
+   * @param <KeyType> the key type of the column family
+   * @param <ValueType> the value type of the column family
+   */
+  public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
+      final ZbColumnFamilies columnFamily,
+      final KeyType keyInstance,
+      final ValueType valueInstance,
+      final BiConsumer<KeyType, ValueType> visitor) {
+
+    final var newContext = zeebeDb.createContext();
+
+    zeebeDb
+        .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
+        .forEach(visitor);
   }
 }

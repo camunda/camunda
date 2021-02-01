@@ -19,10 +19,16 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 /** Execution path to execute a random workflow from start to finish. This class is immutable. */
 public final class ExecutionPath {
   private final List<AbstractExecutionStep> steps = new ArrayList<>();
+  private final String processId;
 
-  public ExecutionPath(final ExecutionPathSegment pathSegment) {
-    steps.add(new StepStartProcessInstance(pathSegment));
+  public ExecutionPath(final String processId, final ExecutionPathSegment pathSegment) {
+    this.processId = processId;
+    steps.add(new StepStartProcessInstance(processId, pathSegment));
     steps.addAll(pathSegment.getSteps());
+  }
+
+  public String getProcessId() {
+    return processId;
   }
 
   public List<AbstractExecutionStep> getSteps() {
