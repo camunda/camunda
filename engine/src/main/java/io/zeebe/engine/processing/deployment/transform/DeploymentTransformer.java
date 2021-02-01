@@ -170,7 +170,7 @@ public final class DeploymentTransformer {
           version = lastWorkflow.getVersion();
         } else {
           key = keyGenerator.nextKey();
-          version = workflowState.getNextWorkflowVersion(bpmnProcessId);
+          version = workflowState.incrementAndGetWorkflowVersion(bpmnProcessId);
           workflowState.putLatestVersionDigest(wrapString(bpmnProcessId), resourceDigest);
         }
 

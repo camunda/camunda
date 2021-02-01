@@ -8,6 +8,7 @@
 package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.zeebe.engine.state.instance.EventTrigger;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
@@ -43,6 +44,15 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
    * @param eventScopeKey the key of the event scope to delete
    */
   void deleteInstance(long eventScopeKey);
+
+  /**
+   * Returns the next event trigger for the event scope or null if none exists. This will remove the
+   * polled event trigger from the state if it exists.
+   *
+   * @param eventScopeKey the key of the event scope
+   * @return the next event trigger or null if none exist
+   */
+  EventTrigger pollEventTrigger(long eventScopeKey);
 
   /**
    * @param eventScopeKey the key of the event scope the event is triggered in

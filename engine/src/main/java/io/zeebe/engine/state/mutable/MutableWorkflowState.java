@@ -17,5 +17,5 @@ public interface MutableWorkflowState extends WorkflowState {
 
   void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest);
 
-  int getNextWorkflowVersion(String bpmnProcessId);
+  int incrementAndGetWorkflowVersion(String bpmnProcessId);
 }

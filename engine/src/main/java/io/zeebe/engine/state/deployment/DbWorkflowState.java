@@ -321,7 +321,7 @@ public final class DbWorkflowState implements MutableWorkflowState {
   }
 
   @Override
-  public int getNextWorkflowVersion(final String bpmnProcessId) {
+  public int incrementAndGetWorkflowVersion(final String bpmnProcessId) {
     return (int) versionManager.getNextValue(bpmnProcessId);
   }
 

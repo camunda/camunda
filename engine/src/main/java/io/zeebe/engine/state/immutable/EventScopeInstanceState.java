@@ -28,13 +28,4 @@ public interface EventScopeInstanceState {
    * @return the next event trigger or null if none exist
    */
   EventTrigger peekEventTrigger(long eventScopeKey);
-
-  /**
-   * Returns the next event trigger for the event scope or null if none exists. This will remove the
-   * polled event trigger from the state if it exists.
-   *
-   * @param eventScopeKey the key of the event scope
-   * @return the next event trigger or null if none exist
-   */
-  EventTrigger pollEventTrigger(long eventScopeKey);
 }
