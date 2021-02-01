@@ -165,18 +165,6 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEMONITORINGINTERVAL
       # diskUsageMonitoringInterval = 1s
 
-      # rocksdb:
-        # Specify custom column family options overwriting Zeebe's own defaults.
-        # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
-        # The expected property key names and values are derived from RocksDB's C implementation,
-        # and are not limited to the provided examples below. Please look in RocksDB's SCM repo
-        # for the files: `cf_options.h` and `options_helper.cc`. This setting can also be overridden
-        # using the environment variable ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_{PROPERTY_KEY_NAME}
-        # For example, `write_buffer_size` can be set using `ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE`.
-        # columnFamilyOptions:
-          # compaction_pri: "kOldestSmallestSeqFirst"
-          # write_buffer_size: 67108864
-
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
@@ -467,3 +455,34 @@
         #     workflowInstanceSubscription: false
         #
         #     ignoreVariablesAbove: 32677
+
+
+    # experimental
+      # Be aware that all configuration's which are part of the experimental section
+      # are subject to change and can be dropped at any time.
+      # It might be that also some of them are actually dangerous so be aware when you change one of these!
+
+      # Sets the maximum of appends which are send per follower.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER
+      # maxAppendsPerFollower = 2
+
+      # Sets the maximum batch size, which is send per append request to a follower.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
+      # maxAppendBatchSize = 32KB;
+
+      # Enables the detection of an inconsistency during reprocessing. If a inconsistency is detect the StreamProcessor is
+      # failed and the partition becomes unhealthy, no further progress will made on that specific partition.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
+      # detectReprocessingInconsistency = false;
+
+      # rocksdb:
+        # Specify custom column family options overwriting Zeebe's own defaults.
+        # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
+        # The expected property key names and values are derived from RocksDB's C implementation,
+        # and are not limited to the provided examples below. Please look in RocksDB's SCM repo
+        # for the files: `cf_options.h` and `options_helper.cc`. This setting can also be overridden
+        # using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_{PROPERTY_KEY_NAME}
+        # For example, `write_buffer_size` can be set using `ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE`.
+        # columnFamilyOptions:
+          # compaction_pri: "kOldestSmallestSeqFirst"
+          # write_buffer_size: 67108864

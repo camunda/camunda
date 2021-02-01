@@ -23,7 +23,7 @@ public class StateControllerPartitionStep implements PartitionStep {
   public ActorFuture<Void> open(final PartitionContext context) {
     final var runtimeDirectory =
         context.getRaftPartition().dataDirectory().toPath().resolve("runtime");
-    final var databaseCfg = context.getBrokerCfg().getData().getRocksdb();
+    final var databaseCfg = context.getBrokerCfg().getExperimental().getRocksdb();
 
     final var stateController =
         new StateControllerImpl(

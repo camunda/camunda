@@ -55,7 +55,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
       Objects.requireNonNull(entry.getKey());
       // The key of the entry may contain dot chars when provided as an Environment Variable.
       // These should always be replaced with underscores to match the available property names.
-      // For example: `ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE=8388608`
+      // For example:
+      // `ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE=8388608`
       // would result in a key with name `write.buffer.size`, but should be `write_buffer_size`.
       key = replaceAllDotCharsWithUnderscore(entry.getKey().toString());
       value = entry.getValue(); // the value can stay the same

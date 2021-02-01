@@ -21,7 +21,7 @@ public final class RocksdbCfgTest {
   public void shouldSetColumnFamilyOptionsConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
-    final var rocksdb = cfg.getData().getRocksdb();
+    final var rocksdb = cfg.getExperimental().getRocksdb();
 
     // then
     final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
@@ -32,11 +32,12 @@ public final class RocksdbCfgTest {
   @Test
   public void shouldSetColumnFamilyOptionsConfigFromEnvironmentVariables() {
     // given
-    environment.put("zeebe.broker.data.rocksdb.columnFamilyOptions.arena.block.size", "16777216");
+    environment.put(
+        "zeebe.broker.experimental.rocksdb.columnFamilyOptions.arena.block.size", "16777216");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
-    final var rocksdb = cfg.getData().getRocksdb();
+    final var rocksdb = cfg.getExperimental().getRocksdb();
 
     // then keys should contain underscores
     final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
