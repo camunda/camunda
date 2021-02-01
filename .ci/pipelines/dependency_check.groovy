@@ -105,10 +105,7 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                git url: 'git@github.com:camunda/camunda-optimize',
-                        branch: "${BRANCH}",
-                        credentialsId: 'camunda-jenkins-github-ssh',
-                        poll: false
+                optimizeCloneGitRepo(params.BRANCH)
             }
         }
         stage('Create dependency lists') {

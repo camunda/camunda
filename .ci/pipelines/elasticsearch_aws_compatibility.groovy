@@ -12,8 +12,6 @@ def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
   return itStageBasePod() + camBpmContainerSpec(camBpmVersion)
 }
@@ -90,56 +88,14 @@ static String camBpmContainerSpec(String camBpmVersion) {
     """
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
 }
 
-void gitCheckoutOptimize() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
-}
-
 void integrationTestStepsAWS() {
-  gitCheckoutOptimize()
-
+  optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
     sh("""    
       curl -s "http://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
@@ -176,14 +132,12 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
-        gitCheckoutOptimize()
-        script {
-          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        optimizeCloneGitRepo(params.BRANCH)
+        setBuildEnvVars()
       }
     }
     stage("Elasticsearch AWS Integration") {

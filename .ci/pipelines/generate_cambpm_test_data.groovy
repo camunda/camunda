@@ -155,39 +155,6 @@ spec:
 """
 }
 
-static String mavenAgent() {
-    return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL_SIMPLE_AGENT()}
-  tolerations:
-    - key: "${NODE_POOL_SIMPLE_AGENT()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
 /******** START PIPELINE *******/
 
 pipeline {
@@ -209,14 +176,12 @@ pipeline {
                     cloud 'optimize-ci'
                     label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
                     defaultContainer 'jnlp'
-                    yaml mavenAgent()
+                    yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
                 }
             }
             steps {
                 optimizeCloneGitRepo(params.BRANCH)
-                script {
-                    env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-                }
+                setBuildEnvVars()
             }
         }
         stage('Data Generation') {

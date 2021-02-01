@@ -92,10 +92,7 @@ pipeline {
             poll: false
         }
         dir('optimize') {
-          git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
+          optimizeCloneGitRepo(params.BRANCH)
         }
 
         container('gcloud') {
@@ -135,11 +132,7 @@ pipeline {
       steps {
         container('gcloud') {
           dir('optimize') {
-            script{
-              def mavenProps = readMavenPom().getProperties()
-              env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty("elasticsearch.test.version")
-              env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty("camunda.engine.version")
-            }
+            setBuildEnvVars()
           }
           dir('infra-core') {
             sh("""
