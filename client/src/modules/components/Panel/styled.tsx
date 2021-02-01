@@ -66,6 +66,8 @@ const Body = styled.div<BodyProps>`
         ? 'transparent'
         : theme.colors.ui04};
       overflow-y: hidden;
+      display: flex;
+      flex-direction: column;
     `;
   }}
 `;

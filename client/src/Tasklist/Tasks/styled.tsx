@@ -36,6 +36,8 @@ const Container = styled.div<ContainerProps>`
     return css`
       width: 100%;
       height: 100%;
+      overflow-y: hidden;
+
       ${isLoading
         ? css`
             position: relative;
