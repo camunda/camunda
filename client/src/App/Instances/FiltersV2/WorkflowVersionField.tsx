@@ -9,26 +9,36 @@ import {Field, useField} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {workflowsStore} from 'modules/stores/workflows';
+import Select from 'modules/components/Select';
 
 const WorkflowVersionField: React.FC = observer(() => {
   const {versionsByWorkflow} = workflowsStore;
   const selectedWorkflow = useField('workflow').input.value;
   const versions = versionsByWorkflow[selectedWorkflow];
+  const options = [
+    ...(versions?.map(({version}) => ({
+      value: version,
+      label: `Version ${version}`,
+    })) ?? []),
+    {
+      value: 'all',
+      label: 'All version',
+    },
+  ];
 
   return (
     <Field
       name="workflowVersion"
-      component="select"
-      disabled={versions === undefined || versions.length === 0}
       initialValue={versions?.[versions.length - 1].version}
     >
-      <option value="">Workflow Version</option>
-      {versions?.map(({id, version}) => (
-        <option value={version} key={id}>
-          Version {version}
-        </option>
-      ))}
-      <option value="all">All versions</option>
+      {({input}) => (
+        <Select
+          {...input}
+          placeholder="Workflow Version"
+          disabled={versions === undefined || versions.length === 0}
+          options={options}
+        />
+      )}
     </Field>
   );
 });

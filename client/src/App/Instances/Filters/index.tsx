@@ -281,7 +281,6 @@ const Filters = observer(
           <Styled.Filters>
             <Styled.Field>
               <Styled.Select
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'value' does not exist on type 'Intrinsic... Remove this comment to see the full error message
                 value={workflow}
                 disabled={!isWorkflowsDataLoaded}
                 name="workflow"
@@ -293,7 +292,6 @@ const Filters = observer(
             </Styled.Field>
             <Styled.Field>
               <Styled.Select
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'value' does not exist on type 'Intrinsic... Remove this comment to see the full error message
                 value={version}
                 disabled={workflow === '' || !isWorkflowsDataLoaded}
                 name="version"
@@ -369,7 +367,6 @@ const Filters = observer(
             </Styled.Field>
             <Styled.Field>
               <Styled.Select
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'value' does not exist on type 'Intrinsic... Remove this comment to see the full error message
                 value={activityId}
                 disabled={
                   version === '' ||

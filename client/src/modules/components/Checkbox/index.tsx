@@ -86,6 +86,7 @@ export default class Checkbox extends React.Component<Props, State> {
         <Styled.Input
           data-testid="checkbox-input"
           id={id}
+          name={id}
           indeterminate={isIndeterminate}
           type="checkbox"
           checked={isChecked}

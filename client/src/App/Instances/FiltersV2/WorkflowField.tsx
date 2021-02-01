@@ -9,16 +9,18 @@ import {Field, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {workflowsStore} from 'modules/stores/workflows';
+import Select from 'modules/components/Select';
 
 const WorkflowField: React.FC = observer(() => {
   const {workflows, versionsByWorkflow} = workflowsStore;
   const form = useForm();
 
   return (
-    <Field name="workflow" component="select" disabled={workflows.length === 0}>
+    <Field name="workflow">
       {({input}) => (
-        <select
+        <Select
           {...input}
+          disabled={workflows.length === 0}
           onChange={(event) => {
             const versions = versionsByWorkflow[event.target.value];
             const initialVersionSelection =
@@ -31,14 +33,9 @@ const WorkflowField: React.FC = observer(() => {
               form.change('activityId', undefined);
             }
           }}
-        >
-          <option value="">Workflow</option>
-          {workflows.map(({value, label}) => (
-            <option value={value} key={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+          placeholder="Workflows"
+          options={workflows}
+        />
       )}
     </Field>
   );

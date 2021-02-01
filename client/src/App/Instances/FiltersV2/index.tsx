@@ -8,10 +8,14 @@ import React from 'react';
 import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
 
-import {FiltersForm, Row} from './styled';
+import {FiltersForm, Row, VariableRow} from './styled';
 import {WorkflowField} from './WorkflowField';
 import {WorkflowVersionField} from './WorkflowVersionField';
 import {FlowNodeField} from './FlowNodeField';
+import Textarea from 'modules/components/Textarea';
+import {Input} from 'modules/components/Input';
+import {CheckboxGroup} from './CheckboxGroup';
+import Button from 'modules/components/Button';
 
 type FieldsType =
   | 'workflow'
@@ -83,7 +87,7 @@ function parseFilters(filters: FiltersType) {
 const Filters: React.FC = () => {
   const history = useHistory();
 
-  function setFiltersToURL(filters: FiltersType) {
+  function setFiltersToURL(filters: FiltersType = {}) {
     const oldParams = Object.fromEntries(
       new URLSearchParams(history.location.search)
     );
@@ -111,12 +115,10 @@ const Filters: React.FC = () => {
 
   return (
     <Form<FiltersType>
-      onSubmit={(values) => {
-        setFiltersToURL(values);
-      }}
+      onSubmit={setFiltersToURL}
       initialValues={parseFilters(getFilters(history.location.search, FIELDS))}
     >
-      {({handleSubmit}) => (
+      {({handleSubmit, pristine, form}) => (
         <FiltersForm onSubmit={handleSubmit}>
           <Row>
             <WorkflowField />
@@ -125,91 +127,97 @@ const Filters: React.FC = () => {
             <WorkflowVersionField />
           </Row>
           <Row>
-            <Field name="ids" component="textarea" />
+            <Field name="ids">
+              {({input}) => (
+                <Textarea
+                  {...input}
+                  placeholder="Instance Id(s) separated by space or comma"
+                />
+              )}
+            </Field>
           </Row>
           <Row>
-            <Field
-              name="errorMessage"
-              component="input"
-              type="text"
-              placeholder="Error Message"
-            />
+            <Field name="errorMessage">
+              {({input}) => <Input {...input} placeholder="Error Message" />}
+            </Field>
           </Row>
           <Row>
-            <Field
-              name="startDate"
-              component="input"
-              type="text"
-              placeholder="Start Date YYYY-MM-DD hh:mm:ss"
-            />
+            <Field name="startDate">
+              {({input}) => (
+                <Input
+                  {...input}
+                  placeholder="Start Date YYYY-MM-DD hh:mm:ss"
+                />
+              )}
+            </Field>
           </Row>
           <Row>
-            <Field
-              name="endDate"
-              component="input"
-              type="text"
-              placeholder="End Date YYYY-MM-DD hh:mm:ss"
-            />
+            <Field name="endDate">
+              {({input}) => (
+                <Input {...input} placeholder="End Date YYYY-MM-DD hh:mm:ss" />
+              )}
+            </Field>
           </Row>
           <Row>
             <FlowNodeField />
           </Row>
+          <VariableRow>
+            <Field name="variableName">
+              {({input}) => <Input {...input} placeholder="Variable" />}
+            </Field>
+            <Field name="variableValue">
+              {({input}) => <Input {...input} placeholder="Value" />}
+            </Field>
+          </VariableRow>
           <Row>
-            <Field
-              name="variableName"
-              component="input"
-              type="text"
-              placeholder="Variable"
+            <Field name="operationId">
+              {({input}) => <Input {...input} placeholder="Operation Id" />}
+            </Field>
+          </Row>
+          <Row>
+            <CheckboxGroup
+              groupLabel="Running Instances"
+              items={[
+                {
+                  label: 'Active',
+                  name: 'active',
+                },
+                {
+                  label: 'Incidents',
+                  name: 'incidents',
+                },
+              ]}
             />
-            <Field
-              name="variableValue"
-              component="input"
-              type="text"
-              placeholder="Value"
+          </Row>
+          <Row>
+            <CheckboxGroup
+              groupLabel="Finished Instances"
+              items={[
+                {
+                  label: 'Completed',
+                  name: 'completed',
+                },
+                {
+                  label: 'Canceled',
+                  name: 'canceled',
+                },
+              ]}
             />
-          </Row>
-          <Row>
-            <Field
-              name="operationId"
-              component="input"
-              type="text"
-              placeholder="Operation Id"
-            />
-          </Row>
-          <Row>
-            <label>
-              <Field name="active" component="input" type="checkbox" />
-              Active
-            </label>
-          </Row>
-          <Row>
-            <label>
-              <Field name="incidents" component="input" type="checkbox" />
-              Incidents
-            </label>
-          </Row>
-          <Row>
-            <label>
-              <Field name="completed" component="input" type="checkbox" />
-              Completed
-            </label>
-          </Row>
-          <Row>
-            <label>
-              <Field name="canceled" component="input" type="checkbox" />
-              Canceled
-            </label>
           </Row>
           <Row>
             <button type="submit">Filter</button>
-            <button
+            <Button
+              title="Reset filters"
+              size="small"
+              disabled={pristine}
               type="reset"
               onClick={() => {
-                setFiltersToURL({});
+                form.reset();
+                setFiltersToURL();
               }}
             >
               Reset Filters
-            </button>
+            </Button>
           </Row>
         </FiltersForm>
       )}

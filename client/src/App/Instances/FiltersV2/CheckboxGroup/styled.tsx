@@ -4,13 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import styled from 'styled-components';
 
-import * as Styled from './styled';
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
 
-const Input = styled((props) => {
-  return <Styled.Input {...props} aria-label={props.placeholder} />;
-})<React.ComponentProps<typeof Styled.Input>>``;
+const Group = styled.div`
+  padding-left: 26px;
+`;
 
-export {Input};
+export {Container, Group};

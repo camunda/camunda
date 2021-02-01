@@ -154,7 +154,6 @@ const Variables: React.FC = observer(function Variables() {
       <>
         <Styled.EditInputTD ref={editInputTDRef}>
           <Styled.EditTextarea
-            // @ts-expect-error ts-migrate(2769) FIXME: Property 'autoFocus' does not exist on type 'Intri... Remove this comment to see the full error message
             autoFocus
             hasAutoSize
             minRows={1}
@@ -195,7 +194,6 @@ const Variables: React.FC = observer(function Variables() {
           <Styled.AddTextarea
             placeholder="Value"
             hasAutoSize
-            // @ts-expect-error ts-migrate(2769) FIXME: Property 'minRows' does not exist on type 'Intrins... Remove this comment to see the full error message
             minRows={1}
             maxRows={4}
             value={value}

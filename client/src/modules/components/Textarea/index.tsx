@@ -5,34 +5,34 @@
  */
 
 import React, {useEffect, createRef} from 'react';
+import {TextareaAutosizeProps} from 'react-textarea-autosize';
 
 import * as Styled from './styled';
 
 type Props = {
   placeholder?: string;
   hasAutoSize?: boolean;
-};
+} & TextareaAutosizeProps;
 
-export default function Textarea({hasAutoSize, ...props}: Props) {
-  const textareaAutosize = createRef();
+const Textarea: React.FC<Props> = ({hasAutoSize, ...props}) => {
+  const textareaRef = createRef<HTMLTextAreaElement>();
 
   // Initially scroll to top to maintain a consistent text position.
   useEffect(() => {
-    if (textareaAutosize.current) {
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      textareaAutosize.current.scrollTop = 0;
+    if (textareaRef.current !== null) {
+      textareaRef.current.scrollTop = 0;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [textareaRef]);
 
   return hasAutoSize ? (
     <Styled.TextareaAutosize
       aria-label={props.placeholder}
       {...props}
-      // @ts-expect-error ts-migrate(2769) FIXME: Type 'RefObject<unknown>' is not assignable to typ... Remove this comment to see the full error message
-      ref={textareaAutosize}
+      ref={textareaRef}
     />
   ) : (
     <Styled.Textarea aria-label={props.placeholder} {...props} />
   );
-}
+};
+
+export default Textarea;
