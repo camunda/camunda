@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, Select} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
@@ -166,6 +166,8 @@ export default withErrorHandling(
     render() {
       const {data, result} = this.props.report;
 
+      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.property);
+
       return (
         <div className="ReportControlPanel">
           <div className="select source">
@@ -197,27 +199,47 @@ export default withErrorHandling(
             <div className="reportSetup">
               <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
               <ul>
-                {['view', 'groupBy'].map((field, idx, fields) => {
-                  const previous = fields
-                    .filter((prev, prevIdx) => prevIdx < idx)
-                    .map((prev) => data[prev]);
-
-                  return (
-                    <li className="select" key={field}>
-                      <span className="label">{t(`report.${field}.label`)}</span>
-                      <ReportSelect
-                        type="process"
-                        field={field}
-                        value={data[field]}
-                        report={this.props.report}
-                        variables={{variable: this.state.variables}}
-                        previous={previous}
-                        disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
-                        onChange={(newValue) => this.updateReport(field, newValue)}
-                      />
-                    </li>
-                  );
-                })}
+                <li className="select">
+                  <span className="label">{t(`report.view.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="view"
+                    value={data.view}
+                    report={this.props.report}
+                    variables={{variable: this.state.variables}}
+                    disabled={!data.processDefinitionKey}
+                    onChange={(newValue) => this.updateReport('view', newValue)}
+                  />
+                </li>
+                {shouldDisplayMeasure && (
+                  <li className="select">
+                    <span className="label">{t('report.measure')}</span>
+                    <Select
+                      value={data.view.property}
+                      onChange={(property) => this.updateReport('view', {...data.view, property})}
+                    >
+                      <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
+                      <Select.Option value="duration">
+                        {data.view.entity === 'incident'
+                          ? t('report.view.resolutionDuration')
+                          : t('report.view.duration')}
+                      </Select.Option>
+                    </Select>
+                  </li>
+                )}
+                <li className="select">
+                  <span className="label">{t(`report.groupBy.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="groupBy"
+                    value={data.groupBy}
+                    report={this.props.report}
+                    variables={{variable: this.state.variables}}
+                    disabled={!data.processDefinitionKey || !data.view}
+                    onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                    previous={[data.view]}
+                  />
+                </li>
                 <AggregationType report={this.props.report} onChange={this.props.updateReport} />
                 <UserTaskDurationTime
                   report={this.props.report}

@@ -6,7 +6,7 @@
   border-bottom: 1px solid var(--silver-darken-87);
   margin-left: 20px;
   flex-shrink: 0;
-  width: 300px;
+  width: 308px;
   display: flex;
   flex-direction: column;
 
@@ -51,9 +51,18 @@
 
       > .label {
         color: var(--grey-base-40);
-        font-size: 0.875em;
-        margin-bottom: 5px;
-        display: block;
+        font-size: 12px;
+        display: inline-block;
+        width: 80px;
+        vertical-align: middle;
+      }
+
+      > .Select {
+        width: 180px;
+
+        .activateButton {
+          padding-left: 10px;
+        }
       }
     }
   }

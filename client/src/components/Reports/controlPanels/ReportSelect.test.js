@@ -25,6 +25,21 @@ jest.mock('services', () => {
         options: {
           view: [
             {key: 'rawData', data: 'foo'},
+            {
+              key: 'pi',
+              options: [
+                {
+                  key: 'pi_count',
+                  group: 'pi_count',
+                  data: {property: 'frequency', entity: 'processInstance'},
+                },
+                {
+                  key: 'pi_duration',
+                  group: 'pi_duration',
+                  data: {property: 'duration', entity: 'processInstance'},
+                },
+              ],
+            },
             {key: 'variable', options: 'variable'},
           ],
           groupBy: [
@@ -53,7 +68,7 @@ it('should disable options which would create a wrong combination', () => {
 
   const node = shallow(<ReportSelect {...config} />);
 
-  expect(node.find(Select.Option)).toBeDisabled();
+  expect(node.find(Select.Option).first()).toBeDisabled();
 });
 
 it('should disable the variable groupby submenu if there are no variables', () => {
@@ -127,4 +142,17 @@ it('provide the correct payload for variable reports', async () => {
   node.find('Select').simulate('change', 'variable_testName');
 
   expect(config.onChange).toHaveBeenCalledWith(selectedOption);
+});
+
+it('should not show suboptions for view measures', () => {
+  const node = shallow(
+    <ReportSelect {...config} value={{property: 'frequency', entity: 'processInstance'}} />
+  );
+
+  expect(
+    node
+      .findWhere((t) => t.text() === 'Process Instance')
+      .parent()
+      .type()
+  ).toBe(Select.Option);
 });

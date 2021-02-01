@@ -27,6 +27,18 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
       (entity, property) => ({entity, property}),
       ({type}) => ['Float', 'Integer', 'Short', 'Long', 'Double'].includes(type)
     );
+
+    if (type === 'process') {
+      options = options.map((option) => {
+        if (option.key === 'rawData' || option.key === 'variable') {
+          return option;
+        } else {
+          return (
+            option.options.find(({data}) => data.property === value?.property) || option.options[0]
+          );
+        }
+      });
+    }
   }
 
   const selectedOption = config.findSelectedOption(options, 'data', value);
@@ -58,7 +70,7 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
                   >
                     {key.toLowerCase().includes('variable')
                       ? label
-                      : t(`report.${field}.${key.split('_')[1]}`)}
+                      : t(`report.${field}.${key.split('_').pop()}`)}
                   </Select.Option>
                 );
               })}
@@ -71,7 +83,7 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
               value={key}
               disabled={!config.isAllowed(report, ...previous, data)}
             >
-              {t(`report.${field}.${key}`)}
+              {t(`report.${field}.${key.split('_').shift()}`)}
             </Select.Option>
           );
         }

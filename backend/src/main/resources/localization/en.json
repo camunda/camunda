@@ -242,6 +242,7 @@
     "addName": "Report Name",
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
+    "measure": "Measure",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",

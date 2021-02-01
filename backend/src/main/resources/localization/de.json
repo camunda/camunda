@@ -242,6 +242,7 @@
     "addName": "Berichtname",
     "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
+    "measure": "Maß",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",

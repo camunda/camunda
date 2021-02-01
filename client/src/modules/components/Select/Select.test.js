@@ -39,22 +39,26 @@ it('should render child elements and their props', () => {
 });
 
 it('should select option onClick and add checked property', () => {
+  const spy = jest.fn();
   const node = shallow(
-    <Select>
+    <Select onChange={spy}>
       <Select.Option value="1">Option One</Select.Option>
     </Select>
   );
 
   node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+  expect(spy).toHaveBeenCalledWith('1');
 
-  expect(node.find('Option').props().checked).toBeTruthy();
-  expect(node.state().selected).toBe('1');
-  expect(node.instance().label).toBe('Option One');
+  node.setProps({value: '1'});
+
+  expect(node.find('Option').props('checked')).toBeTruthy();
+  expect(node.find('Dropdown').prop('label')).toBe('Option One');
 });
 
 it('should select submenu option onClick and set checked property on the submenu and the option', () => {
+  const spy = jest.fn();
   const node = shallow(
-    <Select>
+    <Select onChange={spy}>
       <Select.Submenu label="submenu">
         <Select.Option value="1">Option One</Select.Option>
       </Select.Submenu>
@@ -62,8 +66,11 @@ it('should select submenu option onClick and set checked property on the submenu
   );
 
   node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+  expect(spy).toHaveBeenCalledWith('1');
+
+  node.setProps({value: '1'});
+
   expect(node.find('Submenu').props().checked).toBeTruthy();
   expect(node.find('Option').props().checked).toBeTruthy();
-  expect(node.state().selected).toBe('1');
-  expect(node.instance().label).toBe('submenu : Option One');
+  expect(node.find('Dropdown').prop('label')).toBe('submenu : Option One');
 });

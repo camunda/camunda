@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import ReportSelect from './ReportSelect';
 
@@ -326,4 +327,22 @@ it('should show the number of process instances in the current Filter', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
   expect(node).toIncludeText('3 instances in current filter');
+});
+
+it('should show a measure selection for views that have a measure', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  expect(node).toIncludeText('Measure');
+  expect(node.find('Select').prop('value')).toBe('frequency');
+});
+
+it('should show not show a measure selection where it does not make sense', () => {
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(props.report, {data: {view: {$set: {entity: null, property: 'rawData'}}}})}
+    />
+  );
+
+  expect(node).not.toIncludeText('Measure');
 });
