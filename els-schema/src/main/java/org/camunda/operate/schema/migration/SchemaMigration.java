@@ -7,6 +7,8 @@ package org.camunda.operate.schema.migration;
 
 import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.schema.ElasticsearchSchemaManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -22,16 +24,14 @@ import org.springframework.context.annotation.Import;
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import(JacksonConfig.class)
 public class SchemaMigration implements CommandLineRunner {
-  
+
+  private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
   @Autowired
   private ElasticsearchSchemaManager schemaManager;
-  
-  private static int exitCode = -1;
 
   @Override
   public void run(String... args) {
-    //only if application context starts correctly, the exit code is 0(OK)
-    exitCode = 0;
+    logger.info("SchemaMigration finished.");
   }
 
   public static void main(String[] args) {
@@ -41,6 +41,6 @@ public class SchemaMigration implements CommandLineRunner {
     springApplication.setWebApplicationType(WebApplicationType.NONE);
     springApplication.setAddCommandLineProperties(true);
     final ConfigurableApplicationContext ctx = springApplication.run(args);
-    SpringApplication.exit(ctx, () -> exitCode);
+    SpringApplication.exit(ctx);
   }
 }

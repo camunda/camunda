@@ -21,15 +21,16 @@
   <artifactId>qa</artifactId>
   <packaging>pom</packaging>
 
-  <modules>
-    <module>util</module>
-    <module>data-generator</module>
-    <module>integration-tests</module>
-    <module>import-old-zeebe-tests</module>
-    <module>import-performance-tests</module>
-    <module>query-performance-tests</module>
-    <module>batch-operation-performance-tests</module>
-    <module>migration-tests</module>
-  </modules>
+    <modules>
+        <module>util</module>
+        <module>data-generator</module>
+        <module>integration-tests</module>
+        <module>import-old-zeebe-tests</module>
+        <module>import-performance-tests</module>
+        <module>query-performance-tests</module>
+        <module>batch-operation-performance-tests</module>
+        <module>migration-tests</module>
+        <module>migration-performance-test</module>
+    </modules>
 
 </project>

@@ -1,10 +1,10 @@
 #!/usr/bin/env groovy
 
 String agent() {
-  boolean isStage = env.JENKINS_URL.contains('stage')
-  String vaultPrefix = isStage ? 'stage.' : ''
-  String prefix = isStage ? 'stage-' : ''
-  """
+    boolean isStage = env.JENKINS_URL.contains('stage')
+    String vaultPrefix = isStage ? 'stage.' : ''
+    String prefix = isStage ? 'stage-' : ''
+    """
 ---
 apiVersion: v1
 kind: Pod
@@ -159,83 +159,96 @@ spec:
 /******** START PIPELINE *******/
 
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'operate-ci'
-      label "operate-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml agent()
-    }
-  }
-
-  environment {
-    NEXUS = credentials("camunda-nexus")
-  }
-
-  options {
-    buildDiscarder(logRotator(numToKeepStr: '10'))
-    timestamps()
-    timeout(time: 1, unit: 'HOURS')
-  }
-
-  stages {
-    stage('Prepare') {
-      parallel {
-        stage('Build Operate') {
-          steps {
-            git url: 'git@github.com:camunda/camunda-operate',
-                branch: "master",
-                credentialsId: 'camunda-jenkins-github-ssh',
-                poll: false
-            container('maven') {
-              // Compile Operate and skip tests
-              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
-              }
-            }
-          }
+    agent {
+        kubernetes {
+            cloud 'operate-ci'
+            label "operate-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+            defaultContainer 'jnlp'
+            yaml agent()
         }
-        stage('Import ES Snapshot') {
-          steps {
-            container('maven') {
-                // Delete existing indices
-                sh ("""
+    }
+
+    environment {
+        NEXUS = credentials("camunda-nexus")
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    stages {
+        stage('Prepare') {
+            parallel {
+                stage('Build Operate') {
+                    steps {
+                        git url: 'git@github.com:camunda/camunda-operate',
+                                branch: "master",
+                                credentialsId: 'camunda-jenkins-github-ssh',
+                                poll: false
+                        container('maven') {
+                            // Compile Operate and skip tests
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
+                            }
+                        }
+                    }
+                }
+                stage('Import ES Snapshot') {
+                    steps {
+                        container('maven') {
+                            // Delete existing indices
+                            sh ("""
                     echo \$(curl -sq -H "Content-Type: application/json" -XDELETE "http://localhost:9200/_all")
                 """)
-                // Create repository
-                sh ("""
+                            // Create repository
+                            sh ("""
                     echo \$(curl -sq -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
                 """)
-                // Restore Snapshot
-                sh ("""
+                            // Restore Snapshot
+                            sh ("""
                     echo \$(curl -sq -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2/_restore?wait_for_completion=true')
                 """)
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-    }
-    stage('Run migration') {
-      steps {
-        container('maven') {
-          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-              sh ('OPERATE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args=\'${project.version}\' --non-recursive exec:exec) && mvn -B -s $MAVEN_SETTINGS_XML -f els-schema/pom.xml exec:java -Dexec.mainClass=org.camunda.operate.schema.migration.SchemaMigration -Dcamunda.operate.schemaVersion=$OPERATE_VERSION-migration-test')
-          }
+        stage('Multiply existing elasticsearch data') {
+            steps {
+                container('maven') {
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-performance-test/pom.xml exec:java -Dexec.mainClass=org.camunda.operate.qa.migration.performance.DataMultiplicator -Dexec.args=500')
+                    }
+                }
+            }
         }
-      }
+        stage('Run migration performance test') {
+            steps {
+                container('maven') {
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-performance-test verify')
+                    }
+                }
+            }
+            post {
+                always {
+                    junit testResults: 'qa/migration-performance-test/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+                }
+            }
+        }
     }
-  }
+    post {
+        failure {
+            script {
+                def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
+                notification.buildNotification(currentBuild.result)
 
-  post {
-    failure {
-      script {
-        def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
-        notification.buildNotification(currentBuild.result)
-
-        slackSend(
-          channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-          message: "Job build ${currentBuild.absoluteUrl} failed!")
-      }
+                slackSend(
+                        channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                        message: "Job build ${currentBuild.absoluteUrl} failed!")
+            }
+        }
     }
-  }
 }

@@ -100,6 +100,7 @@ public class Migrator{
     final String dst = destinationVersion != null ? destinationVersion : operateProperties.getSchemaVersion();
     try {
       final Optional<String> srcVersion = sourceVersion != null ? Optional.of(sourceVersion) : detectPreviousSchemaVersion();
+
       if (srcVersion.isPresent()) {
         String src = srcVersion.get();
         logger.info("Detected previous Operate Elasticsearch schema: {}", src);
@@ -141,7 +142,14 @@ public class Migrator{
       if (versions.size() > 1) {
         throw new MigrationException(String.format("Found %d Operate Schema versions: %s .Can only upgrade from one.", versions.size(), versions));
       }
-      return Optional.of(versions.iterator().next());
+      if (versions.size() == 1){
+        String previousVersion = versions.iterator().next();
+        SemanticVersion currentVersion = SemanticVersion.fromVersion(operateProperties.getSchemaVersion());
+        if(currentVersion.isNewerThan(SemanticVersion.fromVersion(previousVersion))) {
+          return Optional.of(previousVersion);
+        }
+      }
+      return Optional.empty();
     }
   }
 
