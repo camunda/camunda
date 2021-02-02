@@ -157,7 +157,6 @@ public class CompositeCommandResult {
 
   public ReportHyperMapResultDto transformToHyperMap() {
     ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
-
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
@@ -188,7 +187,6 @@ public class CompositeCommandResult {
 
   public NumberResultDto transformToNumber() {
     NumberResultDto numberResultDto = new NumberResultDto();
-    final List<GroupByResult> groups = this.groups;
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
@@ -204,7 +202,6 @@ public class CompositeCommandResult {
   }
 
   public RawDataProcessReportResultDto transformToProcessRawData() {
-    final List<GroupByResult> groups = this.groups;
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
@@ -221,7 +218,6 @@ public class CompositeCommandResult {
   }
 
   public RawDataDecisionReportResultDto transformToDecisionRawData() {
-    final List<GroupByResult> groups = this.groups;
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {

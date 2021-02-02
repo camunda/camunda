@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublish
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -79,6 +80,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
@@ -367,6 +369,39 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(eventProcessClient.getEventProcessMapping(processId))
       .extracting(EventProcessMappingResponseDto::getEventSources)
       .isEqualTo(externalEventSources);
+  }
+
+  private static Stream<List<EventSourceEntryDto<?>>> invalidExternalEventSourceCombinations() {
+    return Stream.of(
+      Arrays.asList(createExternalEventAllGroupsSourceEntry(), createExternalEventAllGroupsSourceEntry()),
+      Arrays.asList(createExternalEventAllGroupsSourceEntry(), createExternalEventSourceEntryForGroup("aGroup")),
+      Arrays.asList(createExternalEventSourceEntryForGroup("aGroup"), createExternalEventSourceEntryForGroup("aGroup")),
+      Collections.singletonList(
+        createExternalEventAllGroupsSourceEntry().toBuilder()
+          .configuration(ExternalEventSourceConfigDto.builder().includeAllGroups(true).group("groupName").build())
+          .build())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidExternalEventSourceCombinations")
+  public void createEventProcessMapping_invalidExternalEventSourceCombination(final List<EventSourceEntryDto<?>> sources) {
+    // given
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(USER_TASK_ID_ONE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
+    eventMappings.put(USER_TASK_ID_TWO, createEventMappingsDto(createMappedEventDto(), null));
+    eventMappings.put(USER_TASK_ID_THREE, createEventMappingsDto(null, createMappedEventDto()));
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+        eventMappings, "process name", simpleDiagramXml, sources
+      );
+
+    // when
+    final Response response =
+      eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -681,6 +716,29 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         eventSourceEntry.getSourceType(),
         eventSourceEntry.getConfiguration().getEventScope()
       ));
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidExternalEventSourceCombinations")
+  public void updateEventProcessMapping_invalidExternalEventSourceCombination(final List<EventSourceEntryDto<?>> sources) {
+    // given
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
+    );
+    EventProcessMappingDto updateDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      Collections.singletonMap(
+        USER_TASK_ID_THREE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "new process name",
+      simpleDiagramXml
+    );
+    updateDto.setEventSources(sources);
+
+    // when
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -213,7 +214,6 @@ public class EventProcessService {
 
     eventProcessMapping.ifPresent(eventProcessMappingDto ->
                                     validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto));
-
     return eventProcessMapping.orElseThrow(() -> {
       final String message = String.format(
         "Event based process does not exist! Tried to retrieve event based process with id: %s.", eventProcessMappingId
@@ -282,7 +282,7 @@ public class EventProcessService {
     );
   }
 
-  private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto eventSourceEntryDto) {
+  private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto<?> eventSourceEntryDto) {
     Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps;
     if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getSourceType())) {
       minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestamps();
@@ -361,6 +361,7 @@ public class EventProcessService {
     validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
     validateNoEventProcessesAsEventSource(eventProcessMappingDto);
     validateCamundaEventSourcesAreImported(eventProcessMappingDto);
+    validateCompatibleExternalEventSources(eventProcessMappingDto);
   }
 
   private void validateCamundaEventSourcesAreImported(final EventProcessMappingDto eventProcessMappingDto) {
@@ -420,7 +421,7 @@ public class EventProcessService {
     }
   }
 
-  private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto eventSource) {
+  private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto<?> eventSource) {
     return EventSourceType.EXTERNAL.equals(eventSource.getSourceType())
       || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
       userId,
@@ -459,6 +460,44 @@ public class EventProcessService {
         "Only one event source for each process definition can exist for an Event Process Mapping. " +
           "Mapping contains duplicates for process definition keys %s", duplicates);
       throw new OptimizeConflictException(errorMessage);
+    }
+  }
+
+  private void validateCompatibleExternalEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+    final Map<Boolean, List<ExternalEventSourceEntryDto>> externalSourcesByIncludeAllGroups =
+      eventProcessMappingDto.getEventSources().stream()
+        .filter(ExternalEventSourceEntryDto.class::isInstance)
+        .map(ExternalEventSourceEntryDto.class::cast)
+        .collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
+    final List<ExternalEventSourceEntryDto> sourcesForAllGroups =
+      externalSourcesByIncludeAllGroups.getOrDefault(true, Collections.emptyList());
+    if (sourcesForAllGroups.size() > 1) {
+      throw new OptimizeValidationException(
+        "Only one external event source with all groups selected can be used for event mappings");
+    }
+    if (sourcesForAllGroups.stream().anyMatch(source -> source.getConfiguration().getGroup() != null)) {
+      throw new OptimizeValidationException("An external event source for all groups cannot specify a group name");
+    }
+    final List<ExternalEventSourceEntryDto> sourcesForSpecificGroups =
+      externalSourcesByIncludeAllGroups.getOrDefault(false, Collections.emptyList());
+    if (!sourcesForAllGroups.isEmpty() && !sourcesForSpecificGroups.isEmpty()) {
+      throw new OptimizeValidationException(String.format(
+        "External event sources for a specified group cannot be selected if all groups are also " +
+          "included as an event source. Individual groups selected: %s", sourcesForSpecificGroups));
+    }
+    final List<String> duplicateGroups = sourcesForSpecificGroups.stream()
+      .map(source -> source.getConfiguration().getGroup())
+      .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+      .entrySet()
+      .stream()
+      .filter(countPerGroup -> countPerGroup.getValue() > 1)
+      .map(Map.Entry::getKey)
+      .collect(toList());
+    if (!duplicateGroups.isEmpty()) {
+      throw new OptimizeValidationException(String.format(
+        "The following group names were supplied for more than one external event source: %s",
+        sourcesForSpecificGroups
+      ));
     }
   }
 
