@@ -13,8 +13,8 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.util.Either;
 import java.util.Optional;
@@ -22,14 +22,14 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnVariableMappingBehavior {
   private final ExpressionProcessor expressionProcessor;
-  private final VariablesState variablesState;
+  private final MutableVariableState variablesState;
   private final ElementInstanceState elementInstanceState;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor, final ZeebeState zeebeState) {
     this.expressionProcessor = expressionProcessor;
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
-    variablesState = elementInstanceState.getVariablesState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    variablesState = zeebeState.getVariableState();
   }
 
   /**

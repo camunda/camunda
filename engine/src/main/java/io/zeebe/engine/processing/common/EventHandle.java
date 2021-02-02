@@ -12,7 +12,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -22,10 +22,11 @@ public final class EventHandle {
 
   private final WorkflowInstanceRecord eventOccurredRecord = new WorkflowInstanceRecord();
   private final KeyGenerator keyGenerator;
-  private final EventScopeInstanceState eventScopeInstanceState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public EventHandle(
-      final KeyGenerator keyGenerator, final EventScopeInstanceState eventScopeInstanceState) {
+      final KeyGenerator keyGenerator,
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }

@@ -13,16 +13,17 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import java.util.function.ObjLongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class DeploymentsState {
+public final class DbDeploymentState implements MutableDeploymentState {
   private final PendingDeploymentDistribution pendingDeploymentDistribution;
 
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbDeploymentState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution =
@@ -35,6 +36,7 @@ public final class DeploymentsState {
             pendingDeploymentDistribution);
   }
 
+  @Override
   public void putPendingDeployment(
       final long key, final PendingDeploymentDistribution pendingDeploymentDistribution) {
 
@@ -47,10 +49,12 @@ public final class DeploymentsState {
     return pendingDeploymentColumnFamily.get(deploymentKey);
   }
 
+  @Override
   public PendingDeploymentDistribution getPendingDeployment(final long key) {
     return getPending(key);
   }
 
+  @Override
   public PendingDeploymentDistribution removePendingDeployment(final long key) {
     final PendingDeploymentDistribution pending = getPending(key);
     if (pending != null) {
@@ -59,6 +63,7 @@ public final class DeploymentsState {
     return pending;
   }
 
+  @Override
   public void foreachPending(final ObjLongConsumer<PendingDeploymentDistribution> consumer) {
 
     pendingDeploymentColumnFamily.forEach(

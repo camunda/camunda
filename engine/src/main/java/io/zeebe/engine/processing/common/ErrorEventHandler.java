@@ -12,9 +12,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,11 +29,15 @@ public final class ErrorEventHandler {
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
 
-  public ErrorEventHandler(final WorkflowState workflowState, final KeyGenerator keyGenerator) {
+  public ErrorEventHandler(
+      final WorkflowState workflowState,
+      final ElementInstanceState elementInstanceState,
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final KeyGenerator keyGenerator) {
     this.workflowState = workflowState;
-    elementInstanceState = workflowState.getElementInstanceState();
+    this.elementInstanceState = elementInstanceState;
 
-    eventHandle = new EventHandle(keyGenerator, workflowState.getEventScopeInstanceState());
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
   }
 
   /**

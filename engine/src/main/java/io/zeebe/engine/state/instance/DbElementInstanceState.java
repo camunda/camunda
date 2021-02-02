@@ -14,16 +14,17 @@ import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
-import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class ElementInstanceState {
+public final class DbElementInstanceState implements MutableElementInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> parentChildColumnFamily;
   private final DbCompositeKey<DbLong, DbLong> parentChildKey;
@@ -48,12 +49,14 @@ public final class ElementInstanceState {
   private final ColumnFamily<DbLong, AwaitWorkflowInstanceResultMetadata>
       awaitWorkflowInstanceResultMetadataColumnFamily;
 
-  private final VariablesState variablesState;
+  private final MutableVariableState variableState;
 
-  public ElementInstanceState(
+  public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final DbContext dbContext,
-      final KeyGenerator keyGenerator) {
+      final MutableVariableState variableState) {
+
+    this.variableState = variableState;
 
     elementInstanceKey = new DbLong();
     parentKey = new DbLong();
@@ -87,7 +90,6 @@ public final class ElementInstanceState {
             recordParentStateRecordKey,
             DbNil.INSTANCE);
 
-    variablesState = new VariablesState(zeebeDb, dbContext, keyGenerator);
     awaitResultMetadata = new AwaitWorkflowInstanceResultMetadata();
     awaitWorkflowInstanceResultMetadataColumnFamily =
         zeebeDb.createColumnFamily(
@@ -97,11 +99,13 @@ public final class ElementInstanceState {
             awaitResultMetadata);
   }
 
+  @Override
   public ElementInstance newInstance(
       final long key, final WorkflowInstanceRecord value, final WorkflowInstanceIntent state) {
     return newInstance(null, key, value, state);
   }
 
+  @Override
   public ElementInstance newInstance(
       final ElementInstance parent,
       final long key,
@@ -126,15 +130,17 @@ public final class ElementInstanceState {
 
     elementInstanceColumnFamily.put(elementInstanceKey, instance);
     parentChildColumnFamily.put(parentChildKey, DbNil.INSTANCE);
-    variablesState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
+    variableState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
   }
 
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
     return copyElementInstance(elementInstance);
   }
 
+  @Override
   public void removeInstance(final long key) {
     final ElementInstance instance = getInstance(key);
 
@@ -152,7 +158,7 @@ public final class ElementInstanceState {
             recordColumnFamily.delete(compositeKey.getSecond());
           });
 
-      variablesState.removeScope(key);
+      variableState.removeScope(key);
 
       awaitWorkflowInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
 
@@ -170,15 +176,18 @@ public final class ElementInstanceState {
     }
   }
 
+  @Override
   public StoredRecord getStoredRecord(final long recordKey) {
     this.recordKey.wrapLong(recordKey);
     return recordColumnFamily.get(this.recordKey);
   }
 
+  @Override
   public void updateInstance(final ElementInstance scopeInstance) {
     writeElementInstance(scopeInstance);
   }
 
+  @Override
   public List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
@@ -198,6 +207,7 @@ public final class ElementInstanceState {
     return children;
   }
 
+  @Override
   public void consumeToken(final long scopeKey) {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
@@ -206,6 +216,7 @@ public final class ElementInstanceState {
     }
   }
 
+  @Override
   public void spawnToken(final long scopeKey) {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
@@ -214,6 +225,7 @@ public final class ElementInstanceState {
     }
   }
 
+  @Override
   public void storeRecord(
       final long key,
       final long scopeKey,
@@ -229,6 +241,7 @@ public final class ElementInstanceState {
     recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
   }
 
+  @Override
   public void removeStoredRecord(final long scopeKey, final long recordKey, final Purpose purpose) {
     setRecordKeys(scopeKey, recordKey, purpose);
 
@@ -242,10 +255,12 @@ public final class ElementInstanceState {
     this.recordKey.wrapLong(recordKey);
   }
 
+  @Override
   public List<IndexedRecord> getDeferredRecords(final long scopeKey) {
     return collectRecords(scopeKey, Purpose.DEFERRED);
   }
 
+  @Override
   public IndexedRecord getFailedRecord(final long key) {
     final StoredRecord storedRecord = getStoredRecord(key);
     if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
@@ -296,10 +311,6 @@ public final class ElementInstanceState {
         });
   }
 
-  public VariablesState getVariablesState() {
-    return variablesState;
-  }
-
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
     if (elementInstance != null) {
       final byte[] bytes = new byte[elementInstance.getLength()];
@@ -313,12 +324,14 @@ public final class ElementInstanceState {
     return null;
   }
 
+  @Override
   public void setAwaitResultRequestMetadata(
       final long workflowInstanceKey, final AwaitWorkflowInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(workflowInstanceKey);
     awaitWorkflowInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
   }
 
+  @Override
   public AwaitWorkflowInstanceResultMetadata getAwaitResultRequestMetadata(
       final long workflowInstanceKey) {
     elementInstanceKey.wrapLong(workflowInstanceKey);

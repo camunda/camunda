@@ -9,16 +9,16 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
-  private final JobState state;
+  private final MutableJobState state;
   private final DefaultJobCommandProcessor<JobRecord> defaultProcessor;
 
-  public JobThrowErrorProcessor(final JobState state) {
+  public JobThrowErrorProcessor(final MutableJobState state) {
     this.state = state;
     defaultProcessor =
         new DefaultJobCommandProcessor<>("throw an error for", this.state, this::acceptCommand);

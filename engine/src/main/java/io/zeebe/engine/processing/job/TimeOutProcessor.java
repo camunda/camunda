@@ -9,8 +9,9 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.engine.state.instance.JobState.State;
+import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.JobState.State;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -18,9 +19,9 @@ import io.zeebe.protocol.record.intent.JobIntent;
 public final class TimeOutProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
-  private final JobState state;
+  private final MutableJobState state;
 
-  public TimeOutProcessor(final JobState state) {
+  public TimeOutProcessor(final MutableJobState state) {
     this.state = state;
   }
 

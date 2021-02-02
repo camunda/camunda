@@ -11,12 +11,12 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
-import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
@@ -27,17 +27,17 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
 
-  private final ElementInstanceState elementInstanceState;
-  private final EventScopeInstanceState eventScopeInstanceState;
-  private final VariablesState variablesState;
+  private final MutableElementInstanceState elementInstanceState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableVariableState variablesState;
   private final JobState jobState;
   private final WorkflowState workflowState;
 
   public BpmnStateBehavior(final ZeebeState zeebeState) {
     workflowState = zeebeState.getWorkflowState();
-    elementInstanceState = workflowState.getElementInstanceState();
-    eventScopeInstanceState = workflowState.getEventScopeInstanceState();
-    variablesState = elementInstanceState.getVariablesState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    variablesState = zeebeState.getVariableState();
     jobState = zeebeState.getJobState();
   }
 

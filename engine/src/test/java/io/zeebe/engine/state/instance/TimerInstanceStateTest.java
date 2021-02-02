@@ -10,6 +10,7 @@ package io.zeebe.engine.state.instance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,12 +23,12 @@ public final class TimerInstanceStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private TimerInstanceState state;
+  private MutableTimerInstanceState state;
 
   @Before
   public void setUp() {
     final ZeebeState zeebeState = stateRule.getZeebeState();
-    state = zeebeState.getWorkflowState().getTimerState();
+    state = zeebeState.getTimerState();
   }
 
   @Test

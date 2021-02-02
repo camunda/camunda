@@ -9,16 +9,16 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 public final class CompleteProcessor implements CommandProcessor<JobRecord> {
 
-  private final JobState state;
+  private final MutableJobState state;
   private final DefaultJobCommandProcessor<JobRecord> defaultProcessor;
 
-  public CompleteProcessor(final JobState state) {
+  public CompleteProcessor(final MutableJobState state) {
     this.state = state;
     defaultProcessor =
         new DefaultJobCommandProcessor<>("complete", this.state, this::acceptCommand);

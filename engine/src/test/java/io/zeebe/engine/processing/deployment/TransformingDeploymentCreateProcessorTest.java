@@ -20,7 +20,7 @@ import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -66,7 +66,7 @@ public final class TransformingDeploymentCreateProcessorTest {
           final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
 
-          final var variablesState = workflowState.getElementInstanceState().getVariablesState();
+          final var variablesState = zeebeState.getVariableState();
           final ExpressionProcessor expressionProcessor =
               new ExpressionProcessor(
                   ExpressionLanguageFactory.createExpressionLanguage(),

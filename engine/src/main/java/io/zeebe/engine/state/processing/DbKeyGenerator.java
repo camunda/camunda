@@ -5,13 +5,16 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.state;
+package io.zeebe.engine.state.processing;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.NextValueManager;
+import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.Protocol;
 
-public final class KeyState implements KeyGenerator {
+public final class DbKeyGenerator implements KeyGenerator {
 
   private static final long INITIAL_VALUE = 0;
 
@@ -27,7 +30,7 @@ public final class KeyState implements KeyGenerator {
    * @param partitionId the partition to determine the key start value
    * @param dbContext
    */
-  public KeyState(final int partitionId, final ZeebeDb zeebeDb, final DbContext dbContext) {
+  public DbKeyGenerator(final int partitionId, final ZeebeDb zeebeDb, final DbContext dbContext) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
         new NextValueManager(keyStartValue, zeebeDb, dbContext, ZbColumnFamilies.KEY);

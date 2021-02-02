@@ -15,10 +15,10 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -48,14 +48,14 @@ public final class CreateWorkflowInstanceProcessor
 
   private final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
   private final WorkflowState workflowState;
-  private final ElementInstanceState elementInstanceState;
-  private final VariablesState variablesState;
+  private final MutableElementInstanceState elementInstanceState;
+  private final MutableVariableState variablesState;
   private final KeyGenerator keyGenerator;
 
   public CreateWorkflowInstanceProcessor(
       final WorkflowState workflowState,
-      final ElementInstanceState elementInstanceState,
-      final VariablesState variablesState,
+      final MutableElementInstanceState elementInstanceState,
+      final MutableVariableState variablesState,
       final KeyGenerator keyGenerator) {
     this.workflowState = workflowState;
     this.elementInstanceState = elementInstanceState;

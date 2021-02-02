@@ -11,9 +11,9 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.IncidentState;
+import io.zeebe.engine.state.immutable.IncidentState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -23,12 +23,12 @@ public final class BpmnIncidentBehavior {
   private final IncidentRecord incidentCommand = new IncidentRecord();
 
   private final IncidentState incidentState;
-  private final ElementInstanceState elementInstanceState;
+  private final MutableElementInstanceState elementInstanceState;
   private final TypedStreamWriter streamWriter;
 
   public BpmnIncidentBehavior(final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
     incidentState = zeebeState.getIncidentState();
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    elementInstanceState = zeebeState.getElementInstanceState();
     this.streamWriter = streamWriter;
   }
 

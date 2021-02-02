@@ -13,11 +13,12 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 
-public final class EventScopeInstanceState {
+public final class DbEventScopeInstanceState implements MutableEventScopeInstanceState {
 
   private final DbLong eventScopeKey;
   private final EventScopeInstance eventScopeInstance;
@@ -29,7 +30,7 @@ public final class EventScopeInstanceState {
   private final EventTrigger eventTrigger;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
-  public EventScopeInstanceState(
+  public DbEventScopeInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
@@ -46,11 +47,7 @@ public final class EventScopeInstanceState {
             ZbColumnFamilies.EVENT_TRIGGER, dbContext, eventTriggerKey, eventTrigger);
   }
 
-  /**
-   * If the scope exists, sets its accepting property to false.
-   *
-   * @param eventScopeKey the event scope key
-   */
+  @Override
   public void shutdownInstance(final long eventScopeKey) {
     final EventScopeInstance instance = getInstance(eventScopeKey);
     if (instance != null) {
@@ -60,13 +57,7 @@ public final class EventScopeInstanceState {
     }
   }
 
-  /**
-   * Creates a new event scope instance in the state
-   *
-   * @param eventScopeKey the event scope key
-   * @param interruptingIds list of element IDs which should set accepting to false
-   * @return whether the scope was created or not
-   */
+  @Override
   public boolean createIfNotExists(
       final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
     this.eventScopeKey.wrapLong(eventScopeKey);
@@ -80,12 +71,7 @@ public final class EventScopeInstanceState {
     return wasCreated;
   }
 
-  /**
-   * Creates a new event scope instance in the state
-   *
-   * @param eventScopeKey the event scope key
-   * @param interruptingIds list of element IDs which should set accepting to false
-   */
+  @Override
   public void createInstance(
       final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
     eventScopeInstance.reset();
@@ -99,23 +85,14 @@ public final class EventScopeInstanceState {
     eventScopeInstanceColumnFamily.put(this.eventScopeKey, eventScopeInstance);
   }
 
-  /**
-   * Returns a event scope instance by key or null if none exists with this key.
-   *
-   * @param eventScopeKey the key of the event scope
-   * @return the event scope instance or null
-   */
+  @Override
   public EventScopeInstance getInstance(final long eventScopeKey) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
     return instance != null ? new EventScopeInstance(instance) : null;
   }
 
-  /**
-   * Delete an event scope from the state. Does not fail in case the scope does not exist.
-   *
-   * @param eventScopeKey the key of the event scope to delete
-   */
+  @Override
   public void deleteInstance(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
 
@@ -128,13 +105,7 @@ public final class EventScopeInstanceState {
     eventScopeInstanceColumnFamily.delete(this.eventScopeKey);
   }
 
-  /**
-   * @param eventScopeKey the key of the event scope the event is triggered in
-   * @param eventKey the key of the event record (used for ordering)
-   * @param elementId the id of the element which should be triggered, e.g. boundary event
-   * @param variables the variables of the occurred event, i.e. message variables
-   * @return true if the event was accepted by the event scope, false otherwise
-   */
+  @Override
   public boolean triggerEvent(
       final long eventScopeKey,
       final long eventKey,
@@ -170,13 +141,7 @@ public final class EventScopeInstanceState {
     eventTriggerColumnFamily.put(eventTriggerKey, eventTrigger);
   }
 
-  /**
-   * Returns the next event trigger for the event scope or null if none exists. This will not remove
-   * the event trigger from the state.
-   *
-   * @param eventScopeKey the key of the event scope
-   * @return the next event trigger or null if none exist
-   */
+  @Override
   public EventTrigger peekEventTrigger(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     final EventTrigger[] next = new EventTrigger[1];
@@ -190,13 +155,7 @@ public final class EventScopeInstanceState {
     return next[0];
   }
 
-  /**
-   * Returns the next event trigger for the event scope or null if none exists. This will remove the
-   * polled event trigger from the state if it exists.
-   *
-   * @param eventScopeKey the key of the event scope
-   * @return the next event trigger or null if none exist
-   */
+  @Override
   public EventTrigger pollEventTrigger(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     final EventTrigger[] next = new EventTrigger[1];
@@ -211,12 +170,7 @@ public final class EventScopeInstanceState {
     return next[0];
   }
 
-  /**
-   * Deletes an event trigger by key and scope key. Does not fail if the trigger does not exist.
-   *
-   * @param eventScopeKey the key of the event scope
-   * @param eventKey the key of the event trigger
-   */
+  @Override
   public void deleteTrigger(final long eventScopeKey, final long eventKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);

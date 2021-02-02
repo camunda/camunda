@@ -11,7 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
-import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
@@ -22,7 +22,7 @@ public final class CreateWorkflowInstanceWithResultProcessor
     implements CommandProcessor<WorkflowInstanceCreationRecord> {
 
   private final CreateWorkflowInstanceProcessor createProcessor;
-  private final ElementInstanceState elementInstanceState;
+  private final MutableElementInstanceState elementInstanceState;
   private final AwaitWorkflowInstanceResultMetadata awaitResultMetadata =
       new AwaitWorkflowInstanceResultMetadata();
 
@@ -33,7 +33,7 @@ public final class CreateWorkflowInstanceWithResultProcessor
 
   public CreateWorkflowInstanceWithResultProcessor(
       final CreateWorkflowInstanceProcessor createProcessor,
-      final ElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState) {
     this.createProcessor = createProcessor;
     this.elementInstanceState = elementInstanceState;
   }

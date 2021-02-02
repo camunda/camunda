@@ -13,9 +13,9 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -29,14 +29,14 @@ public final class OpenMessageSubscriptionProcessor
       "Expected to open a new message subscription for element with key '%d' and message name '%s', "
           + "but there is already a message subscription for that element key and message name opened";
   private final MessageCorrelator messageCorrelator;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
   public OpenMessageSubscriptionProcessor(
-      final MessageState messageState,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageState messageState,
+      final MutableMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;

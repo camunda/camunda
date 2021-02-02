@@ -116,7 +116,7 @@ public final class ReProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private boolean detectReprocessingInconsistency;
+  private final boolean detectReprocessingInconsistency;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -313,11 +313,13 @@ public final class ReProcessingStateMachine {
     final TransactionOperation operationOnProcessing;
     if (failedEventPositions.contains(position)) {
       LOG.info(LOG_STMT_FAILED_ON_PROCESSING, currentEvent);
-      operationOnProcessing = () -> zeebeState.tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
+      operationOnProcessing =
+          () -> zeebeState.getBlackListState().tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
     } else {
       operationOnProcessing =
           () -> {
-            final boolean isNotOnBlacklist = !zeebeState.isOnBlacklist(typedEvent);
+            final boolean isNotOnBlacklist =
+                !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
             if (isNotOnBlacklist) {
               eventProcessor.processRecord(
                   position,
@@ -326,7 +328,7 @@ public final class ReProcessingStateMachine {
                   reprocessingStreamWriter,
                   NOOP_SIDE_EFFECT_CONSUMER);
             }
-            zeebeState.markAsProcessed(position);
+            zeebeState.getLastProcessedPositionState().markAsProcessed(position);
           };
     }
     return operationOnProcessing;

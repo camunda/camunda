@@ -164,7 +164,10 @@ public final class StreamProcessorTest {
     inOrder.verifyNoMoreInteractions();
 
     Assertions.assertThat(
-            streamProcessorRule.getZeebeState().getLastSuccessfulProcessedRecordPosition())
+            streamProcessorRule
+                .getZeebeState()
+                .getLastProcessedPositionState()
+                .getLastSuccessfulProcessedRecordPosition())
         .isEqualTo(position);
   }
 
@@ -660,7 +663,10 @@ public final class StreamProcessorTest {
     // then
     assertThat(onProcessedListener.await()).isTrue();
     Assertions.assertThat(
-            streamProcessorRule.getZeebeState().getLastSuccessfulProcessedRecordPosition())
+            streamProcessorRule
+                .getZeebeState()
+                .getLastProcessedPositionState()
+                .getLastSuccessfulProcessedRecordPosition())
         .isEqualTo(positionProcessedAfterResume);
   }
 

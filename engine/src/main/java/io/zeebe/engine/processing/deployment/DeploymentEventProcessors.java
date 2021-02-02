@@ -13,14 +13,14 @@ import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.record.ValueType;
 
 public final class DeploymentEventProcessors {
 
   public static void addDeploymentCreateProcessor(
       final TypedRecordProcessors typedRecordProcessors,
-      final WorkflowState workflowState,
+      final MutableWorkflowState workflowState,
       final DeploymentResponder deploymentResponder,
       final int partitionId) {
     typedRecordProcessors.onCommand(

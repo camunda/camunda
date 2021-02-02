@@ -222,13 +222,14 @@ public final class BlacklistInstanceTest {
 
     // when
     final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    zeebeState.tryToBlacklist(typedEvent, (workflowInstanceKey) -> {});
+    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (workflowInstanceKey) -> {});
 
     // then
     metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-    assertThat(zeebeState.isOnBlacklist(typedEvent)).isEqualTo(expectedToBlacklist);
+    assertThat(zeebeState.getBlackListState().isOnBlacklist(typedEvent))
+        .isEqualTo(expectedToBlacklist);
   }
 
   private final class Value extends UnifiedRecordValue implements WorkflowInstanceRelated {

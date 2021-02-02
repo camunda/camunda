@@ -15,9 +15,11 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowInstanceSubscriptionState {
+public final class DbWorkflowInstanceSubscriptionState
+    implements MutableWorkflowInstanceSubscriptionState {
 
   private final DbContext dbContext;
 
@@ -35,7 +37,7 @@ public final class WorkflowInstanceSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       sentTimeColumnFamily;
 
-  public WorkflowInstanceSubscriptionState(
+  public DbWorkflowInstanceSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this.dbContext = dbContext;
 
@@ -61,6 +63,7 @@ public final class WorkflowInstanceSubscriptionState {
             DbNil.INSTANCE);
   }
 
+  @Override
   public void put(final WorkflowInstanceSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
@@ -70,6 +73,7 @@ public final class WorkflowInstanceSubscriptionState {
     sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
   }
 
+  @Override
   public WorkflowInstanceSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
@@ -77,6 +81,7 @@ public final class WorkflowInstanceSubscriptionState {
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
+  @Override
   public void visitElementSubscriptions(
       final long elementInstanceKey, final WorkflowInstanceSubscriptionVisitor visitor) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
@@ -88,6 +93,7 @@ public final class WorkflowInstanceSubscriptionState {
         });
   }
 
+  @Override
   public void visitSubscriptionBefore(
       final long deadline, final WorkflowInstanceSubscriptionVisitor visitor) {
 
@@ -104,6 +110,7 @@ public final class WorkflowInstanceSubscriptionState {
         });
   }
 
+  @Override
   public void updateToOpenedState(
       final WorkflowInstanceSubscription subscription, final int subscriptionPartitionId) {
     subscription.setOpened();
@@ -111,17 +118,20 @@ public final class WorkflowInstanceSubscriptionState {
     updateSentTime(subscription, 0);
   }
 
+  @Override
   public void updateToClosingState(
       final WorkflowInstanceSubscription subscription, final long sentTime) {
     subscription.setClosing();
     updateSentTime(subscription, sentTime);
   }
 
+  @Override
   public void updateSentTimeInTransaction(
       final WorkflowInstanceSubscription subscription, final long sentTime) {
     dbContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
   }
 
+  @Override
   public void updateSentTime(final WorkflowInstanceSubscription subscription, final long sentTime) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
@@ -139,6 +149,7 @@ public final class WorkflowInstanceSubscriptionState {
     }
   }
 
+  @Override
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
@@ -146,6 +157,7 @@ public final class WorkflowInstanceSubscriptionState {
     return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
+  @Override
   public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
     final WorkflowInstanceSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
@@ -156,6 +168,7 @@ public final class WorkflowInstanceSubscriptionState {
     return found;
   }
 
+  @Override
   public void remove(final WorkflowInstanceSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
@@ -168,10 +181,5 @@ public final class WorkflowInstanceSubscriptionState {
   private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
-  }
-
-  @FunctionalInterface
-  public interface WorkflowInstanceSubscriptionVisitor {
-    boolean visit(WorkflowInstanceSubscription subscription);
   }
 }

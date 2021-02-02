@@ -10,8 +10,8 @@ package io.zeebe.engine.processing.message;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.state.message.MessageState;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.immutable.MessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
@@ -24,11 +24,11 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageSubscriptionState subscriptionState;
 
   public MessageObserver(
       final MessageState messageState,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;

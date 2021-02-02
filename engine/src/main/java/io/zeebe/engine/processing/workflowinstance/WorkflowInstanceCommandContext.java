@@ -11,21 +11,21 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class WorkflowInstanceCommandContext {
 
-  private final ElementInstanceState elementInstanceState;
+  private final MutableElementInstanceState elementInstanceState;
 
   private TypedRecord<WorkflowInstanceRecord> record;
   private ElementInstance elementInstance;
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;
 
-  public WorkflowInstanceCommandContext(final ElementInstanceState elementInstanceState) {
+  public WorkflowInstanceCommandContext(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
 
@@ -57,7 +57,7 @@ public final class WorkflowInstanceCommandContext {
     this.responseWriter = responseWriter;
   }
 
-  public ElementInstanceState getElementInstanceState() {
+  public MutableElementInstanceState getElementInstanceState() {
     return elementInstanceState;
   }
 

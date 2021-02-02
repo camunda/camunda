@@ -264,7 +264,8 @@ public final class ProcessingStateMachine {
 
           // default side effect is responses; can be changed by processor
           sideEffectProducer = responseWriter;
-          final boolean isNotOnBlacklist = !zeebeState.isOnBlacklist(typedRecord);
+          final boolean isNotOnBlacklist =
+              !zeebeState.getBlackListState().isOnBlacklist(typedRecord);
           if (isNotOnBlacklist) {
             currentProcessor.processRecord(
                 position,
@@ -274,7 +275,7 @@ public final class ProcessingStateMachine {
                 this::setSideEffectProducer);
           }
 
-          zeebeState.markAsProcessed(position);
+          zeebeState.getLastProcessedPositionState().markAsProcessed(position);
         });
   }
 
@@ -328,7 +329,9 @@ public final class ProcessingStateMachine {
           writeRejectionOnCommand(processingException);
           errorRecord.initErrorRecord(processingException, position);
 
-          zeebeState.tryToBlacklist(typedEvent, errorRecord::setWorkflowInstanceKey);
+          zeebeState
+              .getBlackListState()
+              .tryToBlacklist(typedEvent, errorRecord::setWorkflowInstanceKey);
 
           logStreamWriter.appendFollowUpEvent(
               typedEvent.getKey(), ErrorIntent.CREATED, errorRecord);

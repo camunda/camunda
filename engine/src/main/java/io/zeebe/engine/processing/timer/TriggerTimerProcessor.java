@@ -17,8 +17,10 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.Timer;
@@ -40,6 +42,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
+  private final ElementInstanceState elementInstanceState;
+  private final MutableTimerInstanceState timerInstanceState;
   private final EventHandle eventHandle;
   private final ExpressionProcessor expressionProcessor;
 
@@ -50,9 +54,11 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
     workflowState = zeebeState.getWorkflowState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    timerInstanceState = zeebeState.getTimerState();
 
     eventHandle =
-        new EventHandle(zeebeState.getKeyGenerator(), workflowState.getEventScopeInstanceState());
+        new EventHandle(zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState());
   }
 
   @Override
@@ -63,14 +69,13 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     final TimerRecord timer = record.getValue();
     final long elementInstanceKey = timer.getElementInstanceKey();
 
-    final TimerInstance timerInstance =
-        workflowState.getTimerState().get(elementInstanceKey, record.getKey());
+    final TimerInstance timerInstance = timerInstanceState.get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
       streamWriter.appendRejection(
           record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
       return;
     }
-    workflowState.getTimerState().remove(timerInstance);
+    timerInstanceState.remove(timerInstance);
 
     processTimerTrigger(record, streamWriter, timer, elementInstanceKey);
   }
@@ -111,8 +116,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final ExecutableCatchEvent catchEvent) {
 
     if (elementInstanceKey > 0) {
-      final var elementInstance =
-          workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
       if (elementInstance != null && elementInstance.isActive()) {
         return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);

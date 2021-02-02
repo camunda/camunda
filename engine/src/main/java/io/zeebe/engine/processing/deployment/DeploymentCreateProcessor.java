@@ -11,18 +11,18 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final WorkflowState workflowState;
+  private final MutableWorkflowState workflowState;
   private final int partitionId;
   private final DeploymentResponder deploymentResponder;
 
   public DeploymentCreateProcessor(
-      final WorkflowState workflowState,
+      final MutableWorkflowState workflowState,
       final DeploymentResponder deploymentResponder,
       final int partitionId) {
     this.workflowState = workflowState;

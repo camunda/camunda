@@ -25,7 +25,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -55,8 +55,7 @@ public final class EngineProcessors {
     addDistributeDeploymentProcessors(
         actor, zeebeState, typedRecordProcessors, deploymentDistributor);
 
-    final var variablesState =
-        zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
+    final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
@@ -112,7 +111,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior) {
-    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
+    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         zeebeState,
         expressionProcessor,
@@ -129,7 +128,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor) {
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
+    final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(

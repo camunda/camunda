@@ -13,11 +13,12 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.engine.metrics.IncidentMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.immutable.IncidentState;
+import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.ObjLongConsumer;
 
-public final class IncidentState {
-  public static final int MISSING_INCIDENT = -1;
+public final class DbIncidentState implements MutableIncidentState {
 
   /** incident key -> incident record */
   private final DbLong incidentKey;
@@ -41,7 +42,7 @@ public final class IncidentState {
 
   private final IncidentMetrics metrics;
 
-  public IncidentState(
+  public DbIncidentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext, final int partitionId) {
     incidentKey = new DbLong();
     incidentColumnFamily =
@@ -64,6 +65,7 @@ public final class IncidentState {
     metrics = new IncidentMetrics(partitionId);
   }
 
+  @Override
   public void createIncident(final long incidentKey, final IncidentRecord incident) {
     this.incidentKey.wrapLong(incidentKey);
     incidentWrite.setRecord(incident);
@@ -81,6 +83,7 @@ public final class IncidentState {
     metrics.incidentCreated();
   }
 
+  @Override
   public IncidentRecord getIncidentRecord(final long incidentKey) {
     this.incidentKey.wrapLong(incidentKey);
 
@@ -91,6 +94,7 @@ public final class IncidentState {
     return null;
   }
 
+  @Override
   public void deleteIncident(final long key) {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
@@ -109,6 +113,7 @@ public final class IncidentState {
     }
   }
 
+  @Override
   public long getWorkflowInstanceIncidentKey(final long workflowInstanceKey) {
     elementInstanceKey.wrapLong(workflowInstanceKey);
 
@@ -121,6 +126,7 @@ public final class IncidentState {
     return MISSING_INCIDENT;
   }
 
+  @Override
   public long getJobIncidentKey(final long jobKey) {
     this.jobKey.wrapLong(jobKey);
     final IncidentKey incidentKey = jobIncidentColumnFamily.get(this.jobKey);
@@ -131,10 +137,12 @@ public final class IncidentState {
     return MISSING_INCIDENT;
   }
 
+  @Override
   public boolean isJobIncident(final IncidentRecord record) {
     return record.getJobKey() > 0;
   }
 
+  @Override
   public void forExistingWorkflowIncident(
       final long elementInstanceKey, final ObjLongConsumer<IncidentRecord> resolver) {
     final long workflowIncidentKey = getWorkflowInstanceIncidentKey(elementInstanceKey);

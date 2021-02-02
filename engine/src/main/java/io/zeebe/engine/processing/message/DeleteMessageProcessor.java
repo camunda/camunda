@@ -11,15 +11,15 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.MessageState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.intent.MessageIntent;
 
 public final class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageState messageState;
+  private final MutableMessageState messageState;
 
-  public DeleteMessageProcessor(final MessageState messageState) {
+  public DeleteMessageProcessor(final MutableMessageState messageState) {
     this.messageState = messageState;
   }
 

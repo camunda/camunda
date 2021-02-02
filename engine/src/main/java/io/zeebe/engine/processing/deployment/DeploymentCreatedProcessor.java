@@ -16,7 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -27,13 +27,13 @@ import java.util.List;
 
 public final class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final WorkflowState workflowState;
+  private final MutableWorkflowState workflowState;
   private final boolean isDeploymentPartition;
   private final MessageStartEventSubscriptionRecord subscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
   public DeploymentCreatedProcessor(
-      final WorkflowState workflowState, final boolean isDeploymentPartition) {
+      final MutableWorkflowState workflowState, final boolean isDeploymentPartition) {
     this.workflowState = workflowState;
     this.isDeploymentPartition = isDeploymentPartition;
   }

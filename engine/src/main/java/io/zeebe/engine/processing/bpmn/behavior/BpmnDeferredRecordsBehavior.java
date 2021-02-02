@@ -9,19 +9,19 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
 public final class BpmnDeferredRecordsBehavior {
 
-  private final ElementInstanceState elementInstanceState;
+  private final MutableElementInstanceState elementInstanceState;
 
   public BpmnDeferredRecordsBehavior(final ZeebeState zeebeState) {
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    elementInstanceState = zeebeState.getElementInstanceState();
   }
 
   public void deferNewRecord(
