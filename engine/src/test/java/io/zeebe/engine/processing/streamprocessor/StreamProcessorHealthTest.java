@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -250,8 +251,13 @@ public class StreamProcessorHealthTest {
         final TypedRecord<? extends UnpackedObject> command,
         final RejectionType type,
         final String reason,
-        final Consumer<RecordMetadata> metadata) {
-      wrappedWriter.appendRejection(command, type, reason, metadata);
+        final UnaryOperator<RecordMetadata> modifier) {
+      wrappedWriter.appendRejection(command, type, reason, modifier);
+    }
+
+    @Override
+    public void configureSourceContext(final long sourceRecordPosition) {
+      wrappedWriter.configureSourceContext(sourceRecordPosition);
     }
 
     @Override
@@ -273,16 +279,11 @@ public class StreamProcessorHealthTest {
         final long key,
         final Intent intent,
         final UnpackedObject value,
-        final Consumer<RecordMetadata> metadata) {
+        final UnaryOperator<RecordMetadata> modifier) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
-      wrappedWriter.appendFollowUpEvent(key, intent, value, metadata);
-    }
-
-    @Override
-    public void configureSourceContext(final long sourceRecordPosition) {
-      wrappedWriter.configureSourceContext(sourceRecordPosition);
+      wrappedWriter.appendFollowUpEvent(key, intent, value, modifier);
     }
 
     @Override
@@ -301,8 +302,8 @@ public class StreamProcessorHealthTest {
         final long key,
         final Intent intent,
         final UnpackedObject value,
-        final Consumer<RecordMetadata> metadata) {
-      wrappedWriter.appendFollowUpCommand(key, intent, value, metadata);
+        final UnaryOperator<RecordMetadata> modifier) {
+      wrappedWriter.appendFollowUpCommand(key, intent, value, modifier);
     }
 
     @Override

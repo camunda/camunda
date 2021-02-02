@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.streamprocessor.writers;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public interface TypedEventWriter {
 
@@ -18,6 +18,8 @@ public interface TypedEventWriter {
 
   void appendFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
+  /** @deprecated The modifier parameter is not used at the time of writing */
+  @Deprecated
   void appendFollowUpEvent(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+      long key, Intent intent, UnpackedObject value, UnaryOperator<RecordMetadata> modifier);
 }

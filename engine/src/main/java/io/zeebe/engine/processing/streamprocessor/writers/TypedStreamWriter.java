@@ -11,7 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RejectionType;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
 public interface TypedStreamWriter extends TypedCommandWriter, TypedEventWriter {
@@ -19,11 +19,13 @@ public interface TypedStreamWriter extends TypedCommandWriter, TypedEventWriter 
   void appendRejection(
       TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
+  /** @deprecated The modifier parameter is not used at the time of writing */
+  @Deprecated
   void appendRejection(
       TypedRecord<? extends UnpackedObject> command,
       RejectionType type,
       String reason,
-      Consumer<RecordMetadata> metadata);
+      UnaryOperator<RecordMetadata> modifier);
 
   void configureSourceContext(long sourceRecordPosition);
 }

@@ -20,15 +20,17 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class TypedStreamWriterImpl implements TypedStreamWriter {
-  protected final Consumer<RecordMetadata> noop = m -> {};
-  protected final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
-  protected final RecordMetadata metadata = new RecordMetadata();
-  protected final LogStreamBatchWriter batchWriter;
 
-  protected long sourceRecordPosition = -1;
+  private static final UnaryOperator<RecordMetadata> NO_MODIFIER = UnaryOperator.identity();
+
+  private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
+  private final RecordMetadata metadata = new RecordMetadata();
+  private final LogStreamBatchWriter batchWriter;
+
+  private long sourceRecordPosition = -1;
 
   public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
     this.batchWriter = batchWriter;
@@ -53,8 +55,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final RecordType type,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> additionalMetadata) {
-    appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
+      final UnaryOperator<RecordMetadata> modifier) {
+    appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value, modifier);
   }
 
   protected void appendRecord(
@@ -64,7 +66,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final RejectionType rejectionType,
       final String rejectionReason,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> additionalMetadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
 
     final LogEntryBuilder event = batchWriter.event();
 
@@ -75,7 +77,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
     initMetadata(type, intent, value);
     metadata.rejectionType(rejectionType);
     metadata.rejectionReason(rejectionReason);
-    additionalMetadata.accept(metadata);
 
     if (key >= 0) {
       event.key(key);
@@ -83,18 +84,18 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       event.keyNull();
     }
 
-    event.metadataWriter(metadata).valueWriter(value).done();
+    event.metadataWriter(modifier.apply(metadata)).valueWriter(value).done();
   }
 
   @Override
   public void appendNewCommand(final Intent intent, final UnpackedObject value) {
-    appendRecord(-1, RecordType.COMMAND, intent, value, noop);
+    appendRecord(-1, RecordType.COMMAND, intent, value, NO_MODIFIER);
   }
 
   @Override
   public void appendFollowUpCommand(
       final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.COMMAND, intent, value, noop);
+    appendRecord(key, RecordType.COMMAND, intent, value, NO_MODIFIER);
   }
 
   @Override
@@ -102,8 +103,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    appendRecord(key, RecordType.COMMAND, intent, value, metadata);
+      final UnaryOperator<RecordMetadata> modifier) {
+    appendRecord(key, RecordType.COMMAND, intent, value, modifier);
   }
 
   @Override
@@ -128,7 +129,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
         rejectionType,
         reason,
         command.getValue(),
-        noop);
+        NO_MODIFIER);
   }
 
   @Override
@@ -136,7 +137,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType rejectionType,
       final String reason,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
     appendRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
@@ -144,17 +145,22 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
         rejectionType,
         reason,
         command.getValue(),
-        metadata);
+        modifier);
+  }
+
+  @Override
+  public void configureSourceContext(final long sourceRecordPosition) {
+    this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override
   public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
+    appendRecord(key, RecordType.EVENT, intent, value, NO_MODIFIER);
   }
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
+    appendRecord(key, RecordType.EVENT, intent, value, NO_MODIFIER);
   }
 
   @Override
@@ -162,12 +168,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    appendRecord(key, RecordType.EVENT, intent, value, metadata);
-  }
-
-  @Override
-  public void configureSourceContext(final long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
+      final UnaryOperator<RecordMetadata> modifier) {
+    appendRecord(key, RecordType.EVENT, intent, value, modifier);
   }
 }

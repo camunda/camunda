@@ -15,7 +15,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public final class ReprocessingStreamWriter implements TypedStreamWriter {
 
@@ -43,7 +43,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType type,
       final String reason,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
 
     final var record =
         new ReprocessingRecord(
@@ -52,6 +52,11 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
             command.getIntent(),
             RecordType.COMMAND_REJECTION);
     records.add(record);
+  }
+
+  @Override
+  public void configureSourceContext(final long sourceRecordPosition) {
+    this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override
@@ -73,15 +78,10 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
     records.add(record);
-  }
-
-  @Override
-  public void configureSourceContext(final long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override
@@ -106,7 +106,7 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
 
     final var record =
         new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.COMMAND);
