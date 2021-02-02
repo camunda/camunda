@@ -20,7 +20,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Data
 @Builder
-public class AssigneeCandidateGroupSearchRequestDto {
+public class AssigneeCandidateGroupDefinitionSearchRequestDto {
   private String terms;
   @Builder.Default
   private int limit = 25;

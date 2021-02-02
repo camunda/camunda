@@ -13,8 +13,11 @@ import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -41,6 +44,18 @@ public class DefinitionQueryUtil {
       // not relevant
       s -> ""
     );
+  }
+
+  public static BoolQueryBuilder createDefinitionQuery(final Map<String, Set<String>> definitionKeyToTenantsMap,
+                                                       final DefinitionBasedType type) {
+    final BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
+    definitionKeyToTenantsMap.forEach(
+      (definitionKey, tenantIds) -> query.should(
+        boolQuery()
+          .must(termQuery(type.getDefinitionKeyFieldName(), definitionKey))
+          .must(createTenantIdQuery(type.getTenantIdFieldName(), new ArrayList<>(tenantIds)))
+      ));
+    return query;
   }
 
   public static BoolQueryBuilder createDefinitionQuery(final String definitionKey,

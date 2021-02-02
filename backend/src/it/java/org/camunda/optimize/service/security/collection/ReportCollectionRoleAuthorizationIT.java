@@ -1043,7 +1043,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
             password
           );
         } else {
-          return reportClient.createSingleProcessReportAsUser(collectionId, DEFAULT_DEFINITION_KEY, user, password);
+          return reportClient.createSingleProcessReportAsUserAndReturnResponse(collectionId, DEFAULT_DEFINITION_KEY, user, password);
         }
       case DECISION:
         return reportClient.createSingleDecisionReportAsUser(collectionId, DEFAULT_DEFINITION_KEY, user, password);

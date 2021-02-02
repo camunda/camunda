@@ -169,6 +169,24 @@ public class ReportClient {
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
+  public String createAndStoreProcessReport(final String definitionKey, final List<String> tenants) {
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
+      null,
+      definitionKey,
+      tenants
+    );
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  public String createAndStoreProcessReport(final String collectionId, final String definitionKey) {
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
+      collectionId,
+      definitionKey,
+      Collections.singletonList(null)
+    );
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
   public String createAndStoreProcessReport(String definitionKey) {
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
       null,
@@ -176,6 +194,16 @@ public class ReportClient {
       Collections.singletonList(null)
     );
     return createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  public String createAndStoreDecisionReport(String definitionKey) {
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+      createSingleDecisionReportDefinitionDto(
+        null,
+        definitionKey,
+        Collections.singletonList(null)
+      );
+    return createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
 
@@ -207,8 +235,8 @@ public class ReportClient {
     return createSingleDecisionReportDefinitionDto(null, definitionKey, Collections.singletonList(null));
   }
 
-  public Response createSingleProcessReportAsUser(String collectionId, String definitionKey, String username,
-                                                  String password) {
+  public Response createSingleProcessReportAsUserAndReturnResponse(String collectionId, String definitionKey,
+                                                                   String username, String password) {
     return createSingleProcessReportAsUserRawResponse(createSingleProcessReportDefinitionDto(
       collectionId,
       definitionKey,
@@ -304,6 +332,17 @@ public class ReportClient {
       tenants,
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD
+    );
+  }
+
+  public String createSingleProcessReportAsUser(final String definitionKey, final String user, final String pw) {
+    return createReportForCollectionAsUser(
+      null,
+      DefinitionType.PROCESS,
+      definitionKey,
+      Collections.singletonList(null),
+      user,
+      pw
     );
   }
 
