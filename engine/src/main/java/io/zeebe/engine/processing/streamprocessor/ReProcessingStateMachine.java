@@ -96,7 +96,9 @@ public final class ReProcessingStateMachine {
   private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
 
-  private final EventFilter eventFilter;
+  private final EventFilter eventFilter =
+      new MetadataEventFilter(new RecordProtocolVersionFilter());
+
   private final LogStreamReader logStreamReader;
   private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
@@ -120,7 +122,6 @@ public final class ReProcessingStateMachine {
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
-    eventFilter = context.getEventFilter();
     logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
     recordProcessorMap = context.getRecordProcessorMap();
@@ -235,7 +236,7 @@ public final class ReProcessingStateMachine {
     try {
       readNextEvent();
 
-      if (eventFilter == null || eventFilter.applies(currentEvent)) {
+      if (eventFilter.applies(currentEvent)) {
         reprocessEvent(currentEvent);
       } else {
         onRecordReprocessed(currentEvent);

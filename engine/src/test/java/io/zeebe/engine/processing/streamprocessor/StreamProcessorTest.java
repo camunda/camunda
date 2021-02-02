@@ -33,6 +33,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.ActorControl;
@@ -232,6 +233,57 @@ public final class StreamProcessorTest {
     inOrder
         .verify(typedRecordProcessor, never())
         .processRecord(eq(secondPosition), any(), any(), any(), any());
+
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldProcessOnlyCommands() {
+    // given
+    final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors
+                .onCommand(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ACTIVATE_ELEMENT,
+                    typedRecordProcessor)
+                .onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                    typedRecordProcessor));
+
+    final var record =
+        new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.TESTING_ONLY);
+
+    // when
+    final long commandPosition =
+        streamProcessorRule.writeCommand(WorkflowInstanceIntent.ACTIVATE_ELEMENT, record);
+
+    final long eventPosition =
+        streamProcessorRule.writeEvent(WorkflowInstanceIntent.ACTIVATE_ELEMENT, record);
+
+    final var rejectionPosition =
+        streamProcessorRule.writeCommandRejection(WorkflowInstanceIntent.ACTIVATE_ELEMENT, record);
+
+    final var nextCommandPosition =
+        streamProcessorRule.writeCommand(WorkflowInstanceIntent.ACTIVATE_ELEMENT, record);
+
+    // then
+    final InOrder inOrder = inOrder(typedRecordProcessor);
+    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onRecovered(any());
+    inOrder
+        .verify(typedRecordProcessor, TIMEOUT)
+        .processRecord(eq(commandPosition), any(), any(), any(), any());
+    inOrder
+        .verify(typedRecordProcessor, never())
+        .processRecord(eq(eventPosition), any(), any(), any(), any());
+    inOrder
+        .verify(typedRecordProcessor, never())
+        .processRecord(eq(rejectionPosition), any(), any(), any(), any());
+    inOrder
+        .verify(typedRecordProcessor, TIMEOUT)
+        .processRecord(eq(nextCommandPosition), any(), any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
   }

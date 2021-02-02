@@ -27,7 +27,11 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   ELEMENT_TERMINATING((short) 6),
   ELEMENT_TERMINATED((short) 7),
 
-  EVENT_OCCURRED((short) 8);
+  EVENT_OCCURRED((short) 8),
+
+  ACTIVATE_ELEMENT((short) 9),
+  COMPLETE_ELEMENT((short) 10),
+  TERMINATE_ELEMENT((short) 11);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -65,6 +69,12 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
         return ELEMENT_TERMINATED;
       case 8:
         return EVENT_OCCURRED;
+      case 9:
+        return ACTIVATE_ELEMENT;
+      case 10:
+        return COMPLETE_ELEMENT;
+      case 11:
+        return TERMINATE_ELEMENT;
       default:
         return Intent.UNKNOWN;
     }

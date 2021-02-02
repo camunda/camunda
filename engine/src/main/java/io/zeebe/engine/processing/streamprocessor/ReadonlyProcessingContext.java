@@ -21,9 +21,6 @@ public interface ReadonlyProcessingContext {
   /** @return the actor on which the processing runs */
   ActorControl getActor();
 
-  /** @return the filter, which is used to filter for events */
-  EventFilter getEventFilter();
-
   /** @return the logstream, on which the processor runs */
   LogStream getLogStream();
 
