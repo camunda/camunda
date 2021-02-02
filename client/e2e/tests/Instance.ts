@@ -340,32 +340,44 @@ test('Instance with an incident - incident bar', async (t) => {
   // filter by incident type pills
   await t
     .click(screen.getByRole('button', {name: /extract value error/i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
-    .eql(3);
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
+    .eql(3)
+    .expect(withinIncidentsTable.getAllByText(/extract value error/i).count)
+    .eql(2)
+    .expect(withinIncidentsTable.findByText(/i\/o mapping error/i).exists)
+    .notOk();
 
   await t.click(screen.getByRole('button', {name: /extract value error/i})); // deselect pill
 
   await t
     .click(screen.getByRole('button', {name: /i\/o mapping error/i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
-    .eql(2);
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
+    .eql(2)
+    .expect(withinIncidentsTable.getByText(/i\/o mapping error/i).exists)
+    .ok()
+    .expect(withinIncidentsTable.findByText(/extract value error/i).exists)
+    .notOk();
 
   // clear filter pills
   await t
     .click(screen.getByRole('button', {name: /clear all/i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
-    .eql(4);
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
+    .eql(4)
+    .expect(withinIncidentsTable.getAllByText(/extract value error/i).count)
+    .eql(2)
+    .expect(withinIncidentsTable.getByText(/i\/o mapping error/i).exists)
+    .ok();
 
   // filter by flow node pills
   await t
     .click(screen.getByRole('button', {name: /where to go\? /i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(2)
     .click(screen.getByRole('button', {name: /message /i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(3)
     .click(screen.getByRole('button', {name: /upper task /i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(4);
 
   // clear filter pills
@@ -418,26 +430,26 @@ test('Instance with an incident - incident bar', async (t) => {
   // clear filters
   await t
     .click(screen.getByRole('button', {name: /clear all/i}))
-    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(4);
 
   await t
     .click(withinIncidentsTable.getByRole('row', {name: /Upper task/}))
-    .expect(withinVariablesTable.getAllByRole('row').count)
+    .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
     .expect(withinVariablesTable.getByRole('cell', {name: /orderid/i}).exists)
     .ok();
 
   await t
     .click(withinIncidentsTable.getByRole('row', {name: /Where to go\?/}))
-    .expect(withinVariablesTable.getAllByRole('row').count)
+    .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
     .expect(withinVariablesTable.getByRole('cell', {name: /goUp/i}).exists)
     .ok();
 
   await t
     .click(withinIncidentsTable.getByRole('row', {name: /message/}))
-    .expect(withinVariablesTable.getAllByRole('row').count)
+    .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
     .expect(withinVariablesTable.getByRole('cell', {name: /clientId/i}).exists)
     .ok();

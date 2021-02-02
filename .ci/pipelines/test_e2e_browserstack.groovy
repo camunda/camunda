@@ -204,7 +204,6 @@ pipeline {
             poll: false
           dir('client') {
             sh '''
-            mv .npmrc.ci .npmrc
             yarn install
             '''
           }
