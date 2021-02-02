@@ -24,7 +24,7 @@ public final class DbCompositeKeyColumnFamilyTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
+      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
   private DbString firstKey;

@@ -29,7 +29,7 @@ public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
+      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> columnFamily;
   private DbLong firstKey;

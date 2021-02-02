@@ -5,3 +5,4 @@ zeebe:
         columnFamilyOptions:
           compaction_pri: "kOldestSmallestSeqFirst"
           write_buffer_size: 67108864
+        statisticsEnabled: true

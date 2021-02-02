@@ -18,6 +18,56 @@ public final class RocksdbCfgTest {
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
+  public void shouldDisableStatisticsPerDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.isStatisticsEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldHaveEmptyPropertiesPerDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getColumnFamilyOptions()).isEmpty();
+  }
+
+  @Test
+  public void shouldCreateRocksDbConfigurationFromDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // when
+    final var rocksDbConfiguration = rocksdb.createRocksDbConfiguration();
+
+    // then
+    assertThat(rocksDbConfiguration.getColumnFamilyOptions()).isEmpty();
+    assertThat(rocksDbConfiguration.isStatisticsEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldCreateRocksDbConfigurationFromConfig() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // when
+    final var rocksDbConfiguration = rocksdb.createRocksDbConfiguration();
+
+    // then
+    assertThat(rocksDbConfiguration.getColumnFamilyOptions())
+        .containsEntry("compaction_pri", "kOldestSmallestSeqFirst")
+        .containsEntry("write_buffer_size", "67108864");
+    assertThat(rocksDbConfiguration.isStatisticsEnabled()).isTrue();
+  }
+
+  @Test
   public void shouldSetColumnFamilyOptionsConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
@@ -27,6 +77,16 @@ public final class RocksdbCfgTest {
     final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
     assertThat(columnFamilyOptions).containsEntry("compaction_pri", "kOldestSmallestSeqFirst");
     assertThat(columnFamilyOptions).containsEntry("write_buffer_size", "67108864");
+  }
+
+  @Test
+  public void shouldEnableStatisticsViaConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.isStatisticsEnabled()).isTrue();
   }
 
   @Test
@@ -42,5 +102,18 @@ public final class RocksdbCfgTest {
     // then keys should contain underscores
     final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
     assertThat(columnFamilyOptions).containsEntry("arena_block_size", "16777216");
+  }
+
+  @Test
+  public void shouldEnableStatisticsViaEnvironmentVariables() {
+    // given
+    environment.put("zeebe.broker.experimental.rocksdb.statisticsEnabled", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.isStatisticsEnabled()).isTrue();
   }
 }

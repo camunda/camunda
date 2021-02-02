@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 public final class RocksdbCfg implements ConfigurationEntry {
 
   private Properties columnFamilyOptions;
+  private boolean statisticsEnabled;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -42,6 +44,18 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   public void setColumnFamilyOptions(final Properties columnFamilyOptions) {
     this.columnFamilyOptions = columnFamilyOptions;
+  }
+
+  public boolean isStatisticsEnabled() {
+    return statisticsEnabled;
+  }
+
+  public void setStatisticsEnabled(final boolean statisticsEnabled) {
+    this.statisticsEnabled = statisticsEnabled;
+  }
+
+  public RocksDbConfiguration createRocksDbConfiguration() {
+    return RocksDbConfiguration.of(columnFamilyOptions, statisticsEnabled);
   }
 
   private static final class RocksDBColumnFamilyOption {

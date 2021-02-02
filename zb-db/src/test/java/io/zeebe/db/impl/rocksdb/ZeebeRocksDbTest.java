@@ -26,8 +26,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldCreateSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
 
     final File pathName = temporaryFolder.newFolder();
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -52,8 +51,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldReopenDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
     final File pathName = temporaryFolder.newFolder();
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 
@@ -82,8 +80,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldRecoverFromSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
     final File pathName = temporaryFolder.newFolder();
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 
