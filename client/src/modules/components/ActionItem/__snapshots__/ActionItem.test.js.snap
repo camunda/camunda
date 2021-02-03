@@ -1,5 +1,36 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should match snapshot 1`] = `
+<div
+  className="ActionItem"
+>
+  <div
+    className="header"
+  >
+    <div
+      className="type"
+    >
+      ActionItem type
+    </div>
+    <div
+      className="buttons"
+    >
+      <ForwardRef(Button)
+        icon={true}
+      >
+        <Icon
+          size="15"
+          type="close-large"
+        />
+      </ForwardRef(Button)>
+    </div>
+  </div>
+  <div
+    className="content"
+  />
+</div>
+`;
+
 exports[`should show an error warning if specified 1`] = `
 <Message
   error={true}

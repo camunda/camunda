@@ -322,7 +322,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
 
-  await t.expect(controlPanelFilterText).contains('is Running, Canceled or Completed');
+  await t.expect(controlPanelFilterText).contains('Running, Canceled or Completed');
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);

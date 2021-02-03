@@ -89,7 +89,7 @@ export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
 export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
-export const filterRemoveButton = controlPanelFilter.find('.Button');
+export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
 export const definitionSelection = Selector('.Popover.DefinitionSelection');
 export const definitionSelectionDialog = Selector('.Popover.DefinitionSelection .Popover__dialog');
 export const versionPopover = Selector('.VersionPopover');

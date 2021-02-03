@@ -12,5 +12,9 @@
     font-size: 0.875em;
     align-items: center;
     white-space: nowrap;
+
+    .filterText {
+      display: inline-block;
+    }
   }
 }

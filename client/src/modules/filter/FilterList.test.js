@@ -202,7 +202,7 @@ it('should display a duration filter', () => {
   const actionItem = node.find('ActionItem').dive();
 
   expect(actionItem).toIncludeText('Duration is less than');
-  expect(actionItem.find('PreviewItemValue').prop('children').join('')).toBe('18 hours');
+  expect(actionItem.find('b').prop('children').join('')).toBe('18 hours');
 });
 
 it('should display a flow node duration filter', () => {
@@ -241,7 +241,7 @@ it('should show flow node duration filter in expanded state if specified', () =>
     />
   );
 
-  expect(node.find('PreviewItemValue')).toExist();
+  expect(node.find('b')).toExist();
 });
 
 it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {

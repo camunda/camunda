@@ -10,11 +10,15 @@ exports[`should create Today/Yesterday preview 1`] = `
     Start Date
      
   </span>
-  occurs
-  : 
-  <PreviewItemValue>
-    Today
-  </PreviewItemValue>
+  <span
+    className="filterText"
+  >
+    occurs
+     
+    <b>
+      Today
+    </b>
+  </span>
 </div>
 `;
 
@@ -28,18 +32,22 @@ exports[`should create correct fixed date preview 1`] = `
     Start Date
      
   </span>
-  occurs
-  : 
-  between
-   
-  <PreviewItemValue>
-    2015-01-20
-  </PreviewItemValue>
-   and
-   
-  <PreviewItemValue>
-    2019-05-11
-  </PreviewItemValue>
+  <span
+    className="filterText"
+  >
+    occurs
+     
+    between
+     
+    <b>
+      2015-01-20
+    </b>
+     and
+     
+    <b>
+      2019-05-11
+    </b>
+  </span>
 </div>
 `;
 
@@ -53,13 +61,17 @@ exports[`should create correct last... with custom preview 1`] = `
     End Date
      
   </span>
-  occurs
-  : 
-  in the last
-   
-  <PreviewItemValue>
-    5 months
-  </PreviewItemValue>
+  <span
+    className="filterText"
+  >
+    occurs
+     
+    in the last
+     
+    <b>
+      5 months
+    </b>
+  </span>
 </div>
 `;
 
@@ -77,25 +89,25 @@ exports[`should create variable preview 1`] = `
   </span>
   in the last
    
-  <PreviewItemValue>
+  <b>
     2 days
-  </PreviewItemValue>
+  </b>
   <span>
      
     or
      
   </span>
-  <PreviewItemValue>
+  <b>
     null
-  </PreviewItemValue>
+  </b>
   <span>
      
     or
      
   </span>
-  <PreviewItemValue>
+  <b>
     undefined
-  </PreviewItemValue>
+  </b>
 </div>
 `;
 
@@ -109,17 +121,21 @@ exports[`should include time information if fixed date filter contains time info
     Start Date
      
   </span>
-  occurs
-  : 
-  between
-   
-  <PreviewItemValue>
-    2015-01-20 at 14:12
-  </PreviewItemValue>
-   and
-   
-  <PreviewItemValue>
-    2019-05-11 at 19:24
-  </PreviewItemValue>
+  <span
+    className="filterText"
+  >
+    occurs
+     
+    between
+     
+    <b>
+      2015-01-20 at 14:12
+    </b>
+     and
+     
+    <b>
+      2019-05-11 at 19:24
+    </b>
+  </span>
 </div>
 `;

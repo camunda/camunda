@@ -7,10 +7,13 @@
 import React from 'react';
 
 import {t} from 'translation';
+import {Tooltip} from 'components';
 
-import PreviewItemValue from '../../PreviewItemValue';
-
-export default function VariablePreview({variableName, filter: {operator, values}}) {
+export default function VariablePreview({
+  variableName,
+  filter: {operator, values},
+  type = 'variable',
+}) {
   const createOperator = (val) => <span> {val} </span>;
 
   const operatorText = (
@@ -20,34 +23,45 @@ export default function VariablePreview({variableName, filter: {operator, values
         : createOperator(t('common.filter.list.operators.or'))}
     </span>
   );
+  const parameterName = (
+    <span className="parameterName">
+      {' '}
+      {t('report.table.rawData.' + type)}: <b>{variableName}</b>
+    </span>
+  );
 
   return (
     <>
-      <span className="parameterName">{variableName}</span>
-      {(!operator || operator === 'in' || operator === '=') &&
-        createOperator(t('common.filter.list.operators.is'))}
-      {operator === 'contains' && createOperator(t('common.filter.list.operators.contains'))}
-      {operator === 'not contains' && createOperator(t('common.filter.list.operators.notContains'))}
-      {operator === 'not in' &&
-        (values.length === 1
-          ? createOperator(t('common.filter.list.operators.not'))
-          : createOperator(t('common.filter.list.operators.neither')))}
-      {operator === '<' && createOperator(t('common.filter.list.operators.less'))}
-      {operator === '>' && createOperator(t('common.filter.list.operators.greater'))}
-      {values.map((value, idx) => (
-        <span key={idx}>
-          {value === null ? (
-            <>
-              <PreviewItemValue>{t('common.null')}</PreviewItemValue>
-              {operatorText}
-              <PreviewItemValue>{t('common.undefined')}</PreviewItemValue>
-            </>
-          ) : (
-            <PreviewItemValue>{value.toString()}</PreviewItemValue>
-          )}
-          {idx < values.length - 1 && operatorText}
-        </span>
-      ))}
+      <Tooltip content={parameterName} overflowOnly>
+        {parameterName}
+      </Tooltip>
+      <span className="filterText">
+        {(!operator || operator === 'in' || operator === '=') &&
+          createOperator(t('common.filter.list.operators.is'))}
+        {operator === 'contains' && createOperator(t('common.filter.list.operators.contains'))}
+        {operator === 'not contains' &&
+          createOperator(t('common.filter.list.operators.notContains'))}
+        {operator === 'not in' &&
+          (values.length === 1
+            ? createOperator(t('common.filter.list.operators.not'))
+            : createOperator(t('common.filter.list.operators.neither')))}
+        {operator === '<' && createOperator(t('common.filter.list.operators.less'))}
+        {operator === '>' && createOperator(t('common.filter.list.operators.greater'))}
+        {values.map((value, idx) => (
+          <span key={idx}>
+            {value === null ? (
+              <>
+                <b>{t('common.null')}</b>
+                {operatorText}
+                <b>{t('common.undefined')}</b>
+              </>
+            ) : (
+              <b>{value.toString()}</b>
+            )}
+            {idx < values.length - 1 && operatorText}
+          </span>
+        ))}
+      </span>
     </>
   );
 }

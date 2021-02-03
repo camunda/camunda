@@ -11,22 +11,16 @@ import {Button} from 'components';
 
 import ActionItem from './ActionItem';
 
-it('should have an action button', () => {
-  const node = shallow(<ActionItem />);
+it('should match snapshot', () => {
+  const node = shallow(<ActionItem type="ActionItem type" />);
 
-  expect(node.find(Button)).toExist();
+  expect(node).toMatchSnapshot();
 });
 
 it('should render child content', () => {
   const node = shallow(<ActionItem>Some child content</ActionItem>);
 
-  expect(node.find('span')).toIncludeText('Some child content');
-});
-
-it('should add highlighted classname when highlighted property is set', () => {
-  const node = shallow(<ActionItem highlighted />);
-
-  expect(node).toHaveClassName('highlighted');
+  expect(node.find('div.content')).toIncludeText('Some child content');
 });
 
 it('should call the onClick handler', () => {
@@ -38,10 +32,13 @@ it('should call the onClick handler', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should pass the disabled prop to the child-button', () => {
-  const node = shallow(<ActionItem disabled />);
+it('should call the onClick handler', () => {
+  const spy = jest.fn();
+  const node = shallow(<ActionItem onEdit={spy}>Content</ActionItem>);
 
-  expect(node.find(Button)).toBeDisabled();
+  node.find(Button).at(0).simulate('click');
+
+  expect(spy).toHaveBeenCalled();
 });
 
 it('should show an error warning if specified', () => {

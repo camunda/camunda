@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .NodeFilter {
   .modalContent {
     display: flex;
@@ -13,8 +15,7 @@
       margin-bottom: 24px;
 
       .parameterName {
-        font-style: italic;
-        font-weight: bold;
+        @include highlighted;
       }
 
       .previewList {
@@ -28,10 +29,6 @@
 
           .previewItemOperator {
             white-space: pre-wrap;
-          }
-
-          .PreviewItemValue {
-            display: inline;
           }
         }
       }

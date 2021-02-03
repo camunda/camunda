@@ -1,0 +1,37 @@
+.SelectionPreview {
+  border: 1px solid var(--silver-darken-87);
+  background-color: var(--white);
+  border-radius: 3px;
+  background: var(--white);
+  padding-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875em;
+
+  &.disabled {
+    color: var(--grey-lighten-56);
+
+    .Button.icon:disabled,
+    .Button.icon[disabled] {
+      background-color: transparent;
+    }
+  }
+
+  &.highlighted {
+    background: var(--blue-base-65);
+    color: var(--white);
+
+    .Button {
+      color: var(--white);
+
+      &:hover {
+        background-color: var(--blue-lighten-75);
+      }
+    }
+  }
+
+  .Button {
+    margin-left: 5px;
+    border-radius: 0;
+  }
+}

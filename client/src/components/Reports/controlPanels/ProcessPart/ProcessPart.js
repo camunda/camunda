@@ -13,6 +13,7 @@ import {
   PartHighlight,
   ActionItem,
   MessageBox,
+  SelectionPreview,
 } from 'components';
 
 import './ProcessPart.scss';
@@ -50,21 +51,20 @@ export default class ProcessPart extends React.Component {
   renderPart() {
     if (this.props.processPart) {
       return (
-        <div onClick={this.openModal} className="ProcessPart__current">
+        <div className="ProcessPart__current">
           <ActionItem
             onClick={(evt) => {
               evt.stopPropagation();
               this.props.update(null);
             }}
+            onEdit={this.openModal}
           >
-            {t('report.processPart.description')}{' '}
-            <span className="highlighted">
-              {this.renderFlowNodeName(this.props.processPart.start)}
-            </span>
-            <span> {t('common.and')} </span>
-            <span className="highlighted">
-              {this.renderFlowNodeName(this.props.processPart.end)}
-            </span>
+            <span className="highlighted">{t('report.processPart.label')}</span>
+            <div>
+              <b>{this.renderFlowNodeName(this.props.processPart.start)}</b>
+              <span> {t('common.and')} </span>
+              <b>{this.renderFlowNodeName(this.props.processPart.end)}</b>
+            </div>
           </ActionItem>
         </div>
       );
@@ -94,15 +94,15 @@ export default class ProcessPart extends React.Component {
         <Modal.Content>
           <span>
             {t('report.processPart.description')}{' '}
-            <ActionItem
+            <SelectionPreview
               disabled={!start}
               highlighted={hoveredNode && (start ? hoveredNode.id === start.id : true)}
               onClick={() => this.setState({start: null, hasPath: true})}
             >
               {start ? start.name || start.id : t('report.processPart.selectStart')}
-            </ActionItem>
+            </SelectionPreview>
             <span> {t('common.and')} </span>
-            <ActionItem
+            <SelectionPreview
               highlighted={
                 hoveredNode &&
                 start &&
@@ -112,7 +112,7 @@ export default class ProcessPart extends React.Component {
               onClick={() => this.setState({end: null, hasPath: true})}
             >
               {end ? end.name || end.id : t('report.processPart.selectEnd')}
-            </ActionItem>
+            </SelectionPreview>
           </span>
           {start && end && !hasPath && (
             <MessageBox type="warning">{t('report.processPart.noPathWarning')}</MessageBox>

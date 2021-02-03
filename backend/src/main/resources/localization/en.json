@@ -831,8 +831,8 @@
         "endDate": "End Date",
         "duration": "Duration",
         "instance": "Process instance",
-        "instanceDuration": "Process instance duration",
-        "flowNodeDuration": "Flow Node duration",
+        "instanceDuration": "Process Instance Duration",
+        "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
@@ -937,15 +937,19 @@
       "durationModal": {
         "includeInstance": "Only include process instances that ran for...",
         "moreThan": "more than",
-        "lessThan": "less than",
-        "appliedTo": "filter is applied to"
+        "lessThan": "less than"
       },
       "nodeModal": {
         "executedFlowNodes": "Running, Canceled or Completed",
         "notExecutedFlowNodes": "Not executed",
         "canceledFlowNodes": "Canceled",
         "executingFlowNodes": "Running",
-        "previewLabel": "Display process instances where: "
+        "preview": {
+          "executedFlowNodes": "Running, Canceled or Completed Flow Nodes",
+          "notExecutedFlowNodes": "Not executed Flow Nodes",
+          "canceledFlowNodes": "Canceled Flow Nodes",
+          "executingFlowNodes": "Running Flow Nodes"
+        }
       },
       "assigneeModal": {
         "includeOnly": "Include only",
@@ -967,7 +971,10 @@
         "view": "All Flow Node data visible"
       },
       "linkingTip": "Filters are linked by 'and' logic",
-      "incompatibleFilters": "No data shown due to incompatible filters"
+      "incompatibleFilters": "No data shown due to incompatible filters",
+      "instanceFilter": "Process Instance Filter",
+      "decisionFilter": "Decision Instance Filter",
+      "flowNodeFilter": "Flow Node Data Filter"
     },
     "definitionSelection": {
       "latest": "Latest",

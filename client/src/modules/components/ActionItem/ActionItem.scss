@@ -1,13 +1,14 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ActionItem {
-  display: inline-flex;
-  border: 1px solid var(--silver-darken-80);
+  border: 1px solid var(--silver-darken-87);
   background-color: var(--white);
   border-radius: 3px;
   background: var(--white);
   width: 100%;
   position: relative;
   min-height: 32px;
-  width: max-content;
+  padding-bottom: 10px;
 
   &.highlighted {
     background: var(--blue-base-65);
@@ -18,25 +19,48 @@
     padding: 5px 10px;
   }
 
-  .Button,
-  .Button:hover,
-  .Button:active {
-    border: 1px solid transparent;
-    border-radius: 0;
-    position: absolute;
-    background: var(--white);
-    right: 0;
-    top: 0;
-    height: 30px;
+  .header {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    margin-left: auto;
+    padding: 5px 10px 0px 10px;
+
+    .type {
+      color: var(--grey-lighten-56);
+      font-size: 0.75em;
+      flex-grow: 1;
+    }
+
+    .buttons {
+      margin-left: auto;
+
+      .Button {
+        height: 22px;
+        width: 22px;
+
+        .Icon {
+          margin: 0;
+        }
+      }
+    }
   }
 
   .content {
+    font-size: 0.75em;
     padding: 0 10px;
-    font-size: 0.875em;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    flex-grow: 1;
-    padding-right: 35px;
+    max-width: 100%;
+  }
+
+  &:not(:hover) {
+    .Button,
+    &.Button {
+      opacity: 0;
+
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
+    }
   }
 }

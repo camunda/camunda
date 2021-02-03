@@ -52,3 +52,4 @@ export {Tag} from './Tag';
 export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {Checklist} from './Checklist';
 export {Tooltip} from './Tooltip';
+export {SelectionPreview} from './SelectionPreview';

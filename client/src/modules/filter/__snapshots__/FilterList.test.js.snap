@@ -5,11 +5,12 @@ exports[`should disable editing and pass a warning to the filter item if at leas
   className="FilterList"
 >
   <li
-    className="listItem notEditable"
+    className="listItem"
     key="0"
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
       warning="Flow Node(s) does not exist"
     >
       <NodeListPreview
@@ -34,59 +35,45 @@ exports[`should disable editing and pass a warning to the filter item if at leas
   className="FilterList"
 >
   <li
-    className="listItem notEditable"
+    className="listItem"
     key="0"
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
       warning="Flow Node(s) does not exist"
     >
       <span
         className="parameterName"
       >
-        Duration
+        Flow Node Duration
       </span>
-      <span>
-         
-        filter is applied to
-         
-      </span>
-      <Tooltip
-        content={
-          <div
-            className="filterValues"
-          >
-            <div>
-              <div
-                className="flowNode"
-              >
-                <PreviewItemValue>
-                  flowNodeThatDoesNotExist
-                </PreviewItemValue>
-                <span>
-                   
-                  is less than
-                   
-                </span>
-                <PreviewItemValue>
-                  18
-                   
-                  hours
-                </PreviewItemValue>
-              </div>
-            </div>
-          </div>
-        }
-        position="bottom"
+      <span
+        className="filterText"
       >
-        <span
-          className="PreviewItemValue"
+        <div
+          className="filterValues"
         >
-          1
-           
-          Flow Node
-        </span>
-      </Tooltip>
+          <div
+            className="flowNode"
+            key="flowNodeThatDoesNotExist"
+          >
+            <b>
+              flowNodeThatDoesNotExist
+            </b>
+            <span>
+               
+              is less than
+               
+            </span>
+            <b>
+              18
+               
+              hours
+            </b>
+          </div>
+        </div>
+      </span>
     </ActionItem>
   </li>
 </ul>
@@ -97,11 +84,12 @@ exports[`should disable editing and pass a warning to variablePreview if variabl
   className="FilterList"
 >
   <li
-    className="listItem notEditable"
+    className="listItem"
     key="0"
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
       warning="Variable does not exist"
     >
       <VariablePreview
@@ -113,6 +101,7 @@ exports[`should disable editing and pass a warning to variablePreview if variabl
             ],
           }
         }
+        type="variable"
         variableName="notANameButAnId"
       />
     </ActionItem>
@@ -130,54 +119,40 @@ exports[`should display a flow node duration filter 1`] = `
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
       warning={false}
     >
       <span
         className="parameterName"
       >
-        Duration
+        Flow Node Duration
       </span>
-      <span>
-         
-        filter is applied to
-         
-      </span>
-      <Tooltip
-        content={
-          <div
-            className="filterValues"
-          >
-            <div>
-              <div
-                className="flowNode"
-              >
-                <PreviewItemValue>
-                  flow node name
-                </PreviewItemValue>
-                <span>
-                   
-                  is less than
-                   
-                </span>
-                <PreviewItemValue>
-                  18
-                   
-                  hours
-                </PreviewItemValue>
-              </div>
-            </div>
-          </div>
-        }
-        position="bottom"
+      <span
+        className="filterText"
       >
-        <span
-          className="PreviewItemValue"
+        <div
+          className="filterValues"
         >
-          1
-           
-          Flow Node
-        </span>
-      </Tooltip>
+          <div
+            className="flowNode"
+            key="a"
+          >
+            <b>
+              flow node name
+            </b>
+            <span>
+               
+              is less than
+               
+            </span>
+            <b>
+              18
+               
+              hours
+            </b>
+          </div>
+        </div>
+      </span>
     </ActionItem>
   </li>
 </ul>
@@ -193,6 +168,7 @@ exports[`should display date preview if the filter is a date filter 1`] = `
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
     >
       <DateFilterPreview
         filter={

@@ -937,15 +937,19 @@
       "durationModal": {
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
-        "lessThan": "weniger als",
-        "appliedTo": "Filter wird angewendet auf"
+        "lessThan": "weniger als"
       },
       "nodeModal": {
         "executedFlowNodes": "Laufend, Abgebrochen oder Beendet",
         "notExecutedFlowNodes": "Nicht ausgeführt",
         "canceledFlowNodes": "Abgebrochen",
         "executingFlowNodes": "Laufend",
-        "previewLabel": "Zeige Prozessinstanzen bei denen gilt: "
+        "preview": {
+          "executedFlowNodes": "Laufende, Abgebrochene oder Beendete Prozessknoten",
+          "notExecutedFlowNodes": "Nicht ausgeführte Prozessknoten",
+          "canceledFlowNodes": "Abgebrochene Prozessknoten",
+          "executingFlowNodes": "Laufende Prozessknoten"
+        }
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",
@@ -967,7 +971,10 @@
         "view": "Alle Prozessknoten-Daten sichtbar"
       },
       "linkingTip": "Filter sind durch 'und' Logik verbunden",
-      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
+      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
+      "instanceFilter": "Prozessinstanzen Filter",
+      "decisionFilter": "Entscheidungsinstanzen Filter",
+      "flowNodeFilter": "Prozessknoten-Daten Filter"
     },
     "definitionSelection": {
       "latest": "Neueste",

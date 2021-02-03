@@ -9,14 +9,11 @@
     cursor: pointer;
     white-space: pre-wrap;
 
-    .ActionItem {
-      width: 100%;
+    .ActionItem .content {
+      margin-top: -20px;
+
       span.highlighted {
         @include highlighted;
-        max-width: 200px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        vertical-align: middle;
       }
     }
   }

@@ -1,9 +1,0 @@
-@import 'shared-styles/shared-styles.scss';
-
-.PreviewItemValue {
-  @include highlighted;
-  max-width: 200px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  vertical-align: middle;
-}

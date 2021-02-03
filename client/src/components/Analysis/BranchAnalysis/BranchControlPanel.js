@@ -8,7 +8,7 @@ import update from 'immutability-helper';
 import React from 'react';
 import equal from 'deep-equal';
 
-import {ActionItem, DefinitionSelection} from 'components';
+import {DefinitionSelection, SelectionPreview} from 'components';
 import {Filter} from 'filter';
 import {getFlowNodeNames, loadVariables} from 'services';
 import {t} from 'translation';
@@ -90,7 +90,7 @@ export class BranchControlPanel extends React.Component {
         onMouseOver={this.hover(type)}
         onMouseOut={this.hover(null)}
       >
-        <ActionItem
+        <SelectionPreview
           disabled={disableFlowNodeSelection}
           onClick={() => this.props.updateSelection(type, null)}
           highlighted={
@@ -101,7 +101,7 @@ export class BranchControlPanel extends React.Component {
           {this.props[type]
             ? this.props[type].name || this.props[type].id
             : t(`analysis.emptySelectionLabel.${type}`)}
-        </ActionItem>
+        </SelectionPreview>
       </div>
     );
   };

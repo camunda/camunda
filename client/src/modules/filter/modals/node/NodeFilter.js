@@ -71,7 +71,6 @@ export default class NodeFilter extends React.Component {
         </Modal.Header>
         <Modal.Content className="modalContent">
           <div className="preview">
-            <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
             <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
           </div>
           <ButtonGroup>

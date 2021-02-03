@@ -25,15 +25,10 @@ it('should not display the button if process part is set', () => {
 
 it('should show a preview of the process part', () => {
   const node = shallow(
-    <ProcessPart
-      processPart={{start: 'a', end: 'b'}}
-      flowNodeNames={{a: 'Start Node', b: 'End Node'}}
-    />
+    <ProcessPart processPart={{start: 'a', end: 'b'}} flowNodeNames={{a: 'Start Node'}} />
   );
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText(
-    'Only regard part between Start Node and End Node'
-  );
+  expect(node.find('ActionItem')).toMatchSnapshot();
 });
 
 it('should remove the process part', () => {
@@ -48,7 +43,7 @@ it('should remove the process part', () => {
 it('should open a modal when clicking the button', () => {
   const node = shallow(<ProcessPart processPart={{start: 'a', end: 'b'}} />);
 
-  node.find('.ProcessPart__current').simulate('click');
+  node.find('ActionItem').prop('onEdit')();
 
   expect(node.state('modalOpen')).toBe(true);
 });
@@ -59,21 +54,6 @@ it('should show the bpmn diagram', () => {
   node.find('.ProcessPart__current').simulate('click');
 
   expect(node.find(BPMNDiagram)).toExist();
-});
-
-it('should show the id of the selected node if it does not have a name', () => {
-  const node = shallow(<ProcessPart />);
-
-  node.setState({
-    modalOpen: true,
-    start: {id: 'startId', name: 'Start Name'},
-    end: {id: 'endId'},
-  });
-
-  const previewItem = node.find('ActionItem');
-
-  expect(previewItem.at(0).dive()).toIncludeText('Start Name');
-  expect(previewItem.at(1).dive()).toIncludeText('endId');
 });
 
 it('should deselect a node when it is clicked and already selected', () => {

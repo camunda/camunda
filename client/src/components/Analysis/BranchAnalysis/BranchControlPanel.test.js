@@ -51,8 +51,8 @@ it('should contain a gateway and end Event field', () => {
 it('should show a please select message if an entity is not selected', () => {
   const node = shallow(<BranchControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('Select Gateway');
-  expect(node.find('ActionItem').at(1).dive()).toIncludeText('Select End Event');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('Select Gateway');
+  expect(node.find('SelectionPreview').at(1).dive()).toIncludeText('Select End Event');
 });
 
 it('should show the element name if an element is selected', () => {
@@ -67,8 +67,8 @@ it('should show the element name if an element is selected', () => {
     />
   );
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('I am a Gateway');
-  expect(node.find('ActionItem').at(0).dive()).not.toIncludeText('gatewayId');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('I am a Gateway');
+  expect(node.find('SelectionPreview').at(0).dive()).not.toIncludeText('gatewayId');
 });
 
 it('should show the element id if an element has no name', () => {
@@ -83,16 +83,18 @@ it('should show the element id if an element has no name', () => {
     />
   );
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('gatewayId');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('gatewayId');
 });
 
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
   const node = await shallow(<BranchControlPanel hoveredControl="gateway" {...emptyData} />);
 
-  expect(node.find('ActionItem').at(0)).toBeDisabled();
-  expect(node.find('ActionItem').at(1)).toBeDisabled();
+  expect(node.find('SelectionPreview').at(0)).toBeDisabled();
+  expect(node.find('SelectionPreview').at(1)).toBeDisabled();
 
-  expect(node.find('ActionItem').at(1)).not.toHaveClassName('BranchControlPanel__config--hover');
+  expect(node.find('SelectionPreview').at(1)).not.toHaveClassName(
+    'BranchControlPanel__config--hover'
+  );
 });
 
 it('should pass the xml to the Filter component', async () => {

@@ -11,20 +11,30 @@ import {Button, Message, Icon} from 'components';
 
 import './ActionItem.scss';
 
-export default function ActionItem({disabled, onClick, highlighted, warning, ...props}) {
+export default function ActionItem({onClick, type, warning, onEdit, ...props}) {
   return (
-    <div className={classnames({highlighted}, 'ActionItem')}>
-      <span {...props} className={classnames('content', props.className)}>
+    <div className="ActionItem">
+      <div className="header">
+        {type && <div className="type">{type}</div>}
+        <div className="buttons">
+          {onEdit && (
+            <Button onClick={onEdit} icon>
+              <Icon size="15" type="edit" />
+            </Button>
+          )}
+          <Button onClick={onClick} icon>
+            <Icon size="15" type="close-large" />
+          </Button>
+        </div>
+      </div>
+      <div {...props} className={classnames('content', props.className)}>
         {props.children}
-      </span>
+      </div>
       {warning && (
         <Message error>
           <Icon type="warning" /> {warning}
         </Message>
       )}
-      <Button disabled={disabled} onClick={onClick}>
-        ×
-      </Button>
     </div>
   );
 }

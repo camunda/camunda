@@ -58,19 +58,10 @@
       .FilterList {
         display: inline;
 
-        .listItem {
+        > .listItem {
           display: inline-flex;
           width: auto;
           margin-right: 10px;
-          .ActionItem {
-            > .Message {
-              padding-right: 35px;
-              margin-left: -35px;
-            }
-            .content {
-              padding-right: 35px;
-            }
-          }
         }
       }
     }
