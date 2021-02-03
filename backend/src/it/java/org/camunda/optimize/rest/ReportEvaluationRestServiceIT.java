@@ -20,13 +20,17 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -62,7 +66,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithAssignees;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithCandidateGroups;
 
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
@@ -222,11 +232,129 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  public void evaluateReportById_additionalAssigneeFiltersAreApplied() {
+    // given
+    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME, "otherUserId");
+    final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    final String reportId = createUserTaskReport(userTaskModel, instance);
+    importAllEngineEntitiesFromScratch();
+
+    // when filtering for usertasks with the assignee
+    ReportMapResultDto result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
+    ).getResult();
+
+    // then only the usertask with the assignee is included
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+
+    // when filtering for usertasks without the assignee
+    result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(NOT_IN, DEFAULT_USERNAME))
+    ).getResult();
+
+    // then only the usertask without the assignee is included
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+  }
+
+  @Test
+  public void evaluateReportById_additionalCandidateGroupFiltersAreApplied() {
+    // given
+    final String candidateGroupId = "candidateGroupId";
+    final BpmnModelInstance userTaskModel =
+      getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, "otherGroupId");
+    final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    final String reportId = createUserTaskReport(userTaskModel, instance);
+    importAllEngineEntitiesFromScratch();
+
+    // when filtering for usertasks with the candidate group
+    ReportMapResultDto result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
+    ).getResult();
+
+    // then only the usertask with the candidate group is included
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+
+    // when filtering for usertasks without the candidate group
+    result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(NOT_IN, candidateGroupId))
+    ).getResult();
+
+    // then only the usertask without the candidate group is included
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+  }
+
+  @Test
+  public void evaluateReportById_additionalAssigneeFiltersAreCombinedWithIncompatibleReportFilter() {
+    // given
+    final String otherUserId = "otherUserId";
+    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME, otherUserId);
+    final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    final String reportId =
+      createUserTaskReport(userTaskModel, instance, createAssigneeFilter(IN, otherUserId));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ReportMapResultDto result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
+    ).getResult();
+
+    // then the additional and report filters are combined with "and" and hence returns no results
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).isEmpty();
+  }
+
+  @Test
+  public void evaluateReportById_additionalCandidateFiltersAreCombinedWithIncompatibleReportFilter() {
+    // given
+    final String candidateGroupId = "candidateGroupId";
+    final String otherGroupId = "otherGroupId";
+    final BpmnModelInstance userTaskModel =
+      getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, otherGroupId);
+    final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
+    final String reportId =
+      createUserTaskReport(userTaskModel, instance, createCandidateGroupFilter(IN, otherGroupId));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ReportMapResultDto result = reportClient.evaluateMapReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
+    ).getResult();
+
+    // then the additional and report filters are combined with "and" and hence return no results
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getData()).isEmpty();
+  }
+
+  @Test
   public void evaluateReportByIdWithAdditionalFilters_filtersCombinedWithAlreadyExistingFiltersOnReport() {
     // given a report with a running instances filter
     BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
-    final String reportId = createOptimizeReportForProcessUsingFilters(
+    final String reportId = createReportForProcessUsingFilters(
       processModel,
       processInstanceEngineDto,
       runningInstancesOnlyFilter()
@@ -255,7 +383,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given a report with a running instances filter
     BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
-    final String reportId = createOptimizeReportForProcessUsingFilters(
+    final String reportId = createReportForProcessUsingFilters(
       processModel,
       processInstanceEngineDto,
       runningInstancesOnlyFilter()
@@ -284,7 +412,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
-    final String reportId = createOptimizeReportForProcessUsingFilters(
+    final String reportId = createReportForProcessUsingFilters(
       processModel,
       processInstanceEngineDto,
       runningInstancesOnlyFilter()
@@ -794,6 +922,28 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .buildList();
   }
 
+  private List<ProcessFilterDto<?>> createAssigneeFilter(final FilterOperator operator,
+                                                         final String assigneeId) {
+    return ProcessFilterBuilder.filter()
+      .assignee()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .operator(operator)
+      .id(assigneeId)
+      .add()
+      .buildList();
+  }
+
+  private List<ProcessFilterDto<?>> createCandidateGroupFilter(final FilterOperator operator,
+                                                               final String assigneeId) {
+    return ProcessFilterBuilder.filter()
+      .candidateGroups()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .operator(operator)
+      .id(assigneeId)
+      .add()
+      .buildList();
+  }
+
   private SingleReportDataDto createReportWithoutVersionsAndTenants(final ReportType reportType) {
     switch (reportType) {
       case PROCESS:
@@ -813,9 +963,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     }
   }
 
-  private String createOptimizeReportForProcessUsingFilters(final BpmnModelInstance processModel,
-                                                            final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                            final List<ProcessFilterDto<?>> filters) {
+  private String createReportForProcessUsingFilters(final BpmnModelInstance processModel,
+                                                    final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                    final List<ProcessFilterDto<?>> filters) {
     final TemplatedProcessReportDataBuilder reportBuilder = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
@@ -827,9 +977,28 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     return addSingleProcessReportWithDefinition(processReportDataDto);
   }
 
+  private String createUserTaskReport(final BpmnModelInstance processModel,
+                                      final ProcessInstanceEngineDto processInstanceEngineDto) {
+    return createUserTaskReport(processModel, processInstanceEngineDto, null);
+  }
+
+  private String createUserTaskReport(final BpmnModelInstance processModel,
+                                      final ProcessInstanceEngineDto processInstanceEngineDto,
+                                      final List<ProcessFilterDto<?>> filters) {
+    final TemplatedProcessReportDataBuilder reportBuilder = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK);
+    Optional.ofNullable(filters).ifPresent(reportBuilder::setFilter);
+    final ProcessReportDataDto processReportDataDto = reportBuilder.build();
+    processReportDataDto.getConfiguration().setXml(toXml(processModel));
+    return addSingleProcessReportWithDefinition(processReportDataDto);
+  }
+
   private String createOptimizeReportForProcess(final BpmnModelInstance processModel,
                                                 final ProcessInstanceEngineDto processInstanceEngineDto) {
-    return createOptimizeReportForProcessUsingFilters(processModel, processInstanceEngineDto, null);
+    return createReportForProcessUsingFilters(processModel, processInstanceEngineDto, null);
   }
 
   private ProcessInstanceEngineDto deployAndStartInstanceForModel(final BpmnModelInstance processModel) {

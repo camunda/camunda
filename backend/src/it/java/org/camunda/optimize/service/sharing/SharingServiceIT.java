@@ -136,7 +136,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, runningInstanceFilter());
 
     // then instances is filtered from result
-    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(0L);
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
 
     // when variable instance filter is applied that is not part of report
@@ -144,6 +144,20 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then filter is ignored and instance is part of result
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when assignee filter is applied
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, assigneeFilter());
+
+    // then instance is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when candidate filter is applied
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, candidateFilter());
+
+    // then instance is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
   }
 
@@ -191,7 +205,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, runningInstanceFilter());
 
     // then instances is filtered from result
-    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(0L);
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
 
     // when variable instance filter is applied that is not part of report
@@ -199,6 +213,20 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then filter is ignored and instance is part of result
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when assignee filter is applied
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, assigneeFilter());
+
+    // then instance is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when candidate filter is applied
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, candidateFilter());
+
+    // then instance is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
   }
 
@@ -1071,6 +1099,16 @@ public class SharingServiceIT extends AbstractSharingIT {
   private AdditionalProcessReportEvaluationFilterDto runningInstanceFilter() {
     return new AdditionalProcessReportEvaluationFilterDto(
       ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList());
+  }
+
+  private AdditionalProcessReportEvaluationFilterDto assigneeFilter() {
+    return new AdditionalProcessReportEvaluationFilterDto(
+      ProcessFilterBuilder.filter().assignee().operator(IN).id("someId").add().buildList());
+  }
+
+  private AdditionalProcessReportEvaluationFilterDto candidateFilter() {
+    return new AdditionalProcessReportEvaluationFilterDto(
+      ProcessFilterBuilder.filter().candidateGroups().operator(IN).id("someId").add().buildList());
   }
 
 }

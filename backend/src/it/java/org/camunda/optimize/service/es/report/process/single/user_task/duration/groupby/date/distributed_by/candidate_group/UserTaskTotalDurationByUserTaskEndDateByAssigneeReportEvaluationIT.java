@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
-public class UserTaskTotalDurationByUserTaskEndDateByAssgineeReportEvaluationIT
+public class UserTaskTotalDurationByUserTaskEndDateByAssigneeReportEvaluationIT
   extends UserTaskDurationByUserTaskEndDateByCandidateGroupReportEvaluationIT {
 
   @Override

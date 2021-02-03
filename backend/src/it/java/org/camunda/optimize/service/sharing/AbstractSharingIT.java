@@ -77,7 +77,8 @@ public abstract class AbstractSharingIT extends AbstractIT {
       .setProcessDefinitionVersions(versions)
       .setReportDataType(type)
       .build();
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     return singleProcessReportDefinitionDto;
   }

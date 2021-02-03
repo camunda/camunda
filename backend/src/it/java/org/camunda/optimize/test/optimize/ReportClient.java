@@ -633,6 +633,16 @@ public class ReportClient {
       // @formatter:on
   }
 
+  public AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(
+    final String reportId,
+    final AdditionalProcessReportEvaluationFilterDto filters) {
+    return getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId, filters)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
+    // @formatter:on
+  }
+
   public AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluateHyperMapReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
@@ -678,10 +688,10 @@ public class ReportClient {
   }
 
   public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportById(String reportId) {
-    return evaluateCombinedReportByIdWithFilters(reportId, null);
+    return evaluateCombinedReportByIdWithAdditionalFilters(reportId, null);
   }
 
-  public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportByIdWithFilters(
+  public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportByIdWithAdditionalFilters(
     final String reportId,
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return getRequestExecutor()
