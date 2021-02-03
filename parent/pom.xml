@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -851,6 +853,15 @@
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <statelessTestsetReporter
+              implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <version>3.0</version>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
           </configuration>
         </plugin>
 
@@ -981,7 +992,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1076,7 +1087,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1087,7 +1098,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
