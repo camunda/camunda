@@ -12,7 +12,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.NoBeansTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.zeebe.ImportValueType;
-import org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
