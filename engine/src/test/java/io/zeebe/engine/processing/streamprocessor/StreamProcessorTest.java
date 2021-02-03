@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -164,12 +165,16 @@ public final class StreamProcessorTest {
 
     inOrder.verifyNoMoreInteractions();
 
-    Assertions.assertThat(
-            streamProcessorRule
-                .getZeebeState()
-                .getLastProcessedPositionState()
-                .getLastSuccessfulProcessedRecordPosition())
-        .isEqualTo(position);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              Assertions.assertThat(
+                      streamProcessorRule
+                          .getZeebeState()
+                          .getLastProcessedPositionState()
+                          .getLastSuccessfulProcessedRecordPosition())
+                  .isEqualTo(position);
+            });
   }
 
   @Test
@@ -790,6 +795,7 @@ public final class StreamProcessorTest {
    * <p>It is necessary to always call {@link #expect(int)} before {@link #accept(TypedRecord)}}
    */
   private static final class AwaitableProcessedListener implements Consumer<TypedRecord> {
+
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     private CountDownLatch latch;
