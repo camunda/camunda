@@ -3,10 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v26.record.value;
+package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.tasklist.zeebeimport.v26.record.RecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueImpl;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 

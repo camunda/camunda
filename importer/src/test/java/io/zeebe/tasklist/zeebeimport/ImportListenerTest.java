@@ -19,7 +19,7 @@ import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.NoBeansTest;
 import io.zeebe.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.zeebe.tasklist.zeebe.ImportValueType;
-import io.zeebe.tasklist.zeebeimport.v26.processors.ElasticsearchBulkProcessor;
+import io.zeebe.tasklist.zeebeimport.v100.processors.ElasticsearchBulkProcessor;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;

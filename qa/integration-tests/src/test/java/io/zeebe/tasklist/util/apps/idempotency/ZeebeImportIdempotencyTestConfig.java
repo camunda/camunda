@@ -8,7 +8,7 @@ package io.zeebe.tasklist.util.apps.idempotency;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.ImportBatch;
-import io.zeebe.tasklist.zeebeimport.v26.processors.ElasticsearchBulkProcessor;
+import io.zeebe.tasklist.zeebeimport.v100.processors.ElasticsearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
