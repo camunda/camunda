@@ -33,7 +33,7 @@ public final class ZeebeRocksDbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
+      DefaultZeebeDbFactory.getDefaultFactory();
   private DbContext dbContext;
 
   @Before

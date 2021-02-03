@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
@@ -45,7 +44,7 @@ public class ExporterContainerTest {
   public void setup() throws IOException {
     testActor = new TestActor();
     actorSchedulerRule.submitActor(testActor).join();
-    final var dbFactory = DefaultZeebeDbFactory.defaultFactory(ZbColumnFamilies.class);
+    final var dbFactory = DefaultZeebeDbFactory.defaultFactory();
     final var db = dbFactory.createDb(tempFolder.newFolder());
     exportersState = new ExportersState(db, db.createContext());
     final ExporterMetrics exporterMetrics = new ExporterMetrics(1);

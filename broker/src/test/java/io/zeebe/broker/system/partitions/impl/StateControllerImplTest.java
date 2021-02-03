@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
-import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
@@ -36,6 +35,7 @@ import org.junit.rules.TemporaryFolder;
 
 @SuppressWarnings("unchecked")
 public final class StateControllerImplTest {
+
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
@@ -54,7 +54,7 @@ public final class StateControllerImplTest {
     snapshotController =
         new StateControllerImpl(
             1,
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            ZeebeRocksDbFactory.newFactory(),
             store,
             factory.getReceivableSnapshotStore("1"),
             rootDirectory.resolve("runtime"),
