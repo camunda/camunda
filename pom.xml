@@ -54,7 +54,7 @@
     <skip.fe.build>false</skip.fe.build>
 
     <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.checkstyle>3.1.1</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
     <plugin.version.fmt>2.10</plugin.version.fmt>
     <license.header>${project.baseUri}/../license/license-header</license.header>
   </properties>
