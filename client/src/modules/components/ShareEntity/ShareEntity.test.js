@@ -63,7 +63,7 @@ it('should construct special link', () => {
 
   expect(node.find('CopyToClipboard').at(0)).toHaveProp(
     'value',
-    'http://example.com/#/share/report/10'
+    'http://example.com/external/#/share/report/10'
   );
 });
 
@@ -77,7 +77,7 @@ it('should construct special link for embedding', () => {
 
   const clipboardValue = node.find('CopyToClipboard').at(1).prop('value');
 
-  expect(clipboardValue).toContain('<iframe src="http://example.com/#/share/report/10');
+  expect(clipboardValue).toContain('<iframe src="http://example.com/external/#/share/report/10');
   expect(clipboardValue).toContain('mode=embed');
 });
 
