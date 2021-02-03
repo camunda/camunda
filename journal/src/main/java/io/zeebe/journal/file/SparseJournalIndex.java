@@ -80,4 +80,11 @@ class SparseJournalIndex implements JournalIndex {
       asqnToIndex.headMap(asqnToDelete, false).clear();
     }
   }
+
+  @Override
+  public void clear() {
+    indexToPosition.clear();
+    indexToAsqn.clear();
+    asqnToIndex.clear();
+  }
 }

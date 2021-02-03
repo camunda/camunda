@@ -180,10 +180,6 @@ class JournalSegment implements AutoCloseable {
     open = false;
   }
 
-  void compactIndex(final long index) {
-    this.index.deleteUntil(index);
-  }
-
   /** Deletes the segment. */
   public void delete() {
     try {

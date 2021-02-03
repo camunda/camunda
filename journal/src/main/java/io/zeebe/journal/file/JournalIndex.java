@@ -64,4 +64,7 @@ interface JournalIndex {
    * @param indexExclusive the index to which to compact the index
    */
   void deleteUntil(long indexExclusive);
+
+  /** Delete all index mappings */
+  void clear();
 }

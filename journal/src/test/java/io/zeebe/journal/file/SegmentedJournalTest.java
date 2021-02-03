@@ -39,6 +39,7 @@ public class SegmentedJournalTest {
   private SegmentedJournal journal;
   private byte[] entry;
   private int entriesPerSegment;
+  private final int journalIndexDensity = 5;
 
   @BeforeEach
   public void setup() {
@@ -63,7 +64,7 @@ public class SegmentedJournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(entriesPerSegment * entrySize + JournalSegmentDescriptor.BYTES)
-            .withJournalIndexDensity(5)
+            .withJournalIndexDensity(journalIndexDensity)
             .build();
   }
 
@@ -374,5 +375,61 @@ public class SegmentedJournalTest {
     // then
     assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
         .isInstanceOf(InvalidChecksum.class);
+  }
+
+  @Test
+  public void shouldDeleteIndexMappingsOnReset() {
+    // given
+    long asqn = 1;
+    // append until there are two index mappings
+    for (int i = 0; i < 2 * journalIndexDensity; i++) {
+      journal.append(asqn++, data);
+    }
+    assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity)).isNotNull();
+
+    // when
+    journal.reset(journal.getLastIndex());
+
+    // then
+    assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNull();
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity)).isNull();
+  }
+
+  @Test
+  public void shouldUpdateIndexMappingsOnCompact() {
+    // given
+    long asqn = 1;
+    for (int i = 0; i < 3 * entriesPerSegment; i++) {
+      journal.append(asqn++, data);
+    }
+    assertThat(journal.getJournalIndex().lookup(entriesPerSegment)).isNotNull();
+
+    // when - delete first segment
+    journal.deleteUntil(entriesPerSegment + 1);
+
+    // then
+    assertThat(journal.getJournalIndex().lookup(entriesPerSegment)).isNull();
+    assertThat(journal.getJournalIndex().lookup(3 * entriesPerSegment)).isNotNull();
+  }
+
+  @Test
+  public void shouldUpdateIndexMappingsOnTruncate() {
+    // given
+    long asqn = 1;
+    for (int i = 0; i < 2 * journalIndexDensity; i++) {
+      journal.append(asqn++, data);
+    }
+    assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index())
+        .isEqualTo(2 * journalIndexDensity);
+
+    // when
+    journal.deleteAfter(journalIndexDensity);
+
+    // then
+    assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index())
+        .isEqualTo(journalIndexDensity);
   }
 }
