@@ -97,20 +97,21 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             // limit the size of the manifest (logs all operations), otherwise it will grow
             // unbounded
             .setMaxManifestFileSize(256 * 1024 * 1024L)
-            // speeds up opening the DB
-            .setSkipStatsUpdateOnDbOpen(true)
             // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
-            .setKeepLogFileNum(2)
-            // can be disabled when not profiling
-            .setStatsDumpPeriodSec(20);
+            .setKeepLogFileNum(2);
 
     if (rocksDbConfiguration.isStatisticsEnabled()) {
       final var statistics = new Statistics();
       closeables.add(statistics);
       statistics.setStatsLevel(StatsLevel.ALL);
-      dbOptions.setStatistics(statistics);
+      dbOptions
+          .setStatistics(statistics)
+          // speeds up opening the DB
+          .setSkipStatsUpdateOnDbOpen(true)
+          // can be disabled when not profiling
+          .setStatsDumpPeriodSec(20);
     }
 
     return dbOptions;
