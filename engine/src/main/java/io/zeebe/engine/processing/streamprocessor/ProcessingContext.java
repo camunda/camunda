@@ -11,6 +11,7 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -30,6 +31,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private RecordProcessorMap recordProcessorMap;
   private ZeebeState zeebeState;
   private TransactionContext transactionContext;
+  private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
@@ -103,6 +105,11 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
+  public ProcessingContext eventApplier(final EventApplier eventApplier) {
+    this.eventApplier = eventApplier;
+    return this;
+  }
+
   @Override
   public ActorControl getActor() {
     return actor;
@@ -164,5 +171,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public boolean isDetectReprocessingInconsistency() {
     return detectReprocessingInconsistency;
+  }
+
+  @Override
+  public EventApplier getEventApplier() {
+    return eventApplier;
   }
 }

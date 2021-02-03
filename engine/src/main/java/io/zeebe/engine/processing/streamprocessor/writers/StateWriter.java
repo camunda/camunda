@@ -8,8 +8,8 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.state.appliers.EventAppliers;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.UnaryOperator;
 
@@ -35,12 +35,12 @@ public final class StateWriter implements TypedEventWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
     appendFollowUpEvent(key, intent, value, NO_MODIFIER);
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     appendFollowUpEvent(key, intent, value, NO_MODIFIER);
   }
 
@@ -48,7 +48,7 @@ public final class StateWriter implements TypedEventWriter {
   public void appendFollowUpEvent(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final RecordValue value,
       final UnaryOperator<RecordMetadata> modifier) {
     streamWriter.appendFollowUpEvent(key, intent, value, modifier);
     eventAppliers.applyState(key, intent, value);
