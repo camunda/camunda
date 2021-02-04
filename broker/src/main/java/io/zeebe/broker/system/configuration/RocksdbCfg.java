@@ -12,11 +12,13 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import org.springframework.util.unit.DataSize;
 
 public final class RocksdbCfg implements ConfigurationEntry {
 
   private Properties columnFamilyOptions;
   private boolean statisticsEnabled;
+  private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -54,8 +56,28 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.statisticsEnabled = statisticsEnabled;
   }
 
+  public DataSize getMemoryLimit() {
+    return memoryLimit;
+  }
+
+  public void setMemoryLimit(final DataSize memoryLimit) {
+    this.memoryLimit = memoryLimit;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
-    return RocksDbConfiguration.of(columnFamilyOptions, statisticsEnabled);
+    return RocksDbConfiguration.of(columnFamilyOptions, statisticsEnabled, memoryLimit.toBytes());
+  }
+
+  @Override
+  public String toString() {
+    return "RocksdbCfg{"
+        + "columnFamilyOptions="
+        + columnFamilyOptions
+        + ", statisticsEnabled="
+        + statisticsEnabled
+        + ", memoryLimit="
+        + memoryLimit
+        + '}';
   }
 
   private static final class RocksDBColumnFamilyOption {
