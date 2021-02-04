@@ -44,11 +44,16 @@ import org.slf4j.Logger;
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
  * retryDelaySupplier} to ask for a new {@code pollInterval}. By default this retry delay supplier
- * is the {@link ExponentialBackoff}.
+ * is the {@link ExponentialBackoff}. This default is also used as a fallback for the user provided
+ * backoff. On the next success, the {@code pollInterval} is reset to its original value.
  */
 public final class JobWorkerImpl implements JobWorker, Closeable {
 
+  private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
+      JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+  private static final String SUPPLY_RETRY_DELAY_FAILURE_MESSAGE =
+      "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
 
   // job queue state
   private final int maxJobsActive;
@@ -120,7 +125,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     isPollScheduled.set(false);
     final int actualRemainingJobs = remainingJobs.get();
     if (shouldPoll(actualRemainingJobs)) {
-      poll();
+      tryPoll();
     }
   }
 
@@ -128,38 +133,44 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     return acquiringJobs.get() && remainingJobs <= activationThreshold;
   }
 
-  private void poll() {
+  private void tryPoll() {
     tryClaimJobPoller()
         .ifPresent(
-            jobPoller -> {
-              // check the condition again within the critical section
-              // to avoid race conditions that would let us exceed the buffer size
-              final int actualRemainingJobs = remainingJobs.get();
-              if (shouldPoll(actualRemainingJobs)) {
-                final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
-                try {
-                  jobPoller.poll(
-                      maxJobsToActivate,
-                      this::handleJob,
-                      activatedJobs -> onPollSuccess(jobPoller, activatedJobs),
-                      error -> onPollError(jobPoller, error),
-                      this::isOpen);
-                } catch (final Exception e) {
-                  LOG.warn("Failed to activate jobs", e);
-                  releaseJobPoller(jobPoller);
-                }
-              } else {
-                releaseJobPoller(jobPoller);
+            poller -> {
+              try {
+                poll(poller);
+              } catch (final Exception error) {
+                LOG.warn("Unexpected failure to activate jobs", error);
+                backoff(poller, error);
               }
             });
   }
 
+  /** @return an optional job poller if not already in use, otherwise an empty optional */
   private Optional<JobPoller> tryClaimJobPoller() {
     return Optional.ofNullable(claimableJobPoller.getAndSet(null));
   }
 
+  /** Release the job poller for the next try to poll */
   private void releaseJobPoller(final JobPoller jobPoller) {
     claimableJobPoller.set(jobPoller);
+  }
+
+  private void poll(final JobPoller jobPoller) {
+    // check the condition again within the critical section
+    // to avoid race conditions that would let us exceed the buffer size
+    final int actualRemainingJobs = remainingJobs.get();
+    if (!shouldPoll(actualRemainingJobs)) {
+      releaseJobPoller(jobPoller);
+      return;
+    }
+    final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
+    jobPoller.poll(
+        maxJobsToActivate,
+        this::handleJob,
+        activatedJobs -> onPollSuccess(jobPoller, activatedJobs),
+        error -> onPollError(jobPoller, error),
+        this::isOpen);
   }
 
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
@@ -173,7 +184,17 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
-    pollInterval = backoffSupplier.supplyRetryDelay(pollInterval);
+    backoff(jobPoller, error);
+  }
+
+  /** Apply the backoff strategy by scheduling the next poll at a new interval */
+  private void backoff(final JobPoller jobPoller, final Throwable error) {
+    try {
+      pollInterval = backoffSupplier.supplyRetryDelay(pollInterval);
+    } catch (final Exception e) {
+      LOG.warn(SUPPLY_RETRY_DELAY_FAILURE_MESSAGE, e);
+      pollInterval = DEFAULT_BACKOFF_SUPPLIER.supplyRetryDelay(pollInterval);
+    }
     LOG.debug(
         "Failed to activate jobs due to {}, delay retry for {} ms",
         error.getMessage(),
@@ -189,7 +210,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void handleJobFinished() {
     final int actualRemainingJobs = remainingJobs.decrementAndGet();
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
-      poll();
+      tryPoll();
     }
   }
 }

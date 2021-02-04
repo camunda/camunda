@@ -18,28 +18,12 @@ package io.zeebe.client.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.api.worker.BackoffSupplier;
-import io.zeebe.client.impl.worker.ExponentialBackoff;
 import io.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
 
 public final class ExponentialBackoffTest {
-  @Test
-  public void plotIt() {
-    final ExponentialBackoff defaultSupplier =
-        (ExponentialBackoff) BackoffSupplier.newBackoffBuilder().jitterFactor(0.15).build();
-
-    final List<String> list = new ArrayList<>();
-    long delay = 0L;
-    for (int i = 0; i < 100; i++) {
-      delay = defaultSupplier.supplyRetryDelay(delay);
-      list.add("" + i + ".0, " + delay + ".0");
-    }
-
-    System.out.println(String.join("\n", list));
-  }
 
   @Test
   public void shouldReturnDelayWithinBounds() {
@@ -95,6 +79,7 @@ public final class ExponentialBackoffTest {
   }
 
   // ignore for the sake of readability
+  @SuppressWarnings("SameParameterValue")
   private void assertIsStrictlyIncreasing(
       final long maxDelay, final ArrayList<Long> delays, long previousDelay) {
     for (final long delay : delays) {

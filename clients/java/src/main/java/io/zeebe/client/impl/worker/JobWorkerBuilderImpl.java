@@ -41,10 +41,9 @@ import java.util.function.Predicate;
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
 
-  private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
-  private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
+  public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
-
+  private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final GatewayStub gatewayStub;
   private final JobClient jobClient;
   private final JsonMapper jsonMapper;

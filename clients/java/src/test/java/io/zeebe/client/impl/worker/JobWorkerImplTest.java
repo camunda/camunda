@@ -61,23 +61,21 @@ public final class JobWorkerImplTest {
 
   @Before
   public void setup() throws IOException {
-    // Generate a unique in-process server name.
-    final String serverName = InProcessServerBuilder.generateName();
-
-    // Create a server, add service, start, and register for automatic graceful shutdown.
     gateway = new MockedGateway();
+
+    // ensure all gRPC resources are registered for cleanup. Since clients identify the in-process
+    // server by its name, these names should be unique. gRPC advocates this in its test examples:
+    // see https://github.com/grpc/grpc-java/tree/v1.35.0/examples/src/test/java/io/grpc/examples
+    final String serverName = InProcessServerBuilder.generateName();
     grpcCleanup.register(
         InProcessServerBuilder.forName(serverName)
             .directExecutor()
             .addService(gateway)
             .build()
             .start());
-
-    // Create a client channel and register for automatic graceful shutdown.
     final ManagedChannel channel =
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-    // Create the Zeebe Client
     client =
         new ZeebeClientImpl(new ZeebeClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
   }
@@ -131,13 +129,11 @@ public final class JobWorkerImplTest {
    */
   private static final class MockedGateway extends GatewayImplBase {
 
-    // mocking of poll responses
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
     private StatusRuntimeException pollErrorResponse = new StatusRuntimeException(Status.UNKNOWN);
 
-    // polling metrics
     private final Object metricsLock = new Object();
     private boolean isMeasuring = false;
     private long countedPolls = 0;
@@ -231,7 +227,7 @@ public final class JobWorkerImplTest {
           .build();
     }
 
-    public static List<ActivatedJob> jobs(final int numberOfJobs) {
+    private static List<ActivatedJob> jobs(final int numberOfJobs) {
       return IntStream.range(0, numberOfJobs).mapToObj(i -> job()).collect(Collectors.toList());
     }
   }
