@@ -40,17 +40,9 @@ public class ProcessVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
 
-  public List<ProcessVariableNameResponseDto> getVariableNames(String userId,
-                                                               ProcessVariableNameRequestDto variableRequestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("process definition key", variableRequestDto.getProcessDefinitionKey());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(
-      userId,
-      IdentityType.USER,
-      variableRequestDto.getTenantIds()
-    )) {
-      throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
-    }
     return processVariableReader.getVariableNames(variableRequestDto);
   }
 

@@ -27,7 +27,6 @@ import java.util.List;
 
 @AllArgsConstructor
 @Path("/variables")
-@Secured
 @Component
 public class ProcessVariableRestService {
 
@@ -39,12 +38,13 @@ public class ProcessVariableRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNames(@Context ContainerRequestContext requestContext,
                                                                ProcessVariableNameRequestDto variableRequestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processVariableService.getVariableNames(userId, variableRequestDto);
+
+    return processVariableService.getVariableNames(variableRequestDto);
   }
 
   @POST
   @Path("/reports")
+  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
@@ -55,6 +55,7 @@ public class ProcessVariableRestService {
 
   @POST
   @Path("/values")
+  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValues(@Context ContainerRequestContext requestContext,
@@ -65,6 +66,7 @@ public class ProcessVariableRestService {
 
   @POST
   @Path("/values/reports")
+  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValuesForReports(@Context ContainerRequestContext requestContext,
