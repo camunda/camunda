@@ -18,8 +18,6 @@ import io.zeebe.test.util.bpmn.random.IDGenerator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Generates a block with a forking exclusive gateway, a default case, a random number of
@@ -127,22 +125,23 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepPickConditionCase that = (StepPickConditionCase) o;
 
-      return new EqualsBuilder()
-          .append(forkingGatewayId, that.forkingGatewayId)
-          .append(edgeId, that.edgeId)
-          .isEquals();
+      if (!forkingGatewayId.equals(that.forkingGatewayId)) {
+        return false;
+      }
+      return edgeId.equals(that.edgeId);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(forkingGatewayId).append(edgeId).toHashCode();
+      int result = forkingGatewayId.hashCode();
+      result = 31 * result + edgeId.hashCode();
+      return result;
     }
   }
 
@@ -161,19 +160,18 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepPickDefaultCase that = (StepPickDefaultCase) o;
 
-      return new EqualsBuilder().append(forkingGatewayId, that.forkingGatewayId).isEquals();
+      return forkingGatewayId.equals(that.forkingGatewayId);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(forkingGatewayId).toHashCode();
+      return forkingGatewayId.hashCode();
     }
   }
 

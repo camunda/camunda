@@ -16,8 +16,6 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import java.util.Random;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /** Generates a service task * */
 public class ServiceTaskBlockBuilder implements BlockBuilder {
@@ -71,19 +69,18 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
 
-      return new EqualsBuilder().append(jobType, that.jobType).isEquals();
+      return jobType.equals(that.jobType);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(jobType).toHashCode();
+      return jobType.hashCode();
     }
   }
 
@@ -103,19 +100,18 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepActivateAndFailJob that = (StepActivateAndFailJob) o;
 
-      return new EqualsBuilder().append(jobType, that.jobType).isEquals();
+      return jobType.equals(that.jobType);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(jobType).toHashCode();
+      return jobType.hashCode();
     }
   }
 
