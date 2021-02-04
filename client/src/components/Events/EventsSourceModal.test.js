@@ -20,13 +20,16 @@ jest.mock('services', () => {
 const EventsSourceModal = EventsSourceModalWithErrorHandling.WrappedComponent;
 
 const testSource = {
-  processDefinitionKey: 'foo',
-  processDefinitionName: 'Foo',
-  versions: ['1'],
-  tenants: ['a', 'b'],
-  eventScope: ['start_end'],
-  tracedByBusinessKey: false,
-  traceVariable: 'var',
+  type: 'camunda',
+  configuration: {
+    processDefinitionKey: 'foo',
+    processDefinitionName: 'Foo',
+    versions: ['1'],
+    tenants: ['a', 'b'],
+    eventScope: ['start_end'],
+    tracedByBusinessKey: false,
+    traceVariable: 'var',
+  },
 };
 
 const props = {
@@ -93,13 +96,16 @@ it('should edit a source when clicking confirm', () => {
 
   expect(spy).toHaveBeenCalledWith([
     {
-      eventScope: ['start_end'],
-      processDefinitionKey: 'foo',
-      processDefinitionName: 'Foo',
-      tenants: ['a', 'b'],
-      traceVariable: null,
-      tracedByBusinessKey: true,
-      versions: ['1'],
+      type: 'camunda',
+      configuration: {
+        eventScope: ['start_end'],
+        processDefinitionKey: 'foo',
+        processDefinitionName: 'Foo',
+        tenants: ['a', 'b'],
+        traceVariable: null,
+        tracedByBusinessKey: true,
+        versions: ['1'],
+      },
     },
   ]);
 });
@@ -123,13 +129,16 @@ it('should add a source when clicking confirm', () => {
 
   expect(spy).toHaveBeenCalledWith([
     {
-      processDefinitionKey: 'test',
-      processDefinitionName: 'Test',
-      versions: ['1'],
-      tenants: ['a', 'b'],
-      tracedByBusinessKey: false,
-      traceVariable: 'boolVar',
-      eventScope: ['process_instance'],
+      type: 'camunda',
+      configuration: {
+        processDefinitionKey: 'test',
+        processDefinitionName: 'Test',
+        versions: ['1'],
+        tenants: ['a', 'b'],
+        tracedByBusinessKey: false,
+        traceVariable: 'boolVar',
+        eventScope: ['process_instance'],
+      },
     },
   ]);
 });
@@ -155,7 +164,9 @@ it('should add external sources', () => {
 
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
+  expect(spy).toHaveBeenCalledWith([
+    {type: 'external', configuration: {includeAllGroups: true, group: null}},
+  ]);
 });
 
 it('should disable external source if already added', () => {

@@ -29,6 +29,8 @@ import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
 
+const externalSource = {type: 'external', configuration: {includeAllGroups: true, group: null}};
+
 const defaultSource = {
   processDefinitionKey: '',
   processDefinitionName: '',
@@ -38,12 +40,11 @@ const defaultSource = {
   tracedByBusinessKey: false,
   traceVariable: null,
 };
+
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
     state = {
-      source: this.props.initialSource?.processDefinitionKey
-        ? this.props.initialSource
-        : defaultSource,
+      source: this.props.initialSource?.configuration || defaultSource,
       variables: null,
       type: 'camunda',
       externalExist: false,
@@ -51,12 +52,12 @@ export default withErrorHandling(
 
     componentDidMount = async () => {
       if (this.isEditing()) {
-        const {processDefinitionKey, versions, tenants} = this.props.initialSource;
+        const {processDefinitionKey, versions, tenants} = this.props.initialSource.configuration;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
 
       this.props.mightFail(
-        loadEvents({eventSources: [{type: 'external'}]}),
+        loadEvents({eventSources: [externalSource]}),
         (events) => this.setState({externalExist: !!events.length}),
         showError
       );
@@ -67,16 +68,20 @@ export default withErrorHandling(
       const {source, type} = this.state;
       let updatedSources;
       if (type === 'external') {
-        updatedSources = update(existingSources, {$push: [{type: 'external'}]});
+        updatedSources = update(existingSources, {$push: [externalSource]});
       } else {
         const newSource = {
-          ...source,
-          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
+          type: 'camunda',
+          configuration: {
+            ...source,
+            traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
+          },
         };
 
         if (this.isEditing()) {
           const sourceIndex = existingSources.findIndex(
-            ({processDefinitionKey}) => processDefinitionKey === source.processDefinitionKey
+            ({configuration: {processDefinitionKey}}) =>
+              processDefinitionKey === source.processDefinitionKey
           );
 
           updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
@@ -87,7 +92,7 @@ export default withErrorHandling(
       this.props.onConfirm(updatedSources);
     };
 
-    isEditing = () => this.props.initialSource?.processDefinitionKey;
+    isEditing = () => this.props.initialSource?.configuration;
 
     alreadyExists = () =>
       this.props.existingSources.some(

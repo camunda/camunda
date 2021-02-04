@@ -159,11 +159,11 @@ export default withErrorHandling(
     inShownSources = (event) => {
       const shownSources = this.props.eventSources.filter((src) => !src.hidden);
 
-      return shownSources.some(({processDefinitionKey, type}) => {
+      return shownSources.some(({configuration, type}) => {
         if (type === 'external') {
           return event.source !== 'camunda';
         } else {
-          return event.group === processDefinitionKey;
+          return event.group === configuration.processDefinitionKey;
         }
       });
     };

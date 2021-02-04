@@ -42,11 +42,11 @@ export default class EventSources extends React.Component {
 
   updateSourceScope = (newScope) => {
     const sourceIndex = this.props.sources.findIndex(
-      ({processDefinitionKey}) =>
-        processDefinitionKey === this.state.editingScope.processDefinitionKey
+      ({configuration: {processDefinitionKey}}) =>
+        processDefinitionKey === this.state.editingScope.configuration.processDefinitionKey
     );
     const updateSources = update(this.props.sources, {
-      [sourceIndex]: {eventScope: {$set: newScope}},
+      [sourceIndex]: {configuration: {eventScope: {$set: newScope}}},
     });
     this.props.onChange(updateSources, true);
     this.closeEditScopeModal();
@@ -121,13 +121,14 @@ export default class EventSources extends React.Component {
   }
 }
 
-function getDropdownProps({processDefinitionKey, processDefinitionName, type}) {
+function getDropdownProps({configuration, type}) {
   if (type === 'external') {
     return {
       label: t('events.sources.externalEvents'),
       key: 'externalEvents',
     };
   } else {
+    const {processDefinitionKey, processDefinitionName} = configuration;
     return {
       label: processDefinitionName || processDefinitionKey,
       key: processDefinitionKey,

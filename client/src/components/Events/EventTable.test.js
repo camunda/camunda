@@ -188,7 +188,9 @@ it('should mark suggested events', async () => {
 });
 
 it('should disable events Suggestion if there are any camunda event sources', () => {
-  const node = shallow(<EventTable {...props} eventSources={[{type: 'camunda'}]} />);
+  const node = shallow(
+    <EventTable {...props} eventSources={[{type: 'camunda', configuration: {}}]} />
+  );
 
   expect(node.find('Switch')).toBeDisabled();
 });
@@ -212,7 +214,10 @@ it('should not show events from hidden sources in the table', async () => {
   const node = shallow(
     <EventTable
       {...props}
-      eventSources={[{type: 'external', hidden: true}, {processDefinitionKey: 'bookrequest'}]}
+      eventSources={[
+        {type: 'external', hidden: true},
+        {type: 'camunda', configuration: {processDefinitionKey: 'bookrequest'}},
+      ]}
     />
   );
 

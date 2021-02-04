@@ -12,7 +12,7 @@ import EventsSources from './EventsSources';
 import {Dropdown} from 'components';
 
 const props = {
-  sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+  sources: [{type: 'camunda', configuration: {processDefinitionKey: 'src1'}}, {type: 'external'}],
   onChange: jest.fn(),
 };
 
@@ -50,7 +50,10 @@ it('should hide/show source', () => {
   node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith(
-    [{hidden: true, type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+    [
+      {hidden: true, type: 'camunda', configuration: {processDefinitionKey: 'src1'}},
+      {type: 'external'},
+    ],
     false
   );
 });
@@ -61,7 +64,7 @@ it('should edit a source from the list', () => {
   node.find(Dropdown.Option).at(1).simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
-    processDefinitionKey: 'src1',
+    configuration: {processDefinitionKey: 'src1'},
     type: 'camunda',
   });
 });
@@ -78,7 +81,10 @@ it('should edit a scope of a source', () => {
 
   expect(props.onChange).toHaveBeenCalledWith(
     [
-      {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1', type: 'camunda'},
+      {
+        type: 'camunda',
+        configuration: {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1'},
+      },
       {type: 'external'},
     ],
     true
