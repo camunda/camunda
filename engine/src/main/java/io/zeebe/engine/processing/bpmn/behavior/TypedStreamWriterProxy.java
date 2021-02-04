@@ -13,7 +13,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
@@ -36,8 +36,13 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType type,
       final String reason,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendRejection(command, type, reason, metadata);
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendRejection(command, type, reason, modifier);
+  }
+
+  @Override
+  public void configureSourceContext(final long sourceRecordPosition) {
+    writer.configureSourceContext(sourceRecordPosition);
   }
 
   @Override
@@ -55,13 +60,8 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendFollowUpEvent(key, intent, value, metadata);
-  }
-
-  @Override
-  public void configureSourceContext(final long sourceRecordPosition) {
-    writer.configureSourceContext(sourceRecordPosition);
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendFollowUpEvent(key, intent, value, modifier);
   }
 
   @Override
@@ -80,8 +80,8 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendFollowUpCommand(key, intent, value, metadata);
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendFollowUpCommand(key, intent, value, modifier);
   }
 
   @Override

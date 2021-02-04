@@ -12,7 +12,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public final class NoopTypedStreamWriter implements TypedStreamWriter {
 
@@ -29,7 +29,12 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType type,
       final String reason,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
+    // no op implementation
+  }
+
+  @Override
+  public void configureSourceContext(final long sourceRecordPosition) {
     // no op implementation
   }
 
@@ -48,12 +53,7 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    // no op implementation
-  }
-
-  @Override
-  public void configureSourceContext(final long sourceRecordPosition) {
+      final UnaryOperator<RecordMetadata> modifier) {
     // no op implementation
   }
 
@@ -73,7 +73,7 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
       final long key,
       final Intent intent,
       final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
+      final UnaryOperator<RecordMetadata> modifier) {
     // no op implementation
   }
 
