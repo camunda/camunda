@@ -31,7 +31,7 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>>
-    implements ZeebeDb<ColumnFamilyNames> {
+    implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
@@ -128,9 +128,14 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
+  public Transaction renewTransaction(final Transaction oldTransaction) {
+    return optimisticTransactionDB.beginTransaction(defaultWriteOptions, oldTransaction);
+  }
+
+  @Override
   public TransactionContext createContext() {
     final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction);
+    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }

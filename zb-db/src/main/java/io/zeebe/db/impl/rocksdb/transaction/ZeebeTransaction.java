@@ -20,11 +20,15 @@ import org.rocksdb.Transaction;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
-  private final Transaction transaction;
   private final long nativeHandle;
-  private boolean inCurrentTransaction;
+  private final TransactionRenovator transactionRenovator;
 
-  public ZeebeTransaction(final Transaction transaction) {
+  private boolean inCurrentTransaction;
+  private Transaction transaction;
+
+  public ZeebeTransaction(
+      final Transaction transaction, final TransactionRenovator transactionRenovator) {
+    this.transactionRenovator = transactionRenovator;
     this.transaction = transaction;
     try {
       nativeHandle = RocksDbInternal.nativeHandle.getLong(transaction);
@@ -66,6 +70,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   void resetTransaction() {
+    transaction = transactionRenovator.renewTransaction(transaction);
     inCurrentTransaction = true;
   }
 
