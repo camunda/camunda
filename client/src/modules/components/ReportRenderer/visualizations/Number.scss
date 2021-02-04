@@ -1,7 +1,16 @@
 .Number {
-  font-weight: bold;
   display: inline-block;
   white-space: nowrap;
   align-self: flex-start;
   margin: 0 auto;
+
+  .data {
+    font-weight: bold;
+    color: var(--grey-darken-23);
+  }
+  .label {
+    font-size: 12px;
+    color: var(--grey-base-40);
+    margin-top: -6px;
+  }
 }

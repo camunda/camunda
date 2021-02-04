@@ -439,6 +439,13 @@
         "median": "Median",
         "maximum": "Maximum"
       },
+      "aggregationShort": {
+        "sum": "Sum",
+        "min": "Min",
+        "avg": "Avg",
+        "median": "Med",
+        "max": "Max"
+      },
       "userTaskDuration": {
         "legend": "User Task Duration Time",
         "idle": "Idle",

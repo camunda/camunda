@@ -99,7 +99,7 @@ test('should apply a filter to the report result', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
 
-  const unfiltered = +(await Report.reportRenderer.textContent);
+  const unfiltered = +(await Report.reportNumber.textContent);
 
   await t
     .resizeWindow(1400, 850)
@@ -119,7 +119,7 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.click(Report.primaryModalButton);
 
-  const filtered = +(await Report.reportRenderer.textContent);
+  const filtered = +(await Report.reportNumber.textContent);
 
   await t.expect(unfiltered).gt(filtered);
 });

@@ -30,7 +30,7 @@ export const configurationOption = (text) =>
 export const reportTable = reportRenderer.find('.Table');
 export const reportChart = reportRenderer.find('canvas');
 export const reportDiagram = reportRenderer.find('.djs-container > svg');
-export const reportNumber = reportRenderer.find('.Number');
+export const reportNumber = reportRenderer.find('.Number .data');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
 export const configurationButton = Selector('.Configuration .Popover');

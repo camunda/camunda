@@ -439,6 +439,13 @@
         "median": "Median",
         "maximum": "Maximum"
       },
+      "aggregationShort": {
+        "sum": "Se",
+        "min": "Min",
+        "avg": "Durchschn",
+        "median": "Med",
+        "max": "Max"
+      },
       "userTaskDuration": {
         "legend": "Dauer der Benutzeraufgabe",
         "idle": "Wartezeit",

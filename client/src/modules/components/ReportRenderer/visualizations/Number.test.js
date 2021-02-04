@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {reportConfig} from 'services';
+
 import Number from './Number';
 import ProgressBar from './ProgressBar';
 
@@ -14,6 +16,12 @@ jest.mock('services', () => {
   return {
     formatters: {
       convertDurationToSingleNumber: () => 12,
+    },
+    reportConfig: {
+      process: {
+        findSelectedOption: jest.fn().mockReturnValue({key: 'pi_count'}),
+        options: {},
+      },
     },
   };
 });
@@ -63,4 +71,27 @@ it('should display a progress bar if target values are active', () => {
   );
 
   expect(node.find(ProgressBar)).toExist();
+});
+
+it('should show the view label underneath the number', () => {
+  const node = shallow(<Number report={report} formatter={(v) => v} />);
+  expect(node).toIncludeText('Process Instance Count');
+
+  reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'pi_duration'});
+  node.setProps({
+    report: {
+      reportType: 'process',
+      result: {data: 123},
+      data: {
+        configuration: {aggregationType: 'avg', targetValue: {active: false}},
+        view: {
+          entity: 'processInstance',
+          property: 'duration',
+        },
+        visualization: 'Number',
+      },
+    },
+  });
+
+  expect(node).toIncludeText('Process Instance Duration - Avg');
 });

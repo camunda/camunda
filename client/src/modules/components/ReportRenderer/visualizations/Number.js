@@ -7,13 +7,15 @@
 import React, {useEffect, useRef} from 'react';
 import fitty from 'fitty';
 
+import {formatters, reportConfig} from 'services';
+import {t} from 'translation';
+
 import ProgressBar from './ProgressBar';
-import {formatters} from 'services';
 
 import './Number.scss';
 
 export default function Number({report, formatter}) {
-  const {data, result} = report;
+  const {data, result, reportType} = report;
   const {targetValue, precision} = data.configuration;
   const numberText = useRef();
 
@@ -21,7 +23,7 @@ export default function Number({report, formatter}) {
     if (numberText.current) {
       fitty(numberText.current, {
         minSize: 5,
-        maxSize: 64,
+        maxSize: 55,
       });
     }
   }, [targetValue]);
@@ -47,9 +49,27 @@ export default function Number({report, formatter}) {
     );
   }
 
+  let viewString;
+
+  if (data.view.entity === 'variable') {
+    viewString = data.view.property.name;
+  } else {
+    const config = reportConfig[reportType];
+    const selectedView = config.findSelectedOption(config.options.view, 'data', data.view);
+    viewString = selectedView.key
+      .split('_')
+      .map((key) => t('report.view.' + key))
+      .join(' ');
+  }
+
+  if (data.view.property === 'duration' || data.view.entity === 'variable') {
+    viewString += ' - ' + t('report.config.aggregationShort.' + data.configuration.aggregationType);
+  }
+
   return (
-    <span className="Number" ref={numberText}>
-      {formatter(result.data, precision)}
-    </span>
+    <div className="Number" ref={numberText}>
+      <div className="data">{formatter(result.data, precision)}</div>
+      <div className="label">{viewString}</div>
+    </div>
   );
 }
