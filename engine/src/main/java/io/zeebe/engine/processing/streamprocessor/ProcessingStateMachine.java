@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -119,7 +119,7 @@ public final class ProcessingStateMachine {
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final TypedStreamWriter logStreamWriter;
-  private final DbContext dbContext;
+  private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
@@ -157,7 +157,7 @@ public final class ProcessingStateMachine {
     logStreamWriter = context.getLogStreamWriter();
     logStream = context.getLogStream();
     zeebeState = context.getZeebeState();
-    dbContext = context.getDbContext();
+    transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
@@ -274,7 +274,7 @@ public final class ProcessingStateMachine {
   }
 
   private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
-    zeebeDbTransaction = dbContext.getCurrentTransaction();
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
           final long position = typedRecord.getPosition();
@@ -338,7 +338,7 @@ public final class ProcessingStateMachine {
   }
 
   private void errorHandlingInTransaction(final Throwable processingException) throws Exception {
-    zeebeDbTransaction = dbContext.getCurrentTransaction();
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
           final long position = typedEvent.getPosition();

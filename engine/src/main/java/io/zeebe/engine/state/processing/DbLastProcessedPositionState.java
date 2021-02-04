@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.processing;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
@@ -24,11 +24,12 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
   private final ColumnFamily<DbString, LastProcessedPosition> positionColumnFamily;
 
   public DbLastProcessedPositionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     positionKey = new DbString();
     positionKey.wrapString(LAST_PROCESSED_EVENT_KEY);
     positionColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.DEFAULT, dbContext, positionKey, position);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEFAULT, transactionContext, positionKey, position);
   }
 
   @Override

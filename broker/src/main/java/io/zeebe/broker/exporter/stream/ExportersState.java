@@ -8,7 +8,7 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
@@ -17,16 +17,19 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
 public final class ExportersState {
+
   public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;
   private final ExporterPosition position = new ExporterPosition();
   private final ColumnFamily<DbString, ExporterPosition> exporterPositionColumnFamily;
 
-  public ExportersState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public ExportersState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     exporterId = new DbString();
     exporterPositionColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.EXPORTER, dbContext, exporterId, position);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, position);
   }
 
   public void setPosition(final String exporterId, final long position) {

@@ -29,6 +29,7 @@ import org.rocksdb.Status.Code;
 import org.rocksdb.Transaction;
 
 public final class RocksDbInternal {
+
   static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
       EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 
@@ -83,18 +84,12 @@ public final class RocksDbInternal {
     putWithHandle.setAccessible(true);
   }
 
-  //    private native byte[] get(final long handle, final long readOptionsHandle,
-  //      final byte key[], final int keyLength, final long columnFamilyHandle)
-
   private static void getWithHandle() throws NoSuchMethodException {
     getWithHandle =
         Transaction.class.getDeclaredMethod(
             "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
     getWithHandle.setAccessible(true);
   }
-
-  //    private native void delete(final long handle, final byte[] key,
-  //      final int keyLength, final long columnFamilyHandle)
 
   private static void removeWithHandle() throws NoSuchMethodException {
     removeWithHandle =

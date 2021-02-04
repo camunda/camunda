@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class StreamProcessor extends Actor implements HealthMonitorable {
+
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
@@ -261,10 +262,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   }
 
   private ZeebeState recoverState() {
-    final DbContext dbContext = zeebeDb.createContext();
-    final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
+    final TransactionContext transactionContext = zeebeDb.createContext();
+    final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, transactionContext);
 
-    processingContext.dbContext(dbContext);
+    processingContext.transactionContext(transactionContext);
     processingContext.zeebeState(zeebeState);
 
     return zeebeState;

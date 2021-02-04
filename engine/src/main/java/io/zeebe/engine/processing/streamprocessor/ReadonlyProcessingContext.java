@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
@@ -45,8 +45,8 @@ public interface ReadonlyProcessingContext {
   /** @return the state, where the data is stored during processing */
   ZeebeState getZeebeState();
 
-  /** @return the database context for the current actor */
-  DbContext getDbContext();
+  /** @return the transaction context for the current actor */
+  TransactionContext getTransactionContext();
 
   /** @return the response writer, which is used during processing */
   CommandResponseWriter getCommandResponseWriter();

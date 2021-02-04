@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.processing;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
@@ -33,11 +33,12 @@ public final class DbBlackListState implements MutableBlackListState {
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong workflowInstanceKey;
 
-  public DbBlackListState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbBlackListState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     workflowInstanceKey = new DbLong();
     blackListColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.BLACKLIST, dbContext, workflowInstanceKey, DbNil.INSTANCE);
+            ZbColumnFamilies.BLACKLIST, transactionContext, workflowInstanceKey, DbNil.INSTANCE);
   }
 
   private void blacklist(final long key) {

@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -74,25 +74,34 @@ public class DbVariableState implements MutableVariableState {
 
   public DbVariableState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final DbContext dbContext,
+      final TransactionContext transactionContext,
       final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
 
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, dbContext, childKey, parentKey);
+            ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT,
+            transactionContext,
+            childKey,
+            parentKey);
 
     scopeKey = new DbLong();
     variableName = new DbString();
     scopeKeyVariableNameKey = new DbCompositeKey<>(scopeKey, variableName);
     variablesColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.VARIABLES, dbContext, scopeKeyVariableNameKey, new VariableInstance());
+            ZbColumnFamilies.VARIABLES,
+            transactionContext,
+            scopeKeyVariableNameKey,
+            new VariableInstance());
 
     temporaryVariableStoreColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TEMPORARY_VARIABLE_STORE, dbContext, scopeKey, temporaryVariables);
+            ZbColumnFamilies.TEMPORARY_VARIABLE_STORE,
+            transactionContext,
+            scopeKey,
+            temporaryVariables);
   }
 
   @Override

@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -59,25 +59,29 @@ public final class DbJobState implements JobState, MutableJobState {
   private Consumer<String> onJobsAvailableCallback;
 
   public DbJobState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext, final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int partitionId) {
     jobKey = new DbLong();
     jobsColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, dbContext, jobKey, jobRecordToRead);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOBS, transactionContext, jobKey, jobRecordToRead);
 
     statesJobColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, dbContext, jobKey, jobState);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_STATES, transactionContext, jobKey, jobState);
 
     jobTypeKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, jobKey);
     activatableColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_ACTIVATABLE, dbContext, typeJobKey, DbNil.INSTANCE);
+            ZbColumnFamilies.JOB_ACTIVATABLE, transactionContext, typeJobKey, DbNil.INSTANCE);
 
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, jobKey);
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_DEADLINES, dbContext, deadlineJobKey, DbNil.INSTANCE);
+            ZbColumnFamilies.JOB_DEADLINES, transactionContext, deadlineJobKey, DbNil.INSTANCE);
 
     metrics = new JobMetrics(partitionId);
   }

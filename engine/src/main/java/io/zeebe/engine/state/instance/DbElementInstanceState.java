@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -53,7 +53,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final DbContext dbContext,
+      final TransactionContext transactionContext,
       final MutableVariableState variableState) {
 
     this.variableState = variableState;
@@ -64,20 +64,23 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     parentChildColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
-            dbContext,
+            transactionContext,
             parentChildKey,
             DbNil.INSTANCE);
 
     elementInstance = new ElementInstance();
     elementInstanceColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_KEY, dbContext, elementInstanceKey, elementInstance);
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+            transactionContext,
+            elementInstanceKey,
+            elementInstance);
 
     recordKey = new DbLong();
     storedRecord = new StoredRecord();
     recordColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS, dbContext, recordKey, storedRecord);
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS, transactionContext, recordKey, storedRecord);
 
     recordParentKey = new DbLong();
     stateKey = new DbByte();
@@ -86,7 +89,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     recordParentChildColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
-            dbContext,
+            transactionContext,
             recordParentStateRecordKey,
             DbNil.INSTANCE);
 
@@ -94,7 +97,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     awaitWorkflowInstanceResultMetadataColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AWAIT_WORKLOW_RESULT,
-            dbContext,
+            transactionContext,
             elementInstanceKey,
             awaitResultMetadata);
   }
@@ -340,6 +343,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @FunctionalInterface
   public interface RecordVisitor {
+
     void visitRecord(IndexedRecord indexedRecord);
   }
 }

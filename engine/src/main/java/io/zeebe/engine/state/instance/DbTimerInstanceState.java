@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -33,20 +33,24 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   private long nextDueDate;
 
-  public DbTimerInstanceState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbTimerInstanceState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     timerInstance = new TimerInstance();
     timerKey = new DbLong();
     elementInstanceKey = new DbLong();
     elementAndTimerKey = new DbCompositeKey<>(elementInstanceKey, timerKey);
     timerInstanceColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TIMERS, dbContext, elementAndTimerKey, timerInstance);
+            ZbColumnFamilies.TIMERS, transactionContext, elementAndTimerKey, timerInstance);
 
     dueDateKey = new DbLong();
     dueDateCompositeKey = new DbCompositeKey<>(dueDateKey, elementAndTimerKey);
     dueDateColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TIMER_DUE_DATES, dbContext, dueDateCompositeKey, DbNil.INSTANCE);
+            ZbColumnFamilies.TIMER_DUE_DATES,
+            transactionContext,
+            dueDateCompositeKey,
+            DbNil.INSTANCE);
   }
 
   @Override

@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -31,12 +31,12 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
   public DbEventScopeInstanceState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EVENT_SCOPE, dbContext, eventScopeKey, eventScopeInstance);
+            ZbColumnFamilies.EVENT_SCOPE, transactionContext, eventScopeKey, eventScopeInstance);
 
     eventTriggerScopeKey = new DbLong();
     eventTriggerEventKey = new DbLong();
@@ -44,7 +44,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     eventTrigger = new EventTrigger();
     eventTriggerColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EVENT_TRIGGER, dbContext, eventTriggerKey, eventTrigger);
+            ZbColumnFamilies.EVENT_TRIGGER, transactionContext, eventTriggerKey, eventTrigger);
   }
 
   @Override

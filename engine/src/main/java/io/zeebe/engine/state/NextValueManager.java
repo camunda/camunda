@@ -8,7 +8,7 @@
 package io.zeebe.engine.state;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 
@@ -24,21 +24,21 @@ public final class NextValueManager {
 
   public NextValueManager(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final DbContext dbContext,
+      final TransactionContext transactionContext,
       final ZbColumnFamilies columnFamily) {
-    this(INITIAL_VALUE, zeebeDb, dbContext, columnFamily);
+    this(INITIAL_VALUE, zeebeDb, transactionContext, columnFamily);
   }
 
   public NextValueManager(
       final long initialValue,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final DbContext dbContext,
+      final TransactionContext transactionContext,
       final ZbColumnFamilies columnFamily) {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
     nextValueColumnFamily =
-        zeebeDb.createColumnFamily(columnFamily, dbContext, nextValueKey, nextValue);
+        zeebeDb.createColumnFamily(columnFamily, transactionContext, nextValueKey, nextValue);
   }
 
   public long getNextValue(final String key) {

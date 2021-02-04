@@ -10,7 +10,7 @@ package io.zeebe.engine.state.deployment;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -66,12 +66,13 @@ public final class DbWorkflowState implements MutableWorkflowState {
 
   private final NextValueManager versionManager;
 
-  public DbWorkflowState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+  public DbWorkflowState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     workflowKey = new DbLong();
     persistedWorkflow = new PersistedWorkflow();
     workflowColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE, dbContext, workflowKey, persistedWorkflow);
+            ZbColumnFamilies.WORKFLOW_CACHE, transactionContext, workflowKey, persistedWorkflow);
 
     workflowId = new DbString();
     workflowVersion = new DbLong();
@@ -79,21 +80,25 @@ public final class DbWorkflowState implements MutableWorkflowState {
     workflowByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_CACHE_BY_ID_AND_VERSION,
-            dbContext,
+            transactionContext,
             idAndVersionKey,
             persistedWorkflow);
 
     latestWorkflowColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY, dbContext, workflowId, latestVersion);
+            ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY,
+            transactionContext,
+            workflowId,
+            latestVersion);
 
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, dbContext, workflowId, digest);
+            ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, transactionContext, workflowId, digest);
 
     workflowsByKey = new Long2ObjectHashMap<>();
 
-    versionManager = new NextValueManager(zeebeDb, dbContext, ZbColumnFamilies.WORKFLOW_VERSION);
+    versionManager =
+        new NextValueManager(zeebeDb, transactionContext, ZbColumnFamilies.WORKFLOW_VERSION);
   }
 
   @Override

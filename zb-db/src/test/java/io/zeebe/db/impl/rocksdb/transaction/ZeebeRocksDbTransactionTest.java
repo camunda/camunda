@@ -11,7 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbException;
 import io.zeebe.db.ZeebeDbFactory;
@@ -34,13 +34,14 @@ public final class ZeebeRocksDbTransactionTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory();
-  private DbContext dbContext;
+
+  private TransactionContext transactionContext;
 
   @Before
   public void setup() throws Exception {
     final File pathName = temporaryFolder.newFolder();
     final ZeebeDb<DefaultColumnFamily> zeebeDb = dbFactory.createDb(pathName);
-    dbContext = zeebeDb.createContext();
+    transactionContext = zeebeDb.createContext();
   }
 
   @Test(expected = ZeebeDbException.class)
@@ -49,7 +50,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.IOError, SubCode.None, "");
 
     // when
-    dbContext.runInTransaction(
+    transactionContext.runInTransaction(
         () -> {
           throw new RocksDBException("expected", status);
         });
@@ -61,7 +62,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.IOError, SubCode.None, "");
 
     // when
-    dbContext.runInTransaction(
+    transactionContext.runInTransaction(
         () -> {
           throw new RecoverableException(new RocksDBException("expected", status));
         });
@@ -73,7 +74,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
 
     // when
-    dbContext.runInTransaction(
+    transactionContext.runInTransaction(
         () -> {
           throw new RocksDBException("expected", status);
         });
@@ -83,7 +84,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldThrowRecoverableExceptionOnCommit() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final DbContext newContext = new DefaultDbContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.IOError, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
@@ -95,7 +96,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldWrapExceptionInRuntimeExceptionOnCommit() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final DbContext newContext = new DefaultDbContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
@@ -107,7 +108,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldThrowRecoverableExceptionOnRollback() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final DbContext newContext = new DefaultDbContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.IOError, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
 
@@ -119,7 +120,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldWrapExceptionInRuntimeExceptionOnRollback() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final DbContext newContext = new DefaultDbContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
 
@@ -133,7 +134,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.IOError, SubCode.None, "");
 
     // when
-    final ZeebeDbTransaction currentTransaction = dbContext.getCurrentTransaction();
+    final ZeebeDbTransaction currentTransaction = transactionContext.getCurrentTransaction();
     currentTransaction.run(
         () -> {
           throw new RocksDBException("expected", status);
@@ -146,7 +147,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.IOError, SubCode.None, "");
 
     // when
-    final ZeebeDbTransaction currentTransaction = dbContext.getCurrentTransaction();
+    final ZeebeDbTransaction currentTransaction = transactionContext.getCurrentTransaction();
     currentTransaction.run(
         () -> {
           throw new RecoverableException(new RocksDBException("expected", status));
@@ -159,7 +160,7 @@ public final class ZeebeRocksDbTransactionTest {
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
 
     // when
-    final ZeebeDbTransaction currentTransaction = dbContext.getCurrentTransaction();
+    final ZeebeDbTransaction currentTransaction = transactionContext.getCurrentTransaction();
     currentTransaction.run(
         () -> {
           throw new RocksDBException("expected", status);
@@ -171,7 +172,7 @@ public final class ZeebeRocksDbTransactionTest {
     // given
     final Status status = new Status(Code.IOError, SubCode.None, "");
     final ZeebeTransaction currentTransaction =
-        spy((ZeebeTransaction) dbContext.getCurrentTransaction());
+        spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
     doThrow(new RocksDBException("expected", status)).when(currentTransaction).commitInternal();
 
     // when
@@ -183,7 +184,7 @@ public final class ZeebeRocksDbTransactionTest {
     // given
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     final ZeebeTransaction currentTransaction =
-        spy((ZeebeTransaction) dbContext.getCurrentTransaction());
+        spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
     doThrow(new RocksDBException("expected", status)).when(currentTransaction).commitInternal();
 
     // when
@@ -195,7 +196,7 @@ public final class ZeebeRocksDbTransactionTest {
     // given
     final Status status = new Status(Code.IOError, SubCode.None, "");
     final ZeebeTransaction currentTransaction =
-        spy((ZeebeTransaction) dbContext.getCurrentTransaction());
+        spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
     doThrow(new RocksDBException("expected", status)).when(currentTransaction).rollbackInternal();
 
     // when
@@ -207,7 +208,7 @@ public final class ZeebeRocksDbTransactionTest {
     // given
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     final ZeebeTransaction currentTransaction =
-        spy((ZeebeTransaction) dbContext.getCurrentTransaction());
+        spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
     doThrow(new RocksDBException("expected", status)).when(currentTransaction).rollbackInternal();
 
     // when

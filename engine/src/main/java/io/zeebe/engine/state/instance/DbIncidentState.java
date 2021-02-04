@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.engine.metrics.IncidentMetrics;
@@ -19,6 +19,8 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
+
+  public static final int MISSING_INCIDENT = -1;
 
   /** incident key -> incident record */
   private final DbLong incidentKey;
@@ -43,24 +45,26 @@ public final class DbIncidentState implements MutableIncidentState {
   private final IncidentMetrics metrics;
 
   public DbIncidentState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext, final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int partitionId) {
     incidentKey = new DbLong();
     incidentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.INCIDENTS, dbContext, incidentKey, incidentRead);
+            ZbColumnFamilies.INCIDENTS, transactionContext, incidentKey, incidentRead);
 
     elementInstanceKey = new DbLong();
     workflowInstanceIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES,
-            dbContext,
+            transactionContext,
             elementInstanceKey,
             incidentKeyValue);
 
     jobKey = new DbLong();
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.INCIDENT_JOBS, dbContext, jobKey, incidentKeyValue);
+            ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
 
     metrics = new IncidentMetrics(partitionId);
   }
