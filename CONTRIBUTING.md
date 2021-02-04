@@ -15,6 +15,7 @@ Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
 
 > NOTE: All Java modules in Zeebe are built and tested with JDK 11, __except__ the Java client, which is built and tested with JDK 8.
+
 > NOTE: The Go client and zbctl are built and tested with Go 1.15
 
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
