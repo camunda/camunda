@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
+import org.springframework.util.unit.DataSize;
 
 public final class RocksdbCfgTest {
 
@@ -38,6 +39,16 @@ public final class RocksdbCfgTest {
   }
 
   @Test
+  public void shouldUseDefaultMemoryLimit() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(512));
+  }
+
+  @Test
   public void shouldCreateRocksDbConfigurationFromDefault() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
@@ -49,6 +60,8 @@ public final class RocksdbCfgTest {
     // then
     assertThat(rocksDbConfiguration.getColumnFamilyOptions()).isEmpty();
     assertThat(rocksDbConfiguration.isStatisticsEnabled()).isFalse();
+    assertThat(rocksDbConfiguration.getMemoryLimit())
+        .isEqualTo(DataSize.ofMegabytes(512).toBytes());
   }
 
   @Test
@@ -65,6 +78,7 @@ public final class RocksdbCfgTest {
         .containsEntry("compaction_pri", "kOldestSmallestSeqFirst")
         .containsEntry("write_buffer_size", "67108864");
     assertThat(rocksDbConfiguration.isStatisticsEnabled()).isTrue();
+    assertThat(rocksDbConfiguration.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(32).toBytes());
   }
 
   @Test
@@ -87,6 +101,16 @@ public final class RocksdbCfgTest {
 
     // then
     assertThat(rocksdb.isStatisticsEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldSetMemoryLimitViaConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(32));
   }
 
   @Test
@@ -115,5 +139,18 @@ public final class RocksdbCfgTest {
 
     // then
     assertThat(rocksdb.isStatisticsEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldSetMemoryLimitViaEnvironmentVariables() {
+    // given
+    environment.put("zeebe.broker.experimental.rocksdb.memoryLimit", "16KB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMemoryLimit()).isEqualTo(DataSize.ofKilobytes(16));
   }
 }

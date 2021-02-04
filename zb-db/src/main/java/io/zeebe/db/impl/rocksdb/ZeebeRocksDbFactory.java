@@ -149,9 +149,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final List<AutoCloseable> closeables) {
     final var columnFamilyOptions = new ColumnFamilyOptions();
 
-    final var totalMemoryBudget =
-        512 * 1024
-            * 1024L; // TODO: make this configurable https://github.com/zeebe-io/zeebe/issues/6159
+    final var totalMemoryBudget = rocksDbConfiguration.getMemoryLimit();
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
     final var blockCacheMemory = totalMemoryBudget / 3;

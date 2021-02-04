@@ -11,26 +11,37 @@ import java.util.Properties;
 
 public final class RocksDbConfiguration {
 
+  public static final long DEFAULT_MEMORY_LIMIT = 512 * 1024 * 1024L;
+
   private final Properties columnFamilyOptions;
   private final boolean statisticsEnabled;
+  private final long memoryLimit;
 
   private RocksDbConfiguration(
-      final Properties columnFamilyOptions, final boolean statisticsEnabled) {
+      final Properties columnFamilyOptions,
+      final boolean statisticsEnabled,
+      final long memoryLimit) {
     this.columnFamilyOptions = columnFamilyOptions;
     this.statisticsEnabled = statisticsEnabled;
+    this.memoryLimit = memoryLimit;
   }
 
   public static RocksDbConfiguration empty() {
-    return new RocksDbConfiguration(new Properties(), false);
+    return new RocksDbConfiguration(new Properties(), false, DEFAULT_MEMORY_LIMIT);
   }
 
   public static RocksDbConfiguration of(final Properties properties) {
-    return new RocksDbConfiguration(properties, false);
+    return new RocksDbConfiguration(properties, false, DEFAULT_MEMORY_LIMIT);
   }
 
   public static RocksDbConfiguration of(
       final Properties properties, final boolean statisticsEnabled) {
-    return new RocksDbConfiguration(properties, statisticsEnabled);
+    return new RocksDbConfiguration(properties, statisticsEnabled, DEFAULT_MEMORY_LIMIT);
+  }
+
+  public static RocksDbConfiguration of(
+      final Properties properties, final boolean statisticsEnabled, final long memoryLimit) {
+    return new RocksDbConfiguration(properties, statisticsEnabled, memoryLimit);
   }
 
   public Properties getColumnFamilyOptions() {
@@ -39,5 +50,9 @@ public final class RocksDbConfiguration {
 
   public boolean isStatisticsEnabled() {
     return statisticsEnabled;
+  }
+
+  public long getMemoryLimit() {
+    return memoryLimit;
   }
 }
