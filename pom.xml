@@ -105,7 +105,7 @@
     <profile>
       <id>engine-snapshot</id>
       <properties>
-        <camunda.engine.version>7.14.0-SNAPSHOT</camunda.engine.version>
+        <camunda.engine.version>7.15.0-SNAPSHOT</camunda.engine.version>
       </properties>
     </profile>
 
