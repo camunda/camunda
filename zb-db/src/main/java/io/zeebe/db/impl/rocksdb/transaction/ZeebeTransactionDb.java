@@ -64,7 +64,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     closables.add(prefixReadOptions);
     defaultReadOptions = new ReadOptions();
     closables.add(defaultReadOptions);
-    defaultWriteOptions = new WriteOptions();
+    defaultWriteOptions = new WriteOptions().setDisableWAL(true);
     closables.add(defaultWriteOptions);
   }
 
