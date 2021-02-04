@@ -535,3 +535,10 @@
         # an RocksDB instance is used per partition.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORY_LIMIT
         # memoryLimit: 512MB
+
+        # Configures how many files are kept open by RocksDB, per default it is unlimited (-1).
+        # This is a performance optimization: if you set a value greater than zero, it will keep track and cap the number of open
+        # files in the TableCache. On accessing the files it needs to look them up in the cache.
+        # You should configure this property if the maximum open files are limited on your system, or if you have thousands of files in your RocksDB state as there is a memory overhead to keeping all of them open, and setting maxOpenFiles will bound that.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAX_OPEN_FILES
+        # maxOpenFiles: -1
