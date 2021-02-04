@@ -475,6 +475,7 @@
       # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
       # detectReprocessingInconsistency = false;
 
+      # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.
         # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
@@ -486,3 +487,12 @@
         # columnFamilyOptions:
           # compaction_pri: "kOldestSmallestSeqFirst"
           # write_buffer_size: 67108864
+
+        # Enables RocksDB statistics, which will be written to the RocksDB log file.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_STATISTICS_ENABLED
+        # statisticsEnabled: false
+
+        # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
+        # an RocksDB instance is used per partition.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORY_LIMIT
+        # memoryLimit: 512MB
