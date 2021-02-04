@@ -85,6 +85,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             .setErrorIfExists(false)
             .setCreateIfMissing(true)
             .setParanoidChecks(true)
+            .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
             // 1 flush, 1 compaction
             .setMaxBackgroundJobs(2)
             // we only use the default CF

@@ -19,6 +19,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private Properties columnFamilyOptions;
   private boolean statisticsEnabled;
   private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
+  private int maxOpenFiles = RocksDbConfiguration.DEFAULT_UNLIMITED_MAX_OPEN_FILES;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -64,8 +65,17 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.memoryLimit = memoryLimit;
   }
 
+  public int getMaxOpenFiles() {
+    return maxOpenFiles;
+  }
+
+  public void setMaxOpenFiles(final int maxOpenFiles) {
+    this.maxOpenFiles = maxOpenFiles;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
-    return RocksDbConfiguration.of(columnFamilyOptions, statisticsEnabled, memoryLimit.toBytes());
+    return RocksDbConfiguration.of(
+        columnFamilyOptions, statisticsEnabled, memoryLimit.toBytes(), maxOpenFiles);
   }
 
   @Override
@@ -77,6 +87,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + statisticsEnabled
         + ", memoryLimit="
         + memoryLimit
+        + ", maxOpenFiles="
+        + maxOpenFiles
         + '}';
   }
 

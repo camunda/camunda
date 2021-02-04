@@ -49,6 +49,16 @@ public final class RocksdbCfgTest {
   }
 
   @Test
+  public void shouldUseDefaultMaxOpenFiles() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMaxOpenFiles()).isEqualTo(-1);
+  }
+
+  @Test
   public void shouldCreateRocksDbConfigurationFromDefault() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
@@ -62,6 +72,7 @@ public final class RocksdbCfgTest {
     assertThat(rocksDbConfiguration.isStatisticsEnabled()).isFalse();
     assertThat(rocksDbConfiguration.getMemoryLimit())
         .isEqualTo(DataSize.ofMegabytes(512).toBytes());
+    assertThat(rocksDbConfiguration.getMaxOpenFiles()).isEqualTo(-1);
   }
 
   @Test
@@ -79,6 +90,7 @@ public final class RocksdbCfgTest {
         .containsEntry("write_buffer_size", "67108864");
     assertThat(rocksDbConfiguration.isStatisticsEnabled()).isTrue();
     assertThat(rocksDbConfiguration.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(32).toBytes());
+    assertThat(rocksDbConfiguration.getMaxOpenFiles()).isEqualTo(3);
   }
 
   @Test
@@ -111,6 +123,16 @@ public final class RocksdbCfgTest {
 
     // then
     assertThat(rocksdb.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(32));
+  }
+
+  @Test
+  public void shouldSetMaxOpenFilesViaConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMaxOpenFiles()).isEqualTo(3);
   }
 
   @Test
@@ -152,5 +174,18 @@ public final class RocksdbCfgTest {
 
     // then
     assertThat(rocksdb.getMemoryLimit()).isEqualTo(DataSize.ofKilobytes(16));
+  }
+
+  @Test
+  public void shouldSetMaxOpenFilesViaEnvironmentVariables() {
+    // given
+    environment.put("zeebe.broker.experimental.rocksdb.maxOpenFiles", "5");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getExperimental().getRocksdb();
+
+    // then
+    assertThat(rocksdb.getMaxOpenFiles()).isEqualTo(5);
   }
 }
