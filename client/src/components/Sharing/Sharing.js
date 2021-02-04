@@ -11,7 +11,6 @@ import {
   ReportRenderer,
   DashboardRenderer,
   Icon,
-  Button,
   LoadingIndicator,
   ErrorPage,
   EntityName,
@@ -20,7 +19,7 @@ import {
   InstanceCount,
   DiagramScrollLock,
 } from 'components';
-import {Link, withRouter} from 'react-router-dom';
+import {withRouter} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
 
@@ -82,6 +81,13 @@ export class Sharing extends React.Component {
     return type === 'report' || type === 'dashboard';
   }
 
+  getEntityUrl = () => {
+    const currentUrl = window.location.href;
+    const baseUrl = currentUrl.substring(0, currentUrl.indexOf('#')).replace('external/', '');
+
+    return `${baseUrl}#/${this.getType()}/${this.state.evaluationResult.id}/`;
+  };
+
   render() {
     const {loading, evaluationResult} = this.state;
     const type = this.getType();
@@ -111,16 +117,15 @@ export class Sharing extends React.Component {
             >
               {evaluationResult.name}
             </EntityName>
-            <Link
+            <a
+              href={this.getEntityUrl()}
               target="_blank"
-              to={`/${this.getType()}/${this.state.evaluationResult.id}/`}
-              className="title-button"
+              rel="noopener noreferrer"
+              className="Button main title-button"
             >
-              <Button main>
-                <Icon type="share" renderedIn="span" />
-                <span>{t('common.sharing.openInOptimize')}</span>
-              </Button>
-            </Link>
+              <Icon type="share" renderedIn="span" />
+              <span>{t('common.sharing.openInOptimize')}</span>
+            </a>
           </div>
           {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
