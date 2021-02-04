@@ -14,6 +14,9 @@
 Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
 
+> NOTE: All Java modules in Zeebe are built and tested with JDK 11, __except__ the Java client, which is built and tested with JDK 8.
+> NOTE: The Go client and zbctl are built and tested with Go 1.15
+
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 ```
 dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.tar.gz
@@ -35,6 +38,11 @@ This is a small overview of the contents of the different modules:
 - `engine`  is the implementation of the event stream processor
 - `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
+- `atomix` contains transport, membership, and consensus algorithms
+- `benchmark` contains utilities the team uses to run load tests
+- `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
+- `journal` contains the append-only log used by the consensus algorithm
+- `snapshots` module abstracting how state snapshots (i.e. `zb-db`) are handled
 
 ## Report issues or contact developers
 
