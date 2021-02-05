@@ -48,7 +48,7 @@
     <mockito.version>3.7.7</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
-    <junit.jupiter.version>5.7.0</junit.jupiter.version>
+    <junit.jupiter.version>5.7.1</junit.jupiter.version>
     <junit.platform.version>1.7.1</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
