@@ -17,4 +17,9 @@
     <method>io.zeebe.client.api.JsonMapper getJsonMapper()</method>
     <differenceType>7012</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/api/worker/JobWorkerBuilderStep1$JobWorkerBuilderStep3</className>
+    <differenceType>7012</differenceType>
+    <method>io.zeebe.client.api.worker.JobWorkerBuilderStep1$JobWorkerBuilderStep3 backoffSupplier(io.zeebe.client.api.worker.BackoffSupplier)</method>
+  </difference>
 </differences>

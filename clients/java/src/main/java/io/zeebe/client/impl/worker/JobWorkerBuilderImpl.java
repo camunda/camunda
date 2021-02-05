@@ -21,6 +21,7 @@ import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.JsonMapper;
+import io.zeebe.client.api.worker.BackoffSupplier;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobHandler;
 import io.zeebe.client.api.worker.JobWorker;
@@ -40,8 +41,9 @@ import java.util.function.Predicate;
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
 
+  public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
+      BackoffSupplier.newBackoffBuilder().build();
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
-
   private final GatewayStub gatewayStub;
   private final JobClient jobClient;
   private final JsonMapper jsonMapper;
@@ -56,6 +58,7 @@ public final class JobWorkerBuilderImpl
   private Duration pollInterval;
   private Duration requestTimeout;
   private List<String> fetchVariables;
+  private BackoffSupplier backoffSupplier;
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -76,6 +79,7 @@ public final class JobWorkerBuilderImpl
     maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
+    backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     this.retryPredicate = retryPredicate;
   }
 
@@ -120,6 +124,7 @@ public final class JobWorkerBuilderImpl
     return this;
   }
 
+  @Override
   public JobWorkerBuilderStep3 requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
@@ -134,6 +139,12 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorkerBuilderStep3 fetchVariables(final String... fetchVariables) {
     return fetchVariables(Arrays.asList(fetchVariables));
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
+    this.backoffSupplier = backoffSupplier;
+    return this;
   }
 
   @Override
@@ -164,7 +175,12 @@ public final class JobWorkerBuilderImpl
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
-            maxJobsActive, executorService, pollInterval, jobRunnableFactory, jobPoller);
+            maxJobsActive,
+            executorService,
+            pollInterval,
+            jobRunnableFactory,
+            jobPoller,
+            backoffSupplier);
     closeables.add(jobWorker);
     return jobWorker;
   }
