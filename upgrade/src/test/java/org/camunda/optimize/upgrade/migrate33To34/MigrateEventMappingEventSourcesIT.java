@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.migrate33To34;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceConfigDto;
@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEven
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.upgrade.migrate33To34.dto.EventSourceEntryDtoOld;
-import org.camunda.optimize.upgrade.migrate33To34.dto.IndexableEventProcessMappingDtoV3Old;
+import org.camunda.optimize.upgrade.migrate33To34.dto.EsEventProcessMappingDtoV3Old;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -42,9 +42,9 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
     final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
 
     // then
-    final List<IndexableEventProcessMappingDtoV3Old> eventMappingsBeforeUpgrade = getAllDocumentsOfIndexAs(
+    final List<EsEventProcessMappingDtoV3Old> eventMappingsBeforeUpgrade = getAllDocumentsOfIndexAs(
       EVENT_MAPPING_INDEX.getIndexName(),
-      IndexableEventProcessMappingDtoV3Old.class
+      EsEventProcessMappingDtoV3Old.class
     );
 
     // when
@@ -54,18 +54,18 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
     final SearchHit[] mappingHitsAfterUpgrade = getAllDocumentsOfIndex(new EventProcessMappingIndex().getIndexName());
     assertThat(mappingHitsAfterUpgrade).hasSize(3)
       .allSatisfy(eventMapping -> {
-        final IndexableEventProcessMappingDtoV3Old mappingBeforeUpgrade = getMappingBeforeUpgrade(
+        final EsEventProcessMappingDtoV3Old mappingBeforeUpgrade = getMappingBeforeUpgrade(
           eventMappingsBeforeUpgrade, eventMapping.getId());
         assertEventSourcesHaveBeenUpgraded(mappingBeforeUpgrade, eventMapping);
         assertOtherMappingsPropertiesAreUnaffected(mappingBeforeUpgrade);
       });
   }
 
-  private void assertOtherMappingsPropertiesAreUnaffected(final IndexableEventProcessMappingDtoV3Old mappingBeforeUpgrade) {
-    final IndexableEventProcessMappingDto mappingAfterUpgrade = getDocumentOfIndexByIdAs(
+  private void assertOtherMappingsPropertiesAreUnaffected(final EsEventProcessMappingDtoV3Old mappingBeforeUpgrade) {
+    final EsEventProcessMappingDto mappingAfterUpgrade = getDocumentOfIndexByIdAs(
       new EventProcessMappingIndex().getIndexName(),
       mappingBeforeUpgrade.getId(),
-      IndexableEventProcessMappingDto.class
+      EsEventProcessMappingDto.class
     ).orElseThrow(() -> new OptimizeIntegrationTestException(
       "Cannot fetch event process mapping with ID: " + mappingBeforeUpgrade.getId()));
     assertThat(mappingBeforeUpgrade.getLastModified()).isEqualTo(mappingAfterUpgrade.getLastModified());
@@ -78,7 +78,7 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private void assertEventSourcesHaveBeenUpgraded(final IndexableEventProcessMappingDtoV3Old eventMappingBeforeUpgrade,
+  private void assertEventSourcesHaveBeenUpgraded(final EsEventProcessMappingDtoV3Old eventMappingBeforeUpgrade,
                                                   final SearchHit eventMapping) {
     final List<Map<String, Object>> eventSources =
       (List<Map<String, Object>>) eventMapping.getSourceAsMap().get(EVENT_SOURCES);
@@ -117,16 +117,16 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
     });
   }
 
-  private IndexableEventProcessMappingDtoV3Old getMappingBeforeUpgrade(final List<IndexableEventProcessMappingDtoV3Old> oldMappings,
-                                                                       final String eventMappingId) {
-    final List<IndexableEventProcessMappingDtoV3Old> oldMappingsWithId = oldMappings.stream()
+  private EsEventProcessMappingDtoV3Old getMappingBeforeUpgrade(final List<EsEventProcessMappingDtoV3Old> oldMappings,
+                                                                final String eventMappingId) {
+    final List<EsEventProcessMappingDtoV3Old> oldMappingsWithId = oldMappings.stream()
       .filter(mapping -> mapping.getId().equals(eventMappingId))
       .collect(Collectors.toList());
     assertThat(oldMappingsWithId).hasSize(1);
     return oldMappingsWithId.get(0);
   }
 
-  private EventSourceEntryDtoOld getEventSourceFromMapping(final IndexableEventProcessMappingDtoV3Old oldMapping,
+  private EventSourceEntryDtoOld getEventSourceFromMapping(final EsEventProcessMappingDtoV3Old oldMapping,
                                                            final String sourceId) {
     final List<EventSourceEntryDtoOld> oldSourceWithId = oldMapping.getEventSources().stream()
       .filter(source -> source.getId().equals(sourceId))

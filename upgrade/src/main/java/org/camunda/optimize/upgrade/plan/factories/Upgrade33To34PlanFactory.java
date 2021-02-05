@@ -88,20 +88,20 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "  if (eventSource.type == 'external') {\n" +
       "    def sourceConfig = [\n" +
       "      'includeAllGroups': true,\n" +
+      "      'group': null,\n" +
       "      'eventScope': eventSource.eventScope\n" +
       "     ];\n" +
-      "    sourceConfig.group = null;" +
       "    eventSource.configuration = sourceConfig;\n" +
       "  } else if (eventSource.type == 'camunda') {\n" +
       "    def sourceConfig = [\n" +
       "      'eventScope': eventSource.eventScope,\n" +
       "      'processDefinitionKey': eventSource.processDefinitionKey,\n" +
+      "      'processDefinitionName': null,\n" +
       "      'versions': eventSource.versions,\n" +
       "      'tenants': eventSource.tenants,\n" +
       "      'tracedByBusinessKey': eventSource.tracedByBusinessKey,\n" +
       "      'traceVariable': eventSource.traceVariable\n" +
       "     ];\n" +
-      "    sourceConfig.processDefinitionName = null;\n" +
       "    eventSource.configuration = sourceConfig;\n" +
       "  }\n" +
       "  eventSource.remove(\"processDefinitionKey\");\n" +

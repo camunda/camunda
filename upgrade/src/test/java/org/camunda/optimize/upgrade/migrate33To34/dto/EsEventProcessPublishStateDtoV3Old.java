@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class IndexableEventProcessPublishStateDtoV3Old {
+public class EsEventProcessPublishStateDtoV3Old {
   private String id;
   private String processMappingId;
   private String name;
@@ -26,6 +26,6 @@ public class IndexableEventProcessPublishStateDtoV3Old {
   private Double publishProgress;
   private Boolean deleted;
   private String xml;
-  private List<IndexableEventMappingDto> mappings;
+  private List<EsEventMappingDto> mappings;
   private List<EventImportSourceDtoOld> eventImportSources;
 }

@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.List;
 
@@ -42,7 +41,7 @@ public class CorrelatableProcessInstanceDto extends CorrelatableInstanceDto {
           .findFirst().orElse(null);
       }
     }
-    throw new OptimizeRuntimeException("Cannot get correlation value from non-Camunda sources");
+    throw new IllegalArgumentException("Cannot get correlation value from non-Camunda sources");
   }
 
 }

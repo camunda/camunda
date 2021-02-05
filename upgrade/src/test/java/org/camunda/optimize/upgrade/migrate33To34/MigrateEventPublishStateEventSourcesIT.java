@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.migrate33To34;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceConfigDto;
@@ -16,7 +16,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.upgrade.migrate33To34.dto.EventImportSourceDtoOld;
 import org.camunda.optimize.upgrade.migrate33To34.dto.EventSourceEntryDtoOld;
-import org.camunda.optimize.upgrade.migrate33To34.dto.IndexableEventProcessPublishStateDtoV3Old;
+import org.camunda.optimize.upgrade.migrate33To34.dto.EsEventProcessPublishStateDtoV3Old;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -43,9 +43,9 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
     final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
 
     // then
-    final List<IndexableEventProcessPublishStateDtoV3Old> publishStatesBeforeUpgrade = getAllDocumentsOfIndexAs(
+    final List<EsEventProcessPublishStateDtoV3Old> publishStatesBeforeUpgrade = getAllDocumentsOfIndexAs(
       EVENT_PUBLISH_STATE_INDEX.getIndexName(),
-      IndexableEventProcessPublishStateDtoV3Old.class
+      EsEventProcessPublishStateDtoV3Old.class
     );
 
     // when
@@ -56,18 +56,18 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
       getAllDocumentsOfIndex(new EventProcessPublishStateIndex().getIndexName());
     assertThat(publishStateHitsAfterUpgrade).hasSize(3)
       .allSatisfy(publishState -> {
-        final IndexableEventProcessPublishStateDtoV3Old beforeUpgrade = getPublishStateBeforeUpgrade(
+        final EsEventProcessPublishStateDtoV3Old beforeUpgrade = getPublishStateBeforeUpgrade(
           publishStatesBeforeUpgrade, publishState.getId());
         assertEventSourceHasBeenUpgraded(beforeUpgrade, publishState);
         assertOtherPublishStatePropertiesAreUnaffected(beforeUpgrade);
       });
   }
 
-  private void assertOtherPublishStatePropertiesAreUnaffected(final IndexableEventProcessPublishStateDtoV3Old beforeUpgrade) {
-    final IndexableEventProcessPublishStateDto afterUpgrade = getDocumentOfIndexByIdAs(
+  private void assertOtherPublishStatePropertiesAreUnaffected(final EsEventProcessPublishStateDtoV3Old beforeUpgrade) {
+    final EsEventProcessPublishStateDto afterUpgrade = getDocumentOfIndexByIdAs(
       new EventProcessPublishStateIndex().getIndexName(),
       beforeUpgrade.getId(),
-      IndexableEventProcessPublishStateDto.class
+      EsEventProcessPublishStateDto.class
     ).orElseThrow(() -> new OptimizeIntegrationTestException(
       "Cannot fetch event process publish state with ID: " + beforeUpgrade.getId()));
     assertThat(beforeUpgrade.getId()).isEqualTo(afterUpgrade.getId());
@@ -81,7 +81,7 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private void assertEventSourceHasBeenUpgraded(final IndexableEventProcessPublishStateDtoV3Old publishStateBeforeUpgrade,
+  private void assertEventSourceHasBeenUpgraded(final EsEventProcessPublishStateDtoV3Old publishStateBeforeUpgrade,
                                                 final SearchHit publishState) {
     final List<Map<String, Object>> importSources =
       (List<Map<String, Object>>) publishState.getSourceAsMap().get(EVENT_IMPORT_SOURCES);
@@ -124,17 +124,17 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
     });
   }
 
-  private IndexableEventProcessPublishStateDtoV3Old getPublishStateBeforeUpgrade(
-    final List<IndexableEventProcessPublishStateDtoV3Old> oldPublishStates,
+  private EsEventProcessPublishStateDtoV3Old getPublishStateBeforeUpgrade(
+    final List<EsEventProcessPublishStateDtoV3Old> oldPublishStates,
     final String publishStateId) {
-    final List<IndexableEventProcessPublishStateDtoV3Old> oldPublishStatesWithId = oldPublishStates.stream()
+    final List<EsEventProcessPublishStateDtoV3Old> oldPublishStatesWithId = oldPublishStates.stream()
       .filter(publishState -> publishState.getId().equals(publishStateId))
       .collect(Collectors.toList());
     assertThat(oldPublishStatesWithId).hasSize(1);
     return oldPublishStatesWithId.get(0);
   }
 
-  private EventSourceEntryDtoOld getEventSourceForPublishState(final IndexableEventProcessPublishStateDtoV3Old oldPublishState,
+  private EventSourceEntryDtoOld getEventSourceForPublishState(final EsEventProcessPublishStateDtoV3Old oldPublishState,
                                                                final String sourceId) {
     final List<EventSourceEntryDtoOld> oldSourceWithId = oldPublishState.getEventImportSources().stream()
       .map(EventImportSourceDtoOld::getEventSource)

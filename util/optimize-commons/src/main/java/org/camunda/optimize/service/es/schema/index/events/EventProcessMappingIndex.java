@@ -17,8 +17,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
@@ -43,7 +41,7 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
   public static final String EVENT_LABEL = EventTypeDto.Fields.eventLabel;
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
-  public static final String EVENT_SOURCE_TYPE = MAPPING_PROPERTY_TYPE;
+  public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.TYPE;
   public static final String EVENT_SOURCE_CONFIG = EventSourceEntryDto.Fields.configuration;
 
   public static final String ROLES = EsEventProcessMappingDto.Fields.roles;
@@ -151,13 +149,14 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(EVENT_SOURCE_ID)
-        .field(MAPPING_ENABLED_SETTING, false)
+        .field("type", "keyword")
       .endObject()
       .startObject(EVENT_SOURCE_TYPE)
-        .field(MAPPING_ENABLED_SETTING, false)
+        .field("type", "keyword")
       .endObject()
       .startObject(EVENT_SOURCE_CONFIG)
-        .field(MAPPING_ENABLED_SETTING, false)
+        .field("type", "object")
+        .field("dynamic", true)
       .endObject();
     // @formatter:on
   }

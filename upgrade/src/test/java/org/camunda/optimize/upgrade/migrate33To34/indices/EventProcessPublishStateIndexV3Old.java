@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade.migrate33To34.indices;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.migrate33To34.dto.EventSourceEntryDtoOld;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -22,20 +22,20 @@ public class EventProcessPublishStateIndexV3Old extends DefaultIndexMappingCreat
 
   public static final int VERSION = 3;
 
-  public static final String ID = IndexableEventProcessPublishStateDto.Fields.id;
-  public static final String PROCESS_MAPPING_ID = IndexableEventProcessPublishStateDto.Fields.processMappingId;
-  public static final String NAME = IndexableEventProcessPublishStateDto.Fields.name;
-  public static final String PUBLISH_DATE_TIME = IndexableEventProcessPublishStateDto.Fields.publishDateTime;
-  public static final String STATE = IndexableEventProcessPublishStateDto.Fields.state;
-  public static final String PUBLISH_PROGRESS = IndexableEventProcessPublishStateDto.Fields.publishProgress;
-  public static final String DELETED = IndexableEventProcessPublishStateDto.Fields.deleted;
-  public static final String XML = IndexableEventProcessPublishStateDto.Fields.xml;
-  public static final String MAPPINGS = IndexableEventProcessPublishStateDto.Fields.mappings;
-  public static final String EVENT_IMPORT_SOURCES = IndexableEventProcessPublishStateDto.Fields.eventImportSources;
+  public static final String ID = EsEventProcessPublishStateDto.Fields.id;
+  public static final String PROCESS_MAPPING_ID = EsEventProcessPublishStateDto.Fields.processMappingId;
+  public static final String NAME = EsEventProcessPublishStateDto.Fields.name;
+  public static final String PUBLISH_DATE_TIME = EsEventProcessPublishStateDto.Fields.publishDateTime;
+  public static final String STATE = EsEventProcessPublishStateDto.Fields.state;
+  public static final String PUBLISH_PROGRESS = EsEventProcessPublishStateDto.Fields.publishProgress;
+  public static final String DELETED = EsEventProcessPublishStateDto.Fields.deleted;
+  public static final String XML = EsEventProcessPublishStateDto.Fields.xml;
+  public static final String MAPPINGS = EsEventProcessPublishStateDto.Fields.mappings;
+  public static final String EVENT_IMPORT_SOURCES = EsEventProcessPublishStateDto.Fields.eventImportSources;
 
-  public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
-  public static final String START = IndexableEventMappingDto.Fields.start;
-  public static final String END = IndexableEventMappingDto.Fields.end;
+  public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
+  public static final String START = EsEventMappingDto.Fields.start;
+  public static final String END = EsEventMappingDto.Fields.end;
 
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;

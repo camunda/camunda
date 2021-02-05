@@ -55,7 +55,7 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
     if (eventSourceEntryDto instanceof ExternalEventSourceEntryDto) {
       return tracingId;
     }
-    throw new OptimizeRuntimeException("Cannot get correlation value from non-external sources");
+    throw new IllegalArgumentException("Cannot get correlation value from non-external sources");
   }
 
 }

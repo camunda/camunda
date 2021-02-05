@@ -31,6 +31,8 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
 
+  public static final String TYPE = "type";
+
   @EqualsAndHashCode.Include
   @NonNull
   @Builder.Default
