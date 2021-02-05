@@ -343,16 +343,15 @@ final class LeaderAppender extends AbstractAppender {
   }
 
   private void tryToReplicateSnapshot(final RaftMemberContext member) {
-    final var optSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+    final var persistedSnapshot = raft.getCurrentSnapshot();
 
-    if (optSnapshot.isPresent()
-        && member.getSnapshotIndex() < optSnapshot.get().getIndex()
-        && optSnapshot.get().getIndex() >= member.getLogReader().getCurrentIndex()) {
+    if (persistedSnapshot != null
+        && member.getSnapshotIndex() < persistedSnapshot.getIndex()
+        && persistedSnapshot.getIndex() >= member.getLogReader().getCurrentIndex()) {
       if (!member.canInstall()) {
         return;
       }
 
-      final var persistedSnapshot = optSnapshot.get();
       log.debug(
           "Replicating snapshot {} to {}",
           persistedSnapshot.getIndex(),

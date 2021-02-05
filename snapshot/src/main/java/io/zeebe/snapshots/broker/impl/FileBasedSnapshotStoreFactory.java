@@ -12,6 +12,7 @@ import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
+import io.zeebe.util.sched.ActorScheduler;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,11 @@ public final class FileBasedSnapshotStoreFactory
   public static final String PENDING_DIRECTORY = "pending";
 
   private final Map<String, FileBasedSnapshotStore> partitionSnapshotStores = new HashMap();
+  private final ActorScheduler actorScheduler;
+
+  public FileBasedSnapshotStoreFactory(final ActorScheduler actorScheduler) {
+    this.actorScheduler = actorScheduler;
+  }
 
   @Override
   public ReceivableSnapshotStore createReceivableSnapshotStore(
@@ -45,9 +51,16 @@ public final class FileBasedSnapshotStoreFactory
 
     return partitionSnapshotStores.computeIfAbsent(
         partitionName,
-        p ->
-            new FileBasedSnapshotStore(
-                new SnapshotMetrics(partitionName), snapshotDirectory, pendingDirectory));
+        p -> createAndOpenNewSnapshotStore(partitionName, snapshotDirectory, pendingDirectory));
+  }
+
+  private FileBasedSnapshotStore createAndOpenNewSnapshotStore(
+      final String partitionName, final Path snapshotDirectory, final Path pendingDirectory) {
+    final var snapshotStore =
+        new FileBasedSnapshotStore(
+            new SnapshotMetrics(partitionName), snapshotDirectory, pendingDirectory);
+    actorScheduler.submitActor(snapshotStore).join();
+    return snapshotStore;
   }
 
   @Override

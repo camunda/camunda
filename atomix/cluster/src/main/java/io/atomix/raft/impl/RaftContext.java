@@ -56,6 +56,7 @@ import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.time.Duration;
 import java.util.Objects;
@@ -111,6 +112,7 @@ public class RaftContext implements AutoCloseable {
   private final int maxAppendsPerFollower;
   // Used for randomizing election timeout
   private final Random random;
+  private PersistedSnapshot currentSnapshot;
 
   public RaftContext(
       final String name,
@@ -155,6 +157,12 @@ public class RaftContext implements AutoCloseable {
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
+    persistedSnapshotStore.addSnapshotListener(this::setSnapshot);
+    // Update the current snapshot because the listener only notifies when a new snapshot is
+    // created.
+    persistedSnapshotStore
+        .getLatestSnapshot()
+        .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
 
     logCompactor = new LogCompactor(this);
 
@@ -169,6 +177,10 @@ public class RaftContext implements AutoCloseable {
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
     started = true;
+  }
+
+  private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
+    threadContext.execute(() -> currentSnapshot = persistedSnapshot);
   }
 
   private void onUncaughtException(final Throwable error) {
@@ -934,6 +946,14 @@ public class RaftContext implements AutoCloseable {
 
       log.trace("Set leader {}", this.leader);
     }
+  }
+
+  public PersistedSnapshot getCurrentSnapshot() {
+    return currentSnapshot;
+  }
+
+  public long getCurrentSnapshotIndex() {
+    return currentSnapshot != null ? currentSnapshot.getIndex() : 0L;
   }
 
   public boolean isRunning() {

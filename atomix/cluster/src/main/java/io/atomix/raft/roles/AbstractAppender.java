@@ -120,9 +120,8 @@ abstract class AbstractAppender implements AutoCloseable {
       prevIndex = prevEntry.index();
       prevTerm = prevEntry.entry().term();
     } else {
-      final var optCurrentSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
-      if (optCurrentSnapshot.isPresent()) {
-        final var currentSnapshot = optCurrentSnapshot.get();
+      final var currentSnapshot = raft.getCurrentSnapshot();
+      if (currentSnapshot != null) {
         prevIndex = currentSnapshot.getIndex();
         prevTerm = currentSnapshot.getTerm();
       }

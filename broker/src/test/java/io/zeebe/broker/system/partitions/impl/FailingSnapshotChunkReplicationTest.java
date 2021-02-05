@@ -19,10 +19,13 @@ import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +35,7 @@ public final class FailingSnapshotChunkReplicationTest {
 
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   private StateControllerImpl replicatorSnapshotController;
   private StateControllerImpl receiverSnapshotController;
@@ -41,12 +45,12 @@ public final class FailingSnapshotChunkReplicationTest {
   public void setup(final SnapshotReplication replicator) throws IOException {
     final var senderRoot = tempFolderRule.newFolder("sender").toPath();
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory();
+    final var senderFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     senderFactory.createReceivableSnapshotStore(senderRoot, "1");
     senderStore = senderFactory.getConstructableSnapshotStore("1");
 
     final var receiverRoot = tempFolderRule.newFolder("receiver").toPath();
-    final var receiverFactory = new FileBasedSnapshotStoreFactory();
+    final var receiverFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     receiverStore = receiverFactory.createReceivableSnapshotStore(receiverRoot, "1");
 
     replicatorSnapshotController =
@@ -94,7 +98,7 @@ public final class FailingSnapshotChunkReplicationTest {
     final var transientSnapshot = takeSnapshot();
 
     // when
-    transientSnapshot.persist();
+    transientSnapshot.persist().join();
 
     // then
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
@@ -111,7 +115,7 @@ public final class FailingSnapshotChunkReplicationTest {
     final var transientSnapshot = takeSnapshot();
 
     // when
-    transientSnapshot.persist();
+    transientSnapshot.persist().join();
 
     // then
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
@@ -128,13 +132,15 @@ public final class FailingSnapshotChunkReplicationTest {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
     private Consumer<SnapshotChunk> chunkConsumer;
+    // Consumers are usually running on a separate thread
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
     public void replicate(final SnapshotChunk snapshot) {
       replicatedChunks.add(snapshot);
       if (chunkConsumer != null) {
         if (replicatedChunks.size() < 3) {
-          chunkConsumer.accept(snapshot);
+          executorService.execute(() -> chunkConsumer.accept(snapshot));
         }
       }
     }
@@ -152,13 +158,17 @@ public final class FailingSnapshotChunkReplicationTest {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
     private Consumer<SnapshotChunk> chunkConsumer;
+    // Consumers are usually running on a separate thread
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
     public void replicate(final SnapshotChunk snapshot) {
       replicatedChunks.add(snapshot);
       if (chunkConsumer != null) {
-        chunkConsumer.accept(
-            replicatedChunks.size() > 1 ? new DisruptedSnapshotChunk(snapshot) : snapshot);
+        executorService.execute(
+            () ->
+                chunkConsumer.accept(
+                    replicatedChunks.size() > 1 ? new DisruptedSnapshotChunk(snapshot) : snapshot));
       }
     }
 
