@@ -14,7 +14,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -39,7 +39,7 @@ public final class JobTimeoutTriggerTest {
   public void setUp() {
     initMocks(this);
 
-    final JobState jobState = stateRule.getZeebeState().getJobState();
+    final MutableJobState jobState = stateRule.getZeebeState().getJobState();
     jobTimeoutTrigger = new JobTimeoutTrigger(jobState);
 
     final ProcessingContext processingContext =

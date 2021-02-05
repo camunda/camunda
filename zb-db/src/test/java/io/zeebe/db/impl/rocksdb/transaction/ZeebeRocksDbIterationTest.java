@@ -7,8 +7,7 @@
  */
 package io.zeebe.db.impl.rocksdb.transaction;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -29,9 +28,10 @@ public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
+      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
-  private ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> columnFamily;
+  private TransactionalColumnFamily<DefaultColumnFamily, DbCompositeKey<DbLong, DbLong>, DbNil>
+      columnFamily;
   private DbLong firstKey;
   private DbLong secondKey;
   private DbCompositeKey<DbLong, DbLong> compositeKey;
@@ -45,8 +45,13 @@ public final class ZeebeRocksDbIterationTest {
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
     columnFamily =
-        zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, DbNil.INSTANCE);
+        Mockito.spy(
+            (TransactionalColumnFamily)
+                zeebeDb.createColumnFamily(
+                    DefaultColumnFamily.DEFAULT,
+                    zeebeDb.createContext(),
+                    compositeKey,
+                    DbNil.INSTANCE));
   }
 
   @Test
@@ -59,8 +64,8 @@ public final class ZeebeRocksDbIterationTest {
               spyIterator.set((RocksIterator) spy);
               return spy;
             })
-        .when(zeebeDb)
-        .newIterator(Mockito.any(DbContext.class), Mockito.any(ReadOptions.class));
+        .when(columnFamily)
+        .newIterator(Mockito.any(TransactionContext.class), Mockito.any(ReadOptions.class));
 
     final long prefixes = 3;
     final long suffixes = 5;

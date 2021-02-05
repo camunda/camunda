@@ -11,8 +11,8 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import java.util.Collections;
@@ -20,14 +20,14 @@ import java.util.Collections;
 public final class OpenMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
-  private final MessageStartEventSubscriptionState subscriptionState;
-  private final WorkflowState workflowState;
+  private final MutableMessageStartEventSubscriptionState subscriptionState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public OpenMessageStartEventSubscriptionProcessor(
-      final MessageStartEventSubscriptionState subscriptionState,
-      final WorkflowState workflowState) {
+      final MutableMessageStartEventSubscriptionState subscriptionState,
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.subscriptionState = subscriptionState;
-    this.workflowState = workflowState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
@@ -39,9 +39,8 @@ public final class OpenMessageStartEventSubscriptionProcessor
     final MessageStartEventSubscriptionRecord subscription = record.getValue();
     subscriptionState.put(subscription);
 
-    workflowState
-        .getEventScopeInstanceState()
-        .createIfNotExists(subscription.getWorkflowKey(), Collections.emptyList());
+    eventScopeInstanceState.createIfNotExists(
+        subscription.getWorkflowKey(), Collections.emptyList());
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageStartEventSubscriptionIntent.OPENED, subscription);

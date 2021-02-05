@@ -29,13 +29,13 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -55,8 +55,8 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-  private final EventScopeInstanceState eventScopeInstanceState;
-  private final ElementInstanceState elementInstanceState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableElementInstanceState elementInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
   private final TypedStreamWriter streamWriter;
@@ -64,7 +64,7 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final KeyGenerator keyGenerator;
   private final WorkflowState workflowState;
-  private final VariablesState variablesState;
+  private final MutableVariableState variablesState;
 
   public BpmnEventSubscriptionBehavior(
       final BpmnStateBehavior stateBehavior,
@@ -80,10 +80,10 @@ public final class BpmnEventSubscriptionBehavior {
     this.sideEffects = sideEffects;
 
     workflowState = zeebeState.getWorkflowState();
-    eventScopeInstanceState = workflowState.getEventScopeInstanceState();
-    elementInstanceState = workflowState.getElementInstanceState();
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    elementInstanceState = zeebeState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
-    variablesState = elementInstanceState.getVariablesState();
+    variablesState = zeebeState.getVariableState();
   }
 
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(

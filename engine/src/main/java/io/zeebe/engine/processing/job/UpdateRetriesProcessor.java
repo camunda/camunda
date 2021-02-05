@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -22,9 +22,9 @@ public final class UpdateRetriesProcessor implements CommandProcessor<JobRecord>
       "Expected to update retries for job with key '%d' with a positive amount of retries, "
           + "but the amount given was '%d'";
 
-  private final JobState state;
+  private final MutableJobState state;
 
-  public UpdateRetriesProcessor(final JobState state) {
+  public UpdateRetriesProcessor(final MutableJobState state) {
     this.state = state;
   }
 

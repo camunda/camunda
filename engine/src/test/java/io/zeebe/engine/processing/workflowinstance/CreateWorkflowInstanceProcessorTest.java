@@ -22,10 +22,10 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -60,9 +60,9 @@ public final class CreateWorkflowInstanceProcessorTest
 
   private ZeebeState state;
   private KeyGenerator keyGenerator;
-  private WorkflowState workflowState;
-  private ElementInstanceState elementInstanceState;
-  private VariablesState variablesState;
+  private MutableWorkflowState workflowState;
+  private MutableElementInstanceState elementInstanceState;
+  private MutableVariableState variablesState;
   private CreateWorkflowInstanceProcessor processor;
 
   @BeforeClass
@@ -80,8 +80,8 @@ public final class CreateWorkflowInstanceProcessorTest
     state = CommandProcessorTestCase.ZEEBE_STATE_RULE.getZeebeState();
     keyGenerator = state.getKeyGenerator();
     workflowState = state.getWorkflowState();
-    elementInstanceState = workflowState.getElementInstanceState();
-    variablesState = elementInstanceState.getVariablesState();
+    elementInstanceState = state.getElementInstanceState();
+    variablesState = state.getVariableState();
 
     processor =
         new CreateWorkflowInstanceProcessor(

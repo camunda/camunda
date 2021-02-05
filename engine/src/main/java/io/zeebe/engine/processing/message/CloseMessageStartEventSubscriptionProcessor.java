@@ -11,20 +11,20 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
-import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 
 public final class CloseMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
-  private final MessageStartEventSubscriptionState subscriptionState;
-  private final EventScopeInstanceState eventScopeInstanceState;
+  private final MutableMessageStartEventSubscriptionState subscriptionState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public CloseMessageStartEventSubscriptionProcessor(
-      final MessageStartEventSubscriptionState subscriptionState,
-      final EventScopeInstanceState eventScopeInstanceState) {
+      final MutableMessageStartEventSubscriptionState subscriptionState,
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.subscriptionState = subscriptionState;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }

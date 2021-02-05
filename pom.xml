@@ -47,6 +47,7 @@
     <module>expression-language</module>
     <module>snapshot</module>
     <module>benchmarks/project</module>
+    <module>journal</module>
   </modules>
 
   <scm>

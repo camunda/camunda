@@ -13,7 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.DeploymentsState;
+import io.zeebe.engine.state.immutable.DeploymentState;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.RecordType;
@@ -28,15 +28,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final DeploymentsState deploymentsState;
+  private final DeploymentState deploymentState;
   private final DeploymentDistributor deploymentDistributor;
   private final ActorControl actor;
 
   public DeploymentDistributeProcessor(
       final ActorControl actor,
-      final DeploymentsState deploymentsState,
+      final DeploymentState deploymentState,
       final DeploymentDistributor deploymentDistributor) {
-    this.deploymentsState = deploymentsState;
+    this.deploymentState = deploymentState;
     this.deploymentDistributor = deploymentDistributor;
     this.actor = actor;
   }
@@ -47,7 +47,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   }
 
   private void reprocessPendingDeployments(final TypedStreamWriter logStreamWriter) {
-    deploymentsState.foreachPending(
+    deploymentState.foreachPending(
         ((pendingDeploymentDistribution, key) -> {
           final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
           final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();

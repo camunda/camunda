@@ -22,7 +22,6 @@ import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
@@ -76,7 +75,7 @@ public final class AsyncSnapshotingTest {
     snapshotController =
         new StateControllerImpl(
             1,
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            ZeebeRocksDbFactory.newFactory(),
             persistedSnapshotStore,
             factory.getReceivableSnapshotStore(partitionName),
             rootDirectory.resolve("runtime"),

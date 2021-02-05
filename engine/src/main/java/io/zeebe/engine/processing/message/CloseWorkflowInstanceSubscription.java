@@ -11,7 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
@@ -23,10 +23,10 @@ public final class CloseWorkflowInstanceSubscription
       "Expected to close workflow instance subscription for element with key '%d' and message name '%s', "
           + "but no such subscription was found";
 
-  private final WorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
 
   public CloseWorkflowInstanceSubscription(
-      final WorkflowInstanceSubscriptionState subscriptionState) {
+      final MutableWorkflowInstanceSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 

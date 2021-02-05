@@ -17,11 +17,11 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
+import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.Message;
-import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
-import io.zeebe.engine.state.message.MessageState;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -33,8 +33,8 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
 
-  private final MessageState messageState;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageState messageState;
+  private final MutableMessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
@@ -47,10 +47,10 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
 
   public PublishMessageProcessor(
-      final MessageState messageState,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageState messageState,
+      final MutableMessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
-      final EventScopeInstanceState scopeEventInstanceState,
+      final MutableEventScopeInstanceState scopeEventInstanceState,
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator) {
     this.messageState = messageState;

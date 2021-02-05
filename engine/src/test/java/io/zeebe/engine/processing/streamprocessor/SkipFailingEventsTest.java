@@ -236,7 +236,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
-    Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isTrue();
+    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
     verify(dumpProcessor, times(1)).processRecord(any(), any(), any(), any());
     assertThat(dumpProcessor.processedInstances).containsExactly(2L);
@@ -289,7 +289,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
-    waitUntil(() -> zeebeState.isOnBlacklist(mockTypedRecord));
+    waitUntil(() -> zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord));
   }
 
   @Test
@@ -368,7 +368,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
-    Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isFalse();
+    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
     verify(dumpProcessor, timeout(1000).times(2)).processRecord(any(), any(), any(), any());
     assertThat(processedInstances).containsExactly(1L, 2L);
@@ -429,7 +429,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.TIMER);
     final MockTypedRecord<TimerRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-    Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isFalse();
+    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
     assertThat(processedInstances).containsExactly((long) TimerInstance.NO_ELEMENT_INSTANCE);
   }
 

@@ -14,10 +14,9 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -28,15 +27,19 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
-  private final ElementInstanceState elementInstanceState;
-  private final JobState jobState;
+  private final MutableElementInstanceState elementInstanceState;
+  private final MutableJobState jobState;
   private final ErrorEventHandler errorEventHandler;
 
-  public JobErrorThrownProcessor(
-      final WorkflowState workflowState, final KeyGenerator keyGenerator, final JobState jobState) {
-    elementInstanceState = workflowState.getElementInstanceState();
-    this.jobState = jobState;
-    errorEventHandler = new ErrorEventHandler(workflowState, keyGenerator);
+  public JobErrorThrownProcessor(final ZeebeState zeebeState) {
+    elementInstanceState = zeebeState.getElementInstanceState();
+    jobState = zeebeState.getJobState();
+    errorEventHandler =
+        new ErrorEventHandler(
+            zeebeState.getWorkflowState(),
+            zeebeState.getElementInstanceState(),
+            zeebeState.getEventScopeInstanceState(),
+            zeebeState.getKeyGenerator());
   }
 
   @Override

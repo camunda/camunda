@@ -9,18 +9,18 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageSubscriptionState subscriptionState;
 
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageSubscriptionState subscriptionState,
       final long subscriptionTimeout) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;

@@ -8,6 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.DbValue;
+import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 

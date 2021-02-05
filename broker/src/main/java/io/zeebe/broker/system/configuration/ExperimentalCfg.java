@@ -15,7 +15,7 @@ import org.springframework.util.unit.DataSize;
  * are subject to change and to drop. It might be that also some of them are actually dangerous so
  * be aware when you change one of these!
  */
-public class ExperimentalCfg {
+public class ExperimentalCfg implements ConfigurationEntry {
 
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
@@ -26,6 +26,12 @@ public class ExperimentalCfg {
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
   private boolean detectReprocessingInconsistency = DEFAULT_DETECT_REPROCESSING_INCONSISTENCY;
+  private RocksdbCfg rocksdb = new RocksdbCfg();
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    rocksdb.init(globalConfig, brokerBase);
+  }
 
   public int getMaxAppendsPerFollower() {
     return maxAppendsPerFollower;
@@ -63,6 +69,14 @@ public class ExperimentalCfg {
     this.detectReprocessingInconsistency = detectReprocessingInconsistency;
   }
 
+  public RocksdbCfg getRocksdb() {
+    return rocksdb;
+  }
+
+  public void setRocksdb(final RocksdbCfg rocksdb) {
+    this.rocksdb = rocksdb;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -74,6 +88,8 @@ public class ExperimentalCfg {
         + disableExplicitRaftFlush
         + ", detectReprocessingInconsistency="
         + detectReprocessingInconsistency
+        + ", rocksdb="
+        + rocksdb
         + '}';
   }
 }

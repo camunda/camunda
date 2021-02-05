@@ -8,29 +8,24 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
-public interface TypedStreamWriter extends TypedCommandWriter {
-  void appendRejection(
-      TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
+public interface TypedStreamWriter extends TypedCommandWriter, TypedEventWriter {
 
   void appendRejection(
-      TypedRecord<? extends UnpackedObject> command,
+      TypedRecord<? extends RecordValue> command, RejectionType type, String reason);
+
+  /** @deprecated The modifier parameter is not used at the time of writing */
+  @Deprecated
+  void appendRejection(
+      TypedRecord<? extends RecordValue> command,
       RejectionType type,
       String reason,
-      Consumer<RecordMetadata> metadata);
-
-  void appendNewEvent(long key, Intent intent, UnpackedObject value);
-
-  void appendFollowUpEvent(long key, Intent intent, UnpackedObject value);
-
-  void appendFollowUpEvent(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
+      UnaryOperator<RecordMetadata> modifier);
 
   void configureSourceContext(long sourceRecordPosition);
 }

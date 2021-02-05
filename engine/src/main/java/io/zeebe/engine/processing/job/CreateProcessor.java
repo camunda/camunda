@@ -9,15 +9,15 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 public final class CreateProcessor implements CommandProcessor<JobRecord> {
 
-  private final JobState state;
+  private final MutableJobState state;
 
-  public CreateProcessor(final JobState state) {
+  public CreateProcessor(final MutableJobState state) {
     this.state = state;
   }
 

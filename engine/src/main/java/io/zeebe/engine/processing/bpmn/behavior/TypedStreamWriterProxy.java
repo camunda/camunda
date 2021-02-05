@@ -9,11 +9,11 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
@@ -25,7 +25,7 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
   @Override
   public void appendRejection(
-      final TypedRecord<? extends UnpackedObject> command,
+      final TypedRecord<? extends RecordValue> command,
       final RejectionType type,
       final String reason) {
     writer.appendRejection(command, type, reason);
@@ -33,30 +33,11 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
   @Override
   public void appendRejection(
-      final TypedRecord<? extends UnpackedObject> command,
+      final TypedRecord<? extends RecordValue> command,
       final RejectionType type,
       final String reason,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendRejection(command, type, reason, metadata);
-  }
-
-  @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
-    writer.appendNewEvent(key, intent, value);
-  }
-
-  @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
-    writer.appendFollowUpEvent(key, intent, value);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendFollowUpEvent(key, intent, value, metadata);
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendRejection(command, type, reason, modifier);
   }
 
   @Override
@@ -65,13 +46,31 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
+    writer.appendNewEvent(key, intent, value);
+  }
+
+  @Override
+  public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+    writer.appendFollowUpEvent(key, intent, value);
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendFollowUpEvent(key, intent, value, modifier);
+  }
+
+  @Override
+  public void appendNewCommand(final Intent intent, final RecordValue value) {
     writer.appendNewCommand(intent, value);
   }
 
   @Override
-  public void appendFollowUpCommand(
-      final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
     writer.appendFollowUpCommand(key, intent, value);
   }
 
@@ -79,9 +78,9 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   public void appendFollowUpCommand(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    writer.appendFollowUpCommand(key, intent, value, metadata);
+      final RecordValue value,
+      final UnaryOperator<RecordMetadata> modifier) {
+    writer.appendFollowUpCommand(key, intent, value, modifier);
   }
 
   @Override

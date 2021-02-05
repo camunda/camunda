@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.util.buffer.BufferUtil;
@@ -25,7 +26,7 @@ public final class MessageStartEventSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MessageStartEventSubscriptionState state;
+  private MutableMessageStartEventSubscriptionState state;
 
   @Before
   public void setUp() {

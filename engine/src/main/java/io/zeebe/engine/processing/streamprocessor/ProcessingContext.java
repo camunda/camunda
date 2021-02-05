@@ -7,10 +7,11 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.DbContext;
+import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -21,7 +22,6 @@ import java.util.function.Consumer;
 public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private ActorControl actor;
-  private EventFilter eventFilter;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private TypedStreamWriter logStreamWriter = new NoopTypedStreamWriter();
@@ -30,7 +30,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private RecordValues recordValues;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeState zeebeState;
-  private DbContext dbContext;
+  private TransactionContext transactionContext;
+  private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
@@ -39,11 +40,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
-    return this;
-  }
-
-  public ProcessingContext eventFilter(final EventFilter eventFilter) {
-    this.eventFilter = eventFilter;
     return this;
   }
 
@@ -72,8 +68,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext dbContext(final DbContext dbContext) {
-    this.dbContext = dbContext;
+  public ProcessingContext transactionContext(final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
     return this;
   }
 
@@ -109,14 +105,14 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  @Override
-  public ActorControl getActor() {
-    return actor;
+  public ProcessingContext eventApplier(final EventApplier eventApplier) {
+    this.eventApplier = eventApplier;
+    return this;
   }
 
   @Override
-  public EventFilter getEventFilter() {
-    return eventFilter;
+  public ActorControl getActor() {
+    return actor;
   }
 
   @Override
@@ -155,8 +151,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public DbContext getDbContext() {
-    return dbContext;
+  public TransactionContext getTransactionContext() {
+    return transactionContext;
   }
 
   @Override
@@ -175,5 +171,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public boolean isDetectReprocessingInconsistency() {
     return detectReprocessingInconsistency;
+  }
+
+  @Override
+  public EventApplier getEventApplier() {
+    return eventApplier;
   }
 }

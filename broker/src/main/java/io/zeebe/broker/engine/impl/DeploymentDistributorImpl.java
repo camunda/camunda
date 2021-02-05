@@ -16,7 +16,7 @@ import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
-import io.zeebe.engine.state.deployment.DeploymentsState;
+import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorCode;
@@ -51,7 +51,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
 
   private final transient Long2ObjectHashMap<ActorFuture<Void>> pendingDeploymentFutures =
       new Long2ObjectHashMap<>();
-  private final DeploymentsState deploymentsState;
+  private final MutableDeploymentState deploymentsState;
 
   private final IntArrayList partitionsToDistributeTo;
   private final Atomix atomix;
@@ -61,7 +61,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
       final ClusterCfg clusterCfg,
       final Atomix atomix,
       final TopologyPartitionListenerImpl partitionListener,
-      final DeploymentsState deploymentsState,
+      final MutableDeploymentState deploymentsState,
       final ActorControl actor) {
     this.atomix = atomix;
     this.partitionListener = partitionListener;

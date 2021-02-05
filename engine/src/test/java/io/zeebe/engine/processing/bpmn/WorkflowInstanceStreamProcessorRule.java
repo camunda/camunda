@@ -25,7 +25,7 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;
@@ -71,7 +71,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
   private final StreamProcessorRule environmentRule;
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
-  private WorkflowState workflowState;
+  private MutableWorkflowState workflowState;
   private ActorControl actor;
 
   public WorkflowInstanceStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
@@ -105,8 +105,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
           actor = processingContext.getActor();
           workflowState = zeebeState.getWorkflowState();
 
-          final var variablesState =
-              zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
+          final var variablesState = zeebeState.getVariableState();
           final ExpressionProcessor expressionProcessor =
               new ExpressionProcessor(
                   ExpressionLanguageFactory.createExpressionLanguage(),
@@ -119,7 +118,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
               mockSubscriptionCommandSender,
               new CatchEventBehavior(
                   zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
-              new DueDateTimerChecker(workflowState));
+              new DueDateTimerChecker(zeebeState.getTimerState()));
 
           JobEventProcessors.addJobProcessors(
               typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);

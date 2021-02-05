@@ -13,7 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -26,13 +26,13 @@ public final class CloseMessageSubscriptionProcessor
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to close message subscription for element with key '%d' and message name '%s', "
           + "but no such message subscription exists";
-  private final MessageSubscriptionState subscriptionState;
+  private final MutableMessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
   public CloseMessageSubscriptionProcessor(
-      final MessageSubscriptionState subscriptionState,
+      final MutableMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;

@@ -12,7 +12,7 @@ import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;

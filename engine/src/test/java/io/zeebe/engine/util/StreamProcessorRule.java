@@ -15,11 +15,14 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
+import io.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -30,7 +33,9 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -109,6 +114,12 @@ public final class StreamProcessorRule implements TestRule {
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
+  }
+
+  public StreamProcessorRule withEventApplierFactory(
+      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+    streams.withEventApplierFactory(eventApplierFactory);
+    return this;
   }
 
   public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
@@ -235,6 +246,38 @@ public final class StreamProcessorRule implements TestRule {
       final Intent intent,
       final UnpackedObject value) {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
+  }
+
+  public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
+    return streamProcessingComposite.writeCommandRejection(intent, value);
+  }
+
+  public long writeEvent(
+      final Intent intent,
+      final UnpackedObject value,
+      final UnaryOperator<FluentLogWriter> writer) {
+    return writeRecord(intent, value, w -> writer.apply(w.recordType(RecordType.EVENT)));
+  }
+
+  public long writeCommandRejection(
+      final Intent intent,
+      final UnpackedObject value,
+      final UnaryOperator<FluentLogWriter> writer) {
+    return writeRecord(
+        intent, value, w -> writer.apply(w.recordType(RecordType.COMMAND_REJECTION)));
+  }
+
+  private long writeRecord(
+      final Intent intent,
+      final UnpackedObject value,
+      final UnaryOperator<FluentLogWriter> writer) {
+    final var recordWriter =
+        streams
+            .newRecord(getLogName(startPartitionId))
+            .recordType(RecordType.EVENT)
+            .intent(intent)
+            .event(value);
+    return writer.apply(recordWriter).write();
   }
 
   public void snapshot() {

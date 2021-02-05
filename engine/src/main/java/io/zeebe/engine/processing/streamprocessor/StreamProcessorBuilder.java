@@ -9,15 +9,15 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class StreamProcessorBuilder {
 
@@ -26,6 +26,7 @@ public final class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
+  private Function<ZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
 
   public StreamProcessorBuilder() {
@@ -71,7 +72,13 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder detectReprocessingInconsistency(
       final boolean detectReprocessingInconsistency) {
-    this.processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
+    processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
+    return this;
+  }
+
+  public StreamProcessorBuilder eventApplierFactory(
+      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+    this.eventApplierFactory = eventApplierFactory;
     return this;
   }
 
@@ -99,12 +106,12 @@ public final class StreamProcessorBuilder {
     return nodeId;
   }
 
+  public Function<ZeebeState, EventApplier> getEventApplierFactory() {
+    return eventApplierFactory;
+  }
+
   public StreamProcessor build() {
     validate();
-
-    final MetadataFilter metadataFilter = new VersionFilter();
-    final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
-    processingContext.eventFilter(eventFilter);
 
     return new StreamProcessor(this);
   }
@@ -116,36 +123,6 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-  }
-
-  private static class MetadataEventFilter implements EventFilter {
-
-    protected final RecordMetadata metadata = new RecordMetadata();
-    protected final MetadataFilter metadataFilter;
-
-    MetadataEventFilter(final MetadataFilter metadataFilter) {
-      this.metadataFilter = metadataFilter;
-    }
-
-    @Override
-    public boolean applies(final LoggedEvent event) {
-      event.readMetadata(metadata);
-      return metadataFilter.applies(metadata);
-    }
-  }
-
-  private final class VersionFilter implements MetadataFilter {
-    @Override
-    public boolean applies(final RecordMetadata m) {
-      if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
-        throw new RuntimeException(
-            String.format(
-                "Cannot handle event with version newer "
-                    + "than what is implemented by broker (%d > %d)",
-                m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
-      }
-
-      return true;
-    }
+    Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
 }

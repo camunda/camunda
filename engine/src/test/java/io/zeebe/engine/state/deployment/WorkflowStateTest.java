@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -31,7 +32,8 @@ public final class WorkflowStateTest {
   private static final Long FIRST_WORKFLOW_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
-  private WorkflowState workflowState;
+
+  private MutableWorkflowState workflowState;
   private ZeebeState zeebeState;
 
   @Before
@@ -45,7 +47,7 @@ public final class WorkflowStateTest {
     // given
 
     // when
-    final long nextWorkflowVersion = workflowState.getNextWorkflowVersion("foo");
+    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("foo");
 
     // then
     assertThat(nextWorkflowVersion).isEqualTo(1L);
@@ -54,10 +56,10 @@ public final class WorkflowStateTest {
   @Test
   public void shouldIncrementWorkflowVersion() {
     // given
-    workflowState.getNextWorkflowVersion("foo");
+    workflowState.incrementAndGetWorkflowVersion("foo");
 
     // when
-    final long nextWorkflowVersion = workflowState.getNextWorkflowVersion("foo");
+    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("foo");
 
     // then
     assertThat(nextWorkflowVersion).isEqualTo(2L);
@@ -66,10 +68,10 @@ public final class WorkflowStateTest {
   @Test
   public void shouldNotIncrementWorkflowVersionForDifferentProcessId() {
     // given
-    workflowState.getNextWorkflowVersion("foo");
+    workflowState.incrementAndGetWorkflowVersion("foo");
 
     // when
-    final long nextWorkflowVersion = workflowState.getNextWorkflowVersion("bar");
+    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("bar");
 
     // then
     assertThat(nextWorkflowVersion).isEqualTo(1L);
@@ -426,8 +428,8 @@ public final class WorkflowStateTest {
 
   public static DeploymentRecord creatingDeploymentRecord(
       final ZeebeState zeebeState, final String processId) {
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
-    final int version = workflowState.getNextWorkflowVersion(processId);
+    final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
+    final int version = workflowState.incrementAndGetWorkflowVersion(processId);
     return creatingDeploymentRecord(zeebeState, processId, version);
   }
 

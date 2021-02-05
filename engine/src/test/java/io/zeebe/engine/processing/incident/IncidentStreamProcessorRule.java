@@ -24,7 +24,7 @@ import io.zeebe.engine.processing.job.JobEventProcessors;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -51,7 +51,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private DueDateTimerChecker mockTimerEventScheduler;
 
-  private WorkflowState workflowState;
+  private MutableWorkflowState workflowState;
   private ZeebeState zeebeState;
 
   public IncidentStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
@@ -78,7 +78,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
           zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
 
-          final var variablesState = workflowState.getElementInstanceState().getVariablesState();
+          final var variablesState = zeebeState.getVariableState();
           final ExpressionProcessor expressionProcessor =
               new ExpressionProcessor(
                   ExpressionLanguageFactory.createExpressionLanguage(),

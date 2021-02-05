@@ -11,8 +11,9 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 
 public final class WorkflowInstanceCommandProcessor
@@ -22,7 +23,7 @@ public final class WorkflowInstanceCommandProcessor
   private final ElementInstanceState elementInstanceState;
   private final WorkflowInstanceCommandContext context;
 
-  public WorkflowInstanceCommandProcessor(final ElementInstanceState elementInstanceState) {
+  public WorkflowInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new WorkflowInstanceCommandHandlers();
     context = new WorkflowInstanceCommandContext(elementInstanceState);

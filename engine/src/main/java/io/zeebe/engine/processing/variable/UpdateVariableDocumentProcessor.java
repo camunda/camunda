@@ -10,9 +10,9 @@ package io.zeebe.engine.processing.variable;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.record.RejectionType;
@@ -23,10 +23,10 @@ import org.agrona.DirectBuffer;
 public final class UpdateVariableDocumentProcessor
     implements CommandProcessor<VariableDocumentRecord> {
   private final ElementInstanceState elementInstanceState;
-  private final VariablesState variablesState;
+  private final MutableVariableState variablesState;
 
   public UpdateVariableDocumentProcessor(
-      final ElementInstanceState elementInstanceState, final VariablesState variablesState) {
+      final ElementInstanceState elementInstanceState, final MutableVariableState variablesState) {
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
   }

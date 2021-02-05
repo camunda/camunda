@@ -30,8 +30,7 @@ public final class ZeebeRocksDbFactoryTest {
   @Test
   public void shouldCreateNewDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
 
     final File pathName = temporaryFolder.newFolder();
 
@@ -46,8 +45,7 @@ public final class ZeebeRocksDbFactoryTest {
   @Test
   public void shouldCreateTwoNewDbs() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
     final File firstPath = temporaryFolder.newFolder();
     final File secondPath = temporaryFolder.newFolder();
 
@@ -73,11 +71,10 @@ public final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+        (ZeebeRocksDbFactory<DefaultColumnFamily>) ZeebeRocksDbFactory.newFactory();
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class, customProperties);
+            ZeebeRocksDbFactory.newFactory(RocksDbConfiguration.of(customProperties));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -109,7 +106,7 @@ public final class ZeebeRocksDbFactoryTest {
 
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class, customProperties);
+            ZeebeRocksDbFactory.newFactory(RocksDbConfiguration.of(customProperties));
 
     // expect
     assertThatThrownBy(

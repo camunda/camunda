@@ -28,34 +28,12 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   void put(KeyType key, ValueType value);
 
   /**
-   * Stores the key-value pair into the column family. Uses the provided {@code dbContext} instead
-   * of the default instance, to be thread-safe.
-   *
-   * @param dbContext the database context
-   * @param key the key
-   * @param value the value
-   */
-  void put(DbContext dbContext, KeyType key, ValueType value);
-
-  /**
    * The corresponding stored value in the column family to the given key.
    *
    * @param key the key
    * @return if the key was found in the column family then the value, otherwise null
    */
   ValueType get(KeyType key);
-
-  /**
-   * Looks up the value that corresponds to the {@code key} parameter in the column family. Uses the
-   * provided {@code dbContext} and stores the result in the provided {@code value} instead of using
-   * the default instances, making this method thread-safe.
-   *
-   * @param dbContext the database context
-   * @param key the key
-   * @param value the value
-   * @return if the key was found in the column family then the value, otherwise null
-   */
-  ValueType get(DbContext dbContext, KeyType key, ValueType value);
 
   /**
    * Visits the values, which are stored in the column family. The ordering depends on the key.
@@ -90,26 +68,6 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   void whileTrue(KeyValuePairVisitor<KeyType, ValueType> visitor);
 
   /**
-   * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
-   * key. The visitor can indicate via the return value, whether the iteration should continue or
-   * not. This means if the visitor returns false the iteration will stop. Uses the provided {@code
-   * dbContext} as well as the {@code key} and {@code value} parameters to store the iterator's key
-   * and value, making this method thread-safe.
-   *
-   * <p>Similar to {@link #forEach(BiConsumer)}.
-   *
-   * @param dbContext the database context
-   * @param visitor the visitor which visits the key-value pairs
-   * @param key the key instance
-   * @param value the value instance
-   */
-  void whileTrue(
-      DbContext dbContext,
-      KeyValuePairVisitor<KeyType, ValueType> visitor,
-      KeyType key,
-      ValueType value);
-
-  /**
    * Visits the key-value pairs, which are stored in the column family and which have the same
    * common prefix. The ordering depends on the key.
    *
@@ -142,15 +100,6 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   void delete(KeyType key);
 
   /**
-   * Deletes the key-value pair with the given key from the column family. Uses the provided {@code
-   * dbContext} instead of the default instance, to be thread-safe.
-   *
-   * @param dbContext the database context
-   * @param key the key which identifies the pair
-   */
-  void delete(DbContext dbContext, KeyType key);
-
-  /**
    * Checks for key existence in the column family.
    *
    * @param key the key to look for
@@ -164,13 +113,4 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * @return <code>true</code> if the column family has no entry
    */
   boolean isEmpty();
-
-  /**
-   * Checks if the column family has any entry. Uses the provided {@code dbContext} instead of the
-   * default instance, to be thread-safe.
-   *
-   * @param dbContext the database context
-   * @return <code>true</code> if the column family has no entry
-   */
-  boolean isEmpty(DbContext dbContext);
 }

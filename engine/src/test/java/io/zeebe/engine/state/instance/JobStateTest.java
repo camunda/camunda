@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.JobState.State;
+import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.JobState.State;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -34,7 +36,7 @@ import org.junit.Test;
 public final class JobStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private JobState jobState;
+  private MutableJobState jobState;
   private ZeebeState zeebeState;
 
   @Before

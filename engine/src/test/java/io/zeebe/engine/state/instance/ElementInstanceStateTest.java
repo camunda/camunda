@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -35,13 +36,13 @@ public final class ElementInstanceStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private ElementInstanceState elementInstanceState;
+  private MutableElementInstanceState elementInstanceState;
   private ZeebeState zeebeState;
 
   @Before
   public void setUp() {
     zeebeState = stateRule.getZeebeState();
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    elementInstanceState = zeebeState.getElementInstanceState();
   }
 
   @Test
@@ -518,8 +519,8 @@ public final class ElementInstanceStateTest {
 
   public void setVariableLocal(
       final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
-    elementInstanceState
-        .getVariablesState()
+    zeebeState
+        .getVariableState()
         .setVariableLocal(
             scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }

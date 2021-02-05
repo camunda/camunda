@@ -40,28 +40,20 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     RocksDB.loadLibrary();
   }
 
-  private final Class<ColumnFamilyType> columnFamilyTypeClass;
-  private final Properties userProvidedColumnFamilyOptions;
+  private final RocksDbConfiguration rocksDbConfiguration;
 
-  private ZeebeRocksDbFactory(
-      final Class<ColumnFamilyType> columnFamilyTypeClass,
-      final Properties userProvidedColumnFamilyOptions) {
-    this.columnFamilyTypeClass = columnFamilyTypeClass;
-    this.userProvidedColumnFamilyOptions = Objects.requireNonNull(userProvidedColumnFamilyOptions);
+  private ZeebeRocksDbFactory(final RocksDbConfiguration rocksDbConfiguration) {
+    this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory(
-          final Class<ColumnFamilyType> columnFamilyTypeClass) {
-    final var columnFamilyOptions = new Properties();
-    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, columnFamilyOptions);
+      ZeebeDbFactory<ColumnFamilyType> newFactory() {
+    return new ZeebeRocksDbFactory<>(RocksDbConfiguration.empty());
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory(
-          final Class<ColumnFamilyType> columnFamilyTypeClass,
-          final Properties userProvidedColumnFamilyOptions) {
-    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, userProvidedColumnFamilyOptions);
+      ZeebeDbFactory<ColumnFamilyType> newFactory(final RocksDbConfiguration rocksDbConfiguration) {
+    return new ZeebeRocksDbFactory<>(rocksDbConfiguration);
   }
 
   @Override
@@ -88,40 +80,47 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
-    final var statistics = new Statistics();
-    closeables.add(statistics);
-    statistics.setStatsLevel(StatsLevel.ALL);
+    final var dbOptions =
+        new DBOptions()
+            .setErrorIfExists(false)
+            .setCreateIfMissing(true)
+            .setParanoidChecks(true)
+            .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
+            // 1 flush, 1 compaction
+            .setMaxBackgroundJobs(2)
+            // we only use the default CF
+            .setCreateMissingColumnFamilies(false)
+            // may not be necessary when WAL is disabled, but nevertheless recommended to avoid
+            // many small SST files
+            .setAvoidFlushDuringRecovery(true)
+            // fsync is called asynchronously once we have at least 4Mb
+            .setBytesPerSync(4 * 1024 * 1024L)
+            // limit the size of the manifest (logs all operations), otherwise it will grow
+            // unbounded
+            .setMaxManifestFileSize(256 * 1024 * 1024L)
+            // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
+            // a good balance between useful for performance and small for replication
+            .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
+            .setKeepLogFileNum(2);
 
-    return new DBOptions()
-        .setErrorIfExists(false)
-        .setCreateIfMissing(true)
-        .setParanoidChecks(true)
-        // 1 flush, 1 compaction
-        .setMaxBackgroundJobs(2)
-        // we only use the default CF
-        .setCreateMissingColumnFamilies(false)
-        // may not be necessary when WAL is disabled, but nevertheless recommended to avoid
-        // many small SST files
-        .setAvoidFlushDuringRecovery(true)
-        // fsync is called asynchronously once we have at least 4Mb
-        .setBytesPerSync(4 * 1024 * 1024L)
-        // limit the size of the manifest (logs all operations), otherwise it will grow
-        // unbounded
-        .setMaxManifestFileSize(256 * 1024 * 1024L)
-        // speeds up opening the DB
-        .setSkipStatsUpdateOnDbOpen(true)
-        // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
-        // a good balance between useful for performance and small for replication
-        .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
-        .setKeepLogFileNum(2)
-        // can be disabled when not profiling
-        .setStatsDumpPeriodSec(20)
-        .setStatistics(statistics);
+    if (rocksDbConfiguration.isStatisticsEnabled()) {
+      final var statistics = new Statistics();
+      closeables.add(statistics);
+      statistics.setStatsLevel(StatsLevel.ALL);
+      dbOptions
+          .setStatistics(statistics)
+          // speeds up opening the DB
+          .setSkipStatsUpdateOnDbOpen(true)
+          // can be disabled when not profiling
+          .setStatsDumpPeriodSec(20);
+    }
+
+    return dbOptions;
   }
 
   /** @return Options which are used on all column families */
   ColumnFamilyOptions createColumnFamilyOptions(final List<AutoCloseable> closeables) {
-
+    final var userProvidedColumnFamilyOptions = rocksDbConfiguration.getColumnFamilyOptions();
     final var hasUserOptions = !userProvidedColumnFamilyOptions.isEmpty();
 
     if (hasUserOptions) {
@@ -151,9 +150,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final List<AutoCloseable> closeables) {
     final var columnFamilyOptions = new ColumnFamilyOptions();
 
-    final var totalMemoryBudget =
-        512 * 1024
-            * 1024L; // TODO: make this configurable https://github.com/zeebe-io/zeebe/issues/6159
+    final var totalMemoryBudget = rocksDbConfiguration.getMemoryLimit();
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
     final var blockCacheMemory = totalMemoryBudget / 3;

@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
-import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
@@ -53,7 +52,7 @@ public final class FailingSnapshotChunkReplicationTest {
     replicatorSnapshotController =
         new StateControllerImpl(
             1,
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            ZeebeRocksDbFactory.newFactory(),
             senderStore,
             senderFactory.getReceivableSnapshotStore("1"),
             senderRoot.resolve("runtime"),
@@ -68,7 +67,7 @@ public final class FailingSnapshotChunkReplicationTest {
     receiverSnapshotController =
         new StateControllerImpl(
             1,
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            ZeebeRocksDbFactory.newFactory(),
             receiverFactory.getConstructableSnapshotStore("1"),
             receiverFactory.getReceivableSnapshotStore("1"),
             receiverRoot.resolve("runtime"),

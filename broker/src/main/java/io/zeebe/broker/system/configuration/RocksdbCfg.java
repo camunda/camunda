@@ -7,14 +7,19 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import org.springframework.util.unit.DataSize;
 
 public final class RocksdbCfg implements ConfigurationEntry {
 
   private Properties columnFamilyOptions;
+  private boolean statisticsEnabled;
+  private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
+  private int maxOpenFiles = RocksDbConfiguration.DEFAULT_UNLIMITED_MAX_OPEN_FILES;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -44,6 +49,49 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.columnFamilyOptions = columnFamilyOptions;
   }
 
+  public boolean isStatisticsEnabled() {
+    return statisticsEnabled;
+  }
+
+  public void setStatisticsEnabled(final boolean statisticsEnabled) {
+    this.statisticsEnabled = statisticsEnabled;
+  }
+
+  public DataSize getMemoryLimit() {
+    return memoryLimit;
+  }
+
+  public void setMemoryLimit(final DataSize memoryLimit) {
+    this.memoryLimit = memoryLimit;
+  }
+
+  public int getMaxOpenFiles() {
+    return maxOpenFiles;
+  }
+
+  public void setMaxOpenFiles(final int maxOpenFiles) {
+    this.maxOpenFiles = maxOpenFiles;
+  }
+
+  public RocksDbConfiguration createRocksDbConfiguration() {
+    return RocksDbConfiguration.of(
+        columnFamilyOptions, statisticsEnabled, memoryLimit.toBytes(), maxOpenFiles);
+  }
+
+  @Override
+  public String toString() {
+    return "RocksdbCfg{"
+        + "columnFamilyOptions="
+        + columnFamilyOptions
+        + ", statisticsEnabled="
+        + statisticsEnabled
+        + ", memoryLimit="
+        + memoryLimit
+        + ", maxOpenFiles="
+        + maxOpenFiles
+        + '}';
+  }
+
   private static final class RocksDBColumnFamilyOption {
 
     private static final Pattern DOT_CHAR_PATTERN = Pattern.compile("\\.");
@@ -55,7 +103,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
       Objects.requireNonNull(entry.getKey());
       // The key of the entry may contain dot chars when provided as an Environment Variable.
       // These should always be replaced with underscores to match the available property names.
-      // For example: `ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE=8388608`
+      // For example:
+      // `ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE=8388608`
       // would result in a key with name `write.buffer.size`, but should be `write_buffer_size`.
       key = replaceAllDotCharsWithUnderscore(entry.getKey().toString());
       value = entry.getValue(); // the value can stay the same

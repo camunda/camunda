@@ -9,19 +9,19 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public final class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final WorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
 
   private final long subscriptionTimeout;
 
   public PendingWorkflowInstanceSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final WorkflowInstanceSubscriptionState subscriptionState,
+      final MutableWorkflowInstanceSubscriptionState subscriptionState,
       final long subscriptionTimeout) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;

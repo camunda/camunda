@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public final class MessageStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MessageState messageState;
+  private MutableMessageState messageState;
   private ZeebeState zeebeState;
 
   @Before
