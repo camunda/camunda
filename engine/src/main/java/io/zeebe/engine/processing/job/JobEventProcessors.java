@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.job;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
@@ -22,7 +23,8 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final int maxRecordSize) {
+      final int maxRecordSize,
+      final StateWriter stateWriter) {
 
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
@@ -30,19 +32,9 @@ public final class JobEventProcessors {
     final var jobErrorThrownProcessor = new JobErrorThrownProcessor(zeebeState);
 
     typedRecordProcessors
-        .onEvent(
-            ValueType.JOB,
-            JobIntent.CREATED,
-            new JobCreatedProcessor(zeebeState.getElementInstanceState()))
-        .onEvent(
-            ValueType.JOB,
-            JobIntent.COMPLETED,
-            new JobCompletedEventProcessor(
-                zeebeState.getElementInstanceState(),
-                zeebeState.getEventScopeInstanceState(),
-                zeebeState.getVariableState()))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
-        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
+        .onCommand(
+            ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(zeebeState, stateWriter))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))

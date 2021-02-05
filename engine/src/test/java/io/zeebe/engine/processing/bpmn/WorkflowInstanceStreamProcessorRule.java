@@ -24,6 +24,7 @@ import io.zeebe.engine.processing.job.JobEventProcessors;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.util.Records;
@@ -122,7 +123,12 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
               processingContext.getWriters());
 
           JobEventProcessors.addJobProcessors(
-              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+              typedRecordProcessors,
+              zeebeState,
+              type -> {},
+              Integer.MAX_VALUE,
+              new StateWriter(
+                  processingContext.getLogStreamWriter(), processingContext.getEventApplier()));
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

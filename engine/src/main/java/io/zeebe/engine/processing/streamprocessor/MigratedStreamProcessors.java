@@ -30,7 +30,6 @@ public final class MigratedStreamProcessors {
       new EnumMap<>(ValueType.class);
 
   private static final Function<List<Intent>, Function<TypedRecord<?>, Boolean>>
-
       MIGRATED_INTENT_FILTER_FACTORY =
           (intents) -> (record) -> intents.contains(record.getIntent());
 
@@ -44,7 +43,8 @@ public final class MigratedStreamProcessors {
         });
     MIGRATED_VALUE_TYPES.put(
         ValueType.JOB,
-        MIGRATED_INTENT_FILTER_FACTORY.apply(List.of(JobIntent.CREATE, JobIntent.CREATED)));
+        MIGRATED_INTENT_FILTER_FACTORY.apply(
+            List.of(JobIntent.CREATE, JobIntent.CREATED, JobIntent.COMPLETE, JobIntent.COMPLETED)));
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);

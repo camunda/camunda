@@ -80,6 +80,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public void onCompleting(final ExecutableServiceTask element, final BpmnElementContext context) {
 
+    // TODO have a look at JobCompletedEventApplier. It contains some logic that probably needs to
+    // be moved to this methods event applier
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .ifRightOrLeft(

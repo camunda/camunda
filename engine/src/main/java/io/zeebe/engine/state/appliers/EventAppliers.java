@@ -36,7 +36,10 @@ public final class EventAppliers implements EventApplier {
   private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
       intent ->
           (key, value) ->
-              LOG.debug("No state changed: tried to use unimplemented event applier {}", intent);
+              LOG.debug(
+                  "No state changed: tried to use unimplemented event applier {}.{}",
+                  intent.getClass().getSimpleName(),
+                  intent);
 
   @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
@@ -45,11 +48,16 @@ public final class EventAppliers implements EventApplier {
     register(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         new WorkflowInstanceElementActivatedApplier(state));
-    register(JobIntent.CREATED, new JobCreatedApplier(state));
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
 
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+    registerJobIntentEventAppliers(state);
+  }
+
+  private void registerJobIntentEventAppliers(final ZeebeState state) {
+    register(JobIntent.CREATED, new JobCreatedApplier(state));
+    register(JobIntent.COMPLETED, new JobCompletedEventApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

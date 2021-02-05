@@ -431,7 +431,7 @@ public final class WorkflowInstanceStreamProcessorTest {
     final Record<JobRecord> jobRecord =
         streamProcessorRule.awaitJobInState("task1", JobIntent.CREATED);
 
-    envRule.writeEvent(jobRecord.getKey(), JobIntent.COMPLETED, jobRecord.getValue());
+    envRule.writeCommand(jobRecord.getKey(), JobIntent.COMPLETE, jobRecord.getValue());
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
     streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
