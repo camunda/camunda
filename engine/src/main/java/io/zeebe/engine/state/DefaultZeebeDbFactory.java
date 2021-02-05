@@ -39,7 +39,8 @@ public final class DefaultZeebeDbFactory {
    */
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
       final Properties userProvidedColumnFamilyOptions) {
-    return defaultFactory(RocksDbConfiguration.of(userProvidedColumnFamilyOptions));
+    return defaultFactory(
+        new RocksDbConfiguration().setColumnFamilyOptions(userProvidedColumnFamilyOptions));
   }
 
   /**

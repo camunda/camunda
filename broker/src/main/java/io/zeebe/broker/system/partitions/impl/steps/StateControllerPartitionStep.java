@@ -28,7 +28,7 @@ public class StateControllerPartitionStep implements PartitionStep {
     final var stateController =
         new StateControllerImpl(
             context.getPartitionId(),
-            DefaultZeebeDbFactory.defaultFactory(databaseCfg.getColumnFamilyOptions()),
+            DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
             context
                 .getSnapshotStoreSupplier()
                 .getConstructableSnapshotStore(context.getRaftPartition().name()),

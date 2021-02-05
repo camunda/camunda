@@ -5,6 +5,10 @@ zeebe:
         columnFamilyOptions:
           compaction_pri: "kOldestSmallestSeqFirst"
           write_buffer_size: 67108864
-        statisticsEnabled: true
+        enableStatistics: true
         memoryLimit: 32MB
         maxOpenFiles: 3
+        maxWriteBufferNumber: 3
+        minWriteBufferNumberToMerge: 3
+        ioRateBytesPerSecond: 4096
+        disableWal: true

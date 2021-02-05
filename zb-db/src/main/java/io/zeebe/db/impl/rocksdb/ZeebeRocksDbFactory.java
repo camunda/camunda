@@ -27,6 +27,7 @@ import org.rocksdb.DataBlockIndexType;
 import org.rocksdb.IndexType;
 import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
+import org.rocksdb.RateLimiter;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
@@ -48,7 +49,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> newFactory() {
-    return new ZeebeRocksDbFactory<>(RocksDbConfiguration.empty());
+    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration());
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
@@ -70,7 +71,9 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final var options = new Options(dbOptions, columnFamilyOptions);
       closeables.add(options);
 
-      db = ZeebeTransactionDb.openTransactionalDb(options, pathName.getAbsolutePath(), closeables);
+      db =
+          ZeebeTransactionDb.openTransactionalDb(
+              options, pathName.getAbsolutePath(), closeables, rocksDbConfiguration);
 
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
@@ -93,8 +96,6 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             // may not be necessary when WAL is disabled, but nevertheless recommended to avoid
             // many small SST files
             .setAvoidFlushDuringRecovery(true)
-            // fsync is called asynchronously once we have at least 4Mb
-            .setBytesPerSync(4 * 1024 * 1024L)
             // limit the size of the manifest (logs all operations), otherwise it will grow
             // unbounded
             .setMaxManifestFileSize(256 * 1024 * 1024L)
@@ -102,6 +103,13 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
             .setKeepLogFileNum(2);
+
+    // limit I/O writes
+    if (rocksDbConfiguration.getIoRateBytesPerSecond() > 0) {
+      final RateLimiter rateLimiter =
+          new RateLimiter(rocksDbConfiguration.getIoRateBytesPerSecond());
+      dbOptions.setRateLimiter(rateLimiter);
+    }
 
     if (rocksDbConfiguration.isStatisticsEnabled()) {
       final var statistics = new Statistics();
@@ -158,7 +166,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     // although only a single one is writable. once we have too many memtables, writes will stop.
     // since prefix iteration is our bread n butter, we will build an additional filter for each
     // memtable which takes a bit of memory which must be accounted for from the memtable's memory
-    final var maxConcurrentMemtableCount = 6;
+    final var maxConcurrentMemtableCount = rocksDbConfiguration.getMaxWriteBufferNumber();
     // this is a current guess and candidate for further tuning
     // values can be between 0 and 0.25 (anything higher gets clamped to 0.25), we randomly picked
     // 0.15
@@ -181,7 +189,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
         // merge at least 3 memtables per L0 file, otherwise all memtables are flushed as individual
         // files
         // this is also a candidate for tuning, it was a rough guess
-        .setMinWriteBufferNumberToMerge(Math.min(3, maxConcurrentMemtableCount))
+        .setMinWriteBufferNumberToMerge(rocksDbConfiguration.getMinWriteBufferNumberToMerge())
         .setMaxWriteBufferNumberToMaintain(maxConcurrentMemtableCount)
         .setMaxWriteBufferNumber(maxConcurrentMemtableCount)
         .setWriteBufferSize(memtableMemory)
