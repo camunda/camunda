@@ -39,6 +39,8 @@ import {
   mockCompleteTaskWithEditedVariable,
 } from 'modules/mutations/complete-task';
 import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
+import {mockClaimTask} from 'modules/mutations/claim-task';
+import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 
 type GetWrapperProps = {
   mocks: MockedResponse[];
@@ -119,7 +121,7 @@ describe('<Task />', () => {
         mocks: [
           mockGetTaskCreated,
           mockGetTaskDetailsClaimed,
-          mockTaskWithoutVariables,
+          mockTaskWithoutVariables('0'),
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks,
@@ -284,5 +286,56 @@ describe('<Task />', () => {
     expect(screen.getByTestId('details-overlay')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.getByTestId('details-overlay'));
+  });
+
+  it('should reset variables on unclaim/claim', async () => {
+    render(<Task />, {
+      wrapper: getWrapper({
+        history: createMemoryHistory({
+          initialEntries: ['/0'],
+        }),
+        mocks: [
+          mockGetCurrentUser,
+          mockGetTaskCreated,
+          mockGetTaskDetailsClaimed,
+          mockTaskWithoutVariables('0'),
+          mockUnclaimTask,
+          mockGetAllOpenTasks,
+          mockClaimTask,
+          mockGetAllOpenTasks,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      {target: {value: 'valid_name'}},
+    );
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      {target: {value: '"valid_value"'}},
+    );
+
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
+    expect(
+      await screen.findByRole('button', {name: 'Claim'}),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
+    expect(
+      await screen.findByRole('button', {name: 'Unclaim'}),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
   });
 });

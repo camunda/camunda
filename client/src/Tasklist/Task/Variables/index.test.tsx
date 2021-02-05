@@ -19,25 +19,23 @@ import {
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './';
+import {Link} from 'react-router-dom';
 
-const getWrapper = ({
-  id,
-  mocks,
-}: {
-  id: string;
-  mocks: Array<MockedResponse>;
-}) => {
+const getWrapper = ({mocks}: {mocks: Array<MockedResponse>}) => {
   const Wrapper: React.FC = ({children}) => (
-    <MemoryRouter initialEntries={[`/${id}`]}>
-      <Route path="/:id">
-        <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
-          <MockThemeProvider>
-            <Form mutators={{...arrayMutators}} onSubmit={() => {}}>
-              {() => children}
-            </Form>
-          </MockThemeProvider>
-        </MockedApolloProvider>
-      </Route>
+    <MemoryRouter initialEntries={['/0']}>
+      <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
+        <MockThemeProvider>
+          <Route
+            path="/:id"
+            component={() => (
+              <Form mutators={{...arrayMutators}} onSubmit={() => {}}>
+                {() => children}
+              </Form>
+            )}
+          ></Route>
+        </MockThemeProvider>
+      </MockedApolloProvider>
     </MemoryRouter>
   );
 
@@ -47,7 +45,7 @@ const getWrapper = ({
 describe('<Variables />', () => {
   it('should render with variables (readonly)', async () => {
     render(<Variables />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
     });
 
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
@@ -60,7 +58,7 @@ describe('<Variables />', () => {
 
   it('should render with empty message', async () => {
     render(<Variables />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     expect(
@@ -71,7 +69,7 @@ describe('<Variables />', () => {
 
   it('should edit variable', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
     });
     const newVariableValue = '"changedValue"';
 
@@ -88,7 +86,7 @@ describe('<Variables />', () => {
 
   it('should add two variables and remove one', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -141,7 +139,7 @@ describe('<Variables />', () => {
 
   it('should add variable on task without variables', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -157,7 +155,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on empty variable name', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -174,7 +172,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on empty variable value', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -191,7 +189,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on invalid variable name', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -210,7 +208,7 @@ describe('<Variables />', () => {
 
   it('should show no validation error on valid name/value', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -232,5 +230,55 @@ describe('<Variables />', () => {
       screen.queryByTitle('Variable has to be filled'),
     ).not.toBeInTheDocument();
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+  });
+
+  it('should reset variables on task id change', async () => {
+    render(
+      <>
+        <Link
+          to={(location: Location) => ({
+            ...location,
+            pathname: '/1',
+          })}
+        >
+          Change route
+        </Link>
+        <Variables canEdit />
+      </>,
+      {
+        wrapper: getWrapper({
+          mocks: [
+            mockTaskWithoutVariables('0'),
+            mockGetCurrentUser,
+            mockTaskWithoutVariables('1'),
+          ],
+        }),
+      },
+    );
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      {target: {value: 'valid_name'}},
+    );
+
+    fireEvent.change(
+      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      {target: {value: '"valid_value"'}},
+    );
+
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', {name: 'Change route'}));
+
+    expect(
+      await screen.findByText(/Task has no Variables/),
+    ).toBeInTheDocument();
   });
 });

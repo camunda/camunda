@@ -117,7 +117,7 @@ const Unclaimed: React.FC = () => {
         mockGetUnclaimed,
         mockGetTaskCreated,
         mockGetTaskDetailsUnclaimed,
-        mockTaskWithoutVariables,
+        mockTaskWithoutVariables('0'),
         mockGetUnclaimed,
         mockGetUnclaimed,
       ]}
@@ -136,7 +136,7 @@ const Claimed: React.FC = () => {
         mockGetAllOpenTasks,
         mockGetTaskCreated,
         mockGetTaskDetailsClaimed,
-        mockTaskWithoutVariables,
+        mockTaskWithoutVariables('0'),
         mockGetAllOpenTasks,
       ]}
       initialEntries={['/0']}
@@ -154,7 +154,7 @@ const Completed: React.FC = () => {
         mockGetCompleted,
         mockGetTaskCompleted,
         mockGetTaskDetailsCompleted,
-        mockTaskWithoutVariables,
+        mockTaskWithoutVariables('0'),
         mockGetCompleted,
       ]}
       initialEntries={['/0?filter=completed']}

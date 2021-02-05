@@ -46,17 +46,17 @@ const mockTaskWithVariables = {
   },
 };
 
-const mockTaskWithoutVariables = {
+const mockTaskWithoutVariables = (id: string) => ({
   request: {
     query: GET_TASK_VARIABLES,
-    variables: {id: '0'},
+    variables: {id: id},
   },
   result: {
     data: {
       task: taskWithoutVariables,
     },
   },
-};
+});
 
 export type {GetTaskVariables, TaskVariablesQueryVariables};
 export {GET_TASK_VARIABLES, mockTaskWithVariables, mockTaskWithoutVariables};

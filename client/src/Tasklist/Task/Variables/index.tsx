@@ -71,6 +71,12 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
     }
   }, [canEdit, form]);
 
+  useEffect(() => {
+    return () => {
+      form.reset();
+    };
+  }, [taskId, form]);
+
   if (loading || data === undefined) {
     return null;
   }
