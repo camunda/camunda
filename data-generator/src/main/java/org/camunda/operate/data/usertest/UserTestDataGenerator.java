@@ -52,7 +52,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   protected PayloadUtil payloadUtil;
 
   @Override
-  public boolean createZeebeData(boolean manuallyCalled) {   
+  public boolean createZeebeData(boolean manuallyCalled) {
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
@@ -63,9 +63,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     createWorkflowWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
 
     createAndStartWorkflowWithLargeVariableValue();
-    
+
     deployVersion1();
- 
+
     createSpecialDataV1();
 
     startWorkflowInstances(1);
@@ -93,7 +93,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployWorkflow(client, "usertest/single-task.bpmn");
     String jsonString = payloadUtil.readJSONStringFromClasspath("/usertest/large-payload.json");
     ZeebeTestUtil.startWorkflowInstance(client, "bigVarProcess", jsonString);
-  }  
+  }
 
   public void createSpecialDataV1() {
     doNotTouchWorkflowInstanceKeys.add(startLoanProcess());
@@ -562,13 +562,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private boolean canProgress(long key) {
     return !doNotTouchWorkflowInstanceKeys.contains(key);
   }
-  
+
   protected void createWorkflowWithoutInstances() {
     Long workflowKeyVersion1 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_1.bpmn");
     Long workflowKeyVersion2 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_2.bpmn");
     logger.info("Created workflow 'withoutInstancesProcess' version 1: {} and version 2: {}", workflowKeyVersion1, workflowKeyVersion2);
   }
-  
+
   protected void createWorkflowWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
     ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
@@ -583,7 +583,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     }
     logger.info("Created workflow 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
-  
+
   protected void createWorkflowWithInstancesWithoutIncidents(int forVersion1,int forVersion2) {
     ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {

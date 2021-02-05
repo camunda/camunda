@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.schema.migration;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,15 +12,7 @@ import java.util.Optional;
 import static org.camunda.operate.util.CollectionUtil.*;
 
 import org.camunda.operate.exceptions.MigrationException;
-import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.ingest.DeletePipelineRequest;
-import org.elasticsearch.action.ingest.PutPipelineRequest;
-import org.elasticsearch.action.support.master.AcknowledgedResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.bytes.ByteBufferReference;
-import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -69,12 +59,12 @@ public class ReindexPlan implements Plan {
   }
 
   @Override
-  public void executeOn(final RestHighLevelClient esClient) throws MigrationException, IOException {
+  public void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws MigrationException {
     final ReindexRequest reindexRequest = new ReindexRequest()
           .setSourceIndices(srcIndex + "_*")
           .setDestIndex(dstIndex + "_");
 
-    final Optional<String> pipelineName = createPipelineFromSteps(esClient);
+    final Optional<String> pipelineName = createPipelineFromSteps(retryElasticsearchClient);
 
     pipelineName.ifPresent(reindexRequest::setDestPipeline);
     if (script != null) {
@@ -82,37 +72,22 @@ public class ReindexPlan implements Plan {
     }
 
     try {
-      ElasticsearchUtil.reindex(reindexRequest, srcIndex, esClient);
+      retryElasticsearchClient.reindex(reindexRequest);
     } finally {
-      if (pipelineName.isPresent()) {
-        deletePipeline(esClient, pipelineName.get());
-      }
+      pipelineName.ifPresent(retryElasticsearchClient::removePipeline);
     }
-
   }
 
-  private boolean deletePipeline(final RestHighLevelClient esClient,final String pipelineName) throws IOException {
-      return esClient.ingest()
-          .deletePipeline(new DeletePipelineRequest(pipelineName), RequestOptions.DEFAULT)
-          .isAcknowledged();
-  }
-
-  private Optional<String> createPipelineFromSteps(final RestHighLevelClient esClient) throws IOException, MigrationException {
+  private Optional<String> createPipelineFromSteps(final RetryElasticsearchClient retryElasticsearchClient) throws MigrationException {
     if (steps.isEmpty()) {
       return Optional.empty();
     }
-    final String pipelineDefinition = getPipelineDefinition();
-    final BytesReference content = new ByteBufferReference(ByteBuffer.wrap(pipelineDefinition.getBytes()));
-
-    String pipelineName = srcIndex + "-to-" + dstIndex + "-pipeline";
-    AcknowledgedResponse response;
-    response = esClient.ingest()
-            .putPipeline(new PutPipelineRequest(pipelineName, content, XContentType.JSON),RequestOptions.DEFAULT);
-
-    if (response.isAcknowledged()) {
-      return Optional.of(pipelineName);
+    final String name = srcIndex + "-to-" + dstIndex + "-pipeline";
+    boolean added = retryElasticsearchClient.addPipeline(name, getPipelineDefinition());
+    if (added) {
+      return Optional.of(name);
     } else {
-      throw new MigrationException(String.format("Create pipeline '%s' wasn't acknowledged.", pipelineName));
+      throw new MigrationException(String.format("Couldn't create '%s' pipeline.", name));
     }
   }
 

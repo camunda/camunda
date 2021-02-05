@@ -29,10 +29,10 @@ public class StartupBean {
 
   @Autowired
   private RestHighLevelClient esClient;
-  
+
   @Autowired
-  private RestHighLevelClient zeebeEsClient; 
-  
+  private RestHighLevelClient zeebeEsClient;
+
   @Autowired(required = false)
   private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
 
@@ -41,10 +41,10 @@ public class StartupBean {
 
   @Autowired
   private OperationExecutor operationExecutor;
-  
+
   @Autowired
   private OperateProperties operateProperties;
-  
+
   @PostConstruct
   public void initApplication() {
     logger.info("Operate Version: " + operateProperties.getSchemaVersion());
@@ -63,12 +63,12 @@ public class StartupBean {
     operationExecutor.startExecuting();
     logger.info("INIT: DONE");
   }
-  
+
   @PreDestroy
   public void shutdown() {
     logger.info("Shutdown elasticsearch clients.");
     ElasticsearchConnector.closeEsClient(esClient);
     ElasticsearchConnector.closeEsClient(zeebeEsClient);
   }
-  
+
 }

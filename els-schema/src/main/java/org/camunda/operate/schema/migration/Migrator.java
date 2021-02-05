@@ -11,18 +11,9 @@ import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
+import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +60,7 @@ public class Migrator{
   private OperateProperties operateProperties;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired
   private StepsRepository stepsRepository;
@@ -123,8 +114,8 @@ public class Migrator{
    * Detects already existing operate schemas, but returns only one.
    * @return an optional String containing the detected schema version.
    */
-  public Optional<String> detectPreviousSchemaVersion() throws MigrationException, IOException {
-    final List<String> indexNames = getAllIndexNames(getIndexPrefix() + "*");
+  public Optional<String> detectPreviousSchemaVersion() throws MigrationException {
+    final List<String> indexNames = retryElasticsearchClient.getIndexNamesFor(getIndexPrefix() + "*");
     final List<String> indexNamesWithoutCurrentVersion = filter(indexNames,
         indexName -> !indexName.contains(operateProperties.getSchemaVersion()) && !indexName.contains(stepsRepository.getName())
     );
@@ -153,14 +144,9 @@ public class Migrator{
     }
   }
 
-  private List<String> getAllIndexNames(final String namePattern) throws IOException {
-    final GetIndexResponse response = esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
-    return List.of(response.getIndices());
-  }
-
   private void migrateFromTo(final String srcVersion,final String dstVersion) throws IOException, MigrationException {
     // Retrieve index settings for old schema
-    Map<String,String> srcSettings = getIndexSettings(
+    Map<String,String> srcSettings = retryElasticsearchClient.getIndexSettingsFor(
         getIndexNameFor(indexDescriptors.get(0).getMainIndexName(), srcVersion),
         NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     // Set settings for Reindex
@@ -168,7 +154,8 @@ public class Migrator{
 
     List<String> indexNames = map(indexDescriptors, IndexDescriptor::getMainIndexName);
     indexNames.addAll(map(templateDescriptors, TemplateDescriptor::getIndexNameFormat));
-    for (final String indexName : indexNames) {
+    List<String> indexNamesWithoutRepository = filter(indexNames, indexName -> !indexName.contains(MigrationRepositoryIndex.INDEX_NAME));
+    for (final String indexName : indexNamesWithoutRepository) {
       final List<Step> stepsForIndex = stepsRepository.findNotAppliedFor(indexName);
       final Plan plan = createPlanFor(indexName, srcVersion, dstVersion, stepsForIndex);
       migrateIndex(plan);
@@ -181,7 +168,7 @@ public class Migrator{
   protected void migrateIndex(final Plan plan) throws IOException, MigrationException {
     logger.info("Execute plan: {} ", plan);
 
-    plan.executeOn(esClient);
+    plan.executeOn(retryElasticsearchClient);
 
     for (final Step step : plan.getSteps()) {
         step.setApplied(true)
@@ -192,30 +179,23 @@ public class Migrator{
 
   protected void deleteSrcSchema(final String srcVersion) throws IOException {
     if (migrationProperties.isDeleteSrcSchema()) {
-      deleteSchema(srcVersion);
+        deleteSchema(srcVersion);
     }
   }
 
-  private void resetSettingsFromReindex(String version, Map<String, String> previousSettings) throws IOException {
+  private void resetSettingsFromReindex(String version, Map<String, String> previousSettings) {
     OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     String indexPattern = getIndexPatternFor(version);
     String numberOfReplicas = previousSettings.getOrDefault(NUMBERS_OF_REPLICA, "" + elsConfig.getNumberOfReplicas());
     String refreshInterval = previousSettings.getOrDefault(REFRESH_INTERVAL, elsConfig.getRefreshInterval());
-    updateSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, numberOfReplicas).put(REFRESH_INTERVAL, refreshInterval).build(), indexPattern);
-    forceIndexRefresh(indexPattern);
+    retryElasticsearchClient
+        .setIndexSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, numberOfReplicas).put(REFRESH_INTERVAL, refreshInterval).build(), indexPattern);
+    retryElasticsearchClient.refresh(indexPattern);
   }
 
-  private void forceIndexRefresh(String indexPattern) throws IOException {
-    esClient.indices().refresh(new RefreshRequest(indexPattern), RequestOptions.DEFAULT);
-  }
-
-  private void setSettingsForReindex(String version) throws IOException {
+  private void setSettingsForReindex(String version) {
     String indexPattern = getIndexPatternFor(version);
-    updateSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, "0").put(REFRESH_INTERVAL, "-1").build(), indexPattern);
-  }
-
-  private void updateSettingsFor(Settings settings, String indexPattern) throws IOException {
-    esClient.indices().putSettings(new UpdateSettingsRequest(indexPattern).settings(settings), RequestOptions.DEFAULT);
+    retryElasticsearchClient.setIndexSettingsFor(Settings.builder().put(NUMBERS_OF_REPLICA, "0").put(REFRESH_INTERVAL, "-1").build(), indexPattern);
   }
 
   private String getIndexNameFor(String indexMainName, String version) {
@@ -229,30 +209,15 @@ public class Migrator{
     return String.format("%s-*-%s_*", getIndexPrefix(), version);
   }
 
-  private Map<String, String> getIndexSettings(String indexName, String... fields) throws IOException {
-    Map<String, String> settings = new HashMap<>();
-    GetSettingsResponse response = esClient.indices().getSettings(new GetSettingsRequest().indices(indexName), RequestOptions.DEFAULT);
-    for (String field : fields) {
-      settings.put(field, response.getSetting(indexName, field));
-    }
-    return settings;
-  }
-
   private void deleteSchema(final String version) throws IOException {
     deleteTemplates(version);
     deleteIndices(version);
   }
 
-  protected void deleteTemplates(final String version) throws IOException {
+  protected void deleteTemplates(final String version) {
     final String templatesPattern = getIndexPrefix() + "-*-" + version + "_template";
 
-    if (!templatesExist(templatesPattern)) {
-      return;
-    }
-
-    boolean templatesDeleted = esClient.indices()
-        .deleteTemplate(new DeleteIndexTemplateRequest(templatesPattern), RequestOptions.DEFAULT)
-        .isAcknowledged();
+    boolean templatesDeleted = retryElasticsearchClient.deleteTemplatesFor(templatesPattern);
     if (templatesDeleted) {
       logger.info("Templates with pattern {} deleted", templatesPattern);
     } else {
@@ -260,16 +225,10 @@ public class Migrator{
     }
   }
 
-  protected void deleteIndices(final String version) throws IOException {
+  protected void deleteIndices(final String version) {
     final String indexPattern = getIndexPatternFor(version);
 
-    if (!indicesExist(indexPattern)) {
-      return;
-    }
-
-    boolean indicesDeleted = esClient.indices()
-        .delete(new DeleteIndexRequest(indexPattern), RequestOptions.DEFAULT)
-        .isAcknowledged();
+    boolean indicesDeleted = retryElasticsearchClient.deleteIndicesFor(indexPattern);
     if (indicesDeleted) {
       logger.info("Indices with pattern {} deleted ", indexPattern);
     } else {
@@ -300,23 +259,4 @@ public class Migrator{
   protected String getIndexPrefix() {
     return operateProperties.getElasticsearch().getIndexPrefix();
   }
-
-  protected boolean templatesExist(final String templatePattern) {
-    try {
-      return esClient.indices().existsTemplate(new IndexTemplatesExistRequest(templatePattern), RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Failed to check existence of templates with pattern {}, continue assuming they don't exist", templatePattern, e);
-      return false;
-    }
-  }
-
-  protected boolean indicesExist(final String indexPattern) {
-    try {
-      return esClient.indices().exists(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Failed to check existence of indices with pattern {}, continue assuming they don't exist",indexPattern, e);
-      return false;
-    }
-  }
-
 }

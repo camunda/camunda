@@ -18,16 +18,10 @@ import javax.annotation.PostConstruct;
 import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
-import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.DocWriteResponse.Result;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -54,7 +48,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/change";
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private RetryElasticsearchClient retryElasticsearchClient;
 
   @Qualifier("operateObjectMapper")
   @Autowired
@@ -111,32 +105,32 @@ public class ElasticsearchStepsRepository implements StepsRepository {
 
   @Override
   public void save(final Step step) throws MigrationException,IOException {
-    final IndexResponse response = esClient
-          .index(new IndexRequest(getName(), ElasticsearchUtil.ES_INDEX_TYPE, idFromStep(step))
-              .source(objectMapper.writeValueAsString(step), XContentType.JSON), RequestOptions.DEFAULT);
-    Result result = response.getResult();
-    if (result.equals(Result.CREATED) || result.equals(Result.UPDATED)) {
+    final boolean createdOrUpdated = retryElasticsearchClient.createOrUpdateDocument(
+        getName(),
+        idFromStep(step),
+        objectMapper.writeValueAsString(step));
+    if (createdOrUpdated) {
       logger.info("Step {}  saved.", step);
     } else {
       throw new MigrationException(String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
   }
 
-  protected List<Step> findBy(final Optional<QueryBuilder> query) throws IOException {
+  protected List<Step> findBy(final Optional<QueryBuilder> query) {
     final SearchSourceBuilder searchSpec = new SearchSourceBuilder()
         .sort(Step.VERSION+ ".keyword", SortOrder.ASC);
     query.ifPresent(searchSpec::query);
     SearchRequest request = new SearchRequest(getName())
         .source(searchSpec)
         .indicesOptions(IndicesOptions.lenientExpandOpen());
-    return ElasticsearchUtil.scroll(request, Step.class, objectMapper, esClient);
+    return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
   }
 
   /**
    * Returns all stored steps in repository index
    */
   @Override
-  public List<Step> findAll() throws IOException {
+  public List<Step> findAll() {
     logger.debug("Find all steps from Elasticsearch at {}:{} ", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
 
     return findBy(Optional.empty());
@@ -145,7 +139,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    * Returns all steps for an index that are not applied yet.
    */
   @Override
-  public List<Step> findNotAppliedFor(final String indexName) throws IOException {
+  public List<Step> findNotAppliedFor(final String indexName) {
     logger.debug("Find 'not applied steps' for index {} from Elasticsearch at {}:{} ", indexName,
         operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
 

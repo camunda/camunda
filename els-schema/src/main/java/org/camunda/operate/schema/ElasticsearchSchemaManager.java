@@ -21,8 +21,7 @@ import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import org.camunda.operate.schema.migration.Migrator;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
@@ -56,7 +55,7 @@ public class ElasticsearchSchemaManager {
   private ElsIndicesCheck elsIndicesCheck;
 
   @Autowired
-  protected RestHighLevelClient esClient;
+  protected RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -98,7 +97,6 @@ public class ElasticsearchSchemaManager {
     final List<String> patterns = List.of(
         String.format("%s-*-%s_*", elsConfig.getIndexPrefix(), schemaVersion),
         String.format("%s-%s", elsConfig.getIndexPrefix(), MigrationRepositoryIndex.INDEX_NAME));
-    if (templateNotExists(settingsTemplate)) {
       logger.info(
           "Create default settings from '{}' with {} shards and {} replicas per index.",
           settingsTemplate,
@@ -114,9 +112,6 @@ public class ElasticsearchSchemaManager {
                       .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
                       .build());
       putIndexTemplate(putIndexTemplateRequest, settingsTemplate);
-    } else {
-      logger.warn("Default settings in '{}' already exists.", settingsTemplate);
-    }
   }
 
   public void createIndices() {
@@ -129,27 +124,20 @@ public class ElasticsearchSchemaManager {
 
   protected void createIndex(final IndexDescriptor indexDescriptor) {
     String indexName = indexDescriptor.getIndexName();
-    if (indexNotExists(indexName)) {
-      final Map<String, Object> indexDescription = prepareCreateIndex(indexName,indexDescriptor.getFileName(),indexDescriptor.getAlias());
-      createIndex(new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription), indexDescriptor.getIndexName());
-    }
+    final Map<String, Object> indexDescription = prepareCreateIndex(indexName,indexDescriptor.getFileName(),indexDescriptor.getAlias());
+    createIndex(new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription), indexDescriptor.getIndexName());
   }
 
   protected void createTemplate(final TemplateDescriptor templateDescriptor) {
-    if (templateNotExists(templateDescriptor.getTemplateName())) {
-      final Map<String, Object> template = readJSONFileToMap(templateDescriptor.getFileName());
-      // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
-      template.put(INDEX_PATTERNS, Collections.singletonList(templateDescriptor.getIndexPattern()));
-      template.put(ALIASES, Collections.singletonMap(templateDescriptor.getAlias(), Collections.emptyMap()));
-
-      putIndexTemplate(new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template),templateDescriptor.getTemplateName());
-    }
+    final Map<String, Object> template = readJSONFileToMap(templateDescriptor.getFileName());
+    // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
+    template.put(INDEX_PATTERNS, Collections.singletonList(templateDescriptor.getIndexPattern()));
+    template.put(ALIASES, Collections.singletonMap(templateDescriptor.getAlias(), Collections.emptyMap()));
+    putIndexTemplate(new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template),templateDescriptor.getTemplateName());
     // This is necessary, otherwise operate won't find indexes at startup
     String indexName = templateDescriptor.getMainIndexName();
-    if (indexNotExists(indexName)) {
-      final Map<String, Object> indexDescription = prepareCreateIndex(indexName,templateDescriptor.getFileName(),templateDescriptor.getAlias());
-      createIndex(new CreateIndexRequest(indexName).source(indexDescription),indexName);
-    }
+    final Map<String, Object> indexDescription = prepareCreateIndex(indexName,templateDescriptor.getFileName(),templateDescriptor.getAlias());
+    createIndex(new CreateIndexRequest(indexName).source(indexDescription),indexName);
   }
 
   protected Map<String, Object> prepareCreateIndex(String indexName,String fileName,String alias){
@@ -174,40 +162,20 @@ public class ElasticsearchSchemaManager {
   }
 
   protected void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
-    try {
-        boolean acknowledged = esClient.indices().create(createIndexRequest, RequestOptions.DEFAULT).isAcknowledged();
-        if (acknowledged) {
-          logger.debug("Index [{}] was successfully created", indexName);
-        }
-    } catch (IOException e) {
-      throw new OperateRuntimeException("Failed to create index " + indexName, e);
+    boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
+    if (created) {
+      logger.debug("Index [{}] was successfully created", indexName);
+    } else {
+      logger.debug("Index [{}] was NOT created", indexName);
     }
   }
 
   protected void putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest, String templateName) {
-    try {
-      boolean acknowledged = esClient.indices().putTemplate(putIndexTemplateRequest, RequestOptions.DEFAULT).isAcknowledged();
-      if (acknowledged) {
-        logger.debug("Template [{}] was successfully created", templateName);
-      }
-    } catch (IOException e) {
-      throw new OperateRuntimeException("Failed to put index template " + templateName , e);
-    }
-  }
-
-  protected boolean templateNotExists(final String templateName) {
-    try {
-      return !esClient.indices().existsTemplate(new IndexTemplatesExistRequest(templateName), RequestOptions.DEFAULT);
-    }catch (IOException e) {
-      throw new OperateRuntimeException("Failed to check existence of template " + templateName, e);
-    }
-  }
-
-  protected boolean indexNotExists(final String indexName) {
-    try {
-      return !esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
-    }catch (IOException e) {
-      throw new OperateRuntimeException("Failed to check existence of index " + indexName, e);
+    boolean created = retryElasticsearchClient.createTemplate(putIndexTemplateRequest);
+    if (created) {
+      logger.debug("Template [{}] was successfully created", templateName);
+    } else {
+      logger.debug("Template [{}] was NOT created", templateName);
     }
   }
 

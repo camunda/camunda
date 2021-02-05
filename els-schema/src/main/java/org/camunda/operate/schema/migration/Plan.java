@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.camunda.operate.exceptions.MigrationException;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.camunda.operate.es.RetryElasticsearchClient;
 /**
  * A plan consists of executable Steps.
  * The plan can be execute on an elasticsearch client.
@@ -18,6 +18,6 @@ public interface Plan {
 
   List<Step> getSteps();
 
-  void executeOn(final RestHighLevelClient esClient) throws IOException, MigrationException;
+  void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws IOException, MigrationException;
 
 }

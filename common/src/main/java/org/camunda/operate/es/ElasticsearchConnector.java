@@ -13,6 +13,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -20,9 +22,12 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 
+import org.camunda.operate.util.RetryOperation;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -42,8 +47,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import org.springframework.util.StringUtils;
-
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 @Configuration
@@ -67,7 +70,7 @@ public class ElasticsearchConnector {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(operateProperties.getZeebeElasticsearch());
   }
-  
+
   public static void closeEsClient(RestHighLevelClient esClient) {
     if (esClient != null) {
       try {
@@ -88,7 +91,7 @@ public class ElasticsearchConnector {
           .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, elsConfig));
     }
     RestHighLevelClient esClient = new RestHighLevelClient(restClientBuilder);
-    if (!checkHealth(esClient, true)) {
+    if (!checkHealth(esClient)) {
       logger.warn("Elasticsearch cluster is not accessible");
     } else {
       logger.debug("Elasticsearch connection was successfully created.");
@@ -132,33 +135,26 @@ public class ElasticsearchConnector {
     return builder;
   }
 
-  public boolean checkHealth(RestHighLevelClient esClient, boolean reconnect) {
-    //TODO temporary solution
+  public boolean checkHealth(RestHighLevelClient esClient) {
     ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    int attempts = 0, maxAttempts = 50;
-    boolean successfullyConnected = false;
-    while (attempts == 0 || (reconnect && attempts < maxAttempts && !successfullyConnected)) {
-      try {
-        final ClusterHealthResponse clusterHealthResponse = esClient.cluster()
-            .health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-        //!clusterHealthResponse.getStatus().equals(ClusterHealthStatus.RED)
-        //TODO do we need this?
-        successfullyConnected = clusterHealthResponse.getClusterName()
-            .equals(elsConfig.getClusterName());
-      } catch (IOException ex) {
-        logger.error(
-            "Error occurred while connecting to Elasticsearch: clustername [{}], {}:{}. Will be retried ({}/{}) ...",
-            elsConfig.getClusterName(),
-            elsConfig.getHost(), elsConfig.getPort(), attempts, maxAttempts, ex);
-        sleepFor(3000);
-      }
-      attempts++;
+    try {
+      return RetryOperation.<Boolean>newBuilder()
+          .noOfRetry(50)
+          .retryOn(IOException.class, ElasticsearchException.class)
+          .delayInterval(3, TimeUnit.SECONDS)
+          .message(String.format("Connect to Elasticsearch cluster [%s] %s:%d (URL: %s)",
+              elsConfig.getClusterName(),
+              elsConfig.getHost(), elsConfig.getPort(),
+              elsConfig.getURI()))
+          .retryConsumer(() -> {
+            final ClusterHealthResponse clusterHealthResponse = esClient.cluster()
+                .health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+            return clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
+          })
+          .build().retry();
+    } catch (Exception e) {
+      throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
-    return successfullyConnected;
-  }
-
-  public boolean checkHealth(boolean reconnect) {
-    return checkHealth(esClient(), reconnect);
   }
 
   public static class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {

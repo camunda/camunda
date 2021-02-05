@@ -5,19 +5,13 @@
  */
 package org.camunda.operate.qa.util;
 
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
-import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.schema.ElasticsearchSchemaManager;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
 
 @Component("schemaManager")
 @Profile("test")
@@ -33,14 +27,10 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
   }
 
   public void deleteSchema() {
-    try {
-      String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
-      logger.info("Removing indices " + prefix + "*");
-      this.esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      this.esClient.indices().deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
-    } catch (ElasticsearchStatusException | IOException e) {
-      throw new OperateRuntimeException("Failed to delete indices ", e);
-    }
+    String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
+    logger.info("Removing indices {}*", prefix);
+    retryElasticsearchClient.deleteIndicesFor(prefix + "*");
+    retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
 
   public void deleteSchemaQuietly() {
