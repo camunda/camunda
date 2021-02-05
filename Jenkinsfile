@@ -499,7 +499,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
+              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -533,19 +533,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage ('Deploy to K8s') {
-      when {
-        expression {
-          getBranchName() ==~ /(.*-deploy)/
-        }
-      }
-      steps {
-        build job: '/deploy-optimize-branch-to-k8s',
-                parameters: [
-                        string(name: 'BRANCH', value: getBranchName()),
-                ]
       }
     }
   }

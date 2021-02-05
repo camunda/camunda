@@ -1,3 +1,6 @@
+# Deployment files are for stage.optimize.camunda.cloud deployment (master branch)
+# only due to decisions in https://jira.camunda.com/browse/INFRA-1235 and problems
+# with https://jira.camunda.com/browse/INFRA-1617
 ---
 apiVersion: apps/v1
 kind: Deployment
