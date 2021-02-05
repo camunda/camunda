@@ -41,7 +41,7 @@ public final class JobEventProcessors {
                 zeebeState.getElementInstanceState(),
                 zeebeState.getEventScopeInstanceState(),
                 zeebeState.getVariableState()))
-        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())

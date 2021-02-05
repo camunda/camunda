@@ -15,6 +15,12 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 
+/**
+ * @deprecated Kept for testing. Should be removed as soon as there is a way to call the event
+ *     applier, at which time this class will become obsolete because we can use just a generic
+ *     forwarder to the event applier
+ */
+@Deprecated
 public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
 
   private final MutableElementInstanceState elementInstanceState;

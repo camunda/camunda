@@ -9,7 +9,9 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -27,6 +29,11 @@ public final class MigratedStreamProcessors {
   private static final Map<ValueType, Function<TypedRecord<?>, Boolean>> MIGRATED_VALUE_TYPES =
       new EnumMap<>(ValueType.class);
 
+  private static final Function<List<Intent>, Function<TypedRecord<?>, Boolean>>
+
+      MIGRATED_INTENT_FILTER_FACTORY =
+          (intents) -> (record) -> intents.contains(record.getIntent());
+
   static {
     MIGRATED_VALUE_TYPES.put(
         ValueType.WORKFLOW_INSTANCE,
@@ -35,6 +42,9 @@ public final class MigratedStreamProcessors {
           final var bpmnElementType = recordValue.getBpmnElementType();
           return MIGRATED_BPMN_PROCESSORS.contains(bpmnElementType);
         });
+    MIGRATED_VALUE_TYPES.put(
+        ValueType.JOB,
+        MIGRATED_INTENT_FILTER_FACTORY.apply(List.of(JobIntent.CREATE, JobIntent.CREATED)));
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
