@@ -11,6 +11,7 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
+import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -28,6 +29,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 public class StreamProcessor extends Actor implements HealthMonitorable {
@@ -41,6 +43,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private final ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
+  private final Function<ZeebeState, EventApplier> eventApplierFactory;
 
   // log stream
   private final LogStream logStream;
@@ -72,6 +75,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
     typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
     zeebeDb = processorBuilder.getZeebeDb();
+    eventApplierFactory = processorBuilder.getEventApplierFactory();
 
     processingContext =
         processorBuilder
@@ -267,6 +271,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
     processingContext.transactionContext(transactionContext);
     processingContext.zeebeState(zeebeState);
+    processingContext.eventApplier(eventApplierFactory.apply(zeebeState));
 
     return zeebeState;
   }

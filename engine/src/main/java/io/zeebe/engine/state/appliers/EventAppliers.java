@@ -9,8 +9,9 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
@@ -21,20 +22,19 @@ import org.slf4j.Logger;
 /**
  * Applies state changes from events to the {@link io.zeebe.engine.state.ZeebeState}.
  *
- * <p>Finds the correct {@link EventApplier} and delegates.
+ * <p>Finds the correct {@link TypedEventApplier} and delegates.
  */
-public final class EventAppliers {
+public final class EventAppliers implements EventApplier {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   // todo (#6202): after migration this should log at WARN level
-  private static final Function<Intent, EventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
+  private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
       intent ->
           (key, value) ->
               LOG.debug("No state changed: tried to use unimplemented event applier {}", intent);
 
-  @SuppressWarnings("rawtypes")
-  private final Map<Intent, EventApplier> mapping = new HashMap<>();
+  private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final ZeebeState state) {
     register(
@@ -42,13 +42,12 @@ public final class EventAppliers {
         new WorkflowInstanceElementActivatedApplier(state));
   }
 
-  @SuppressWarnings("java:S2326")
-  private <I extends Intent> void register(final I intent, final EventApplier<I, ?> applier) {
+  private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
     mapping.put(intent, applier);
   }
 
-  @SuppressWarnings("unchecked")
-  public void applyState(final long key, final Intent intent, final UnpackedObject value) {
+  @Override
+  public void applyState(final long key, final Intent intent, final RecordValue value) {
     final var eventApplier =
         mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
     eventApplier.applyState(key, value);

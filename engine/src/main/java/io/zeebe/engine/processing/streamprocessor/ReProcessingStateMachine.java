@@ -13,6 +13,7 @@ import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -20,6 +21,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
@@ -87,6 +89,12 @@ public final class ReProcessingStateMachine {
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
 
   private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
+
+  private static final MetadataFilter REPLAY_FILTER =
+      recordMetadata ->
+          recordMetadata.getRecordType() == RecordType.EVENT
+              || !MigratedStreamProcessors.isMigrated(recordMetadata.getValueType());
+
   protected final RecordMetadata metadata = new RecordMetadata();
   private final ZeebeState zeebeState;
   private final ActorControl actor;
@@ -97,11 +105,12 @@ public final class ReProcessingStateMachine {
   private final RecordProcessorMap recordProcessorMap;
 
   private final EventFilter eventFilter =
-      new MetadataEventFilter(new RecordProtocolVersionFilter());
+      new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
 
   private final LogStreamReader logStreamReader;
   private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
+  private final EventApplier eventApplier;
 
   private final TransactionContext transactionContext;
   private final RetryStrategy updateStateRetryStrategy;
@@ -128,6 +137,7 @@ public final class ReProcessingStateMachine {
     transactionContext = context.getTransactionContext();
     zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
+    eventApplier = context.getEventApplier();
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
 
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
@@ -272,14 +282,7 @@ public final class ReProcessingStateMachine {
       verifyRecordMatchesToReprocessing(typedEvent);
     }
 
-    if (currentEvent.getPosition() <= lastSourceEventPosition) {
-      // don't reprocess records after the last source event
-      reprocessingStreamWriter.configureSourceContext(currentEvent.getPosition());
-      processUntilDone(currentEvent.getPosition(), typedEvent);
-
-    } else {
-      onRecordReprocessed(currentEvent);
-    }
+    processUntilDone(currentEvent.getPosition(), typedEvent);
   }
 
   private void processUntilDone(final long position, final TypedRecord<?> currentEvent) {
@@ -311,6 +314,7 @@ public final class ReProcessingStateMachine {
   private TransactionOperation chooseOperationForEvent(
       final long position, final TypedRecord<?> currentEvent) {
     final TransactionOperation operationOnProcessing;
+
     if (failedEventPositions.contains(position)) {
       LOG.info(LOG_STMT_FAILED_ON_PROCESSING, currentEvent);
       operationOnProcessing =
@@ -321,17 +325,38 @@ public final class ReProcessingStateMachine {
             final boolean isNotOnBlacklist =
                 !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
             if (isNotOnBlacklist) {
-              eventProcessor.processRecord(
-                  position,
-                  typedEvent,
-                  noopResponseWriter,
-                  reprocessingStreamWriter,
-                  NOOP_SIDE_EFFECT_CONSUMER);
+              reprocessRecord(currentEvent);
             }
             zeebeState.getLastProcessedPositionState().markAsProcessed(position);
           };
     }
     return operationOnProcessing;
+  }
+
+  private void reprocessRecord(final TypedRecord<?> currentEvent) {
+    final long recordPosition = currentEvent.getPosition();
+
+    if (MigratedStreamProcessors.isMigrated(currentEvent)) {
+      // replay only events - skip commands and rejections
+      // skip events if the state changes are already applied to the state in the snapshot
+      if (currentEvent.getRecordType() == RecordType.EVENT
+          && currentEvent.getSourceRecordPosition() > snapshotPosition) {
+
+        eventApplier.applyState(
+            currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+      }
+
+    } else if (recordPosition <= lastSourceEventPosition) {
+      // skip records that are not yet processed
+      reprocessingStreamWriter.configureSourceContext(recordPosition);
+
+      eventProcessor.processRecord(
+          recordPosition,
+          typedEvent,
+          noopResponseWriter,
+          reprocessingStreamWriter,
+          NOOP_SIDE_EFFECT_CONSUMER);
+    }
   }
 
   private void updateStateUntilDone() {

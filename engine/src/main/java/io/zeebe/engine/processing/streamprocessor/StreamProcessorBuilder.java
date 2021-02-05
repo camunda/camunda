@@ -9,12 +9,15 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class StreamProcessorBuilder {
 
@@ -23,6 +26,7 @@ public final class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
+  private Function<ZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
 
   public StreamProcessorBuilder() {
@@ -72,6 +76,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder eventApplierFactory(
+      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+    this.eventApplierFactory = eventApplierFactory;
+    return this;
+  }
+
   public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
     return typedRecordProcessorFactory;
   }
@@ -96,6 +106,10 @@ public final class StreamProcessorBuilder {
     return nodeId;
   }
 
+  public Function<ZeebeState, EventApplier> getEventApplierFactory() {
+    return eventApplierFactory;
+  }
+
   public StreamProcessor build() {
     validate();
 
@@ -109,5 +123,6 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
+    Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
 }

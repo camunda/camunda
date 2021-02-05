@@ -7,17 +7,17 @@
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.UnaryOperator;
 
 /** Things that any actor can write to a partition. */
 public interface TypedCommandWriter {
 
-  void appendNewCommand(Intent intent, UnpackedObject value);
+  void appendNewCommand(Intent intent, RecordValue value);
 
-  void appendFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  void appendFollowUpCommand(long key, Intent intent, RecordValue value);
 
   /**
    * @deprecated The modifier parameter is used, but at the time of writing unnecessarily by {@link
@@ -25,7 +25,7 @@ public interface TypedCommandWriter {
    */
   @Deprecated
   void appendFollowUpCommand(
-      long key, Intent intent, UnpackedObject value, UnaryOperator<RecordMetadata> modifier);
+      long key, Intent intent, RecordValue value, UnaryOperator<RecordMetadata> modifier);
 
   void reset();
 

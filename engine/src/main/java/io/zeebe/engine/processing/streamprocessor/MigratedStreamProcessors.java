@@ -26,7 +26,7 @@ public final class MigratedStreamProcessors {
   private static final Map<ValueType, Function<TypedRecord<?>, Boolean>> MIGRATED_VALUE_TYPES =
       new EnumMap<>(ValueType.class);
 
-  private MigratedStreamProcessors() {
+  static {
     MIGRATED_VALUE_TYPES.put(
         ValueType.WORKFLOW_INSTANCE,
         record -> {
@@ -38,6 +38,8 @@ public final class MigratedStreamProcessors {
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
   }
+
+  private MigratedStreamProcessors() {}
 
   public static boolean isMigrated(final TypedRecord<?> record) {
     final var valueType = record.getValueType();

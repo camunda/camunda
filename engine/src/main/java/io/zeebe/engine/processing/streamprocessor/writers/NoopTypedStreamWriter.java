@@ -8,8 +8,8 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.UnaryOperator;
@@ -18,7 +18,7 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
 
   @Override
   public void appendRejection(
-      final TypedRecord<? extends UnpackedObject> command,
+      final TypedRecord<? extends RecordValue> command,
       final RejectionType type,
       final String reason) {
     // no op implementation
@@ -26,7 +26,7 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
 
   @Override
   public void appendRejection(
-      final TypedRecord<? extends UnpackedObject> command,
+      final TypedRecord<? extends RecordValue> command,
       final RejectionType type,
       final String reason,
       final UnaryOperator<RecordMetadata> modifier) {
@@ -39,12 +39,12 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
     // no op implementation
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     // no op implementation
   }
 
@@ -52,19 +52,18 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
   public void appendFollowUpEvent(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final RecordValue value,
       final UnaryOperator<RecordMetadata> modifier) {
     // no op implementation
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+  public void appendNewCommand(final Intent intent, final RecordValue value) {
     // no op implementation
   }
 
   @Override
-  public void appendFollowUpCommand(
-      final long key, final Intent intent, final UnpackedObject value) {
+  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
     // no op implementation
   }
 
@@ -72,7 +71,7 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
   public void appendFollowUpCommand(
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final RecordValue value,
       final UnaryOperator<RecordMetadata> modifier) {
     // no op implementation
   }

@@ -11,6 +11,7 @@ import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.appliers.EventAppliers;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -67,6 +68,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .logStream(state.getLogStream())
         .actorScheduler(state.getScheduler())
         .zeebeDb(state.getZeebeDb())
+        .eventApplierFactory(EventAppliers::new)
         .nodeId(state.getNodeId())
         .commandResponseWriter(state.getCommandApiService().newCommandResponseWriter())
         .detectReprocessingInconsistency(

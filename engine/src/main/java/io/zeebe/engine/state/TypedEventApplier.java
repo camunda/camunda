@@ -10,15 +10,8 @@ package io.zeebe.engine.state;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 
-/** Applies the state changes for a specific event. */
-public interface EventApplier {
+/** Applies state changes for a specific event to the {@link io.zeebe.engine.state.ZeebeState}. */
+public interface TypedEventApplier<I extends Intent, V extends RecordValue> {
 
-  /**
-   * Apply the state changes of the given event.
-   *
-   * @param key the key of the event
-   * @param intent the intent of the event
-   * @param recordValue the value of the event
-   */
-  void applyState(long key, Intent intent, RecordValue recordValue);
+  void applyState(final long key, final V value);
 }

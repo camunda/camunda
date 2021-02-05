@@ -8,8 +8,8 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import java.util.function.UnaryOperator;
 
@@ -17,12 +17,12 @@ import java.util.function.UnaryOperator;
 public interface TypedStreamWriter extends TypedCommandWriter, TypedEventWriter {
 
   void appendRejection(
-      TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
+      TypedRecord<? extends RecordValue> command, RejectionType type, String reason);
 
   /** @deprecated The modifier parameter is not used at the time of writing */
   @Deprecated
   void appendRejection(
-      TypedRecord<? extends UnpackedObject> command,
+      TypedRecord<? extends RecordValue> command,
       RejectionType type,
       String reason,
       UnaryOperator<RecordMetadata> modifier);
