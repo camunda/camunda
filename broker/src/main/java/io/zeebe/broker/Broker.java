@@ -254,7 +254,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    final var snapshotStoreFactory = new FileBasedSnapshotStoreFactory();
+    final var snapshotStoreFactory = new FileBasedSnapshotStoreFactory(scheduler);
     snapshotStoreSupplier = snapshotStoreFactory;
     atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
 

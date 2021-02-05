@@ -20,12 +20,17 @@ import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.zip.CRC32;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +43,7 @@ public final class ReplicateStateControllerTest {
 
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   private StateControllerImpl replicatorSnapshotController;
   private StateControllerImpl receiverSnapshotController;
@@ -49,12 +55,12 @@ public final class ReplicateStateControllerTest {
   public void setup() throws IOException {
     final var senderRoot = tempFolderRule.newFolder("sender").toPath();
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory();
+    final var senderFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     senderFactory.createReceivableSnapshotStore(senderRoot, "1");
     senderStore = senderFactory.getConstructableSnapshotStore("1");
 
     final var receiverRoot = tempFolderRule.newFolder("receiver").toPath();
-    final var receiverFactory = new FileBasedSnapshotStoreFactory();
+    final var receiverFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     receiverStore = receiverFactory.createReceivableSnapshotStore(receiverRoot, "1");
 
     replicator = new Replicator();
@@ -102,7 +108,7 @@ public final class ReplicateStateControllerTest {
     final var snapshot = replicatorSnapshotController.takeTransientSnapshot(1).orElseThrow();
 
     // when
-    snapshot.persist();
+    snapshot.persist().join();
 
     // then
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
@@ -127,7 +133,7 @@ public final class ReplicateStateControllerTest {
     final var snapshot = replicatorSnapshotController.takeTransientSnapshot(1).orElseThrow();
 
     // when
-    snapshot.persist();
+    snapshot.persist().join();
 
     // then
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
@@ -146,9 +152,14 @@ public final class ReplicateStateControllerTest {
     // given
     receiverSnapshotController.consumeReplicatedSnapshots();
     final var snapshot = replicatorSnapshotController.takeTransientSnapshot(1).orElseThrow();
+    final CompletableFuture<Void> snapshotTaken = new CompletableFuture<>();
+    snapshot.onSnapshotTaken((ignore, error) -> snapshotTaken.complete(null));
+    snapshotTaken.join();
 
     // when
-    snapshot.persist();
+    snapshot.persist().join();
+    Awaitility.await()
+        .until(() -> receiverStore.hasSnapshotId(snapshot.snapshotId().getSnapshotIdAsString()));
 
     // then
     final RocksDBWrapper wrapper = new RocksDBWrapper();
@@ -166,9 +177,18 @@ public final class ReplicateStateControllerTest {
     receiverSnapshotController.consumeReplicatedSnapshots();
     final var transientSnapshot =
         replicatorSnapshotController.takeTransientSnapshot(1).orElseThrow();
+    final CompletableFuture<Void> snapshotTaken = new CompletableFuture<>();
+    transientSnapshot.onSnapshotTaken((ignor, error) -> snapshotTaken.complete(null));
+    snapshotTaken.join();
+
+    final var snapshot = transientSnapshot.persist().join();
+    Awaitility.await()
+        .until(
+            () ->
+                receiverStore.hasSnapshotId(
+                    transientSnapshot.snapshotId().getSnapshotIdAsString()));
 
     // when
-    final var snapshot = transientSnapshot.persist();
     receiverSnapshotController.onNewSnapshot(snapshot);
 
     // then
@@ -185,12 +205,14 @@ public final class ReplicateStateControllerTest {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
     private Consumer<SnapshotChunk> chunkConsumer;
+    // Consumers are usually running on a separate thread
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
     public void replicate(final SnapshotChunk snapshot) {
       replicatedChunks.add(snapshot);
       if (chunkConsumer != null) {
-        chunkConsumer.accept(snapshot);
+        executorService.execute(() -> chunkConsumer.accept(snapshot));
       }
     }
 
