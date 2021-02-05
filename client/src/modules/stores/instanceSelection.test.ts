@@ -47,11 +47,23 @@ describe('stores/instanceSelection', () => {
 
   describe('filter observer', () => {
     it('should reset instance selection every time filter changes', () => {
-      const instanceSelectionSpy = jest.spyOn(
-        instanceSelectionStore,
-        'resetState'
-      );
-      expect(instanceSelectionSpy).toHaveBeenCalledTimes(0);
+      const initialState = {
+        selectedInstanceIds: [],
+        isAllChecked: false,
+        selectionMode: 'INCLUDE',
+      };
+
+      expect(instanceSelectionStore.state).toEqual(initialState);
+
+      instanceSelectionStore.setAllChecked(true);
+      instanceSelectionStore.setSelectedInstanceIds(['1']);
+      instanceSelectionStore.setMode('EXCLUDE');
+
+      expect(instanceSelectionStore.state).toEqual({
+        selectedInstanceIds: ['1'],
+        isAllChecked: true,
+        selectionMode: 'EXCLUDE',
+      });
 
       filtersStore.setFilter({
         ...DEFAULT_FILTER,
@@ -59,11 +71,7 @@ describe('stores/instanceSelection', () => {
         version: '1',
       });
 
-      expect(instanceSelectionSpy).toHaveBeenCalledTimes(1);
-      filtersStore.setFilter({
-        ...DEFAULT_FILTER,
-      });
-      expect(instanceSelectionSpy).toHaveBeenCalledTimes(2);
+      expect(instanceSelectionStore.state).toEqual(initialState);
     });
   });
 });
