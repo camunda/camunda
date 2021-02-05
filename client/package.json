@@ -7,7 +7,7 @@
     "@camunda-cloud/common-ui": "^0.0.14",
     "@camunda-cloud/common-ui-react": "^0.0.14",
     "@testing-library/jest-dom": "^5.11.9",
-    "@testing-library/react": "^11.2.3",
+    "@testing-library/react": "^11.2.5",
     "@testing-library/testcafe": "^4.3.1",
     "@testing-library/user-event": "^12.6.2",
     "@types/jest": "^26.0.20",
