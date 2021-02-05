@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -102,6 +103,28 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final ExecutableFlowElement element) {
 
     switch (intent) {
+      case ACTIVATE_ELEMENT:
+        if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+          // TODO (saig0): invoke the migrated processor to activate the element
+        } else {
+          processor.onActivating(element, context);
+        }
+        break;
+      case COMPLETE_ELEMENT:
+        if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+          // TODO (saig0): invoke the migrated processor to complete the element
+        } else {
+          processor.onCompleting(element, context);
+        }
+        break;
+      case TERMINATE_ELEMENT:
+        if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+          // TODO (saig0): invoke the migrated processor to terminate the element
+        } else {
+          processor.onTerminating(element, context);
+        }
+        break;
+        // legacy behavior for not migrated processors
       case ELEMENT_ACTIVATING:
         processor.onActivating(element, context);
         break;
