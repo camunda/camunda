@@ -110,7 +110,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         authenticated = claims.contains(config.getOrganization());
       }
     } catch (JWTDecodeException e) {
-      logger.warn("Read organization claim as list of strings failed.", e);
+      logger.debug("Read organization claim as list of strings failed.", e);
     }
   }
 

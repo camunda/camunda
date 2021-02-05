@@ -15,7 +15,6 @@ import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import com.auth0.AuthenticationController;
 import com.auth0.Tokens;
 import java.io.IOException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -51,15 +50,18 @@ public class SSOController {
       value = LOGIN_RESOURCE,
       method = {RequestMethod.GET, RequestMethod.POST})
   public String login(final HttpServletRequest req, final HttpServletResponse res) {
-    final String authorizeUrl =
-        authenticationController
-            .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
-            .withAudience(
-                String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
-            .withScope("openid profile email") // which info we request
-            .build();
+    final String authorizeUrl = getAuthorizeUrl(req, res);
     LOGGER.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
+  }
+
+  private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
+    return authenticationController
+        .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
+        .withAudience(
+            String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+        .withScope("openid profile email") // which info we request
+        .build();
   }
 
   /**
@@ -68,8 +70,8 @@ public class SSOController {
    */
   @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
-      throws ServletException, IOException {
-    LOGGER.debug("Called back by auth0.");
+      throws IOException {
+    LOGGER.debug("Called back by auth0 with {} {}", req.getRequestURI(), req.getQueryString());
     try {
       final Tokens tokens = authenticationController.handle(req, res);
       final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
@@ -139,6 +141,10 @@ public class SSOController {
         || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
-    return redirectUri + req.getContextPath() + redirectTo;
+    final String clusterId = req.getContextPath().replaceAll("/", "");
+    final String result =
+        redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
+    LOGGER.debug("RedirectURI: {}", result);
+    return result;
   }
 }
