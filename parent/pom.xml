@@ -127,7 +127,7 @@
     <plugin.version.jacoco>0.8.6</plugin.version.jacoco>
 
     <!-- maven extensions -->
-    <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
+    <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>0.26.0</backwards.compat.version>
