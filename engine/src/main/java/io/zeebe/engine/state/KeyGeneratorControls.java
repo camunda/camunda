@@ -7,14 +7,13 @@
  */
 package io.zeebe.engine.state;
 
-/** Generate unique keys. Should be used for records only. */
-@FunctionalInterface
-public interface KeyGenerator {
+/** Allows to manipulate the key generator. Should be used with caution. */
+public interface KeyGeneratorControls extends KeyGenerator {
 
   /**
-   * Returns the next key of a record and updates the key generator.
+   * Set the given value as the new key if it is higher than the current key.
    *
-   * @return the next key for a new record
+   * @param key the new key
    */
-  long nextKey();
+  void setKeyIfHigher(long key);
 }

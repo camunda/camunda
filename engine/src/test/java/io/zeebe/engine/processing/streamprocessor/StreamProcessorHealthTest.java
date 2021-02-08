@@ -186,7 +186,6 @@ public class StreamProcessorHealthTest {
               final ZeebeState zeebeState = processingContext.getZeebeState();
               mockedLogStreamWriter =
                   new WrappedStreamWriter(processingContext.getLogStreamWriter());
-              processingContext.zeebeState(zeebeState);
               processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator())
                   .onEvent(

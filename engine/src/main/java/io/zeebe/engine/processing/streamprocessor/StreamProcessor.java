@@ -12,6 +12,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
 import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.ZeebeDbState;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -248,7 +249,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   }
 
   private long recoverFromSnapshot() {
-    final ZeebeState zeebeState = recoverState();
+    final var zeebeState = recoverState();
+
     final long snapshotPosition =
         zeebeState.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
 
@@ -265,9 +267,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     return snapshotPosition;
   }
 
-  private ZeebeState recoverState() {
+  private ZeebeDbState recoverState() {
     final TransactionContext transactionContext = zeebeDb.createContext();
-    final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, transactionContext);
+    final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
 
     processingContext.transactionContext(transactionContext);
     processingContext.zeebeState(zeebeState);

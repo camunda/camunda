@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -113,6 +114,7 @@ public final class ProcessingStateMachine {
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
 
   private final ZeebeState zeebeState;
+  private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final TypedResponseWriterImpl responseWriter;
   private final ActorControl actor;
@@ -159,6 +161,7 @@ public final class ProcessingStateMachine {
     zeebeState = context.getZeebeState();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
+    lastProcessedPositionState = context.getLastProcessedPositionState();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
@@ -293,7 +296,7 @@ public final class ProcessingStateMachine {
                 this::setSideEffectProducer);
           }
 
-          zeebeState.getLastProcessedPositionState().markAsProcessed(position);
+          lastProcessedPositionState.markAsProcessed(position);
         });
   }
 

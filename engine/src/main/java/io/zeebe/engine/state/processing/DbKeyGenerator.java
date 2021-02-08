@@ -9,12 +9,12 @@ package io.zeebe.engine.state.processing;
 
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.NextValueManager;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.Protocol;
 
-public final class DbKeyGenerator implements KeyGenerator {
+public final class DbKeyGenerator implements KeyGeneratorControls {
 
   private static final long INITIAL_VALUE = 0;
 
@@ -39,5 +39,14 @@ public final class DbKeyGenerator implements KeyGenerator {
   @Override
   public long nextKey() {
     return nextValueManager.getNextValue(LATEST_KEY);
+  }
+
+  @Override
+  public void setKeyIfHigher(final long key) {
+    final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
+
+    if (key > currentKey) {
+      nextValueManager.setValue(LATEST_KEY, key);
+    }
   }
 }

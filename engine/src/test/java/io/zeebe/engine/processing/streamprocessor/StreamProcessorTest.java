@@ -168,11 +168,7 @@ public final class StreamProcessorTest {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              Assertions.assertThat(
-                      streamProcessorRule
-                          .getZeebeState()
-                          .getLastProcessedPositionState()
-                          .getLastSuccessfulProcessedRecordPosition())
+              Assertions.assertThat(streamProcessorRule.getLastSuccessfulProcessedRecordPosition())
                   .isEqualTo(position);
             });
   }
@@ -719,11 +715,7 @@ public final class StreamProcessorTest {
 
     // then
     assertThat(onProcessedListener.await()).isTrue();
-    Assertions.assertThat(
-            streamProcessorRule
-                .getZeebeState()
-                .getLastProcessedPositionState()
-                .getLastSuccessfulProcessedRecordPosition())
+    Assertions.assertThat(streamProcessorRule.getLastSuccessfulProcessedRecordPosition())
         .isEqualTo(positionProcessedAfterResume);
   }
 
