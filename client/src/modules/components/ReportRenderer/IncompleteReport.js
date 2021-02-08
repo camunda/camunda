@@ -5,19 +5,23 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router-dom';
+import {Link, withRouter} from 'react-router-dom';
 
 import './IncompleteReport.scss';
 import {t} from 'translation';
 
-export default function IncompleteReport({id}) {
+export function IncompleteReport({id, location}) {
   return (
     <div className="IncompleteReport">
       <p>
         {t('report.incompleteNotice.message')}
         <br />
-        <Link to={`/report/${id}/edit`}>{t('report.incompleteNotice.action')}</Link>
+        <Link to={`/report/${id}/edit?returnTo=${location.pathname}`}>
+          {t('report.incompleteNotice.action')}
+        </Link>
       </p>
     </div>
   );
 }
+
+export default withRouter(IncompleteReport);

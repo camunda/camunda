@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import ReportRenderer from './ReportRenderer';
 import CombinedReportRenderer from './CombinedReportRenderer';
 import NoDataNotice from './NoDataNotice';
+import IncompleteReport from './IncompleteReport';
 
 const reportTemplate = {
   combined: false,
@@ -102,7 +103,7 @@ it('should include the instance count if indicated in the config', () => {
 it('should show an incomplete report notice when inside a dashboard', () => {
   const node = shallow(<ReportRenderer report={{data: {}}} context="dashboard" />);
 
-  expect(node.find('IncompleteReport')).toExist();
+  expect(node.find(IncompleteReport)).toExist();
 });
 
 describe('SetupNotice', () => {
