@@ -9,7 +9,7 @@ import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 
 import java.util.List;
 
-public abstract class ScrollBasedImportMediator<T extends ScrollBasedImportIndexHandler, DTO>
+public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportIndexHandler, DTO>
   extends BackoffImportMediator<T, DTO> {
 
   public void reset() {

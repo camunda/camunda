@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ScrollBasedImportMediatorTest {
+public class DefinitionXmlImportMediatorTest {
 
   @InjectMocks
   private DecisionDefinitionXmlEngineImportMediator underTest;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
-import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
+import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionXmlImportService;
@@ -22,7 +22,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlEngineImportMediator
-  extends ScrollBasedImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
+  extends DefinitionXmlImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
   private final DecisionDefinitionXmlFetcher engineEntityFetcher;
 

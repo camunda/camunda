@@ -12,7 +12,6 @@ import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -21,30 +20,22 @@ import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.clearScroll;
-
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class ScrollBasedImportIndexHandler
+public abstract class DefinitionXmlImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   @Autowired
   protected OptimizeElasticsearchClient esClient;
   @Autowired
   protected ConfigurationService configurationService;
-  protected String scrollId;
   @Autowired
   private ImportIndexReader importIndexReader;
   private Long importIndex = 0L;
 
   @Override
   public IdSetBasedImportPage getNextPage() {
-    Set<String> ids = fetchNextPageOfIds();
-    if (ids.isEmpty()) {
-      resetScroll();
-      //it might be the case that new PI's have been imported
-      ids = fetchNextPageOfIds();
-    }
+    Set<String> ids = performSearchQuery();
     IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(ids);
     updateIndex(ids.size());
@@ -63,7 +54,6 @@ public abstract class ScrollBasedImportIndexHandler
   @Override
   public void resetImportIndex() {
     log.debug("Resetting import index");
-    resetScroll();
     importIndex = 0L;
   }
 
@@ -76,43 +66,9 @@ public abstract class ScrollBasedImportIndexHandler
     readIndexFromElasticsearch();
   }
 
-  protected abstract Set<String> performScrollQuery();
-
-  protected abstract Set<String> performInitialSearchQuery();
+  protected abstract Set<String> performSearchQuery();
 
   protected abstract String getElasticsearchTypeForStoring();
-
-  private Set<String> fetchNextPageOfIds() {
-    Set<String> ids;
-    if (scrollId == null) {
-      ids = performInitialSearchQuery();
-    } else {
-      try {
-        ids = performScrollQuery();
-      } catch (Exception e) {
-        //scroll got lost, try again after reset
-        this.resetScroll();
-        ids = performInitialSearchQuery();
-      }
-    }
-    if (ids.isEmpty()) {
-      resetScroll();
-    }
-    return ids;
-  }
-
-  private void resetScroll() {
-    String currentScrollId = scrollId;
-    scrollId = null;
-    importIndex = 0L;
-    if (currentScrollId != null) {
-      try {
-        clearScroll(this.getClass(), esClient, currentScrollId);
-      } catch (ElasticsearchStatusException ex) {
-        log.warn("Could not clear scroll. The scroll might have already been expired.");
-      }
-    }
-  }
 
   private String getElasticsearchId() {
     return EsHelper.constructKey(getElasticsearchTypeForStoring(), getEngineAlias());
