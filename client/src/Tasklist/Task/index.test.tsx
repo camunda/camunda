@@ -231,6 +231,7 @@ describe('<Task />', () => {
 
     expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
     expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
+    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
   });
 

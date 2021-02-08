@@ -39,6 +39,7 @@ import {
   RowTH,
 } from './styled';
 import {validateJSON, validateNonEmpty} from './validators';
+import {createVariableFieldName} from './createVariableFieldName';
 
 const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
@@ -153,7 +154,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                           </RowTH>
                           <ValueInputTD>
                             <Field
-                              name={variable.name}
+                              name={createVariableFieldName(variable.name)}
                               initialValue={variable.value}
                               validate={validateJSON}
                             >
@@ -167,10 +168,15 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                             </Field>
                           </ValueInputTD>
                           <IconTD>
-                            {form.getFieldState(variable.name)?.error !==
-                              undefined && (
+                            {form.getFieldState(
+                              createVariableFieldName(variable.name),
+                            )?.error !== undefined && (
                               <Warning
-                                title={form.getFieldState(variable.name)?.error}
+                                title={
+                                  form.getFieldState(
+                                    createVariableFieldName(variable.name),
+                                  )?.error
+                                }
                                 data-testid={`warning-icon-${variable.name}`}
                               />
                             )}

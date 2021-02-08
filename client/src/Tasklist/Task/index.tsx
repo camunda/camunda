@@ -38,6 +38,7 @@ import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {useLocation} from 'react-router-dom';
 import {FilterValues} from 'modules/constants/filterValues';
 import {useNotifications} from 'modules/notifications';
+import {getVariableFieldName} from './getVariableFieldName';
 
 const Task: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -104,7 +105,13 @@ const Task: React.FC = () => {
             await completeTask({
               variables: {
                 id,
-                variables: [...existingVariables, ...newVariables],
+                variables: [
+                  ...existingVariables.map((variable) => ({
+                    ...variable,
+                    name: getVariableFieldName(variable.name),
+                  })),
+                  ...newVariables,
+                ],
               },
             });
 
