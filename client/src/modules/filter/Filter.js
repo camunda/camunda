@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Icon} from 'components';
+import {Icon, Tooltip} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 
@@ -28,11 +28,12 @@ import './Filter.scss';
 export default class Filter extends React.Component {
   state = {
     newFilterType: null,
+    newFilterLevel: null,
     editFilter: null,
   };
 
-  openNewFilterModal = (type) => (evt) => {
-    this.setState({newFilterType: type});
+  openNewFilterModal = (filterLevel) => (type) => (evt) => {
+    this.setState({newFilterType: type, newFilterLevel: filterLevel});
   };
 
   openEditFilterModal = (filter) => (evt) => {
@@ -40,7 +41,7 @@ export default class Filter extends React.Component {
   };
 
   closeModal = () => {
-    this.setState({newFilterType: null, editFilter: null});
+    this.setState({newFilterType: null, newFilterLevel: null, editFilter: null});
   };
 
   getFilterModal = (type) => {
@@ -92,13 +93,13 @@ export default class Filter extends React.Component {
 
     const index = filters.indexOf(filters.find((v) => this.state.editFilter.data === v.data));
 
-    newFilter.filterLevel = this.props.filterLevel;
+    newFilter.filterLevel = filters[index].filterLevel;
     this.props.onChange({filter: {[index]: {$set: newFilter}}}, true);
     this.closeModal();
   };
 
   addFilter = (newFilter) => {
-    newFilter.filterLevel = this.props.filterLevel;
+    newFilter.filterLevel = newFilter.filterLevel || this.state.newFilterLevel;
     const filters = filterSameTypeExistingFilters(this.props.data, newFilter);
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
@@ -131,11 +132,11 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByTypeOnly = (type) => () => {
+  filterByTypeOnly = (filterLevel) => (type) => () => {
     this.addFilter({
       type,
       data: null,
-      filterLevel: this.props.filterLevel,
+      filterLevel,
     });
   };
 
@@ -145,27 +146,60 @@ export default class Filter extends React.Component {
       this.state.editFilter ? this.state.editFilter.type : null
     );
 
-    const filters = this.props.data.filter(
-      ({filterLevel}) => filterLevel === this.props.filterLevel
-    );
+    const displayAllFilters = !this.props.filterLevel;
+    const displayInstanceFilters = displayAllFilters || this.props.filterLevel === 'instance';
+    const displayViewFilters = displayAllFilters || this.props.filterLevel === 'view';
 
-    const FilterOptions = this.props.filterLevel === 'instance' ? InstanceFilters : ViewFilters;
+    const filters = this.props.data.filter(
+      ({filterLevel}) => filterLevel === this.props.filterLevel || displayAllFilters
+    );
 
     return (
       <div className="Filter">
-        <div className="filterHeader">
-          <Icon type="filter" />
-          <span className="dropdownLabel">
-            {t('common.filter.dropdownLabel.' + this.props.filterLevel)}
-          </span>
-          <FilterOptions
-            processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
-            openNewFilterModal={this.openNewFilterModal}
-            filterByTypeOnly={this.filterByTypeOnly}
-          />
-        </div>
+        {displayInstanceFilters && (
+          <div className="filterHeader">
+            <span className="dropdownLabel">{t('common.filter.dropdownLabel.instance')}</span>
+            <div className="explanation">
+              <Tooltip
+                align="right"
+                content={
+                  <div className="filterLevelTooltip">{t('common.filter.tooltip.instance')}</div>
+                }
+              >
+                <Icon type="info" />
+              </Tooltip>
+            </div>
+            <InstanceFilters
+              processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
+              openNewFilterModal={this.openNewFilterModal('instance')}
+              filterByTypeOnly={this.filterByTypeOnly('instance')}
+            />
+          </div>
+        )}
+        {displayViewFilters && (
+          <div className="filterHeader">
+            <span className="dropdownLabel">{t('common.filter.dropdownLabel.view')}</span>
+            <div className="explanation">
+              <Tooltip
+                align="right"
+                content={
+                  <div className="filterLevelTooltip">{t('common.filter.tooltip.view')}</div>
+                }
+              >
+                <Icon type="info" />
+              </Tooltip>
+            </div>
+            <ViewFilters
+              processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
+              openNewFilterModal={this.openNewFilterModal('view')}
+              filterByTypeOnly={this.filterByTypeOnly('view')}
+            />
+          </div>
+        )}
         {filters.length === 0 && (
-          <p className="emptyMessage">{t('common.filter.allVisible.' + this.props.filterLevel)}</p>
+          <p className="emptyMessage">
+            {t('common.filter.allVisible.' + (this.props.filterLevel ?? 'instance'))}
+          </p>
         )}
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList

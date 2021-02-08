@@ -47,6 +47,11 @@
 
         .dropdownLabel {
           margin-right: 10px;
+          flex-grow: 1;
+        }
+
+        .explanation {
+          display: none;
         }
       }
 

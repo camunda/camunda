@@ -826,6 +826,11 @@
       "openInOptimize": "In Optimize Öffnen"
     },
     "filter": {
+      "label": "Filter",
+      "tooltip": {
+        "instance": "Durch Hinzufügen eines Prozessinstanzfilters wird die Anzahl der Prozessinstanzen verringert, die bei der Auswertung des Berichts berücksichtigt werden.",
+        "view": "Durch Hinzufügen eines Prozessknotendaten-Filters werden Instanzen gefiltert und der Inhalt von Instanzen, z.B. Prozessknoten."
+      },
       "types": {
         "instanceState": "Instanzstatus",
         "runningInstancesOnly": "Nur laufende Instanzen",

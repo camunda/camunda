@@ -33,6 +33,17 @@
   .filter {
     padding: 20px;
     border-top: 1px solid var(--silver-darken-87);
+
+    .filterCount {
+      float: right;
+      padding: 1px 8px 2px;
+      margin-top: -1px;
+      border-radius: 11.5px;
+      background-color: var(--blue-base-65);
+      font-size: 14px;
+      color: var(--white);
+      font-weight: normal;
+    }
   }
 
   .reportSetup > ul {

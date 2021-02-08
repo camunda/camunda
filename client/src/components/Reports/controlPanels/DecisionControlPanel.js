@@ -132,16 +132,6 @@ export class DecisionControlPanel extends React.Component {
           />
         </div>
         <div className="scrollable">
-          <div className="filter">
-            <DecisionFilter
-              data={filter}
-              onChange={this.props.updateReport}
-              decisionDefinitionKey={decisionDefinitionKey}
-              decisionDefinitionVersions={decisionDefinitionVersions}
-              tenants={tenantIds}
-              variables={this.state.variables}
-            />
-          </div>
           <div className="reportSetup">
             <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
             <ul>
@@ -167,6 +157,20 @@ export class DecisionControlPanel extends React.Component {
                 );
               })}
             </ul>
+          </div>
+          <div className="filter">
+            <h3 className="sectionTitle">
+              {t('common.filter.label')}
+              {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
+            </h3>
+            <DecisionFilter
+              data={filter}
+              onChange={this.props.updateReport}
+              decisionDefinitionKey={decisionDefinitionKey}
+              decisionDefinitionVersions={decisionDefinitionVersions}
+              tenants={tenantIds}
+              variables={this.state.variables}
+            />
           </div>
           {result && typeof result.instanceCount !== 'undefined' && (
             <div className="instanceCount">

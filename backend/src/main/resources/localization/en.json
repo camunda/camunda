@@ -826,6 +826,11 @@
       "openInOptimize": "Open in Optimize"
     },
     "filter": {
+      "label": "Filters",
+      "tooltip": {
+        "instance": "Adding a Process Instance filter will reduce the number of process instances that are considered when evaluating the report.",
+        "view": "Adding a Flow Node Data filter will filter instances and additionally reduce the content of instances, e.g. flow nodes."
+      },
       "types": {
         "instanceState": "Instance state",
         "runningInstancesOnly": "Running Instances Only",
@@ -972,9 +977,9 @@
         "selectValue": "Filter for ID"
       },
       "dropdownLabel": {
-        "instance": "Filter Process instances",
-        "view": "Filter Flow Node Data",
-        "decision": "Filter Decision instances"
+        "instance": "Filter Process Instances",
+        "view": "Filter Flow Nodes",
+        "decision": "Filter Decision Instances"
       },
       "allVisible": {
         "instance": "All instances visible",

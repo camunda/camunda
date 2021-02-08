@@ -183,19 +183,6 @@ export default withErrorHandling(
             />
           </div>
           <div className="scrollable">
-            <div className="filter">
-              <Filter
-                flowNodeNames={this.state.flowNodeNames}
-                data={data.filter}
-                onChange={this.props.updateReport}
-                processDefinitionKey={data.processDefinitionKey}
-                processDefinitionVersions={data.processDefinitionVersions}
-                tenantIds={data.tenantIds}
-                xml={data.configuration.xml}
-                filterLevel="instance"
-                variables={this.state.variables}
-              />
-            </div>
             <div className="reportSetup">
               <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
               <ul>
@@ -273,6 +260,12 @@ export default withErrorHandling(
               </ul>
             </div>
             <div className="filter">
+              <h3 className="sectionTitle">
+                {t('common.filter.label')}
+                {data.filter?.length > 0 && (
+                  <span className="filterCount">{data.filter.length}</span>
+                )}
+              </h3>
               <Filter
                 flowNodeNames={this.state.flowNodeNames}
                 data={data.filter}
@@ -281,7 +274,6 @@ export default withErrorHandling(
                 processDefinitionVersions={data.processDefinitionVersions}
                 tenantIds={data.tenantIds}
                 xml={data.configuration.xml}
-                filterLevel="view"
                 variables={this.state.variables}
               />
             </div>
