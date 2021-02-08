@@ -16,6 +16,7 @@ import io.zeebe.engine.processing.message.OpenWorkflowInstanceSubscriptionProces
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.timer.CancelTimerProcessor;
 import io.zeebe.engine.processing.timer.CreateTimerProcessor;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -56,7 +57,8 @@ public final class WorkflowEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final StateWriter stateWriter) {
     final MutableWorkflowInstanceSubscriptionState subscriptionState =
         zeebeState.getWorkflowInstanceSubscriptionState();
 
@@ -74,7 +76,7 @@ public final class WorkflowEventProcessors {
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, zeebeState, catchEventBehavior, expressionProcessor);
     addVariableDocumentStreamProcessors(typedRecordProcessors, zeebeState);
-    addWorkflowInstanceCreationStreamProcessors(typedRecordProcessors, zeebeState);
+    addWorkflowInstanceCreationStreamProcessors(typedRecordProcessors, zeebeState, stateWriter);
 
     return bpmnStreamProcessor;
   }
@@ -157,14 +159,20 @@ public final class WorkflowEventProcessors {
   }
 
   private static void addWorkflowInstanceCreationStreamProcessors(
-      final TypedRecordProcessors typedRecordProcessors, final ZeebeState zeebeState) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final ZeebeState zeebeState,
+      final StateWriter stateWriter) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final MutableVariableState variablesState = zeebeState.getVariableState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     final CreateWorkflowInstanceProcessor createProcessor =
         new CreateWorkflowInstanceProcessor(
-            zeebeState.getWorkflowState(), elementInstanceState, variablesState, keyGenerator);
+            zeebeState.getWorkflowState(),
+            elementInstanceState,
+            variablesState,
+            keyGenerator,
+            stateWriter);
     typedRecordProcessors.onCommand(
         ValueType.WORKFLOW_INSTANCE_CREATION,
         WorkflowInstanceCreationIntent.CREATE,

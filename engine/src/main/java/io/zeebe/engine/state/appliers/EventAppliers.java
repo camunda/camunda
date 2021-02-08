@@ -35,6 +35,7 @@ public final class EventAppliers implements EventApplier {
           (key, value) ->
               LOG.debug("No state changed: tried to use unimplemented event applier {}", intent);
 
+  @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final ZeebeState state) {
@@ -50,6 +51,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void applyState(final long key, final Intent intent, final RecordValue value) {
     final var eventApplier =
         mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));

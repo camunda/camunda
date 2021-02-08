@@ -8,6 +8,9 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
@@ -15,12 +18,26 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 
+/**
+ * Decorates a command processor with simple accept and reject logic.
+ *
+ * <p>On accept it writes the state corresponding to successfully processing the command (e.g.
+ * workflow instance creation: CREATE => CREATED); and responds if it was a client command that
+ * should be responded to.
+ *
+ * <p>On reject it writes a command rejection
+ *
+ * @param <T> the record value type
+ */
 public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
 
   private final CommandProcessor<T> wrappedProcessor;
 
   private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedCommandWriter commandWriter;
 
   private boolean isAccepted;
   private long entityKey;
@@ -32,9 +49,16 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   private String rejectionReason;
 
   public CommandProcessorImpl(
-      final KeyGenerator keyGenerator, final CommandProcessor<T> commandProcessor) {
-    this.keyGenerator = keyGenerator;
+      final CommandProcessor<T> commandProcessor,
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final TypedRejectionWriter rejectionWriter) {
     wrappedProcessor = commandProcessor;
+    this.keyGenerator = keyGenerator;
+    this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
+    this.rejectionWriter = rejectionWriter;
   }
 
   @Override
@@ -44,17 +68,17 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       final TypedStreamWriter streamWriter) {
 
     entityKey = command.getKey();
-    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, streamWriter);
+    final boolean shouldRespond = wrappedProcessor.onCommand(command, this);
 
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
     if (isAccepted) {
-      streamWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
+      stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
-      streamWriter.appendRejection(command, rejectionType, rejectionReason);
+      rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
         responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }

@@ -17,7 +17,9 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -27,6 +29,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.junit.ClassRule;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -46,6 +49,9 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
 
   @Mock(name = "TypedStreamWriter")
   protected TypedStreamWriter streamWriter;
+
+  @Mock(name = "StateWriter")
+  protected StateWriter stateWriter;
 
   @Captor protected ArgumentCaptor<T> acceptedRecordCaptor;
 
@@ -89,5 +95,14 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
     }
 
     return new MockTypedRecord<>(-1, metadata, value);
+  }
+
+  protected void verifyElementActivatingPublished(
+      final long instanceKey, final ElementInstance instance) {
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(instanceKey),
+            eq(WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            eq(instance.getValue()));
   }
 }

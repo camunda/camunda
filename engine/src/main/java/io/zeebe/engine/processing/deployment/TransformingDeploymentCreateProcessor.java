@@ -20,6 +20,7 @@ import io.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -67,7 +68,7 @@ public final class TransformingDeploymentCreateProcessor
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
     typedStreamWriterProxy = new TypedStreamWriterProxy();
-    stateWriter = new StateWriter(typedStreamWriterProxy, eventAppliers);
+    stateWriter = new EventApplyingStateWriter(typedStreamWriterProxy, eventAppliers);
     deploymentTransformer = new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;

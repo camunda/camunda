@@ -92,7 +92,8 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
                   mockSubscriptionCommandSender,
                   new CatchEventBehavior(
                       zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
-                  mockTimerEventScheduler);
+                  mockTimerEventScheduler,
+                  processingContext.getStateWriter());
 
           final var jobErrorThrownProcessor =
               JobEventProcessors.addJobProcessors(

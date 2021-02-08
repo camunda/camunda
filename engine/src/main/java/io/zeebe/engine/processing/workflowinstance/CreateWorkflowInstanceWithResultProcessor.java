@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.workflowinstance;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.msgpack.property.ArrayProperty;
@@ -41,10 +40,9 @@ public final class CreateWorkflowInstanceWithResultProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<WorkflowInstanceCreationRecord> command,
-      final CommandControl<WorkflowInstanceCreationRecord> controller,
-      final TypedStreamWriter streamWriter) {
+      final CommandControl<WorkflowInstanceCreationRecord> controller) {
     wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController, streamWriter);
+    createProcessor.onCommand(command, wrappedController);
     return shouldRespond;
   }
 

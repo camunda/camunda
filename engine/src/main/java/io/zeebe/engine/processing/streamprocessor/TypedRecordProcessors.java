@@ -7,6 +7,9 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -20,13 +23,27 @@ public final class TypedRecordProcessors {
   private final RecordProcessorMap recordProcessorMap = new RecordProcessorMap();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
-  private TypedRecordProcessors(final KeyGenerator keyGenerator) {
+  private TypedRecordProcessors(
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final TypedRejectionWriter rejectionWriter) {
     this.keyGenerator = keyGenerator;
+    this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
+    this.rejectionWriter = rejectionWriter;
   }
 
-  public static TypedRecordProcessors processors(final KeyGenerator keyGenerator) {
-    return new TypedRecordProcessors(keyGenerator);
+  public static TypedRecordProcessors processors(
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final TypedRejectionWriter rejectionWriter) {
+    return new TypedRecordProcessors(keyGenerator, stateWriter, commandWriter, rejectionWriter);
   }
 
   // TODO: could remove the ValueType argument as it follows from the intent
@@ -52,7 +69,10 @@ public final class TypedRecordProcessors {
 
   public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final CommandProcessor<T> commandProcessor) {
-    return onCommand(valueType, intent, new CommandProcessorImpl<>(keyGenerator, commandProcessor));
+    final var processor =
+        new CommandProcessorImpl<>(
+            commandProcessor, keyGenerator, stateWriter, commandWriter, rejectionWriter);
+    return onCommand(valueType, intent, processor);
   }
 
   public TypedRecordProcessors withListener(final StreamProcessorLifecycleAware listener) {
