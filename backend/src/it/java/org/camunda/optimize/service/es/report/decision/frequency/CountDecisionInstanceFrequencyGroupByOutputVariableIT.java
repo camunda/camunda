@@ -116,7 +116,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
@@ -173,7 +172,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(4L);
@@ -224,7 +222,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(3);
@@ -392,123 +389,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .isNotNull()
       .isNotEmpty()
       .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-  }
-
-  @Test
-  public void reportEvaluationMultiBuckets_resultLimitedByConfig_booleanVariable() {
-    // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
-    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    // audit = false
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
-    );
-    // audit = true
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
-    );
-
-    // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
-    ).getResult();
-
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(4L);
-    assertThat(result.getIsComplete()).isFalse();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-  }
-
-  @Test
-  public void reportEvaluationMultiBuckets_resultLimitedByConfig_numberVariable() {
-    // given
-    final String outputVarName = "outputVarName";
-    final String inputVarName = "inputVarName";
-
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
-
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 10.0)
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 20.0)
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE
-    ).getResult();
-
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-  }
-
-  @Test
-  public void reportEvaluationMultiBuckets_resultLimitedByConfig_dateVariable() {
-    // given
-    final String outputClauseId = "outputClauseId";
-    final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
-
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now)
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now.minusSeconds(1L))
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
-    ).getResult();
-
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
   }
 
   @Test
@@ -991,7 +871,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -1027,7 +906,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();

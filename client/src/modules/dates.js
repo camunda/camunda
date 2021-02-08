@@ -16,7 +16,23 @@ export function format(date, formatStr = 'PP') {
 }
 
 export async function loadDateTranslation(localeCode) {
-  if (localeCode !== 'en') {
-    globalLocale = await import(`date-fns/locale/${localeCode}/index.js`);
+  switch (localeCode) {
+    case 'de':
+      return (globalLocale = await import('date-fns/locale/de/index.js'));
+    case 'fr':
+      return (globalLocale = await import('date-fns/locale/fr/index.js'));
+    case 'es':
+      return (globalLocale = await import('date-fns/locale/es/index.js'));
+    case 'hi':
+      return (globalLocale = await import('date-fns/locale/hi/index.js'));
+    case 'it':
+      return (globalLocale = await import('date-fns/locale/it/index.js'));
+    case 'ja':
+      return (globalLocale = await import('date-fns/locale/ja/index.js'));
+    case 'pt':
+      return (globalLocale = await import('date-fns/locale/pt/index.js'));
+    case 'ru':
+      return (globalLocale = await import('date-fns/locale/ru/index.js'));
+    default:
   }
 }

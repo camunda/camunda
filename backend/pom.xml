@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.35.v20201120</jetty.version>
+    <jetty.version>9.4.36.v20210114</jetty.version>
     <jersey.version>2.32</jersey.version>
     <it.test.excludedGroups />
     <test.forkCount />
@@ -166,7 +166,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.12.0</version>
+      <version>3.12.1</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -226,14 +226,14 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.6</version>
+      <version>1.0.7</version>
     </dependency>
 
     <!-- ClassGraph  -->
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.98</version>
+      <version>4.8.102</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -269,7 +269,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

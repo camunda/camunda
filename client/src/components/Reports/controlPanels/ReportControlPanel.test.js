@@ -89,18 +89,11 @@ it('should not disable the groupBy and visualization Selects if view is selected
 });
 
 it('should load the variables of the process', () => {
-  const node = shallow(<ReportControlPanel {...props} />);
-
-  node.setProps({
-    report: {
-      ...report,
-      data: {...report.data, processDefinitionKey: 'bar', processDefinitionVersions: ['ALL']},
-    },
-  });
+  shallow(<ReportControlPanel {...props} />);
 
   expect(loadVariables).toHaveBeenCalledWith({
-    processDefinitionKey: 'bar',
-    processDefinitionVersions: ['ALL'],
+    processDefinitionKey: 'aKey',
+    processDefinitionVersions: ['aVersion'],
     tenantIds: [],
   });
 });
@@ -230,49 +223,26 @@ it('should load the process definition xml when a new definition is selected', a
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });
 
-it('should remove incompatible filters when changing the process definition', async () => {
+it('should reset variable groupBy report when changing to a definition that does not have the variable', async () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
       {...props}
       report={{
         ...report,
-        data: {
-          ...report.data,
-          filter: [
-            {type: 'startDate'},
-            {type: 'executingFlowNodes'},
-            {type: 'executedFlowNodes'},
-            {type: 'variable'},
-          ],
-        },
+        data: {...report.data, groupBy: {type: 'variable', value: {name: 'doubleVar'}}},
       }}
       updateReport={spy}
+      setLoading={jest.fn()}
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
-
-  expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
-});
-
-it('should reset the groupby and visualization when changing process definition and groupby is variable', async () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <ReportControlPanel
-      {...props}
-      report={{...report, data: {...report.data, groupBy: {type: 'variable'}}}}
-      updateReport={spy}
-    />
-  );
-
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
-
+  await node.find(DefinitionSelection).prop('onChange')({});
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
 
-it('should reset the view, groupby and visualization when changing process definition and view is variable', async () => {
+it('should reset variable view report when changing to a definition that does not have the variable', async () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -288,21 +258,63 @@ it('should reset the view, groupby and visualization when changing process defin
         },
       }}
       updateReport={spy}
+      setLoading={jest.fn()}
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
+  await node.find(DefinitionSelection).prop('onChange')({});
 
   expect(spy.mock.calls[0][0].view).toEqual({$set: null});
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
 
+it('should reset distributed by variable report when changing to a definition that does not have the variable', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          distributedBy: {type: 'variable', value: {name: 'doubleVar'}},
+        },
+      }}
+      updateReport={spy}
+      setLoading={jest.fn()}
+    />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].distributedBy).toEqual({$set: {type: 'none', value: null}});
+});
+
+it('should not reset variable report when changing to a definition that has the same variable', async () => {
+  loadVariables.mockReturnValue([{name: 'doubleVar'}]);
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={{
+        ...report,
+        data: {...report.data, groupBy: {type: 'variable', value: {name: 'doubleVar'}}},
+      }}
+      updateReport={spy}
+      setLoading={jest.fn()}
+    />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+  expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
+});
+
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
+  await node.find(DefinitionSelection).prop('onChange')({});
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();

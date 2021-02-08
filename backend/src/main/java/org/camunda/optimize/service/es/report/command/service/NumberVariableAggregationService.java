@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
@@ -30,8 +29,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 @Component
 public class NumberVariableAggregationService {
 
-  private final ConfigurationService configurationService;
-
   public Optional<AggregationBuilder> createNumberVariableAggregation(final VariableAggregationContext context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {
       return Optional.empty();
@@ -45,15 +42,12 @@ public class NumberVariableAggregationService {
 
     final double intervalSize = getIntervalSize(context, min.get());
     final double max = context.getMaxVariableValue();
-    int numberOfBuckets = 0;
 
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)
       .field(context.getNestedVariableValueFieldLabel());
 
-    for (double start = min.get();
-         start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
-         start += intervalSize, numberOfBuckets++) {
+    for (double start = min.get(); start <= max; start += intervalSize) {
       RangeAggregator.Range range =
         new RangeAggregator.Range(
           getKeyForNumberBucket(context.getVariableType(), start),

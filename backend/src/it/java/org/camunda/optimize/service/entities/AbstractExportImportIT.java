@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.entities;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -14,7 +13,8 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -350,8 +350,8 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     dashboard.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     dashboard.setLastModified(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     dashboard.setAvailableFilters(Arrays.asList(
-      new DashboardFilterDto(DashboardFilterType.START_DATE, null),
-      new DashboardFilterDto(DashboardFilterType.END_DATE, null)
+      new DashboardStartDateFilterDto(),
+      new DashboardEndDateFilterDto()
     ));
 
     return dashboard;

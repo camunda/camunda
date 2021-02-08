@@ -17,15 +17,21 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +39,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
@@ -49,8 +56,9 @@ public class AssigneeCandidateGroupService {
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
   private final UserTaskIdentityCacheService identityCacheService;
+  private final ReportService reportService;
 
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type ){
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type) {
     return identityCacheService.getIdentityByIdAndType(id, type);
   }
 
@@ -62,7 +70,7 @@ public class AssigneeCandidateGroupService {
     return assigneeIds
       .stream()
       .map(id -> assigneesById.getOrDefault(id, new UserDto(id)))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<String> getAllAssigneeIdsForProcess(@NonNull final String userId,
@@ -74,16 +82,25 @@ public class AssigneeCandidateGroupService {
 
   public IdentitySearchResultResponseDto searchForAssigneesAsUser(
     @NonNull final String userId,
-    @NonNull final AssigneeCandidateGroupSearchRequestDto requestDto) {
-    validateDefinitionAccess(userId, requestDto.getProcessDefinitionKey(), requestDto.getTenantIds());
-
-    // this is not efficient but a compromise assuming assignee cardinality is usually within a handleable frame
-    // and that the effort to enrich the cache data with the definition scope is for now too complex to be worth it
-    final Set<String> assigneeIdsForProcess = assigneeAndCandidateGroupsReader.getAssigneeIdsForProcess(
-      requestDto.getProcessDefinitionKey(), requestDto.getTenantIds()
+    @NonNull final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    return searchForAssignees(
+      requestDto.getLimit(),
+      requestDto.getTerms().orElse(""),
+      validateAccessAndCreateDefinitionTenantMap(
+        userId,
+        requestDto.getProcessDefinitionKey(),
+        requestDto.getTenantIds()
+      )
     );
-    return identityCacheService.searchAmongIdentitiesWithIds(
-      requestDto.getTerms().orElse(""), assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPES, requestDto.getLimit()
+  }
+
+  public IdentitySearchResultResponseDto searchForAssigneesAsUser(
+    @NonNull final String userId,
+    @NonNull final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    return searchForAssignees(
+      requestDto.getLimit(),
+      requestDto.getTerms().orElse(""),
+      retrieveAuthorizedDefinitionTenantMap(userId, requestDto.getReportIds())
     );
   }
 
@@ -95,7 +112,7 @@ public class AssigneeCandidateGroupService {
     return assigneeIds
       .stream()
       .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<String> getAllCandidateGroups(@NonNull final String userId,
@@ -107,19 +124,25 @@ public class AssigneeCandidateGroupService {
 
   public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(
     @NonNull final String userId,
-    @NonNull final AssigneeCandidateGroupSearchRequestDto requestDto) {
-    validateDefinitionAccess(userId, requestDto.getProcessDefinitionKey(), requestDto.getTenantIds());
-
-    // this is not efficient but a compromise assuming assignee cardinality is usually within a handleable frame
-    // and that the effort to enrich the cache data with the definition scope is for now too complex to be worth it
-    final Set<String> candidateGroupIdsForProcess = assigneeAndCandidateGroupsReader.getCandidateGroupIdsForProcess(
-      requestDto.getProcessDefinitionKey(), requestDto.getTenantIds()
-    );
-    return identityCacheService.searchAmongIdentitiesWithIds(
+    @NonNull final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    return searchForCandidateGroups(
+      requestDto.getLimit(),
       requestDto.getTerms().orElse(""),
-      candidateGroupIdsForProcess,
-      CANDIDATE_GROUP_IDENTITY_TYPES,
-      requestDto.getLimit()
+      validateAccessAndCreateDefinitionTenantMap(
+        userId,
+        requestDto.getProcessDefinitionKey(),
+        requestDto.getTenantIds()
+      )
+    );
+  }
+
+  public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(
+    @NonNull final String userId,
+    @NonNull final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    return searchForCandidateGroups(
+      requestDto.getLimit(),
+      requestDto.getTerms().orElse(""),
+      retrieveAuthorizedDefinitionTenantMap(userId, requestDto.getReportIds())
     );
   }
 
@@ -130,6 +153,67 @@ public class AssigneeCandidateGroupService {
     if (!identitiesToSync.isEmpty()) {
       identityCacheService.resolveAndAddIdentities(identitiesToSync);
     }
+  }
+
+  private IdentitySearchResultResponseDto searchForAssignees(
+    final int limit,
+    @NonNull final String terms,
+    @NonNull Map<String, Set<String>> definitionKeyToTenantsMap) {
+    // this is not efficient but a compromise assuming assignee cardinality is usually within a handleable frame
+    // and that the effort to enrich the cache data with the definition scope is for now too complex to be worth it
+    final Set<String> assigneeIdsForProcess =
+      assigneeAndCandidateGroupsReader.getAssigneeIdsForProcess(definitionKeyToTenantsMap);
+    return
+      identityCacheService.searchAmongIdentitiesWithIds(terms, assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPES, limit);
+  }
+
+  private IdentitySearchResultResponseDto searchForCandidateGroups(
+    final int limit,
+    @NonNull final String terms,
+    @NonNull Map<String, Set<String>> definitionKeyToTenantsMap) {
+    // this is not efficient but a compromise assuming assignee cardinality is usually within a handleable frame
+    // and that the effort to enrich the cache data with the definition scope is for now too complex to be worth it
+    final Set<String> candidateGroupIdsForProcess =
+      assigneeAndCandidateGroupsReader.getCandidateGroupIdsForProcess(definitionKeyToTenantsMap);
+    return identityCacheService.searchAmongIdentitiesWithIds(
+      terms,
+      candidateGroupIdsForProcess,
+      CANDIDATE_GROUP_IDENTITY_TYPES,
+      limit
+    );
+  }
+
+  private Map<String, Set<String>> retrieveAuthorizedDefinitionTenantMap(@NonNull final String userId,
+                                                                         @NonNull final List<String> reportIds) {
+    final List<ReportDefinitionDto> reports = reportService.getAllAuthorizedReportsForIds(userId, reportIds);
+    // Add all single reports contained within combined reports
+    reports.addAll(
+      reports.stream()
+        .filter(CombinedReportDefinitionRequestDto.class::isInstance)
+        .map(CombinedReportDefinitionRequestDto.class::cast)
+        .flatMap(report ->
+                   reportService.getAllAuthorizedReportsForIds(userId, report.getData().getReportIds()).stream())
+        .collect(Collectors.toList()));
+    return reports.stream()
+      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
+      .map(SingleProcessReportDefinitionRequestDto.class::cast)
+      .collect(toMap(
+        r -> r.getData().getProcessDefinitionKey(),
+        r -> Sets.newHashSet(r.getData().getTenantIds()),
+        (u, v) -> {
+          u.addAll(v);
+          return u;
+        }
+      ));
+  }
+
+  private Map<String, Set<String>> validateAccessAndCreateDefinitionTenantMap(@NonNull final String userId,
+                                                                              @NonNull final String definitionKey,
+                                                                              @NonNull final List<String> tenantIds) {
+    validateDefinitionAccess(userId, definitionKey, tenantIds);
+    final Map<String, Set<String>> definitionKeyToTenantsMap = new HashMap<>();
+    definitionKeyToTenantsMap.put(definitionKey, Sets.newHashSet(tenantIds));
+    return definitionKeyToTenantsMap;
   }
 
   private void validateDefinitionAccess(final @NonNull String userId,

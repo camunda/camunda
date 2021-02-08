@@ -55,12 +55,12 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+                                                              final FlowNodeStateTestValues flowNodeStatusValues) {
     assertThat(result.getEntryForKey(DEFAULT_USERNAME).map(MapResultEntryDto::getValue).orElse(null))
-      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(DEFAULT_USERNAME));
+      .isEqualTo(flowNodeStatusValues.getExpectedWorkDurationValues().get(DEFAULT_USERNAME));
     assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
-      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(SECOND_USER));
+      .isEqualTo(flowNodeStatusValues.getExpectedWorkDurationValues().get(SECOND_USER));
   }
 
   @Override
@@ -106,7 +106,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
@@ -129,7 +128,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
         SECOND_USER, new Double[]{SET_DURATIONS[1]}
       )
     );
-    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Override

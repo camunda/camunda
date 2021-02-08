@@ -8,9 +8,6 @@ def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
@@ -176,40 +173,6 @@ String nginxContainerSpec(boolean ssl = false, boolean basicAuth = false, int fr
    """ + basicAuthConfig + sslConfig
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: maven:3.6.3-jdk-8-slim
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 String securedEsTestPodSpec(def esVersion, def camBpmVersion) {
   def nginxConfigBasicAuth = nginxContainerSpec(false, true, 80)
   def nginxConfigSslBasicAuth = nginxContainerSpec(true, true, 9200)
@@ -237,16 +200,12 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
         optimizeCloneGitRepo(params.BRANCH)
-        script {
-          def mavenProps = readMavenPom().getProperties()
-          env.ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        setBuildEnvVars()
       }
     }
     stage('Security') {

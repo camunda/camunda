@@ -85,10 +85,8 @@ public class EventProcessInstanceWriter {
 
   public void deleteInstancesThatEndedBefore(final OffsetDateTime endDate) {
     final String indexName = getIndexName();
-    final String deletedItemName = "event process instances";
-    final String deletedItemIdentifier = String.format(
-      "%s in index %s that ended before %s", deletedItemName, indexName, endDate
-    );
+    final String deletedItemIdentifier =
+      String.format("event process instances in index %s that ended before %s", indexName, endDate);
     log.info("Performing cleanup on {}", deletedItemIdentifier);
 
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
@@ -100,7 +98,7 @@ public class EventProcessInstanceWriter {
         .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)));
 
       ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient, filterQuery, deletedItemName, deletedItemIdentifier, false, indexName
+        esClient, filterQuery, deletedItemIdentifier, false, indexName
       );
     } finally {
       progressReporter.stop();
@@ -137,10 +135,7 @@ public class EventProcessInstanceWriter {
   }
 
   public void deleteEventsWithIdsInFromAllInstances(final List<String> eventIdsToDelete) {
-    final String updateItem = String.format(
-      "event instance events with ID from list of size %s",
-      eventIdsToDelete.size()
-    );
+    final String updateItem = String.format("%d event process instance events by ID", eventIdsToDelete.size());
 
     final NestedQueryBuilder query = nestedQuery(
       EVENTS,

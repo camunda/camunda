@@ -69,7 +69,7 @@ public class StatusNotifier implements ImportObserver {
   }
 
   private void sendStatus() {
-    StatusResponseDto result = statusCheckingService.getStatusResponse();
+    StatusResponseDto result = statusCheckingService.getCachedStatusResponse();
     try {
       if (session.isOpen()) {
         session.getBasicRemote().sendText(objectMapper.writeValueAsString(result));

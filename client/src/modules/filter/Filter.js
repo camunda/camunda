@@ -19,7 +19,7 @@ import {
   NodeDuration,
 } from './modals';
 import FilterList from './FilterList';
-import {loadValues, filterIncompatibleExistingFilters} from './service';
+import {loadValues, filterSameTypeExistingFilters} from './service';
 import InstanceFilters from './InstanceFilters';
 import ViewFilters from './ViewFilters';
 
@@ -98,16 +98,8 @@ export default class Filter extends React.Component {
   };
 
   addFilter = (newFilter) => {
-    let filters = this.props.data;
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'completedInstancesOnly',
-    ]);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['runningInstancesOnly']);
-    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['canceledInstancesOnly']);
-
     newFilter.filterLevel = this.props.filterLevel;
+    const filters = filterSameTypeExistingFilters(this.props.data, newFilter);
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
   };
@@ -139,7 +131,7 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByInstancesOnly = (type) => () => {
+  filterByTypeOnly = (type) => () => {
     this.addFilter({
       type,
       data: null,
@@ -169,7 +161,7 @@ export default class Filter extends React.Component {
           <FilterOptions
             processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
             openNewFilterModal={this.openNewFilterModal}
-            filterByInstancesOnly={this.filterByInstancesOnly}
+            filterByTypeOnly={this.filterByTypeOnly}
           />
         </div>
         {filters.length === 0 && (
@@ -182,6 +174,7 @@ export default class Filter extends React.Component {
           openEditFilterModal={this.openEditFilterModal}
           data={filters}
           deleteFilter={this.deleteFilter}
+          variables={this.props.variables}
         />
         <FilterModal
           addFilter={this.addFilter}

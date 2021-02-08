@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -18,7 +17,6 @@ import org.springframework.context.ApplicationContext;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -77,7 +75,7 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
 
   protected abstract T fetchAuthorizationsForUserId(final String userId);
 
-  protected abstract T fetchAuthorizationsForGroupId(final String userId);
+  protected abstract T fetchAuthorizationsForGroupId(final String groupId);
 
   private void initAuthorizationsCache() {
     userAuthorizationLoadingCache = Caffeine.newBuilder()
@@ -91,14 +89,12 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
       .build(this::fetchAuthorizationsForGroupId);
   }
 
-  public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final String engine,
-                                                                                 final List<AuthorizationDto> allEngineAuthorizations,
-                                                                                 final List<String> relevantPermissions,
-                                                                                 final String userId,
-                                                                                 final List<GroupDto> userGroups,
-                                                                                 final int resourceType) {
+  public static ResolvedResourceTypeAuthorizations resolveUserResourceAuthorizations(final String engine,
+                                                                                     final List<AuthorizationDto> engineAuthorizationsOfUser,
+                                                                                     final List<String> relevantPermissions,
+                                                                                     final int resourceType) {
     return resolveResourceAuthorizations(
-      mapToEngineAuthorizations(engine, allEngineAuthorizations, userId, userGroups),
+      mapToEngineAuthorizations(engine, engineAuthorizationsOfUser),
       relevantPermissions,
       resourceType
     );
@@ -107,10 +103,10 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final String engine,
                                                                                  final List<AuthorizationDto> allEngineAuthorizations,
                                                                                  final List<String> relevantPermissions,
-                                                                                 final List<GroupDto> groups,
+                                                                                 final List<String> groupIds,
                                                                                  final int resourceType) {
     return resolveResourceAuthorizations(
-      mapToEngineAuthorizations(engine, allEngineAuthorizations, groups),
+      mapToEngineAuthorizations(engine, allEngineAuthorizations, groupIds),
       relevantPermissions,
       resourceType
     );
@@ -143,25 +139,23 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   }
 
   public static EngineAuthorizations mapToEngineAuthorizations(final String engine,
-                                                               final List<AuthorizationDto> allEngineAuthorizations,
-                                                               final String userId,
-                                                               final List<GroupDto> userGroups) {
+                                                               final List<AuthorizationDto> engineAuthorizationsForUser) {
     return new EngineAuthorizations(
       engine,
-      extractGlobalAuthorizations(allEngineAuthorizations),
-      extractGroupAuthorizations(userGroups, allEngineAuthorizations),
-      extractUserAuthorizations(userId, allEngineAuthorizations)
+      extractGlobalAuthorizations(engineAuthorizationsForUser),
+      extractAllGroupAuthorizations(engineAuthorizationsForUser),
+      extractAllUserAuthorizations(engineAuthorizationsForUser)
     );
   }
 
   public static EngineAuthorizations mapToEngineAuthorizations(final String engine,
                                                                final List<AuthorizationDto> allEngineAuthorizations,
-                                                               final List<GroupDto> groups) {
+                                                               final List<String> groupIds) {
     return new EngineAuthorizations(
       engine,
       extractGlobalAuthorizations(allEngineAuthorizations),
-      extractGroupAuthorizations(groups, allEngineAuthorizations),
-      Collections.EMPTY_LIST
+      extractAuthorizationsForGroups(groupIds, allEngineAuthorizations),
+      Collections.emptyList()
     );
   }
 
@@ -172,20 +166,25 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
       .collect(Collectors.toList());
   }
 
-  private static List<AuthorizationDto> extractGroupAuthorizations(final List<GroupDto> groupsOfUser,
-                                                                   final List<AuthorizationDto> allAuthorizations) {
-    final Set<String> groupIds = groupsOfUser.stream().map(GroupDto::getId).collect(Collectors.toSet());
+  private static List<AuthorizationDto> extractAuthorizationsForGroups(final List<String> groupsIdsOfUser,
+                                                                       final List<AuthorizationDto> allAuthorizations) {
     return allAuthorizations
       .stream()
-      .filter(a -> groupIds.contains(a.getGroupId()))
+      .filter(a -> groupsIdsOfUser.contains(a.getGroupId()))
       .collect(Collectors.toList());
   }
 
-  private static List<AuthorizationDto> extractUserAuthorizations(final String username,
-                                                                  final List<AuthorizationDto> allAuthorizations) {
-    return allAuthorizations
+  private static List<AuthorizationDto> extractAllGroupAuthorizations(final List<AuthorizationDto> authorizations) {
+    return authorizations
       .stream()
-      .filter(a -> username.equals(a.getUserId()))
+      .filter(a -> a.getGroupId() != null)
+      .collect(Collectors.toList());
+  }
+
+  private static List<AuthorizationDto> extractAllUserAuthorizations(final List<AuthorizationDto> allAuthorizationsOfUser) {
+    return allAuthorizationsOfUser
+      .stream()
+      .filter(a -> a.getUserId() != null)
       .collect(Collectors.toList());
   }
 

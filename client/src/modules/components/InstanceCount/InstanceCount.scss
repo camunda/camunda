@@ -103,19 +103,13 @@
       }
 
       .ActionItem {
-        width: 100%;
         min-height: 41px;
-        padding-left: 2px;
-
-        .content {
-          padding: 6px 4px;
-        }
 
         .Button {
           display: none;
         }
 
-        .PreviewItemValue {
+        .parameterName {
           max-width: unset;
           overflow: unset;
         }

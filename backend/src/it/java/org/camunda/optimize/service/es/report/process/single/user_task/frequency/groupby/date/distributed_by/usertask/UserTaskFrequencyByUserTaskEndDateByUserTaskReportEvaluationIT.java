@@ -5,41 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.usertask;
 
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT extends UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT {
-
-  @Test
-  public void groupedByEndDateWithExecutionStateRunning_setIsCompleteFlagToTrue() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isEmpty();
-    assertThat(result.getIsComplete()).isTrue();
-  }
+public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT
+  extends UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {

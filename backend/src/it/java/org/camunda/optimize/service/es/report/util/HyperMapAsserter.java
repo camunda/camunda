@@ -34,11 +34,6 @@ public class HyperMapAsserter {
     return this;
   }
 
-  public HyperMapAsserter isComplete(boolean isComplete) {
-    expectedResult.setIsComplete(isComplete);
-    return this;
-  }
-
   public GroupByAdder groupByContains(final String groupByKey) {
     return new GroupByAdder(this, groupByKey);
   }
@@ -64,13 +59,6 @@ public class HyperMapAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
-    assertThat(actualResult.getIsComplete())
-      .as(String.format(
-        "IsComplete status should be [%s] but is [%s].",
-        expectedResult.getIsComplete(),
-        actualResult.getIsComplete()
-      ))
-      .isEqualTo(expectedResult.getIsComplete());
     assertThat(actualResult.getData())
       .as("Data should not be null.")
       .isNotNull();
@@ -159,14 +147,14 @@ public class HyperMapAsserter {
     private String groupByLabel;
     private List<MapResultEntryDto> distributedByEntry = new ArrayList<>();
 
-    public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey) {
-      this(asserter, groupByKey, groupByKey);
-    }
-
     public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey, final String groupByLabel) {
       this.asserter = asserter;
       this.groupByKey = groupByKey;
       this.groupByLabel = groupByLabel;
+    }
+
+    public GroupByAdder(final HyperMapAsserter asserter, final String groupByKey) {
+      this(asserter, groupByKey, groupByKey);
     }
 
     public GroupByAdder distributedByContains(Collection<MapResultEntryDto> entries) {
@@ -185,8 +173,7 @@ public class HyperMapAsserter {
     }
 
     public GroupByAdder groupByContains(final String groupByKey) {
-      add();
-      return new GroupByAdder(asserter, groupByKey);
+      return groupByContains(groupByKey, groupByKey);
     }
 
     public GroupByAdder groupByContains(final String groupByKey, final String groupByLabel) {

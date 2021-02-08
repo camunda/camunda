@@ -12,6 +12,7 @@ import {t} from 'translation';
 import InstanceStateFilter from './InstanceStateFilter';
 import DateFilter from './DateFilter';
 import VariableFilter from './VariableFilter';
+import AssigneeFilter from './AssigneeFilter';
 
 import './FiltersView.scss';
 
@@ -72,6 +73,26 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                       ...rest,
                       {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
                     ]);
+                  } else {
+                    setFilter(rest);
+                  }
+                }}
+              />
+            );
+          case 'assignee':
+          case 'candidateGroup':
+            const identityFilter = filter.find((filter) => filter.type === type);
+            return (
+              <AssigneeFilter
+                key={idx}
+                config={data}
+                filter={identityFilter?.data}
+                reports={reports}
+                type={type}
+                setFilter={(newFilter) => {
+                  const rest = filter.filter((filter) => filter !== identityFilter);
+                  if (newFilter) {
+                    setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
                   } else {
                     setFilter(rest);
                   }

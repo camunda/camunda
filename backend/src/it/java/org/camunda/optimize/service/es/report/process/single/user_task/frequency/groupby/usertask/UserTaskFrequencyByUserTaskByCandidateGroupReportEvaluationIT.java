@@ -45,10 +45,11 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -235,39 +236,6 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
-
-    importAndRefresh();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -297,14 +265,14 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
       .groupByContains(USER_TASK_2)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+      .groupByContains(USER_TASK_1)
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -312,7 +280,16 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   @Test
   public void testCustomOrderOnResultLabelIsApplied() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT_ID)
+      .userTask(USER_TASK_1).name("thisLabelComesSecond")
+      .userTask(USER_TASK_2).name("thisLabelComesFirst")
+      .endEvent(END_EVENT)
+      .done();
+
+    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(bpmnModelInstance);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -341,59 +318,12 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(USER_TASK_1, "thisLabelComesSecond")
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .groupByContains(USER_TASK_2, "thisLabelComesFirst")
         .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish task 1 and 2 of instance 1 with first candidate group
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish task 1 of instance 2 with first candidate group and leave task 2 of instance 2 unassigned
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish task 1 of instance 3 with second candidate group and leave task 2 of instance 2 unassigned
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto3.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto3.getId());
-
-    importAndRefresh();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(3L)
-      .processInstanceCountWithoutFilters(3L)
-      .groupByContains(USER_TASK_1)
         .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 2., FIRST_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 3., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }

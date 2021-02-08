@@ -7,7 +7,7 @@
 const {createProxyMiddleware} = require('http-proxy-middleware');
 
 module.exports = function (app) {
-  app.use('/api', createProxyMiddleware({target: 'http://localhost:8090'}));
+  app.use(['/api', '/external/api'], createProxyMiddleware({target: 'http://localhost:8090'}));
   app.use(
     '/ws',
     createProxyMiddleware({

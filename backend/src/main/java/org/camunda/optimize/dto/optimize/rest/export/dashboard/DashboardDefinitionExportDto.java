@@ -33,7 +33,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   @NotNull
   private List<ReportLocationDto> reports = new ArrayList<>();
   @NotNull
-  private List<DashboardFilterDto> availableFilters = new ArrayList<>();
+  private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {

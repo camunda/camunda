@@ -10,6 +10,7 @@ import lombok.Data;
 @Data
 public class GlobalCacheConfiguration {
   private CacheConfiguration tenants;
+  private CacheConfiguration definitions;
   private CacheConfiguration definitionEngines;
   private CacheConfiguration eventProcessRoles;
 }

@@ -164,14 +164,10 @@ public class AlertWriter {
    * Delete all alerts that are associated with following report ID
    */
   public void deleteAlertsForReport(String reportId) {
-    String deletedItemName = "all alerts for report";
-    String deletedItemIdentifier = String.format("ID [%s]", reportId);
-
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
-      deletedItemName,
-      deletedItemIdentifier,
+      String.format("all alerts for report with ID [%s]", reportId),
       true,
       ALERT_INDEX_NAME
     );

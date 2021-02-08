@@ -79,7 +79,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

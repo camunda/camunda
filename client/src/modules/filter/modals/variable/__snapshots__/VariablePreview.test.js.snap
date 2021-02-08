@@ -2,176 +2,301 @@
 
 exports[`should combine multiple variable values with or 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+         
+        Var
+        : 
+        <b>
+          varName
+        </b>
+      </span>
+    }
+    overflowOnly={true}
   >
-    varName
-  </span>
-  <span>
-     
-    is
-     
-  </span>
+    <span
+      className="parameterName"
+    >
+       
+      Var
+      : 
+      <b>
+        varName
+      </b>
+    </span>
+  </Tooltip>
   <span
-    key="0"
+    className="filterText"
   >
-    <PreviewItemValue>
-      varValue
-    </PreviewItemValue>
     <span>
+       
+      is
+       
+    </span>
+    <span
+      key="0"
+    >
+      <b>
+        varValue
+      </b>
       <span>
-         
-        or
-         
+        <span>
+           
+          or
+           
+        </span>
       </span>
     </span>
-  </span>
-  <span
-    key="1"
-  >
-    <PreviewItemValue>
-      varValue2
-    </PreviewItemValue>
+    <span
+      key="1"
+    >
+      <b>
+        varValue2
+      </b>
+    </span>
   </span>
 </Fragment>
 `;
 
 exports[`should combine multiple variable values with or 2`] = `
 <Fragment>
-  <span
-    className="parameterName"
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+         
+        Var
+        : 
+        <b>
+          varName
+        </b>
+      </span>
+    }
+    overflowOnly={true}
   >
-    varName
-  </span>
-  <span>
-     
-    is neither
-     
-  </span>
+    <span
+      className="parameterName"
+    >
+       
+      Var
+      : 
+      <b>
+        varName
+      </b>
+    </span>
+  </Tooltip>
   <span
-    key="0"
+    className="filterText"
   >
-    <PreviewItemValue>
-      null
-    </PreviewItemValue>
     <span>
+       
+      is neither
+       
+    </span>
+    <span
+      key="0"
+    >
+      <b>
+        null
+      </b>
       <span>
-         
-        nor
-         
+        <span>
+           
+          nor
+           
+        </span>
+      </span>
+      <b>
+        undefined
+      </b>
+      <span>
+        <span>
+           
+          nor
+           
+        </span>
       </span>
     </span>
-    <PreviewItemValue>
-      undefined
-    </PreviewItemValue>
-    <span>
+    <span
+      key="1"
+    >
+      <b>
+        varValue
+      </b>
       <span>
-         
-        nor
-         
+        <span>
+           
+          nor
+           
+        </span>
       </span>
     </span>
-  </span>
-  <span
-    key="1"
-  >
-    <PreviewItemValue>
-      varValue
-    </PreviewItemValue>
-    <span>
-      <span>
-         
-        nor
-         
-      </span>
+    <span
+      key="2"
+    >
+      <b>
+        varValue2
+      </b>
     </span>
-  </span>
-  <span
-    key="2"
-  >
-    <PreviewItemValue>
-      varValue2
-    </PreviewItemValue>
   </span>
 </Fragment>
 `;
 
 exports[`should display correct preview even if no operator is defined 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+         
+        Var
+        : 
+        <b>
+          varName
+        </b>
+      </span>
+    }
+    overflowOnly={true}
   >
-    varName
-  </span>
-  <span>
-     
-    is
-     
-  </span>
+    <span
+      className="parameterName"
+    >
+       
+      Var
+      : 
+      <b>
+        varName
+      </b>
+    </span>
+  </Tooltip>
   <span
-    key="0"
+    className="filterText"
   >
-    <PreviewItemValue>
-      true
-    </PreviewItemValue>
     <span>
+       
+      is
+       
+    </span>
+    <span
+      key="0"
+    >
+      <b>
+        true
+      </b>
       <span>
-         
-        or
-         
+        <span>
+           
+          or
+           
+        </span>
       </span>
     </span>
-  </span>
-  <span
-    key="1"
-  >
-    <PreviewItemValue>
-      false
-    </PreviewItemValue>
+    <span
+      key="1"
+    >
+      <b>
+        false
+      </b>
+    </span>
   </span>
 </Fragment>
 `;
 
 exports[`should use contains operators 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+         
+        Var
+        : 
+        <b>
+          varName
+        </b>
+      </span>
+    }
+    overflowOnly={true}
   >
-    varName
-  </span>
-  <span>
-     
-    contains
-     
-  </span>
+    <span
+      className="parameterName"
+    >
+       
+      Var
+      : 
+      <b>
+        varName
+      </b>
+    </span>
+  </Tooltip>
   <span
-    key="0"
+    className="filterText"
   >
-    <PreviewItemValue>
-      varValue
-    </PreviewItemValue>
+    <span>
+       
+      contains
+       
+    </span>
+    <span
+      key="0"
+    >
+      <b>
+        varValue
+      </b>
+    </span>
   </span>
 </Fragment>
 `;
 
 exports[`should use less/greater for comparison operators 1`] = `
 <Fragment>
-  <span
-    className="parameterName"
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+         
+        Var
+        : 
+        <b>
+          varName
+        </b>
+      </span>
+    }
+    overflowOnly={true}
   >
-    varName
-  </span>
-  <span>
-     
-    is less than
-     
-  </span>
+    <span
+      className="parameterName"
+    >
+       
+      Var
+      : 
+      <b>
+        varName
+      </b>
+    </span>
+  </Tooltip>
   <span
-    key="0"
+    className="filterText"
   >
-    <PreviewItemValue>
-      varValue
-    </PreviewItemValue>
+    <span>
+       
+      is less than
+       
+    </span>
+    <span
+      key="0"
+    >
+      <b>
+        varValue
+      </b>
+    </span>
   </span>
 </Fragment>
 `;

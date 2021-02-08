@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -30,8 +31,10 @@ public class StatusRestServiceIT extends AbstractIT {
 
   @Test
   public void getConnectedStatus() {
+    // when
     final StatusResponseDto statusWithProgressDto = statusClient.getStatus();
 
+    // then
     assertThat(statusWithProgressDto.isConnectedToElasticsearch()).isTrue();
     assertThat(statusWithProgressDto.getEngineStatus()).hasSize(1);
     assertThat(statusWithProgressDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsConnected()).isTrue();
@@ -80,6 +83,21 @@ public class StatusRestServiceIT extends AbstractIT {
       EngineStatusDto::getIsConnected,
       EngineStatusDto::getIsImporting
     ).containsExactly(false, false);
+  }
+
+  @Test
+  public void getConnectedStatusSkipsCache() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest engineVersionRequestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/version");
+
+    // when
+    statusClient.getStatus();
+    statusClient.getStatus();
+
+    // then both requests make actual requests to the engine
+    engineMockServer.verify(engineVersionRequestMatcher, VerificationTimes.exactly(2));
   }
 
   private static Stream<ErrorResponseMock> engineErrors() {

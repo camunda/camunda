@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import update from 'immutability-helper';
 
-import {getFlowNodeNames, loadInputVariables, loadOutputVariables} from 'services';
+import {getFlowNodeNames, loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 
 import {InstanceCount} from './InstanceCount';
 
@@ -23,6 +23,7 @@ jest.mock('services', () => {
     loadOutputVariables: jest
       .fn()
       .mockReturnValue([{id: 'output1', name: 'Output 1', type: 'String'}]),
+    loadVariables: jest.fn().mockReturnValue([{name: 'variable1', type: 'String'}]),
   };
 });
 
@@ -30,6 +31,7 @@ beforeEach(() => {
   getFlowNodeNames.mockClear();
   loadInputVariables.mockClear();
   loadOutputVariables.mockClear();
+  loadVariables.mockClear();
 });
 
 const props = {
@@ -121,6 +123,23 @@ it('should load flow node names for process reports', () => {
 
   expect(getFlowNodeNames).toHaveBeenCalledWith('aKey', '1', 'tenantId');
   expect(node.find('FilterList').prop('flowNodeNames')).toEqual({nodeA: 'Flow Node A'});
+});
+
+it('should load variable names for process reports', async () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  node.find('span').first().simulate('click');
+
+  await flushPromises();
+
+  const payload = {
+    processDefinitionKey: 'aKey',
+    processDefinitionVersions: ['1'],
+    tenantIds: ['tenantId'],
+  };
+
+  expect(loadVariables).toHaveBeenCalledWith(payload);
+  expect(node.find('FilterList').prop('variables')).toEqual([{name: 'variable1', type: 'String'}]);
 });
 
 it('should load variable names for decision reports', async () => {

@@ -30,6 +30,6 @@ public class StatusRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public StatusResponseDto getImportStatus() {
     return statusCheckingService.getStatusResponse();
-
   }
+
 }

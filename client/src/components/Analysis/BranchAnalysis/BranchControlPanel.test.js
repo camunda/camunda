@@ -7,9 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {getFlowNodeNames} from 'services';
+import {getFlowNodeNames, loadVariables} from 'services';
 
-import BranchControlPanel from './BranchControlPanel';
+import {BranchControlPanel} from './BranchControlPanel';
 
 jest.mock('services', () => {
   return {
@@ -18,6 +18,7 @@ jest.mock('services', () => {
       a: 'foo',
       b: 'bar',
     }),
+    loadVariables: jest.fn().mockReturnValue([{name: 'variable1', type: 'String'}]),
   };
 });
 
@@ -27,6 +28,7 @@ const data = {
   tenantIds: [],
   filter: null,
   xml: 'aFooXml',
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 const emptyData = {
@@ -49,8 +51,8 @@ it('should contain a gateway and end Event field', () => {
 it('should show a please select message if an entity is not selected', () => {
   const node = shallow(<BranchControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('Select Gateway');
-  expect(node.find('ActionItem').at(1).dive()).toIncludeText('Select End Event');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('Select Gateway');
+  expect(node.find('SelectionPreview').at(1).dive()).toIncludeText('Select End Event');
 });
 
 it('should show the element name if an element is selected', () => {
@@ -65,8 +67,8 @@ it('should show the element name if an element is selected', () => {
     />
   );
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('I am a Gateway');
-  expect(node.find('ActionItem').at(0).dive()).not.toIncludeText('gatewayId');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('I am a Gateway');
+  expect(node.find('SelectionPreview').at(0).dive()).not.toIncludeText('gatewayId');
 });
 
 it('should show the element id if an element has no name', () => {
@@ -81,16 +83,18 @@ it('should show the element id if an element has no name', () => {
     />
   );
 
-  expect(node.find('ActionItem').at(0).dive()).toIncludeText('gatewayId');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('gatewayId');
 });
 
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
   const node = await shallow(<BranchControlPanel hoveredControl="gateway" {...emptyData} />);
 
-  expect(node.find('ActionItem').at(0)).toBeDisabled();
-  expect(node.find('ActionItem').at(1)).toBeDisabled();
+  expect(node.find('SelectionPreview').at(0)).toBeDisabled();
+  expect(node.find('SelectionPreview').at(1)).toBeDisabled();
 
-  expect(node.find('ActionItem').at(1)).not.toHaveClassName('BranchControlPanel__config--hover');
+  expect(node.find('SelectionPreview').at(1)).not.toHaveClassName(
+    'BranchControlPanel__config--hover'
+  );
 });
 
 it('should pass the xml to the Filter component', async () => {
@@ -99,7 +103,7 @@ it('should pass the xml to the Filter component', async () => {
   expect(filter.find('[xml="aFooXml"]')).toExist();
 });
 
-it('should load the flownode names and hand them to the filter if process definition changes', async () => {
+it('should load the flownode and variable names and hand them to the filter if process definition changes', async () => {
   const node = shallow(<BranchControlPanel {...data} />);
   node.setProps({
     processDefinitionKey: 'fooKey',
@@ -110,7 +114,9 @@ it('should load the flownode names and hand them to the filter if process defini
   node.update();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(loadVariables).toHaveBeenCalled();
   expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
+  expect(node.find('Filter').prop('variables')).toEqual(loadVariables());
 });
 
 it('should display a sentence to describe what the user can do on this page', () => {

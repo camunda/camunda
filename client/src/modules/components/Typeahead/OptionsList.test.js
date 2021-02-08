@@ -94,3 +94,15 @@ it('should not display an option if it is identical to the typed option', () => 
 
   expect(node.find(Dropdown.Option)).toHaveLength(2);
 });
+
+it('should not crash when not providing a mouseDown handler', () => {
+  const node = shallow(
+    <OptionsList {...props}>
+      <Typeahead.Option id="test_option" value="1">
+        Test 1
+      </Typeahead.Option>
+    </OptionsList>
+  );
+
+  node.find(Dropdown.Option).simulate('mousedown');
+});

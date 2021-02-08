@@ -17,9 +17,6 @@ static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE(boolean pushChanges) { return "${PUBLIC_DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize" }
 
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
     'downloads-camunda-cloud-enterprise-release' :
@@ -95,7 +92,7 @@ spec:
         cpu: 2
         memory: 1Gi
   - name: gcloud
-    image: google/cloud-sdk:slim
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
@@ -281,16 +278,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
-
-        script {
-          def mavenProps = readMavenPom().getProperties()
-          env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        optimizeCloneGitRepo(params.BRANCH)
+        setBuildEnvVars()
 
         container('maven') {
           sh ('''

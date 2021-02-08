@@ -243,7 +243,7 @@ public abstract class AbstractUpgradeIT {
     return request().withPath("/" + versionedIndexName).withMethod(DELETE);
   }
 
-  protected ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
+  private ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
     return MockServerUtil.createProxyMockServer(
       elasticConfig.getHost(),
       elasticConfig.getHttpPort(),

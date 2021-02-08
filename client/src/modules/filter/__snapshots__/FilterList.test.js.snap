@@ -1,5 +1,114 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 1`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      type="Decision Instance Filter"
+      warning="Flow Node(s) does not exist"
+    >
+      <NodeListPreview
+        nodes={
+          Array [
+            Object {
+              "id": "flowNodeThatDoesNotExist",
+              "name": undefined,
+            },
+          ]
+        }
+        operator="in"
+        type="executedFlowNodes"
+      />
+    </ActionItem>
+  </li>
+</ul>
+`;
+
+exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 2`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      type="Decision Instance Filter"
+      warning="Flow Node(s) does not exist"
+    >
+      <span
+        className="parameterName"
+      >
+        Flow Node Duration
+      </span>
+      <span
+        className="filterText"
+      >
+        <div
+          className="filterValues"
+        >
+          <div
+            className="flowNode"
+            key="flowNodeThatDoesNotExist"
+          >
+            <b>
+              flowNodeThatDoesNotExist
+            </b>
+            <span>
+               
+              is less than
+               
+            </span>
+            <b>
+              18
+               
+              hours
+            </b>
+          </div>
+        </div>
+      </span>
+    </ActionItem>
+  </li>
+</ul>
+`;
+
+exports[`should disable editing and pass a warning to variablePreview if variable does not exist 1`] = `
+<ul
+  className="FilterList"
+>
+  <li
+    className="listItem"
+    key="0"
+  >
+    <ActionItem
+      onClick={[Function]}
+      type="Decision Instance Filter"
+      warning="Variable does not exist"
+    >
+      <VariablePreview
+        filter={
+          Object {
+            "operator": "in",
+            "values": Array [
+              "varValue",
+            ],
+          }
+        }
+        type="variable"
+        variableName="notANameButAnId"
+      />
+    </ActionItem>
+  </li>
+</ul>
+`;
+
 exports[`should display a flow node duration filter 1`] = `
 <ul
   className="FilterList"
@@ -10,53 +119,40 @@ exports[`should display a flow node duration filter 1`] = `
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
+      warning={false}
     >
       <span
         className="parameterName"
       >
-        Duration
+        Flow Node Duration
       </span>
-      <span>
-         
-        filter is applied to
-         
-      </span>
-      <Tooltip
-        content={
-          <div
-            className="filterValues"
-          >
-            <div>
-              <div
-                className="flowNode"
-              >
-                <PreviewItemValue>
-                  flow node name
-                </PreviewItemValue>
-                <span>
-                   
-                  is less than
-                   
-                </span>
-                <PreviewItemValue>
-                  18
-                   
-                  hours
-                </PreviewItemValue>
-              </div>
-            </div>
-          </div>
-        }
-        position="bottom"
+      <span
+        className="filterText"
       >
-        <span
-          className="PreviewItemValue"
+        <div
+          className="filterValues"
         >
-          1
-           
-          Flow Node
-        </span>
-      </Tooltip>
+          <div
+            className="flowNode"
+            key="a"
+          >
+            <b>
+              flow node name
+            </b>
+            <span>
+               
+              is less than
+               
+            </span>
+            <b>
+              18
+               
+              hours
+            </b>
+          </div>
+        </div>
+      </span>
     </ActionItem>
   </li>
 </ul>
@@ -72,6 +168,7 @@ exports[`should display date preview if the filter is a date filter 1`] = `
   >
     <ActionItem
       onClick={[Function]}
+      type="Decision Instance Filter"
     >
       <DateFilterPreview
         filter={

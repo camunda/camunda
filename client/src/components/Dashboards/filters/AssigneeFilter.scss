@@ -1,0 +1,28 @@
+.AssigneeFilter__Dashboard {
+  .AssigneeFilterPreview {
+    .parameterName {
+      display: none;
+    }
+    .PreviewItemValue {
+      background: none;
+      color: inherit;
+      padding: 0;
+      margin: 0;
+      border: none;
+      display: inline;
+      vertical-align: baseline;
+    }
+  }
+
+  .customValue {
+    display: flex;
+
+    .Switch {
+      margin-right: 0;
+    }
+
+    .MultiUserInput {
+      width: 300px;
+    }
+  }
+}

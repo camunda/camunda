@@ -24,7 +24,7 @@ it('should create preview of nodes', () => {
 it('should show the id of the flow node if the name is null', () => {
   const node = shallow(<NodeListPreview {...props} nodes={[{id: 'bar', name: undefined}]} />);
 
-  expect(node.find('PreviewItemValue')).toMatchSnapshot();
+  expect(node.find('b')).toMatchSnapshot();
 });
 
 it('should create preview of selected nodes linked by or', () => {
@@ -68,5 +68,5 @@ it('should show executing node filter', () => {
     <NodeListPreview {...props} operator={undefined} type="executingFlowNodes" />
   );
 
-  expect(node.find('.parameterName')).toIncludeText('Pending or Executing');
+  expect(node.find('.parameterName')).toIncludeText('Running');
 });

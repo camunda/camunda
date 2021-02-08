@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
@@ -28,7 +29,11 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +42,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.IdentityType.GROUP;
+import static org.camunda.optimize.dto.optimize.IdentityType.USER;
 import static org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher.UTF8;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
@@ -46,6 +53,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.GROUP_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.GROUP_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.GROUP_ID_IN;
 import static org.camunda.optimize.service.util.importing.EngineConstants.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.importing.EngineConstants.MEMBER;
@@ -65,6 +73,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_O
 import static org.camunda.optimize.service.util.importing.EngineConstants.USER_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.USER_COUNT_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.USER_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.USER_ID_IN;
 
 @Slf4j
 public class EngineContext {
@@ -97,15 +106,16 @@ public class EngineContext {
 
   public AuthorizedIdentitiesResult getApplicationAuthorizedIdentities() {
     final AuthorizedIdentitiesResult authorizedIdentitiesResult = new AuthorizedIdentitiesResult();
-    final List<AuthorizationDto> optimizeGrantAndRevokeAuthorizations = getAllApplicationAuthorizations().stream()
-      .filter(authorizationDto -> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS.contains(authorizationDto.getResourceId()))
-      .peek(authorizationDto -> {
-        if (AUTHORIZATION_TYPE_GLOBAL == authorizationDto.getType()) {
-          authorizedIdentitiesResult.setGlobalOptimizeGrant(true);
-        }
-      })
-      .filter(authorizationDto -> AUTHORIZATION_TYPE_GLOBAL != authorizationDto.getType())
-      .collect(toList());
+    final List<AuthorizationDto> optimizeGrantAndRevokeAuthorizations =
+      getAllApplicationAuthorizations().stream()
+        .filter(authorizationDto -> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS.contains(authorizationDto.getResourceId()))
+        .peek(authorizationDto -> {
+          if (AUTHORIZATION_TYPE_GLOBAL == authorizationDto.getType()) {
+            authorizedIdentitiesResult.setGlobalOptimizeGrant(true);
+          }
+        })
+        .filter(authorizationDto -> AUTHORIZATION_TYPE_GLOBAL != authorizationDto.getType())
+        .collect(toList());
 
     optimizeGrantAndRevokeAuthorizations.stream()
       .sorted(
@@ -420,7 +430,7 @@ public class EngineContext {
     }
   }
 
-  public List<GroupDto> getAllGroupsOfUser(String userId) {
+  public List<GroupDto> getAllGroupsOfUser(final String userId) {
     try {
       Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -528,6 +538,103 @@ public class EngineContext {
     return new ArrayList<>();
   }
 
+  public List<AuthorizationDto> getAllApplicationAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_APPLICATION, userId);
+    } catch (Exception e) {
+      final String message = String.format(
+        "Could not fetch application authorizations for user with ID [%s] from the Engine with alias [%s] to check " +
+          "the access permissions.",
+        userId,
+        engineAlias
+      );
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message);
+    }
+  }
+
+  public List<AuthorizationDto> getAllProcessDefinitionAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_PROCESS_DEFINITION, userId);
+    } catch (Exception e) {
+      String message = String.format(
+        "Could not fetch process definition authorizations for user with ID [%s] from the Engine with alias [%s] to " +
+          "check the access permissions.",
+        userId,
+        engineAlias
+      );
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public List<AuthorizationDto> getAllDecisionDefinitionAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_DECISION_DEFINITION, userId);
+    } catch (Exception e) {
+      String message = String.format(
+        "Could not fetch decision definition authorizations from the Engine with alias [%s] to check the access " +
+          "permissions.",
+        engineAlias
+      );
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public List<AuthorizationDto> getAllTenantAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_TENANT, userId);
+    } catch (Exception e) {
+      String message = String.format(
+        "Could not fetch tenant authorizations from the Engine with alias [%s] to check the access " +
+          "permissions.",
+        engineAlias
+      );
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public List<AuthorizationDto> getAllGroupAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_GROUP, userId);
+    } catch (Exception e) {
+      log.error(
+        "Could not fetch group authorizations from the engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
+  }
+
+  public List<AuthorizationDto> getAllUserAuthorizationsForUser(final String userId) {
+    try {
+      return getAuthorizationsForTypeForUser(RESOURCE_TYPE_USER, userId);
+    } catch (Exception e) {
+      log.error(
+        "Could not fetch user authorizations from the engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
+  }
+
+  private List<AuthorizationDto> getAuthorizationsForTypeForUser(final int resourceType,
+                                                                 final String userId) {
+    final List<AuthorizationDto> allAuthorizations =
+      getAuthorizationsForTypeForIdentity(resourceType, USER, Arrays.asList(userId, "*"));
+    final List<String> groupIdsForUser = getAllGroupsOfUser(userId).stream().map(GroupDto::getId).collect(toList());
+    if (!groupIdsForUser.isEmpty()) {
+      allAuthorizations.addAll(getAuthorizationsForTypeForIdentity(
+        resourceType,
+        GROUP,
+        groupIdsForUser
+      ));
+    }
+    return allAuthorizations;
+  }
+
   private List<AuthorizationDto> getAuthorizationsForType(final int resourceType) {
     int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
     List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
@@ -558,6 +665,59 @@ public class EngineContext {
       response.close();
     } while (pageOfAuthorizations.size() >= pageSize);
     return totalAuthorizations;
+  }
+
+  private List<AuthorizationDto> getAuthorizationsForTypeForIdentity(final int resourceType,
+                                                                     final IdentityType identityType,
+                                                                     final List<String> identityIds) {
+    int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
+    List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
+    List<AuthorizationDto> pageOfAuthorizations;
+    do {
+      final Response response = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(AUTHORIZATION_ENDPOINT)
+        .queryParam(mapToIdentityQueryParam(identityType), encodeCommaSeparatedListForUri(identityIds))
+        .queryParam(RESOURCE_TYPE, resourceType)
+        .queryParam(INDEX_OF_FIRST_RESULT, totalAuthorizations.size())
+        .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+        .request(MediaType.APPLICATION_JSON)
+        .get();
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+        // @formatter:off
+        pageOfAuthorizations = response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+        totalAuthorizations.addAll(pageOfAuthorizations);
+        // @formatter:on
+      } else {
+        String message = String.format(
+          "Could not fetch authorizations from engine with alias [%s] for [%s]s with IDs [%s]! Error from " +
+            "engine: %s",
+          engineAlias,
+          identityType,
+          identityIds,
+          response.readEntity(String.class)
+        );
+        log.debug(message);
+        throw new OptimizeRuntimeException(message);
+      }
+      response.close();
+    } while (pageOfAuthorizations.size() >= pageSize);
+    return totalAuthorizations;
+  }
+
+  private String mapToIdentityQueryParam(final IdentityType identityType) {
+    if (USER.equals(identityType)) {
+      return USER_ID_IN;
+    }
+    return GROUP_ID_IN;
+  }
+
+  private String encodeCommaSeparatedListForUri(final List<String> stringList) {
+    try {
+      return URLEncoder.encode(String.join(",", stringList), StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      throw new OptimizeRuntimeException("Error while encoding list for URI.", e);
+    }
   }
 
 }

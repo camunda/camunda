@@ -90,7 +90,6 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(6L));
-    assertThat(result.getIsComplete(), is(true));
 
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(4));
@@ -98,54 +97,6 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
     assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
     assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1.));
-  }
-
-  @Test
-  public void reportEvaluationMultiBuckets_resultLimitedByConfig() {
-    // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
-    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    // rule 1
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
-    );
-    // rule 2
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
-    );
-    // rule 3
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(3000.0, "Misc")
-    );
-    // rule 4
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
-    );
-
-    // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
-      decisionDefinitionDto1, decisionDefinitionVersion1
-    ).getResult();
-
-    // then
-    assertThat(result.getInstanceCount(), is(6L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getIsComplete(), is(false));
   }
 
   @Test

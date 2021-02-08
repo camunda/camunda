@@ -12,10 +12,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -46,6 +44,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -297,53 +296,64 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY)).isPresent().get().extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateRunning() {
+  public void evaluateReportWithFlowNodeStatusRunningFilter() {
     // given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    ProcessInstanceEngineDto runningInstance = deployAndStartSimpleUserTaskProcess();
+    final ProcessInstanceEngineDto completedInstance = engineIntegrationExtension.startProcessInstance(
+      runningInstance.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstance.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
+      runningInstance.getProcessDefinitionKey(),
+      runningInstance.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    reportData.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(VIEW).add().buildList());
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent")).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCompleted() {
+  public void evaluateReportWithFlowNodeStatusCompletedFilter() {
     // given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    ProcessInstanceEngineDto runningInstance = deployAndStartSimpleUserTaskProcess();
+    final ProcessInstanceEngineDto completedInstance = engineIntegrationExtension.startProcessInstance(
+      runningInstance.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstance.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
+      runningInstance.getProcessDefinitionKey(),
+      runningInstance.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
+    reportData.setFilter(ProcessFilterBuilder.filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList());
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(END_EVENT)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCanceled() {
+  public void evaluateReportWithFlowNodeStatusCompletedOrCanceledFilter() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
@@ -354,36 +364,43 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .completedOrCanceledFlowNodesOnly()
+        .filterLevel(VIEW)
+        .add()
+        .buildList());
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
-      .extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateAll() {
+  public void evaluateReportWithFlowNodeStatusCanceledFilter() {
     // given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    ProcessInstanceEngineDto instanceWithCanceledFlowNode = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.cancelActivityInstance(instanceWithCanceledFlowNode.getId(), USER_TASK_1);
+    engineIntegrationExtension.startProcessInstance(instanceWithCanceledFlowNode.getDefinitionId());
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
+      instanceWithCanceledFlowNode.getProcessDefinitionKey(),
+      instanceWithCanceledFlowNode.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().filterLevel(VIEW).add().buildList());
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isEqualTo(1.);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -403,33 +420,8 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
-  }
-
-  @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(3);
-    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
-    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -472,7 +464,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void evaluateReportForMoreThenTenEvents() {
+  public void evaluateReportForMoreThanTenEvents() {
     // given
     AbstractServiceTaskBuilder serviceTaskBuilder = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -684,7 +676,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
         .flowNode(TEST_ACTIVITY, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .add()
         .buildList());
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();

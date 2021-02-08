@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
@@ -42,6 +43,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
@@ -65,6 +67,9 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
 public class DecisionImportIT extends AbstractImportIT {
+
+  private static final String DMN_DIAGRAM_NO_INPUT_TYPE = "dmn/compatibility/NoInputType-DMN.dmn";
+  private static final String DMN_DIAGRAM_NO_OUTPUT_TYPE = "dmn/compatibility//NoOutputType-DMN.dmn";
 
   private static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(DecisionDefinitionIndex.TENANT_ID);
@@ -396,6 +401,44 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(allDecisionInstances).isNotEmpty()
       .extracting(DecisionInstanceDto::getDecisionDefinitionKey)
       .allMatch(key -> key.equals(definitionEngineDto.getKey()));
+  }
+
+  @Test
+  public void decisionDefinitionWithInputTypeNull() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto =
+      engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_INPUT_TYPE, DEFAULT_TENANT);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+
+    List<VariableType> variableTypes = allDecisionDefinitions.stream()
+      .flatMap(definition -> definition.getInputVariableNames().stream().map(variable -> variable.getType())).collect(Collectors.toList());
+    assertThat(variableTypes).isNotEmpty()
+      .allMatch(type -> type.equals(VariableType.STRING));
+  }
+
+  @Test
+  public void decisionDefinitionWithOutputTypeNull() {
+    // given
+    final DecisionDefinitionEngineDto definitionEngineDto =
+      engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_OUTPUT_TYPE, DEFAULT_TENANT);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+
+    List<VariableType> variableTypes = allDecisionDefinitions.stream()
+      .flatMap(definition -> definition.getOutputVariableNames().stream().map(variable -> variable.getType())).collect(Collectors.toList());
+    assertThat(variableTypes).isNotEmpty()
+      .allMatch(type -> type.equals(VariableType.STRING));
   }
 
   @Test

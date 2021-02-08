@@ -84,10 +84,7 @@ public class DecisionDefinitionWriter {
 
     final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
-      String.format(
-        "decision definitions with IDs [%s]",
-        decisionDefIds
-      ),
+      String.format("%d decision definitions", decisionDefIds.size()),
       MARK_AS_DELETED_SCRIPT,
       definitionsToDeleteQuery,
       DECISION_DEFINITION_INDEX_NAME

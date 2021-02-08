@@ -13,8 +13,9 @@ public enum DashboardFilterType {
   START_DATE("startDate"),
   END_DATE("endDate"),
   STATE("state"),
-  VARIABLE("variable")
-  ;
+  VARIABLE("variable"),
+  ASSIGNEE("assignee"),
+  CANDIDATE_GROUP("candidateGroup");
 
   private String id;
 

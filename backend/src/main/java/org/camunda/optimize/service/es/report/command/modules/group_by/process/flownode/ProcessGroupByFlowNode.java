@@ -41,8 +41,8 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
 
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
 
-  private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+  private final ConfigurationService configurationService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -80,7 +80,6 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
         addMissingGroupByKeys(flowNodeNames, groupedData, context);
 
         compositeCommandResult.setGroups(groupedData);
-        compositeCommandResult.setIsComplete(byFlowNodeIdAggregation.getSumOfOtherDocCounts() == 0L);
       });
   }
 
@@ -105,7 +104,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

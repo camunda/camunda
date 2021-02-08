@@ -7,7 +7,7 @@
     white-space: nowrap;
 
     .parameterName {
-      font-weight: bold;
+      @include highlighted;
     }
   }
 }

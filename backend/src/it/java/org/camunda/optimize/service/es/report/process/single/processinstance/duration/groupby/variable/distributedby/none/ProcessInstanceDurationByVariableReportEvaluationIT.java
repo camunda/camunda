@@ -387,158 +387,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinitionDto.getVersionAsString());
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getEntryForKey("bar1").get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
     assertThat(result.getEntryForKey("bar2").get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_stringVariable() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", "bar1");
-    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-    variables.put("foo", "bar2");
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
-      .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
-      .setVariableName("foo")
-      .setVariableType(VariableType.STRING)
-      .build();
-
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable() {
-    // given
-    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", 10.0);
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-    variables.put("foo", 20.0);
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
-      .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
-      .setVariableName("foo")
-      .setVariableType(VariableType.DOUBLE)
-      .build();
-
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() {
-    // given
-    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", 10.0);
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-    variables.put("foo", 20.0);
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
-      .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
-      .setVariableName("foo")
-      .setVariableType(VariableType.DOUBLE)
-      .build();
-    reportData.getConfiguration().getCustomBucket().setActive(true);
-    reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
-
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_dateVariable() {
-    // given
-    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getSingleServiceTaskProcess());
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", OffsetDateTime.now());
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-    variables.put("foo", OffsetDateTime.now().plusMinutes(1));
-    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
-      .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
-      .setVariableName("foo")
-      .setVariableType(VariableType.DATE)
-      .build();
-
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -574,7 +427,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3);
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(3);
     assertThat(resultDto.getData().stream()
@@ -617,7 +469,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then the correct baseline is used and both instances are included in the result
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData().get(0).getKey()).isEqualTo("-300.00");
     assertThat(resultDto.getData()
@@ -1007,7 +858,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> runningInstanceFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -1019,7 +870,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(runningInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1062,7 +913,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> completedInstanceFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -1074,7 +925,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(completedInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1170,7 +1021,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DurationFilterUnit.HOURS)
@@ -1185,7 +1036,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(durationFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1703,7 +1554,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(numberOfInstances);
     List<MapResultEntryDto> resultData = result.getData();
@@ -1747,21 +1597,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
-
-//  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-//    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-//      getSingleServiceTaskProcess());
-//    ProcessInstanceEngineDto processInstanceEngineDto =
-//      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-//    processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-//    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-//    return processInstanceEngineDto;
-//  }
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
                                                     String processDefinitionId,

@@ -88,7 +88,6 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)

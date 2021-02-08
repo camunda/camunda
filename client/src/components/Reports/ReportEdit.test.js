@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
+import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm, InstanceCount} from 'components';
 
@@ -175,66 +175,6 @@ it('should use original data as result data if report cant be evaluated on cance
   expect(node.state().report.data.processDefinitionKey).toEqual('123');
 });
 
-it('should show a warning message when the data is not complete', async () => {
-  const node = shallow(<ReportEdit {...props} />);
-
-  node.setState({
-    report: {
-      ...report,
-      result: {data: new Array(1000), isComplete: false, instanceCount: 1500},
-    },
-  });
-
-  expect(node.find('MessageBox')).toExist();
-  expect(node.find('MessageBox').props().type).toBe('warning');
-});
-
-it('should show a warning message when there are incompatible filter ', async () => {
-  const node = shallow(<ReportEdit {...props} />);
-
-  incompatibleFilters.mockReturnValue(true);
-
-  node.setState({
-    report: {
-      ...report,
-      data: {
-        visualization: 'table',
-        view: {
-          property: 'rawData',
-        },
-        filter: ['some data'],
-      },
-    },
-  });
-
-  expect(node.find('MessageBox')).toExist();
-  expect(node.find('MessageBox').props().type).toBe('warning');
-});
-
-it('should show a warning when node status is running on a grouped by endDate user task report', async () => {
-  const node = shallow(<ReportEdit {...props} />);
-
-  node.setState({
-    report: {
-      ...report,
-      data: {
-        visualization: 'table',
-        view: {
-          entity: 'UserTask',
-          property: 'count',
-        },
-        groupBy: {
-          type: 'endDate',
-        },
-        configuration: {flowNodeExecutionState: 'running'},
-      },
-    },
-  });
-
-  expect(node.find('MessageBox')).toExist();
-  expect(node.find('MessageBox').props().type).toBe('warning');
-});
-
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
@@ -331,38 +271,6 @@ it('should only resolve the save promise if a decision for conflicts has been ma
   expect(promiseResolved).toBe(true);
 });
 
-describe('showIncompleteResultWarning', () => {
-  it('should show incomplete warning if report is configured and incomplete', () => {
-    const node = shallow(<ReportEdit {...props} />);
-
-    node.setState({
-      report: {
-        ...report,
-        result: {...report.result, isComplete: false},
-      },
-    });
-
-    expect(node.instance().showIncompleteResultWarning()).toBe(true);
-  });
-
-  it('should not show incomplete data warning if the visualization is not selected', () => {
-    const node = shallow(<ReportEdit {...props} />);
-
-    node.setState({
-      report: {
-        ...report,
-        data: {
-          ...report.data,
-          visualization: null,
-        },
-        result: {...report.result, isComplete: false},
-      },
-    });
-
-    expect(node.instance().showIncompleteResultWarning()).toBe(false);
-  });
-});
-
 it('should disable the visualization Select if view or groupBy is not selected', () => {
   const node = shallow(
     <ReportEdit {...props} report={{...report, data: {...report.data, groupBy: null}}} />
@@ -397,4 +305,16 @@ it('should go back to a custom route after canceling if provided as URL Search P
 
   expect(node.find('Redirect')).toExist();
   expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+});
+
+it('should show loading indicator if specified by children components', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  node.find(ReportControlPanel).prop('setLoading')(true);
+
+  expect(node.find('LoadingIndicator')).toExist();
+
+  node.find(ReportControlPanel).prop('setLoading')(false);
+
+  expect(node.find('LoadingIndicator')).not.toExist();
 });

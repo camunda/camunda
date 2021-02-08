@@ -22,7 +22,7 @@ class UpgradeDataIT extends BaseUpgradeIT {
     oldElasticClient.cleanIndicesAndTemplates()
     def newElasticClient = new ElasticClient("new", newElasticPort)
     newElasticClient.cleanIndicesAndTemplates()
-    def oldOptimize = new OptimizeWrapper(previousVersion, buildDirectory, oldElasticPort, "environment")
+    def oldOptimize = new OptimizeWrapper(previousVersion, buildDirectory, oldElasticPort)
     // license only needed for old Optimize as the new one would get it from elasticsearch
     oldOptimize.copyLicense(UpgradeDataIT.class.getResource("/OptimizeLicense.txt").getPath())
     def newOptimize = new OptimizeWrapper(currentVersion, buildDirectory, newElasticPort)

@@ -12,10 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -25,6 +24,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -38,6 +38,7 @@ public class CamundaActivityEventWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ObjectMapper objectMapper;
+  private final CamundaActivityEventReader camundaActivityEventReader;
 
   public List<ImportRequestDto> generateImportRequests(List<CamundaActivityEventDto> camundaActivityEvents) {
     String importItemName = "camunda activity events";
@@ -62,7 +63,6 @@ public class CamundaActivityEventWriter {
   }
 
   public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
-    final String deletedItemName = "variable updates";
     log.debug("Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
 
     final BoolQueryBuilder filterQuery = boolQuery()
@@ -71,8 +71,7 @@ public class CamundaActivityEventWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      deletedItemName,
-      "list of ids",
+      String.format("camunda activity events of %d process instances" , processInstanceIds.size()),
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
@@ -94,26 +93,12 @@ public class CamundaActivityEventWriter {
   }
 
   private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
-    final List<IndexMappingCreator> activityIndicesToCheck = processDefinitionKeys.stream()
+    final Set<String> currentProcessDefinitions =
+      camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
+    processDefinitionKeys.removeAll(currentProcessDefinitions);
+    processDefinitionKeys.stream()
       .distinct()
       .map(CamundaActivityEventIndex::new)
-      .collect(Collectors.toList());
-    if (!activityIndicesToCheck.isEmpty()) {
-      try {
-        // We make this check first to see if we can avoid checking individually for each definition key in the batch
-        if (elasticSearchSchemaManager.indicesExist(esClient, activityIndicesToCheck)) {
-          return;
-        }
-      } catch (OptimizeRuntimeException ex) {
-        log.warn(
-          "Failed to check if camunda activity event indices exist for process definition keys {}",
-          processDefinitionKeys
-        );
-      }
-      activityIndicesToCheck.forEach(
-        activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex)
-      );
-    }
+      .forEach(activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex));
   }
-
 }

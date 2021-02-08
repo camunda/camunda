@@ -5,7 +5,7 @@
 
 // general properties for CI execution
 def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
-def static GCLOUD_DOCKER_IMAGE() { "google/cloud-sdk:alpine" }
+def static GCLOUD_DOCKER_IMAGE() { "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
 static String kubectlAgent(postgresVersion='9.6-alpine') {
   return """
@@ -92,10 +92,7 @@ pipeline {
             poll: false
         }
         dir('optimize') {
-          git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
+          optimizeCloneGitRepo(params.BRANCH)
         }
 
         container('gcloud') {
@@ -135,11 +132,7 @@ pipeline {
       steps {
         container('gcloud') {
           dir('optimize') {
-            script{
-              def mavenProps = readMavenPom().getProperties()
-              env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty("elasticsearch.test.version")
-              env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty("camunda.engine.version")
-            }
+            setBuildEnvVars()
           }
           dir('infra-core') {
             sh("""

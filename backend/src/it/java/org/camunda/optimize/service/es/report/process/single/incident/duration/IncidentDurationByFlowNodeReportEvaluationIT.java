@@ -113,7 +113,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -143,7 +142,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -173,7 +171,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -203,7 +200,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -236,7 +232,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(3L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1) // uses the average by default
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -270,7 +265,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 55_000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -304,7 +298,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -337,7 +330,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
@@ -371,7 +363,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
@@ -405,7 +396,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -438,7 +428,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -487,7 +476,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -520,7 +508,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then the result has two process instances
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -539,7 +526,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -583,7 +569,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(3L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -626,8 +611,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     final MapResultAsserter asserter = MapResultAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(true);
+      .processInstanceCountWithoutFilters(2L);
     Optional.ofNullable(firstExpectedResult)
       .ifPresent(result -> asserter.groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1));
     Optional.ofNullable(secondExpectedResult)
@@ -686,7 +670,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null)
       .groupedByContains(START_EVENT, null)
       .doAssert(resultDto);
@@ -714,7 +697,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -760,45 +742,9 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(3L)
-      .isComplete(true)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, expectedResult, SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
-      .doAssert(resultDto);
-  }
-
-  @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    // @formatter:off
-    IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(TWO_PARALLEL_TASKS)
-      .startProcessInstance()
-        .withResolvedIncident()
-        .withIncidentDurationInSec(2L)
-      .startProcessInstance()
-        .withResolvedIncident()
-        .withIncidentDurationInSec(4L)
-      .executeDeployment();
-    // @formatter:on
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    MapResultAsserter.asserter()
-      .processInstanceCount(2L)
-      .isComplete(false)
-      .groupedByContains(END_EVENT_1, null)
-      .groupedByContains(END_EVENT_2, null)
-      .groupedByContains(SERVICE_TASK_ID_1, 3000.)
-      .groupedByContains(SERVICE_TASK_ID_2, null)
-      .groupedByContains(SPLITTING_GATEWAY_ID, null)
-      .groupedByContains(START_EVENT, null)
       .doAssert(resultDto);
   }
 
@@ -826,7 +772,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(START_EVENT, null)
       .groupedByContains(SPLITTING_GATEWAY_ID, null)
       .groupedByContains(SERVICE_TASK_ID_2, 2000.)
@@ -860,7 +805,6 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .isComplete(true)
       .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)

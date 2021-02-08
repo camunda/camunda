@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -101,7 +101,7 @@ public class DecisionFilterUtilHelper {
                                                                         VariableType variableType,
                                                                         FilterOperator operator,
                                                                         List<String> variableValues) {
-    OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
+    OperatorMultipleValuesFilterDataDto subData = new OperatorMultipleValuesFilterDataDto(
       operator, variableValues
     );
     OperatorMultipleValuesVariableFilterDataDto data = new OperatorMultipleValuesVariableFilterDataDto(
@@ -173,7 +173,7 @@ public class DecisionFilterUtilHelper {
                                                                           VariableType variableType,
                                                                           FilterOperator operator,
                                                                           List<String> variableValues) {
-    OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
+    OperatorMultipleValuesFilterDataDto subData = new OperatorMultipleValuesFilterDataDto(
       operator, variableValues
     );
     OperatorMultipleValuesVariableFilterDataDto data = new OperatorMultipleValuesVariableFilterDataDto(

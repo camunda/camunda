@@ -10,7 +10,7 @@ import update from 'immutability-helper';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
-import {getFlowNodeNames, loadInputVariables, loadOutputVariables} from 'services';
+import {getFlowNodeNames, loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -39,6 +39,13 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
         setFlowNodeNames,
         showError
       );
+
+      const payload = {
+        processDefinitionKey: data.processDefinitionKey,
+        processDefinitionVersions: data.processDefinitionVersions,
+        tenantIds: data.tenantIds,
+      };
+      mightFail(loadVariables(payload), setVariables, showError);
     } else if (reportType === 'decision') {
       const payload = {
         decisionDefinitionKey: data.decisionDefinitionKey,

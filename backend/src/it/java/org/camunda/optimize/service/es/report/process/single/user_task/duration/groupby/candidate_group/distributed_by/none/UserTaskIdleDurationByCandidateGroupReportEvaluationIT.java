@@ -50,8 +50,8 @@ public class UserTaskIdleDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+                                                              final FlowNodeStatusTestValues expectedValues) {
     assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedIdleDurationValues().get(FIRST_CANDIDATE_GROUP_ID));
     assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))

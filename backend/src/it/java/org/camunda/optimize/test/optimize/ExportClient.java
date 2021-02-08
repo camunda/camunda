@@ -14,6 +14,8 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+
 @AllArgsConstructor
 public class ExportClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
@@ -21,6 +23,13 @@ public class ExportClient {
   public Response exportReportAsCsv(String reportId, String fileName) {
     return getRequestExecutor()
       .buildCsvExportRequest(reportId, fileName)
+      .execute();
+  }
+
+  public Response exportReportAsCsv(String reportId, String fileName, String timezone) {
+    return getRequestExecutor()
+      .buildCsvExportRequest(reportId, fileName)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, timezone)
       .execute();
   }
 

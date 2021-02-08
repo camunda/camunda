@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, ReportRenderer, InstanceCount} from 'components';
+import {ReportRenderer, InstanceCount} from 'components';
 
 import {Sharing} from './Sharing';
 import {evaluateEntity} from './service';
@@ -168,16 +168,21 @@ it('should display the dashboard name and last modification info', () => {
   expect(node.find('EntityName').prop('details').props.entity).toEqual({name: 'My dashboard name'});
 });
 
-it('should render a button linking to view mode', () => {
+it('should render an href directing to view mode ignoring /external sub url', () => {
   props.match.params.type = 'dashboard';
+  delete window.location;
+  window.location = new URL('http://example.com/subUrl/external/#/share/dashboard/shareId');
+
   const node = shallow(<Sharing {...props} />);
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My dashboard name'},
+    evaluationResult: {id: 'dashboardId'},
   });
 
-  expect(node.find(Button)).toExist();
+  expect(node.find('.Button').prop('href')).toBe(
+    'http://example.com/subUrl/#/dashboard/dashboardId/'
+  );
 });
 
 it('should add a DiagramScrollLock when a shared report is embedded', () => {

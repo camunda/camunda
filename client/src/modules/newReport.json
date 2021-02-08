@@ -5,7 +5,6 @@
       "configuration": {
         "color": "#1991c8",
         "aggregationType": "avg",
-        "flowNodeExecutionState": "all",
         "userTaskDurationTime": "total",
         "hiddenNodes": {
           "active": false,
@@ -137,7 +136,6 @@
       "configuration": {
         "color": "#1991c8",
         "aggregationType": "avg",
-        "flowNodeExecutionState": "all",
         "userTaskDurationTime": "total",
         "hiddenNodes": {
           "active": false,

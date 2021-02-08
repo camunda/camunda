@@ -66,7 +66,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);

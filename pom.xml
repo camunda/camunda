@@ -32,9 +32,9 @@
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
-    <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
+    <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
 
-    <jackson.version>2.12.0</jackson.version>
+    <jackson.version>2.12.1</jackson.version>
     <jsonpath.version>2.5.0</jsonpath.version>
     <elasticsearch.version>7.10.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -44,17 +44,17 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.0</elasticsearch.log4j.version>
     <guava.version>30.1-jre</guava.version>
-    <spring.version>5.3.2</spring.version>
-    <mockito.version>3.7.0</mockito.version>
+    <spring.version>5.3.3</spring.version>
+    <mockito.version>3.7.7</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
-    <junit.jupiter.version>5.7.0</junit.jupiter.version>
-    <junit.platform.version>1.7.0</junit.platform.version>
+    <junit.jupiter.version>5.7.1</junit.jupiter.version>
+    <junit.platform.version>1.7.1</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.18.1</assertj.version>
+    <assertj.version>3.19.0</assertj.version>
 
-    <lombok.version>1.18.16</lombok.version>
+    <lombok.version>1.18.18</lombok.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
 
@@ -105,7 +105,7 @@
     <profile>
       <id>engine-snapshot</id>
       <properties>
-        <camunda.engine.version>7.14.0-SNAPSHOT</camunda.engine.version>
+        <camunda.engine.version>7.15.0-SNAPSHOT</camunda.engine.version>
       </properties>
     </profile>
 
@@ -410,7 +410,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.8.4</version>
+          <version>1.8.5</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -456,7 +456,7 @@
       <plugin>
         <groupId>com.amashchenko.maven.plugin</groupId>
         <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.15.0</version>
+        <version>1.15.1</version>
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>

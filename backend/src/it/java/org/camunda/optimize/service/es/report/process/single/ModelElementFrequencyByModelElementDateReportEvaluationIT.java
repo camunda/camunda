@@ -84,7 +84,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
@@ -103,7 +102,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
@@ -114,7 +114,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
@@ -149,7 +148,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -180,7 +178,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -216,38 +213,9 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(3)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
-  }
-
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    startAndCompleteInstanceWithDates(
-      processDefinition.getId(),
-      referenceDate.minusDays(3),
-      referenceDate.minusDays(1)
-    );
-    startAndCompleteInstanceWithDates(
-      processDefinition.getId(),
-      referenceDate.minusDays(2),
-      referenceDate.minusDays(4)
-    );
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
   }
 
   @Test
@@ -299,7 +267,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
@@ -336,7 +303,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(1);
@@ -399,7 +365,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -426,7 +393,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(4), now.plusDays(6));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -453,7 +421,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     startInstancesWithDayRangeForDefinition(processDefinition2, now.plusDays(3), now.plusDays(5));
     importAllEngineEntitiesFromScratch();
 
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto reportData = createReportData(processDefinition1, AggregateByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -481,7 +450,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
@@ -502,7 +470,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(6);
@@ -526,7 +493,6 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);

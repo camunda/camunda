@@ -10,8 +10,8 @@ import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.plan.GenericUpgradeFactory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +24,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @RegisterExtension
   protected final LogCapturer logCapturer = LogCapturer.create().captureForType(UpgradeProcedure.class);
 
-  private final UpgradePlan upgradePlan = GenericUpgradeFactory.createUpgradePlan();
+  private final UpgradePlan upgradePlan = new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
 
   @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {

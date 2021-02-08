@@ -81,8 +81,11 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     final String version = "1";
     final String tenantId1 = "tenant1";
     final String tenantId2 = "tenant2";
+    engineIntegrationExtension.createTenant(tenantId1);
+    engineIntegrationExtension.createTenant(tenantId2);
     createProcessDefinition(key, version, ImmutableMap.of("1", "1"), tenantId1);
     createProcessDefinition(key, version, ImmutableMap.of("1", "1", "2", "2"), tenantId2);
+    importAllEngineEntitiesFromScratch();
 
     // when
     final FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
@@ -102,7 +105,9 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     final String key = "aKey";
     final String version = "1";
     final String tenantId1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenantId1);
     createProcessDefinition(key, version, ImmutableMap.of("1", "1"), null);
+    importAllEngineEntitiesFromScratch();
 
     // when
     final FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();

@@ -26,7 +26,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
     oldElasticClient.cleanIndicesAndTemplates()
     def newElasticClient = new ElasticClient("new", newElasticPort)
     newElasticClient.cleanIndicesAndTemplates()
-    def oldOptimize = new OptimizeWrapper(previousVersion, buildDirectory, oldElasticPort, "environment")
+    def oldOptimize = new OptimizeWrapper(previousVersion, buildDirectory, oldElasticPort)
     def newOptimize = new OptimizeWrapper(currentVersion, buildDirectory, newElasticPort)
     try {
       // start new optimize to obtain expected schema and settings

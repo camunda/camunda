@@ -9,15 +9,22 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardAssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardIdentityFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -53,6 +60,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @AllArgsConstructor
@@ -202,34 +212,31 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<DashboardDefinitionRestDto> dashboardsForReport = dashboardReader.getDashboardsForReport(reportId);
     dashboardsForReport
       .stream()
-      .filter(dashboard -> !CollectionUtils.isEmpty(dashboard.getAvailableFilters()) &&
-        dashboard.getAvailableFilters()
-          .stream()
-          .anyMatch(filter -> DashboardFilterType.VARIABLE.equals(filter.getType())))
+      .filter(dashboard -> !extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).isEmpty())
       .forEach(dashboard -> {
         final List<String> otherReportIdsInDashboard = dashboard.getReports()
           .stream()
           .map(ReportLocationDto::getId)
           .filter(reportInDashboardId -> !reportId.equals(reportInDashboardId))
-          .collect(Collectors.toList());
+          .collect(toList());
         final List<SingleProcessReportDefinitionRequestDto> allReportsForIdsOmitXml =
           reportReader.getAllReportsForIdsOmitXml(otherReportIdsInDashboard)
             .stream()
             .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
             .map(SingleProcessReportDefinitionRequestDto.class::cast)
-            .collect(Collectors.toList());
+            .collect(toList());
         final List<ProcessVariableNameResponseDto> varNamesForReportsToRemain =
           processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml);
-        final List<DashboardFilterDto> filtersToRemove = dashboard.getAvailableFilters().stream()
-          .filter(dashboardFilter -> DashboardFilterType.VARIABLE.equals(dashboardFilter.getType()))
-          .filter(variableFilter -> {
-            final DashboardVariableFilterDataDto filterData = variableFilter.getData();
-            final ProcessVariableNameResponseDto processVariableForFilter =
-              new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType());
-            return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
-              filters.contains(processVariableForFilter);
-          })
-          .collect(Collectors.toList());
+        final List<DashboardVariableFilterDto> filtersToRemove =
+          extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).stream()
+            .filter(variableFilter -> {
+              final DashboardVariableFilterDataDto filterData = variableFilter.getData();
+              final ProcessVariableNameResponseDto processVariableForFilter =
+                new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType());
+              return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
+                filters.contains(processVariableForFilter);
+            })
+            .collect(Collectors.toList());
         if (!filtersToRemove.isEmpty()) {
           dashboard.getAvailableFilters().removeAll(filtersToRemove);
           dashboardWriter.updateDashboard(convertToUpdateDto(dashboard), dashboard.getId());
@@ -335,93 +342,146 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public void validateDashboardFilters(final String userId,
-                                       final List<DashboardFilterDto> availableFilters,
+                                       final List<DashboardFilterDto<?>> availableFilters,
                                        final List<ReportLocationDto> reportsInDashboard) {
     if (!CollectionUtils.isEmpty(availableFilters)) {
-      if (availableFilters.stream().anyMatch(filter -> filter.getType() == null)) {
-        throw new BadRequestException("Dashboard Filters cannot have a null type");
-      }
-      final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType = availableFilters
-        .stream()
-        .collect(Collectors.groupingBy(DashboardFilterDto::getType));
-      validateNonVariableTypeFilters(filtersByType);
-      validateVariableFilters(filtersByType);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, availableFilters);
+      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        availableFilters
+          .stream()
+          .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
+      validateDateAndStateFilters(filtersByClass);
+      validateIdentityFilters(filtersByClass);
+      validateVariableFilters(filtersByClass);
+      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
     }
   }
 
   private void validateVariableFiltersExistInReports(final String userId,
                                                      final List<ReportLocationDto> reportsInDashboard,
-                                                     final List<DashboardFilterDto> availableFilters) {
-    final List<String> reportIdsInDashboard = reportsInDashboard.stream()
-      .map(ReportLocationDto::getId)
-      .filter(IdGenerator::isValidId)
-      .collect(Collectors.toList());
-    final Map<String, List<VariableType>> possibleVarTypesByName =
-      processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
-        .stream().collect(
-        Collectors.groupingBy(
-          ProcessVariableNameResponseDto::getName,
-          Collectors.mapping(ProcessVariableNameResponseDto::getType, Collectors.toList())
-        )
-      );
-    final List<DashboardFilterDto> invalidFilters = availableFilters.stream()
-      .filter(isInvalidVariableFilter(possibleVarTypesByName))
-      .collect(Collectors.toList());
-    if (!invalidFilters.isEmpty()) {
-      throw new InvalidDashboardVariableFilterException(String.format(
-        "The following variable filter names/types do not exist in any report in dashboard: [%s]",
-        invalidFilters
-      ));
+                                                     final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
+    final List<DashboardFilterDto<?>> variableFilters =
+      filtersByClass.get(DashboardVariableFilterDto.class.getSimpleName());
+    if (!CollectionUtils.isEmpty(variableFilters)) {
+      final List<String> reportIdsInDashboard = reportsInDashboard.stream()
+        .map(ReportLocationDto::getId)
+        .filter(IdGenerator::isValidId)
+        .collect(toList());
+      final Map<String, List<VariableType>> possibleVarTypesByName =
+        processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
+          .stream().collect(
+          groupingBy(
+            ProcessVariableNameResponseDto::getName,
+            Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())
+          )
+        );
+      final List<DashboardFilterDto<?>> invalidFilters = variableFilters.stream()
+        .filter(isInvalidVariableFilter(possibleVarTypesByName))
+        .collect(toList());
+      if (!invalidFilters.isEmpty()) {
+        throw new InvalidDashboardVariableFilterException(String.format(
+          "The following variable filter names/types do not exist in any report in dashboard: [%s]",
+          invalidFilters
+        ));
+      }
     }
   }
 
-  private Predicate<DashboardFilterDto> isInvalidVariableFilter(final Map<String, List<VariableType>> possibleVarTypesByName) {
+  private Predicate<DashboardFilterDto<?>> isInvalidVariableFilter(final Map<String, List<VariableType>> possibleVarTypesByName) {
     return filter -> {
-      if (DashboardFilterType.VARIABLE.equals(filter.getType())) {
-        final List<VariableType> typesByName = possibleVarTypesByName.get(filter.getData().getName());
-        return typesByName == null || !typesByName.contains(filter.getData().getType());
-      }
-      return false;
+      final DashboardVariableFilterDataDto filterData = ((DashboardVariableFilterDto) filter).getData();
+      final List<VariableType> typesByName = possibleVarTypesByName.get(filterData.getName());
+      return typesByName == null || !typesByName.contains(filterData.getType());
     };
   }
 
-  private void validateVariableFilters(final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType) {
-    final List<DashboardFilterDto> variableFilters = filtersByType.get(DashboardFilterType.VARIABLE);
+  private void validateVariableFilters(final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
+    final List<DashboardFilterDto<?>> variableFilters =
+      filtersByClass.get(DashboardVariableFilterDto.class.getSimpleName());
     if (variableFilters != null) {
       variableFilters.forEach(variableFilter -> {
-        final DashboardVariableFilterDataDto filterData = variableFilter.getData();
+        final DashboardVariableFilterDataDto filterData = (DashboardVariableFilterDataDto) variableFilter.getData();
         if (filterData == null) {
           throw new BadRequestException("Variable dashboard filters require additional data");
         }
         final VariableType variableType = filterData.getType();
-        if ((variableType.equals(VariableType.DATE) || variableType.equals(VariableType.BOOLEAN)) && filterData.getData() != null) {
+        if ((variableType.equals(VariableType.DATE) || variableType.equals(VariableType.BOOLEAN))
+          && filterData.getData() != null) {
           throw new BadRequestException(String.format(
-            "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
+            "Filter subdata cannot be supplied for %s variable filters", variableType));
         }
       });
     }
   }
 
-  private void validateNonVariableTypeFilters(final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType) {
-    filtersByType.entrySet().stream()
-      .filter(filterType -> !filterType.getKey().equals(DashboardFilterType.VARIABLE))
-      .forEach(byType -> {
-        if (byType.getValue().size() > 1) {
+  private void validateDateAndStateFilters(final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
+    filtersByClass.entrySet().stream()
+      .filter(byClass -> DashboardStartDateFilterDto.class.getSimpleName().equals(byClass.getKey())
+        || DashboardEndDateFilterDto.class.getSimpleName().equals(byClass.getKey())
+        || DashboardStateFilterDto.class.getSimpleName().equals(byClass.getKey()))
+      .forEach(byClass -> {
+        if (byClass.getValue().size() > 1) {
           throw new BadRequestException(String.format(
-            "There can only be one of each non-variable filter types. Filters of type %s supplied: %s",
-            byType.getKey(),
-            byType.getValue()
+            "There can only be one %s. %s supplied: %s",
+            byClass.getKey(),
+            byClass.getKey(),
+            byClass.getValue()
           )
           );
         }
-        final List<DashboardFilterDto> filtersWithData = byType.getValue()
+        final List<DashboardFilterDto<?>> filtersWithData = byClass.getValue()
           .stream()
           .filter(filter -> filter.getData() != null)
           .collect(Collectors.toList());
         if (!filtersWithData.isEmpty()) {
           throw new BadRequestException(String.format(
-            "Filters %s supplied additional data but are not a variable filter", filtersWithData)
+            "Filters %s supplied additional data but are not a filter with data", filtersWithData)
+          );
+        }
+      });
+  }
+
+  private void validateIdentityFilters(final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
+    filtersByClass.entrySet().stream()
+      .filter(byClass -> DashboardAssigneeFilterDto.class.getSimpleName().equals(byClass.getKey())
+        || DashboardCandidateGroupFilterDto.class.getSimpleName().equals(byClass.getKey()))
+      .forEach(byClass -> {
+        final boolean hasNullData = byClass.getValue().stream().anyMatch(filter -> filter.getData() == null);
+        if (hasNullData) {
+          throw new BadRequestException("Identity Dashboard filters require additional data");
+        }
+        final boolean hasIncompatibleOperators = byClass.getValue().stream()
+          .anyMatch(filter -> !FilterOperator.isEqualsOperation(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()));
+        if (hasIncompatibleOperators) {
+          throw new BadRequestException(String.format(
+            "%s with incompatible operator detected. Identity filters should only use 'in' or 'not in'.",
+            byClass.getKey()
+          )
+          );
+        }
+
+        final long inCount = byClass.getValue().stream()
+          .filter(filter -> FilterOperator.IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
+          .count();
+        if (inCount > 1) {
+          throw new BadRequestException(String.format(
+            "Duplicate identity filter: %s including %s present. There can only be one including %s.",
+            inCount,
+            byClass.getKey(),
+            byClass.getKey()
+          )
+          );
+        }
+
+        final long notInCount = byClass.getValue().stream()
+          .filter(filter -> FilterOperator.NOT_IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
+          .count();
+        if (notInCount > 1) {
+          throw new BadRequestException(String.format(
+            "Duplicate identity filter: %s excluding %s present. There can only be one excluding %s.",
+            notInCount,
+            byClass.getKey(),
+            byClass.getKey()
+          )
           );
         }
       });
@@ -453,6 +513,15 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     updateDto.setReports(updatedDashboard.getReports());
     updateDto.setAvailableFilters(updatedDashboard.getAvailableFilters());
     return updateDto;
+  }
+
+  public <T extends DashboardFilterDto<?>> List<T> extractFilters(final List<DashboardFilterDto<?>> availableFilters,
+                                                                  final Class<T> filterClass) {
+    return availableFilters
+      .stream()
+      .filter(filterClass::isInstance)
+      .map(filterClass::cast)
+      .collect(toList());
   }
 
 }

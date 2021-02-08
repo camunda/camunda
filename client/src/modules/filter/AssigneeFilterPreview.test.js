@@ -39,7 +39,7 @@ beforeEach(() => {
 it('should display the id if no name is resolved', () => {
   const node = shallow(<AssigneeFilterPreview {...props} />);
 
-  expect(node.find('PreviewItemValue').at(1).prop('children')).toBe('demo');
+  expect(node.find('b').at(1).prop('children')).toBe('demo');
 });
 
 it('should load assignee names based on provided ids', () => {
@@ -55,5 +55,21 @@ it('should display assignee names', () => {
 
   runLastEffect();
 
-  expect(node.find('PreviewItemValue').at(1).prop('children')).toBe('Demo Demo');
+  expect(node.find('b').at(1).prop('children')).toBe('Demo Demo');
+});
+
+it('should accept a custom function to get user names', () => {
+  const getNames = jest.fn().mockReturnValue([
+    {
+      id: 'demo',
+      name: 'Harald',
+    },
+  ]);
+  const node = shallow(<AssigneeFilterPreview {...props} getNames={getNames} />);
+
+  runLastEffect();
+
+  expect(loadUserNames).not.toHaveBeenCalled();
+  expect(getNames).toHaveBeenCalledWith('assignee', ['demo']);
+  expect(node.find('b').at(1).prop('children')).toBe('Harald');
 });

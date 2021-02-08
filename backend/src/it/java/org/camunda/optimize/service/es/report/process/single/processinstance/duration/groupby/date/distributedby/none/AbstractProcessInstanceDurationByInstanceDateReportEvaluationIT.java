@@ -281,7 +281,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
@@ -327,7 +326,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getIsComplete()).isTrue();
       final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
@@ -335,48 +333,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
         .collect(Collectors.toList());
       assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
     });
-  }
-
-  @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    final OffsetDateTime referenceDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
-    final String processDefinitionId = instance1.getDefinitionId();
-    final String processDefinitionKey = instance1.getProcessDefinitionKey();
-    final String processDefinitionVersion = instance1.getProcessDefinitionVersion();
-    adjustProcessInstanceDates(instance1.getId(), referenceDate, 0L, 1L);
-
-    final ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance2.getId(), referenceDate, -1L, 2L);
-    final ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance3.getId(), referenceDate, -1L, 100L);
-    final ProcessInstanceEngineDto instance4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance4.getId(), referenceDate, -2L, 1L);
-    final ProcessInstanceEngineDto instance5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance5.getId(), referenceDate, -2L, 2L);
-    final ProcessInstanceEngineDto instance6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance6.getId(), referenceDate, -2L, 3L);
-    final ProcessInstanceEngineDto instance7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(instance7.getId(), referenceDate, -2L, 4L);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(getTestReportDataType())
-      .build();
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
   }
 
   @Test
@@ -447,7 +403,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue())
@@ -485,7 +440,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> completedInstanceFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -495,14 +450,13 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(completedInstanceFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData).isNotNull().hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
@@ -532,7 +486,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(LESS_THAN)
       .unit(DurationFilterUnit.HOURS)
@@ -545,7 +499,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setFilter(testExecutionStateFilter)
+      .setFilter(durationFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 

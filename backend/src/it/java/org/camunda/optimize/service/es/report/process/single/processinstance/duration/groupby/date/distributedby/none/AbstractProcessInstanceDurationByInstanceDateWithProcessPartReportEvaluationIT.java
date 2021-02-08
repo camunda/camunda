@@ -257,40 +257,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() {
-    // given
-    OffsetDateTime procInstRefDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
-    startThreeProcessInstances(procInstRefDate, 0, procDefDto, Arrays.asList(1, 2, 9));
-    startThreeProcessInstances(procInstRefDate, -1, procDefDto, Arrays.asList(2, 4, 12));
-    startThreeProcessInstances(procInstRefDate, -2, procDefDto, Arrays.asList(2, 4, 12));
-    startThreeProcessInstances(procInstRefDate, -3, procDefDto, Arrays.asList(2, 4, 12));
-
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
-    // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(procDefDto.getKey())
-      .setProcessDefinitionVersion(procDefDto.getVersionAsString())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
-  }
-
-  @Test
   public void takeCorrectActivityOccurrences() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();

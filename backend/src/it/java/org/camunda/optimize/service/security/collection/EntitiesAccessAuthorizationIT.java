@@ -179,7 +179,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     collectionClient.createNewCollection(actualUserId, actualUserId);
-    reportClient.createSingleProcessReportAsUser(null, null, actualUserId, actualUserId);
+    reportClient.createSingleProcessReportAsUserAndReturnResponse(null, null, actualUserId, actualUserId);
     reportClient.createSingleDecisionReportAsUser(null, null, actualUserId, actualUserId);
     reportClient.createNewCombinedReportAsUserRawResponse(null, Collections.emptyList(), actualUserId, actualUserId);
     dashboardClient.createDashboardAsUser(null, actualUserId, actualUserId);

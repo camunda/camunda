@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -51,7 +52,7 @@ public enum VariableType {
   }
 
   public static VariableType getTypeForId(String id) {
-    return BY_LOWER_CASE_ID_MAP.get(id.toLowerCase());
+    return Optional.ofNullable(id).map(String::toLowerCase).map(BY_LOWER_CASE_ID_MAP::get).orElse(null);
   }
 
   public static Set<VariableType> getNumericTypes() {

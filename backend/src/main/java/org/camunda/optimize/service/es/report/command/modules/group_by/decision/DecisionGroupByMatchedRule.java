@@ -64,7 +64,6 @@ public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDt
     }
 
     compositeCommandResult.setGroups(matchedRules);
-    compositeCommandResult.setIsComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
   }
 
 

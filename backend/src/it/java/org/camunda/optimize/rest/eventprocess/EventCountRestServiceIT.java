@@ -48,6 +48,8 @@ import java.util.stream.Stream;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
@@ -1452,10 +1454,10 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
   private static Stream<List<String>> multipleVersionCases() {
     return Stream.of(
-      ImmutableList.of("all"),
+      ImmutableList.of(ALL_VERSIONS),
       ImmutableList.of("1", "2"),
       ImmutableList.of("2"),
-      ImmutableList.of("latest")
+      ImmutableList.of(LATEST_VERSION)
     );
   }
 

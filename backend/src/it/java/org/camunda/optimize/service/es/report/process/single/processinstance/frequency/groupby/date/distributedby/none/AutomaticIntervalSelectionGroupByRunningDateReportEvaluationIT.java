@@ -60,7 +60,6 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final int expectedNumberOfBuckets = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();

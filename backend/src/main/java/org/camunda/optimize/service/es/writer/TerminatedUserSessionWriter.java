@@ -57,9 +57,6 @@ public class TerminatedUserSessionWriter {
   }
 
   public void deleteTerminatedUserSessionsOlderThan(final OffsetDateTime timestamp) {
-    String deletedItemName = "terminated user sessions";
-    String deletedItemIdentifier = String.format("timestamp older than %s", timestamp);
-
     final BoolQueryBuilder filterQuery = boolQuery().filter(
       rangeQuery(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
         .lt(dateTimeFormatter.format(timestamp))
@@ -69,9 +66,9 @@ public class TerminatedUserSessionWriter {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      deletedItemName,
-      deletedItemIdentifier,
+      String.format("terminated user sessions with timestamp older than %s", timestamp),
       true,
-      TERMINATED_USER_SESSION_INDEX_NAME);
+      TERMINATED_USER_SESSION_INDEX_NAME
+    );
   }
 }

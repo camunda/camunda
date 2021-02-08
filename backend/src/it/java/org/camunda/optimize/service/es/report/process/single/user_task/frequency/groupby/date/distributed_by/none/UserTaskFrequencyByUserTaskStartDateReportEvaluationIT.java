@@ -8,9 +8,10 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -33,8 +35,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
   extends UserTaskFrequencyByUserTaskDateReportEvaluationIT {
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
     final ProcessInstanceEngineDto processInstanceDto = startAndCompleteInstance(processDefinition.getId());
@@ -46,23 +48,22 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.expectedInstanceCount);
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(executionStateTestValues.resultValue);
+      .isEqualTo(flowNodeStatusTestValues.resultValue);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCanceled() {
+  public void evaluateReportWithFlowNodeStatusFilterCanceled() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
     startAndCompleteInstance(processDefinition.getId());
@@ -75,13 +76,12 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -93,17 +93,20 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
 
   @Data
   @AllArgsConstructor
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Double resultValue;
-
+    Long expectedInstanceCount;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, 1.),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, 2.),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, 3.)
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 1., 1L),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 2., 2L),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 2., 2L)
     );
   }
 

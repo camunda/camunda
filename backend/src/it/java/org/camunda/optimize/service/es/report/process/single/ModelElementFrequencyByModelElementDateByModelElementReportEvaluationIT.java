@@ -84,11 +84,10 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 2.);
-    assertLastValueEquals(resultData, 1.);
+    assertFirstValueEquals(resultData, 1.);
+    assertLastValueEquals(resultData, 2.);
   }
 
   @Test
@@ -102,7 +101,6 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
@@ -128,7 +126,7 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     IntStream.range(0, procInsts.size())
       .forEach(i -> {
         String id = procInsts.get(i).getId();
-        OffsetDateTime newStartDate = now.minus(i, unit);
+        OffsetDateTime newStartDate = now.plus(i, unit);
         idToNewStartDate.put(id, newStartDate);
       });
     changeModelElementDates(idToNewStartDate);

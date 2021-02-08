@@ -20,6 +20,8 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -288,7 +290,12 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   protected void executeRequestAndAssertBelowMaxQueryTime(final OptimizeRequestExecutor requestExecutor) {
     final Instant start = Instant.now();
     try (final Response response = requestExecutor.execute()) {
-      assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+      if (Response.Status.BAD_REQUEST.getStatusCode() == response.getStatus()
+        && response.readEntity(ErrorResponseDto.class).getErrorCode().equals(TooManyBucketsException.ERROR_CODE)) {
+        log.warn("Report evaluation failed due to too many buckets");
+      } else {
+        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+      }
       final Instant finish = Instant.now();
       long timeElapsed = Duration.between(start, finish).toMillis();
       log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);

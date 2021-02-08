@@ -10,7 +10,7 @@ import {Dropdown} from 'components';
 import {t} from 'translation';
 
 export default function InstanceFilters({
-  filterByInstancesOnly,
+  filterByTypeOnly,
   openNewFilterModal,
   processDefinitionIsNotSelected,
 }) {
@@ -21,33 +21,33 @@ export default function InstanceFilters({
       className="InstanceFilters Filter__dropdown"
     >
       <Dropdown.Submenu label={t('common.filter.types.instanceState')}>
-        <Dropdown.Option onClick={filterByInstancesOnly('runningInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('runningInstancesOnly')}>
           {t('common.filter.types.runningInstancesOnly')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('completedInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('completedInstancesOnly')}>
           {t('common.filter.types.completedInstancesOnly')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('canceledInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('canceledInstancesOnly')}>
           {t('common.filter.types.canceledInstancesOnly')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('nonCanceledInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('nonCanceledInstancesOnly')}>
           {t('common.filter.types.nonCanceledInstancesOnly')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('suspendedInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('suspendedInstancesOnly')}>
           {t('common.filter.types.suspendedInstancesOnly')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('nonSuspendedInstancesOnly')}>
+        <Dropdown.Option onClick={filterByTypeOnly('nonSuspendedInstancesOnly')}>
           {t('common.filter.types.nonSuspendedInstancesOnly')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.incident')}>
-        <Dropdown.Option onClick={filterByInstancesOnly('includesOpenIncident')}>
+        <Dropdown.Option onClick={filterByTypeOnly('includesOpenIncident')}>
           {t('common.filter.types.includesOpenIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('includesResolvedIncident')}>
+        <Dropdown.Option onClick={filterByTypeOnly('includesResolvedIncident')}>
           {t('common.filter.types.includesResolvedIncident')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={filterByInstancesOnly('doesNotIncludeIncident')}>
+        <Dropdown.Option onClick={filterByTypeOnly('doesNotIncludeIncident')}>
           {t('common.filter.types.doesNotIncludeIncident')}
         </Dropdown.Option>
       </Dropdown.Submenu>

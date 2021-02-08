@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class StringVariableFilterDataDto extends OperatorMultipleValuesVariableF
   }
 
   public StringVariableFilterDataDto(final String name, final FilterOperator operator, final List<String> values) {
-    super(name, VariableType.STRING, new OperatorMultipleValuesVariableFilterSubDataDto(operator, values));
+    super(name, VariableType.STRING, new OperatorMultipleValuesFilterDataDto(operator, values));
   }
 
   public boolean hasContainsOperation() {

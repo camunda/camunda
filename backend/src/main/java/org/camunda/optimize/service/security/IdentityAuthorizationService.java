@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -96,15 +95,16 @@ public class IdentityAuthorizationService
   private ResolvedResourceTypeAuthorizations resolveUserAuthorizations(final IdentityType identitytype,
                                                                        final String userId,
                                                                        final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(userId);
-    final List<AuthorizationDto> allAuthorizations = getAllIdentityAuthorizations(engineContext, identitytype);
+    final List<AuthorizationDto> allAuthorizations = getAllIdentityAuthorizationsForUser(
+      engineContext,
+      identitytype,
+      userId
+    );
 
-    return resolveResourceAuthorizations(
+    return resolveUserResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
       RELEVANT_PERMISSIONS,
-      userId,
-      groups,
       resolveResourceTypeFromIdentityType(identitytype)
     );
   }
@@ -112,14 +112,13 @@ public class IdentityAuthorizationService
   private ResolvedResourceTypeAuthorizations resolveGroupAuthorizations(final IdentityType identitytype,
                                                                         final String groupId,
                                                                         final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getGroupsById(Collections.singletonList(groupId));
     final List<AuthorizationDto> allAuthorizations = getAllIdentityAuthorizations(engineContext, identitytype);
 
     return resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
       RELEVANT_PERMISSIONS,
-      groups,
+      Collections.singletonList(groupId),
       resolveResourceTypeFromIdentityType(identitytype)
     );
   }
@@ -130,6 +129,15 @@ public class IdentityAuthorizationService
       return engineContext.getAllUserAuthorizations();
     }
     return engineContext.getAllGroupAuthorizations();
+  }
+
+  public List<AuthorizationDto> getAllIdentityAuthorizationsForUser(final EngineContext engineContext,
+                                                                    final IdentityType identityType,
+                                                                    final String userId) {
+    if (IdentityType.USER.equals(identityType)) {
+      return engineContext.getAllUserAuthorizationsForUser(userId);
+    }
+    return engineContext.getAllGroupAuthorizationsForUser(userId);
   }
 
   private int resolveResourceTypeFromIdentityType(final IdentityType identitytype) {

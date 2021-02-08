@@ -6,40 +6,25 @@
 
   .listItem {
     list-style-type: none;
-    margin: 10px 0;
-    cursor: pointer;
+    margin: 5px 0;
     width: 100%;
 
-    &.notEditable {
-      cursor: default;
+    .parameterName {
+      @include highlighted;
+      max-width: 230px;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
 
-    .ActionItem {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      width: 100%;
-
-      .content {
-        padding: 0 35px 0 10px;
+    .previewList {
+      padding: 0;
+      .previewItem {
+        list-style-type: none;
       }
+    }
 
-      :not(.PreviewItemValue) {
-        white-space: pre-wrap;
-      }
-
-      .parameterName {
-        font-style: italic;
-        font-weight: bold;
-      }
-
-      .previewList {
-        padding: 0;
-        .previewItem {
-          list-style-type: none;
-          display: inline-block;
-        }
-      }
+    .filterText {
+      display: block;
     }
   }
 

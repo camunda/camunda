@@ -34,7 +34,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -217,20 +216,11 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     addMissingVariableBuckets(groupedData, response, context);
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
     if (VariableType.DATE.equals(getVariableType(context))) {
-      compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
+      compositeCommandResult.setGroupBySorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
-    compositeCommandResult.setKeyIsOfNumericType(
-      distributedByPart.isKeyOfNumericType(context).orElse(getSortByKeyIsOfNumericType(context))
-    );
-    // additional sorting of groupBy number variable result buckets when in a distributed by report
-    if (distributedByPart.isKeyOfNumericType(context).isPresent()
-      && getSortByKeyIsOfNumericType(context)) {
-      groupedData.sort(
-        Comparator.comparingDouble(groupBy -> Double.parseDouble(groupBy.getKey()))
-      );
-    }
+    compositeCommandResult.setGroupByKeyOfNumericType(getSortByKeyIsOfNumericType(context));
+    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
   }
 
   private void addMissingVariableBuckets(final List<GroupByResult> groupedData,
@@ -266,15 +256,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {
     return VariableType.getNumericTypes().contains(getVariableType(context));
-  }
-
-  private boolean isResultComplete(final Filter filteredVariables,
-                                   final MultiBucketsAggregation variableTerms) {
-    final long resultDocCount = variableTerms.getBuckets()
-      .stream()
-      .mapToLong(MultiBucketsAggregation.Bucket::getDocCount)
-      .sum();
-    return filteredVariables.getDocCount() == resultDocCount;
   }
 
   private AggregateByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {

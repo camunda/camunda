@@ -12,7 +12,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -248,35 +247,6 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-  }
-
-  @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
-    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -684,8 +654,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @Data
   @AllArgsConstructor
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedFrequencyValues;
   }
 
@@ -696,17 +666,26 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     return result;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(2., 1.)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(3., 1.))
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(2., 1.)
+      ),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      ),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      )
     );
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -729,24 +708,24 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat((long) result.getData().size()).isEqualTo(
-      executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
+      flowNodeStatusTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
     assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(
-        executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
+        flowNodeStatusTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
     assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
-      .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP_ID));
+      .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP_ID));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCanceled() {
+  public void evaluateReportWithFlowNodeStatusFilterCanceled() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -771,7 +750,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

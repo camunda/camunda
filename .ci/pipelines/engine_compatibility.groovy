@@ -6,10 +6,6 @@
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-
-
 String basePodSpec() {
   return """
 apiVersion: v1
@@ -128,42 +124,8 @@ String camBpmContainerSpec(String camBpmVersion) {
     """
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 void integrationTestSteps(String camBpmVersion) {
-  gitCheckoutOptimize()
+  optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
     runMaven("verify -Dskip.docker -Pit,engine-${camBpmVersion} -pl backend -am -T\$LIMITS_CPU")
   }
@@ -181,13 +143,6 @@ String integrationTestPodSpec(String camBpmVersion, def esVersion) {
 
 String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
-}
-
-void gitCheckoutOptimize() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
 }
 
 pipeline {
@@ -212,13 +167,13 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
-        gitCheckoutOptimize()
+        optimizeCloneGitRepo(params.BRANCH)
+        setBuildEnvVars()
         script {
-          env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
           env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
           env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
@@ -328,6 +283,6 @@ pipeline {
 
 private void getCamBpmVersion(String profileId) {
   def profile = readMavenPom().getProfiles().find { it.getId().equals(profileId) }
-  return profile.getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+  return profile.getProperties().getProperty("camunda.engine.version")
 }
 

@@ -11,8 +11,6 @@ import {t} from 'translation';
 
 import {convertFilterToState} from './service';
 
-import PreviewItemValue from '../../PreviewItemValue';
-
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType, variableName}) {
@@ -26,19 +24,19 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     excludeUndefined,
   } = convertFilterToState(filter);
 
-  const highlight = (text) => <PreviewItemValue>{text}</PreviewItemValue>;
+  const bolden = (text) => <b>{text}</b>;
 
   let previewText;
 
   if (['today', 'yesterday'].includes(type)) {
-    previewText = highlight(t(`common.filter.dateModal.unit.${type}`));
+    previewText = bolden(t(`common.filter.dateModal.unit.${type}`));
   } else if (['this', 'last'].includes(type)) {
     const translationType = unit === 'weeks' ? 'week' : 'all';
     previewText = (
       <>
         {t(`common.filter.dateModal.preview.${type}.${translationType}`)}{' '}
         {type === 'last' && t(`common.filter.dateModal.preview.completed.${translationType}`) + ' '}
-        {highlight(t(`common.unit.${makeSingular(unit)}.label`))}
+        {bolden(t(`common.unit.${makeSingular(unit)}.label`))}
       </>
     );
   } else if (type === 'custom') {
@@ -54,7 +52,7 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     }
     previewText = (
       <>
-        {t('common.filter.dateModal.preview.last.' + prefix)} {highlight(highlighted)}
+        {t('common.filter.dateModal.preview.last.' + prefix)} {bolden(highlighted)}
       </>
     );
   } else if (type === 'fixed') {
@@ -65,8 +63,8 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
 
     previewText = (
       <>
-        {t('common.filter.list.operators.between')} {highlight(format(startDate, dateFormat))}
-        {' ' + t('common.and')} {highlight(format(endDate, dateFormat))}
+        {t('common.filter.list.operators.between')} {bolden(format(startDate, dateFormat))}
+        {' ' + t('common.and')} {bolden(format(endDate, dateFormat))}
       </>
     );
   }
@@ -91,9 +89,9 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
         {(excludeUndefined || includeUndefined) && (
           <>
             {previewText && operator}
-            {highlight(t('common.null'))}
+            {bolden(t('common.null'))}
             {operator}
-            {highlight(t('common.undefined'))}
+            {bolden(t('common.undefined'))}
           </>
         )}
       </div>
@@ -102,7 +100,9 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     return (
       <div className="DateFilterPreview">
         <span className="parameterName">{t(`common.filter.types.${filterType}`)} </span>
-        {t('common.filter.list.operators.occurs')}: {previewText}
+        <span className="filterText">
+          {t('common.filter.list.operators.occurs')} {previewText}
+        </span>
       </div>
     );
   }

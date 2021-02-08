@@ -67,7 +67,6 @@ public class DmnModelGenerator {
     decisions.forEach(definitions::addChildElement);
 
     modelInstance.setDefinitions(definitions);
-
     return modelInstance;
   }
 

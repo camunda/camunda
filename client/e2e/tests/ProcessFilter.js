@@ -68,6 +68,31 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
 
+test('filter for custom string variable values', async (t) => {
+  await u.createNewReport(t);
+
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Variable'));
+
+  await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
+  await t.click(Filter.typeaheadOption('stringVar'));
+
+  await t.expect(Filter.stringValues.textContent).contains('aStringValue');
+
+  await t.click(Filter.addValueButton);
+  await t.typeText(Filter.customValueInput, 'custom value', {replace: true});
+  await t.click(Filter.addValueToListButton);
+
+  await t.expect(Filter.stringValues.textContent).contains('custom value');
+
+  await t.click(Report.primaryModalButton);
+
+  await t.expect(Report.controlPanelFilter.textContent).contains('custom value');
+});
+
 test('should apply a filter to the report result', async (t) => {
   await u.createNewReport(t);
 
@@ -76,11 +101,12 @@ test('should apply a filter to the report result', async (t) => {
 
   const unfiltered = +(await Report.reportRenderer.textContent);
 
-  await t.click(Report.filterButton);
-
   await t
-    .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png')
+    .resizeWindow(1400, 850)
+    .click(Report.filterButton)
+    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png', {
+      crop: {bottom: -250},
+    })
     .maximizeWindow();
 
   await t.click(Report.filterOption('Variable'));
@@ -241,7 +267,18 @@ test('add assignee filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
-  await t.click(Report.flowNodeFilterButton);
+
+  await t
+    .resizeWindow(1400, 850)
+    .click(Report.flowNodeFilterButton)
+    .takeElementScreenshot(
+      Report.controlPanel,
+      'process/filter/report-with-flownode-filterlist-open.png',
+      {
+        crop: {top: 220},
+      }
+    );
+
   await t.click(Report.filterOption('Assignee'));
 
   await t.click(Filter.multiSelect);
@@ -285,7 +322,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
 
-  await t.expect(controlPanelFilterText).contains('was Executed');
+  await t.expect(controlPanelFilterText).contains('Running, Canceled or Completed');
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);
@@ -309,4 +346,45 @@ test('the filter is visible in the control panel and contains correct informatio
   await u.selectVisualization(t, 'Heatmap');
 
   await t.takeScreenshot('process/filter/combined-filter.png', {fullPage: true}).maximizeWindow();
+});
+
+test('add an incident filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Incident Process', 'All');
+  await u.selectView(t, 'Incident', 'Resolution Duration');
+
+  await t.click(Report.filterButton);
+
+  await t.click(Report.filterOption('Incident'));
+  await t.click(Report.subFilterOption('With Open Incidents'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Incident'));
+  await t.click(Report.subFilterOption('Resolved Incidents'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+});
+
+test('add flow node status filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Flow Node Status'));
+  await t.click(Report.subFilterOption('Running Flow Nodes Only'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+  await t.click(Report.flowNodeFilterButton);
+
+  await t.click(Report.filterOption('Flow Node Status'));
+  await t.click(Report.subFilterOption('Completed or Canceled Flow Nodes Only'));
+
+  await t.expect(Report.reportRenderer.visible).ok();
 });

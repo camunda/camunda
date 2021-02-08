@@ -29,7 +29,7 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
   }
 
   @Override
-  protected Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedWorkDurationValue;
+  protected Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues) {
+    return flowNodeStatusTestValues.expectedWorkDurationValue;
   }
 }

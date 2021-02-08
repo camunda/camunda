@@ -8,6 +8,9 @@ package org.camunda.optimize.websocket;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
@@ -19,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.mockserver.model.HttpRequest.request;
 
 public class StatusWebSocketIT extends AbstractIT {
 
@@ -146,6 +150,28 @@ public class StatusWebSocketIT extends AbstractIT {
         .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(true));
       embeddedOptimizeExtension.reloadConfiguration();
     }
+  }
+
+  @Test
+  public void engineConnectionStatusValuesReadFromCacheWhenAvailable() throws Exception {
+    // given
+    final HttpRequest engineVersionRequestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/version");
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final StatusClientSocket socket = new StatusClientSocket();
+    connectStatusClientSocket(socket);
+
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived).isTrue();
+
+    // when
+    deployProcessAndTriggerImport();
+
+    // then
+    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(statusCorrectlyReceived).isTrue();
+    // only one request to the engine was made
+    engineMockServer.verify(engineVersionRequestMatcher, VerificationTimes.exactly(1));
   }
 
   private void connectStatusClientSocket(Object statusClientSocket)

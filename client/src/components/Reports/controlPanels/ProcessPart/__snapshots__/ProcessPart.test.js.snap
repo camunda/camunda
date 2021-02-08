@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show a preview of the process part 1`] = `
+<ActionItem
+  onClick={[Function]}
+  onEdit={[Function]}
+>
+  <span
+    className="highlighted"
+  >
+    Process Instance Part
+  </span>
+  <div>
+    <b>
+      Start Node
+    </b>
+    <span>
+       
+      and
+       
+    </span>
+    <b>
+      b
+    </b>
+  </div>
+</ActionItem>
+`;

@@ -9,7 +9,8 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -26,8 +27,23 @@ public class CandidateGroupClient {
       .executeAndReturnList(GroupDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public IdentitySearchResultResponseDto searchForCandidateGroups(final AssigneeCandidateGroupSearchRequestDto requestDto) {
+  public IdentitySearchResultResponseDto searchForCandidateGroups(final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
     return getRequestExecutor()
+      .buildSearchForCandidateGroupsRequest(requestDto)
+      .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public IdentitySearchResultResponseDto searchForCandidateGroups(final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    return getRequestExecutor()
+      .buildSearchForCandidateGroupsRequest(requestDto)
+      .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(final String username,
+                                                                        final String password,
+                                                                        final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    return getRequestExecutor()
+      .withUserAuthentication(username, password)
       .buildSearchForCandidateGroupsRequest(requestDto)
       .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
   }

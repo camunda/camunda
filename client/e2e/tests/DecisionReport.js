@@ -176,12 +176,11 @@ test('filters', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
-  await t.click(Report.filterButton);
-  await t.hover(Report.filterOption('Output Variable'));
-
   await t
     .resizeWindow(1400, 700)
-    .takeScreenshot('decision/filter/report-with-filterlist-open.png', {fullPage: true})
+    .click(Report.filterButton)
+    .hover(Report.filterOption('Output Variable'))
+    .takeElementScreenshot(Report.controlPanel, 'decision/filter/report-with-filterlist-open.png')
     .maximizeWindow();
 });
 

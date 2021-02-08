@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -517,7 +518,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     // when the "all" version is included
     final List<TenantResponseDto> tenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-        definitionType, definitionKey, Lists.newArrayList("all"), collectionId
+        definitionType, definitionKey, Collections.singletonList(ALL_VERSIONS), collectionId
       );
 
     // then still only the tenant within the scope is returned

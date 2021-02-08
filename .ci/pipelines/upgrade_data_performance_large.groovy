@@ -9,10 +9,6 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String upgradePerformanceConfig(prevEsVersion, esVersion, camBpmVersion) {
   return """
 metadata:
@@ -92,7 +88,7 @@ spec:
 static String gcloudContainerSpec() {
   return """
   - name: gcloud
-    image: google/cloud-sdk:slim
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
@@ -216,40 +212,6 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
   """
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
-  tolerations:
-    - key: "agents-n1-standard-32-netssd-stable"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
@@ -276,17 +238,12 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
         optimizeCloneGitRepo(params.BRANCH)
-        script {
-          def mavenProps = readMavenPom().getProperties()
-          env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.PREV_ES_VERSION = params.PREV_ES_VERSION ?: mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        setBuildEnvVars()
       }
     }
     stage('Upgrade Performance Test') {

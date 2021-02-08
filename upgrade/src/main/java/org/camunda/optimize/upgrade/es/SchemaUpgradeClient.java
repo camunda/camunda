@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -28,9 +28,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -47,7 +45,6 @@ import org.elasticsearch.tasks.TaskInfo;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,8 +53,6 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 
 @Slf4j
 public class SchemaUpgradeClient {
-  private static final String TASKS_ENDPOINT = "_tasks";
-
   private final ElasticSearchSchemaManager schemaManager;
   private final ElasticsearchMetadataService metadataService;
   private final OptimizeElasticsearchClient elasticsearchClient;
@@ -109,7 +104,6 @@ public class SchemaUpgradeClient {
       } else {
         reindexTaskId = submitReindexTask(sourceIndex, targetIndex, mappingScript, parameters);
       }
-
       waitUntilTaskIsFinished(reindexTaskId, targetIndex);
     }
   }
@@ -401,65 +395,12 @@ public class SchemaUpgradeClient {
     return taskId;
   }
 
-  private void waitUntilTaskIsFinished(final String taskId, final String destinationIndex) {
-    boolean finished = false;
-    int progress = -1;
-    while (!finished) {
-      try {
-        final TaskResponse taskResponse = getTaskResponse(taskId);
-        validateTaskResponse(taskResponse);
-
-        int currentProgress = (int) (taskResponse.getProgress() * 100.0);
-        if (currentProgress != progress) {
-          final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
-          progress = currentProgress;
-          log.info(
-            "Progress of task (id:{}) on index {}: {}% (total: {}, updated: {}, created: {}, deleted: {})",
-            taskId,
-            destinationIndex,
-            progress,
-            taskStatus.getTotal(),
-            taskStatus.getUpdated(),
-            taskStatus.getCreated(),
-            taskStatus.getDeleted()
-          );
-        }
-        finished = taskResponse.isCompleted();
-        if (!finished) {
-          Thread.sleep(1000);
-        }
-      } catch (InterruptedException e) {
-        log.error("Waiting for Elasticsearch task (id:{}) completion was interrupted!", taskId, e);
-        Thread.currentThread().interrupt();
-      } catch (UpgradeRuntimeException e) {
-        // upgrade exceptions are just forwarded
-        throw e;
-      } catch (Exception e) {
-        throw new UpgradeRuntimeException(
-          String.format("Error while trying to read Elasticsearch task (id:%s) progress!", taskId), e
-        );
-      }
-    }
-  }
-
-  private TaskResponse getTaskResponse(final String taskId) throws IOException {
-    final Response response = getHighLevelRestClient().getLowLevelClient()
-      .performRequest(new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId));
-    return objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
-  }
-
-  private void validateTaskResponse(final TaskResponse taskResponse) {
-    if (taskResponse.getError() != null) {
-      log.error("An Elasticsearch task that is part of the upgrade failed: {}", taskResponse.getError());
-      throw new UpgradeRuntimeException(taskResponse.getError().toString());
-    }
-
-    if (taskResponse.getResponseDetails() != null) {
-      final List<Object> failures = taskResponse.getResponseDetails().getFailures();
-      if (failures != null && !failures.isEmpty()) {
-        log.error("An Elasticsearch task that is part of the upgrade contained failures: {}", failures);
-        throw new UpgradeRuntimeException(failures.toString());
-      }
+  private void waitUntilTaskIsFinished(final String taskId,
+                                       final String destinationIndex) {
+    try {
+      ElasticsearchWriterUtil.waitUntilTaskIsFinished(elasticsearchClient, taskId, destinationIndex);
+    } catch (OptimizeRuntimeException e) {
+      throw new UpgradeRuntimeException(e.getCause().getMessage(), e);
     }
   }
 

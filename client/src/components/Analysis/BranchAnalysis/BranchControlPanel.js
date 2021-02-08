@@ -8,25 +8,40 @@ import update from 'immutability-helper';
 import React from 'react';
 import equal from 'deep-equal';
 
-import {ActionItem, DefinitionSelection} from 'components';
+import {DefinitionSelection, SelectionPreview} from 'components';
 import {Filter} from 'filter';
-import {getFlowNodeNames} from 'services';
+import {getFlowNodeNames, loadVariables} from 'services';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import './BranchControlPanel.scss';
 
-export default class BranchControlPanel extends React.Component {
+export class BranchControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       flowNodeNames: null,
+      variables: null,
     };
   }
 
   componentDidMount() {
     this.loadFlowNodeNames();
+    this.loadVariables();
   }
+
+  loadVariables = () => {
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
+    if (processDefinitionKey && processDefinitionVersions) {
+      this.props.mightFail(
+        loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+        (variables) => this.setState({variables}),
+        showError
+      );
+    }
+  };
 
   loadFlowNodeNames = async () => {
     this.setState({
@@ -44,6 +59,7 @@ export default class BranchControlPanel extends React.Component {
       !equal(this.props.processDefinitionVersions, processDefinitionVersions)
     ) {
       this.loadFlowNodeNames();
+      this.loadVariables();
     }
   }
 
@@ -74,7 +90,7 @@ export default class BranchControlPanel extends React.Component {
         onMouseOver={this.hover(type)}
         onMouseOut={this.hover(null)}
       >
-        <ActionItem
+        <SelectionPreview
           disabled={disableFlowNodeSelection}
           onClick={() => this.props.updateSelection(type, null)}
           highlighted={
@@ -85,7 +101,7 @@ export default class BranchControlPanel extends React.Component {
           {this.props[type]
             ? this.props[type].name || this.props[type].id
             : t(`analysis.emptySelectionLabel.${type}`)}
-        </ActionItem>
+        </SelectionPreview>
       </div>
     );
   };
@@ -107,18 +123,6 @@ export default class BranchControlPanel extends React.Component {
                   processDefinitionKey: key,
                   processDefinitionVersions: versions,
                   tenantIds,
-                  filter: this.props.filter.filter(
-                    ({type}) =>
-                      ![
-                        'executedFlowNodes',
-                        'executingFlowNodes',
-                        'canceledFlowNodes',
-                        'variable',
-                        'assignee',
-                        'candidateGroup',
-                        'flowNodeDuration',
-                      ].includes(type)
-                  ),
                 })
               }
             />
@@ -130,13 +134,14 @@ export default class BranchControlPanel extends React.Component {
           <li className="item itemFilter">
             <Filter
               data={this.props.filter}
-              flowNodeNames={this.state.flowNodeNames}
               onChange={({filter}) =>
                 this.props.onChange({filter: update(this.props.filter, filter)})
               }
               xml={this.props.xml}
               {...this.getDefinitionConfig()}
               filterLevel="instance"
+              flowNodeNames={this.state.flowNodeNames}
+              variables={this.state.variables}
             />
           </li>
         </ul>
@@ -144,3 +149,5 @@ export default class BranchControlPanel extends React.Component {
     );
   }
 }
+
+export default withErrorHandling(BranchControlPanel);

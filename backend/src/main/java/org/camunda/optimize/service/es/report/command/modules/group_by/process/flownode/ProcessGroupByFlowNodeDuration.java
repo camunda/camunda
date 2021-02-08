@@ -14,14 +14,12 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
 import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
-import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -63,7 +61,8 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
+    compositeCommandResult.setGroupByKeyOfNumericType(true);
+    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
     getFilteredFlowNodesAggregation(response)
       .ifPresent(filteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =
@@ -75,10 +74,6 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
           );
 
         compositeCommandResult.setGroups(durationHistogramData);
-        compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
-          filteredFlowNodes.getAggregations(),
-          getFlowNodesAggregation(response).map(SingleBucketAggregation::getDocCount).orElse(0L)
-        ));
       });
   }
 

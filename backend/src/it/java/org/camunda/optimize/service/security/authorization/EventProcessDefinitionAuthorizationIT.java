@@ -381,10 +381,8 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
-
     // then
     assertThat(versions).extracting(DefinitionVersionResponseDto::getVersion).containsExactly("1");
-
     assertThat(unauthorizedKeyResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 

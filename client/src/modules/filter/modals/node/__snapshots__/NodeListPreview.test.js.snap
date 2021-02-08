@@ -2,8 +2,24 @@
 
 exports[`should create preview of nodes 1`] = `
 <Fragment>
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+        Running, Canceled or Completed Flow Nodes
+      </span>
+    }
+    overflowOnly={true}
+  >
+    <span
+      className="parameterName"
+    >
+      Running, Canceled or Completed Flow Nodes
+    </span>
+  </Tooltip>
   <ul
-    className="previewList"
+    className="previewList filterText"
   >
     <li
       className="previewItem"
@@ -11,31 +27,35 @@ exports[`should create preview of nodes 1`] = `
     >
       <span>
          
-        <PreviewItemValue>
+        <b>
           foo
-        </PreviewItemValue>
+        </b>
       </span>
     </li>
   </ul>
-  <span
-    className="previewItemOperator"
-  >
-     
-    was
-     
-  </span>
-  <span
-    className="parameterName"
-  >
-    Executed
-  </span>
 </Fragment>
 `;
 
 exports[`should create preview of selected nodes linked by nor 1`] = `
 <Fragment>
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+        Not executed Flow Nodes
+      </span>
+    }
+    overflowOnly={true}
+  >
+    <span
+      className="parameterName"
+    >
+      Not executed Flow Nodes
+    </span>
+  </Tooltip>
   <ul
-    className="previewList"
+    className="previewList filterText"
   >
     <li
       className="previewItem"
@@ -43,9 +63,17 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
     >
       <span>
          
-        <PreviewItemValue>
+        <b>
           foo
-        </PreviewItemValue>
+        </b>
+      </span>
+    </li>
+    <li
+      className="previewItem"
+      key="1"
+    >
+      <span>
+         
         <span
           className="previewItemOperator"
         >
@@ -53,40 +81,35 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
           and
            
         </span>
-      </span>
-    </li>
-    <li
-      className="previewItem"
-      key="1"
-    >
-      <span>
-         
-        <PreviewItemValue>
+        <b>
           foo
-        </PreviewItemValue>
+        </b>
       </span>
     </li>
   </ul>
-  <span
-    className="previewItemOperator"
-  >
-     
-    were
-     
-  </span>
-  <span
-    className="parameterName"
-  >
-    Not 
-    Executed
-  </span>
 </Fragment>
 `;
 
 exports[`should create preview of selected nodes linked by or 1`] = `
 <Fragment>
+  <Tooltip
+    content={
+      <span
+        className="parameterName"
+      >
+        Running, Canceled or Completed Flow Nodes
+      </span>
+    }
+    overflowOnly={true}
+  >
+    <span
+      className="parameterName"
+    >
+      Running, Canceled or Completed Flow Nodes
+    </span>
+  </Tooltip>
   <ul
-    className="previewList"
+    className="previewList filterText"
   >
     <li
       className="previewItem"
@@ -94,16 +117,9 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     >
       <span>
          
-        <PreviewItemValue>
+        <b>
           foo
-        </PreviewItemValue>
-        <span
-          className="previewItemOperator"
-        >
-           
-          or
-           
-        </span>
+        </b>
       </span>
     </li>
     <li
@@ -112,29 +128,24 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     >
       <span>
          
-        <PreviewItemValue>
+        <span
+          className="previewItemOperator"
+        >
+           
+          or
+           
+        </span>
+        <b>
           foo
-        </PreviewItemValue>
+        </b>
       </span>
     </li>
   </ul>
-  <span
-    className="previewItemOperator"
-  >
-     
-    was
-     
-  </span>
-  <span
-    className="parameterName"
-  >
-    Executed
-  </span>
 </Fragment>
 `;
 
 exports[`should show the id of the flow node if the name is null 1`] = `
-<PreviewItemValue>
+<b>
   bar
-</PreviewItemValue>
+</b>
 `;

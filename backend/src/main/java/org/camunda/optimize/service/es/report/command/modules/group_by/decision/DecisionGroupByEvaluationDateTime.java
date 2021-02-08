@@ -85,10 +85,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
                              final SearchResponse response,
                              final ExecutionContext<DecisionReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
-    result.setIsComplete(dateAggregationService.isResultComplete(
-      response.getAggregations(), response.getHits().getTotalHits().value
-    ));
-    result.setSorting(
+    result.setGroupBySorting(
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC))

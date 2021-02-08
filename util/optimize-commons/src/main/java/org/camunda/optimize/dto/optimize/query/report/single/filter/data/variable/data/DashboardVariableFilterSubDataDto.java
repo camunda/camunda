@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @FieldNameConstants
-public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesVariableFilterSubDataDto {
+public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFilterDataDto {
 
   protected boolean allowCustomValues;
 

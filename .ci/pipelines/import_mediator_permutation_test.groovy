@@ -16,9 +16,6 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String mavenElasticsearchAgent(esVersion, cambpmVersion) {
   return """
 metadata:
@@ -127,40 +124,6 @@ spec:
 """
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 pipeline {
   agent none
   environment {
@@ -180,16 +143,12 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
         optimizeCloneGitRepo(params.BRANCH)
-        script {
-          def mavenProps = readMavenPom().getProperties()
-          env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        setBuildEnvVars()
       }
     }
     stage('Import Mediators Permutation Test') {

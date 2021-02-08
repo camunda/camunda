@@ -6,16 +6,15 @@
 
 import React from 'react';
 
-import {ActionItem, Tooltip} from 'components';
+import {ActionItem} from 'components';
 import {t} from 'translation';
 
 import {NodeListPreview, DateFilterPreview, VariablePreview} from './modals';
-import PreviewItemValue from './PreviewItemValue';
 import AssigneeFilterPreview from './AssigneeFilterPreview';
 
 import './FilterList.scss';
 
-const instanceFilters = [
+const stateFilters = [
   'runningInstancesOnly',
   'completedInstancesOnly',
   'canceledInstancesOnly',
@@ -25,14 +24,22 @@ const instanceFilters = [
   'includesOpenIncident',
   'includesResolvedIncident',
   'doesNotIncludeIncident',
+  'runningFlowNodesOnly',
+  'completedFlowNodesOnly',
+  'canceledFlowNodesOnly',
+  'completedOrCanceledFlowNodesOnly',
 ];
 
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
-  getVariableName = (type, nameOrId) => {
-    if (this.props.variables && this.props.variables[type].length) {
-      return this.props.variables[type].find(({id}) => id === nameOrId).name;
+  getVariableName = (type, nameOrId, variableExists) => {
+    if (isDecisionVariable(type) && this.props.variables?.[type]) {
+      if (variableExists) {
+        const {name, id} = this.props.variables[type].find(({id}) => id === nameOrId);
+        return name || id;
+      }
+      return t('report.missingVariable');
     }
 
     return nameOrId;
@@ -45,8 +52,10 @@ export default class FilterList extends React.Component {
       const filter = this.props.data[i];
       if (filter.type.includes('Date')) {
         list.push(
-          <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+          <li key={i} className="listItem">
             <ActionItem
+              type={getFilterLevelText(filter.filterLevel)}
+              onEdit={this.props.openEditFilterModal(filter)}
               onClick={(evt) => {
                 evt.stopPropagation();
                 this.props.deleteFilter(filter);
@@ -59,11 +68,15 @@ export default class FilterList extends React.Component {
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
           const {name, type, data} = filter.data;
-          const variableName = this.getVariableName(filter.type, name);
+          const variableExists = checkVariableExistence(filter.type, name, this.props.variables);
+          const variableName = this.getVariableName(filter.type, name, variableExists);
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
+                warning={!variableExists && t('report.nonExistingVariable')}
+                onEdit={variableExists ? this.props.openEditFilterModal(filter) : undefined}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -76,7 +89,7 @@ export default class FilterList extends React.Component {
                     filter={data}
                   />
                 ) : (
-                  <VariablePreview variableName={variableName} filter={data} />
+                  <VariablePreview type={filter.type} variableName={variableName} filter={data} />
                 )}
               </ActionItem>
             </li>
@@ -86,11 +99,15 @@ export default class FilterList extends React.Component {
         ) {
           const {values, operator} = filter.data;
           const flowNodeNames = this.props.flowNodeNames || {};
+          const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, values);
           const selectedNodes = values.map((id) => ({name: flowNodeNames[id], id}));
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
+                warning={!allFlowNodesExist && t('report.nonExistingFlowNode')}
+                onEdit={allFlowNodesExist ? this.props.openEditFilterModal(filter) : undefined}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -104,46 +121,48 @@ export default class FilterList extends React.Component {
           const {unit, value, operator} = filter.data;
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
+                onEdit={this.props.openEditFilterModal(filter)}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
               >
-                <span className="parameterName">{t('common.filter.types.duration')}</span>
-                {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
-                {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
-                <PreviewItemValue>
-                  {value.toString()}{' '}
-                  {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
-                </PreviewItemValue>
+                <span className="parameterName">{t('common.filter.types.instanceDuration')}</span>
+                <span className="filterText">
+                  {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
+                  {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
+                  <b>
+                    {value.toString()}{' '}
+                    {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
+                  </b>
+                </span>
               </ActionItem>
             </li>
           );
         } else if (filter.type === 'flowNodeDuration') {
           const filters = filter.data;
-          const filtersCount = Object.keys(filters).length;
           const flowNodeNames = this.props.flowNodeNames || {};
+          const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, Object.keys(filters));
 
           const filterValues = (
             <div className="filterValues">
               {Object.keys(filters).map((key, i) => {
                 const {value, unit, operator} = filters[key];
                 return (
-                  <div key={key}>
-                    <div key={key} className="flowNode">
-                      <PreviewItemValue>{flowNodeNames[key] || key}</PreviewItemValue>
-                      {operator === '<' &&
-                        this.createOperator(t('common.filter.list.operators.less'))}
-                      {operator === '>' &&
-                        this.createOperator(t('common.filter.list.operators.more'))}
-                      <PreviewItemValue>
-                        {value.toString()}{' '}
-                        {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
-                      </PreviewItemValue>
-                    </div>
-                    {i !== filtersCount - 1 && t('common.filter.list.operators.or')}
+                  <div key={key} className="flowNode">
+                    {i !== 0 && <span>{t('common.filter.list.operators.or')} </span>}
+                    <b>{flowNodeNames[key] || key}</b>
+                    {operator === '<' &&
+                      this.createOperator(t('common.filter.list.operators.less'))}
+                    {operator === '>' &&
+                      this.createOperator(t('common.filter.list.operators.more'))}
+                    <b>
+                      {value.toString()}{' '}
+                      {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
+                    </b>
                   </div>
                 );
               })}
@@ -151,32 +170,26 @@ export default class FilterList extends React.Component {
           );
 
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
+                warning={!allFlowNodesExist && t('report.nonExistingFlowNode')}
+                onEdit={allFlowNodesExist ? this.props.openEditFilterModal(filter) : undefined}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
               >
-                <span className="parameterName">{t('common.filter.types.duration')}</span>
-                {this.createOperator(t('common.filter.durationModal.appliedTo'))}
-                {this.props.expanded ? (
-                  filterValues
-                ) : (
-                  <Tooltip position="bottom" content={filterValues}>
-                    <span className="PreviewItemValue">
-                      {filtersCount}{' '}
-                      {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
-                    </span>
-                  </Tooltip>
-                )}
+                <span className="parameterName">{t('common.filter.types.flowNodeDuration')}</span>
+                <span className="filterText">{filterValues}</span>
               </ActionItem>
             </li>
           );
-        } else if (instanceFilters.includes(filter.type)) {
+        } else if (stateFilters.includes(filter.type)) {
           list.push(
-            <li key={i} className="listItem notEditable">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -188,8 +201,10 @@ export default class FilterList extends React.Component {
           );
         } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
           list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <li key={i} className="listItem">
               <ActionItem
+                type={getFilterLevelText(filter.filterLevel)}
+                onEdit={this.props.openEditFilterModal(filter)}
                 onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
@@ -212,3 +227,35 @@ FilterList.defaultProps = {
   openEditFilterModal: () => {},
   deleteFilter: () => {},
 };
+
+function isDecisionVariable(type) {
+  return ['inputVariable', 'outputVariable'].includes(type);
+}
+
+function checkVariableExistence(type, name, variables) {
+  if (!variables || (isDecisionVariable(type) && !variables[type])) {
+    return true;
+  }
+
+  if (isDecisionVariable(type)) {
+    return variables[type].some((variable) => variable.id === name);
+  }
+
+  return variables.some((variable) => variable.name === name);
+}
+
+function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
+  const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
+  return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
+}
+
+function getFilterLevelText(filterLevel) {
+  if (!filterLevel) {
+    return t('common.filter.decisionFilter');
+  }
+  if (filterLevel === 'instance') {
+    return t('common.filter.instanceFilter');
+  }
+
+  return t('common.filter.flowNodeFilter');
+}

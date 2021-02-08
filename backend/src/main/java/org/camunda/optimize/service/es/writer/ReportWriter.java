@@ -278,14 +278,10 @@ public class ReportWriter {
   }
 
   public void deleteSingleReport(final String reportId) {
-    String deletedItemName = "single report";
-    String deletedItemIdentifier = String.format("ID %s", reportId);
-
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       idsQuery().addIds(reportId),
-      deletedItemName,
-      deletedItemIdentifier,
+      String.format("single report with ID [%s]", reportId),
       true,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
@@ -353,14 +349,10 @@ public class ReportWriter {
   }
 
   public void deleteAllReportsOfCollection(String collectionId) {
-    String deletedItemName = "all reports of collection";
-    String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
-
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
-      deletedItemName,
-      deletedItemIdentifier,
+      String.format("all reports of collection with collectionId [%s]", collectionId),
       true,
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,

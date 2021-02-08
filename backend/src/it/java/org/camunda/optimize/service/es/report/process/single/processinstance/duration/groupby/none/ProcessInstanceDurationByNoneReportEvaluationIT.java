@@ -339,7 +339,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> runningInstanceFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -349,7 +349,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(testExecutionStateFilter)
+      .setFilter(runningInstanceFilter)
       .build();
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
@@ -385,7 +385,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> completedInstanceFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -395,7 +395,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(testExecutionStateFilter)
+      .setFilter(completedInstanceFilter)
       .build();
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
@@ -477,7 +477,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DurationFilterUnit.HOURS)
@@ -490,7 +490,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(testExecutionStateFilter)
+      .setFilter(durationFilter)
       .build();
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 

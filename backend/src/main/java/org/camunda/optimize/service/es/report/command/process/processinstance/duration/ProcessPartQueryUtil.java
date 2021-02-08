@@ -138,8 +138,6 @@ public class ProcessPartQueryUtil {
         "}" +
       "}" +
       "Map result = new HashMap();" +
-      // the params object is only available in Elasticsearch from 7.3 so we have to use this workaround
-      // see https://github.com/elastic/elasticsearch/issues/42046
       "result.put('aggregationType', params.aggregationType);" +
       "result.put('sum', sum);" +
       "result.put('count', count);" +
@@ -167,26 +165,22 @@ public class ProcessPartQueryUtil {
           "count += a.get('count');" +
           "min = a.get('min') < min? a.get('min') : min;" +
           "max = a.get('max') > max? a.get('max') : max;" +
-          // it will be the same type for each shard but since we need to make sure that we assign the type
-          // for a state that's non null. Until Elasticsearch 7.3 we can't access the params object directly.
-          // See https://github.com/elastic/elasticsearch/issues/42046 for the origin of the problem.
-          "aggregationType = a.get('aggregationType');" +
         "}" +
       "}" +
       "if (count == 0) {" +
         "return null;" +
       "}" +
       // return correct result depending on the aggregation type
-      "if (aggregationType == 'avg') {" +
+      "if (params.aggregationType == 'avg') {" +
         "return sum / count;" +
-      "} else if (aggregationType == 'min') {" +
+      "} else if (params.aggregationType == 'min') {" +
         "return min;" +
-      "} else if (aggregationType == 'max') {" +
+      "} else if (params.aggregationType == 'max') {" +
         "return max;" +
-      "} else if (aggregationType == 'sum') {" +
+      "} else if (params.aggregationType == 'sum') {" +
         "return sum;" +
       "} else {" +
-        "Debug.explain('Aggregation type ' + aggregationType + 'is not supported!');" +
+        "Debug.explain('Aggregation type ' + params.aggregationType + 'is not supported!');" +
       "}"
     );
     // @formatter:on

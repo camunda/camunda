@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -67,8 +66,7 @@ public class DmnModelUtil {
 
   private static List<DecisionVariableNameResponseDto> extractVariables(final DmnModelInstance model,
                                                                         @NonNull final String decisionKey,
-                                                                        final Function<DecisionTable,
-                                                                  List<DecisionVariableNameResponseDto>> extractVariables) {
+                                                                        VariableExtractionFunction extractVariables) {
     return model.getModelElementsByType(Decision.class)
       .stream()
       .filter(decision -> Objects.equals(decision.getId(), decisionKey))
@@ -83,33 +81,51 @@ public class DmnModelUtil {
           return new ArrayList<DecisionVariableNameResponseDto>();
         }
         DecisionTable firstDecisionTable = decisionTables.iterator().next();
-        return extractVariables.apply(firstDecisionTable);
+        return extractVariables.extract(firstDecisionTable, decisionKey);
       })
       .orElse(new ArrayList<>());
   }
 
-  private static List<DecisionVariableNameResponseDto> extractInputVariablesFromDecision(final DecisionTable decision) {
+  private static List<DecisionVariableNameResponseDto> extractInputVariablesFromDecision(final DecisionTable decision, String xmlDecisionKey) {
     final List<DecisionVariableNameResponseDto> inputVariableList = new ArrayList<>();
     for (Input node : decision.getChildElementsByType(Input.class)) {
       DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
-      variableNameDto.setType(VariableType.getTypeForId(node.getInputExpression().getTypeRef()));
+      String id = node.getInputExpression().getTypeRef();
+      if(id == null) {
+        log.warn("Found decision input with id {} without a type on decision with key {}, will default to String", node.getId(), xmlDecisionKey);
+        variableNameDto.setType(VariableType.STRING);
+      }
+      else {
+        variableNameDto.setType(VariableType.getTypeForId(id));
+      }
       inputVariableList.add(variableNameDto);
     }
     return inputVariableList;
   }
 
-  private static List<DecisionVariableNameResponseDto> extractOutputVariablesFromDecision(final DecisionTable decision) {
+  private static List<DecisionVariableNameResponseDto> extractOutputVariablesFromDecision(final DecisionTable decision, String xmlDecisionKey) {
     final List<DecisionVariableNameResponseDto> outputVariableList = new ArrayList<>();
     for (Output node : decision.getChildElementsByType(Output.class)) {
       DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
-      variableNameDto.setType(VariableType.getTypeForId(node.getTypeRef()));
+      String id = node.getTypeRef();
+      if(id == null) {
+        log.warn("Found decision output with id {} without a type on decision with key {}, will default to String", node.getId(), xmlDecisionKey);
+        variableNameDto.setType(VariableType.STRING);
+      }
+      else {
+        variableNameDto.setType(VariableType.getTypeForId(id));
+      }
       outputVariableList.add(variableNameDto);
     }
     return outputVariableList;
   }
 
+  private interface VariableExtractionFunction {
+    List<DecisionVariableNameResponseDto> extract(DecisionTable table, String key);
+  }
 }
+

@@ -177,7 +177,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -212,7 +211,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
@@ -254,7 +252,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData())
       .hasSize(3)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
@@ -322,7 +319,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
@@ -361,7 +357,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(1);
@@ -554,7 +549,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
@@ -589,7 +583,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream()
@@ -617,7 +610,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month
-    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(1);
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);

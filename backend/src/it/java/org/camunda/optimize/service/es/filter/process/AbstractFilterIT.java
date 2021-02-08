@@ -26,6 +26,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractFilterIT extends AbstractIT {
 
@@ -100,6 +101,7 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .build();
   }
 
+  @SuppressWarnings(UNUSED)
   private static Stream<ProcessReportDataType> simpleDateReportTypes() {
     return Stream.of(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,

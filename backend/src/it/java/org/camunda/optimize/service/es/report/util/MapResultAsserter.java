@@ -31,11 +31,6 @@ public class MapResultAsserter {
     return this;
   }
 
-  public MapResultAsserter isComplete(boolean isComplete) {
-    expectedResult.setIsComplete(isComplete);
-    return this;
-  }
-
   public MapResultAsserter groupedByContains(String distributedByKey, Double result) {
     expectedResult.getData().add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
     return this;
@@ -63,13 +58,6 @@ public class MapResultAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
-    assertThat(actualResult.getIsComplete())
-      .as(String.format(
-        "IsComplete status should be [%s] but is [%s].",
-        expectedResult.getIsComplete(),
-        actualResult.getIsComplete()
-      ))
-      .isEqualTo(expectedResult.getIsComplete());
     assertThat(actualResult.getData())
       .as("Data should not be null.")
       .isNotNull();

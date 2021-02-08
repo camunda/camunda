@@ -29,6 +29,7 @@ export default function Table({
   onScroll,
   fetchData = () => {},
   defaultPageSize = 20,
+  defaultPage = 0,
   totalEntries,
   loading,
 }) {
@@ -64,7 +65,7 @@ export default function Table({
       disableSortRemove: true,
       autoResetPage: false,
       initialState: {
-        pageIndex: 0,
+        pageIndex: defaultPage,
         sortBy: initialSorting,
         pageSize: disablePagination ? Number.MAX_VALUE : defaultPageSize,
       },

@@ -16,18 +16,11 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
-
 static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
-  return itStageBasePod(4) + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
+  return itStageBasePod() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
-static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
-  return itStageBasePod(2) + camBpmContainerSpec(camBpmVersion)
-}
-
-static String itStageBasePod(int limitsCpu) {
+static String itStageBasePod() {
   return """
 metadata:
   labels:
@@ -60,7 +53,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: ${limitsCpu}
+        value: 2
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -126,71 +119,16 @@ static String elasticSearchContainerSpec(esVersion) {
   """
 }
 
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
-}
-
 void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
 }
 
-void gitCheckoutOptimize() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-    branch: "${params.BRANCH}",
-    credentialsId: 'camunda-jenkins-github-ssh',
-    poll: false
-}
-
 void integrationTestSteps() {
-  gitCheckoutOptimize()
+  optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
     runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU")
-  }
-}
-
-void integrationTestStepsAWS() {
-  gitCheckoutOptimize()
-
-  container('maven') {
-    sh("""    
-      curl -s "http://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
-      
-      #cleanup before starting the integration tests to assure starting from scratch
-      curl -XDELETE "http://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
-      """)
-    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=60000")
   }
 }
 
@@ -213,14 +151,12 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
-        gitCheckoutOptimize()
-        script {
-          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-        }
+        optimizeCloneGitRepo(params.BRANCH)
+        setBuildEnvVars()
       }
     }
     stage('Elasticsearch Integration Tests') {
@@ -363,30 +299,6 @@ pipeline {
           }
           steps {
             integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Elasticsearch AWS Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-AWS_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchAWSIntegrationTestAgent("${env.CAMBPM_VERSION}")
-            }
-          }
-
-          environment {
-            OPTIMIZE_ELASTICSEARCH_HOST = "ci-elasticsearch.optimize"
-            OPTIMIZE_ELASTICSEARCH_HTTP_PORT = 80
-          }
-
-          steps {
-            integrationTestStepsAWS()
           }
           post {
             always {

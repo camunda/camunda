@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -48,7 +47,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<ProcessReportDataDto> {
   private final DateTimeFormatter formatter;
-  private final ConfigurationService configurationService;
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
@@ -103,22 +101,12 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     if (response.getAggregations() != null) {
       // Only enrich result if aggregations exist (if no aggregations exist, this report contains no instances)
       result.setGroups(processAggregations(response, response.getAggregations(), context));
-      result.setIsComplete(isResultComplete(response.getAggregations()));
-      result.setSorting(
+      result.setGroupBySorting(
         context.getReportConfiguration()
           .getSorting()
           .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
       );
     }
-  }
-
-  private boolean isResultComplete(final Aggregations aggregations) {
-    boolean complete = true;
-    Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
-    if (agg.getBuckets().size() > configurationService.getEsAggregationBucketLimit()) {
-      complete = false;
-    }
-    return complete;
   }
 
   private List<CompositeCommandResult.GroupByResult> processAggregations(
@@ -136,9 +124,6 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       results.add(
         CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions)
       );
-      if (results.size() >= configurationService.getEsAggregationBucketLimit()) {
-        break;
-      }
     }
     return results;
   }

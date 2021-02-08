@@ -209,109 +209,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(2);
     assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1.);
     assertThat(resultDto.getEntryForKey("bar2").get().getValue()).isEqualTo(2.);
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_stringVariable() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    variables.put("foo", "bar2");
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      "foo",
-      VariableType.STRING
-    );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable() {
-    // given
-    final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
-    variables.put(varName, 1.0);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    variables.put(varName, 2.0);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      varName,
-      VariableType.DOUBLE
-    );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
-  }
-
-  @Test
-  public void multipleBuckets_resultLimitedByConfig_dateVariable() {
-    // given
-    final String varName = "dateVar";
-    Map<String, Object> variables = new HashMap<>();
-    variables.put(varName, OffsetDateTime.now());
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    variables.put(varName, OffsetDateTime.now().plusMinutes(1));
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      varName,
-      VariableType.DATE
-    );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
-    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -1196,7 +1097,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -1232,7 +1132,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();

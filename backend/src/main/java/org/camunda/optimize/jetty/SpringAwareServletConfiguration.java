@@ -41,14 +41,12 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     "image/svg+xml";
 
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
-  private String springContextLocation = "classpath:applicationContext.xml";
-  private String optimizeRestPackage = "org.camunda.optimize.rest";
-  private ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
-  private ApplicationContext applicationContext;
+  private static final String OPTIMIZE_REST_PACKAGE = "org.camunda.optimize.rest";
 
-  public SpringAwareServletConfiguration() {
-    this(null);
-  }
+  private final ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
+
+  private String springContextLocation = "classpath:applicationContext.xml";
+  private ApplicationContext applicationContext;
 
   public SpringAwareServletConfiguration(String contextLocation) {
     if (contextLocation != null) {
@@ -56,10 +54,24 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     }
   }
 
+  @Override
+  public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException {
+    this.applicationContext = applicationContext;
+  }
+
+  public ServletContextHandler initServletContextHandler() {
+    final ServletHolder jerseyServlet = initJerseyServlet();
+    return setupServletContextHandler(jerseyServlet);
+  }
+
+  public ApplicationContext getApplicationContext() {
+    return applicationContext;
+  }
+
   private ServletHolder initJerseyServlet() {
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
-      .packages(optimizeRestPackage)
+      .packages(OPTIMIZE_REST_PACKAGE)
       // WADL is not used and having it not explicitly disabled causes a warn log
       .property(ServerProperties.WADL_FEATURE_DISABLE, true)
       .register(JacksonFeature.class);
@@ -80,18 +92,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addLifeCycleListener(new SpringContextInterceptingListener(this));
 
     addStaticResources(context);
-    return context;
-  }
-
-  private void addStaticResources(ServletContextHandler context) {
-    //add static resources
-    URL webappURL = this.getClass().getClassLoader().getResource("webapp");
-    if (webappURL != null) {
-      context.setResourceBase(webappURL.toExternalForm());
-    }
-    ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
-    holderPwd.setInitParameter("dirAllowed", "true");
-    context.addServlet(holderPwd, "/");
+    addGzipHandler(context);
+    context.setErrorHandler(new NotFoundErrorHandler());
 
     addLicenseFilter(context);
     addSingleSignOnFilter(context);
@@ -99,10 +101,17 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     addEventIngestionQoSFilter(context);
     addIngestionRequestLimitFilter(context);
 
-    NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
-    context.setErrorHandler(errorMapper);
+    return context;
+  }
 
-    initGzipHandler(context);
+  private void addStaticResources(ServletContextHandler context) {
+    final URL webappURL = this.getClass().getClassLoader().getResource("webapp");
+    if (webappURL != null) {
+      context.setResourceBase(webappURL.toExternalForm());
+    }
+    final ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
+    holderPwd.setInitParameter("dirAllowed", "false");
+    context.addServlet(holderPwd, "/");
   }
 
   private void addIngestionRequestLimitFilter(final ServletContextHandler context) {
@@ -163,7 +172,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     );
   }
 
-  private void initGzipHandler(ServletContextHandler context) {
+  private void addGzipHandler(ServletContextHandler context) {
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setCompressionLevel(9);
     gzipHandler.setMinGzipSize(23);
@@ -171,20 +180,5 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
     gzipHandler.setIncludedPaths("/*");
     context.setGzipHandler(gzipHandler);
-  }
-
-  public ServletContextHandler getServletContextHandler() {
-    ServletHolder jerseyServlet = initJerseyServlet();
-
-    return setupServletContextHandler(jerseyServlet);
-  }
-
-  public ApplicationContext getApplicationContext() {
-    return applicationContext;
-  }
-
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.applicationContext = applicationContext;
   }
 }

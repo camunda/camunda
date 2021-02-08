@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.Value;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -24,7 +23,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -287,24 +285,26 @@ public class EngineDefinitionAuthorizationService
     return resourceAuthorizations.isAuthorizedToAccessResource(definitionKey);
   }
 
-  private static EngineAuthorizations fetchEngineAuthorizationsForUser(final String username,
+  private static EngineAuthorizations fetchEngineAuthorizationsForUser(final String userId,
                                                                        final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
-      .addAll(engineContext.getAllProcessDefinitionAuthorizations())
-      .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
+    final List<AuthorizationDto> allAuthorizationsForUser = ImmutableList.<AuthorizationDto>builder()
+      .addAll(engineContext.getAllProcessDefinitionAuthorizationsForUser(userId))
+      .addAll(engineContext.getAllDecisionDefinitionAuthorizationsForUser(userId))
       .build();
-    return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, username, groups);
+    return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizationsForUser);
   }
 
   private static EngineAuthorizations fetchEngineAuthorizationsForGroup(final String groupId,
                                                                         final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
     final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
       .addAll(engineContext.getAllProcessDefinitionAuthorizations())
       .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
       .build();
-    return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, groups);
+    return mapToEngineAuthorizations(
+      engineContext.getEngineAlias(),
+      allAuthorizations,
+      Collections.singletonList(groupId)
+    );
   }
 
   private List<TenantAndEnginePair> resolveTenantAndEnginePairs(final List<String> tenantIds) {

@@ -6,11 +6,13 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -22,6 +24,7 @@ import static org.camunda.optimize.service.es.report.command.modules.distributed
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskByCandidateGroupReportEvaluationIT {
@@ -55,59 +58,41 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final FlowNodeExecutionState executionState) {
-    switch (executionState) {
-      case RUNNING:
-        HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
-          .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+                                                              final List<ProcessFilterDto<?>> processFilter) {
+    if (isSingleFilterOfType(processFilter, RunningFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 500., FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 500., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 500., FIRST_CANDIDATE_GROUP_NAME)
-          .doAssert(result);
-        break;
-      case COMPLETED:
-        HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
-          .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 500., FIRST_CANDIDATE_GROUP_NAME)
+        .doAssert(result);
+      // @formatter:on
+    } else if (isSingleFilterOfType(processFilter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
-          .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .doAssert(result);
-        break;
-      case CANCELED:
-        HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
-          .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
+        .doAssert(result);
+      // @formatter:on
+    } else if (isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
+      // @formatter:off
+      HyperMapAsserter.asserter()
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
-          .doAssert(result);
-        break;
-      case ALL:
-        HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
-          .processInstanceCountWithoutFilters(2L)
-          .isComplete(true)
-          .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 500., FIRST_CANDIDATE_GROUP_NAME)
-          .doAssert(result);
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("No assertions for execution state: " + executionState);
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
+        .doAssert(result);
+      // @formatter:on
+    } else {
+      fail("No assertions for execution state: " + processFilter);
     }
   }
 
@@ -250,33 +235,6 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
           SECOND_CANDIDATE_GROUP_NAME
         )
         .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .doAssert(results.get(aggType));
-    // @formatter:on
-  }
-
-  @Override
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID,null, FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(results.get(aggType));
     // @formatter:on
   }

@@ -55,8 +55,8 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+                                                              final FlowNodeStatusTestValues expectedValues) {
     assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(FIRST_CANDIDATE_GROUP_ID));
     assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
@@ -105,7 +105,6 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
@@ -128,7 +127,6 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]}
       )
     );
-    assertThat(results.get(MIN).getIsComplete()).isTrue();
   }
 
   @Override

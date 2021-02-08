@@ -108,6 +108,22 @@ public class ProcessFilterBuilder {
     return IdentityLinkFilterBuilder.constructCandidateGroupFilterBuilder(this);
   }
 
+  public RunningFlowNodesOnlyFilterBuilder runningFlowNodesOnly() {
+    return RunningFlowNodesOnlyFilterBuilder.construct(this);
+  }
+
+  public CompletedFlowNodesOnlyFilterBuilder completedFlowNodesOnly() {
+    return CompletedFlowNodesOnlyFilterBuilder.construct(this);
+  }
+
+  public CanceledFlowNodesOnlyFilterBuilder canceledFlowNodesOnly() {
+    return CanceledFlowNodesOnlyFilterBuilder.construct(this);
+  }
+
+  public CompletedOrCanceledFlowNodesOnlyFilterBuilder completedOrCanceledFlowNodesOnly() {
+    return CompletedOrCanceledFlowNodesOnlyFilterBuilder.construct(this);
+  }
+
   void addFilter(ProcessFilterDto<?> result) {
     filters.add(result);
   }

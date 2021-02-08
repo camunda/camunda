@@ -7,9 +7,10 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 
 import lombok.Data;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -22,50 +23,56 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 
 public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
   extends UserTaskDurationByUserTaskDateReportEvaluationIT {
 
   @Data
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     Double expectedIdleDurationValue;
     Double expectedWorkDurationValue;
     Double expectedTotalDurationValue;
+    Long expectedInstanceCount;
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
-    ExecutionStateTestValues runningStateValues =
-      new ExecutionStateTestValues();
-    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
+    FlowNodeStatusTestValues runningStateValues =
+      new FlowNodeStatusTestValues();
+    runningStateValues.processFilter = ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValue = 200.;
     runningStateValues.expectedWorkDurationValue = 500.;
     runningStateValues.expectedTotalDurationValue = 700.;
+    runningStateValues.expectedInstanceCount = 1L;
 
-    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
-    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
+    FlowNodeStatusTestValues completedStateValues = new FlowNodeStatusTestValues();
+    completedStateValues.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
     completedStateValues.expectedIdleDurationValue = 100.;
     completedStateValues.expectedWorkDurationValue = 100.;
     completedStateValues.expectedTotalDurationValue = 100.;
+    completedStateValues.expectedInstanceCount = 2L;
 
-    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
-    allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 100., 200.);
-    allStateValues.expectedWorkDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 100., 500.);
-    allStateValues.expectedTotalDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 100., 700.);
+    FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
+    completedOrCanceled.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedOrCanceled.expectedIdleDurationValue = 100.;
+    completedOrCanceled.expectedWorkDurationValue = 100.;
+    completedOrCanceled.expectedTotalDurationValue = 100.;
+    completedOrCanceled.expectedInstanceCount = 2L;
 
-    return Stream.of(runningStateValues, completedStateValues, allStateValues);
+    return Stream.of(runningStateValues, completedStateValues, completedOrCanceled);
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -87,22 +94,21 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.expectedInstanceCount);
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(getCorrectTestExecutionValue(executionStateTestValues));
+      .isEqualTo(getCorrectTestExecutionValue(flowNodeStatusTestValues));
   }
 
-  protected abstract Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
+  protected abstract Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues);
 
   @Override
   protected ProcessGroupByType getGroupByType() {

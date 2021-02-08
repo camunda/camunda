@@ -81,11 +81,6 @@ public class ReportConstants {
   public static final String DISTRIBUTED_BY_START_DATE = "startDate";
   public static final String DISTRIBUTED_BY_END_DATE = "endDate";
 
-  public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
-  public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";
-  public static final String CANCELED_FLOWNODE_EXECUTION_STATE = "canceled";
-  public static final String ALL_FLOWNODE_EXECUTION_STATE = "all";
-
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";
   public static final String TOTAL_USER_TASK_DURATION_TIME = "total";

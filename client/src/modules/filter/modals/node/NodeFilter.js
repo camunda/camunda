@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
 
 import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
 import {t} from 'translation';
@@ -72,36 +71,32 @@ export default class NodeFilter extends React.Component {
         </Modal.Header>
         <Modal.Content className="modalContent">
           <div className="preview">
-            <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
             <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
           </div>
-          <p className={classnames('note', {hidden: operator !== 'in'})}>
-            {t('common.filter.nodeModal.note')}
-          </p>
           <ButtonGroup>
             <Button
               active={type === 'executingFlowNodes'}
               onClick={() => this.setState({operator: undefined, type: 'executingFlowNodes'})}
             >
-              {t('common.filter.nodeModal.executing')}
+              {t('common.filter.nodeModal.executingFlowNodes')}
             </Button>
             <Button
               active={operator === 'in'}
               onClick={() => this.setState({operator: 'in', type: 'executedFlowNodes'})}
             >
-              {t('common.filter.nodeModal.executed')}
+              {t('common.filter.nodeModal.executedFlowNodes')}
             </Button>
             <Button
               active={operator === 'not in'}
               onClick={() => this.setState({operator: 'not in', type: 'executedFlowNodes'})}
             >
-              {t('common.filter.nodeModal.notExecuted')}
+              {t('common.filter.nodeModal.notExecutedFlowNodes')}
             </Button>
             <Button
               active={type === 'canceledFlowNodes'}
               onClick={() => this.setState({operator: undefined, type: 'canceledFlowNodes'})}
             >
-              {t('common.filter.nodeModal.canceled')}
+              {t('common.filter.nodeModal.canceledFlowNodes')}
             </Button>
           </ButtonGroup>
           {this.props.xml && (

@@ -26,13 +26,13 @@ exports[`should display a sentence to describe what the user can do on this page
         onMouseOut={[Function]}
         onMouseOver={[Function]}
       >
-        <ActionItem
+        <SelectionPreview
           disabled={true}
           highlighted={false}
           onClick={[Function]}
         >
           Select Gateway
-        </ActionItem>
+        </SelectionPreview>
       </div>
       affect the probability that an instance reached
       <div
@@ -41,13 +41,13 @@ exports[`should display a sentence to describe what the user can do on this page
         onMouseOut={[Function]}
         onMouseOver={[Function]}
       >
-        <ActionItem
+        <SelectionPreview
           disabled={true}
           highlighted={false}
           onClick={[Function]}
         >
           Select End Event
-        </ActionItem>
+        </SelectionPreview>
       </div>
     </li>
     <li
@@ -61,6 +61,7 @@ exports[`should display a sentence to describe what the user can do on this page
         processDefinitionKey=""
         processDefinitionVersions={Array []}
         tenantIds={Array []}
+        variables={null}
         xml={null}
       />
     </li>

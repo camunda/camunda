@@ -23,7 +23,7 @@ public class DecisionDefinitionReader {
   public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(final String decisionDefinitionKey,
                                                                        final List<String> decisionDefinitionVersions,
                                                                        final List<String> tenantIds) {
-    return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
+    return definitionReader.getFirstFullyImportedDefinitionFromTenantsIfAvailable(
       DefinitionType.DECISION,
       decisionDefinitionKey,
       decisionDefinitionVersions,
@@ -31,14 +31,12 @@ public class DecisionDefinitionReader {
     );
   }
 
-  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
-                                                                    final boolean withXml,
-                                                                    final boolean includeDeleted) {
+  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
     return definitionReader.getDefinitions(
       DefinitionType.DECISION,
-      fullyImported,
-      withXml,
-      includeDeleted
+      false,
+      false,
+      true
     );
   }
 

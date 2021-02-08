@@ -28,6 +28,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,11 +39,12 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 @Accessors(chain = true)
 public class CompositeCommandResult {
 
-  private ReportSortingDto sorting = new ReportSortingDto(null, null);
-  private boolean keyIsOfNumericType = false;
+  private ReportSortingDto groupBySorting = new ReportSortingDto();
+  private ReportSortingDto distributedBySorting = new ReportSortingDto();
+  private boolean isGroupByKeyOfNumericType = false;
+  private boolean isDistributedByKeyOfNumericType = false;
 
   private List<GroupByResult> groups = new ArrayList<>();
-  private Boolean isComplete = true;
 
   public void setGroup(GroupByResult groupByResult) {
     this.groups = singletonList(groupByResult);
@@ -155,21 +157,20 @@ public class CompositeCommandResult {
 
   public ReportHyperMapResultDto transformToHyperMap() {
     ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
-    resultDto.setIsComplete(this.isComplete);
 
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
-        .sorted(getSortingComparator(sorting, keyIsOfNumericType))
+        .sorted(getSortingComparator(distributedBySorting, isDistributedByKeyOfNumericType))
         .collect(Collectors.toList());
       resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
+    sortHypermapResultData(groupBySorting, isGroupByKeyOfNumericType, resultDto);
     return resultDto;
   }
 
   public ReportMapResultDto transformToMap() {
     ReportMapResultDto resultDto = new ReportMapResultDto();
-    resultDto.setIsComplete(this.isComplete);
     List<MapResultEntryDto> mapData = new ArrayList<>();
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();
@@ -180,7 +181,7 @@ public class CompositeCommandResult {
         throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedByType.class));
       }
     }
-    mapData.sort(getSortingComparator(sorting, keyIsOfNumericType));
+    mapData.sort(getSortingComparator(groupBySorting, isGroupByKeyOfNumericType));
     resultDto.setData(mapData);
     return resultDto;
   }
@@ -247,12 +248,13 @@ public class CompositeCommandResult {
     switch (sortBy) {
       default:
       case ReportSortingDto.SORT_BY_KEY:
-        if (keyIsOfNumericType) {
-          valueToSortByExtractor =
-            entry -> entry.getKey().equals(MISSING_VARIABLE_KEY) ? null : Double.valueOf(entry.getKey());
-        } else {
-          valueToSortByExtractor = entry -> entry.getKey().toLowerCase();
-        }
+        valueToSortByExtractor = entry -> {
+          if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
+            return null;
+          } else {
+            return keyIsOfNumericType ? Double.valueOf(entry.getKey()) : entry.getKey().toLowerCase();
+          }
+        };
         break;
       case ReportSortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;
@@ -274,6 +276,48 @@ public class CompositeCommandResult {
     }
 
     return comparator;
+  }
+
+  private void sortHypermapResultData(final ReportSortingDto sortingDto, final boolean keyIsOfNumericType,
+                                      final ReportHyperMapResultDto resultDto) {
+    List<HyperMapResultEntryDto> data = resultDto.getData();
+    Optional.of(sortingDto).ifPresent(
+      sorting -> {
+        final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
+        final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.ASC);
+
+        final Function<HyperMapResultEntryDto, Comparable> valueToSortByExtractor;
+
+        switch (sortBy) {
+          default:
+          case ReportSortingDto.SORT_BY_KEY:
+            valueToSortByExtractor = entry -> {
+              if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
+                return null;
+              } else {
+                return keyIsOfNumericType ? Double.valueOf(entry.getKey()) : entry.getKey().toLowerCase();
+              }
+            };
+            break;
+          case ReportSortingDto.SORT_BY_LABEL:
+            valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
+            break;
+        }
+
+        final Comparator<HyperMapResultEntryDto> comparator;
+        switch (sortOrder) {
+          case DESC:
+            comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));
+            break;
+          default:
+          case ASC:
+            comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+            break;
+        }
+
+        data.sort(comparator);
+      }
+    );
   }
 
   private String createErrorMessage(Class resultClass, Class resultPartClass) {

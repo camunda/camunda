@@ -10,16 +10,15 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
-import PreviewItemValue from './PreviewItemValue';
 import {loadUserNames} from './service';
 
-export function AssigneeFilterPreview({mightFail, filter}) {
+export function AssigneeFilterPreview({mightFail, filter, getNames}) {
   const [names, setNames] = useState({});
 
   useEffect(() => {
     const realUsers = filter.data.values.filter((id) => !!id); // remove null for Unassigned
     mightFail(
-      loadUserNames(filter.type, realUsers),
+      (getNames || loadUserNames)(filter.type, realUsers),
       (response) =>
         setNames(
           response.reduce((prev, current) => {
@@ -29,29 +28,29 @@ export function AssigneeFilterPreview({mightFail, filter}) {
         ),
       showError
     );
-  }, [mightFail, filter]);
+  }, [mightFail, filter, getNames]);
 
   const {values, operator} = filter.data;
 
   return (
     <span className="AssigneeFilterPreview">
       <span className="parameterName">{t(`common.filter.types.${filter.type}`)}</span>
-      {operator === 'in' && createOperator(t('common.filter.list.operators.is'))}
-      {operator === 'not in' &&
-        (values.length === 1
-          ? createOperator(t('common.filter.list.operators.not'))
-          : createOperator(t('common.filter.list.operators.neither')))}
-      {values.map((val, idx) => (
-        <span key={val}>
-          <PreviewItemValue>
-            {val === null ? t('common.filter.assigneeModal.unassigned') : names[val] || val}
-          </PreviewItemValue>
-          {idx < values.length - 1 &&
-            (operator === 'not in'
-              ? createOperator(t('common.filter.list.operators.nor'))
-              : createOperator(t('common.filter.list.operators.or')))}
-        </span>
-      ))}
+      <span className="filterText">
+        {operator === 'in' && createOperator(t('common.filter.list.operators.is'))}
+        {operator === 'not in' &&
+          (values.length === 1
+            ? createOperator(t('common.filter.list.operators.not'))
+            : createOperator(t('common.filter.list.operators.neither')))}
+        {values.map((val, idx) => (
+          <span key={val}>
+            <b>{val === null ? t('common.filter.assigneeModal.unassigned') : names[val] || val}</b>
+            {idx < values.length - 1 &&
+              (operator === 'not in'
+                ? createOperator(t('common.filter.list.operators.nor'))
+                : createOperator(t('common.filter.list.operators.or')))}
+          </span>
+        ))}
+      </span>
     </span>
   );
 }

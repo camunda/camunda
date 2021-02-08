@@ -27,7 +27,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessReportDataDto> {
 
-
   public ProcessGroupByVariable(final VariableAggregationService variableAggregationService) {
     super(variableAggregationService);
   }

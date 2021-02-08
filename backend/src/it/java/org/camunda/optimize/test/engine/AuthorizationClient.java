@@ -128,10 +128,6 @@ public class AuthorizationClient {
     grantSingleResourceAuthorizationsForUser(KERMIT_USER, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
-  public void grantAllResourceAuthorizationsForUser(final String userId, final int resourceType) {
-    grantSingleResourceAuthorizationsForUser(userId, ALL_RESOURCES_RESOURCE_ID, resourceType);
-  }
-
   public void grantSingleResourceAuthorizationForKermit(final String resourceId, final int resourceType) {
     grantSingleResourceAuthorizationsForUser(KERMIT_USER, resourceId, resourceType);
   }

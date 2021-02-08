@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -46,9 +44,9 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToDateHistogramInterval;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
-import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.createModelElementDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.filter.util.DateHistogramBucketLimiterUtil.extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramFilterUtil.createModelElementDateHistogramLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramFilterUtil.extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.util.DateHistogramFilterUtil.extendBoundsAndCreateProcessDateHistogramLimitingFilterFor;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -63,7 +61,6 @@ public class DateAggregationService {
   private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
-  private final ConfigurationService configurationService;
 
   public Optional<AggregationBuilder> createProcessInstanceDateAggregation(final DateAggregationContext context) {
     if (context.getMinMaxStats().isEmpty()) {
@@ -172,10 +169,6 @@ public class DateAggregationService {
     return formattedKeyToBucketMap;
   }
 
-  public boolean isResultComplete(final Aggregations aggregations, final long totalHits) {
-    return FilterLimitedAggregationUtil.isResultComplete(aggregations, totalHits);
-  }
-
   private DateHistogramAggregationBuilder createDateHistogramAggregation(final DateAggregationContext context) {
     DateHistogramAggregationBuilder dateHistogramAggregationBuilder = AggregationBuilders
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
@@ -280,12 +273,8 @@ public class DateAggregationService {
       .range(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .field(context.getDateField());
     ZonedDateTime start = min;
-    int bucketCount = 0;
 
     do {
-      if (bucketCount >= configurationService.getEsAggregationBucketLimit()) {
-        break;
-      }
       // this is a do while loop to ensure there's always at least one bucket, even when min and max are equal
       ZonedDateTime nextStart = start.plus(intervalDuration);
       boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
@@ -300,7 +289,6 @@ public class DateAggregationService {
         );
       rangeAgg.addRange(range);
       start = nextStart;
-      bucketCount++;
     } while (start.isBefore(max));
     return Optional.of(rangeAgg);
   }
@@ -309,11 +297,10 @@ public class DateAggregationService {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
     final BoolQueryBuilder limitFilterQuery =
-      extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor(
+      extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor(
         dateHistogramAggregation,
         context,
-        dateTimeFormatter,
-        configurationService.getEsAggregationBucketLimit()
+        dateTimeFormatter
       );
 
     return wrapWithFilterLimitedParentAggregation(
@@ -325,11 +312,10 @@ public class DateAggregationService {
   private AggregationBuilder createFilterLimitedProcessDateHistogramWithSubAggregation(final DateAggregationContext context) {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
-    final BoolQueryBuilder limitFilterQuery = extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor(
+    final BoolQueryBuilder limitFilterQuery = extendBoundsAndCreateProcessDateHistogramLimitingFilterFor(
       dateHistogramAggregation,
       context,
-      dateTimeFormatter,
-      configurationService.getEsAggregationBucketLimit()
+      dateTimeFormatter
     );
 
     return wrapWithFilterLimitedParentAggregation(
@@ -342,10 +328,9 @@ public class DateAggregationService {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
     final BoolQueryBuilder limitFilterQuery =
-      createModelElementDateHistogramBucketLimitingFilterFor(
+      createModelElementDateHistogramLimitingFilterFor(
         context,
-        dateTimeFormatter,
-        configurationService.getEsAggregationBucketLimit()
+        dateTimeFormatter
       );
 
     return wrapWithFilterLimitedParentAggregation(

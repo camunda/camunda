@@ -96,17 +96,23 @@ it('should process raw data', async () => {
   expect(processRawData.process).toHaveBeenCalled();
 });
 
-it('should set the correct configuration when updating sorting', () => {
+it('should load report when updating sorting', () => {
   const spy = jest.fn();
   const node = shallow(
-    <Table {...props} report={{...report, result: {data: []}}} updateReport={spy} />
+    <Table
+      {...props}
+      report={{...report, result: {data: []}}}
+      loadReport={spy}
+      updateReport={() => {}}
+    />
   );
 
   node.find('Table').prop('updateSorting')('columnId', 'desc');
 
   expect(spy).toHaveBeenCalled();
-  expect(spy.mock.calls[0][0].configuration.sorting).toEqual({
-    $set: {by: 'columnId', order: 'desc'},
+  expect(spy.mock.calls[0][1].data.configuration.sorting).toEqual({
+    by: 'columnId',
+    order: 'desc',
   });
 });
 

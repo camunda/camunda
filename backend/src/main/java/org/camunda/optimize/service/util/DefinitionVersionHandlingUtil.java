@@ -26,13 +26,12 @@ public class DefinitionVersionHandlingUtil {
 
   public static String convertToLatestParticularVersion(@NonNull final List<String> definitionVersions,
                                                         @NonNull final Supplier<String> latestVersionSupplier) {
-    Optional<String> isDefinitionVersionSetToAllOrLatest = definitionVersions.stream()
-      .filter(
+    final boolean isDefinitionVersionSetToAllOrLatest = definitionVersions.stream()
+      .anyMatch(
         version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
           ReportConstants.LATEST_VERSION.equalsIgnoreCase(version)
-      )
-      .findFirst();
-    if (isDefinitionVersionSetToAllOrLatest.isPresent()) {
+      );
+    if (isDefinitionVersionSetToAllOrLatest) {
       return latestVersionSupplier.get();
     } else {
       return definitionVersions.stream()

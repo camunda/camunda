@@ -70,7 +70,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
     return definitionService
-      .getLatestDefinition(
+      .getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),

@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -127,17 +126,13 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   }
 
   private static boolean isUserAuthorizedToAccessOptimizeOnEngine(
-    final String username,
+    final String userId,
     final EngineContext engineContext) throws OptimizeRuntimeException {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allAuthorizations;
-    allAuthorizations = engineContext.getAllApplicationAuthorizations();
-    final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
+    final List<AuthorizationDto> allAuthorizationsOfUser = engineContext.getAllApplicationAuthorizationsForUser(userId);
+    final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveUserResourceAuthorizations(
       engineContext.getEngineAlias(),
-      allAuthorizations,
+      allAuthorizationsOfUser,
       RELEVANT_PERMISSIONS,
-      username,
-      groups,
       RESOURCE_TYPE_APPLICATION
     );
     return resolvedApplicationAuthorizations.isAuthorizedToAccessResource(OPTIMIZE_APPLICATION_RESOURCE_ID);
@@ -145,14 +140,13 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
 
   private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
                                                                    final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getGroupsById(Collections.singletonList(groupId));
     final List<AuthorizationDto> allAuthorizations;
     allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
       RELEVANT_PERMISSIONS,
-      groups,
+      Collections.singletonList(groupId),
       RESOURCE_TYPE_APPLICATION
     );
     return resolvedApplicationAuthorizations.isAuthorizedToAccessResource(OPTIMIZE_APPLICATION_RESOURCE_ID);

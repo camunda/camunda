@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import java.util.Optional;
 
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class ReportSortingDto {
   public static final String SORT_BY_KEY = "key";
   public static final String SORT_BY_VALUE = "value";

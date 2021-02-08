@@ -149,6 +149,17 @@ public class BpmnModels {
       .done();
   }
 
+  public static BpmnModelInstance getDoubleUserTaskDiagramWithCandidateGroups(final String candidateGroupFirstUserTask,
+                                                                              final String candidateGroupSecondUserTask) {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1).camundaCandidateGroups(candidateGroupFirstUserTask)
+      .userTask(USER_TASK_2).camundaCandidateGroups(candidateGroupSecondUserTask)
+      .endEvent(END_EVENT)
+      .done();
+  }
+
   public static BpmnModelInstance getSingleServiceTaskProcess(String procDefKey) {
     return getSingleServiceTaskProcess(procDefKey, SERVICE_TASK);
   }

@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {Tooltip} from 'components';
 import React from 'react';
 
 import {t} from 'translation';
-
-import PreviewItemValue from '../../PreviewItemValue';
 
 export default function NodeListPreview({nodes, operator, type}) {
   const previewList = [];
@@ -21,31 +20,32 @@ export default function NodeListPreview({nodes, operator, type}) {
       <li key={idx} className="previewItem">
         <span>
           {' '}
-          <PreviewItemValue>{selectedNode.name || selectedNode.id}</PreviewItemValue>
-          {idx < nodes.length - 1 &&
+          {idx !== 0 &&
             createOperator(
               operator === 'not in'
                 ? t('common.filter.list.operators.and')
                 : t('common.filter.list.operators.or')
             )}
+          <b>{selectedNode.name || selectedNode.id}</b>
         </span>
       </li>
     );
   });
+
+  const parameterName = (
+    <span className="parameterName">
+      {t(
+        'common.filter.nodeModal.preview.' + (operator === 'not in' ? 'notExecutedFlowNodes' : type)
+      )}
+    </span>
+  );
+
   return (
     <>
-      <ul className="previewList">{previewList}</ul>
-      {createOperator(
-        type === 'executingFlowNodes'
-          ? t('common.filter.list.operators.is')
-          : operator === 'not in' && nodes.length > 1
-          ? t('common.filter.list.operators.were')
-          : t('common.filter.list.operators.was')
-      )}
-      <span className="parameterName">
-        {operator === 'not in' && t('common.filter.list.not')}
-        {t('common.filter.list.' + type)}
-      </span>
+      <Tooltip content={parameterName} overflowOnly>
+        {parameterName}
+      </Tooltip>
+      <ul className="previewList filterText">{previewList}</ul>
     </>
   );
 }

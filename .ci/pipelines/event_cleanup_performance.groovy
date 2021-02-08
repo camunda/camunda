@@ -7,9 +7,6 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
 def static NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
 
-ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String gCloudAndMavenAgent() {
   return """
 metadata:
@@ -27,7 +24,7 @@ spec:
   serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud
-    image: google/cloud-sdk:alpine
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
@@ -93,11 +90,7 @@ pipeline {
       steps {
         container('maven') {
           optimizeCloneGitRepo(params.BRANCH)
-          script {
-            def mavenProps = readMavenPom().getProperties()
-            env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-            env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-          }
+          setBuildEnvVars()
         }
       }
     }

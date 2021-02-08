@@ -61,23 +61,28 @@ public class DBConnector {
         statement.setInt(2, currentOffset);
         currentOffset += BATCH_SIZE;
         ResultSet rs = statement.executeQuery();
-        while (rs.next()) {
-          ids.add(rs.getString(1));
-          String[] instanceIds = ids.toArray(new String[0]);
-          OffsetDateTime[] startDates = new OffsetDateTime[instanceIds.length];
-          OffsetDateTime[] endDates = new OffsetDateTime[instanceIds.length];
+        int currentBatchRowCount = 0;
 
-          for (int i = 0; i < instanceIds.length; i++) {
-            List<LocalDateTime> dates = generateDates(startDate, endDate);
-            OffsetDateTime startDateTime = OffsetDateTime.of(dates.get(0), ZoneOffset.UTC);
-            OffsetDateTime endDateTime = OffsetDateTime.of(dates.get(1), ZoneOffset.UTC);
-            startDates[i] = startDateTime;
-            endDates[i] = endDateTime;
-          }
-          changeProcessInstanceStartAndEndDateInBatches(startDates, endDates, instanceIds);
-          ids.clear();
+        while (rs.next()) {
+          currentBatchRowCount++;
+          ids.add(rs.getString(1));
+
         }
-        if (rs.getFetchSize() < BATCH_SIZE) {
+        OffsetDateTime[] startDates = new OffsetDateTime[currentBatchRowCount];
+        OffsetDateTime[] endDates = new OffsetDateTime[currentBatchRowCount];
+        String[] instanceIds = ids.toArray(new String[0]);
+
+        for (int i = 0; i < instanceIds.length; i++) {
+          List<LocalDateTime> dates = generateDates(startDate, endDate);
+          OffsetDateTime startDateTime = OffsetDateTime.of(dates.get(0), ZoneOffset.UTC);
+          OffsetDateTime endDateTime = OffsetDateTime.of(dates.get(1), ZoneOffset.UTC);
+          startDates[i] = startDateTime;
+          endDates[i] = endDateTime;
+        }
+        changeProcessInstanceStartAndEndDateInBatches(startDates, endDates, instanceIds);
+        ids.clear();
+
+        if (currentBatchRowCount < BATCH_SIZE) {
           break;
         }
       }

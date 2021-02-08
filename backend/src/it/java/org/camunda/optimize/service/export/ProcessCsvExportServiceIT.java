@@ -8,11 +8,11 @@ package org.camunda.optimize.service.export;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -50,7 +50,7 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
     // when
-    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -95,7 +95,8 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setId("something");
     singleProcessReportDefinitionDto.setLastModifier("something");
@@ -134,7 +135,7 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
         .setProcessDefinitionVersion(FAKE)
         .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
         .build();
-    reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    reportDataDto.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(FilterApplicationLevel.VIEW).add().buildList());
     return reportDataDto;
   }
 
@@ -202,7 +203,7 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
       ),
       Arguments.of(
         createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
-        "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
+        "/csv/process/single/flownode_duration_group_by_flownodes_results.csv",
         "Flow Node Duration Grouped By Flow Node - Running and null duration"
       )
     );

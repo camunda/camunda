@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -85,9 +86,17 @@ public class AssigneeAndCandidateGroupsReader {
     return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKey, tenantIds);
   }
 
+  public Set<String> getAssigneeIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
+    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKeyToTenantsMap);
+  }
+
   public Set<String> getCandidateGroupIdsForProcess(@NonNull final String definitionKey,
                                                     final List<String> tenantIds) {
     return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKey, tenantIds);
+  }
+
+  public Set<String> getCandidateGroupIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
+    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKeyToTenantsMap);
   }
 
   private Set<String> getUserTaskFieldTerms(final String userTaskFieldName,
@@ -103,6 +112,21 @@ public class AssigneeAndCandidateGroupsReader {
 
     final Set<String> result = new HashSet<>();
     consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+    return result;
+  }
+
+  private Set<String> getUserTaskFieldTerms(final String userTaskFieldName,
+                                            final Map<String, Set<String>> definitionKeyToTenantsMap) {
+    log.debug(
+      "Fetching {} for process definition with key and tenants [{}]", userTaskFieldName, definitionKeyToTenantsMap
+    );
+    final Set<String> result = new HashSet<>();
+    if (!definitionKeyToTenantsMap.isEmpty()) {
+      final BoolQueryBuilder definitionQuery = createDefinitionQuery(
+        definitionKeyToTenantsMap, new ProcessInstanceIndex()
+      );
+      consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+    }
     return result;
   }
 

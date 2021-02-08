@@ -11,7 +11,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -223,42 +222,6 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto2);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_1, 2.)
-        .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, null)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void oneAssigneeHasWorkedOnTasksThatTheOtherDidNot() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -342,12 +305,12 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -395,60 +358,12 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    // finish first and second task with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
-    );
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
-    );
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceDto2.getId()
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -535,8 +450,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
   @Data
   @AllArgsConstructor
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     HyperMapResultEntryDto expectedFrequencyValues;
   }
 
@@ -549,17 +464,26 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     return new HyperMapResultEntryDto(DEFAULT_USERNAME, groupByResults, DEFAULT_FULLNAME);
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1., 1.)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2., 1.))
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., 1.)
+      ),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      ),
+      new FlowNodeStatusTestValues(
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+        getExpectedResultsMap(1., null)
+      )
     );
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
@@ -581,16 +505,16 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getData()).hasSize(1);
-    assertThat(actualResult.getData().get(0)).isEqualTo(executionStateTestValues.expectedFrequencyValues);
+    assertThat(actualResult.getData().get(0)).isEqualTo(flowNodeStatusTestValues.expectedFrequencyValues);
   }
 
   @Test
-  public void evaluateReportWithExecutionStateCanceled() {
+  public void evaluateReportWithFlowNodeStatusFilterCanceled() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
@@ -614,7 +538,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then

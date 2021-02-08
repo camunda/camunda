@@ -238,7 +238,7 @@ String postgresContainerSpec() {
 String gcloudContainerSpec() {
   return """
   - name: gcloud
-    image: google/cloud-sdk:slim
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
     command: ["cat"]
     tty: true
@@ -499,7 +499,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /(master|.*-deploy)/ || CHANGE_BRANCH ==~ /(master|.*-deploy)/ }
+              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -533,19 +533,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage ('Deploy to K8s') {
-      when {
-        expression {
-          getBranchName() ==~ /(.*-deploy)/
-        }
-      }
-      steps {
-        build job: '/deploy-optimize-branch-to-k8s',
-                parameters: [
-                        string(name: 'BRANCH', value: getBranchName()),
-                ]
       }
     }
   }
@@ -596,7 +583,7 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/engine-it-plugin,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -pl upgrade")
     runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
     runMaven("verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests")

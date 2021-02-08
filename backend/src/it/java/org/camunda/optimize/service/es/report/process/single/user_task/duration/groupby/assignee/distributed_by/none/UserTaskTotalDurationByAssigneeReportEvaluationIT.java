@@ -50,8 +50,8 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+                                                              final FlowNodeStateTestValues expectedValues) {
     assertThat(result.getEntryForKey(DEFAULT_USERNAME).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedTotalDurationValues().get(DEFAULT_USERNAME));
     assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))

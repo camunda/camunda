@@ -22,7 +22,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIdentity {
 
-
   public ProcessDistributedByCandidateGroup(final ConfigurationService configurationService,
                                             final LocalizationService localizationService,
                                             final DefinitionService definitionService,

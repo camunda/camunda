@@ -326,7 +326,6 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData()).hasSize(1);
@@ -368,7 +367,6 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData()).hasSize(1);
@@ -410,7 +408,6 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData()).hasSize(1);

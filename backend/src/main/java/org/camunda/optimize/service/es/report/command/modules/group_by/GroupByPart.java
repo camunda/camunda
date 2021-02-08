@@ -46,7 +46,7 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
                                                     final ExecutionContext<Data> executionContext) {
     final CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
-    executionContext.getReportConfiguration().getSorting().ifPresent(compositeCommandResult::setSorting);
+    executionContext.getReportConfiguration().getSorting().ifPresent(compositeCommandResult::setGroupBySorting);
     addQueryResult(compositeCommandResult, response, executionContext);
     return compositeCommandResult;
   }

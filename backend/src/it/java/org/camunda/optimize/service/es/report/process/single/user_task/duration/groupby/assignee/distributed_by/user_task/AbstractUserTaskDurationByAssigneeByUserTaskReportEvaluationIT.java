@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -48,7 +47,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -445,46 +443,6 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
-
-    importAllEngineEntitiesFromScratch();
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
-
-    // then
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .isComplete(false)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -516,20 +474,20 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(
-          USER_TASK_1,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          USER_TASK_1_NAME
-        )
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(
           USER_TASK_2,
           calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
           USER_TASK_2_NAME
         )
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+        .distributedByContains(
+          USER_TASK_1,
+          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+          USER_TASK_1_NAME
+        )
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -566,65 +524,13 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(
-          USER_TASK_1,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          USER_TASK_1_NAME
-        )
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(
           USER_TASK_2,
           calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
           USER_TASK_2_NAME
         )
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-      .doAssert(results.get(aggType));
-      // @formatter:on
-    });
-  }
-
-  @Test
-  public void testCustomOrderOnResultValueIsApplied() {
-    // given
-    // set current time to now for easier evaluation of duration of unassigned tasks
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
-    changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[0]);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
-    finishUserTaskRoundsOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final Map<AggregationType, ReportHyperMapResultDto> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
-
-    // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_CustomOrderOnResultValueIsApplied(results, aggType);
-    });
-  }
-
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
       .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
         .distributedByContains(
           USER_TASK_1,
@@ -632,15 +538,9 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           USER_TASK_1_NAME
         )
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-        .distributedByContains(
-          USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, UNASSIGNED_TASK_DURATION, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(results.get(aggType));
-    // @formatter:on
+      // @formatter:on
+    });
   }
 
   @Test
@@ -945,9 +845,8 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
   }
 
   @Data
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
-
+  static class FlowNodeStatusTestValues {
+    List<ProcessFilterDto<?>> processFilter;
     HyperMapResultEntryDto expectedIdleDurationValues;
     HyperMapResultEntryDto expectedWorkDurationValues;
     HyperMapResultEntryDto expectedTotalDurationValues;
@@ -962,43 +861,34 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
     return new HyperMapResultEntryDto(DEFAULT_USERNAME, groupByResults, DEFAULT_FULLNAME);
   }
 
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
-    ExecutionStateTestValues runningStateValues =
-      new ExecutionStateTestValues();
-    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+  protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
+    FlowNodeStatusTestValues runningStateValues =
+      new FlowNodeStatusTestValues();
+    runningStateValues.processFilter = ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 200.);
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-
-    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
-    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
+    FlowNodeStatusTestValues completedStateValues =
+      new FlowNodeStatusTestValues();
+    completedStateValues.processFilter = ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList();
     completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
+    FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
+    completedOrCanceled.processFilter = ProcessFilterBuilder.filter()
+      .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedOrCanceled.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceled.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedOrCanceled.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
-    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
-    allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
-      200.
-    );
-    allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
-      500.
-    );
-    allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100., 700.),
-      700.
-    );
-
-    return Stream.of(runningStateValues, completedStateValues, allStateValues);
+    return Stream.of(runningStateValues, completedStateValues, completedOrCanceled);
   }
 
   @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+  @MethodSource("getFlowNodeStatusExpectedValues")
+  public void evaluateReportWithFlowNodeStatusFilter(FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1032,16 +922,16 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    reportData.setFilter(flowNodeStatusTestValues.processFilter);
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getData()).hasSize(1);
-    assertEvaluateReportWithExecutionState(actualResult, executionStateTestValues);
+    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, flowNodeStatusTestValues);
   }
 
-  protected abstract void assertEvaluateReportWithExecutionState(ReportHyperMapResultDto result,
-                                                                 ExecutionStateTestValues expectedValues);
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(ReportHyperMapResultDto result,
+                                                                       FlowNodeStatusTestValues expectedValues);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {

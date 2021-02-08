@@ -384,21 +384,6 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).notOk();
 });
 
-test('select to show only running or completed nodes', async (t) => {
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
-  await u.selectView(t, 'Flow Node', 'Count');
-
-  await t.click(e.configurationButton);
-  await t.click(e.flowNodeStatusSelect);
-  await t.click(e.option('Running'));
-
-  await t.click(e.flowNodeStatusSelect);
-  await t.click(e.option('Completed'));
-
-  await t.expect(e.reportTable.visible).ok();
-});
-
 test('bar/line chart configuration', async (t) => {
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});

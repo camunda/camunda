@@ -115,15 +115,13 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setIsComplete(dateAggregationService.isResultComplete(
-      response.getAggregations(), response.getHits().getTotalHits().value
-    ));
-    result.setSorting(
+    result.setGroupBySorting(
       context.getReportConfiguration()
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
     );
-    result.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(false));
+    result.setGroupByKeyOfNumericType(false);
+    result.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,

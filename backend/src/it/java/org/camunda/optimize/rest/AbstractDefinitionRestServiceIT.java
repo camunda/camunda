@@ -18,7 +18,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
 
   protected static final String VERSION_TAG = "aVersionTag";
-  protected static final String EXPECTED_DEFINITION_NOT_FOUND_MESSAGE = "Could not find xml for definition with key";
+  protected static final String EXPECTED_DEFINITION_NOT_FOUND_MESSAGE = "Could not find xml for";
 
   protected abstract int getDefinitionResourceType();
 

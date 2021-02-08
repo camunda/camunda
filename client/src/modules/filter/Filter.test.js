@@ -5,15 +5,17 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
 
 import Filter from './Filter';
-
-import {shallow} from 'enzyme';
+import {filterSameTypeExistingFilters} from './service';
 
 const props = {
   filterLevel: 'instance',
   data: [],
 };
+
+jest.mock('./service', () => ({filterSameTypeExistingFilters: jest.fn()}));
 
 it('should contain a list of filters', () => {
   const node = shallow(<Filter {...props} />);
@@ -83,6 +85,7 @@ it('should contain a EditFilterModal component based on the Filter selected for 
 });
 
 it('should add a filter to the list of filters', () => {
+  filterSameTypeExistingFilters.mockImplementationOnce((filters) => filters);
   const spy = jest.fn();
   const sampleFilter = {
     data: {
@@ -144,43 +147,19 @@ it('should pass the information about a missing process definition to the compon
   expect(node.find('InstanceFilters').prop('processDefinitionIsNotSelected')).toBe(true);
 });
 
-it('should remove any previous startDate filters when adding a new date filter', () => {
+it('should invoke filterSameTypeExistingFilters to remove any previous filters of the same type', () => {
+  filterSameTypeExistingFilters.mockReturnValueOnce([]);
+  const previousFilters = [{type: 'startDate', filterLevel: 'instance'}];
+  const newFilter = {type: 'startDate', filterLevel: 'instance', value: 'new date'};
   const spy = jest.fn();
-  const previousFilters = [{type: 'startDate'}];
 
   const node = shallow(<Filter {...props} data={previousFilters} onChange={spy} />);
 
-  node.instance().addFilter({type: 'startDate', value: 'new date'});
+  node.instance().addFilter(newFilter);
 
-  expect(spy.mock.calls[0][0].filter).toEqual({
-    $set: [{type: 'startDate', value: 'new date', filterLevel: 'instance'}],
-  });
-});
+  expect(filterSameTypeExistingFilters).toHaveBeenCalledWith(previousFilters, newFilter);
 
-it('should remove any completed instances only filters when adding a new completed instances only filter', () => {
-  const spy = jest.fn();
-  const previousFilters = [{type: 'completedInstancesOnly'}];
-
-  const node = shallow(<Filter {...props} data={previousFilters} onChange={spy} />);
-
-  node.instance().addFilter({type: 'completedInstancesOnly'});
-
-  expect(spy.mock.calls[0][0].filter).toEqual({
-    $set: [{type: 'completedInstancesOnly', filterLevel: 'instance'}],
-  });
-});
-
-it('should remove any running instances only filters when adding a new running instances only filter', () => {
-  const spy = jest.fn();
-  const previousFilters = [{type: 'runningInstancesOnly'}];
-
-  const node = shallow(<Filter {...props} data={previousFilters} onChange={spy} />);
-
-  node.instance().addFilter({type: 'runningInstancesOnly'});
-
-  expect(spy.mock.calls[0][0].filter).toEqual({
-    $set: [{type: 'runningInstancesOnly', filterLevel: 'instance'}],
-  });
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: [newFilter]});
 });
 
 it('should render available filters depending on the provided filter level', () => {

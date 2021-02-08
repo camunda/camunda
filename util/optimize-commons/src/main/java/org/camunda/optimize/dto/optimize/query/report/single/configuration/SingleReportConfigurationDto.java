@@ -34,8 +34,6 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private AggregationType aggregationType = AggregationType.AVERAGE;
   @Builder.Default
-  private FlowNodeExecutionState flowNodeExecutionState = FlowNodeExecutionState.ALL;
-  @Builder.Default
   private UserTaskDurationTime userTaskDurationTime = UserTaskDurationTime.TOTAL;
   @Builder.Default
   private HiddenNodesDto hiddenNodes = new HiddenNodesDto();

@@ -63,7 +63,7 @@ it('should use the variables prop to resolve variable names', () => {
     <FilterList variables={{inputVariable: []}} data={data} openEditFilterModal={jest.fn()} />
   );
 
-  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
+  expect(node.find('VariablePreview').prop('variableName')).toBe('Missing variable');
 
   node.setProps({
     variables: {
@@ -72,6 +72,32 @@ it('should use the variables prop to resolve variable names', () => {
   });
 
   expect(node.find('VariablePreview').prop('variableName')).toBe('Resolved Name');
+
+  node.setProps({
+    variables: {inputVariable: [{id: 'notANameButAnId', name: null, type: 'String'}]},
+  });
+
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
+});
+
+it('should disable editing and pass a warning to variablePreview if variable does not exist', () => {
+  const data = [
+    {
+      type: 'variable',
+      data: {
+        name: 'notANameButAnId',
+        type: 'String',
+        data: {
+          operator: 'in',
+          values: ['varValue'],
+        },
+      },
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} variables={[]} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toMatchSnapshot();
 });
 
 it('should use the DateFilterPreview component for date variables', () => {
@@ -123,6 +149,24 @@ it('should display nodeListPreview for flow node filter', async () => {
   });
 });
 
+it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      data: {
+        operator: 'in',
+        values: ['flowNodeThatDoesNotExist'],
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should display a flow node filter with executing nodes', () => {
   const data = [
     {
@@ -158,7 +202,7 @@ it('should display a duration filter', () => {
   const actionItem = node.find('ActionItem').dive();
 
   expect(actionItem).toIncludeText('Duration is less than');
-  expect(actionItem.find('PreviewItemValue').prop('children').join('')).toBe('18 hours');
+  expect(actionItem.find('b').prop('children').join('')).toBe('18 hours');
 });
 
 it('should display a flow node duration filter', () => {
@@ -197,7 +241,24 @@ it('should show flow node duration filter in expanded state if specified', () =>
     />
   );
 
-  expect(node.find('PreviewItemValue')).toExist();
+  expect(node.find('b')).toExist();
+});
+
+it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
+  const data = [
+    {
+      type: 'flowNodeDuration',
+      data: {
+        flowNodeThatDoesNotExist: {operator: '<', value: 18, unit: 'hours'},
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
+  );
+
+  expect(node).toMatchSnapshot();
 });
 
 it('should display a running instances only filter', () => {

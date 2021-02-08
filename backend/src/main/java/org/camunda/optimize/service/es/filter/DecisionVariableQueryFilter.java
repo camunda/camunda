@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -225,7 +225,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     validateMultipleValuesFilterDataDto(dto);
 
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
-    final OperatorMultipleValuesVariableFilterSubDataDto data = dto.getData();
+    final OperatorMultipleValuesFilterDataDto data = dto.getData();
     final BoolQueryBuilder boolQueryBuilder = boolQuery().must(
       termQuery(getVariableIdField(), getVariableId(dto))
     );

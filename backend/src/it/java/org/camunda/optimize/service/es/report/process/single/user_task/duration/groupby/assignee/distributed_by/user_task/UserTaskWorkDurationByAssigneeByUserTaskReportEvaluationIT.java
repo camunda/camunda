@@ -55,8 +55,8 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final ExecutionStateTestValues expectedValues) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+                                                              final FlowNodeStatusTestValues expectedValues) {
     assertThat(result.getDataEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .isEqualTo(expectedValues.getExpectedWorkDurationValues());
   }
@@ -150,28 +150,6 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
       .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2,SET_DURATIONS[0], USER_TASK_2_NAME)
-      .doAssert(results.get(aggType));
-    // @formatter:on
-  }
-
-  @Override
-  protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-        .distributedByContains(
-          USER_TASK_1,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          USER_TASK_1_NAME
-        )
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-        .distributedByContains(
-          USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(results.get(aggType));
     // @formatter:on
   }

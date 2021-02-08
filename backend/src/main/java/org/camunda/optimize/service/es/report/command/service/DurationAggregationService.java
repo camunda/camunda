@@ -22,7 +22,6 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -63,7 +62,6 @@ public class DurationAggregationService {
   private static final BucketUnit DEFAULT_UNIT = BucketUnit.MILLISECOND;
   private static final DurationFilterUnit FILTER_UNIT = DurationFilterUnit.MILLIS;
 
-  private final ConfigurationService configurationService;
   private final MinMaxStatsService minMaxStatsService;
 
   public Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
@@ -161,39 +159,19 @@ public class DurationAggregationService {
     }
 
     final double intervalInMillis = getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
-    final Optional<Double> limitedMaxBoundInMillis = limitMaxBound(
-      minValueInMillis, maxValueInMillis, intervalInMillis
-    );
 
     final BoolQueryBuilder limitingFilter = QueryBuilders.boolQuery()
       .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
-    limitedMaxBoundInMillis.ifPresent(limitedMax -> limitingFilter.filter(limitingFilterCreator.apply(
-      FilterOperator.LESS_THAN_EQUALS,
-      limitedMax
-    )));
 
     final HistogramAggregationBuilder histogramAggregation = AggregationBuilders
       .histogram(DURATION_HISTOGRAM_AGGREGATION)
       .interval(intervalInMillis)
       .offset(minValueInMillis)
       .script(durationCalculationScript)
-      .extendedBounds(minValueInMillis, limitedMaxBoundInMillis.orElse(maxValueInMillis))
+      .extendedBounds(minValueInMillis, maxValueInMillis)
       .subAggregation(distributedByPart.createAggregation(context));
 
     return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
-  }
-
-  private Optional<Double> limitMaxBound(final double minValue,
-                                         final double maxValue,
-                                         final double interval) {
-    final double distance = maxValue - minValue;
-    Double limitedMaxBound = null;
-    if (distance / interval > getAggregationBucketLimit()) {
-      // -1 as the bound is inclusive
-      limitedMaxBound = minValue + interval * getAggregationBucketLimit() - 1;
-    }
-
-    return Optional.ofNullable(limitedMaxBound);
   }
 
   private double getIntervalInMillis(final double minValueInMillis,
@@ -269,9 +247,5 @@ public class DurationAggregationService {
           .build()
       )
     );
-  }
-
-  private int getAggregationBucketLimit() {
-    return configurationService.getEsAggregationBucketLimit();
   }
 }

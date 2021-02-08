@@ -38,6 +38,9 @@ public class EngineConstants {
   public static final String MEMBER = "member";
   public static final String MEMBER_OF_GROUP = "memberOfGroup";
 
+  public static final String USER_ID_IN = "userIdIn";
+  public static final String GROUP_ID_IN = "groupIdIn";
+
   // endpoints in the engines to fetch the data for Optimize import
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
   public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";

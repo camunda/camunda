@@ -7,17 +7,19 @@ package org.camunda.optimize.jetty;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -47,7 +49,9 @@ import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 @Slf4j
 public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
+  public static final String EXTERNAL_SUB_PATH = "/external";
   private static final String PROTOCOL = "http/1.1";
+  private static final String EXTERNAL_SUB_PATH_PATTERN = "^" + EXTERNAL_SUB_PATH + "(/.*)$";
 
   static {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
@@ -78,42 +82,53 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
-    LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
+    final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
 
-    ConfigurationService configurationService = constructConfigurationService();
+    final ConfigurationService configurationService = constructConfigurationService();
+    final Server newJettyServer = initServer(configurationService);
+    final ServletContextHandler appServletContextHandler = jerseyCamundaOptimize.initServletContextHandler();
 
-    Server jettyServer = initServer(configurationService);
-
-    ServletContextHandler context = jerseyCamundaOptimize.getServletContextHandler();
-
-    HandlerCollection handlerCollection = new HandlerCollection();
+    final HandlerCollection handlerCollection = new HandlerCollection();
     handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
-    handlerCollection.addHandler(context);
-    jettyServer.setHandler(handlerCollection);
+    handlerCollection.addHandler(wrapWithExternalPathRewriteHandler(appServletContextHandler));
+    newJettyServer.setHandler(handlerCollection);
 
-    initWebSockets(context);
+    initWebSockets(appServletContextHandler);
 
-    jettyServer.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+    newJettyServer.setRequestLog(new CustomRequestLog(
+      new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT
+    ));
 
-    return jettyServer;
+    return newJettyServer;
+  }
+
+  private RewriteHandler wrapWithExternalPathRewriteHandler(final Handler handler) {
+    RewriteHandler rewriteHandler = new RewriteHandler();
+    rewriteHandler.setRewriteRequestURI(true);
+    rewriteHandler.setRewritePathInfo(true);
+    RewriteRegexRule shareUrlRewriteRule = new RewriteRegexRule(EXTERNAL_SUB_PATH_PATTERN, "$1");
+    rewriteHandler.addRule(shareUrlRewriteRule);
+    rewriteHandler.setHandler(handler);
+    return rewriteHandler;
   }
 
   private RewriteHandler createSecurityHeaderHandlers(final ConfigurationService configurationService) {
-    RewriteHandler rewriteHandler = new RewriteHandler();
+    final RewriteHandler rewriteHandler = new RewriteHandler();
     HeaderPatternRule xssProtection =
       new HeaderPatternRule("*", X_XSS_PROTECTION, configurationService.getXXSSProtection());
     rewriteHandler.addRule(xssProtection);
 
-    if (configurationService.getXContentTypeOptions()) {
-      HeaderPatternRule xContentTypeOptions =
+    if (Boolean.TRUE.equals(configurationService.getXContentTypeOptions())) {
+      final HeaderPatternRule xContentTypeOptions =
         new HeaderPatternRule("*", X_CONTENT_TYPE_OPTIONS, "nosniff");
       rewriteHandler.addRule(xContentTypeOptions);
     }
 
-    HeaderPatternRule contentSecurityPolicy =
+    final HeaderPatternRule contentSecurityPolicy =
       new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, configurationService.getContentSecurityPolicy());
     rewriteHandler.addRule(contentSecurityPolicy);
+
     return rewriteHandler;
   }
 

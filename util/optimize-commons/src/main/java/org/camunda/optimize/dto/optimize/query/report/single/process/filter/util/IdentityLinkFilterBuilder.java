@@ -43,8 +43,8 @@ public class IdentityLinkFilterBuilder {
     return new IdentityLinkFilterBuilder(processFilterBuilder, CandidateGroupFilterDto::new);
   }
 
-  public IdentityLinkFilterBuilder id(String flowNodeId) {
-    values.add(flowNodeId);
+  public IdentityLinkFilterBuilder id(String idToFilterFor) {
+    values.add(idToFilterFor);
     return this;
   }
 
@@ -63,8 +63,8 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
-  public IdentityLinkFilterBuilder ids(String... flowNodeIds) {
-    values.addAll(Arrays.asList(flowNodeIds));
+  public IdentityLinkFilterBuilder ids(String... idsToFilterFor) {
+    values.addAll(Arrays.asList(idsToFilterFor));
     return this;
   }
 

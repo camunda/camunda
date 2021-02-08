@@ -61,9 +61,9 @@ export default class ShareEntity extends React.Component {
     }
     const queryString = query.toString();
 
-    return `${currentUrl.substring(0, currentUrl.indexOf('#'))}#/share/${this.props.type}/${
-      this.state.id
-    }${queryString && '?' + queryString}`;
+    return `${currentUrl.substring(0, currentUrl.indexOf('#'))}external/#/share/${
+      this.props.type
+    }/${this.state.id}${queryString && '?' + queryString}`;
   };
 
   buildShareLinkForEmbedding = () => {

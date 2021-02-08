@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
 import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
-import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -64,10 +63,8 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
     );
 
     compositeCommandResult.setGroups(durationHistogramData);
-    compositeCommandResult.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(true));
-    compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
-      response.getAggregations(), response.getHits().getTotalHits().value
-    ));
+    compositeCommandResult.setGroupByKeyOfNumericType(true);
+    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
   }
 
   @Override

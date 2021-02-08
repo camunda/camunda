@@ -58,13 +58,10 @@
       .FilterList {
         display: inline;
 
-        .listItem {
+        > .listItem {
           display: inline-flex;
           width: auto;
           margin-right: 10px;
-          .ActionItem .content {
-            padding-right: 35px;
-          }
         }
       }
     }

@@ -155,14 +155,10 @@ public class DashboardWriter {
   }
 
   public void deleteDashboardsOfCollection(String collectionId) {
-    String deletedItemName = "dashboards of collection";
-    String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
-
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
-      deletedItemName,
-      deletedItemIdentifier,
+      String.format("dashboards of collection with ID [%s]", collectionId),
       true,
       DASHBOARD_INDEX_NAME
     );

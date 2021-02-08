@@ -260,6 +260,13 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
+  public void applyIndexPrefixes(final IndicesRequest.Replaceable request) {
+    final String[] indices = request.indices();
+    request.indices(
+      convertToPrefixedAliasNames(indices)
+    );
+  }
+
   private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
     return Failsafe.with(createSnapshotRetryPolicy(operation, this.snapshotInProgressRetryDelaySeconds));
   }
@@ -289,13 +296,6 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   private void applyIndexPrefix(final DocWriteRequest<?> request) {
     request.index(indexNameService.getOptimizeIndexAliasForIndex(request.index()));
-  }
-
-  private void applyIndexPrefixes(final IndicesRequest.Replaceable request) {
-    final String[] indices = request.indices();
-    request.indices(
-      convertToPrefixedAliasNames(indices)
-    );
   }
 
   private String[] convertToPrefixedAliasNames(final String[] indices) {
