@@ -37,6 +37,8 @@ public class TableColumnDto {
   private List<String> excludedColumns = new ArrayList<>();
   @Builder.Default
   private List<String> includedColumns = new ArrayList<>();
+  @Builder.Default
+  private List<String> columnOrder = new ArrayList<>();
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     addNewVariableColumns(allVariableColumns);

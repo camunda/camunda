@@ -66,8 +66,6 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private TableColumnDto tableColumns = new TableColumnDto();
   @Builder.Default
-  private ColumnOrderDto columnOrder = new ColumnOrderDto();
-  @Builder.Default
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
