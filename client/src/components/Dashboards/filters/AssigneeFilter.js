@@ -111,7 +111,11 @@ export function AssigneeFilter({config, setFilter, reports, mightFail, filter, t
               <Switch
                 key={idx}
                 checked={!!filter?.values.includes(value)}
-                label={value === null ? t('common.nullOrUndefined') : names[value]?.name || value}
+                label={
+                  value === null
+                    ? t('common.filter.assigneeModal.unassigned')
+                    : names[value]?.name || value
+                }
                 onChange={({target}) => {
                   if (target.checked) {
                     addValue(value);
@@ -163,7 +167,10 @@ export function AssigneeFilter({config, setFilter, reports, mightFail, filter, t
 
                     result.result = result.result.filter((user) => !values.includes(user.id));
 
-                    if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
+                    if (
+                      'unassigned'.indexOf(query.toLowerCase()) !== -1 &&
+                      !values.includes(null)
+                    ) {
                       result.total++;
                       result.result.unshift({
                         id: null,
