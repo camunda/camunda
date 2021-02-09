@@ -28,7 +28,13 @@ public class BlockSequenceBuilder implements BlockBuilder {
   private static final List<BlockBuilderFactory> BLOCK_BUILDER_FACTORIES =
       Arrays.asList(
           new ServiceTaskBlockBuilder.Factory(),
-          new IntermediateMessageCatchEventBlockBuilder.Factory(),
+          // new IntermediateMessageCatchEventBlockBuilder.Factory(),
+          /* The logic for IntermediateMessageCatchEventBlockBuilder is not fully implemented yet.
+           * the logic to generate a workflow and execution path is sound. What is incomplete
+           * is the execution logic of the corresponding execution step. What is missing there is
+           * that after publishing the message, the process should wait until the message has been
+           * correlated.
+           */
           new SubProcessBlockBuilder.Factory(),
           new ExclusiveGatewayBlockBuilder.Factory(),
           new ParallelGatewayBlockBuilder.Factory());

@@ -69,7 +69,7 @@ public final class RandomWorkflowGenerator {
   }
 
   public ExecutionPath findRandomExecutionPath(final long seed) {
-    return new ExecutionPath(blockBuilder.findRandomExecutionPath(new Random(seed)));
+    return new ExecutionPath(processId, blockBuilder.findRandomExecutionPath(new Random(seed)));
   }
 
   // main method to test and debug this class

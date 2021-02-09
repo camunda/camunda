@@ -11,18 +11,22 @@ import io.zeebe.test.util.bpmn.random.blocks.StepStartProcessInstance;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /** Execution path to execute a random workflow from start to finish. This class is immutable. */
 public final class ExecutionPath {
   private final List<AbstractExecutionStep> steps = new ArrayList<>();
+  private final String processId;
 
-  public ExecutionPath(final ExecutionPathSegment pathSegment) {
-    steps.add(new StepStartProcessInstance(pathSegment));
+  public ExecutionPath(final String processId, final ExecutionPathSegment pathSegment) {
+    this.processId = processId;
+    steps.add(new StepStartProcessInstance(processId, pathSegment));
     steps.addAll(pathSegment.getSteps());
+  }
+
+  public String getProcessId() {
+    return processId;
   }
 
   public List<AbstractExecutionStep> getSteps() {
@@ -39,18 +43,22 @@ public final class ExecutionPath {
     if (this == o) {
       return true;
     }
-
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
 
     final ExecutionPath that = (ExecutionPath) o;
 
-    return new EqualsBuilder().append(steps, that.steps).isEquals();
+    if (!steps.equals(that.steps)) {
+      return false;
+    }
+    return processId.equals(that.processId);
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder(17, 37).append(steps).toHashCode();
+    int result = steps.hashCode();
+    result = 31 * result + processId.hashCode();
+    return result;
   }
 }

@@ -59,10 +59,8 @@ public final class ZeebeStateRule extends ExternalResource {
 
   public ZeebeDb<ZbColumnFamilies> createNewDb() {
     try {
-      final ZeebeDb<ZbColumnFamilies> db =
-          DefaultZeebeDbFactory.defaultFactory().createDb(tempFolder.newFolder());
 
-      return db;
+      return DefaultZeebeDbFactory.defaultFactory().createDb(tempFolder.newFolder());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }

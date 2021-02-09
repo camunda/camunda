@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -57,7 +59,7 @@
     <version.httpcomponents>4.4.14</version.httpcomponents>
     <version.jackson>2.12.1</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
-    <version.jna>5.6.0</version.jna>
+    <version.jna>5.7.0</version.jna>
     <version.junit>5.7.1</version.junit>
     <version.junit4>4.13.1</version.junit4>
     <version.opentest4j>1.2.0</version.opentest4j>
@@ -82,7 +84,7 @@
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.27.2</version.wiremock>
     <version.conscrypt>2.5.1</version.conscrypt>
-    <version.asm>9.0</version.asm>
+    <version.asm>9.1</version.asm>
     <version.testcontainers>1.15.1</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
@@ -851,6 +853,15 @@
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <statelessTestsetReporter
+              implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <version>3.0</version>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
           </configuration>
         </plugin>
 
@@ -981,7 +992,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1076,7 +1087,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1087,7 +1098,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>

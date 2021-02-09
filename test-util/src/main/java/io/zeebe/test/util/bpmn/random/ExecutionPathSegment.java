@@ -12,8 +12,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -57,18 +55,17 @@ public final class ExecutionPathSegment {
     if (this == o) {
       return true;
     }
-
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
 
     final ExecutionPathSegment that = (ExecutionPathSegment) o;
 
-    return new EqualsBuilder().append(steps, that.steps).isEquals();
+    return steps.equals(that.steps);
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder(17, 37).append(steps).toHashCode();
+    return steps.hashCode();
   }
 }

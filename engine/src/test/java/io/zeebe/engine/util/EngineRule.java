@@ -11,6 +11,8 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.DbKey;
+import io.zeebe.db.DbValue;
 import io.zeebe.engine.processing.EngineProcessors;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
@@ -24,6 +26,7 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
@@ -37,6 +40,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -47,6 +51,7 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -54,6 +59,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +67,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
@@ -317,6 +325,57 @@ public final class EngineRule extends ExternalResource {
   public void resumeProcessing(final int partitionId) {
     environmentRule.resumeProcessing(partitionId);
   }
+
+  public Map<ZbColumnFamilies, Map<Object, Object>> collectState() {
+
+    final var keyInstance = new VersatileBlob();
+    final var valueInstance = new VersatileBlob();
+
+    return Arrays.stream(ZbColumnFamilies.values())
+        .collect(
+            Collectors.toMap(
+                Function.identity(),
+                columnFamily -> {
+                  final var entries = new HashMap<>();
+                  getZeebeState()
+                      .forEach(
+                          columnFamily,
+                          keyInstance,
+                          valueInstance,
+                          (key, value) ->
+                              entries.put(
+                                  Arrays.toString(
+                                      BufferUtil.cloneBuffer(key.getDirectBuffer())
+                                          .byteArray()), // the key is written as plain bytes
+                                  MsgPackConverter.convertToJson(value.getDirectBuffer())));
+                  return entries;
+                }));
+  }
+
+  private static final class VersatileBlob implements DbKey, DbValue {
+
+    private final DirectBuffer genericBuffer = new UnsafeBuffer(0, 0);
+
+    @Override
+    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+      genericBuffer.wrap(buffer, offset, length);
+    }
+
+    @Override
+    public int getLength() {
+      return genericBuffer.capacity();
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      buffer.putBytes(offset, genericBuffer, 0, genericBuffer.capacity());
+    }
+
+    public DirectBuffer getDirectBuffer() {
+      return genericBuffer;
+    }
+  }
+
   /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////

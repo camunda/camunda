@@ -18,17 +18,15 @@ import io.zeebe.test.util.bpmn.random.IDGenerator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Generates a block with a forking exclusive gateway, a default case, a random number of
  * conditional cases, and a joining exclusive gateway. The default case and each conditional case
  * then have a nested sequence of blocks.
  *
- * <p>Hints: the conditional cases all have the condition {@code edge_[id] = true} so one only needs
- * to set the right variables when starting the process to make sure that a certain edge will be
- * executed
+ * <p>Hints: the conditional cases all have the condition {@code [forkGatewayId]_branch =
+ * "[edge_id]"} so one only needs to set the right variables when starting the process to make sure
+ * that a certain edge will be executed
  */
 public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
@@ -36,6 +34,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   private final List<String> branchIds = new ArrayList<>();
   private final String forkGatewayId;
   private final String joinGatewayId;
+  private final String gatewayConditionVariable;
 
   public ExclusiveGatewayBlockBuilder(final ConstructionContext context) {
     final Random random = context.getRandom();
@@ -44,6 +43,8 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
     forkGatewayId = "fork_" + idGenerator.nextId();
     joinGatewayId = "join_" + idGenerator.nextId();
+
+    gatewayConditionVariable = forkGatewayId + "_branch";
 
     final BlockSequenceBuilder.BlockSequenceBuilderFactory blockSequenceBuilderFactory =
         context.getBlockSequenceBuilderFactory();
@@ -76,7 +77,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
           workInProgress
               .moveToNode(forkGatewayId)
               .sequenceFlowId(edgeId)
-              .conditionExpression(edgeId + " = true");
+              .conditionExpression(gatewayConditionVariable + " = \"" + edgeId + "\"");
 
       workInProgress = blockBuilder.buildFlowNodes(outgoingEdge).connectTo(joinGatewayId);
     }
@@ -91,9 +92,11 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     final int branch = random.nextInt(branchIds.size());
 
     if (branch == 0) {
-      result.append(new StepPickDefaultCase(forkGatewayId));
+      result.append(new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
     } else {
-      result.append(new StepPickConditionCase(forkGatewayId, branchIds.get(branch)));
+      result.append(
+          new StepPickConditionCase(
+              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
     }
 
     final BlockBuilder blockBuilder = blockBuilders.get(branch);
@@ -103,17 +106,18 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     return result;
   }
 
-  // this class could also be called "Set variable when starting the process so that the engine will
-  // select a certain condition"
+  // this class could also be called "Set variables when starting the process so that the engine
+  // will select a certain condition"
   public static final class StepPickConditionCase extends AbstractExecutionStep {
 
     private final String forkingGatewayId;
     private final String edgeId;
 
-    public StepPickConditionCase(final String forkingGatewayId, final String edgeId) {
+    public StepPickConditionCase(
+        final String forkingGatewayId, final String gatewayConditionVariable, final String edgeId) {
       this.forkingGatewayId = forkingGatewayId;
       this.edgeId = edgeId;
-      variables.put(edgeId, true);
+      variables.put(gatewayConditionVariable, edgeId);
     }
 
     @Override
@@ -121,32 +125,34 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepPickConditionCase that = (StepPickConditionCase) o;
 
-      return new EqualsBuilder()
-          .append(forkingGatewayId, that.forkingGatewayId)
-          .append(edgeId, that.edgeId)
-          .isEquals();
+      if (!forkingGatewayId.equals(that.forkingGatewayId)) {
+        return false;
+      }
+      return edgeId.equals(that.edgeId);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(forkingGatewayId).append(edgeId).toHashCode();
+      int result = forkingGatewayId.hashCode();
+      result = 31 * result + edgeId.hashCode();
+      return result;
     }
   }
 
-  // does nothing, but helpful for debugging
   public static final class StepPickDefaultCase extends AbstractExecutionStep {
 
     private final String forkingGatewayId;
 
-    public StepPickDefaultCase(final String forkingGatewayId) {
+    public StepPickDefaultCase(
+        final String forkingGatewayId, final String gatewayConditionVariable) {
       this.forkingGatewayId = forkingGatewayId;
+      variables.put(gatewayConditionVariable, "default-case");
     }
 
     @Override
@@ -154,19 +160,18 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
       if (this == o) {
         return true;
       }
-
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
 
       final StepPickDefaultCase that = (StepPickDefaultCase) o;
 
-      return new EqualsBuilder().append(forkingGatewayId, that.forkingGatewayId).isEquals();
+      return forkingGatewayId.equals(that.forkingGatewayId);
     }
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(forkingGatewayId).toHashCode();
+      return forkingGatewayId.hashCode();
     }
   }
 

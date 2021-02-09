@@ -18,6 +18,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * variables need to be set before the execution step can be executed (e.g. setting the variables
  * when process is created)
  *
+ * <p>New implementations should also extends the execution logic in {@link
+ * io.zeebe.engine.util.WorkflowExecutor}
+ *
  * <p>Contract: each implementing class must implement {@code equals(...)/hashCode()} This is mostly
  * in order to be able to compare two randomly generated execution paths to see if they are the same
  */
