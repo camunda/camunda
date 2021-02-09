@@ -2,8 +2,6 @@ module github.com/zeebe-io/zeebe/clients/go
 
 go 1.15
 
-replace github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
-
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
