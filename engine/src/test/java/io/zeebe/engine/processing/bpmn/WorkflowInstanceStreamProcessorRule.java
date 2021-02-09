@@ -145,7 +145,9 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .setKey(WORKFLOW_KEY)
         .setResourceName(resourceName)
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
-        .setVersion(version);
+        .setVersion(version)
+        .setChecksum(wrapString("checksum"))
+        .setResource(xmlBuffer);
 
     actor.call(() -> workflowState.putDeployment(record)).join();
   }

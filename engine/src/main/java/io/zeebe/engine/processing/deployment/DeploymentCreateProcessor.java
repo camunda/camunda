@@ -35,7 +35,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
-
     final DeploymentRecord deploymentEvent = event.getValue();
     workflowState.putDeployment(deploymentEvent);
     streamWriter.appendFollowUpEvent(event.getKey(), DeploymentIntent.CREATED, deploymentEvent);

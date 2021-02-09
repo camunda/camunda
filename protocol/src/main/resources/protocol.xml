@@ -36,6 +36,7 @@
       <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
       <validValue name="ERROR">20</validValue>
       <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
+      <validValue name="WORKFLOW">22</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
@@ -110,7 +111,7 @@
     <field name="intent" id="6" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
-    <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional" />
+    <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
   </sbe:message>

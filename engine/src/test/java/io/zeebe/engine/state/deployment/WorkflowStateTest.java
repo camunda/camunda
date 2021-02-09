@@ -448,11 +448,13 @@ public final class WorkflowStateTest {
 
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final String resourceName = "process.bpmn";
+    final var resource = wrapString(Bpmn.convertToString(modelInstance));
+    final var checksum = wrapString("checksum");
     deploymentRecord
         .resources()
         .add()
         .setResourceName(wrapString(resourceName))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
+        .setResource(resource);
 
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
     final long key = keyGenerator.nextKey();
@@ -463,7 +465,9 @@ public final class WorkflowStateTest {
         .setBpmnProcessId(BufferUtil.wrapString(processId))
         .setVersion(version)
         .setKey(key)
-        .setResourceName(resourceName);
+        .setResourceName(resourceName)
+        .setChecksum(checksum)
+        .setResource(resource);
 
     return deploymentRecord;
   }

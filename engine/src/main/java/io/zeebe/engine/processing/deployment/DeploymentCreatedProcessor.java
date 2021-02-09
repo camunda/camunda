@@ -18,7 +18,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -50,7 +50,7 @@ public final class DeploymentCreatedProcessor implements TypedRecordProcessor<De
           event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
     }
 
-    for (final Workflow workflowRecord : deploymentEvent.workflows()) {
+    for (final WorkflowRecord workflowRecord : deploymentEvent.workflows()) {
       if (isLatestWorkflow(workflowRecord)) {
         closeExistingMessageStartEventSubscriptions(workflowRecord, streamWriter);
         openMessageStartEventSubscriptions(workflowRecord, streamWriter);
@@ -58,15 +58,15 @@ public final class DeploymentCreatedProcessor implements TypedRecordProcessor<De
     }
   }
 
-  private boolean isLatestWorkflow(final Workflow workflow) {
+  private boolean isLatestWorkflow(final WorkflowRecord workflowRecord) {
     return workflowState
-            .getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer())
+            .getLatestWorkflowVersionByProcessId(workflowRecord.getBpmnProcessIdBuffer())
             .getVersion()
-        == workflow.getVersion();
+        == workflowRecord.getVersion();
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      final Workflow workflowRecord, final TypedStreamWriter streamWriter) {
+      final WorkflowRecord workflowRecord, final TypedStreamWriter streamWriter) {
     final DeployedWorkflow lastMsgWorkflow = findLastMessageStartWorkflow(workflowRecord);
     if (lastMsgWorkflow == null) {
       return;
@@ -77,7 +77,7 @@ public final class DeploymentCreatedProcessor implements TypedRecordProcessor<De
     streamWriter.appendNewCommand(MessageStartEventSubscriptionIntent.CLOSE, subscriptionRecord);
   }
 
-  private DeployedWorkflow findLastMessageStartWorkflow(final Workflow workflowRecord) {
+  private DeployedWorkflow findLastMessageStartWorkflow(final WorkflowRecord workflowRecord) {
     for (int version = workflowRecord.getVersion() - 1; version > 0; --version) {
       final DeployedWorkflow lastMsgWorkflow =
           workflowState.getWorkflowByProcessIdAndVersion(
@@ -92,7 +92,7 @@ public final class DeploymentCreatedProcessor implements TypedRecordProcessor<De
   }
 
   private void openMessageStartEventSubscriptions(
-      final Workflow workflowRecord, final TypedStreamWriter streamWriter) {
+      final WorkflowRecord workflowRecord, final TypedStreamWriter streamWriter) {
     final long workflowKey = workflowRecord.getKey();
     final DeployedWorkflow workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
     final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();

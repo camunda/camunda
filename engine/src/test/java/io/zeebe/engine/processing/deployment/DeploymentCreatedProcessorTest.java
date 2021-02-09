@@ -255,11 +255,12 @@ public final class DeploymentCreatedProcessorTest {
       final long key,
       final int version) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
+    final var resource = wrapString(Bpmn.convertToString(modelInstance));
     deploymentRecord
         .resources()
         .add()
         .setResourceName(wrapString(resourceId))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
+        .setResource(resource);
 
     deploymentRecord
         .workflows()
@@ -267,7 +268,9 @@ public final class DeploymentCreatedProcessorTest {
         .setKey(key)
         .setBpmnProcessId(processId)
         .setResourceName(resourceId)
-        .setVersion(version);
+        .setVersion(version)
+        .setResource(resource)
+        .setChecksum(wrapString("checksum"));
 
     return deploymentRecord;
   }

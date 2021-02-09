@@ -13,25 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value.deployment;
+package io.zeebe.protocol.record.intent;
 
-/** Represents a deployed workflow. */
-public interface DeployedWorkflow {
-  /** @return the bpmn process ID of this workflow */
-  String getBpmnProcessId();
+public enum WorkflowIntent implements Intent {
+  CREATED((short) 0);
 
-  /** @return the version of this workflow */
-  int getVersion();
+  private final short value;
 
-  /** @return the key of this workflow */
-  long getWorkflowKey();
+  WorkflowIntent(final short value) {
+    this.value = value;
+  }
 
-  /** @return the name of the resource through which this workflow was deployed */
-  String getResourceName();
+  public short getIntent() {
+    return value;
+  }
 
-  /** @return the checksum of the workflow (MD5) */
-  byte[] getChecksum();
+  public static Intent from(final short value) {
+    switch (value) {
+      case 1:
+        return CREATED;
+      default:
+        return UNKNOWN;
+    }
+  }
 
-  /** @return returns the corresponding binary resource */
-  byte[] getResource();
+  @Override
+  public short value() {
+    return value;
+  }
 }

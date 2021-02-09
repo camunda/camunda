@@ -62,7 +62,9 @@ public final class TypedEventSerializationTest {
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setKey(workflowKey)
         .setResourceName(wrapString(resourceName))
-        .setVersion(workflowVersion);
+        .setVersion(workflowVersion)
+        .setChecksum(wrapString("checksum"))
+        .setResource(resource);
 
     final long key = 1234;
     final long position = 4321;

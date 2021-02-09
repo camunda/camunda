@@ -26,7 +26,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Collections;
@@ -103,37 +103,59 @@ public final class DbWorkflowState implements MutableWorkflowState {
 
   @Override
   public void putDeployment(final DeploymentRecord deploymentRecord) {
-    for (final Workflow workflow : deploymentRecord.workflows()) {
-      final long workflowKey = workflow.getKey();
-      final DirectBuffer resourceName = workflow.getResourceNameBuffer();
+    for (final WorkflowRecord workflowRecord : deploymentRecord.workflows()) {
+      final long workflowKey = workflowRecord.getKey();
+      final DirectBuffer resourceName = workflowRecord.getResourceNameBuffer();
       for (final DeploymentResource resource : deploymentRecord.resources()) {
         if (resource.getResourceNameBuffer().equals(resourceName)) {
-          persistWorkflow(workflowKey, workflow, resource);
-          updateLatestVersion(workflow);
+          persistWorkflow(workflowKey, workflowRecord, resource);
+          updateLatestVersion(workflowRecord);
         }
       }
     }
   }
 
-  private void persistWorkflow(
-      final long workflowKey, final Workflow workflow, final DeploymentResource resource) {
-    persistedWorkflow.wrap(resource, workflow, workflowKey);
+  @Override
+  public void putWorkflow(final long key, final WorkflowRecord workflowRecord) {
+    persistWorkflow(key, workflowRecord);
+    updateLatestVersion(workflowRecord);
+    putLatestVersionDigest(
+        workflowRecord.getBpmnProcessIdBuffer(), workflowRecord.getChecksumBuffer());
+  }
+
+  private void persistWorkflow(final long workflowKey, final WorkflowRecord workflowRecord) {
+    persistedWorkflow.wrap(workflowRecord, workflowKey);
     this.workflowKey.wrapLong(workflowKey);
     workflowColumnFamily.put(this.workflowKey, persistedWorkflow);
 
-    workflowId.wrapBuffer(workflow.getBpmnProcessIdBuffer());
-    workflowVersion.wrapLong(workflow.getVersion());
+    workflowId.wrapBuffer(workflowRecord.getBpmnProcessIdBuffer());
+    workflowVersion.wrapLong(workflowRecord.getVersion());
 
     workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
   }
 
-  private void updateLatestVersion(final Workflow workflow) {
-    workflowId.wrapBuffer(workflow.getBpmnProcessIdBuffer());
+  @Deprecated
+  private void persistWorkflow(
+      final long workflowKey,
+      final WorkflowRecord workflowRecord,
+      final DeploymentResource resource) {
+    persistedWorkflow.wrap(resource, workflowRecord, workflowKey);
+    this.workflowKey.wrapLong(workflowKey);
+    workflowColumnFamily.put(this.workflowKey, persistedWorkflow);
+
+    workflowId.wrapBuffer(workflowRecord.getBpmnProcessIdBuffer());
+    workflowVersion.wrapLong(workflowRecord.getVersion());
+
+    workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
+  }
+
+  private void updateLatestVersion(final WorkflowRecord workflowRecord) {
+    workflowId.wrapBuffer(workflowRecord.getBpmnProcessIdBuffer());
     final LatestWorkflowVersion storedVersion = latestWorkflowColumnFamily.get(workflowId);
     final long latestVersion = storedVersion == null ? -1 : storedVersion.get();
 
-    if (workflow.getVersion() > latestVersion) {
-      this.latestVersion.set(workflow.getVersion());
+    if (workflowRecord.getVersion() > latestVersion) {
+      this.latestVersion.set(workflowRecord.getVersion());
       latestWorkflowColumnFamily.put(workflowId, this.latestVersion);
     }
   }

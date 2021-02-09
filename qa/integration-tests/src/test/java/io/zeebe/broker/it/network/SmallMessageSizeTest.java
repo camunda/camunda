@@ -24,7 +24,7 @@ import org.springframework.util.unit.DataSize;
 
 public class SmallMessageSizeTest {
   private static final int VARIABLE_COUNT = 4;
-  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(4);
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(12);
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
 

@@ -9,6 +9,7 @@ package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableWorkflowState extends WorkflowState {
@@ -18,4 +19,6 @@ public interface MutableWorkflowState extends WorkflowState {
   void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest);
 
   int incrementAndGetWorkflowVersion(String bpmnProcessId);
+
+  void putWorkflow(long key, WorkflowRecord value);
 }
