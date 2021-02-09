@@ -499,7 +499,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
+              BRANCH_NAME ==~ /master|prototype_zeebeint/ || CHANGE_BRANCH ==~ /master|prototype_zeebeint/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
