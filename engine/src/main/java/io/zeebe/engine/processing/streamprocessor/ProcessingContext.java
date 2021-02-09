@@ -11,7 +11,6 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
@@ -204,10 +203,5 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
       final boolean detectReprocessingInconsistency) {
     this.detectReprocessingInconsistency = detectReprocessingInconsistency;
     return this;
-  }
-
-  public StateWriter getStateWriter() {
-    // TODO clean that up
-    return new StateWriter(getLogStreamWriter(), getEventApplier());
   }
 }

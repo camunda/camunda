@@ -45,7 +45,7 @@ class JobCompletedEventApplier implements TypedEventApplier<JobIntent, JobRecord
 
       if (scopeInstance != null && scopeInstance.isActive()) {
 
-        // TODO move to somewhere else
+        // TODO (#6172) move to somewhere else
         elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
         elementInstance.setJobKey(-1);
         elementInstanceState.updateInstance(elementInstance);

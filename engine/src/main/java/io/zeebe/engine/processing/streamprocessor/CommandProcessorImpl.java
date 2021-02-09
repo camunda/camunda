@@ -73,6 +73,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
     if (isAccepted) {
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
+      wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }

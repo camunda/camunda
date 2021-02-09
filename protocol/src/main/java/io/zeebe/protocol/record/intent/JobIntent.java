@@ -17,7 +17,8 @@ package io.zeebe.protocol.record.intent;
 
 public enum JobIntent implements WorkflowInstanceRelatedIntent {
   /**
-   * @deprecated to be removed after engine refactoring TODO remove at the end of engine refactoring
+   * @deprecated to be removed after engine refactoring TODO (#6202) remove at the end of engine
+   *     refactoring
    */
   @Deprecated
   CREATE((short) 0),

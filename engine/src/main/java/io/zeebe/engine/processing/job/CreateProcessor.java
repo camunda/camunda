@@ -13,7 +13,8 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 /**
- * @deprecated to be removed after engine refactoring TODO remove at the end of engine refactoring
+ * @deprecated to be removed after engine refactoring TODO (#6202) remove at the end of engine
+ *     refactoring
  */
 @Deprecated
 public final class CreateProcessor implements CommandProcessor<JobRecord> {

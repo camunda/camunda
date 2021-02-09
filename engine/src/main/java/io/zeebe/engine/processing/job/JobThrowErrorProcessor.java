@@ -16,12 +16,13 @@ import io.zeebe.protocol.record.intent.JobIntent;
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private final MutableJobState state;
-  private final DefaultJobCommandProcessor<JobRecord> defaultProcessor;
+  private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
 
   public JobThrowErrorProcessor(final MutableJobState state) {
     this.state = state;
     defaultProcessor =
-        new DefaultJobCommandProcessor<>("throw an error for", this.state, this::acceptCommand);
+        new DefaultJobCommandPreconditionGuard<>(
+            "throw an error for", this.state, this::acceptCommand);
   }
 
   @Override

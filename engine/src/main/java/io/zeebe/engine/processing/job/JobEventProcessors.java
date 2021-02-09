@@ -10,7 +10,6 @@ package io.zeebe.engine.processing.job;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
@@ -23,8 +22,7 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final int maxRecordSize,
-      final StateWriter stateWriter) {
+      final int maxRecordSize) {
 
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
@@ -33,10 +31,8 @@ public final class JobEventProcessors {
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
-        .onCommand(
-            ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(zeebeState, stateWriter))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
-        .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
+        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.ERROR_THROWN, jobErrorThrownProcessor)
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
