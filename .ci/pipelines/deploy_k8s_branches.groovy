@@ -16,9 +16,9 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
+  - key: "${NODE_POOL()}"
+    operator: "Exists"
+    effect: "NoSchedule"
   serviceAccountName: ci-optimize-camunda-cloud
   volumes:
   - name: import
@@ -51,14 +51,14 @@ spec:
         cpu: 500m
         memory: 512Mi
     env:
-      - name: PGUSER
-        value: camunda
-      - name: PGPASSWORD
-        value: camunda123
-      - name: PGHOST
-        value: stage-postgres.optimize
-      - name: PGDATABASE
-        value: optimize-ci-performance
+    - name: PGUSER
+      value: camunda
+    - name: PGPASSWORD
+      value: camunda123
+    - name: PGHOST
+      value: stage-postgres.optimize
+    - name: PGDATABASE
+      value: optimize-ci-performance
     volumeMounts:
     - name: import
       mountPath: /import
@@ -136,7 +136,13 @@ pipeline {
           }
           dir('infra-core') {
             sh("""
-              sed -i -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" -e "s/@ES_VERSION@/$ES_VERSION/g" ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
+              sed -i \
+                -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" \
+                -e "s/@ES_VERSION@/$ES_VERSION/g" \
+                ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
+            """)
+
+            sh("""
               ./cmd/k8s/deploy-template-to-branch \
               ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \

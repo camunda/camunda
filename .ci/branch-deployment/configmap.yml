@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: @BRANCH@-optimize-camunda-cloud
+  name: "@BRANCH@-optimize-camunda-cloud"
   labels:
-    app: @BRANCH@-optimize-camunda-cloud
-    branch: @BRANCH@
+    app: "@BRANCH@-optimize-camunda-cloud"
+    branch: "@BRANCH@"
 data:
 ######################## OPT ########################
   OptimizeLicense.txt: |
