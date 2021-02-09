@@ -535,6 +535,18 @@ pipeline {
         }
       }
     }
+    stage('Deploy to K8s') {
+      when {
+        expression {
+          getBranchName() ==~ /prototype_zeebeint/
+        }
+      }
+      steps {
+        build job: '/deploy-optimize-zeebeint-to-k8s', parameters: [
+          string(name: 'BRANCH', value: getBranchName()),
+        ]
+      }
+    }
   }
 
   post {
