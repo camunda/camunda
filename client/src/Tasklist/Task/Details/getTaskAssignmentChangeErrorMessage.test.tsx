@@ -4,29 +4,29 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getTaskAssigmentChangeErrorMessage} from './getTaskAssigmentChangeErrorMessage';
+import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 
-describe('getTaskAssigmentChangeErrorMessage', () => {
+describe('getTaskAssignmentChangeErrorMessage', () => {
   it('should return an error message for unassigned task', () => {
     expect(
-      getTaskAssigmentChangeErrorMessage('Task is not assigned'),
+      getTaskAssignmentChangeErrorMessage('Task is not assigned'),
     ).toBeUndefined();
   });
 
   it('should return an error message for an inactive task', () => {
     expect(
-      getTaskAssigmentChangeErrorMessage('Task is not active'),
+      getTaskAssignmentChangeErrorMessage('Task is not active'),
     ).toBeUndefined();
   });
 
   it('should return an error message for a task which is already assigned', () => {
     expect(
-      getTaskAssigmentChangeErrorMessage('Task is already assigned'),
+      getTaskAssignmentChangeErrorMessage('Task is already assigned'),
     ).toBeUndefined();
   });
 
   it('should return a generic error message', () => {
-    expect(getTaskAssigmentChangeErrorMessage('generic error')).toBe(
+    expect(getTaskAssignmentChangeErrorMessage('generic error')).toBe(
       'Service is not reachable',
     );
   });

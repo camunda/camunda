@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-function getTaskAssigmentChangeErrorMessage(code: string) {
+function getTaskAssignmentChangeErrorMessage(code: string) {
   if (code === 'Task is already assigned') {
     return undefined;
   }
@@ -20,4 +20,4 @@ function getTaskAssigmentChangeErrorMessage(code: string) {
   return 'Service is not reachable';
 }
 
-export {getTaskAssigmentChangeErrorMessage};
+export {getTaskAssignmentChangeErrorMessage};

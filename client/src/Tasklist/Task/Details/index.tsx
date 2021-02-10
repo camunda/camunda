@@ -30,7 +30,7 @@ import {useLocation} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
-import {getTaskAssigmentChangeErrorMessage} from './getTaskAssigmentChangeErrorMessage';
+import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 
 import {
   GET_CURRENT_USER,
@@ -138,13 +138,13 @@ const Details: React.FC = () => {
                           if (shouldDisplayNotification(error.message)) {
                             notifications.displayNotification('error', {
                               headline: 'Task could not be unclaimed',
-                              description: getTaskAssigmentChangeErrorMessage(
+                              description: getTaskAssignmentChangeErrorMessage(
                                 error.message,
                               ),
                             });
                           }
 
-                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
                           if (shouldFetchMore(error.message)) {
                             fetchMore({variables: {id}});
                           }
@@ -169,13 +169,13 @@ const Details: React.FC = () => {
                           if (shouldDisplayNotification(error.message)) {
                             notifications.displayNotification('error', {
                               headline: 'Task could not be claimed',
-                              description: getTaskAssigmentChangeErrorMessage(
+                              description: getTaskAssignmentChangeErrorMessage(
                                 error.message,
                               ),
                             });
                           }
 
-                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
                           if (shouldFetchMore(error.message)) {
                             fetchMore({variables: {id}});
                           }
