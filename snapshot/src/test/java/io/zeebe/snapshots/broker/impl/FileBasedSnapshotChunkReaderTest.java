@@ -92,7 +92,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     }
 
     try {
-      return new FileBasedSnapshotChunkReader(directory);
+      return new FileBasedSnapshotChunkReader(directory, 1);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

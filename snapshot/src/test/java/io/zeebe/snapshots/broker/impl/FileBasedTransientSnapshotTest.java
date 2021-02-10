@@ -117,7 +117,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(pendingSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -175,7 +175,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(pendingSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -200,7 +200,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -234,7 +234,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -267,7 +267,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -298,7 +298,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(pendingSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
 
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
     assertThat(snapshotDirs).isNotNull().hasSize(1);
@@ -308,7 +308,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
 
   @Test
@@ -430,7 +430,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldNotPersistInvalidPendingSnapshot() {
+  public void shouldNotPersistDeletedPendingSnapshot() {
     final var index = 1L;
     final var term = 0L;
     final var processedPosition = 2;
@@ -466,6 +466,54 @@ public class FileBasedTransientSnapshotTest {
     // then
     assertThat(firstSnapshot).isEqualTo(secondSnapshot);
     assertSnapshotWasMoved();
+  }
+
+  @Test
+  public void shouldNotPersistSnapshotWithNoDirectoryCreated() {
+    final var index = 1L;
+    final var term = 0L;
+    final var processedPosition = 2;
+    final var exporterPosition = 3;
+    final var transientSnapshot =
+        persistedSnapshotStore
+            .newTransientSnapshot(index, term, processedPosition, exporterPosition)
+            .orElseThrow();
+    transientSnapshot.take(p -> true).join();
+
+    // when
+    final var persisted = transientSnapshot.persist();
+
+    // then
+    assertThatThrownBy(persisted::join)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Snapshot is not valid");
+  }
+
+  @Test
+  public void shouldNotPersistSnapshotWithEmptyDirectory() {
+    final var index = 1L;
+    final var term = 0L;
+    final var processedPosition = 2;
+    final var exporterPosition = 3;
+    final var transientSnapshot =
+        persistedSnapshotStore
+            .newTransientSnapshot(index, term, processedPosition, exporterPosition)
+            .orElseThrow();
+    transientSnapshot
+        .take(
+            p -> {
+              p.toFile().mkdir();
+              return true;
+            })
+        .join();
+
+    // when
+    final var persisted = transientSnapshot.persist();
+
+    // then
+    assertThatThrownBy(persisted::join)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Snapshot is not valid");
   }
 
   private void assertSnapshotWasMoved() {
