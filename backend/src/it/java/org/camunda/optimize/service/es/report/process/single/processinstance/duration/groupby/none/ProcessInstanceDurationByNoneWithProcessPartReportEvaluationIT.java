@@ -509,7 +509,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
         reportClient.evaluateNumberReport(reportData);
       resultsMap.put(aggType, evaluationResponse);

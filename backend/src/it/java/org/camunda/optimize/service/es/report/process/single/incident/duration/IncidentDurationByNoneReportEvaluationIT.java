@@ -472,7 +472,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    reportData.getConfiguration().setAggregationType(aggregationType);
+    reportData.getConfiguration().setAggregationTypes(aggregationType);
     final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then

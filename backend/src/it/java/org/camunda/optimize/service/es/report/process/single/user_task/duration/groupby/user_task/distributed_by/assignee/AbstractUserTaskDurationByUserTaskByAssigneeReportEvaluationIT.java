@@ -1211,7 +1211,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     Map<AggregationType, ReportHyperMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });

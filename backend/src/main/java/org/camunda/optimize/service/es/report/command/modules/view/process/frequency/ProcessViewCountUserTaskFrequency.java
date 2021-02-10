@@ -21,7 +21,7 @@ public class ProcessViewCountUserTaskFrequency extends ProcessViewFrequency {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.USER_TASK);
-    view.setProperty(ProcessViewProperty.FREQUENCY);
+    view.setProperties(ProcessViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
   }
 }

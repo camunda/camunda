@@ -105,7 +105,7 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .setVariableType(VariableType.INTEGER)
       .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
       .build();
-    data.getConfiguration().setAggregationType(aggregationType);
+    data.getConfiguration().setAggregationTypes(aggregationType);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(data);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);

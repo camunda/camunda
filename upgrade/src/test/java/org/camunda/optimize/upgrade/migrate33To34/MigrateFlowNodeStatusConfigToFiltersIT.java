@@ -48,13 +48,14 @@ public class MigrateFlowNodeStatusConfigToFiltersIT extends AbstractUpgrade33IT 
 
     // then all reports still exist and none have a flow node execution state
     final SearchHit[] reportsAfterUpgrade = getAllDocumentsOfIndex(PROCESS_REPORT_INDEX.getIndexName());
-    assertThat(reportsAfterUpgrade).hasSameSizeAs(reportHitsBeforeUpgrade)
+    assertThat(reportsAfterUpgrade)
+      .hasSameSizeAs(reportHitsBeforeUpgrade)
       .allSatisfy(report -> {
         final Map<String, Object> reportData =
-          (Map<String, Object>) reportsAfterUpgrade[0].getSourceAsMap().get(SingleProcessReportIndex.DATA);
+          (Map<String, Object>) report.getSourceAsMap().get(SingleProcessReportIndex.DATA);
         final Map<String, Object> reportConfig =
           (Map<String, Object>) reportData.get(SingleProcessReportIndex.CONFIGURATION);
-        assertThat(reportConfig.get(FLOW_NODE_EXECUTION_STATE_PROPERTY)).isNull();
+        assertThat(reportConfig.containsKey(FLOW_NODE_EXECUTION_STATE_PROPERTY)).isFalse();
       });
     // that other fields aren't affected
     assertThat(

@@ -254,7 +254,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
@@ -322,7 +322,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
       final ProcessReportDataDto reportData = createReport(processDefinition);
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -1002,7 +1002,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -1102,7 +1102,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });

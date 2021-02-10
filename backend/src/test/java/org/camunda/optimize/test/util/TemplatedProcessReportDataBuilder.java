@@ -968,7 +968,7 @@ public class TemplatedProcessReportDataBuilder {
     reportData.setTenantIds(tenantIds);
     reportData.setFilter(this.filter);
     reportData.setVisualization(visualization == null ? reportData.getVisualization() : visualization);
-    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    reportData.getConfiguration().setUserTaskDurationTimes(userTaskDurationTime);
     reportData.getConfiguration().setGroupByDateVariableUnit(groupByDateVariableUnit);
     return reportData;
   }

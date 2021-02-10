@@ -249,7 +249,7 @@ public class CombinedProcessReportResultTest {
       .setReportDataType(reportDataType)
       .setVariableType(VariableType.DOUBLE)
       .build();
-    processReportDataDto.getConfiguration().setAggregationType(aggregationType);
+    processReportDataDto.getConfiguration().setAggregationTypes(aggregationType);
 
     List<ReportEvaluationResult> reportEvaluationResults = new ArrayList<>();
 

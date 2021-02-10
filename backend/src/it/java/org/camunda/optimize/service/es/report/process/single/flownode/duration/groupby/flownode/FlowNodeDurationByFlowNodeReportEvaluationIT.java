@@ -249,7 +249,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
       final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
       AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
@@ -911,7 +911,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessReportDataDto dataDto =
       createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -977,7 +977,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Map<AggregationType, ReportMapResultDto> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       resultsMap.put(aggType, reportClient.evaluateMapReport(reportData).getResult());
     });
     return resultsMap;

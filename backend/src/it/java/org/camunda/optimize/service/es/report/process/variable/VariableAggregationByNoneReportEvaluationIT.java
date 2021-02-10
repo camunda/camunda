@@ -105,7 +105,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationType(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(AVERAGE);
     NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -125,7 +125,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationType(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(AVERAGE);
     NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -146,7 +146,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    reportData.getConfiguration().setAggregationType(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(AVERAGE);
     NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -166,7 +166,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationType(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(AVERAGE);
     NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -189,7 +189,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationType(aggregationType);
+    reportData.getConfiguration().setAggregationTypes(aggregationType);
     NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then

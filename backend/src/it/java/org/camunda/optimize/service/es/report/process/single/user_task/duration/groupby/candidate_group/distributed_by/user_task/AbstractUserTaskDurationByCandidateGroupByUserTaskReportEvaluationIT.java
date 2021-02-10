@@ -1130,7 +1130,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -1245,7 +1245,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     Map<AggregationType, ReportHyperMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });

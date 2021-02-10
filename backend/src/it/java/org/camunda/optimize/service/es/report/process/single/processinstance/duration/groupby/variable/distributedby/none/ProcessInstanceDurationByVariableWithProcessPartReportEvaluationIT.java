@@ -298,7 +298,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
         .setEndFlowNodeId(END_EVENT)
         .build();
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
@@ -1192,7 +1192,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
       resultsMap.put(aggType, evaluationResponse);

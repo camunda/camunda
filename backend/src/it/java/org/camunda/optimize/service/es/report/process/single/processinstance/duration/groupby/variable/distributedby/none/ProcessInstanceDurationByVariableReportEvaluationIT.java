@@ -237,7 +237,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         .setVariableType(VariableType.STRING)
         .build();
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
@@ -1073,7 +1073,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
+    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
@@ -1398,7 +1398,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

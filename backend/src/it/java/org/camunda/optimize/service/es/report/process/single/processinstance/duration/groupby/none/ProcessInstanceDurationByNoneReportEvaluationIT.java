@@ -505,7 +505,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // given
     ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
 
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -544,7 +544,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
         reportClient.evaluateNumberReport(reportData);
       resultsMap.put(aggType, evaluationResponse);

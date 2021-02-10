@@ -431,7 +431,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
     Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });

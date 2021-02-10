@@ -38,7 +38,7 @@ public class ProcessViewUserTaskDuration extends ProcessViewDuration {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.USER_TASK);
-    view.setProperty(ProcessViewProperty.DURATION);
+    view.setProperties(ProcessViewProperty.DURATION);
     dataForCommandKey.setView(view);
   }
 }

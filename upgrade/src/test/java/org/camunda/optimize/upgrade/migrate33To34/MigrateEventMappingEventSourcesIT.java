@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceT
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
-import org.camunda.optimize.upgrade.migrate33To34.dto.EventSourceEntryDtoOld;
 import org.camunda.optimize.upgrade.migrate33To34.dto.EsEventProcessMappingDtoV3Old;
+import org.camunda.optimize.upgrade.migrate33To34.dto.EventSourceEntryDtoOld;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -108,12 +108,12 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
         assertThat(sourceConfig).containsEntry(
           CamundaEventSourceConfigDto.Fields.versions, sourceBeforeUpgrade.getVersions());
       }
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.eventScope)).isNull();
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.processDefinitionKey)).isNull();
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.tracedByBusinessKey)).isNull();
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.traceVariable)).isNull();
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.tenants)).isNull();
-      assertThat(eventSource.get(EventSourceEntryDtoOld.Fields.versions)).isNull();
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.eventScope);
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.processDefinitionKey);
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.tracedByBusinessKey);
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.traceVariable);
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.tenants);
+      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.versions);
     });
   }
 

@@ -708,7 +708,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto = createReport("123", "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

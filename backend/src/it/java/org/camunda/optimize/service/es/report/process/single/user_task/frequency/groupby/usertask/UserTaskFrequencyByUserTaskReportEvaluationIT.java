@@ -600,8 +600,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
     final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
@@ -631,7 +631,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

@@ -20,15 +20,22 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.3.0")
       .toVersion("3.4.0")
-      .addUpgradeStep(migrateFlowNodeStatusConfigToFilters())
+      .addUpgradeStep(migrateSingleProcessReportV6())
       .addUpgradeStep(migrateEventMappingEventSources())
       .addUpgradeStep(migrateEventPublishStateEventSources())
       .build();
   }
 
-  private static UpgradeStep migrateFlowNodeStatusConfigToFilters() {
+  private static UpgradeStep migrateSingleProcessReportV6() {
+    return new UpdateIndexStep(
+      new SingleProcessReportIndex(),
+      createMigrateFlowNodeStatusConfigToFiltersScript() + createProcessReportToMultiMeasureFieldsScript()
+    );
+  }
+
+  private static String createMigrateFlowNodeStatusConfigToFiltersScript() {
     //@formatter:off
-    final String script =
+    return
       "def reportEntityType = ctx._source.data.view.entity;\n" +
       "def currentFilters = ctx._source.data.filter;\n" +
       "if (reportEntityType == 'userTask' || reportEntityType == 'flowNode') {\n" +
@@ -58,7 +65,29 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "}\n" +
       "ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n";
     //@formatter:on
-    return new UpdateIndexStep(new SingleProcessReportIndex(), script);
+  }
+
+  private static String createProcessReportToMultiMeasureFieldsScript() {
+    //@formatter:off
+    return
+      "def reportConfiguration = ctx._source.data.configuration;\n" +
+      "reportConfiguration.aggregationTypes = [];\n" +
+      "if (reportConfiguration.aggregationType != null) {\n" +
+      "  reportConfiguration.aggregationTypes.add(reportConfiguration.aggregationType);\n" +
+      "}\n" +
+      "reportConfiguration.remove(\"aggregationType\");\n" +
+      "reportConfiguration.userTaskDurationTimes = [];\n" +
+      "if (reportConfiguration.userTaskDurationTime != null) {\n" +
+      "  reportConfiguration.userTaskDurationTimes.add(reportConfiguration.userTaskDurationTime);\n" +
+      "}\n" +
+      "reportConfiguration.remove(\"userTaskDurationTime\");\n" +
+      "def reportView = ctx._source.data.view;\n" +
+      "reportView.properties = [];\n" +
+      "if (reportView.property != null) {\n" +
+      "  reportView.properties.add(reportView.property);\n" +
+      "}\n" +
+      "reportView.remove(\"property\");\n";
+    //@formatter:on
   }
 
   private static UpgradeStep migrateEventMappingEventSources() {

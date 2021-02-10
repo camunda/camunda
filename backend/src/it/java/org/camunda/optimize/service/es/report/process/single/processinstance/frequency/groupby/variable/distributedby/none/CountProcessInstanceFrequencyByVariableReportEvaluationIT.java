@@ -973,7 +973,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

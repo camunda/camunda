@@ -214,7 +214,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // given
     ProcessReportDataDto dataDto =
       createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ProcessViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -249,8 +249,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 

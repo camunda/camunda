@@ -114,7 +114,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
 
     Map<AggregationType, ReportHyperMapResultDto> resultsMap = new HashMap<>();
     getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });

@@ -37,7 +37,7 @@ public class ProcessViewFlowNodeDuration extends ProcessViewDuration {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.FLOW_NODE);
-    view.setProperty(ProcessViewProperty.DURATION);
+    view.setProperties(ProcessViewProperty.DURATION);
     dataForCommandKey.setView(view);
   }
 }

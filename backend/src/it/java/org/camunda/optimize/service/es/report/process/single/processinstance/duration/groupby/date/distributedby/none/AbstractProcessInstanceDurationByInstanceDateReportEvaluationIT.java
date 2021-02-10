@@ -322,7 +322,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
         .setReportDataType(getTestReportDataType())
         .build();
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
@@ -726,7 +726,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setAggregationTypes(aggType);
       ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
