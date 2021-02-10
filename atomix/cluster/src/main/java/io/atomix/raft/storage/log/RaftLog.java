@@ -18,7 +18,9 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.StorageLevel;
+import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader;
+import io.atomix.storage.journal.JournalWriter;
 import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
@@ -27,18 +29,18 @@ import java.io.File;
 import java.util.function.Supplier;
 
 /** Raft log. */
-public class RaftLog implements Closeable {
+public class RaftLog implements RaftLogWriter, Closeable {
 
   private final SegmentedJournal<RaftLogEntry> journal;
-  private final RaftLogWriter writer;
   private final boolean flushExplicitly;
+  private final JournalWriter<RaftLogEntry> writer;
   private volatile long commitIndex;
 
   protected RaftLog(final SegmentedJournal<RaftLogEntry> journal, final boolean flushExplicitly) {
     this.journal = journal;
     this.flushExplicitly = flushExplicitly;
 
-    writer = new RaftLogWriter(journal.writer());
+    writer = journal.writer();
   }
 
   /**
@@ -51,7 +53,7 @@ public class RaftLog implements Closeable {
   }
 
   public RaftLogWriter writer() {
-    return writer;
+    return this;
   }
 
   public RaftLogReader openReader(final long index) {
@@ -64,11 +66,6 @@ public class RaftLog implements Closeable {
 
   public boolean isOpen() {
     return journal.isOpen();
-  }
-
-  @Override
-  public void close() {
-    journal.close();
   }
 
   /**
@@ -123,6 +120,61 @@ public class RaftLog implements Closeable {
 
   public boolean shouldFlushExplicitly() {
     return flushExplicitly;
+  }
+
+  @Override
+  public long getLastIndex() {
+    return writer.getLastIndex();
+  }
+
+  @Override
+  public Indexed<RaftLogEntry> getLastEntry() {
+    return writer.getLastEntry();
+  }
+
+  @Override
+  public long getNextIndex() {
+    return writer.getNextIndex();
+  }
+
+  @Override
+  public <T extends RaftLogEntry> Indexed<T> append(final T entry) {
+    return writer.append(entry);
+  }
+
+  @Override
+  public <T extends RaftLogEntry> Indexed<T> append(final T entry, final long checksum) {
+    return writer.append(entry, checksum);
+  }
+
+  @Override
+  public void append(final Indexed<RaftLogEntry> entry) {
+    writer.append(entry);
+  }
+
+  @Override
+  public void commit(final long index) {
+    writer.commit(index);
+  }
+
+  @Override
+  public void reset(final long index) {
+    writer.reset(index);
+  }
+
+  @Override
+  public void truncate(final long index) {
+    writer.truncate(index);
+  }
+
+  @Override
+  public void flush() {
+    writer.flush();
+  }
+
+  @Override
+  public void close() {
+    journal.close();
   }
 
   @Override
