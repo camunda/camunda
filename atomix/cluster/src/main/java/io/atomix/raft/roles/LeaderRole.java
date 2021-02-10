@@ -192,7 +192,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private ZeebeEntry findLastZeebeEntry() {
-    long index = raft.getLogWriter().getLastIndex();
+    long index = raft.getLog().getLastIndex();
     while (index > 0) {
       raft.getLogReader().reset(index);
       final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
@@ -361,7 +361,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     final CompletableFuture<TransferResponse> future = new CompletableFuture<>();
     appender
-        .appendEntries(raft.getLogWriter().getLastIndex())
+        .appendEntries(raft.getLog().getLastIndex())
         .whenComplete(
             (result, error) -> {
               if (isRunning()) {
@@ -422,7 +422,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withStatus(RaftResponse.Status.OK)
                   .withTerm(raft.getTerm())
                   .withSucceeded(false)
-                  .withLastLogIndex(raft.getLogWriter().getLastIndex())
+                  .withLastLogIndex(raft.getLog().getLastIndex())
                   .withLastSnapshotIndex(raft.getPersistedSnapshotStore().getCurrentSnapshotIndex())
                   .build()));
     } else {
@@ -512,7 +512,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     CompletableFuture<Indexed<E>> resultingFuture = null;
 
     try {
-      final Indexed<E> indexedEntry = raft.getLogWriter().append(entry);
+      final Indexed<E> indexedEntry = raft.getLog().append(entry);
       raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);

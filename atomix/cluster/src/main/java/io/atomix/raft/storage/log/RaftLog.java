@@ -29,7 +29,7 @@ import java.io.File;
 import java.util.function.Supplier;
 
 /** Raft log. */
-public class RaftLog implements RaftLogWriter, Closeable {
+public class RaftLog implements Closeable {
 
   private final SegmentedJournal<RaftLogEntry> journal;
   private final boolean flushExplicitly;
@@ -50,10 +50,6 @@ public class RaftLog implements RaftLogWriter, Closeable {
    */
   public static Builder builder() {
     return new Builder();
-  }
-
-  public RaftLogWriter writer() {
-    return this;
   }
 
   public RaftLogReader openReader(final long index) {
@@ -122,52 +118,42 @@ public class RaftLog implements RaftLogWriter, Closeable {
     return flushExplicitly;
   }
 
-  @Override
   public long getLastIndex() {
     return writer.getLastIndex();
   }
 
-  @Override
   public Indexed<RaftLogEntry> getLastEntry() {
     return writer.getLastEntry();
   }
 
-  @Override
   public long getNextIndex() {
     return writer.getNextIndex();
   }
 
-  @Override
   public <T extends RaftLogEntry> Indexed<T> append(final T entry) {
     return writer.append(entry);
   }
 
-  @Override
   public <T extends RaftLogEntry> Indexed<T> append(final T entry, final long checksum) {
     return writer.append(entry, checksum);
   }
 
-  @Override
   public void append(final Indexed<RaftLogEntry> entry) {
     writer.append(entry);
   }
 
-  @Override
   public void commit(final long index) {
     writer.commit(index);
   }
 
-  @Override
   public void reset(final long index) {
     writer.reset(index);
   }
 
-  @Override
   public void truncate(final long index) {
     writer.truncate(index);
   }
 
-  @Override
   public void flush() {
     writer.flush();
   }
