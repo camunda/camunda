@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, Button} from 'components';
 
 import {DecisionControlPanel} from './DecisionControlPanel';
 import ReportSelect from './ReportSelect';
@@ -55,7 +55,7 @@ const report = {
       xml: 'someXml',
     },
   },
-  result: {instanceCount: 3},
+  result: {instanceCount: 3, instanceCountWithoutFilters: 5},
 };
 
 const props = {
@@ -184,5 +184,15 @@ it('should not crash when no decisionDefinition is selected', () => {
 it('should show the number of decision instances in the current Filter', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
-  expect(node).toIncludeText('3 evaluations in current filter');
+  expect(node).toIncludeText('Displaying 3 of 5 evaluations');
+});
+
+it('should allow collapsing sections', () => {
+  const node = shallow(<DecisionControlPanel {...props} />);
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).toHaveClassName('hidden');
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).not.toHaveClassName('hidden');
 });

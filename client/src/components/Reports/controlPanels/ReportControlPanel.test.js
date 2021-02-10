@@ -8,11 +8,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import ReportSelect from './ReportSelect';
-
-import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, Button} from 'components';
+
+import ReportSelect from './ReportSelect';
+import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
@@ -57,7 +57,7 @@ const report = {
     filter: [],
     configuration: {xml: 'fooXml'},
   },
-  result: {instanceCount: 3},
+  result: {instanceCount: 3, instanceCountWithoutFilters: 5},
 };
 
 const props = {
@@ -325,7 +325,7 @@ it('should reset definition specific configurations on definition change', async
 it('should show the number of process instances in the current Filter', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  expect(node).toIncludeText('3 instances in current filter');
+  expect(node).toIncludeText('Displaying 3 of 5 instances');
 });
 
 it('should show a measure selection for views that have a measure', () => {
@@ -344,4 +344,14 @@ it('should show not show a measure selection where it does not make sense', () =
   );
 
   expect(node).not.toIncludeText('Measure');
+});
+
+it('should allow collapsing sections', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).toHaveClassName('hidden');
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).not.toHaveClassName('hidden');
 });

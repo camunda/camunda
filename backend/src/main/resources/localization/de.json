@@ -261,12 +261,12 @@
       "reportFilters": "Zeigt Daten von {count} aus {totalCount} Instanz",
       "reportFilters-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen",
       "process": {
-        "label": "{count} Instanz im aktuellen Filter",
-        "label-plural": "{count} Instanzen im aktuellen Filter"
+        "label": "Zeigt Daten von {count} aus {totalCount} Instanz",
+        "label-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen"
       },
       "decision": {
-        "label": "{count} Evaluierung im aktuellen Filter",
-        "label-plural": "{count} Evaluierungen im aktuellen Filter"
+        "label": "Zeigt Daten von {count} aus {totalCount} Evaluierung",
+        "label-plural": "Zeigt Daten von {count} aus {totalCount} Evaluierungen"
       }
     },
     "view": {

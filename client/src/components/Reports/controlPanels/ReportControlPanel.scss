@@ -15,35 +15,80 @@
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+
+    &.withDivider {
+      border-top: 1px solid var(--silver-darken-87);
+    }
+  }
+
+  .filter.header {
+    padding: 12px 20px;
+    border-top: 1px solid var(--silver-darken-87);
+
+    .sectionTitle {
+      margin: 0;
+    }
   }
 
   .sectionTitle {
     text-transform: uppercase;
-    font-weight: bold;
-    font-size: 0.875em;
+    font-weight: 500;
+    font-size: 11px;
     margin-bottom: 15px;
-    color: var(--grey-darken-33);
+    color: var(--grey-darken-13);
+
+    .Icon {
+      color: var(--black);
+      margin-right: 5px;
+    }
+
+    .sectionToggle {
+      color: var(--grey-darken-23);
+      float: right;
+      width: 16px;
+      height: 16px;
+      margin-left: 10px;
+
+      .Icon {
+        margin: 0;
+      }
+    }
   }
 
-  .source {
-    padding: 20px;
+  .hidden .sectionTitle {
+    margin-bottom: 0;
   }
 
-  .reportSetup,
-  .filter {
+  section {
     padding: 20px;
+    padding-top: 12px;
     border-top: 1px solid var(--silver-darken-87);
 
-    .filterCount {
-      float: right;
-      padding: 1px 8px 2px;
-      margin-top: -1px;
-      border-radius: 11.5px;
-      background-color: var(--blue-base-65);
-      font-size: 14px;
-      color: var(--white);
-      font-weight: normal;
+    &.hidden {
+      padding-bottom: 12px;
+
+      ul,
+      &.filter,
+      .DefinitionSelection {
+        display: none;
+      }
     }
+  }
+
+  .source,
+  section.filter {
+    border-top: none;
+  }
+
+  .filterCount {
+    float: right;
+    padding: 1px 8px 2px;
+    margin-top: -1px;
+    border-radius: 11.5px;
+    background-color: var(--blue-base-65);
+    font-size: 14px;
+    color: var(--white);
+    font-weight: normal;
   }
 
   .reportSetup > ul {
@@ -82,8 +127,9 @@
     margin-top: auto;
     text-align: center;
     padding: 10px;
-    font-size: 0.875em;
-    color: var(--grey-base-40);
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--grey-darken-23);
     border-top: 1px solid var(--silver-darken-87);
   }
 }

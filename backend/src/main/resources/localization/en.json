@@ -261,12 +261,12 @@
       "reportFilters": "Displaying {count} of {totalCount} instance",
       "reportFilters-plural": "Displaying {count} of {totalCount} instances",
       "process": {
-        "label": "{count} instance in current filter",
-        "label-plural": "{count} instances in current filter"
+        "label": "Displaying {count} of {totalCount} instance",
+        "label-plural": "Displaying {count} of {totalCount} instances"
       },
       "decision": {
-        "label": "{count} evaluation in current filter",
-        "label-plural": "{count} evaluations in current filter"
+        "label": "Displaying {count} of {totalCount} evaluation",
+        "label-plural": "Displaying {count} of {totalCount} evaluations"
       }
     },
     "view": {
