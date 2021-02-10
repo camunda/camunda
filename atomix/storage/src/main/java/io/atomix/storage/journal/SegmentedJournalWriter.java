@@ -87,6 +87,9 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   @Override
   public void reset(final long index) {
     if (index > currentSegment.index()) {
+      // delete all index mapping
+      currentSegment.compactIndex(index + 1);
+      // delete all segments and create an empty one
       currentSegment = journal.resetSegments(index);
       currentWriter = currentSegment.writer();
     } else {
