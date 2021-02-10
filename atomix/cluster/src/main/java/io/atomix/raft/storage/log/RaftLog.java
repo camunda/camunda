@@ -18,16 +18,16 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.StorageLevel;
-import io.atomix.storage.journal.DelegatingJournal;
 import io.atomix.storage.journal.JournalReader;
 import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
+import java.io.Closeable;
 import java.io.File;
 import java.util.function.Supplier;
 
 /** Raft log. */
-public class RaftLog extends DelegatingJournal<RaftLogEntry> {
+public class RaftLog implements Closeable {
 
   private final SegmentedJournal<RaftLogEntry> journal;
   private final RaftLogWriter writer;
@@ -35,7 +35,6 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
   private volatile long commitIndex;
 
   protected RaftLog(final SegmentedJournal<RaftLogEntry> journal, final boolean flushExplicitly) {
-    super(journal);
     this.journal = journal;
     this.flushExplicitly = flushExplicitly;
 
@@ -51,19 +50,25 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     return new Builder();
   }
 
-  @Override
   public RaftLogWriter writer() {
     return writer;
   }
 
-  @Override
   public RaftLogReader openReader(final long index) {
     return openReader(index, JournalReader.Mode.ALL);
   }
 
-  @Override
   public RaftLogReader openReader(final long index, final JournalReader.Mode mode) {
     return new RaftLogReader(journal.openReader(index, mode));
+  }
+
+  public boolean isOpen() {
+    return journal.isOpen();
+  }
+
+  @Override
+  public void close() {
+    journal.close();
   }
 
   /**
@@ -118,6 +123,11 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
 
   public boolean shouldFlushExplicitly() {
     return flushExplicitly;
+  }
+
+  @Override
+  public String toString() {
+    return "RaftLog{" + "journal=" + journal + '}';
   }
 
   /** Raft log builder. */
