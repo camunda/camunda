@@ -141,6 +141,7 @@ public class EventProcessService {
       .roles(Collections.singletonList(new EventProcessRoleRequestDto(new IdentityDto(userId, IdentityType.USER))))
       .build();
     validateEventSources(userId, eventProcessMappingDto.getEventSources());
+    validateAutogenerationEventSources(eventProcessMappingDto.getEventSources());
     validateAutogenerationEventSourceScopes(eventProcessMappingDto);
     if (eventSources.stream().anyMatch(source -> source.getSourceType().equals(EventSourceType.EXTERNAL)) &&
       !configurationService.getEventBasedProcessConfiguration().getEventImport().isEnabled()) {
@@ -377,6 +378,17 @@ public class EventProcessService {
     validateNoEventProcessesAsEventSource(camundaSources);
     validateCamundaEventSourcesAreImported(camundaSources);
     validateCompatibleExternalEventSources(externalSources);
+  }
+
+  private void validateAutogenerationEventSources(final List<EventSourceEntryDto<?>> eventSources) {
+    // Autogeneration is only supported with a single external event source that includes all events
+    final Map<Boolean, List<ExternalEventSourceEntryDto>> externalSourcesByIncludeAll = eventSources.stream()
+      .filter(ExternalEventSourceEntryDto.class::isInstance)
+      .map(ExternalEventSourceEntryDto.class::cast)
+      .collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
+    if (externalSourcesByIncludeAll.containsKey(false)) {
+      throw new OptimizeValidationException("External event sources specific to a group cannot be used for generation");
+    }
   }
 
   private void validateCamundaEventSourcesAreImported(final List<CamundaEventSourceEntryDto> camundaSources) {
