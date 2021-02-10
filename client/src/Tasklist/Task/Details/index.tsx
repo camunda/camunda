@@ -131,6 +131,7 @@ const Details: React.FC = () => {
                   {taskState === TaskStates.Created && (
                     <ClaimButton
                       variant="small"
+                      type="button"
                       onClick={async () => {
                         try {
                           await unclaimTask();
@@ -162,6 +163,7 @@ const Details: React.FC = () => {
                   {taskState === TaskStates.Created && (
                     <ClaimButton
                       variant="small"
+                      type="button"
                       onClick={async () => {
                         try {
                           await claimTask();
