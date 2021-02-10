@@ -110,7 +110,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/sirupsen/logrus v1.4.2
 ## explicit
 github.com/sirupsen/logrus
-# github.com/spf13/cobra v1.1.1
+# github.com/spf13/cobra v1.1.2
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
