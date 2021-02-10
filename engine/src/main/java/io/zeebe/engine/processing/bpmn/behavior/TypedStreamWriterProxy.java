@@ -46,11 +46,6 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-    writer.appendNewEvent(key, intent, value);
-  }
-
-  @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     writer.appendFollowUpEvent(key, intent, value);
   }

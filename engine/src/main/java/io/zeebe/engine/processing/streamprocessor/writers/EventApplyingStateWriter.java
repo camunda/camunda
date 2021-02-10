@@ -35,11 +35,6 @@ public final class EventApplyingStateWriter implements StateWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-    appendFollowUpEvent(key, intent, value, NO_MODIFIER);
-  }
-
-  @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     appendFollowUpEvent(key, intent, value, NO_MODIFIER);
   }

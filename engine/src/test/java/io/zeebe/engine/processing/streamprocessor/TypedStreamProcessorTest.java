@@ -217,7 +217,7 @@ public final class TypedStreamProcessorTest {
         final TypedRecord<DeploymentRecord> record,
         final TypedResponseWriter responseWriter,
         final TypedStreamWriter streamWriter) {
-      streamWriter.appendNewEvent(
+      streamWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
       streamWriter.flush();
     }

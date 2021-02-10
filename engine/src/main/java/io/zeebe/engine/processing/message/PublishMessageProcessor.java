@@ -97,7 +97,7 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
       final Consumer<SideEffectProducer> sideEffect) {
     messageKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
+    streamWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 

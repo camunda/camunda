@@ -39,11 +39,6 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-    // no op implementation
-  }
-
-  @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     // no op implementation
   }

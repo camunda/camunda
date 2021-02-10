@@ -264,11 +264,6 @@ public class StreamProcessorHealthTest {
     }
 
     @Override
-    public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-      wrappedWriter.appendNewEvent(key, intent, value);
-    }
-
-    @Override
     public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");

@@ -60,13 +60,6 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-
-    final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
-    records.add(record);
-  }
-
-  @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);

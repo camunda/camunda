@@ -14,8 +14,6 @@ import java.util.function.UnaryOperator;
 
 public interface TypedEventWriter {
 
-  void appendNewEvent(long key, Intent intent, RecordValue value);
-
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
 
   /** @deprecated The modifier parameter is not used at the time of writing */
